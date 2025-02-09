@@ -19,3 +19,4 @@ python-multipart==0.0.18
 sqlcipher3_binary==0.5.4
 tiktoken==0.7.0
 uvicorn==0.34.0
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
