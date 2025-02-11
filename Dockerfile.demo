@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Run the FastAPI app
-FROM python:3.12-slim
+FROM python:3.13.2-slim
 
 # Set the working directory
 WORKDIR /usr/src/app
