@@ -36,7 +36,7 @@ Follow these steps for a quick installation:
     (Or `docker build -t phlox:latest .` if using Docker)
 
 3.  **Create `.env` File:**
-    Navigate to the `phlox-dev/` directory within the cloned repository. Create a file named `.env` and add the following content, **customizing the values** as needed:
+    Create a file named `.env` in the cloned repo and add the following content, **customizing the values** as needed:
 
     ```env
     # Required
@@ -62,7 +62,7 @@ Follow these steps for a quick installation:
     Open your web browser and navigate to [http://localhost:3000](http://localhost:5000).
 
 6.  **Initial Configuration:**
-    Once Phlox is running, access the **Settings** page within the application (usually found in a user menu or navigation bar). Configure the following:
+    Once Phlox is running, access the **Settings** page within the application (found in the sidebar). Configure the following:
     - **Ollama Endpoint:**  Verify or update the Ollama API URL if needed.
     - **Transcription Endpoint:** **Ensure the Whisper API URL is correctly configured to match your transcription service.** Test the connection if possible. Depending on your endpoint configuration, you may need to specift a model and an API-key.
     - **Model Selection:**  Model selection options will depend on the models available in your Ollama instance and compatibility with the Whisper service.
