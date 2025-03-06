@@ -121,7 +121,7 @@ def extract_pdf_information(pdf_path):
             },
             {
                 "role": "user",
-                "content": f"{sample_text}\n\nIs the block of text focused on diagnosis, treatment, epidemiology, pathophysiology, prognosis, clinical features, prevention, or miscellaneous? (answer only with one word)",
+                "content": f"{sample_text}\n\nIs the block of text focused on guidelines, diagnosis, treatment, epidemiology, pathophysiology, prognosis, clinical features, prevention, or miscellaneous? (answer only with one word)",
             },
         ],
         options=disease_question_options,
