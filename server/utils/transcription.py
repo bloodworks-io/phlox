@@ -7,7 +7,7 @@ from typing import Dict, List, Union
 from ollama import AsyncClient as AsyncOllamaClient
 from server.database.config import config_manager
 from server.schemas.templates import TemplateField, TemplateResponse
-from server.schemas.grammars import FieldResponse
+from server.schemas.grammars import FieldResponse, RefinedResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -117,7 +117,7 @@ async def process_transcription(
             )
             for field in non_persistent_fields
         ])
-
+        print(raw_results)
         # Refine all results concurrently
         refined_results = await asyncio.gather(*[
             refine_field_content(
@@ -142,56 +142,6 @@ async def process_transcription(
 
     except Exception as e:
         logger.error(f"Error in process_transcription: {e}")
-        raise
-
-async def process_template_field_old(
-    transcript_text: str,
-    field: TemplateField,
-    patient_context: Dict[str, str]
-) -> TemplateResponse:
-    """
-    Process a single template field using the specified prompts and format.
-
-    Args:
-        transcript_text (str): The transcribed text.
-        field (TemplateField): The field to process.
-        patient_context (Dict[str, str]): Patient context.
-
-    Returns:
-        TemplateResponse: The processed field content.
-    """
-    try:
-        config = config_manager.get_config()
-        client = AsyncOllamaClient(host=config["OLLAMA_BASE_URL"])
-        options = config_manager.get_prompts_and_options()["options"]["general"]
-
-        # Build request body with system and user messages
-        request_body = [
-            {"role": "system", "content": field.system_prompt},
-            {"role": "system", "content": _build_patient_context(patient_context)},
-            {"role": "user", "content": transcript_text},
-            {"role": "assistant", "content": field.initial_prompt}
-        ]
-
-        response = await client.chat(
-            model=config["PRIMARY_MODEL"],
-            messages=request_body,
-            format=field.format_schema if field.format_schema else None,
-            options=options
-        )
-
-        # Get the part after the last linebreak in initial_prompt (if any)
-        prefix_to_prepend = field.initial_prompt.split('\n')[-1] if '\n' in field.initial_prompt else ''
-
-        # Prepend the prefix only if it exists
-        full_content = f"{prefix_to_prepend} {response['message']['content']}" if prefix_to_prepend else response['message']['content']
-
-        return TemplateResponse(
-            field_key=field.field_key,
-            content=full_content
-        )
-    except Exception as e:
-        logger.error(f"Error processing template field {field.field_key}: {e}")
         raise
 
 async def process_template_field(
@@ -236,15 +186,14 @@ async def process_template_field(
             format=response_format,
             options={**options, "temperature": 0}
         )
-        print(response)
-        # Parse the response
+
         field_response = FieldResponse.model_validate_json(
             response['message']['content']
         )
 
         # Convert key points into a nicely formatted string
         formatted_content = "\n".join(f"• {point.strip()}" for point in field_response.key_points)
-        print(formatted_content)
+
         return TemplateResponse(
             field_key=field.field_key,
             content=formatted_content
@@ -289,29 +238,80 @@ async def refine_field_content(
         prompts = config_manager.get_prompts_and_options()
         options = prompts["options"]["general"]
 
+        # Determine the response format and system prompt based on field format_schema
+        format_type = None
+        if field.format_schema and "type" in field.format_schema:
+            format_type = field.format_schema["type"]
+
+            if format_type == "narrative":
+                response_format = NarrativeResponse.model_json_schema()
+                system_prompt = "Format the following content as a cohesive narrative paragraph."
+            else:
+                response_format = RefinedResponse.model_json_schema()
+
+                # Add format guidance to the system prompt
+                format_guidance = ""
+                if format_type == "numbered":
+                    format_guidance = "Format the key points as a numbered list (1., 2., etc.)."
+                elif format_type == "bullet":
+                    format_guidance = "Format the key points as a bulleted list (•) prefixes)."
+
+                system_prompt = prompts["prompts"]["refinement"]["system"] + "\n" + format_guidance
+        else:
+            # Default to RefinedResponse
+            response_format = RefinedResponse.model_json_schema()
+            system_prompt = prompts["prompts"]["refinement"]["system"]
+
+        # Override with custom refinement rules if specified
+        if field.refinement_rules:
+            # Check if rules are provided and exist in the prompts configuration
+            for rule in field.refinement_rules:
+                if rule in prompts["prompts"]["refinement"]:
+                    system_prompt = prompts["prompts"]["refinement"][rule]
+                    break
+
         request_body = [
-            {"role": "system", "content": prompts["prompts"]["refinement"]["system"]},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": content},
-            {"role": "assistant", "content": field.initial_prompt}
         ]
 
         response = await client.chat(
             model=config["PRIMARY_MODEL"],
             messages=request_body,
-            format=field.format_schema if field.format_schema else None,
+            format=response_format,
             options=options
         )
 
-        # Get the part after the last linebreak in initial_prompt (if any)
-        prefix_to_prepend = field.initial_prompt.split('\n')[-1] if '\n' in field.initial_prompt else ''
+        # Process response based on format type
+        if format_type == "narrative":
+            narrative_response = NarrativeResponse.model_validate_json(response['message']['content'])
+            return narrative_response.narrative
+        else:
+            refined_response = RefinedResponse.model_validate_json(response['message']['content'])
 
-        # Prepend the prefix only if it exists
-        full_content = f"{prefix_to_prepend} {response['message']['content']}" if prefix_to_prepend else response['message']['content']
+            # Apply formatting based on format_type
+            if format_type == "numbered":
+                formatted_key_points = []
+                for i, point in enumerate(refined_response.key_points):
+                    # Strip any existing numbering
+                    cleaned_point = re.sub(r'^\d+\.\s*', '', point.strip())
+                    formatted_key_points.append(f"{i+1}. {cleaned_point}")
+                return "\n".join(formatted_key_points)
+            elif format_type == "bullet":
+                bullet_char = "•"  # Default bullet character
+                if field.format_schema and "bullet_char" in field.format_schema:
+                    bullet_char = field.format_schema["bullet_char"]
 
-        # Clean the double spaces
-        cleaned_content = clean_list_spacing(full_content)
+                formatted_key_points = []
+                for point in refined_response.key_points:
+                    # Strip any existing bullets
+                    cleaned_point = re.sub(r'^[•\-\*]\s*', '', point.strip())
+                    formatted_key_points.append(f"{bullet_char} {cleaned_point}")
+                return "\n".join(formatted_key_points)
+            else:
+                # No specific formatting required
+                return "\n".join(refined_response.key_points)
 
-        return cleaned_content
     except Exception as e:
         logger.error(f"Error refining field {field.field_key}: {e}")
         raise
@@ -337,59 +337,3 @@ def _build_patient_context(context: Dict[str, str]) -> str:
         context_parts.append(f"DOB: {context['dob']}")
 
     return " ".join(context_parts)
-
-async def process_template(
-    transcript_text: str,
-    template_fields: List[TemplateField],
-    patient_context: Dict[str, str]
-) -> Dict[str, Union[str, float]]:
-    """
-    Process all fields in a template concurrently.
-
-    Args:
-        transcript_text (str): The transcribed text.
-        template_fields (List[TemplateField]): The fields to process.
-        patient_context (Dict[str, str]): Patient context.
-
-    Returns:
-        dict: A dictionary containing:
-            - 'fields' (Dict[str, str]): Processed field data.
-            - 'process_duration' (float): The time taken for processing.
-    """
-    process_start = time.perf_counter()
-
-    try:
-        # Process all fields concurrently
-        raw_results = await asyncio.gather(*[
-            process_template_field(
-                transcript_text,
-                field,
-                patient_context
-            )
-            for field in template_fields
-        ])
-
-        # Refine all results concurrently
-        refined_results = await asyncio.gather(*[
-            refine_field_content(
-                result.content,
-                field
-            )
-            for result, field in zip(raw_results, template_fields)
-        ])
-
-        # Combine results into a dictionary
-        processed_fields = {
-            field.field_key: refined_content
-            for field, refined_content in zip(template_fields, refined_results)
-        }
-
-        process_duration = time.perf_counter() - process_start
-
-        return {
-            "fields": processed_fields,
-            "process_duration": process_duration
-        }
-    except Exception as e:
-        logger.error(f"Error in process_template: {e}")
-        raise

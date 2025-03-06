@@ -271,30 +271,30 @@ const FieldEditor = ({ field, idx, updateField, removeField }) => {
                                                     "none"
                                                 }
                                                 onChange={(e) => {
-                                                    const schema =
-                                                        e.target.value ===
-                                                        "none"
-                                                            ? null
-                                                            : {
-                                                                  type: e.target
-                                                                      .value,
-                                                                  pattern:
-                                                                      e.target
-                                                                          .value ===
-                                                                      "bullet"
-                                                                          ? "^[•\\-] .+"
-                                                                          : e
-                                                                                  .target
-                                                                                  .value ===
-                                                                              "numbered"
-                                                                            ? "^\\d+\\. .+"
-                                                                            : null,
-                                                              };
-                                                    updateField(
-                                                        idx,
-                                                        "format_schema",
-                                                        schema,
-                                                    );
+                                                    const value =
+                                                        e.target.value;
+                                                    if (value === "none") {
+                                                        updateField(
+                                                            idx,
+                                                            "format_schema",
+                                                            null,
+                                                        );
+                                                    } else {
+                                                        let schema = {
+                                                            type: value,
+                                                        };
+                                                        if (
+                                                            value === "bullet"
+                                                        ) {
+                                                            schema.bullet_char =
+                                                                "•"; // Default bullet
+                                                        }
+                                                        updateField(
+                                                            idx,
+                                                            "format_schema",
+                                                            schema,
+                                                        );
+                                                    }
                                                 }}
                                             >
                                                 <option value="none">
@@ -306,7 +306,54 @@ const FieldEditor = ({ field, idx, updateField, removeField }) => {
                                                 <option value="numbered">
                                                     Numbered List
                                                 </option>
+                                                <option value="narrative">
+                                                    Narrative Paragraph
+                                                </option>
                                             </Select>
+
+                                            {/* Show bullet character selector if bullet format is selected */}
+                                            {field.format_schema?.type ===
+                                                "bullet" && (
+                                                <Box mt={2}>
+                                                    <Text fontSize="sm" mb={1}>
+                                                        Bullet Character
+                                                    </Text>
+                                                    <Select
+                                                        size="sm"
+                                                        className="input-style"
+                                                        value={
+                                                            field.format_schema
+                                                                ?.bullet_char ||
+                                                            "•"
+                                                        }
+                                                        onChange={(e) => {
+                                                            updateField(
+                                                                idx,
+                                                                "format_schema",
+                                                                {
+                                                                    ...field.format_schema,
+                                                                    bullet_char:
+                                                                        e.target
+                                                                            .value,
+                                                                },
+                                                            );
+                                                        }}
+                                                    >
+                                                        <option value="•">
+                                                            • (Bullet)
+                                                        </option>
+                                                        <option value="-">
+                                                            - (Dash)
+                                                        </option>
+                                                        <option value="*">
+                                                            * (Asterisk)
+                                                        </option>
+                                                        <option value="→">
+                                                            → (Arrow)
+                                                        </option>
+                                                    </Select>
+                                                </Box>
+                                            )}
                                         </Box>
                                     </Tooltip>
                                     <Tooltip label="Rules for refining the AI's response">
