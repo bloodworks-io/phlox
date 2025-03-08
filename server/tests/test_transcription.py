@@ -20,12 +20,14 @@ from server.utils.transcription import (
 
 # A simple asynchronous test for transcribe_audio
 @pytest.mark.asyncio
-async def test_transcribe_audio_success():
+async def test_transcribe_audio():
     # Prepare a fake configuration and response for the HTTP request
     fake_config = {
         "WHISPER_BASE_URL": "http://fake-whisper/",
-        "WHISPER_MODEL": "base",
+        "WHISPER_MODEL": "whisper-1",
+        "WHISPER_KEY": "fake-key",
     }
+
     # Patch config_manager.get_config() to return fake_config
     from server.database.config import config_manager
     with patch.object(config_manager, "get_config", return_value=fake_config):
@@ -38,12 +40,20 @@ async def test_transcribe_audio_success():
         fake_post_context = AsyncMock()
         fake_post_context.__aenter__.return_value = fake_response
 
-        with patch("aiohttp.ClientSession.post", return_value=fake_post_context):
-            result = await transcribe_audio(b"fake audio data")
-            assert "text" in result
-            assert result["text"] == "Transcribed text"
-            assert "transcriptionDuration" in result
+        # Mock the format detection function
+        with patch("server.utils.transcription._detect_audio_format") as mock_detect:
+            mock_detect.return_value = ("recording.mp3", "audio/mpeg")
 
+            with patch("aiohttp.ClientSession.post", return_value=fake_post_context):
+                result = await transcribe_audio(b"fake audio data")
+
+                # Check that format detection was called
+                mock_detect.assert_called_once_with(b"fake audio data")
+
+                # Check the result
+                assert "text" in result
+                assert result["text"] == "Transcribed text"
+                assert "transcriptionDuration" in result
 
 # Test process_transcription with no non-persistent fields.
 @pytest.mark.asyncio
@@ -57,7 +67,6 @@ async def test_process_transcription_no_fields():
     assert result["fields"] == {}
     assert "process_duration" in result
     assert isinstance(result["process_duration"], float)
-
 
 # Test process_template_field and refine_field_content using dummy responses.
 @pytest.mark.asyncio
@@ -122,3 +131,67 @@ async def test_template_field_processing_and_refinement(monkeypatch):
 
     assert isinstance(response, TemplateResponse)
     assert response.field_key == "test_field"
+
+# Test for the audio format detection function
+def test_detect_audio_format():
+    with patch('magic.Magic') as mock_magic:
+        # Setup the mock
+        mock_instance = MagicMock()
+        mock_magic.return_value = mock_instance
+
+        # Test MP3 detection
+        mock_instance.from_buffer.return_value = 'audio/mpeg'
+        filename, content_type = _detect_audio_format(b'fake mp3 data')
+        assert filename == 'recording.mp3'
+        assert content_type == 'audio/mpeg'
+
+        # Test WAV detection
+        mock_instance.from_buffer.return_value = 'audio/wav'
+        filename, content_type = _detect_audio_format(b'fake wav data')
+        assert filename == 'recording.wav'
+        assert content_type == 'audio/wav'
+
+        # Test M4A detection
+        mock_instance.from_buffer.return_value = 'audio/mp4'
+        filename, content_type = _detect_audio_format(b'fake m4a data')
+        assert filename == 'recording.m4a'
+        assert content_type == 'audio/mp4'
+
+        # Test unrecognized format (should default to WAV)
+        mock_instance.from_buffer.return_value = 'audio/unknown'
+        filename, content_type = _detect_audio_format(b'fake unknown data')
+        assert filename == 'recording.wav'
+        assert content_type == 'audio/wav'
+
+# Test for API error handling with detailed error messages
+@pytest.mark.asyncio
+async def test_transcribe_audio_api_error():
+    # Prepare a fake configuration for the HTTP request
+    fake_config = {
+        "WHISPER_BASE_URL": "http://fake-whisper/",
+        "WHISPER_MODEL": "whisper-1",
+        "WHISPER_KEY": "fake-key",
+    }
+
+    # Patch config_manager.get_config() to return fake_config
+    from server.database.config import config_manager
+    with patch.object(config_manager, "get_config", return_value=fake_config):
+        # Create a fake aiohttp response object with error
+        fake_response = AsyncMock()
+        fake_response.status = 400
+        fake_response.text = AsyncMock(return_value='{"error": "Invalid request parameters"}')
+
+        # Create a fake context manager for session.post that returns fake_response
+        fake_post_context = AsyncMock()
+        fake_post_context.__aenter__.return_value = fake_response
+
+        # Mock the format detection function
+        with patch("server.utils.transcription._detect_audio_format") as mock_detect:
+            mock_detect.return_value = ("recording.wav", "audio/wav")
+
+            with patch("aiohttp.ClientSession.post", return_value=fake_post_context):
+                with pytest.raises(ValueError) as excinfo:
+                    await transcribe_audio(b"fake audio data")
+
+                # Check that the error message includes the API response
+                assert "Invalid request parameters" in str(excinfo.value)

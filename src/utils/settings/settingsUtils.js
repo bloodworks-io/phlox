@@ -27,13 +27,53 @@ export const settingsService = {
             );
     },
 
-    fetchModels: (ollamaBaseUrl, setModelOptions) => {
+    fetchOllamaModels: (ollamaBaseUrl, setModelOptions) => {
         return settingsApi
-            .fetchModels(ollamaBaseUrl)
+            .fetchOllamaModels(ollamaBaseUrl)
             .then((data) =>
                 setModelOptions(data.models.map((model) => model.name)),
             );
     },
+
+    fetchWhisperModels: async (
+        whisperBaseUrl,
+        setWhisperModelOptions,
+        setWhisperModelListAvailable,
+    ) => {
+        try {
+            const response =
+                await settingsApi.fetchWhisperModels(whisperBaseUrl);
+            setWhisperModelOptions(response.models);
+            if (setWhisperModelListAvailable) {
+                setWhisperModelListAvailable(response.listAvailable);
+            }
+            return response;
+        } catch (error) {
+            console.error("Error fetching whisper models:", error);
+            return { models: [], listAvailable: false };
+        }
+    },
+
+    validateUrl: async (type, url) => {
+        if (!url) {
+            return false;
+        }
+
+        try {
+            const response = await fetch(
+                `/api/config/validate-url?url=${encodeURIComponent(url)}&type=${type}`,
+            );
+            if (response.ok) {
+                const data = await response.json();
+                return data.valid;
+            }
+            return false;
+        } catch (error) {
+            console.error(`Error validating ${type} URL:`, error);
+            return false;
+        }
+    },
+
     fetchTemplates: async (setTemplates) => {
         const response = await fetch("/api/templates");
         if (!response.ok) {
