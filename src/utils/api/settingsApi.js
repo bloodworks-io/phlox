@@ -26,11 +26,22 @@ export const settingsApi = {
             errorMessage: "Failed to fetch options",
         }),
 
-    fetchModels: (ollamaBaseUrl) => {
-        const apiUrl = `/api/config/models?ollamaEndpoint=${encodeURIComponent(ollamaBaseUrl)}`;
+    fetchOllamaModels: (ollamaBaseUrl) => {
+        const apiUrl = `/api/config/ollama/models?ollamaEndpoint=${encodeURIComponent(ollamaBaseUrl)}`;
         return handleApiRequest({
             apiCall: () => fetch(apiUrl),
             errorMessage: "Failed to fetch models",
+        });
+    },
+
+    fetchWhisperModels: (whisperBaseUrl) => {
+        if (!whisperBaseUrl) {
+            return Promise.resolve({ models: [], listAvailable: false });
+        }
+        const apiUrl = `/api/config/whisper/models?whisperEndpoint=${encodeURIComponent(whisperBaseUrl)}`;
+        return handleApiRequest({
+            apiCall: () => fetch(apiUrl),
+            errorMessage: "Failed to fetch Whisper models",
         });
     },
 

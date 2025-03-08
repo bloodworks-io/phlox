@@ -64,7 +64,6 @@ export const letterApi = {
         context,
         additional_instruction,
     }) => {
-        // Add some debugging
         console.log("Letter Generation Request:", {
             patientName,
             gender,
