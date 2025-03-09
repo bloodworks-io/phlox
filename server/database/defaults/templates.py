@@ -12,13 +12,12 @@ class DefaultTemplates:
             "field_type": "text",
             "persistent": False,
             "required": True,  # Make plan mandatory
-            "system_prompt": "You are a professional transcript summarisation assistant. The user will send you a raw transcript with which you will perform the following:\n1. Extract the action items mentioned in the transcript by the doctor in the following format:\nAction Items:\n1. {Action 1}\n2. {Action 2}\n2. The plan should include at least 2 actions from the appointment\n3. Only items for actioning are to be included. Do not add extraneous or irrelevant information.\n4. The target audience of the text is medical professionals so use jargon and common medical abbreviations.\n5. If a follow-up appointment or investigation is mentioned, be sure to include it in the plan.",
+            "system_prompt": "You are a professional transcript summarisation assistant. The user will send you a raw transcript with which you will perform the following:\n1. Extract the action items mentioned in the transcript by the doctor.\n2. The plan should include at least 2 actions from the appointment\n3. Only items for actioning are to be included. Do not add extraneous or irrelevant information.\n4. The target audience of the text is medical professionals so use jargon and common medical abbreviations.\n5. If a follow-up appointment or investigation is mentioned, be sure to include it in the plan.",
             "initial_prompt": "Items to be completed:\n1. ",
             "format_schema": {
-                "type": "string",
-                "pattern": "^(\\d+\\.\\s.+\\n?)+$"  # Enforce numbered format
+                "type": "numbered"
             },
-            "refinement_rules": ["default"]  # Changed from string to list
+            "refinement_rules": ["default"]
         }
 
     @classmethod
@@ -58,8 +57,12 @@ class DefaultTemplates:
                         "field_name": "Current History",
                         "field_type": "text",
                         "persistent": False,
-                        "system_prompt": "You are a professional transcript summarisation assistant. The user will send you a raw transcript with which you will perform the following:\n1. Summarise and present the key points from the clinical encounter in the following format:\nPoints of discussion from transcript:\n- {Point 1}\n- {Point 2}\n2. Tailor your summary based on the context. If this is a new patient, then focus on the history of the presenting complaint; for returning patients focus on current signs and symptoms.\n3. Include at least 5 bullet points.\n4. Report any examination findings (but only if it clear that one was performed).\n5. The target audience of the text is medical professionals so use jargon and common Australian medical abbreviations where appropriate.\n6. Do not include any items regarding the ongoing plan. Only include items regarding to the patient's HOPC and examination.",
-                        "initial_prompt": "Current Status:\n-"
+                        "format_schema": {
+                            "bullet_char": "-",
+                            "type": "bullet",
+                        },
+                        "initial_prompt": "Current Status:\n-",
+                        "system_prompt": "You are a professional transcript summarisation assistant. The user will send you a raw transcript with which you will perform the following:\n1. Summarise and present the key points from the clinical encounter.\n2. Tailor your summary based on the context. If this is a new patient, then focus on the history of the presenting complaint; for returning patients focus on current signs and symptoms.\n3. Report any examination findings (but only if it clear that one was performed).\n4. The target audience of the text is medical professionals so use jargon and common Australian medical abbreviations where appropriate.\n5. Do not include any items regarding the ongoing plan. Only include items regarding to the patient's HOPC and examination.\n6. Try to include at least 5 distinct dot points in the summary. Include more if required. Pay particular attention to discussion regarding constitutional symptoms, pains, and pertinent negatives on questioning."
                     },
                     {
                         "field_key": "impression",
@@ -67,7 +70,7 @@ class DefaultTemplates:
                         "field_type": "text",
                         "persistent": True,
                         "system_prompt": "Provide a clinical impression of the current status.",
-                        "initial_prompt": "Impression: "
+                        "initial_prompt": "Impression: ",
                     },
                     cls.get_plan_field()  # Add standard plan field
                 ]
@@ -82,7 +85,11 @@ class DefaultTemplates:
                         "field_type": "text",
                         "persistent": False,
                         "system_prompt": "Extract patient's symptoms, complaints, and reported history.",
-                        "initial_prompt": "S:\n-"
+                        "initial_prompt": "S:\n-",
+                        "format_schema": {
+                            "bullet_char": "-",
+                            "type": "bullet",
+                        },
                     },
                     {
                         "field_key": "objective",
@@ -90,7 +97,11 @@ class DefaultTemplates:
                         "field_type": "text",
                         "persistent": False,
                         "system_prompt": "Extract physical examination findings and investigation results.",
-                        "initial_prompt": "O:\n-"
+                        "initial_prompt": "O:\n-",
+                        "format_schema": {
+                            "bullet_char": "-",
+                            "type": "bullet",
+                        },
                     },
                     {
                         "field_key": "assessment",
@@ -98,7 +109,11 @@ class DefaultTemplates:
                         "field_type": "text",
                         "persistent": False,
                         "system_prompt": "Summarize the assessment and diagnosis.",
-                        "initial_prompt": "A:\n-"
+                        "initial_prompt": "A:\n-",
+                        "format_schema": {
+                            "bullet_char": "-",
+                            "type": "bullet",
+                        },
                     },
                     cls.get_plan_field()  # Add standard plan field
                 ]
@@ -113,7 +128,11 @@ class DefaultTemplates:
                         "field_type": "text",
                         "persistent": False,
                         "system_prompt": "Summarize changes since last visit.",
-                        "initial_prompt": "Interval History:\n-"
+                        "initial_prompt": "Interval History:\n-",
+                        "format_schema": {
+                            "bullet_char": "-",
+                            "type": "bullet",
+                        },
                     },
                     {
                         "field_key": "current_status",
@@ -121,7 +140,11 @@ class DefaultTemplates:
                         "field_type": "text",
                         "persistent": False,
                         "system_prompt": "Describe current clinical status and any active issues.",
-                        "initial_prompt": "Current Status:\n-"
+                        "initial_prompt": "Current Status:\n-",
+                        "format_schema": {
+                            "bullet_char": "-",
+                            "type": "bullet",
+                        },
                     },
                     cls.get_plan_field()  # Add standard plan field
                 ]

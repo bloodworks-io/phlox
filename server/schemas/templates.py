@@ -57,7 +57,6 @@ class TemplateFieldSchema(BaseModel):
     description: str
     example_value: Optional[str] = None
 
-
 class TemplateSectionSchema(BaseModel):
     field_name: str
     format_style: FormatStyle
