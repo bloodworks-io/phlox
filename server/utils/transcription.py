@@ -30,37 +30,44 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
     """
     try:
         config = config_manager.get_config()
+        filename, content_type = _detect_audio_format(audio_buffer)
         async with aiohttp.ClientSession() as session:
             form_data = aiohttp.FormData()
             form_data.add_field(
                 "file",
                 audio_buffer,
-                filename="recording.wav",
-                content_type="audio/wav",
+                filename=filename,
+                content_type=content_type,
             )
             form_data.add_field("model", config["WHISPER_MODEL"])
             form_data.add_field("language", "en")
             form_data.add_field("temperature", "0.1")
             form_data.add_field("vad_filter", "true")
-            form_data.add_field("response_format", "verbose_json")
-            form_data.add_field("timestamp_granularities", "segment",)
-            logger.info("Sending audio buffer for transcription")
+            form_data.add_field("response_format", "json")
+            form_data.add_field("timestamp_granularities[]", "segment")
 
             transcription_start = time.perf_counter()
 
+            headers = {
+                "Authorization": f"Bearer {config['WHISPER_KEY']}"
+            }
+
             async with session.post(
-                f"{config['WHISPER_BASE_URL']}audio/transcriptions",
+                f"{config['WHISPER_BASE_URL']}/v1/audio/transcriptions",
                 data=form_data,
+                headers=headers
             ) as response:
                 transcription_end = time.perf_counter()
                 transcription_duration = transcription_end - transcription_start
 
                 if response.status != 200:
-                    raise ValueError(
-                        "Transcription failed, no text in response"
-                    )
+                    error_text = await response.text()
+                    raise ValueError(f"Transcription failed: {error_text}")
 
-                data = await response.json()
+                try:
+                    data = await response.json()
+                except Exception as e:
+                    raise ValueError(f"Failed to parse response: {e}")
 
                 if "text" not in data:
                     raise ValueError(
@@ -337,3 +344,77 @@ def _build_patient_context(context: Dict[str, str]) -> str:
         context_parts.append(f"DOB: {context['dob']}")
 
     return " ".join(context_parts)
+
+async def process_template(
+    transcript_text: str,
+    template_fields: List[TemplateField],
+    patient_context: Dict[str, str]
+) -> Dict[str, Union[str, float]]:
+    """
+    Process all fields in a template concurrently.
+
+    Args:
+        transcript_text (str): The transcribed text.
+        template_fields (List[TemplateField]): The fields to process.
+        patient_context (Dict[str, str]): Patient context.
+
+    Returns:
+        dict: A dictionary containing:
+            - 'fields' (Dict[str, str]): Processed field data.
+            - 'process_duration' (float): The time taken for processing.
+    """
+    process_start = time.perf_counter()
+
+    try:
+        # Process all fields concurrently
+        raw_results = await asyncio.gather(*[
+            process_template_field(
+                transcript_text,
+                field,
+                patient_context
+            )
+            for field in template_fields
+        ])
+
+        # Refine all results concurrently
+        refined_results = await asyncio.gather(*[
+            refine_field_content(
+                result.content,
+                field
+            )
+            for result, field in zip(raw_results, template_fields)
+        ])
+
+        # Combine results into a dictionary
+        processed_fields = {
+            field.field_key: refined_content
+            for field, refined_content in zip(template_fields, refined_results)
+        }
+
+        process_duration = time.perf_counter() - process_start
+
+        return {
+            "fields": processed_fields,
+            "process_duration": process_duration
+        }
+    except Exception as e:
+        logger.error(f"Error in process_template: {e}")
+        raise
+
+def _detect_audio_format(audio_buffer):
+    """
+    Simple audio format detection based on file signatures (magic numbers).
+    """
+    # Check file signatures for common audio formats
+    if audio_buffer.startswith(b'ID3') or audio_buffer.startswith(b'\xFF\xFB'):
+        return "recording.mp3", "audio/mpeg"
+    elif audio_buffer.startswith(b'RIFF') and b'WAVE' in audio_buffer[0:12]:
+        return "recording.wav", "audio/wav"
+    elif audio_buffer.startswith(b'OggS'):
+        return "recording.ogg", "audio/ogg"
+    elif audio_buffer.startswith(b'fLaC'):
+        return "recording.flac", "audio/flac"
+    elif b'ftyp' in audio_buffer[0:20]:  # M4A/MP4 format
+        return "recording.m4a", "audio/mp4"
+    # Default to WAV if we can't determine
+    return "recording.wav", "audio/wav"

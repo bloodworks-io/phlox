@@ -36,7 +36,15 @@ const Settings = () => {
     const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(true);
     const [modelOptions, setModelOptions] = useState([]);
+    const [whisperModelOptions, setWhisperModelOptions] = useState([]);
+    const [whisperModelListAvailable, setWhisperModelListAvailable] =
+        useState(false);
+
     const toast = useToast();
+    const [urlStatus, setUrlStatus] = useState({
+        whisper: false,
+        ollama: false,
+    });
     const [collapseStates, setCollapseStates] = useState({
         userSettings: true,
         modelSettings: false,
@@ -66,9 +74,17 @@ const Settings = () => {
             }));
 
             if (configData?.OLLAMA_BASE_URL) {
-                await settingsService.fetchModels(
+                await settingsService.fetchOllamaModels(
                     configData.OLLAMA_BASE_URL,
                     setModelOptions,
+                );
+            }
+
+            if (configData?.WHISPER_BASE_URL) {
+                await settingsService.fetchWhisperModels(
+                    configData.WHISPER_BASE_URL,
+                    setWhisperModelOptions,
+                    setWhisperModelListAvailable,
                 );
             }
         } catch (error) {
@@ -88,6 +104,28 @@ const Settings = () => {
     useEffect(() => {
         fetchSettings();
     }, [fetchSettings]);
+
+    useEffect(() => {
+        const validateUrls = async () => {
+            if (config?.WHISPER_BASE_URL) {
+                const whisperValid = await settingsService.validateUrl(
+                    "whisper",
+                    config.WHISPER_BASE_URL,
+                );
+                setUrlStatus((prev) => ({ ...prev, whisper: whisperValid }));
+            }
+
+            if (config?.OLLAMA_BASE_URL) {
+                const ollamaValid = await settingsService.validateUrl(
+                    "ollama",
+                    config.OLLAMA_BASE_URL,
+                );
+                setUrlStatus((prev) => ({ ...prev, ollama: ollamaValid }));
+            }
+        };
+
+        validateUrls();
+    }, [config?.WHISPER_BASE_URL, config?.OLLAMA_BASE_URL]);
 
     useEffect(() => {
         const fetchLetterTemplates = async () => {
@@ -209,6 +247,9 @@ const Settings = () => {
                     config={config}
                     handleConfigChange={handleConfigChange}
                     modelOptions={modelOptions}
+                    whisperModelOptions={whisperModelOptions}
+                    whisperModelListAvailable={whisperModelListAvailable}
+                    urlStatus={urlStatus}
                 />
 
                 <PromptSettingsPanel

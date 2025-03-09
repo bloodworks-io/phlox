@@ -10,8 +10,14 @@ import {
     Switch,
     VStack,
     Tooltip,
+    InputGroup,
+    InputRightElement,
 } from "@chakra-ui/react";
-import { ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import {
+    ChevronRightIcon,
+    ChevronDownIcon,
+    CheckCircleIcon,
+} from "@chakra-ui/icons";
 import { FaCog } from "react-icons/fa";
 
 const ModelSettingsPanel = ({
@@ -20,6 +26,9 @@ const ModelSettingsPanel = ({
     config,
     handleConfigChange,
     modelOptions,
+    whisperModelOptions = [],
+    whisperModelListAvailable = false,
+    urlStatus = { whisper: false, ollama: false },
 }) => {
     return (
         <Box className="panels-bg" p="4" borderRadius="sm">
@@ -52,17 +61,25 @@ const ModelSettingsPanel = ({
                                 Whisper API Base URL
                             </Text>
                         </Tooltip>
-                        <Input
-                            size="sm"
-                            value={config?.WHISPER_BASE_URL || ""}
-                            onChange={(e) =>
-                                handleConfigChange(
-                                    "WHISPER_BASE_URL",
-                                    e.target.value,
-                                )
-                            }
-                            className="input-style"
-                        />
+                        <InputGroup size="sm">
+                            <Input
+                                value={config?.WHISPER_BASE_URL || ""}
+                                onChange={(e) =>
+                                    handleConfigChange(
+                                        "WHISPER_BASE_URL",
+                                        e.target.value,
+                                    )
+                                }
+                                className="input-style"
+                            />
+                            {urlStatus.whisper && (
+                                <InputRightElement>
+                                    <Tooltip label="Connection successful">
+                                        <CheckCircleIcon color="green.500" />
+                                    </Tooltip>
+                                </InputRightElement>
+                            )}
+                        </InputGroup>
                     </Box>
 
                     <Box>
@@ -71,17 +88,41 @@ const ModelSettingsPanel = ({
                                 Whisper Model
                             </Text>
                         </Tooltip>
-                        <Input
-                            size="sm"
-                            value={config?.WHISPER_MODEL || ""}
-                            onChange={(e) =>
-                                handleConfigChange(
-                                    "WHISPER_MODEL",
-                                    e.target.value,
-                                )
-                            }
-                            className="input-style"
-                        />
+
+                        {whisperModelListAvailable &&
+                        whisperModelOptions.length > 0 ? (
+                            <Select
+                                size="sm"
+                                value={config?.WHISPER_MODEL || ""}
+                                onChange={(e) =>
+                                    handleConfigChange(
+                                        "WHISPER_MODEL",
+                                        e.target.value,
+                                    )
+                                }
+                                placeholder="Select Whisper model"
+                                className="input-style"
+                            >
+                                {whisperModelOptions.map((model) => (
+                                    <option key={model} value={model}>
+                                        {model}
+                                    </option>
+                                ))}
+                            </Select>
+                        ) : (
+                            <Input
+                                size="sm"
+                                placeholder="Enter model name (e.g., whisper-1)"
+                                value={config?.WHISPER_MODEL || ""}
+                                onChange={(e) =>
+                                    handleConfigChange(
+                                        "WHISPER_MODEL",
+                                        e.target.value,
+                                    )
+                                }
+                                className="input-style"
+                            />
+                        )}
                     </Box>
 
                     <Box>
@@ -109,17 +150,25 @@ const ModelSettingsPanel = ({
                                 Ollama Base URL
                             </Text>
                         </Tooltip>
-                        <Input
-                            size="sm"
-                            value={config?.OLLAMA_BASE_URL || ""}
-                            onChange={(e) =>
-                                handleConfigChange(
-                                    "OLLAMA_BASE_URL",
-                                    e.target.value,
-                                )
-                            }
-                            className="input-style"
-                        />
+                        <InputGroup size="sm">
+                            <Input
+                                value={config?.OLLAMA_BASE_URL || ""}
+                                onChange={(e) =>
+                                    handleConfigChange(
+                                        "OLLAMA_BASE_URL",
+                                        e.target.value,
+                                    )
+                                }
+                                className="input-style"
+                            />
+                            {urlStatus.ollama && (
+                                <InputRightElement>
+                                    <Tooltip label="Connection successful">
+                                        <CheckCircleIcon color="green.500" />
+                                    </Tooltip>
+                                </InputRightElement>
+                            )}
+                        </InputGroup>
                     </Box>
 
                     <Box>
