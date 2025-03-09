@@ -395,7 +395,6 @@ def validate_template_data(template_key: str, template_data: Dict[str, Any]) -> 
         logging.error(f"Error validating template data: {e}")
         raise
 
-
 def set_default_template(template_key: str) -> None:
     """
     Set the default template.
@@ -497,7 +496,6 @@ def generate_unique_template_key(base_name: str) -> str:
 
     # If we somehow run out of letters, add timestamp
     return f"{base_key}-{int(time.time())}{version}"
-
 
 async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
     """
