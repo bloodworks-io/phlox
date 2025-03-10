@@ -63,6 +63,18 @@ class PatientDatabase:
 
     def _set_initial_default_template(self):
         try:
+            # Get the latest non-deleted Phlox template
+            self.cursor.execute(
+                "SELECT template_key FROM clinical_templates WHERE template_key LIKE 'phlox%' AND (deleted IS NULL OR deleted != 1) ORDER BY created_at DESC LIMIT 1"
+            )
+            phlox_template = self.cursor.fetchone()
+
+            if not phlox_template:
+                logging.error("No valid Phlox template found in the database")
+                return
+
+            default_template_key = phlox_template["template_key"]
+
             # Check if user_settings table is empty
             self.cursor.execute("SELECT COUNT(*) FROM user_settings")
             count = self.cursor.fetchone()[0]
@@ -71,21 +83,41 @@ class PatientDatabase:
                 # Create initial settings with default template
                 self.cursor.execute(
                     "INSERT INTO user_settings (default_template_key) VALUES (?)",
-                    ("phlox_01",)
+                    (default_template_key,)
                 )
-                logging.info("Created initial user settings with default template")
+                logging.info(f"Created initial user settings with default template: {default_template_key}")
             else:
-                # Check if default template is set
+                # Get current default template
                 self.cursor.execute(
-                    "SELECT default_template_key FROM user_settings LIMIT 1"
+                    "SELECT id, default_template_key FROM user_settings LIMIT 1"
                 )
                 row = self.cursor.fetchone()
-                if not row["default_template_key"]:
+                current_default = row["default_template_key"]
+
+                # Check if default template is not set or is invalid
+                need_update = False
+
+                if not current_default:
+                    need_update = True
+                    logging.info("No default template currently set")
+                else:
+                    # Verify the current default template exists and is not deleted
+                    self.cursor.execute(
+                        "SELECT 1 FROM clinical_templates WHERE template_key = ? AND (deleted IS NULL OR deleted != 1)",
+                        (current_default,)
+                    )
+                    template_exists = self.cursor.fetchone() is not None
+
+                    if not template_exists:
+                        need_update = True
+                        logging.info(f"Current default template '{current_default}' is invalid or deleted")
+
+                if need_update:
                     self.cursor.execute(
                         "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
-                        ("phlox_01", row["id"])
+                        (default_template_key, row["id"])
                     )
-                    logging.info("Updated existing user settings with default template")
+                    logging.info(f"Updated default template to: {default_template_key}")
 
             self.db.commit()
         except Exception as e:
