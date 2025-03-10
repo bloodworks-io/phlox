@@ -188,6 +188,40 @@ export const inputStyles = (props) => ({
             props.colorMode === "light" ? colors.light.crust : colors.dark.crust
         } !important`,
     },
+
+    ".transcription-style": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.base} !important`
+                : `${colors.dark.crust} !important`,
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textTertiary} !important`
+                : `${colors.dark.textTertiary} !important`,
+        border: "none !important",
+        fontSize: "0.9rem !important",
+        padding: "8px !important",
+        borderRadius: "4px !important",
+        whiteSpace: "pre-wrap !important",
+        boxShadow: "none !important",
+        "&::placeholder": {
+            color:
+                props.colorMode === "light"
+                    ? colors.light.overlay0
+                    : colors.dark.overlay0,
+        },
+        "&:focus": {
+            outline: "none !important",
+            boxShadow: "none !important",
+            border: "none !important",
+        },
+        overflowY: "auto !important",
+        resize: "none",
+        maxHeight: "200px !important",
+        fontFamily: "'Roboto', sans-serif",
+        lineHeight: "1.6",
+        backgroundColor: "var(--chakra-colors-gray-50)",
+    },
     ".scroll-container": {
         marginLeft: "-5px",
         scrollbarWidth: "thin",

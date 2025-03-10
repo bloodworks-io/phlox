@@ -20,6 +20,7 @@ import {
     FaRedo,
     FaFileUpload,
 } from "react-icons/fa";
+import { useTranscription } from "../../../utils/hooks/useTranscription";
 
 // WaveformVisualizer component
 const WaveformVisualizer = React.memo(({ isRecording, isPaused }) => {
@@ -92,6 +93,9 @@ const RecordingWidget = ({
     const audioChunksRef = useRef([]);
     const completeRecordingRef = useRef([]);
     const timerIntervalRef = useRef(null);
+
+    const { transcribeAudio, isTranscribing: isApiTranscribing } =
+        useTranscription(onTranscriptionComplete);
 
     useEffect(() => {
         // Reset state when component mounts or remounts
@@ -252,53 +256,19 @@ const RecordingWidget = ({
             return;
         }
 
-        const formData = new FormData();
-        formData.append("file", currentAudioBlob, "recording.wav");
-
-        if (name && typeof name === "string") formData.append("name", name);
-        if (gender && typeof gender === "string")
-            formData.append("gender", gender);
-        if (dob && typeof dob === "string") formData.append("dob", dob);
-        if (templateKey) formData.append("templateKey", templateKey);
-
-        console.log("FormData created", formData);
-
         setLoading(true);
-
         try {
-            console.log("Sending request to /api/transcribe/audio");
-            const response = await fetch(`/api/transcribe/audio`, {
-                method: "POST",
-                body: formData,
+            await transcribeAudio(currentAudioBlob, {
+                name,
+                gender,
+                dob,
+                templateKey,
             });
-
-            console.log(
-                "Response received",
-                response.status,
-                response.statusText,
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Transcription data:", data);
-            onTranscriptionComplete(
-                {
-                    fields: data.fields,
-                    rawTranscription: data.rawTranscription,
-                    transcriptionDuration: data.transcriptionDuration,
-                    processDuration: data.processDuration,
-                },
-                true,
-            );
 
             // Set the audio blob after successful send
             setAudioBlob(currentAudioBlob);
         } catch (error) {
             console.error("Error transcribing audio:", error);
-            onTranscriptionComplete({ error: error.message });
         } finally {
             setLoading(false);
         }
@@ -314,50 +284,16 @@ const RecordingWidget = ({
 
         console.log("Audio blob size for resend:", audioBlob.size);
 
-        const formData = new FormData();
-        formData.append("file", audioBlob, "recording.wav");
-
-        if (name && typeof name === "string") formData.append("name", name);
-        if (gender && typeof gender === "string")
-            formData.append("gender", gender);
-        if (dob && typeof dob === "string") formData.append("dob", dob);
-        if (templateKey) formData.append("templateKey", templateKey);
-
-        console.log("FormData created for resend", formData);
-
         setLoading(true);
-
         try {
-            console.log("Sending request to /api/transcribe/audio for resend");
-            const response = await fetch(`/api/transcribe/audio`, {
-                method: "POST",
-                body: formData,
+            await transcribeAudio(audioBlob, {
+                name,
+                gender,
+                dob,
+                templateKey,
             });
-
-            console.log(
-                "Response received for resend",
-                response.status,
-                response.statusText,
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Transcription data from resend:", data);
-            onTranscriptionComplete(
-                {
-                    fields: data.fields,
-                    rawTranscription: data.rawTranscription,
-                    transcriptionDuration: data.transcriptionDuration,
-                    processDuration: data.processDuration,
-                },
-                true,
-            );
         } catch (error) {
             console.error("Error transcribing audio on resend:", error);
-            onTranscriptionComplete({ error: error.message });
         } finally {
             setLoading(false);
         }
@@ -366,37 +302,16 @@ const RecordingWidget = ({
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
 
-        const formData = new FormData();
-        formData.append("file", file, "recording.wav");
-
-        if (name && typeof name === "string") formData.append("name", name);
-        if (gender && typeof gender === "string")
-            formData.append("gender", gender);
-        if (dob && typeof dob === "string") formData.append("dob", dob);
-        if (templateKey) formData.append("templateKey", templateKey);
-
         setLoading(true);
-
         try {
-            const response = await fetch(`/api/transcribe/audio`, {
-                method: "POST",
-                body: formData,
+            await transcribeAudio(file, {
+                name,
+                gender,
+                dob,
+                templateKey,
             });
-
-            const data = await response.json();
-            console.log("Transcription data:", data);
-            onTranscriptionComplete(
-                {
-                    fields: data.fields,
-                    rawTranscription: data.rawTranscription,
-                    transcriptionDuration: data.transcriptionDuration,
-                    processDuration: data.processDuration,
-                },
-                true,
-            );
         } catch (error) {
             console.error("Error uploading file:", error);
-            onTranscriptionComplete({ error: error.message });
         } finally {
             setLoading(false);
         }

@@ -525,6 +525,8 @@ const PatientDetails = ({
                     template={currentTemplate}
                     patientId={patient.id}
                     reasoning={patient.reasoning_output || null}
+                    rawTranscription={patient.raw_transcription}
+                    isTranscribing={loading}
                 />
 
                 <Summary

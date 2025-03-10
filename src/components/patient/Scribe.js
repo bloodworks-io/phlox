@@ -37,6 +37,8 @@ const Scribe = ({
     template,
     patientId,
     reasoning,
+    rawTranscription,
+    isTranscribing,
 }) => {
     const [tabIndex, setTabIndex] = useState(0);
     const [mode, setMode] = useState("record");
@@ -144,6 +146,11 @@ const Scribe = ({
                                 recordingProps={recordingProps}
                                 transcriptionDuration={transcriptionDuration}
                                 processDuration={processDuration}
+                                rawTranscription={rawTranscription}
+                                onTranscriptionComplete={
+                                    handleTranscriptionComplete
+                                }
+                                isTranscribing={isTranscribing}
                             />
                         </TabPanel>
 
