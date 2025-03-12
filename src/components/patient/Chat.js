@@ -16,7 +16,6 @@ import {
     ChatIcon,
 } from "@chakra-ui/icons";
 import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import styled from "@emotion/styled";
 import { keyframes } from "@emotion/react";
 
@@ -243,9 +242,9 @@ const Chat = ({
                                             <Spinner size="sm" />
                                         ) : (
                                             <>
-                                                <ReactMarkdown>
+                                                <Text whiteSpace="pre-wrap">
                                                     {message.content}
-                                                </ReactMarkdown>
+                                                </Text>
                                                 {message.role === "assistant" &&
                                                     message.context && (
                                                         <>
