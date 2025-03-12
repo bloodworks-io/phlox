@@ -52,6 +52,33 @@ export const chatStyles = (props) => ({
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textTertiary} !important`,
     },
+    ".quick-chat-buttons-collapsed": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.crust} !important`
+                : `${colors.dark.overlay0} !important`,
+        borderRadius: "sm !important",
+        border:
+            props.colorMode === "light"
+                ? `1px solid ${colors.light.surface} !important`
+                : "none !important",
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textSecondary} !important`
+                : `${colors.dark.textTertiary} !important`,
+        justifyContent: "flex-start !important",
+        padding: "0 8px !important",
+        height: "32px !important",
+    },
+
+    ".quick-chat-buttons-text": {
+        maxWidth: "calc(100% - 24px) !important",
+        whiteSpace: "nowrap !important",
+        overflow: "hidden !important",
+        textOverflow: "ellipsis !important",
+        textAlign: "left !important",
+        display: "block !important",
+    },
     ".message-box": {
         padding: "10px",
         borderRadius: "8px",

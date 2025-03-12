@@ -7,6 +7,7 @@ import {
     Input,
     Spinner,
     Button,
+    HStack,
 } from "@chakra-ui/react";
 import {
     CloseIcon,
@@ -31,6 +32,17 @@ const loadingGradient = keyframes`
   }
 `;
 
+const slideUp = keyframes`
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+`;
+
 const LoadingBox = styled(Box)`
     position: relative;
     overflow: hidden;
@@ -51,6 +63,10 @@ const LoadingBox = styled(Box)`
         animation: ${loadingGradient} 1.5s ease-in-out infinite;
         background-size: 200% 100%;
     }
+`;
+
+const AnimatedHStack = styled(HStack)`
+    animation: ${slideUp} 0.5s ease-out forwards;
 `;
 
 const Chat = ({
@@ -135,6 +151,12 @@ const Chat = ({
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
     };
+
+    // Show quick chat buttons only when we have messages and not showing suggestions in main area
+    const shouldShowQuickChatButtons =
+        filteredMessages.length > 0 &&
+        userSettings &&
+        (!showSuggestions || filteredMessages.length > 0);
 
     return (
         <Box
@@ -270,13 +292,57 @@ const Chat = ({
                                 </Flex>
                             ))}
 
-                            {/* Chat suggestions */}
-                            {showSuggestions && userSettings && (
-                                <Flex
-                                    justify="center"
-                                    mb="4"
-                                    flexWrap="wrap"
-                                    transform="translateY(40%)"
+                            {/* Chat suggestions - only show when no messages exist */}
+                            {showSuggestions &&
+                                filteredMessages.length === 0 &&
+                                userSettings && (
+                                    <Flex
+                                        justify="center"
+                                        mb="4"
+                                        flexWrap="wrap"
+                                        transform="translateY(40%)"
+                                    >
+                                        {[1, 2, 3].map((num) => {
+                                            const title =
+                                                userSettings[
+                                                    `quick_chat_${num}_title`
+                                                ];
+                                            const prompt =
+                                                userSettings[
+                                                    `quick_chat_${num}_prompt`
+                                                ];
+                                            if (!title || !prompt) return null;
+                                            return (
+                                                <Button
+                                                    key={num}
+                                                    leftIcon={<QuestionIcon />}
+                                                    m="2"
+                                                    onClick={() =>
+                                                        handleSendMessage(
+                                                            prompt,
+                                                        )
+                                                    }
+                                                    className="chat-suggestions"
+                                                >
+                                                    {title}
+                                                </Button>
+                                            );
+                                        })}
+                                    </Flex>
+                                )}
+
+                            <div ref={messagesEndRef} />
+                        </Box>
+
+                        {/* Input Area */}
+                        <Box p="4">
+                            {/* Quick chat buttons row - only show after messages have been sent */}
+                            {shouldShowQuickChatButtons && (
+                                <AnimatedHStack
+                                    spacing="2"
+                                    mb="2"
+                                    justifyContent="space-between"
+                                    width="100%"
                                 >
                                     {[1, 2, 3].map((num) => {
                                         const title =
@@ -288,36 +354,45 @@ const Chat = ({
                                                 `quick_chat_${num}_prompt`
                                             ];
                                         if (!title || !prompt) return null;
+
                                         return (
-                                            <Button
+                                            <Tooltip
                                                 key={num}
-                                                leftIcon={<QuestionIcon />}
-                                                m="2"
-                                                onClick={() =>
-                                                    handleSendMessage(prompt)
-                                                }
-                                                className="chat-suggestions"
+                                                label={title}
+                                                placement="top"
+                                                isDisabled={title.length <= 20}
                                             >
-                                                {title}
-                                            </Button>
+                                                <Button
+                                                    leftIcon={<QuestionIcon />}
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() =>
+                                                        handleSendMessage(
+                                                            prompt,
+                                                        )
+                                                    }
+                                                    className="quick-chat-buttons-collapsed"
+                                                    width="100%"
+                                                >
+                                                    <Box
+                                                        className="quick-chat-buttons-text"
+                                                        width="100%"
+                                                    >
+                                                        {title}
+                                                    </Box>
+                                                </Button>
+                                            </Tooltip>
                                         );
                                     })}
-                                </Flex>
+                                </AnimatedHStack>
                             )}
 
-                            <div ref={messagesEndRef} />
-                        </Box>
-
-                        {/* Input Area */}
-                        <Box p="4">
                             <Flex mb="2">
                                 <Input
                                     placeholder="Type your message..."
                                     value={userInput}
                                     onChange={(e) => {
                                         setUserInput(e.target.value);
-                                        if (showSuggestions)
-                                            setShowSuggestions(false);
                                     }}
                                     onKeyPress={(e) =>
                                         e.key === "Enter" &&

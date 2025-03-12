@@ -10,6 +10,7 @@ import LetterTemplatesPanel from "../components/settings/LetterTemplatesPanel";
 import SettingsActions from "../components/settings/SettingsActions";
 import { SPECIALTIES } from "../utils/constants/index.js";
 import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel";
+import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
 import { templateService } from "../utils/services/templateService";
 
 const Settings = () => {
@@ -46,12 +47,13 @@ const Settings = () => {
         ollama: false,
     });
     const [collapseStates, setCollapseStates] = useState({
-        userSettings: true,
-        modelSettings: false,
+        userSettings: false,
+        modelSettings: true,
         promptSettings: true,
         ragSettings: true,
         letterTemplates: true,
         templates: true,
+        chatSettings: true,
     });
     const fetchSettings = useCallback(async () => {
         try {
@@ -281,6 +283,13 @@ const Settings = () => {
                 <LetterTemplatesPanel
                     isCollapsed={collapseStates.letterTemplates}
                     setIsCollapsed={() => toggleCollapse("letterTemplates")}
+                />
+
+                <ChatSettingsPanel
+                    isCollapsed={collapseStates.chatSettings}
+                    setIsCollapsed={() => toggleCollapse("chatSettings")}
+                    userSettings={userSettings}
+                    setUserSettings={setUserSettings}
                 />
 
                 <SettingsActions
