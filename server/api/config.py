@@ -50,7 +50,7 @@ async def validate_url(
                 form_data = {"model": "whisper-1"}
                 try:
                     response = await client.post(validate_url, data=form_data, headers=headers, timeout=3.0)
-                    print(response, flush=True)
+
                     # If we get a 400, it means the endpoint exists but our request was invalid (which is expected)
                     # Or if we get a 401, it means the endpoint exists but requires authentication
                     # Or if we get a 422, it means the endpoint exists but our request was invalid (which is expected)

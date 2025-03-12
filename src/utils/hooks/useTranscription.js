@@ -41,7 +41,11 @@ export const useTranscription = (onTranscriptionComplete, setLoading) => {
         }
     };
 
-    const reprocessTranscription = async (transcriptText, metadata) => {
+    const reprocessTranscription = async (
+        transcriptText,
+        metadata,
+        originalTranscriptionDuration,
+    ) => {
         setIsTranscribing(true);
         setTranscriptionError(null);
         if (setLoading) setLoading(true);
@@ -56,6 +60,11 @@ export const useTranscription = (onTranscriptionComplete, setLoading) => {
             if (metadata.dob) formData.append("dob", metadata.dob);
             if (metadata.templateKey)
                 formData.append("templateKey", metadata.templateKey);
+
+            formData.append(
+                "original_transcription_duration",
+                originalTranscriptionDuration || 0,
+            );
 
             const data =
                 await transcriptionApi.reprocessTranscription(formData);

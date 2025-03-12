@@ -107,12 +107,16 @@ const VoiceInputTab = ({
         if (!rawTranscription) return;
 
         try {
-            await reprocessTranscription(rawTranscription, {
-                name: recordingProps.name,
-                gender: recordingProps.gender,
-                dob: recordingProps.dob,
-                templateKey: recordingProps.templateKey,
-            });
+            await reprocessTranscription(
+                rawTranscription,
+                {
+                    name: recordingProps.name,
+                    gender: recordingProps.gender,
+                    dob: recordingProps.dob,
+                    templateKey: recordingProps.templateKey,
+                },
+                transcriptionDuration,
+            );
         } catch (error) {
             console.error("Failed to reprocess transcription:", error);
         }
@@ -222,12 +226,20 @@ const VoiceInputTab = ({
                                     Start New Transcription
                                 </Button>
                                 <Button
-                                    leftIcon={<FaSync />}
+                                    leftIcon={
+                                        isTranscribing ? (
+                                            <Spinner size="sm" mr={2} />
+                                        ) : (
+                                            <FaSync />
+                                        )
+                                    }
                                     onClick={handleReprocessTranscription}
                                     className="tertiary-button"
                                     isDisabled={isTranscribing}
                                 >
-                                    Reprocess Transcription
+                                    {isTranscribing
+                                        ? "Reprocessing..."
+                                        : "Reprocess Transcription"}
                                 </Button>
                             </ButtonGroup>
                         </Flex>

@@ -101,6 +101,7 @@ async def reprocess_transcription(
     name: Optional[str] = Form(None),
     gender: Optional[str] = Form(None),
     dob: Optional[str] = Form(None),
+    original_transcription_duration: Optional[float] = Form(0),
     templateKey: Optional[str] = Form(None),
 ):
     """Reprocesses an existing transcription."""
@@ -139,7 +140,7 @@ async def reprocess_transcription(
         return TranscribeResponse(
             fields=processing_result["fields"],
             rawTranscription=transcript_text,
-            transcriptionDuration=0,  # No transcription time for reprocessing
+            transcriptionDuration=original_transcription_duration,
             processDuration=processing_result["process_duration"]
         )
 
