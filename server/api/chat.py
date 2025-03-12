@@ -40,10 +40,11 @@ async def chat(
         logging.debug(f"Chat request: {chat_request}")
 
         conversation_history = chat_request.messages
+        raw_transcription = chat_request.raw_transcription
 
         async def generate():
             chunk_count = 0
-            async for chunk in chat_engine.stream_chat(conversation_history):
+            async for chunk in chat_engine.stream_chat(conversation_history, raw_transcription=raw_transcription ):
                 chunk_count += 1
                 yield f"data: {json.dumps(chunk)}\n\n"
 

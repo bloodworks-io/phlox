@@ -74,7 +74,6 @@ async def transcribe(
         logging.error(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.post("/dictate")
 async def dictate(file: UploadFile = File(...)):
     """Transcribes the dictated audio."""
@@ -96,6 +95,57 @@ async def dictate(file: UploadFile = File(...)):
         logging.error(f"Error occurred during dictation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/reprocess", response_model=TranscribeResponse)
+async def reprocess_transcription(
+    transcript_text: str = Form(...),
+    name: Optional[str] = Form(None),
+    gender: Optional[str] = Form(None),
+    dob: Optional[str] = Form(None),
+    templateKey: Optional[str] = Form(None),
+):
+    """Reprocesses an existing transcription."""
+    try:
+        # Process the name if provided
+        formatted_name = "N/A"
+        if name:
+            name_parts = name.split(",")
+            last_name = name_parts[0].strip()
+            first_name = name_parts[1].strip()
+            formatted_name = f"{first_name} {last_name}"
+
+        # Get template fields if template key is provided
+        template_fields = []
+        if templateKey:
+            from server.database.templates import get_template_fields
+            template_fields = get_template_fields(templateKey)
+
+        # Create patient context
+        patient_context = {
+            "name": formatted_name,
+            "dob": dob,
+            "gender": gender
+        }
+
+        # Process the transcription with template fields
+        processing_start = time.perf_counter()
+        processing_result = await process_transcription(
+            transcript_text=transcript_text,
+            template_fields=template_fields,
+            patient_context=patient_context
+        )
+        processing_end = time.perf_counter()
+
+        # Return the response in the expected format
+        return TranscribeResponse(
+            fields=processing_result["fields"],
+            rawTranscription=transcript_text,
+            transcriptionDuration=0,  # No transcription time for reprocessing
+            processDuration=processing_result["process_duration"]
+        )
+
+    except Exception as e:
+        logging.error(f"Error occurred during reprocessing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/process-document", response_model=DocumentProcessResponse)
 async def process_document(

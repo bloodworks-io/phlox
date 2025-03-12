@@ -12,6 +12,17 @@ export const transcriptionApi = {
         });
     },
 
+    reprocessTranscription: async (formData) => {
+        return handleApiRequest({
+            apiCall: () =>
+                fetch(`/api/transcribe/reprocess`, {
+                    method: "POST",
+                    body: formData,
+                }),
+            errorMessage: "Error reprocessing transcription",
+        });
+    },
+
     transcribeDictation: async (formData) => {
         return handleApiRequest({
             apiCall: () =>

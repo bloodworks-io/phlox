@@ -108,7 +108,7 @@ const Chat = ({
 
     const handleSendMessage = async (message) => {
         if (message.trim()) {
-            handleChat(message, patientData, currentTemplate);
+            handleChat(message, patientData, currentTemplate, rawTranscription);
             setUserInput("");
             setShowSuggestions(false);
         }

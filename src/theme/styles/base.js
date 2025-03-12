@@ -59,6 +59,13 @@ export const baseStyles = (props) => ({
                 ? colors.light.textSecondary
                 : colors.dark.textSecondary,
     },
+    h7: {
+        ...typography.styles.h7,
+        color:
+            props.colorMode === "light"
+                ? colors.light.textSecondary
+                : colors.dark.textSecondary,
+    },
     p: {
         fontFamily: '"Roboto", sans-serif',
         fontSize: "1rem",

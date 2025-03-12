@@ -1,4 +1,3 @@
-// Component for handling audio recording and transcription with controls.
 import React, { useState, useRef, useEffect } from "react";
 import {
     Box,
@@ -11,6 +10,11 @@ import {
     HStack,
     useColorMode,
     useTheme,
+    Alert,
+    AlertIcon,
+    AlertTitle,
+    AlertDescription,
+    ButtonGroup,
 } from "@chakra-ui/react";
 import {
     FaMicrophone,
@@ -19,6 +23,8 @@ import {
     FaUndo,
     FaRedo,
     FaFileUpload,
+    FaExclamationTriangle,
+    FaRedoAlt,
 } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 
@@ -89,13 +95,28 @@ const RecordingWidget = ({
     const [loading, setLoading] = useState(false);
     const [timer, setTimer] = useState(0);
     const [audioBlob, setAudioBlob] = useState(null);
+    const [transcriptionError, setTranscriptionError] = useState(null);
+    const [uploadedFile, setUploadedFile] = useState(null);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const completeRecordingRef = useRef([]);
     const timerIntervalRef = useRef(null);
 
     const { transcribeAudio, isTranscribing: isApiTranscribing } =
-        useTranscription(onTranscriptionComplete);
+        useTranscription((data) => {
+            if (data.error) {
+                setTranscriptionError({
+                    message:
+                        data.error || "An error occurred during transcription.",
+                });
+                setLoading(false);
+            } else {
+                // Clear any error state when transcription succeeds
+                setTranscriptionError(null);
+                // Call the original callback
+                onTranscriptionComplete(data);
+            }
+        });
 
     useEffect(() => {
         // Reset state when component mounts or remounts
@@ -104,6 +125,7 @@ const RecordingWidget = ({
         setLoading(false);
         setTimer(0);
         setAudioBlob(null);
+        setTranscriptionError(null);
         audioChunksRef.current = [];
         completeRecordingRef.current = [];
         if (mediaRecorderRef.current) {
@@ -146,6 +168,7 @@ const RecordingWidget = ({
         setIsPaused(false);
         setTimer(0);
         setAudioBlob(null);
+        setTranscriptionError(null);
         audioChunksRef.current = [];
         completeRecordingRef.current = [];
         if (mediaRecorderRef.current) {
@@ -189,8 +212,14 @@ const RecordingWidget = ({
             mediaRecorderRef.current.start();
             setIsRecording(true);
             setTimer(0);
+            // Clear any previous error when starting a new recording
+            setTranscriptionError(null);
         } catch (error) {
             console.error("Error starting recording:", error);
+            setTranscriptionError({
+                message:
+                    "Could not access microphone. Please check your permissions and try again.",
+            });
         }
     };
 
@@ -249,14 +278,23 @@ const RecordingWidget = ({
         console.log(
             "Audio blob size:",
             currentAudioBlob ? currentAudioBlob.size : "No audio blob",
+            "Audio blob type:",
+            currentAudioBlob ? currentAudioBlob.type : "N/A",
         );
 
-        if (!currentAudioBlob) {
-            console.error("No recording data available.");
+        if (!currentAudioBlob || !(currentAudioBlob instanceof Blob)) {
+            console.error("No valid recording data available.");
+            setTranscriptionError({
+                message:
+                    "No valid recording data available. Please record again.",
+            });
             return;
         }
 
         setLoading(true);
+        setAudioBlob(currentAudioBlob); // Make sure we save this for potential retry
+        setTranscriptionError(null);
+
         try {
             await transcribeAudio(currentAudioBlob, {
                 name,
@@ -264,43 +302,56 @@ const RecordingWidget = ({
                 dob,
                 templateKey,
             });
-
-            // Set the audio blob after successful send
-            setAudioBlob(currentAudioBlob);
         } catch (error) {
-            console.error("Error transcribing audio:", error);
-        } finally {
+            console.error("Error in sendRecording:", error);
+            setTranscriptionError({
+                message:
+                    "Failed to transcribe your recording. Server might be experiencing issues.",
+            });
             setLoading(false);
         }
     };
 
-    const resendRecording = async () => {
-        console.log("resendRecording called");
+    const retryTranscription = async () => {
+        // Determine which audio to resend - either from a recording or an uploaded file
+        const audioToSend = mode === "upload" ? uploadedFile : audioBlob;
 
-        if (!audioBlob) {
-            console.error("No recording data available to resend.");
+        if (!audioToSend) {
+            setTranscriptionError({
+                message:
+                    "No audio data available to retry. Please record or upload again.",
+            });
             return;
         }
 
-        console.log("Audio blob size for resend:", audioBlob.size);
-
         setLoading(true);
+        setTranscriptionError(null);
+
         try {
-            await transcribeAudio(audioBlob, {
+            await transcribeAudio(audioToSend, {
                 name,
                 gender,
                 dob,
                 templateKey,
             });
         } catch (error) {
-            console.error("Error transcribing audio on resend:", error);
-        } finally {
+            console.error("Error retrying transcription:", error);
+            setTranscriptionError({
+                message:
+                    "Transcription retry failed. The server might be experiencing issues.",
+            });
             setLoading(false);
         }
     };
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
+        if (!file) return;
+
+        // Clear any previous error state
+        setTranscriptionError(null);
+        // Save the file for potential retries
+        setUploadedFile(file);
 
         setLoading(true);
         try {
@@ -312,7 +363,10 @@ const RecordingWidget = ({
             });
         } catch (error) {
             console.error("Error uploading file:", error);
-        } finally {
+            setTranscriptionError({
+                message:
+                    "Failed to process your audio file. Server might be experiencing issues.",
+            });
             setLoading(false);
         }
     };
@@ -327,8 +381,60 @@ const RecordingWidget = ({
             completeRecordingRef.current = [];
             setAudioBlob(null); // Clear the stored audio blob
             setTimer(0);
+            setTranscriptionError(null);
         }
     };
+
+    const startNewRecording = () => {
+        resetRecordingState();
+        setUploadedFile(null);
+        setTranscriptionError(null);
+    };
+
+    // If there's a transcription error, show the error UI
+    if (transcriptionError) {
+        return (
+            <Box width="100%">
+                <Alert
+                    status="error"
+                    variant="subtle"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    textAlign="center"
+                    borderRadius="sm"
+                >
+                    <Flex mb={2}>
+                        <AlertIcon as={FaExclamationTriangle} mr={2} />
+                        <AlertTitle>Transcription Error</AlertTitle>
+                    </Flex>
+                    <AlertDescription maxWidth="lg">
+                        {transcriptionError.message}
+                    </AlertDescription>
+                    <ButtonGroup mt={4} spacing={3}>
+                        <Button
+                            leftIcon={<FaRedoAlt />}
+                            onClick={retryTranscription}
+                            className="green-button"
+                            isDisabled={loading}
+                        >
+                            {loading ? <Spinner size="sm" mr={2} /> : null}
+                            {mode === "upload" ? "Resend File" : "Resend Audio"}
+                        </Button>
+                        <Button
+                            leftIcon={<FaRedo />}
+                            onClick={startNewRecording}
+                            className="blue-button"
+                        >
+                            {mode === "upload"
+                                ? "Upload New File"
+                                : "Start New Recording"}
+                        </Button>
+                    </ButtonGroup>
+                </Alert>
+            </Box>
+        );
+    }
 
     return (
         <Box>
@@ -397,12 +503,12 @@ const RecordingWidget = ({
                                 )}
                                 {!isRecording && audioBlob && (
                                     <Button
-                                        onClick={resendRecording}
+                                        onClick={sendRecording}
                                         colorScheme="blue"
                                         leftIcon={<FaRedo />}
                                         className="blue-button"
                                     >
-                                        Resend
+                                        Send Recording
                                     </Button>
                                 )}
                             </HStack>
@@ -427,20 +533,28 @@ const RecordingWidget = ({
                             <Input
                                 type="file"
                                 onChange={handleFileUpload}
+                                accept="audio/*"
                                 className="input-style"
+                                style={{ display: "none" }}
+                                id="audio-file-input"
                             />
                             <Button
                                 px="10"
                                 leftIcon={<FaFileUpload />}
                                 onClick={() =>
                                     document
-                                        .querySelector('input[type="file"]')
+                                        .getElementById("audio-file-input")
                                         .click()
                                 }
                                 className="blue-button"
                             >
-                                Upload File
+                                Upload Audio File
                             </Button>
+                            {uploadedFile && (
+                                <Text ml={2} fontSize="sm">
+                                    {uploadedFile.name}
+                                </Text>
+                            )}
                         </HStack>
                     )}
                 </VStack>

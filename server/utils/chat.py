@@ -1,3 +1,4 @@
+from asyncio.transports import Transport
 from numpy import cos
 import chromadb
 from chromadb.config import Settings
@@ -151,7 +152,7 @@ class ChatEngine:
         else:
             return "No relevant literature available"
 
-    async def get_streaming_response(self, conversation_history: list):
+    async def get_streaming_response(self, conversation_history: list, raw_transcription=None):
         """
         Generate a streaming response based on the conversation history and relevant literature.
         """
@@ -177,6 +178,20 @@ class ChatEngine:
                             "type": "object",
                             "properties": {},
                             "required": [],
+                        },
+                    },
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "query_transcript",
+                        "description": "Use this tool ONLY if the user explicitly asks about something from the transcript, interview, or conversation with the patient. This will search the transcript for relevant information.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "query": {"type": "string", "description": "The specific question or information to extract from the transcript"},
+                            },
+                            "required": ["query"],
                         },
                     },
                 },
@@ -224,6 +239,74 @@ class ChatEngine:
                 ):
                     if 'message' in chunk and 'content' in chunk['message']:
                         yield {"type": "chunk", "content": chunk['message']['content']}
+            elif tool["function"]["name"] == "query_transcript":
+                # Check if transcript is available
+                if not raw_transcription:
+                    yield {"type": "status", "content": "Generating response..."}
+                    # No transcript available, inform the user
+                    message_list.append({
+                        "role": "tool",
+                        "content": "No transcript is available to query. Please answer the user's question without transcript information."
+                    })
+
+                    async for chunk in await self.ollama_client.chat(
+                        model=self.config["PRIMARY_MODEL"],
+                        messages=message_list,
+                        options=context_question_options,
+                        stream=True
+                    ):
+                        if 'message' in chunk and 'content' in chunk['message']:
+                            yield {"type": "chunk", "content": chunk['message']['content']}
+                else:
+                            yield {"type": "status", "content": "Searching through transcript..."}
+
+                            # Create a query to extract information from the transcript
+                            query = tool["function"]["arguments"]["query"]
+
+                            # Create a new message list with the transcript and query
+                            transcript_query_messages = [
+                                {
+                                    "role": "system",
+                                    "content": "You are a helpful medical assistant. Extract the relevant information from the provided transcript to answer the user's question. Only include information that is present in the transcript and include direct quotes."
+                                },
+                                {
+                                    "role": "user",
+                                    "content": f"Here is the transcript of a patient conversation:\n\n{raw_transcription}\n\nBased on this transcript only, please answer the following question: {query}"
+                                }
+                            ]
+
+                                    # Get information from transcript
+                            transcript_response = await self.ollama_client.chat(
+                                        model=self.config["PRIMARY_MODEL"],
+                                        messages=transcript_query_messages,
+                                        options=context_question_options,
+                                    )
+
+                            transcript_info = transcript_response["message"]["content"]
+
+
+                            # Add transcript info to original conversation
+                            context_response = {
+                                        "role": "tool",
+                                        "content": f"The following information was found in the transcript:\n\n{transcript_info}\n\nPlease use this information to respond to the user's question about the transcript."
+                                    }
+
+                            temp_conversation_history = message_list + [context_response]
+
+                                    # Send generating response status
+                            yield {"type": "status", "content": "Generating response with transcript information..."}
+
+                                    # Stream the answer
+                            async for chunk in await self.ollama_client.chat(
+                                        model=self.config["PRIMARY_MODEL"],
+                                        messages=temp_conversation_history,
+                                        options=context_question_options,
+                                        stream=True
+                                    ):
+                                if 'message' in chunk and 'content' in chunk['message']:
+                                    yield {"type": "chunk", "content": chunk['message']['content']}
+
+                            function_response = transcript_info
             else:  # get_relevant_literature
                 # Send RAG status message
                 yield {"type": "status", "content": "Searching medical literature..."}
@@ -265,13 +348,13 @@ class ChatEngine:
         # Signal end of stream with function_response if available
         yield {"type": "end", "content": "", "function_response": function_response}
 
-    async def stream_chat(self, conversation_history: list):
+    async def stream_chat(self, conversation_history: list, raw_transcription=None):
         """Stream chat response from Ollama"""
         try:
             print("Starting Ollama stream")
             yield {"type": "start", "content": ""}
 
-            async for chunk in self.get_streaming_response(conversation_history):
+            async for chunk in self.get_streaming_response(conversation_history, raw_transcription):
                 yield chunk
 
         except Exception as e:

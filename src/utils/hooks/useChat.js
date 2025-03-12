@@ -11,7 +11,7 @@ export const useChat = () => {
     const [streamStarted, setStreamStarted] = useState(false);
 
     const sendMessage = useCallback(
-        async (input, patient, currentTemplate) => {
+        async (input, patient, currentTemplate, rawTranscription = null) => {
             if (!input.trim() || !patient || !currentTemplate) return;
 
             setLoading(true);
@@ -52,6 +52,7 @@ export const useChat = () => {
                 // Stream the response
                 for await (const chunk of chatApi.streamMessage(
                     messagesForApi,
+                    rawTranscription,
                 )) {
                     if (!streamStarted && chunk.type === "chunk") {
                         setStreamStarted(true);
@@ -116,6 +117,5 @@ export const useChat = () => {
         loading,
         sendMessage,
         clearChat,
-        sendMessage,
     };
 };

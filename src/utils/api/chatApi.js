@@ -2,13 +2,16 @@
 import { handleApiRequest } from "../helpers/apiHelpers";
 
 export const chatApi = {
-    sendMessage: async (messages) => {
+    sendMessage: async (messages, rawTranscription = null) => {
         return handleApiRequest({
             apiCall: () =>
                 fetch(`/api/chat`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ messages }),
+                    body: JSON.stringify({
+                        messages,
+                        raw_transcription: rawTranscription,
+                    }),
                 }),
             errorMessage: "Error in chat communication",
         });
@@ -27,11 +30,14 @@ export const chatApi = {
         });
     },
 
-    streamMessage: async function* (messages) {
+    streamMessage: async function* (messages, rawTranscription = null) {
         const response = await fetch(`/api/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages }),
+            body: JSON.stringify({
+                messages,
+                raw_transcription: rawTranscription,
+            }),
         });
 
         if (!response.ok) {

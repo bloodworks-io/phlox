@@ -45,5 +45,10 @@ export const typography = {
             lineHeight: "1.25",
             marginBottom: "0.5rem",
         },
+        h7: {
+            fontFamily: '"Roboto", sans-serif',
+            fontWeight: "700 !important",
+            lineHeight: "1.5",
+        },
     },
 };

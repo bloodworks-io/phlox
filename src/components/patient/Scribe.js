@@ -151,6 +151,7 @@ const Scribe = ({
                                     handleTranscriptionComplete
                                 }
                                 isTranscribing={isTranscribing}
+                                setLoading={setLoading}
                             />
                         </TabPanel>
 

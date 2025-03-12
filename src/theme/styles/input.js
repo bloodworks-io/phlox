@@ -188,7 +188,6 @@ export const inputStyles = (props) => ({
             props.colorMode === "light" ? colors.light.crust : colors.dark.crust
         } !important`,
     },
-
     ".transcription-style": {
         backgroundColor:
             props.colorMode === "light"
@@ -246,5 +245,38 @@ export const inputStyles = (props) => ({
                     : colors.dark.overlay0,
             borderRadius: "4px",
         },
+    },
+    ".transcription-view": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.base} !important`
+                : `${colors.dark.crust} !important`,
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textTertiary} !important`
+                : `${colors.dark.textTertiary} !important`,
+        border:
+            props.colorMode === "light"
+                ? `1px solid ${colors.light.surface} !important`
+                : `1px solid ${colors.dark.surface} !important`,
+        resize: "none !important",
+        fontSize: "0.9rem !important",
+        padding: "8px !important",
+        borderRadius: "sm !important",
+        overflow: "auto !important",
+        whiteSpace: "pre-wrap !important",
+        boxShadow: "none !important",
+        "&::placeholder": {
+            color:
+                props.colorMode === "light"
+                    ? colors.light.overlay0
+                    : colors.dark.overlay0,
+        },
+        "&:focus": {
+            outline: "none !important",
+            boxShadow: "none !important",
+            border: "none !important",
+        },
+        minHeight: "auto !important",
     },
 });

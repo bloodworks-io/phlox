@@ -46,6 +46,7 @@ const PatientDetails = ({
     const [saveLoading, setSaveLoading] = useState(false);
     const [isLetterModified, setIsLetterModified] = useState(false);
     const [isSummaryModified, setIsSummaryModified] = useState(false);
+    const previousTranscriptionRef = useRef(null);
 
     const { showWarningToast } = useToastMessage();
 
@@ -252,12 +253,21 @@ const PatientDetails = ({
 
     useEffect(() => {
         // Reset component states when patient changes
-        transcription.setIsCollapsed(false);
-        summary.setIsCollapsed(false);
-        letter.setIsCollapsed(true);
-        chat.setChatExpanded(false);
+        if (isNewPatient) {
+            // For new patients, show transcription and hide others
+            transcription.setIsCollapsed(false);
+            summary.setIsCollapsed(false);
+            letter.setIsCollapsed(true);
+            chat.setChatExpanded(false);
+        } else {
+            // For existing patients, keep current behavior
+            transcription.setIsCollapsed(true);
+            summary.setIsCollapsed(false);
+            letter.setIsCollapsed(true);
+            chat.setChatExpanded(false);
+        }
         chat.clearChat();
-    }, [patient?.id, currentTemplate]);
+    }, [patient?.id, currentTemplate, isNewPatient]);
 
     useEffect(() => {
         if (patient?.id) {
@@ -280,6 +290,12 @@ const PatientDetails = ({
     }, [toast]);
 
     const handleTranscriptionComplete = (data, triggerResize = false) => {
+        // Track if this is a new transcription, reprocessing, or restoration
+        const isReprocessing = !!patient?.raw_transcription;
+        const isRestoration = data.isRestoration === true;
+        // Store current transcription state before updating
+        previousTranscriptionRef.current = patient?.raw_transcription;
+
         handleProcessingComplete(data, {
             setLoading,
             setters: {
@@ -309,7 +325,21 @@ const PatientDetails = ({
                         process_duration: data.processDuration,
                     })),
             },
-            setIsSourceCollapsed: () => transcription.setIsCollapsed(true),
+            // Only collapse transcription in specific scenarios
+            setIsSourceCollapsed: () => {
+                // For restoration or reprocessing, never collapse
+                if (isRestoration || isReprocessing) {
+                    transcription.setIsCollapsed(false);
+                }
+                // For new transcription with content, collapse to show summary
+                else if (data.rawTranscription) {
+                    transcription.setIsCollapsed(true);
+                }
+                // For clearing transcription, keep it open
+                else {
+                    transcription.setIsCollapsed(false);
+                }
+            },
             setIsSummaryCollapsed: () => summary.setIsCollapsed(false),
             triggerResize,
             summaryRef,
@@ -577,7 +607,12 @@ const PatientDetails = ({
                     userInput={chat.userInput}
                     setUserInput={chat.setUserInput}
                     handleChat={(userInput) =>
-                        chat.sendMessage(userInput, patient, currentTemplate)
+                        chat.sendMessage(
+                            userInput,
+                            patient,
+                            currentTemplate,
+                            patient.raw_transcription,
+                        )
                     }
                     showSuggestions={chat.showSuggestions}
                     setShowSuggestions={chat.setShowSuggestions}
