@@ -17,6 +17,8 @@ import {
     Badge,
     IconButton,
     Tooltip,
+    SimpleGrid,
+    Spacer,
 } from "@chakra-ui/react";
 import {
     FaFileUpload,
@@ -26,6 +28,7 @@ import {
     FaArrowRight,
     FaArrowLeft,
 } from "react-icons/fa";
+import { CheckIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 
@@ -207,7 +210,7 @@ const DocumentUploadTab = ({
                     {!extractedDocData ? (
                         // Initial upload UI
                         <>
-                            <Text>
+                            <Text textAlign="center">
                                 Upload a referral letter or other document to
                                 extract information.
                             </Text>
@@ -239,14 +242,18 @@ const DocumentUploadTab = ({
                             </VStack>
 
                             {file && (
-                                <Button
-                                    colorScheme="blue"
-                                    onClick={handleUpload}
-                                    isDisabled={!file}
-                                    className="green-button"
-                                >
-                                    Process Document
-                                </Button>
+                                <Flex justifyContent="center">
+                                    <Button
+                                        colorScheme="blue"
+                                        onClick={handleUpload}
+                                        isDisabled={!file}
+                                        className="green-button"
+                                        width="auto"
+                                        px={6}
+                                    >
+                                        Process Document
+                                    </Button>
+                                </Flex>
                             )}
                         </>
                     ) : (
@@ -266,14 +273,13 @@ const DocumentUploadTab = ({
                                 </Button>
                             </Flex>
 
-                            <Divider />
+                            <Divider my={3} />
 
-                            <Text fontStyle="italic" fontSize="sm" mb={2}>
-                                Click the arrow buttons to toggle between
-                                document content and original text
+                            <Text fontStyle="italic" fontSize="sm" mb={3}>
+                                Click buttons to toggle document content
                             </Text>
 
-                            <VStack spacing={2} align="stretch">
+                            <SimpleGrid columns={[1, 2, 3, 4]} spacing={3}>
                                 {template?.fields?.map((field) => {
                                     const fieldKey = field.field_key;
                                     const hasContent = Boolean(
@@ -284,77 +290,71 @@ const DocumentUploadTab = ({
                                     const isReplaced = replacedFields[fieldKey];
 
                                     return (
-                                        <Flex
+                                        <Box
                                             key={fieldKey}
                                             p={2}
                                             borderWidth="1px"
-                                            borderRadius="md"
-                                            justify="space-between"
-                                            align="center"
-                                            bg={
-                                                isReplaced && hasContent
-                                                    ? "green.50"
-                                                    : "white"
-                                            }
+                                            borderRadius="sm"
                                         >
-                                            <HStack>
-                                                <Text fontWeight="medium">
+                                            <Flex
+                                                justify="space-between"
+                                                align="center"
+                                            >
+                                                <Text
+                                                    fontWeight="medium"
+                                                    fontSize="sm"
+                                                    isTruncated
+                                                    maxWidth="50%"
+                                                    title={field.field_name}
+                                                >
                                                     {field.field_name}
                                                 </Text>
-                                                {!hasContent && (
+
+                                                {!hasContent ? (
                                                     <Badge
                                                         colorScheme="yellow"
                                                         fontSize="xs"
                                                     >
-                                                        No content found
+                                                        No content
                                                     </Badge>
-                                                )}
-                                                {isReplaced && hasContent && (
-                                                    <Badge
-                                                        colorScheme="green"
-                                                        fontSize="xs"
+                                                ) : (
+                                                    <Button
+                                                        size="xs"
+                                                        onClick={() =>
+                                                            toggleDocumentField(
+                                                                fieldKey,
+                                                            )
+                                                        }
+                                                        isDisabled={!hasContent}
+                                                        borderRadius="sm !important"
+                                                        className={
+                                                            isReplaced
+                                                                ? "green-button"
+                                                                : "template-select-button"
+                                                        }
+                                                        variant={
+                                                            isReplaced
+                                                                ? "solid"
+                                                                : "outline"
+                                                        }
+                                                        leftIcon={
+                                                            isReplaced ? (
+                                                                <CheckIcon boxSize="3" />
+                                                            ) : null
+                                                        }
+                                                        height="24px !important"
+                                                        minWidth="80px"
                                                     >
-                                                        Using document content
-                                                    </Badge>
+                                                        {isReplaced
+                                                            ? "Using doc"
+                                                            : "Use doc"}
+                                                    </Button>
                                                 )}
-                                            </HStack>
-
-                                            <Tooltip
-                                                label={
-                                                    isReplaced
-                                                        ? "Restore original content"
-                                                        : hasContent
-                                                          ? "Use document content"
-                                                          : "No content available in document"
-                                                }
-                                            >
-                                                <IconButton
-                                                    icon={
-                                                        isReplaced ? (
-                                                            <FaArrowLeft />
-                                                        ) : (
-                                                            <FaArrowRight />
-                                                        )
-                                                    }
-                                                    onClick={() =>
-                                                        toggleDocumentField(
-                                                            fieldKey,
-                                                        )
-                                                    }
-                                                    aria-label="Toggle field content"
-                                                    isDisabled={!hasContent}
-                                                    colorScheme={
-                                                        isReplaced
-                                                            ? "blue"
-                                                            : "green"
-                                                    }
-                                                    size="sm"
-                                                />
-                                            </Tooltip>
-                                        </Flex>
+                                            </Flex>
+                                        </Box>
                                     );
                                 })}
-                            </VStack>
+                            </SimpleGrid>
                         </>
                     )}
                 </VStack>
