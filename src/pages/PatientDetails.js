@@ -346,6 +346,27 @@ const PatientDetails = ({
         });
     };
 
+    const handleDocumentComplete = (data) => {
+        if (data.fields) {
+            setPatient((prev) => ({
+                ...prev,
+                template_data: {
+                    ...prev.template_data,
+                    ...data.fields,
+                },
+                raw_transcription:
+                    data.rawTranscription || prev.raw_transcription,
+                process_duration: data.processDuration,
+            }));
+
+            setIsModified(true);
+
+            // Show the summary panel with the new data
+            transcription.setIsCollapsed(true);
+            summary.setIsCollapsed(false);
+        }
+    };
+
     const handleGenerateLetterClick = async (additionalInstructions) => {
         if (!patient) return;
 
@@ -557,6 +578,7 @@ const PatientDetails = ({
                     reasoning={patient.reasoning_output || null}
                     rawTranscription={patient.raw_transcription}
                     isTranscribing={loading}
+                    handleDocumentComplete={handleDocumentComplete}
                 />
 
                 <Summary

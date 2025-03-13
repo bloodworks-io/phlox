@@ -33,6 +33,9 @@ import { colors } from "../../theme/colors";
 
 const FieldEditor = ({ field, idx, updateField, removeField }) => {
     const [showAdvanced, setShowAdvanced] = useState(false);
+    // New state for showing system prompt for persistent fields
+    const [showPersistentSystemPrompt, setShowPersistentSystemPrompt] =
+        useState(false);
     const isPlanField = field.field_name?.toLowerCase() === "plan";
 
     return (
@@ -177,6 +180,64 @@ const FieldEditor = ({ field, idx, updateField, removeField }) => {
                 </HStack>
             </Flex>
             <VStack spacing={3} align="stretch">
+                {/* For persistent fields, show a button to expose system prompt */}
+                {field.persistent && (
+                    <Box mt={4}>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            leftIcon={
+                                showPersistentSystemPrompt ? (
+                                    <ChevronDownIcon />
+                                ) : (
+                                    <ChevronRightIcon />
+                                )
+                            }
+                            onClick={() =>
+                                setShowPersistentSystemPrompt(
+                                    !showPersistentSystemPrompt,
+                                )
+                            }
+                            mb={2}
+                        >
+                            {showPersistentSystemPrompt ? "Hide" : "Show"}{" "}
+                            System Prompt
+                        </Button>
+
+                        <Collapse
+                            in={showPersistentSystemPrompt}
+                            animateOpacity
+                        >
+                            <Box width="full">
+                                <Text fontSize="sm" mb={1}>
+                                    System Prompt
+                                </Text>
+                                <Tooltip label="Instructions for the AI on how to process this persistent field (for example, in document processing)">
+                                    <Textarea
+                                        value={field.system_prompt || ""}
+                                        rows={6}
+                                        onChange={(e) =>
+                                            updateField(
+                                                idx,
+                                                "system_prompt",
+                                                e.target.value,
+                                            )
+                                        }
+                                        sx={{ overflowY: "auto !important" }}
+                                        style={{
+                                            lineHeight: "1.5",
+                                            overflowY: "auto !important",
+                                        }}
+                                        className="textarea-style"
+                                        placeholder="Enter system prompt for this persistent field (for example, in document processing)..."
+                                    />
+                                </Tooltip>
+                            </Box>
+                        </Collapse>
+                    </Box>
+                )}
+
+                {/* For dynamic fields, show all the existing fields */}
                 {!field.persistent && (
                     <>
                         <Tooltip label="The type of content this field will contain"></Tooltip>
@@ -186,7 +247,7 @@ const FieldEditor = ({ field, idx, updateField, removeField }) => {
                                     System Prompt
                                 </Text>
                                 <Textarea
-                                    value={field.system_prompt}
+                                    value={field.system_prompt || ""}
                                     rows={6}
                                     onChange={(e) =>
                                         updateField(

@@ -67,6 +67,17 @@ const Scribe = ({
         templateKey: template?.template_key,
     };
 
+    const documentProps = {
+        handleDocumentComplete: (data) => {
+            handleDocumentComplete(data);
+        },
+        name,
+        dob,
+        gender,
+        setLoading,
+        template, // Pass the template to DocumentUploadTab
+    };
+
     return (
         <Box p="4" borderRadius="sm" className="panels-bg">
             <Flex align="center" justify="space-between">
@@ -162,6 +173,8 @@ const Scribe = ({
                                 dob={dob}
                                 gender={gender}
                                 setLoading={setLoading}
+                                template={template}
+                                {...documentProps}
                             />
                         </TabPanel>
 

@@ -1,4 +1,4 @@
-from asyncio.transports import Transport
+import logging
 from numpy import cos
 import chromadb
 from chromadb.config import Settings
@@ -6,9 +6,6 @@ from chromadb.utils.embedding_functions import OllamaEmbeddingFunction
 from ollama import AsyncClient as ollamaClient
 import re
 from server.database.config import config_manager
-import logging
-import asyncio
-import sys
 
 class ChatEngine:
     """
@@ -27,6 +24,10 @@ class ChatEngine:
         user_settings = config_manager.get_user_settings()
         doctor_name = user_settings.get("name", "")
         specialty = user_settings.get("specialty", "")
+
+        # Configure logging for the chat class
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
 
         self.CHAT_SYSTEM_MESSAGE = [
             {
@@ -107,13 +108,10 @@ class ChatEngine:
         Returns:
             str: Relevant literature excerpts or a message if no literature is found.
         """
-
         collection_names = self.chroma_client.list_collections()
-
         sanitized_disease_name = self.sanitizer(disease_name)
 
         if sanitized_disease_name in collection_names:
-
             try:
                 collection = self.chroma_client.get_collection(
                     name=sanitized_disease_name,
@@ -124,9 +122,8 @@ class ChatEngine:
                     n_results=5,
                     include=["documents", "metadatas", "distances"]
                 )
-
-
             except Exception as e:
+                self.logger.error(f"Error querying collection: {e}")
                 return "No relevant literature available"
 
             output_strings = []
@@ -136,7 +133,6 @@ class ChatEngine:
 
             for i, doc_list in enumerate(context["documents"]):
                 for j, doc in enumerate(doc_list):
-
                     if context["distances"][i][j] > distance_threshold:
                         source = context["metadatas"][i][j]["source"]
                         formatted_source = source.replace("_", " ").title()
@@ -146,10 +142,13 @@ class ChatEngine:
                         )
 
             if not output_strings:
+                self.logger.info("No relevant literature matching query found.")
                 return "No relevant literature matching your query was found"
 
+            self.logger.info(f"Retrieved {len(output_strings)} relevant literature excerpts.")
             return output_strings
         else:
+            self.logger.info(f"No collection found for disease: {sanitized_disease_name}")
             return "No relevant literature available"
 
     async def get_streaming_response(self, conversation_history: list, raw_transcription=None):
@@ -164,6 +163,7 @@ class ChatEngine:
         message_list = self.CHAT_SYSTEM_MESSAGE + conversation_history
 
         # First call to determine if we need literature or direct response
+        self.logger.info("Initial LLM call to determine tool usage...")
         response = await self.ollama_client.chat(
             model=self.config["PRIMARY_MODEL"],
             messages=message_list,
@@ -216,6 +216,7 @@ class ChatEngine:
         function_response = None
 
         if not response["message"].get("tool_calls"):
+            self.logger.info("LLM chose direct response.")
             yield {"type": "status", "content": "Generating response..."}
             # Stream direct response
             async for chunk in await self.ollama_client.chat(
@@ -228,7 +229,10 @@ class ChatEngine:
                     yield {"type": "chunk", "content": chunk['message']['content']}
         else:
             tool = response["message"]["tool_calls"][0]
+            self.logger.info(f"LLM chose tool: {tool['function']['name']}")
+
             if tool["function"]["name"] == "direct_response":
+                self.logger.info("Executing direct response...")
                 yield {"type": "status", "content": "Generating response..."}
                 # Stream direct response
                 async for chunk in await self.ollama_client.chat(
@@ -240,8 +244,10 @@ class ChatEngine:
                     if 'message' in chunk and 'content' in chunk['message']:
                         yield {"type": "chunk", "content": chunk['message']['content']}
             elif tool["function"]["name"] == "query_transcript":
+                self.logger.info("Executing query_transcript tool...")
                 # Check if transcript is available
                 if not raw_transcription:
+                    self.logger.info("No transcript available.")
                     yield {"type": "status", "content": "Generating response..."}
                     # No transcript available, inform the user
                     message_list.append({
@@ -258,56 +264,57 @@ class ChatEngine:
                         if 'message' in chunk and 'content' in chunk['message']:
                             yield {"type": "chunk", "content": chunk['message']['content']}
                 else:
-                            yield {"type": "status", "content": "Searching through transcript..."}
+                    self.logger.info(f"Searching transcript for query: {tool['function']['arguments']['query'][:50]}...")
+                    yield {"type": "status", "content": "Searching through transcript..."}
 
-                            # Create a query to extract information from the transcript
-                            query = tool["function"]["arguments"]["query"]
+                    # Create a query to extract information from the transcript
+                    query = tool["function"]["arguments"]["query"]
 
-                            # Create a new message list with the transcript and query
-                            transcript_query_messages = [
-                                {
-                                    "role": "system",
-                                    "content": "You are a helpful medical assistant. Extract the relevant information from the provided transcript to answer the user's question. Only include information that is present in the transcript and include direct quotes."
-                                },
-                                {
-                                    "role": "user",
-                                    "content": f"Here is the transcript of a patient conversation:\n\n{raw_transcription}\n\nBased on this transcript only, please answer the following question: {query}"
-                                }
-                            ]
+                    # Create a new message list with the transcript and query
+                    transcript_query_messages = [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful medical assistant. Extract the relevant information from the provided transcript to answer the user's question. Only include information that is present in the transcript and include direct quotes."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Here is the transcript of a patient conversation:\n\n{raw_transcription}\n\nBased on this transcript only, please answer the following question: {query}"
+                        }
+                    ]
 
-                                    # Get information from transcript
-                            transcript_response = await self.ollama_client.chat(
-                                        model=self.config["PRIMARY_MODEL"],
-                                        messages=transcript_query_messages,
-                                        options=context_question_options,
-                                    )
+                    # Get information from transcript
+                    transcript_response = await self.ollama_client.chat(
+                        model=self.config["PRIMARY_MODEL"],
+                        messages=transcript_query_messages,
+                        options=context_question_options,
+                    )
 
-                            transcript_info = transcript_response["message"]["content"]
+                    transcript_info = transcript_response["message"]["content"]
+                    self.logger.info(f"Transcript query result: {transcript_info[:100]}...")
+                    # Add transcript info to original conversation
+                    context_response = {
+                        "role": "tool",
+                        "content": f"The following information was found in the transcript:\n\n{transcript_info}\n\nPlease use this information to respond to the user's question about the transcript."
+                    }
 
+                    temp_conversation_history = message_list + [context_response]
 
-                            # Add transcript info to original conversation
-                            context_response = {
-                                        "role": "tool",
-                                        "content": f"The following information was found in the transcript:\n\n{transcript_info}\n\nPlease use this information to respond to the user's question about the transcript."
-                                    }
+                    # Send generating response status
+                    yield {"type": "status", "content": "Generating response with transcript information..."}
 
-                            temp_conversation_history = message_list + [context_response]
+                    # Stream the answer
+                    async for chunk in await self.ollama_client.chat(
+                        model=self.config["PRIMARY_MODEL"],
+                        messages=temp_conversation_history,
+                        options=context_question_options,
+                        stream=True
+                    ):
+                        if 'message' in chunk and 'content' in chunk['message']:
+                            yield {"type": "chunk", "content": chunk['message']['content']}
 
-                                    # Send generating response status
-                            yield {"type": "status", "content": "Generating response with transcript information..."}
-
-                                    # Stream the answer
-                            async for chunk in await self.ollama_client.chat(
-                                        model=self.config["PRIMARY_MODEL"],
-                                        messages=temp_conversation_history,
-                                        options=context_question_options,
-                                        stream=True
-                                    ):
-                                if 'message' in chunk and 'content' in chunk['message']:
-                                    yield {"type": "chunk", "content": chunk['message']['content']}
-
-                            function_response = transcript_info
+                    function_response = transcript_info
             else:  # get_relevant_literature
+                self.logger.info("Executing get_relevant_literature tool...")
                 # Send RAG status message
                 yield {"type": "status", "content": "Searching medical literature..."}
 
@@ -318,12 +325,14 @@ class ChatEngine:
                 function_response_string = "\n".join(function_response_list)
 
                 if function_response_list == "No relevant literature available":
+                    self.logger.info("No relevant literature found in database.")
                     context_response = {
                         "role": "tool",
                         "content": "No relevant literature available in the database. Answer the user's question but inform them that you were unable to find any relevant information.",
                     }
                     function_response = None
                 else:
+                    self.logger.info(f"Retrieved relevant literature for disease: {tool['function']['arguments']['disease_name']}")
                     context_response = {
                         "role": "tool",
                         "content": f"The below text excerpts are taken from relevant sections of the guidelines; these may help you answer the user's question. The user has not sent you these documents, they have come from your own database.\n\n{function_response_string}",
@@ -346,40 +355,28 @@ class ChatEngine:
                         yield {"type": "chunk", "content": chunk['message']['content']}
 
         # Signal end of stream with function_response if available
+        self.logger.info("Streaming chat completed.")
         yield {"type": "end", "content": "", "function_response": function_response}
 
     async def stream_chat(self, conversation_history: list, raw_transcription=None):
         """Stream chat response from Ollama"""
         try:
-            print("Starting Ollama stream")
+            self.logger.info("Starting Ollama stream...")
             yield {"type": "start", "content": ""}
 
             async for chunk in self.get_streaming_response(conversation_history, raw_transcription):
                 yield chunk
 
         except Exception as e:
-            logging.error(f"Error in stream_chat: {e}")
+            self.logger.error(f"Error in stream_chat: {e}")
             raise
 
 
 # Usage
-def main():
-    """
-    Main interface for chat interactions.
-
-    Args:
-        conversation_history (list): A list of previous messages in the conversation.
-
-    Returns:
-        dict: The response from get_response method.
-    """
+if __name__ == "__main__":
     chat_engine = ChatEngine()
     conversation_history = [
         {"role": "user", "content": "What are the symptoms of diabetes?"}
     ]
     response = chat_engine.chat(conversation_history)
     print(response)
-
-
-if __name__ == "__main__":
-    main()

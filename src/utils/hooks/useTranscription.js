@@ -99,6 +99,8 @@ export const useTranscription = (onTranscriptionComplete, setLoading) => {
             if (metadata.name) formData.append("name", metadata.name);
             if (metadata.gender) formData.append("gender", metadata.gender);
             if (metadata.dob) formData.append("dob", metadata.dob);
+            if (metadata.templateKey)
+                formData.append("templateKey", metadata.templateKey);
 
             const data = await transcriptionApi.processDocument(formData);
 
