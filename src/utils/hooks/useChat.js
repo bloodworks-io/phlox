@@ -60,12 +60,15 @@ export const useChat = () => {
                     }
 
                     if (chunk.type === "chunk") {
-                        fullContent += chunk.content;
+                        // Create a local copy of fullContent to use in the closure
+                        const newContent = fullContent + chunk.content;
+                        fullContent = newContent; // Update fullContent after creating the local copy
+
                         setMessages((prev) => {
                             const newMessages = [...prev];
                             newMessages[newMessages.length - 1] = {
                                 role: "assistant",
-                                content: fullContent,
+                                content: newContent,
                                 loading: false,
                             };
                             return newMessages;

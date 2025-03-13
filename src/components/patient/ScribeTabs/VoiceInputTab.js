@@ -83,7 +83,7 @@ const VoiceInputTab = ({
                 processDuration: 0,
             },
             false,
-        ); // Add this false parameter to indicate not to trigger collapse
+        );
     };
 
     const handleCancelNewTranscription = () => {

@@ -17,7 +17,7 @@ import Settings from "./pages/Settings";
 import Rag from "./pages/Rag";
 import ClinicSummary from "./pages/ClinicSummary";
 import OutstandingJobs from "./pages/OutstandingJobs";
-import ConfirmLeaveModal from "./components/patient/ConfirmLeaveModal";
+import ConfirmLeaveModal from "./components/modals/ConfirmLeaveModal";
 import { handleError } from "./utils/helpers/errorHandlers";
 import {
     handleLoadPatientDetails,

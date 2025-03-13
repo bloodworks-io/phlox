@@ -29,7 +29,7 @@ import {
 import { FaMicrophone, FaStop, FaSave, FaFileAlt } from "react-icons/fa";
 import { GreenButton, BlueButton, TertiaryButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
-import ConfirmLeaveModal from "./ConfirmLeaveModal";
+import ConfirmLeaveModal from "../modals/ConfirmLeaveModal";
 
 const Summary = forwardRef(
     (

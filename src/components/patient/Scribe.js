@@ -39,6 +39,12 @@ const Scribe = ({
     reasoning,
     rawTranscription,
     isTranscribing,
+    toggleDocumentField,
+    replacedFields,
+    extractedDocData,
+    resetDocumentState,
+    docFileName,
+    setDocFileName,
 }) => {
     const [tabIndex, setTabIndex] = useState(0);
     const [mode, setMode] = useState("record");
@@ -75,7 +81,13 @@ const Scribe = ({
         dob,
         gender,
         setLoading,
-        template, // Pass the template to DocumentUploadTab
+        template,
+        docFileName,
+        setDocFileName,
+        toggleDocumentField,
+        replacedFields,
+        extractedDocData,
+        resetDocumentState,
     };
 
     return (

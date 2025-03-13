@@ -13,26 +13,38 @@ import {
     AlertTitle,
     AlertDescription,
     ButtonGroup,
+    Divider,
+    Badge,
+    IconButton,
+    Tooltip,
 } from "@chakra-ui/react";
 import {
     FaFileUpload,
     FaRedo,
     FaExclamationTriangle,
     FaRedoAlt,
+    FaArrowRight,
+    FaArrowLeft,
 } from "react-icons/fa";
 import { useState } from "react";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 
 const DocumentUploadTab = ({
     handleDocumentComplete,
+    toggleDocumentField,
+    replacedFields,
+    extractedDocData,
+    resetDocumentState,
     name,
     dob,
     gender,
     setLoading,
     template,
+    docFileName,
+    setDocFileName,
 }) => {
     const [file, setFile] = useState(null);
-    const [fileName, setFileName] = useState("");
+
     const [processingError, setProcessingError] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const toast = useToast();
@@ -45,8 +57,7 @@ const DocumentUploadTab = ({
     const handleFileChange = (e) => {
         if (e.target.files.length > 0) {
             setFile(e.target.files[0]);
-            setFileName(e.target.files[0].name);
-            // Clear any previous error state when a new file is selected
+            setDocFileName(e.target.files[0].name); // Use parent state
             setProcessingError(null);
         }
     };
@@ -73,25 +84,12 @@ const DocumentUploadTab = ({
                     name,
                     dob,
                     gender,
-                    templateKey: template?.template_key, // Pass template key to backend
+                    templateKey: template?.template_key,
                 },
                 {
                     handleComplete: (data) => {
-                        // Update to handle fields from template-based response
-                        handleDocumentComplete({
-                            fields: data.fields, // Template fields
-                            rawTranscription: data.rawTranscription || "",
-                            processDuration: data.processDuration,
-                        });
-
-                        toast({
-                            title: "Document processed",
-                            description:
-                                "Document has been successfully processed",
-                            status: "success",
-                            duration: 3000,
-                            isClosable: true,
-                        });
+                        // Pass the data up to parent - don't manage state locally
+                        handleDocumentComplete(data);
                         setIsProcessing(false);
                     },
                     handleError: (error) => {
@@ -127,6 +125,7 @@ const DocumentUploadTab = ({
 
         setIsProcessing(true);
         setProcessingError(null);
+        resetDocumentState(); // Reset in parent
 
         try {
             await handleUpload();
@@ -142,8 +141,9 @@ const DocumentUploadTab = ({
 
     const startNewUpload = () => {
         setFile(null);
-        setFileName("");
+        setDocFileName("");
         setProcessingError(null);
+        resetDocumentState(); // Reset in parent
     };
 
     // If there's a processing error, show the error UI
@@ -189,50 +189,173 @@ const DocumentUploadTab = ({
         );
     }
 
+    // Upload UI with optional field toggles
     return (
         <Box className="tab-panel-container">
             {isProcessing || isTranscribing ? (
-                <Flex justify="center" align="center" height="100px">
-                    <Spinner size="xl" />
+                <Flex
+                    justify="center"
+                    align="center"
+                    height="100px"
+                    direction="column"
+                >
+                    <Spinner size="xl" mb={4} />
+                    <Text>Processing document...</Text>
                 </Flex>
             ) : (
-                <VStack spacing={4} width="full">
-                    <Text>
-                        Upload a referral letter or other document to extract
-                        information.
-                    </Text>
+                <VStack spacing={4} width="full" align="stretch">
+                    {!extractedDocData ? (
+                        // Initial upload UI
+                        <>
+                            <Text>
+                                Upload a referral letter or other document to
+                                extract information.
+                            </Text>
 
-                    <VStack width="full" align="center">
-                        <Input
-                            type="file"
-                            onChange={handleFileChange}
-                            display="none"
-                            id="file-upload"
-                            accept=".pdf,.doc,.docx,.txt"
-                            className="input-style"
-                        />
-                        <Button
-                            px="10"
-                            leftIcon={<FaFileUpload />}
-                            onClick={() =>
-                                document.getElementById("file-upload").click()
-                            }
-                            className="blue-button"
-                        >
-                            Choose Document
-                        </Button>
-                        {fileName && <Text fontSize="sm">{fileName}</Text>}
-                    </VStack>
+                            <VStack width="full" align="center">
+                                <Input
+                                    type="file"
+                                    onChange={handleFileChange}
+                                    display="none"
+                                    id="file-upload"
+                                    accept=".pdf,.doc,.docx,.txt"
+                                    className="input-style"
+                                />
+                                <Button
+                                    px="10"
+                                    leftIcon={<FaFileUpload />}
+                                    onClick={() =>
+                                        document
+                                            .getElementById("file-upload")
+                                            .click()
+                                    }
+                                    className="blue-button"
+                                >
+                                    Choose Document
+                                </Button>
+                                {docFileName && (
+                                    <Text fontSize="sm">{docFileName}</Text>
+                                )}
+                            </VStack>
 
-                    {file && (
-                        <Button
-                            colorScheme="blue"
-                            onClick={handleUpload}
-                            isDisabled={!file}
-                            className="green-button"
-                        >
-                            Process Document
-                        </Button>
+                            {file && (
+                                <Button
+                                    colorScheme="blue"
+                                    onClick={handleUpload}
+                                    isDisabled={!file}
+                                    className="green-button"
+                                >
+                                    Process Document
+                                </Button>
+                            )}
+                        </>
+                    ) : (
+                        // Document processed UI with toggle buttons
+                        <>
+                            <Flex justify="space-between" align="center">
+                                <Text fontWeight="bold">
+                                    Document: {docFileName}
+                                </Text>
+                                <Button
+                                    leftIcon={<FaFileUpload />}
+                                    onClick={startNewUpload}
+                                    size="sm"
+                                    className="blue-button"
+                                >
+                                    Upload New Document
+                                </Button>
+                            </Flex>
+
+                            <Divider />
+
+                            <Text fontStyle="italic" fontSize="sm" mb={2}>
+                                Click the arrow buttons to toggle between
+                                document content and original text
+                            </Text>
+
+                            <VStack spacing={2} align="stretch">
+                                {template?.fields?.map((field) => {
+                                    const fieldKey = field.field_key;
+                                    const hasContent = Boolean(
+                                        extractedDocData?.fields[
+                                            fieldKey
+                                        ]?.trim(),
+                                    );
+                                    const isReplaced = replacedFields[fieldKey];
+
+                                    return (
+                                        <Flex
+                                            key={fieldKey}
+                                            p={2}
+                                            borderWidth="1px"
+                                            borderRadius="md"
+                                            justify="space-between"
+                                            align="center"
+                                            bg={
+                                                isReplaced && hasContent
+                                                    ? "green.50"
+                                                    : "white"
+                                            }
+                                        >
+                                            <HStack>
+                                                <Text fontWeight="medium">
+                                                    {field.field_name}
+                                                </Text>
+                                                {!hasContent && (
+                                                    <Badge
+                                                        colorScheme="yellow"
+                                                        fontSize="xs"
+                                                    >
+                                                        No content found
+                                                    </Badge>
+                                                )}
+                                                {isReplaced && hasContent && (
+                                                    <Badge
+                                                        colorScheme="green"
+                                                        fontSize="xs"
+                                                    >
+                                                        Using document content
+                                                    </Badge>
+                                                )}
+                                            </HStack>
+
+                                            <Tooltip
+                                                label={
+                                                    isReplaced
+                                                        ? "Restore original content"
+                                                        : hasContent
+                                                          ? "Use document content"
+                                                          : "No content available in document"
+                                                }
+                                            >
+                                                <IconButton
+                                                    icon={
+                                                        isReplaced ? (
+                                                            <FaArrowLeft />
+                                                        ) : (
+                                                            <FaArrowRight />
+                                                        )
+                                                    }
+                                                    onClick={() =>
+                                                        toggleDocumentField(
+                                                            fieldKey,
+                                                        )
+                                                    }
+                                                    aria-label="Toggle field content"
+                                                    isDisabled={!hasContent}
+                                                    colorScheme={
+                                                        isReplaced
+                                                            ? "blue"
+                                                            : "green"
+                                                    }
+                                                    size="sm"
+                                                />
+                                            </Tooltip>
+                                        </Flex>
+                                    );
+                                })}
+                            </VStack>
+                        </>
                     )}
                 </VStack>
             )}
