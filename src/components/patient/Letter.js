@@ -193,24 +193,24 @@ const Letter = forwardRef(
                     setLetterTemplates(response.templates);
                     if (response.default_template_id) {
                         setDefaultTemplateId(response.default_template_id);
-                        if (!selectedTemplate) {
-                            const defaultTpl = response.templates.find(
-                                (t) => t.id === response.default_template_id,
+
+                        // Reset to default template when patient changes or component mounts
+                        const defaultTpl = response.templates.find(
+                            (t) => t.id === response.default_template_id,
+                        );
+                        if (defaultTpl) {
+                            setSelectedTemplate(defaultTpl);
+                            // Set initial instructions from default template
+                            setAdditionalInstructions(
+                                defaultTpl.instructions || "",
                             );
-                            if (defaultTpl) {
-                                setSelectedTemplate(defaultTpl);
-                                // Set initial instructions from default template
-                                setAdditionalInstructions(
-                                    defaultTpl.instructions || "",
-                                );
-                            }
                         }
                     }
                 })
                 .catch((err) =>
                     console.error("Error fetching letter templates:", err),
                 );
-        }, [selectedTemplate]);
+        }, [patient?.id]);
 
         const handleCopy = () => {
             onCopy();

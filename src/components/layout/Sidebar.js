@@ -30,6 +30,7 @@ import {
 } from "@chakra-ui/icons";
 import { FaClinicMedical, FaTasks } from "react-icons/fa";
 import { GiBrain } from "react-icons/gi";
+import VersionInfo from "./VersionInfo";
 
 const Sidebar = ({
     onNewPatient,
@@ -161,6 +162,7 @@ const Sidebar = ({
                 </Tooltip>
             )}
 
+            {/* Normal sidebar when not collapsed */}
             {!isCollapsed && (
                 <VStack
                     spacing="5"
@@ -168,262 +170,285 @@ const Sidebar = ({
                     h="full"
                     overflowY="auto"
                     maxHeight="100vh"
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="space-between"
                 >
-                    <Box
-                        as="button"
-                        onClick={() => handleNavigation("/")}
-                        cursor="pointer"
-                        _hover={{ opacity: 0.8 }}
-                        transition="opacity 0.2s"
-                        display="flex"
-                        justifyContent="center"
-                        width="100%"
-                        mt="5px" // Added margin-top to account for the toggle button spacing
-                    >
-                        <Image
-                            src="/logo.webp"
-                            alt="Logo"
-                            mt="5"
-                            width="100px"
-                        />
-                    </Box>
-
-                    {/* Date selector */}
-                    <Box>
-                        <Text as="h4">Clinic Date</Text>
-                        <Input
-                            type="date"
-                            value={selectedDate || ""}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            size="sm"
-                            mt="2"
-                            className="input-style"
-                        />
-                    </Box>
-
-                    {/* New Patient button */}
-                    <Box
-                        p="2"
-                        borderRadius="sm"
-                        mt="2"
-                        mb="4"
-                        className="new-patient"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        onClick={() => {
-                            toast.closeAll();
-                            onNewPatient();
-                        }}
-                        onMouseEnter={() => setHoveredNewPatient(true)}
-                        onMouseLeave={() => setHoveredNewPatient(false)}
-                    >
-                        <Text>New Patient</Text>
-                        {hoveredNewPatient && <AddIcon />}
-                    </Box>
-
-                    {/* Patient List */}
-                    <Text as="h4">Patient List</Text>
-                    <Box
-                        flex="1"
+                    <VStack
+                        spacing="5"
+                        align="stretch"
+                        h="full"
                         overflowY="auto"
-                        className="custom-scrollbar"
-                        mt="0"
+                        maxHeight="100vh"
                     >
-                        {patients.length > 0 ? (
-                            patients.map((patient) => {
-                                const nameParts = patient.name.split(" ");
-                                const initials =
-                                    nameParts.length > 1
-                                        ? `${nameParts[1][0]}${nameParts[0][0]}`
-                                        : nameParts[0][0];
-                                return (
-                                    <Box
-                                        key={patient.id}
-                                        p="2"
-                                        borderRadius="sm"
-                                        className="sidebar-patient-items"
-                                        mb="2"
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="space-between"
-                                        onClick={() =>
-                                            handlePatientClick(patient)
-                                        }
-                                        onMouseEnter={() =>
-                                            setHoveredPatientId(patient.id)
-                                        }
-                                        onMouseLeave={() =>
-                                            setHoveredPatientId(null)
-                                        }
-                                    >
-                                        <HStack>
-                                            <Box
-                                                maxW="120px"
-                                                whiteSpace="nowrap"
-                                                overflow="hidden"
-                                                textOverflow="ellipsis"
-                                                style={{
-                                                    WebkitMaskImage:
-                                                        hoveredPatientId ===
-                                                        patient.id
-                                                            ? "linear-gradient(to right, black 60%, transparent 100%)"
-                                                            : "none",
-                                                }}
-                                            >
-                                                <Text>{`${initials} ${patient.ur_number}`}</Text>
-                                            </Box>
-                                        </HStack>
-                                        {hoveredPatientId === patient.id && (
-                                            <IconButton
-                                                icon={<DeleteIcon />}
-                                                size="sm"
-                                                aria-label="Delete patient"
-                                                className="sidebar-patient-items-delete"
-                                                onClick={(e) => {
-                                                    toast.closeAll();
-                                                    e.stopPropagation();
-                                                    handleDelete(patient);
-                                                }}
-                                                width="24px"
-                                                height="24px"
-                                                minWidth="24px"
-                                                minHeight="24px"
-                                            />
-                                        )}
-                                    </Box>
-                                );
-                            })
-                        ) : (
-                            <Text>No patients available</Text>
-                        )}
-                    </Box>
+                        <Box
+                            as="button"
+                            onClick={() => handleNavigation("/")}
+                            cursor="pointer"
+                            _hover={{ opacity: 0.8 }}
+                            transition="opacity 0.2s"
+                            display="flex"
+                            justifyContent="center"
+                            width="100%"
+                            mt="5px" // Added margin-top to account for the toggle button spacing
+                        >
+                            <Image
+                                src="/logo.webp"
+                                alt="Logo"
+                                mt="5"
+                                width="100px"
+                            />
+                        </Box>
 
-                    {/* Day Summary and All Jobs buttons */}
-                    <Box
-                        display="flex"
-                        mt="4"
-                        justifyContent="center"
-                        alignItems="center"
-                        flexDirection="column"
-                    >
-                        <VStack spacing={2} width="100%" align="stretch">
-                            {/* Day Summary button */}
-                            <Flex justifyContent="center">
-                                <Button
-                                    onClick={() =>
-                                        handleNavigation("/clinic-summary")
-                                    }
-                                    fontSize="sm"
-                                    width="150px"
-                                    height="30px"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                    className="summary-buttons"
-                                >
-                                    <FaClinicMedical
-                                        style={{ marginRight: "8px" }}
-                                    />
-                                    Day Summary
-                                </Button>
-                            </Flex>
+                        {/* Date selector */}
+                        <Box>
+                            <Text as="h4">Clinic Date</Text>
+                            <Input
+                                type="date"
+                                value={selectedDate || ""}
+                                onChange={(e) =>
+                                    setSelectedDate(e.target.value)
+                                }
+                                size="sm"
+                                mt="2"
+                                className="input-style"
+                            />
+                        </Box>
 
-                            {/* All Jobs button */}
-                            <Flex justifyContent="center" position="relative">
-                                <Button
-                                    onClick={() =>
-                                        handleNavigation("/outstanding-jobs")
-                                    }
-                                    fontSize="sm"
-                                    width="150px"
-                                    height="30px"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                    className="summary-buttons"
-                                >
-                                    <FaTasks style={{ marginRight: "8px" }} />
-                                    All Jobs
-                                    {incompleteJobsCount > 0 && (
-                                        <Badge
-                                            borderRadius="full"
-                                            px="2"
-                                            colorScheme="red"
-                                            backgroundColor="red.500"
-                                            color="white"
-                                            position="absolute"
-                                            top="5px"
-                                            right="5px"
-                                            fontSize="0.75em"
-                                            width="20px"
-                                            height="20px"
+                        {/* New Patient button */}
+                        <Box
+                            p="2"
+                            borderRadius="sm"
+                            mt="2"
+                            mb="4"
+                            className="new-patient"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            onClick={() => {
+                                toast.closeAll();
+                                onNewPatient();
+                            }}
+                            onMouseEnter={() => setHoveredNewPatient(true)}
+                            onMouseLeave={() => setHoveredNewPatient(false)}
+                        >
+                            <Text>New Patient</Text>
+                            {hoveredNewPatient && <AddIcon />}
+                        </Box>
+
+                        {/* Patient List */}
+                        <Text as="h4">Patient List</Text>
+                        <Box
+                            flex="1"
+                            overflowY="auto"
+                            className="custom-scrollbar"
+                            mt="0"
+                        >
+                            {patients.length > 0 ? (
+                                patients.map((patient) => {
+                                    const nameParts = patient.name.split(" ");
+                                    const initials =
+                                        nameParts.length > 1
+                                            ? `${nameParts[1][0]}${nameParts[0][0]}`
+                                            : nameParts[0][0];
+                                    return (
+                                        <Box
+                                            key={patient.id}
+                                            p="2"
+                                            borderRadius="sm"
+                                            className="sidebar-patient-items"
+                                            mb="2"
                                             display="flex"
                                             alignItems="center"
-                                            justifyContent="center"
+                                            justifyContent="space-between"
+                                            onClick={() =>
+                                                handlePatientClick(patient)
+                                            }
+                                            onMouseEnter={() =>
+                                                setHoveredPatientId(patient.id)
+                                            }
+                                            onMouseLeave={() =>
+                                                setHoveredPatientId(null)
+                                            }
                                         >
-                                            {incompleteJobsCount}
-                                        </Badge>
-                                    )}
-                                </Button>
-                            </Flex>
-                        </VStack>
-                    </Box>
+                                            <HStack>
+                                                <Box
+                                                    maxW="120px"
+                                                    whiteSpace="nowrap"
+                                                    overflow="hidden"
+                                                    textOverflow="ellipsis"
+                                                    style={{
+                                                        WebkitMaskImage:
+                                                            hoveredPatientId ===
+                                                            patient.id
+                                                                ? "linear-gradient(to right, black 60%, transparent 100%)"
+                                                                : "none",
+                                                    }}
+                                                >
+                                                    <Text>{`${initials} ${patient.ur_number}`}</Text>
+                                                </Box>
+                                            </HStack>
+                                            {hoveredPatientId ===
+                                                patient.id && (
+                                                <IconButton
+                                                    icon={<DeleteIcon />}
+                                                    size="sm"
+                                                    aria-label="Delete patient"
+                                                    className="sidebar-patient-items-delete"
+                                                    onClick={(e) => {
+                                                        toast.closeAll();
+                                                        e.stopPropagation();
+                                                        handleDelete(patient);
+                                                    }}
+                                                    width="24px"
+                                                    height="24px"
+                                                    minWidth="24px"
+                                                    minHeight="24px"
+                                                />
+                                            )}
+                                        </Box>
+                                    );
+                                })
+                            ) : (
+                                <Text>No patients available</Text>
+                            )}
+                        </Box>
 
-                    {/* Documents and Settings buttons */}
-                    <Box mt="auto">
-                        <VStack spacing={2} width="100%">
-                            {/* Documents button */}
-                            <Flex
-                                justifyContent="center"
-                                alignItems="center"
-                                width="100%"
-                            >
-                                <Box
-                                    p="2"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                    borderRadius="sm"
-                                    className="settings-button"
-                                    height="40px"
-                                    width="150px"
-                                    onClick={() => handleNavigation("/rag")}
-                                >
-                                    <GiBrain />
-                                    <Text ml="2" fontSize="md">
-                                        Documents
-                                    </Text>
-                                </Box>
-                            </Flex>
+                        {/* Day Summary and All Jobs buttons */}
+                        <Box
+                            display="flex"
+                            mt="4"
+                            justifyContent="center"
+                            alignItems="center"
+                            flexDirection="column"
+                        >
+                            <VStack spacing={2} width="100%" align="stretch">
+                                {/* Day Summary button */}
+                                <Flex justifyContent="center">
+                                    <Button
+                                        onClick={() =>
+                                            handleNavigation("/clinic-summary")
+                                        }
+                                        fontSize="sm"
+                                        width="150px"
+                                        height="30px"
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                        className="summary-buttons"
+                                    >
+                                        <FaClinicMedical
+                                            style={{ marginRight: "8px" }}
+                                        />
+                                        Day Summary
+                                    </Button>
+                                </Flex>
 
-                            {/* Settings button */}
-                            <Flex
-                                justifyContent="center"
-                                alignItems="center"
-                                width="100%"
-                            >
-                                <Box
-                                    p="2"
-                                    display="flex"
-                                    alignItems="center"
+                                {/* All Jobs button */}
+                                <Flex
                                     justifyContent="center"
-                                    borderRadius="sm"
-                                    className="settings-button"
-                                    height="40px"
-                                    width="150px"
-                                    onClick={() =>
-                                        handleNavigation("/settings")
-                                    }
+                                    position="relative"
                                 >
-                                    <SettingsIcon />
-                                    <Text ml="2" fontSize="md">
-                                        Settings
-                                    </Text>
-                                </Box>
-                            </Flex>
-                        </VStack>
-                    </Box>
+                                    <Button
+                                        onClick={() =>
+                                            handleNavigation(
+                                                "/outstanding-jobs",
+                                            )
+                                        }
+                                        fontSize="sm"
+                                        width="150px"
+                                        height="30px"
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                        className="summary-buttons"
+                                    >
+                                        <FaTasks
+                                            style={{ marginRight: "8px" }}
+                                        />
+                                        All Jobs
+                                        {incompleteJobsCount > 0 && (
+                                            <Badge
+                                                borderRadius="full"
+                                                px="2"
+                                                colorScheme="red"
+                                                backgroundColor="red.500"
+                                                color="white"
+                                                position="absolute"
+                                                top="5px"
+                                                right="5px"
+                                                fontSize="0.75em"
+                                                width="20px"
+                                                height="20px"
+                                                display="flex"
+                                                alignItems="center"
+                                                justifyContent="center"
+                                            >
+                                                {incompleteJobsCount}
+                                            </Badge>
+                                        )}
+                                    </Button>
+                                </Flex>
+                            </VStack>
+                        </Box>
+
+                        {/* Documents and Settings buttons */}
+                        <Box mt="auto">
+                            <VStack spacing={2} width="100%">
+                                {/* Documents button */}
+                                <Flex
+                                    justifyContent="center"
+                                    alignItems="center"
+                                    width="100%"
+                                >
+                                    <Box
+                                        p="2"
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                        borderRadius="sm"
+                                        className="settings-button"
+                                        height="40px"
+                                        width="150px"
+                                        onClick={() => handleNavigation("/rag")}
+                                    >
+                                        <GiBrain />
+                                        <Text ml="2" fontSize="md">
+                                            Documents
+                                        </Text>
+                                    </Box>
+                                </Flex>
+
+                                {/* Settings button */}
+                                <Flex
+                                    justifyContent="center"
+                                    alignItems="center"
+                                    width="100%"
+                                >
+                                    <Box
+                                        p="2"
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                        borderRadius="sm"
+                                        className="settings-button"
+                                        height="40px"
+                                        width="150px"
+                                        onClick={() =>
+                                            handleNavigation("/settings")
+                                        }
+                                    >
+                                        <SettingsIcon />
+                                        <Text ml="2" fontSize="md">
+                                            Settings
+                                        </Text>
+                                    </Box>
+                                </Flex>
+                            </VStack>
+                        </Box>
+                    </VStack>
+
+                    {!isCollapsed && <VersionInfo isCollapsed={false} />}
                 </VStack>
             )}
 
@@ -509,6 +534,7 @@ const Sidebar = ({
                     </Tooltip>
                 </VStack>
             )}
+            {isCollapsed && <VersionInfo isCollapsed={true} />}
 
             {/* Delete confirmation modal */}
             <Modal isOpen={isOpen} onClose={onClose}>

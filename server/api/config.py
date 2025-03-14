@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import httpx
 from server.database.config import config_manager
 import logging
+import json
 
 router = APIRouter()
 
@@ -209,3 +210,51 @@ async def update_user_settings(data: dict):
     """Update user settings with provided data."""
     config_manager.update_user_settings(data)
     return {"message": "User settings updated successfully"}
+
+@router.get("/version")
+async def get_version():
+    """Retrieve the current version of the application."""
+    # Get version from package.json
+    try:
+        with open('/usr/src/app/package.json') as f:
+            package_data = json.load(f)
+            version = package_data.get('version', 'unknown')
+            return {"version": version}
+    except Exception as e:
+        logging.error(f"Error getting version: {str(e)}")
+        return {"version": "unknown"}
+
+@router.get("/status")
+async def get_server_status():
+    """Check the status of Ollama and Whisper servers."""
+    config = config_manager.get_config()
+    status = {
+        "ollama": False,
+        "whisper": False
+    }
+
+    try:
+        # Check Ollama
+        if config.get("OLLAMA_BASE_URL"):
+            async with httpx.AsyncClient() as client:
+                try:
+                    response = await client.get(f"{config.get('OLLAMA_BASE_URL')}/api/tags", timeout=2.0)
+                    status["ollama"] = response.status_code == 200
+                except:
+                    pass
+
+        # Check Whisper
+        if config.get("WHISPER_BASE_URL"):
+            async with httpx.AsyncClient() as client:
+                try:
+                    # For Whisper, we only check if the URL is reachable
+                    response = await client.get(f"{config.get('WHISPER_BASE_URL')}/v1/models", timeout=2.0)
+                    # If we get a 401/403, the service exists but requires auth
+                    status["whisper"] = response.status_code in [200, 401, 403]
+                except:
+                    pass
+
+        return status
+    except Exception as e:
+        logging.error(f"Error checking server status: {str(e)}")
+        return status
