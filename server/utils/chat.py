@@ -263,40 +263,17 @@ class ChatEngine:
                     ):
                         if 'message' in chunk and 'content' in chunk['message']:
                             yield {"type": "chunk", "content": chunk['message']['content']}
+
                 else:
-                    self.logger.info(f"Searching transcript for query: {tool['function']['arguments']['query'][:50]}...")
                     yield {"type": "status", "content": "Searching through transcript..."}
 
-                    # Create a query to extract information from the transcript
-                    query = tool["function"]["arguments"]["query"]
-
-                    # Create a new message list with the transcript and query
-                    transcript_query_messages = [
-                        {
-                            "role": "system",
-                            "content": "You are a helpful medical assistant. Extract the relevant information from the provided transcript to answer the user's question. Only include information that is present in the transcript and include direct quotes."
-                        },
-                        {
-                            "role": "user",
-                            "content": f"Here is the transcript of a patient conversation:\n\n{raw_transcription}\n\nBased on this transcript only, please answer the following question: {query}"
-                        }
-                    ]
-
-                    # Get information from transcript
-                    transcript_response = await self.ollama_client.chat(
-                        model=self.config["PRIMARY_MODEL"],
-                        messages=transcript_query_messages,
-                        options=context_question_options,
-                    )
-
-                    transcript_info = transcript_response["message"]["content"]
-                    self.logger.info(f"Transcript query result: {transcript_info[:100]}...")
-                    # Add transcript info to original conversation
+                    # Simply provide the raw transcript as a tool response
                     context_response = {
                         "role": "tool",
-                        "content": f"The following information was found in the transcript:\n\n{transcript_info}\n\nPlease use this information to respond to the user's question about the transcript."
+                        "content": f"Here is the raw transcript which may help you answer the user's query:\n\n{raw_transcription}"
                     }
 
+                    # This may quickly overwhelm the context window of the model, so we will need to dynamically truncate using tiktoken in the future
                     temp_conversation_history = message_list + [context_response]
 
                     # Send generating response status
@@ -312,7 +289,7 @@ class ChatEngine:
                         if 'message' in chunk and 'content' in chunk['message']:
                             yield {"type": "chunk", "content": chunk['message']['content']}
 
-                    function_response = transcript_info
+                    function_response = raw_transcription[:100]
             else:  # get_relevant_literature
                 self.logger.info("Executing get_relevant_literature tool...")
                 # Send RAG status message
