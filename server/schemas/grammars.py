@@ -1,5 +1,5 @@
+from typing import List, Literal
 from pydantic import BaseModel, Field
-from typing import List
 
 # RAG Chat Items:
 class ClinicalSuggestion(BaseModel):
@@ -45,3 +45,15 @@ class ClinicalReasoning(BaseModel):
     differentials: List[str]
     investigations: List[str]
     clinical_considerations: List[str]
+
+class DialogueLine(BaseModel):
+    """Represents a single line of dialogue in a transcription."""
+    speaker: Literal["Doctor", "Patient", "Unknown"] = Field(...,
+        description="The speaker of this line (Doctor, Patient, or Unknown if uncertain)")
+    text: str = Field(...,
+        description="The text spoken by this speaker, preserving all medical terminology")
+
+class DiarizedTranscript(BaseModel):
+    """Represents a segment of diarized transcript with speaker identification."""
+    lines: List[DialogueLine] = Field(...,
+        description="The sequence of dialogue lines with identified speakers")

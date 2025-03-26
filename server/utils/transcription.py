@@ -7,7 +7,7 @@ from typing import Dict, List, Union
 from ollama import AsyncClient as AsyncOllamaClient
 from server.database.config import config_manager
 from server.schemas.templates import TemplateField, TemplateResponse
-from server.schemas.grammars import FieldResponse, RefinedResponse
+from server.schemas.grammars import FieldResponse, RefinedResponse, DialogueLine, DiarizedTranscript
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,14 +15,15 @@ logger = logging.getLogger(__name__)
 
 async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
     """
-    Transcribe an audio buffer using a Whisper endpoint.
+    Transcribe an audio buffer using a Whisper endpoint with enhanced cleaning and diarization.
 
     Args:
         audio_buffer (bytes): The audio data to be transcribed.
 
     Returns:
         dict: A dictionary containing:
-            - 'text' (str): The transcribed text.
+            - 'text' (str): The diarized and cleaned transcribed text.
+            - 'raw_text' (str): The cleaned but undiarized text.
             - 'transcriptionDuration' (float): The time taken for transcription.
 
     Raises:
@@ -43,7 +44,7 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
             form_data.add_field("language", "en")
             form_data.add_field("temperature", "0.1")
             form_data.add_field("vad_filter", "true")
-            form_data.add_field("response_format", "json")
+            form_data.add_field("response_format", "verbose_json")
             form_data.add_field("timestamp_granularities[]", "segment")
 
             transcription_start = time.perf_counter()
@@ -57,6 +58,7 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
                 data=form_data,
                 headers=headers
             ) as response:
+
                 transcription_end = time.perf_counter()
                 transcription_duration = transcription_end - transcription_start
 
@@ -73,18 +75,31 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
                     raise ValueError(
                         "Transcription failed, no text in response"
                     )
+                # Clean and potentially diarize the transcript
+                if "segments" in data and len(data["segments"]) > 0:
+                    # Clean each segment of repetitive text
+                    for segment in data["segments"]:
+                        segment["text"] = _clean_repetitive_text(segment["text"].strip())
 
-                if "segments" in data:
-                    # Extract text from each segment and join with newlines
+                    # Attempt to diarize the segments
+                    logger.info(f"Attempting diarization for {len(data['segments'])} segments")
+                    print(f"\n--- Starting diarization for {len(data['segments'])} segments using structured output ---")
+                    diarized_text = await _diarize_transcript_segments(data["segments"])
+
+                    # Create a clean non-diarized version
                     transcript_text = '\n'.join(
-                        segment["text"].strip()
+                        segment["text"]
                         for segment in data["segments"]
                     )
                 else:
-                    transcript_text = data["text"]
+                    # Clean the full transcript if no segments
+                    transcript_text = _clean_repetitive_text(data["text"])
+                    diarized_text = transcript_text
+
 
                 return {
-                    "text": transcript_text,
+                    "text": diarized_text,
+                    "raw_text": transcript_text,
                     "transcriptionDuration": float(f"{transcription_duration:.2f}"),
                 }
     except Exception as error:
@@ -124,7 +139,7 @@ async def process_transcription(
             )
             for field in non_persistent_fields
         ])
-        print(raw_results)
+
         # Refine all results concurrently
         refined_results = await asyncio.gather(*[
             refine_field_content(
@@ -292,6 +307,28 @@ def _build_patient_context(context: Dict[str, str]) -> str:
 
     return " ".join(context_parts)
 
+def _clean_repetitive_text(text: str) -> str:
+    """
+    Clean up repetitive text patterns that might appear in transcripts.
+
+    Args:
+        text (str): The text to clean
+
+    Returns:
+        str: Cleaned text
+    """
+    # Pattern to find repetitions of the same word/phrase 3+ times in succession
+    pattern = r'(\b\w+[\s\w]*?\b)(\s+\1){3,}'
+
+    # Replace with just two instances
+    cleaned_text = re.sub(pattern, r'\1 \1', text)
+
+    # If the text changed, recursively clean again (for nested repetitions)
+    if cleaned_text != text:
+        return _clean_repetitive_text(cleaned_text)
+
+    return cleaned_text
+
 def _detect_audio_format(audio_buffer):
     """
     Simple audio format detection based on file signatures (magic numbers).
@@ -337,6 +374,104 @@ def _determine_format_details(field: TemplateField, prompts: dict) -> dict:
         "format_guidance": format_guidance
     }
 
+async def _diarize_transcript_segments(segments: list) -> str:
+    """
+    Diarize transcript segments by sending batches concurrently to the secondary model.
+
+    Args:
+        segments (list): List of transcript segments
+
+    Returns:
+        str: Diarized transcript text
+    """
+    try:
+        config = config_manager.get_config()
+        client = AsyncOllamaClient(host=config["OLLAMA_BASE_URL"])
+
+        # Process segments in small batches (5-6 at a time)
+        batch_size = 5
+        batches = [segments[i:i+batch_size] for i in range(0, len(segments), batch_size)]
+
+        # Create a list to store the diarized results in the correct order
+        diarized_batches = [None] * len(batches)
+
+        # Process batches in groups of 4 concurrently
+        concurrency_limit = 4
+        for i in range(0, len(batches), concurrency_limit):
+            batch_group = batches[i:i + concurrency_limit]
+            batch_indices = list(range(i, min(i + concurrency_limit, len(batches))))
+
+            # Define a function to diarize a single batch
+            async def diarize_batch(batch_text, batch_idx):
+                try:
+                    system_prompt = (
+                        "You are an expert at identifying speakers in medical conversations. "
+                        "Analyze this transcript segment and identify whether each part was spoken by the Doctor or the Patient. "
+                        "If the same person continues speaking across multiple sentences, keep them as a single dialogue line. "
+                        "Split the text when the speaker changes. "
+                        "Maintain all medical information and terminology exactly as provided."
+                    )
+
+                    # Add context from previous batch if available
+                    context = ""
+                    if batch_idx > 0 and diarized_batches[batch_idx - 1] is not None:
+                        # Extract the last few lines from the previous batch to provide context
+                        previous_lines = diarized_batches[batch_idx - 1].splitlines()[-3:]
+                        context = (
+                            "For context, the previous transcript section ended with: \n"
+                            f"{' '.join(previous_lines)}"
+                        )
+
+                    response = await client.chat(
+                        model=config["SECONDARY_MODEL"],
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "system", "content": context} if context else {"role": "system", "content": ""},
+                            {"role": "user", "content": "Return this transcript as a structured dialogue with speakers identified:\n\n" + batch_text}
+                        ],
+                        format=DiarizedTranscript.model_json_schema(),
+                        options={"temperature": 0.2}  # Low temperature for more consistent results
+                    )
+
+                    # Parse the structured response
+                    diarized_data = DiarizedTranscript.model_validate_json(response['message']['content'])
+
+                    # Format the diarized text
+                    diarized_text = "\n".join([f"{line.speaker}: {line.text}" for line in diarized_data.lines])
+
+                    # Print the diarized batch to terminal
+                    print(f"\n--- Diarized Batch {batch_idx+1}/{len(batches)} ---\n{diarized_text}\n")
+
+                    return diarized_text
+                except Exception as e:
+                    logger.error(f"Error in diarizing batch {batch_idx+1}: {e}")
+                    # Fall back to undiarized text for this batch
+                    undiarized_text = batch_text
+                    print(f"\n--- Failed to diarize batch {batch_idx+1}/{len(batches)} ---\n{undiarized_text}\n")
+                    return undiarized_text
+
+            # Create batch text strings for each batch in the group
+            batch_texts = ["\n".join(segment["text"] for segment in batch) for batch in batch_group]
+
+            # Process batches concurrently
+            results = await asyncio.gather(*[
+                diarize_batch(batch_texts[j], batch_indices[j])
+                for j in range(len(batch_group))
+            ])
+
+            # Store results in the correct order
+            for j, result in enumerate(results):
+                diarized_batches[batch_indices[j]] = result
+
+        # Combine all diarized batches
+        return "\n".join(diarized_batches)
+
+    except Exception as e:
+        logger.error(f"Error in diarization: {e}")
+        logger.info("Continuing with undiarized transcript")
+        # Fall back to original text if diarization fails
+        return "\n".join(segment["text"] for segment in segments)
+
 def _build_system_prompt(field: TemplateField, format_details: dict, prompts: dict) -> str:
     """Build the system prompt using format guidance and style examples."""
     # Check if field has style_example and prioritize it
@@ -376,7 +511,7 @@ def _build_system_prompt(field: TemplateField, format_details: dict, prompts: di
             if rule in prompts["prompts"]["refinement"]:
                 system_prompt = prompts["prompts"]["refinement"][rule]
                 break
-    print(system_prompt)
+
     return system_prompt
 
 def _format_refined_response(response: dict, field: TemplateField, format_details: dict) -> str:
