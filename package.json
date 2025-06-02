@@ -5,7 +5,7 @@
     "proxy": "http://localhost:5000",
     "dependencies": {
         "@chakra-ui/icons": "^2.1.1",
-        "@chakra-ui/react": "^2.8.2",
+        "@chakra-ui/react": "^2.10.7",
         "@emotion/react": "^11.11.4",
         "@emotion/styled": "^11.11.5",
         "framer-motion": "^11.2.10",
