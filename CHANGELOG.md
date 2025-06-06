@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.2](https://github.com/bloodworks-io/phlox/compare/v0.7.1...v0.7.2) (2025-06-06)
+
+
+### Bug Fixes
+
+* incorrect parameter name for clean_think_tags ([ce64951](https://github.com/bloodworks-io/phlox/commit/ce64951e1ca507a6b422097e0fb8a66edacef04e))
+* Prevents frontend TypeError by ensuring function_response is always an array or null ([e5aa93d](https://github.com/bloodworks-io/phlox/commit/e5aa93d28c58c7d8fdc0f4fee397556e9d852af5))
+
 ## [0.7.1](https://github.com/bloodworks-io/phlox/compare/v0.7.0...v0.7.1) (2025-05-31)
 
 
