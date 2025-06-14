@@ -10,6 +10,7 @@ icalendar==5.0.13
 ollama==0.4.7
 openai==1.76.2
 Pillow==11.1.0
+platformdirs==4.3.8
 pydantic==2.10.6
 PyMuPDF==1.24.9
 pytesseract==0.3.13

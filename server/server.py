@@ -6,21 +6,44 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from server.database.config import ConfigManager
+from server.tests.test_database import test_db as test_database
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from server.database.analysis import generate_daily_analysis, run_nightly_reasoning
+import socket
+from contextlib import asynccontextmanager, closing
+
+from server.constants import APP_NAME, BUILD_DIR, DATA_DIR, IS_DOCKER
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(
-    title="Phlox",
-)
-
 scheduler = AsyncIOScheduler()
+
+
+# Start the scheduler when the app starts
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    scheduler.start()
+    # Schedule jobs
+    scheduler.add_job(generate_daily_analysis, "cron", hour=3)
+    scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
+
+    # Run initial analysis
+    await generate_daily_analysis()
+
+    yield
+
+    # Shutdown
+    scheduler.shutdown()
+
+
+app = FastAPI(
+    title=APP_NAME,
+    lifespan=lifespan,  # Add the lifespan context manager
+)
 
 
 # CORS configuration
@@ -32,31 +55,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Constants
-DATA_DIR = Path("/usr/src/app/data")
-BUILD_DIR = Path("/usr/src/app/build")
-IS_TESTING = os.getenv("TESTING", "false").lower() == "true"
-
-
 # Initialize config_manager and run migrations
 logger.info("Initializing database and running migrations...")
 from server.database.config import config_manager
 
 # Then load API submodules
-from server.api import chat, config, dashboard, patient, rag, transcribe, templates, letter
+from server.api import (
+    chat,
+    config,
+    dashboard,
+    patient,
+    rag,
+    transcribe,
+    templates,
+    letter,
+)
 
-# Schedule daily analysis
-scheduler.add_job(generate_daily_analysis, "cron", hour=3)
+# Then load analysis submodules
+from server.database.analysis import (
+    generate_daily_analysis,
+    run_nightly_reasoning,
+)
 
-# Schedule reasoning analysis
-scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
 
 # Start the scheduler when the app starts
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     scheduler.start()
-    # Run analysis if none exists or if last one is old
+    # Schedule jobs
+    scheduler.add_job(generate_daily_analysis, "cron", hour=3)
+    scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
+
+    # Run initial analysis
     await generate_daily_analysis()
+
+    yield
+
+    # Shutdown
+    scheduler.shutdown()
 
 
 @app.get("/test-db")
@@ -82,6 +119,7 @@ app.include_router(chat.router, prefix="/api/chat")
 app.include_router(templates.router, prefix="/api/templates")
 app.include_router(letter.router, prefix="/api/letter")
 
+
 # React app routes
 @app.get("/new-patient")
 @app.get("/settings")
@@ -102,20 +140,54 @@ async def catch_all(full_path: str):
     return FileResponse(BUILD_DIR / "index.html")
 
 
-if __name__ == "__main__":
+def find_free_port():
+    """Find a free port on the local machine"""
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(("", 0))
+        s.listen(1)
+        port = s.getsockname()[1]
+    return port
+
+
+def start_server_for_desktop():
+    """Start server with dynamic port for desktop app"""
+    port = find_free_port()
+
+    # Write port to a file that Tauri can read
+    port_file = DATA_DIR / "server_port.txt"
+    port_file.write_text(str(port))
+
     config = uvicorn.Config(
-        "server.server:app",
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", 5000)),
+        app,
+        host="127.0.0.1",  # Only localhost
+        port=port,
         timeout_keep_alive=300,
         timeout_graceful_shutdown=10,
         loop="asyncio",
         workers=1,
         http="httptools",
-        loop_wait=0.0,
-        ws_ping_interval=None,
-        ws_ping_timeout=None,
-        buffer_size=0
     )
     server = uvicorn.Server(config)
     server.run()
+
+
+if __name__ == "__main__":
+    if not IS_DOCKER:
+        # Desktop mode - dynamic port, single worker
+        start_server_for_desktop()
+    else:
+        # Docker mode
+        config = uvicorn.Config(
+            app,
+            host="0.0.0.0",
+            port=int(os.getenv("PORT", 5000)),
+            timeout_keep_alive=300,
+            timeout_graceful_shutdown=10,
+            loop="asyncio",
+            workers=int(os.getenv("WORKERS", 4)),
+            http="httptools",
+            ws_ping_interval=None,
+            ws_ping_timeout=None,
+        )
+        server = uvicorn.Server(config)
+        server.run()

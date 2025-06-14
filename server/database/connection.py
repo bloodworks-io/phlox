@@ -2,10 +2,13 @@ import os
 import sqlcipher3 as sqlite3  # Updated import
 import json
 import logging
+from pathlib import Path
+from server.constants import DATA_DIR
 from datetime import datetime
 from server.schemas.templates import ClinicalTemplate, TemplateField
 from server.database.defaults.templates import DefaultTemplates
 from server.database.defaults.letters import DefaultLetters
+
 
 class PatientDatabase:
     SCHEMA_VERSION = 3  # Current schema version
@@ -43,7 +46,7 @@ class PatientDatabase:
             logging.info(
                 "Data directory does not exist. Creating data directory."
             )
-            os.makedirs(self.db_dir)
+            os.makedirs(self.db_dir, exist_ok=True)
         else:
             logging.info("Data directory exists.")
         logging.info(f"Database path: {self.db_path}")
@@ -83,9 +86,11 @@ class PatientDatabase:
                 # Create initial settings with default template
                 self.cursor.execute(
                     "INSERT INTO user_settings (default_template_key) VALUES (?)",
-                    (default_template_key,)
+                    (default_template_key,),
                 )
-                logging.info(f"Created initial user settings with default template: {default_template_key}")
+                logging.info(
+                    f"Created initial user settings with default template: {default_template_key}"
+                )
             else:
                 # Get current default template
                 self.cursor.execute(
@@ -104,28 +109,36 @@ class PatientDatabase:
                     # Verify the current default template exists and is not deleted
                     self.cursor.execute(
                         "SELECT 1 FROM clinical_templates WHERE template_key = ? AND (deleted IS NULL OR deleted != 1)",
-                        (current_default,)
+                        (current_default,),
                     )
                     template_exists = self.cursor.fetchone() is not None
 
                     if not template_exists:
                         need_update = True
-                        logging.info(f"Current default template '{current_default}' is invalid or deleted")
+                        logging.info(
+                            f"Current default template '{current_default}' is invalid or deleted"
+                        )
 
                 if need_update:
                     self.cursor.execute(
                         "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
-                        (default_template_key, row["id"])
+                        (default_template_key, row["id"]),
                     )
-                    logging.info(f"Updated default template to: {default_template_key}")
+                    logging.info(
+                        f"Updated default template to: {default_template_key}"
+                    )
 
             self.db.commit()
         except Exception as e:
             logging.error(f"Error setting initial default template: {e}")
             raise
 
-    def __init__(self, db_dir="/usr/src/app/data"):
-        self.db_dir = db_dir
+    def __init__(self, db_dir=None):
+        if db_dir is None:
+            self.db_dir = str(DATA_DIR)
+        else:
+            self.db_dir = db_dir
+
         self.encryption_key = os.environ.get("DB_ENCRYPTION_KEY")
         if not self.encryption_key:
             logging.error("DB_ENCRYPTION_KEY environment variable not set!")
@@ -137,7 +150,7 @@ class PatientDatabase:
             if self.is_test
             else "phlox_database.sqlite"
         )
-        self.db_path = os.path.join(db_dir, self.db_name)
+        self.db_path = os.path.join(self.db_dir, self.db_name)
         self.ensure_data_directory()
         self.connect_to_database()
         self.run_migrations()  # Run migrations first to create tables
@@ -151,7 +164,10 @@ class PatientDatabase:
                 template = ClinicalTemplate(
                     template_key=template_data["template_key"],
                     template_name=template_data["template_name"],
-                    fields=[TemplateField(**field) for field in template_data["fields"]]
+                    fields=[
+                        TemplateField(**field)
+                        for field in template_data["fields"]
+                    ],
                 )
                 now = datetime.now().isoformat()
                 self.cursor.execute(
@@ -163,15 +179,19 @@ class PatientDatabase:
                         template.template_key,
                         template.template_name,
                         json.dumps([field.dict() for field in template.fields]),
-                        now, now
-                    )
+                        now,
+                        now,
+                    ),
                 )
-                logging.info(f"Created default template: {template.template_name}")
+                logging.info(
+                    f"Created default template: {template.template_name}"
+                )
 
     def template_exists(self, template_key: str) -> bool:
         """Check if a template exists."""
         self.cursor.execute(
-            "SELECT 1 FROM clinical_templates WHERE template_key = ?", (template_key,)
+            "SELECT 1 FROM clinical_templates WHERE template_key = ?",
+            (template_key,),
         )
         return self.cursor.fetchone() is not None
 
@@ -226,6 +246,7 @@ class PatientDatabase:
 
     def _migrate_to_v1(self):
         from server.database.defaults.prompts import DEFAULT_PROMPTS
+
         """Initial schema setup"""
         self.cursor.execute(
             """
@@ -384,7 +405,8 @@ class PatientDatabase:
             """
         )
 
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS letter_templates (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -405,7 +427,7 @@ class PatientDatabase:
             "PRIMARY_MODEL": "&nbsp;",
             "SECONDARY_MODEL": "&nbsp;",
             "EMBEDDING_MODEL": "&nbsp;",
-            "DAILY_SUMMARY": "&nbsp;"
+            "DAILY_SUMMARY": "&nbsp;",
         }
 
         for key, value in default_config.items():
@@ -414,18 +436,18 @@ class PatientDatabase:
                 (key, json.dumps(value)),
             )
             for key, prompt in prompts_data["prompts"].items():
-                    if key != "reasoning":  # Skip reasoning prompt for v1
-                        self.cursor.execute(
-                            """
+                if key != "reasoning":  # Skip reasoning prompt for v1
+                    self.cursor.execute(
+                        """
                             INSERT OR REPLACE INTO prompts
                             (key, system)
                             VALUES (?, ?)
                             """,
-                            (
-                                key,
-                                prompt.get("system", ""),
-                            ),
-                        )
+                        (
+                            key,
+                            prompt.get("system", ""),
+                        ),
+                    )
 
         default_options = prompts_data["options"].get("general", {})
         for category, options in prompts_data["options"].items():
@@ -440,14 +462,18 @@ class PatientDatabase:
 
         letter_templates = DefaultLetters.get_default_letter_templates()
         for letter_templates in letter_templates:
-            self.cursor.execute("""
+            self.cursor.execute(
+                """
                 INSERT INTO letter_templates (id, name, instructions, created_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            """, letter_templates)
+            """,
+                letter_templates,
+            )
 
     def _migrate_to_v2(self):
         """Add reasoning analysis support"""
         from server.database.defaults.prompts import DEFAULT_PROMPTS
+
         try:
             # Add reasoning_output column to patients table
             self.cursor.execute(
@@ -473,7 +499,7 @@ class PatientDatabase:
                     ('REASONING_MODEL', ?),
                     ('REASONING_ENABLED', ?)
                 """,
-                (json.dumps("&nbsp;"), json.dumps(False))
+                (json.dumps("&nbsp;"), json.dumps(False)),
             )
 
             defaults = DEFAULT_PROMPTS
@@ -485,7 +511,7 @@ class PatientDatabase:
                 INSERT OR IGNORE INTO prompts (key, system)
                 VALUES (?, ?)
                 """,
-                ("reasoning", reasoning_prompt)
+                ("reasoning", reasoning_prompt),
             )
 
             # Add reasoning options
@@ -496,7 +522,7 @@ class PatientDatabase:
                     INSERT OR IGNORE INTO options (category, key, value)
                     VALUES (?, ?, ?)
                     """,
-                    ("reasoning", key, str(value))
+                    ("reasoning", key, str(value)),
                 )
 
             self.db.commit()
@@ -535,22 +561,34 @@ class PatientDatabase:
 
             # Mapping of config values to preserve/migrate
             config_mapping = {
-                "WHISPER_BASE_URL": existing_config.get("WHISPER_BASE_URL", "&nbsp;"),
+                "WHISPER_BASE_URL": existing_config.get(
+                    "WHISPER_BASE_URL", "&nbsp;"
+                ),
                 "WHISPER_MODEL": existing_config.get("WHISPER_MODEL", "&nbsp;"),
                 "WHISPER_KEY": existing_config.get("WHISPER_KEY", "&nbsp;"),
                 "PRIMARY_MODEL": existing_config.get("PRIMARY_MODEL", "&nbsp;"),
-                "SECONDARY_MODEL": existing_config.get("SECONDARY_MODEL", "&nbsp;"),
-                "EMBEDDING_MODEL": existing_config.get("EMBEDDING_MODEL", "&nbsp;"),
-                "REASONING_MODEL": existing_config.get("REASONING_MODEL", "&nbsp;"),
-                "REASONING_ENABLED": existing_config.get("REASONING_ENABLED", False),
+                "SECONDARY_MODEL": existing_config.get(
+                    "SECONDARY_MODEL", "&nbsp;"
+                ),
+                "EMBEDDING_MODEL": existing_config.get(
+                    "EMBEDDING_MODEL", "&nbsp;"
+                ),
+                "REASONING_MODEL": existing_config.get(
+                    "REASONING_MODEL", "&nbsp;"
+                ),
+                "REASONING_ENABLED": existing_config.get(
+                    "REASONING_ENABLED", False
+                ),
                 # New configuration keys
                 "LLM_PROVIDER": llm_provider,
                 "LLM_API_KEY": llm_api_key,
-                "LLM_BASE_URL": llm_base_url
+                "LLM_BASE_URL": llm_base_url,
             }
 
             # Remove old Ollama-specific configuration
-            self.cursor.execute("DELETE FROM config WHERE key = 'OLLAMA_BASE_URL'")
+            self.cursor.execute(
+                "DELETE FROM config WHERE key = 'OLLAMA_BASE_URL'"
+            )
 
             # Update/add all configuration values
             for key, value in config_mapping.items():
@@ -566,13 +604,17 @@ class PatientDatabase:
 
             # Create lookup for default template fields
             for template in default_templates:
-                template_key_base = template["template_key"].split("_")[0]  # e.g., "phlox" from "phlox_01"
+                template_key_base = template["template_key"].split("_")[
+                    0
+                ]  # e.g., "phlox" from "phlox_01"
                 default_fields_by_template[template_key_base] = {
                     field["field_key"]: field for field in template["fields"]
                 }
 
             # Get all existing templates
-            self.cursor.execute("SELECT template_key, template_name, fields FROM clinical_templates")
+            self.cursor.execute(
+                "SELECT template_key, template_name, fields FROM clinical_templates"
+            )
             templates = self.cursor.fetchall()
 
             for template in templates:
@@ -582,7 +624,9 @@ class PatientDatabase:
 
                 # Determine template type (phlox, soap, progress, or custom)
                 template_base = template_key.split("_")[0]
-                is_default_template = template_base in default_fields_by_template
+                is_default_template = (
+                    template_base in default_fields_by_template
+                )
 
                 for field in fields:
                     # Start with existing field
@@ -590,14 +634,24 @@ class PatientDatabase:
 
                     # Add missing fields from new schema
                     if "style_example" not in updated_field:
-                        if is_default_template and field["field_key"] in default_fields_by_template[template_base]:
+                        if (
+                            is_default_template
+                            and field["field_key"]
+                            in default_fields_by_template[template_base]
+                        ):
                             # Use style_example from default template
-                            default_field = default_fields_by_template[template_base][field["field_key"]]
-                            updated_field["style_example"] = default_field.get("style_example", "&nbsp;")
+                            default_field = default_fields_by_template[
+                                template_base
+                            ][field["field_key"]]
+                            updated_field["style_example"] = default_field.get(
+                                "style_example", "&nbsp;"
+                            )
 
                             # Also update format_schema if it's changed in defaults
                             if "format_schema" in default_field:
-                                updated_field["format_schema"] = default_field["format_schema"]
+                                updated_field["format_schema"] = default_field[
+                                    "format_schema"
+                                ]
                         else:
                             # Custom template, use placeholder
                             updated_field["style_example"] = "&nbsp;"
@@ -607,7 +661,7 @@ class PatientDatabase:
                 # Update the template with new fields
                 self.cursor.execute(
                     "UPDATE clinical_templates SET fields = ? WHERE template_key = ?",
-                    (json.dumps(updated_fields), template_key)
+                    (json.dumps(updated_fields), template_key),
                 )
 
             self.db.commit()
@@ -617,7 +671,6 @@ class PatientDatabase:
             logging.error(f"Error during v3 migration: {e}")
             self.db.rollback()
             raise
-
 
     def test_database(self):
         """Test database functionality with sample data."""
@@ -631,9 +684,9 @@ class PatientDatabase:
                         "field_key": "presenting_complaint",
                         "field_name": "Presenting Complaint",
                         "field_type": "text",
-                        "persistent": True
+                        "persistent": True,
                     }
-                ]
+                ],
             }
 
             # Insert test template
@@ -642,13 +695,11 @@ class PatientDatabase:
                 INSERT INTO clinical_templates (template_key, template_name, fields)
                 VALUES (?, ?, ?)
                 """,
-                ("test_template", "Test Template", json.dumps(template_data))
+                ("test_template", "Test Template", json.dumps(template_data)),
             )
 
             # Insert test patient with template
-            template_patient_data = {
-                "presenting_complaint": "Test complaint"
-            }
+            template_patient_data = {"presenting_complaint": "Test complaint"}
 
             self.cursor.execute(
                 """
@@ -668,8 +719,8 @@ class PatientDatabase:
                     json.dumps(template_patient_data),
                     "Test transcription",
                     1.0,
-                    1.0
-                )
+                    1.0,
+                ),
             )
 
             self.db.commit()

@@ -2,13 +2,16 @@ from server.database.connection import PatientDatabase
 from typing import List, Dict
 from icalendar import Calendar, Todo
 from datetime import datetime
+from pathlib import Path
+from server.constants import DATA_DIR
 import os
 
 db = PatientDatabase()
-ICS_FILE_PATH = "/usr/src/app/data/todos.ics"
+ICS_FILE_PATH = DATA_DIR / "todos.ics"
 
 
 def update_ics_file():
+    """Update the ICS file with current todo items"""
     cal = Calendar()
     todos = get_todo_items()
     for todo in todos:
@@ -20,6 +23,8 @@ def update_ics_file():
         )
         vtodo["uid"] = f"todo-{todo['id']}@example.com"
         cal.add_component(vtodo)
+
+    ICS_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     with open(ICS_FILE_PATH, "wb") as f:
         f.write(cal.to_ical())

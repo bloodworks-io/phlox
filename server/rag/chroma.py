@@ -2,9 +2,13 @@ import fitz  # PyMuPDF
 from .semantic_chunker import ClusterSemanticChunker
 import chromadb
 from chromadb.config import Settings
-from chromadb.utils.embedding_functions import OllamaEmbeddingFunction, OpenAIEmbeddingFunction
+from chromadb.utils.embedding_functions import (
+    OllamaEmbeddingFunction,
+    OpenAIEmbeddingFunction,
+)
 import re
 import asyncio
+from server.constants import DATA_DIR
 from server.database.config import config_manager
 from server.utils.llm_client import get_llm_client, LLMProviderType
 
@@ -45,7 +49,7 @@ class ChromaManager:
 
         # Initialize Chroma client
         self.chroma_client = chromadb.PersistentClient(
-            path="/usr/src/app/data/chroma",
+            path=str(DATA_DIR / "chroma"),
             settings=Settings(anonymized_telemetry=False, allow_reset=True),
         )
         self.extracted_text_store = None
@@ -54,7 +58,9 @@ class ChromaManager:
         model_name = self.config["PRIMARY_MODEL"].lower()
         self.uses_thinking_step = "qwen3" in model_name
 
-    async def process_with_thinking(self, messages, options=None, completion_prompt=None):
+    async def process_with_thinking(
+        self, messages, options=None, completion_prompt=None
+    ):
         """
         Process a request with or without thinking step based on model.
 
@@ -75,7 +81,9 @@ class ChromaManager:
         if not self.uses_thinking_step:
             # For models that don't need thinking step
             if completion_prompt:
-                messages.append({"role": "assistant", "content": completion_prompt})
+                messages.append(
+                    {"role": "assistant", "content": completion_prompt}
+                )
             return await self.llm_client.chat(
                 model=self.config["PRIMARY_MODEL"],
                 messages=messages,
@@ -84,10 +92,7 @@ class ChromaManager:
 
         # For models that use thinking step
         thinking_messages = messages.copy()
-        thinking_messages.append({
-            "role": "assistant",
-            "content": "<think>"
-        })
+        thinking_messages.append({"role": "assistant", "content": "<think>"})
 
         thinking_options = options.copy()
         thinking_options["stop"] = ["</think>"]
@@ -95,20 +100,21 @@ class ChromaManager:
         thinking_response = await self.llm_client.chat(
             model=self.config["PRIMARY_MODEL"],
             messages=thinking_messages,
-            options=thinking_options
+            options=thinking_options,
         )
 
-        thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
+        thinking = (
+            "<think>" + thinking_response["message"]["content"] + "</think>"
+        )
 
         # Complete message with thinking
         complete_messages = messages.copy()
-        complete_messages.append({
-            "role": "assistant",
-            "content": thinking
-        })
+        complete_messages.append({"role": "assistant", "content": thinking})
 
         if completion_prompt:
-            complete_messages.append({"role": "assistant", "content": completion_prompt})
+            complete_messages.append(
+                {"role": "assistant", "content": completion_prompt}
+            )
 
         return await self.llm_client.chat(
             model=self.config["PRIMARY_MODEL"],
@@ -147,7 +153,9 @@ class ChromaManager:
             texts = chunker.split_text(self.extracted_text_store)
 
             collection = self.chroma_client.get_or_create_collection(
-                name=disease_name, embedding_function=self.embedding_model, metadata={"hnsw:space": "cosine"}
+                name=disease_name,
+                embedding_function=self.embedding_model,
+                metadata={"hnsw:space": "cosine"},
             )
 
             metadatas = [
@@ -206,8 +214,9 @@ class ChromaManager:
         """
         try:
             formatted_name = self.format_to_collection_name(collection_name)
-            collection = self.chroma_client.get_collection(name=formatted_name,
-            embedding_function=self.embedding_model)
+            collection = self.chroma_client.get_collection(
+                name=formatted_name, embedding_function=self.embedding_model
+            )
             context = collection.get(
                 where={"disease_name": formatted_name}, include=["metadatas"]
             )
@@ -232,8 +241,9 @@ class ChromaManager:
         """
         try:
             formatted_name = self.format_to_collection_name(collection_name)
-            collection = self.chroma_client.get_collection(name=formatted_name,
-            embedding_function=self.embedding_model)
+            collection = self.chroma_client.get_collection(
+                name=formatted_name, embedding_function=self.embedding_model
+            )
             result = collection.get(
                 where={"disease_name": formatted_name}, include=["metadatas"]
             )
@@ -369,7 +379,6 @@ class ChromaManager:
 
         disease_question_options = {
             **prompts["options"]["chat"],  # Unpack the chat options
-
         }
         disease_question_options["stop"] = [".", " "]
 
@@ -385,12 +394,13 @@ class ChromaManager:
             },
         ]
 
-        disease_question = await self.process_with_thinking(initial_messages, disease_question_options)
+        disease_question = await self.process_with_thinking(
+            initial_messages, disease_question_options
+        )
 
         # Reset disease_question_options
         disease_question_options = {
             **prompts["options"]["chat"],  # Unpack the chat options
-
         }
         disease_answer = disease_question["message"]["content"].strip()
         sanitized_disease_answer = disease_answer.lower().replace(" ", "_")
@@ -417,16 +427,18 @@ class ChromaManager:
             ]
 
             # Get response with structured format
-            response_format = {"type": "json_object", "schema": DiseaseNameResponse.schema()}
+            response_format = {
+                "type": "json_object",
+                "schema": DiseaseNameResponse.schema(),
+            }
 
             # For models that use thinking step
             if self.uses_thinking_step:
                 # First get thinking
                 thinking_messages = initial_messages.copy()
-                thinking_messages.append({
-                    "role": "assistant",
-                    "content": "<think>"
-                })
+                thinking_messages.append(
+                    {"role": "assistant", "content": "<think>"}
+                )
 
                 thinking_options = disease_question_options.copy()
                 thinking_options["stop"] = ["</think>"]
@@ -434,17 +446,20 @@ class ChromaManager:
                 thinking_response = await self.llm_client.chat(
                     model=self.config["PRIMARY_MODEL"],
                     messages=thinking_messages,
-                    options=thinking_options
+                    options=thinking_options,
                 )
 
-                thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
+                thinking = (
+                    "<think>"
+                    + thinking_response["message"]["content"]
+                    + "</think>"
+                )
 
                 # Complete message with thinking
                 complete_messages = initial_messages.copy()
-                complete_messages.append({
-                    "role": "assistant",
-                    "content": thinking
-                })
+                complete_messages.append(
+                    {"role": "assistant", "content": thinking}
+                )
                 print(f"HERE: {complete_messages}", flush=True)
                 disease_choice = await self.llm_client.chat(
                     model=self.config["PRIMARY_MODEL"],
@@ -489,10 +504,9 @@ class ChromaManager:
             if self.uses_thinking_step:
                 # First get thinking
                 thinking_messages = initial_messages.copy()
-                thinking_messages.append({
-                    "role": "assistant",
-                    "content": "<think>"
-                })
+                thinking_messages.append(
+                    {"role": "assistant", "content": "<think>"}
+                )
 
                 thinking_options = disease_question_options.copy()
                 thinking_options["stop"] = ["</think>"]
@@ -500,17 +514,20 @@ class ChromaManager:
                 thinking_response = await self.llm_client.chat(
                     model=self.config["PRIMARY_MODEL"],
                     messages=thinking_messages,
-                    options=thinking_options
+                    options=thinking_options,
                 )
 
-                thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
+                thinking = (
+                    "<think>"
+                    + thinking_response["message"]["content"]
+                    + "</think>"
+                )
 
                 # Complete message with thinking
                 complete_messages = initial_messages.copy()
-                complete_messages.append({
-                    "role": "assistant",
-                    "content": thinking
-                })
+                complete_messages.append(
+                    {"role": "assistant", "content": thinking}
+                )
 
                 disease_choice = await self.llm_client.chat(
                     model=self.config["PRIMARY_MODEL"],
@@ -527,8 +544,9 @@ class ChromaManager:
                     options=disease_question_options,
                 )
 
-            validated_response = DiseaseNameResponse.model_validate_json(disease_choice["message"]["content"])
-
+            validated_response = DiseaseNameResponse.model_validate_json(
+                disease_choice["message"]["content"]
+            )
 
         disease_name = validated_response.disease_name
 
@@ -572,10 +590,9 @@ class ChromaManager:
         if self.uses_thinking_step:
             # First get thinking
             thinking_messages = focus_area_messages.copy()
-            thinking_messages.append({
-                "role": "assistant",
-                "content": "<think>"
-            })
+            thinking_messages.append(
+                {"role": "assistant", "content": "<think>"}
+            )
 
             thinking_options = disease_question_options.copy()
             thinking_options["stop"] = ["</think>"]
@@ -583,17 +600,16 @@ class ChromaManager:
             thinking_response = await self.llm_client.chat(
                 model=self.config["PRIMARY_MODEL"],
                 messages=thinking_messages,
-                options=thinking_options
+                options=thinking_options,
             )
 
-            thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
+            thinking = (
+                "<think>" + thinking_response["message"]["content"] + "</think>"
+            )
 
             # Complete message with thinking
             complete_messages = focus_area_messages.copy()
-            complete_messages.append({
-                "role": "assistant",
-                "content": thinking
-            })
+            complete_messages.append({"role": "assistant", "content": thinking})
 
             focus_area_response = await self.llm_client.chat(
                 model=self.config["PRIMARY_MODEL"],
@@ -611,7 +627,9 @@ class ChromaManager:
             )
 
         # Add validation step here
-        validated_response = FocusAreaResponse.model_validate_json(focus_area_response["message"]["content"])
+        validated_response = FocusAreaResponse.model_validate_json(
+            focus_area_response["message"]["content"]
+        )
 
         focus_area = validated_response.focus_area
 
@@ -651,7 +669,9 @@ class ChromaManager:
             },
         ]
 
-        document_source_question = await self.process_with_thinking(source_question_messages, disease_question_options)
+        document_source_question = await self.process_with_thinking(
+            source_question_messages, disease_question_options
+        )
 
         source_answer = (
             document_source_question["message"]["content"].strip().lower()
@@ -677,10 +697,9 @@ class ChromaManager:
             if self.uses_thinking_step:
                 # First get thinking
                 thinking_messages = initial_messages.copy()
-                thinking_messages.append({
-                    "role": "assistant",
-                    "content": "<think>"
-                })
+                thinking_messages.append(
+                    {"role": "assistant", "content": "<think>"}
+                )
 
                 thinking_options = disease_question_options.copy()
                 thinking_options["stop"] = ["</think>"]
@@ -688,17 +707,20 @@ class ChromaManager:
                 thinking_response = await self.llm_client.chat(
                     model=self.config["PRIMARY_MODEL"],
                     messages=thinking_messages,
-                    options=thinking_options
+                    options=thinking_options,
                 )
 
-                thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
+                thinking = (
+                    "<think>"
+                    + thinking_response["message"]["content"]
+                    + "</think>"
+                )
 
                 # Complete message with thinking
                 complete_messages = initial_messages.copy()
-                complete_messages.append({
-                    "role": "assistant",
-                    "content": thinking
-                })
+                complete_messages.append(
+                    {"role": "assistant", "content": thinking}
+                )
 
                 document_source_choice = await self.llm_client.chat(
                     model=self.config["PRIMARY_MODEL"],
@@ -715,7 +737,9 @@ class ChromaManager:
                 )
 
             # Add validation
-            validated_response = DocumentSourceResponse.model_validate_json(document_source_choice["message"]["content"])
+            validated_response = DocumentSourceResponse.model_validate_json(
+                document_source_choice["message"]["content"]
+            )
             document_source = validated_response.source
         else:
             # Initial messages for "No" source path
@@ -737,10 +761,9 @@ class ChromaManager:
             if self.uses_thinking_step:
                 # First get thinking
                 thinking_messages = initial_messages.copy()
-                thinking_messages.append({
-                    "role": "assistant",
-                    "content": "<think>"
-                })
+                thinking_messages.append(
+                    {"role": "assistant", "content": "<think>"}
+                )
 
                 thinking_options = disease_question_options.copy()
                 thinking_options["stop"] = ["</think>"]
@@ -748,17 +771,20 @@ class ChromaManager:
                 thinking_response = await self.llm_client.chat(
                     model=self.config["PRIMARY_MODEL"],
                     messages=thinking_messages,
-                    options=thinking_options
+                    options=thinking_options,
                 )
 
-                thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
+                thinking = (
+                    "<think>"
+                    + thinking_response["message"]["content"]
+                    + "</think>"
+                )
 
                 # Complete message with thinking
                 complete_messages = initial_messages.copy()
-                complete_messages.append({
-                    "role": "assistant",
-                    "content": thinking
-                })
+                complete_messages.append(
+                    {"role": "assistant", "content": thinking}
+                )
 
                 document_source_response = await self.llm_client.chat(
                     model=self.config["PRIMARY_MODEL"],
@@ -775,7 +801,9 @@ class ChromaManager:
                 )
 
             # Add validation
-            validated_response = DocumentSourceResponse.model_validate_json(document_source_response["message"]["content"])
+            validated_response = DocumentSourceResponse.model_validate_json(
+                document_source_response["message"]["content"]
+            )
             document_source = validated_response.source
 
         return document_source
