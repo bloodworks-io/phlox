@@ -12,9 +12,7 @@ from server.database.rss import (
     refresh_manager,
     fetch_and_insert_initial_items,
 )
-from server.utils.rss import (
-    get_feed_title
-)
+from server.utils.rss import get_feed_title
 from server.database.todo import (
     add_todo_item,
     get_todo_items,
@@ -37,6 +35,12 @@ from server.database.config import config_manager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+@router.get("/health")
+async def health_check():
+    """Simple health check endpoint that returns OK if the server is running."""
+    return {"status": "ok"}
 
 
 @router.post("/rss/fetch")
@@ -223,7 +227,7 @@ async def get_server_info():
     """Get Ollama server information including running models."""
     try:
         config = config_manager.get_config()
-        client = AsyncClient(host=config["OLLAMA_BASE_URL"])
+        client = AsyncClient(host=config["LLM_BASE_URL"])
         process_info = await client.ps()
 
         return process_info
