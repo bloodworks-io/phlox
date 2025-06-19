@@ -39,6 +39,7 @@ __pycache__/
 build/
 dist/
 .tmp/
+main.*/
 
 # Coverage
 coverage/
