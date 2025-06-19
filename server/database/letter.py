@@ -1,10 +1,9 @@
 import logging
 from typing import List, Dict, Optional, Any
 from datetime import datetime
-from server.database.connection import PatientDatabase
+from server.database.connection import db
 from server.schemas.letter import LetterTemplate
 
-db = PatientDatabase()
 
 def update_patient_letter(patient_id: int, letter: str) -> None:
     """
@@ -22,12 +21,13 @@ def update_patient_letter(patient_id: int, letter: str) -> None:
                 updated_at = ?
             WHERE id = ?
             """,
-            (letter, datetime.now().isoformat(), patient_id)
+            (letter, datetime.now().isoformat(), patient_id),
         )
         db.commit()
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")
         raise
+
 
 async def fetch_patient_letter(patient_id: int) -> Optional[str]:
     """
@@ -41,8 +41,7 @@ async def fetch_patient_letter(patient_id: int) -> Optional[str]:
     """
     try:
         db.cursor.execute(
-            "SELECT final_letter FROM patients WHERE id = ?",
-            (patient_id,)
+            "SELECT final_letter FROM patients WHERE id = ?", (patient_id,)
         )
         row = db.cursor.fetchone()
         return row["final_letter"] if row else None
@@ -71,6 +70,7 @@ def get_letter_templates() -> List[Dict[str, Any]]:
         logging.error(f"Error fetching letter templates: {e}")
         raise
 
+
 def get_letter_template_by_id(template_id: int) -> Optional[Dict[str, Any]]:
     """
     Retrieve a specific letter template by ID.
@@ -88,13 +88,14 @@ def get_letter_template_by_id(template_id: int) -> Optional[Dict[str, Any]]:
             FROM letter_templates
             WHERE id = ?
             """,
-            (template_id,)
+            (template_id,),
         )
         row = db.cursor.fetchone()
         return dict(row) if row else None
     except Exception as e:
         logging.error(f"Error fetching letter template: {e}")
         raise
+
 
 def save_letter_template(template: LetterTemplate) -> int:
     """
@@ -112,13 +113,14 @@ def save_letter_template(template: LetterTemplate) -> int:
             INSERT INTO letter_templates (name, instructions)
             VALUES (?, ?)
             """,
-            (template.name, template.instructions)
+            (template.name, template.instructions),
         )
         db.commit()
         return db.cursor.lastrowid
     except Exception as e:
         logging.error(f"Error saving letter template: {e}")
         raise
+
 
 def update_letter_template(template_id: int, template: LetterTemplate) -> bool:
     """
@@ -139,13 +141,14 @@ def update_letter_template(template_id: int, template: LetterTemplate) -> bool:
                 instructions = ?
             WHERE id = ?
             """,
-            (template.name, template.instructions, template_id)
+            (template.name, template.instructions, template_id),
         )
         db.commit()
         return db.cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error updating letter template: {e}")
         raise
+
 
 def delete_letter_template(template_id: int) -> bool:
     """
@@ -159,14 +162,14 @@ def delete_letter_template(template_id: int) -> bool:
     """
     try:
         db.cursor.execute(
-            "DELETE FROM letter_templates WHERE id = ?",
-            (template_id,)
+            "DELETE FROM letter_templates WHERE id = ?", (template_id,)
         )
         db.commit()
         return db.cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error deleting letter template: {e}")
         raise
+
 
 def reset_default_templates() -> None:
     """
@@ -178,15 +181,27 @@ def reset_default_templates() -> None:
 
         # Insert defaults
         default_templates = [
-            ("GP Letter", "Write a brief letter to the patient's general practitioner summarizing the consultation"),
-            ("Specialist Referral", "Write a detailed referral letter to a specialist including relevant history and examination findings"),
-            ("Discharge Summary", "Write a comprehensive discharge summary including admission details, treatment, and follow-up plan"),
-            ("Brief Update", "Write a short update letter focusing only on recent changes and current plan")
+            (
+                "GP Letter",
+                "Write a brief letter to the patient's general practitioner summarizing the consultation",
+            ),
+            (
+                "Specialist Referral",
+                "Write a detailed referral letter to a specialist including relevant history and examination findings",
+            ),
+            (
+                "Discharge Summary",
+                "Write a comprehensive discharge summary including admission details, treatment, and follow-up plan",
+            ),
+            (
+                "Brief Update",
+                "Write a short update letter focusing only on recent changes and current plan",
+            ),
         ]
 
         db.cursor.executemany(
             "INSERT INTO letter_templates (name, instructions) VALUES (?, ?)",
-            default_templates
+            default_templates,
         )
         db.commit()
     except Exception as e:

@@ -1,9 +1,11 @@
 import json
 from threading import Lock
-from server.database.connection import PatientDatabase
+from server.database.connection import db
+
 
 class ConfigManager:
     """Manages configuration settings, prompts, and options."""
+
     _instance = None
     _lock = Lock()
 
@@ -11,7 +13,7 @@ class ConfigManager:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(ConfigManager, cls).__new__(cls)
-                cls._instance.db = PatientDatabase()
+                cls._instance.db = db
                 if cls._instance._is_database_empty():
                     cls._instance._initialize_database()
                 cls._instance._load_configs()
@@ -25,11 +27,7 @@ class ConfigManager:
         prompts_count = self.db.cursor.fetchone()[0]
         self.db.cursor.execute("SELECT COUNT(*) FROM options")
         options_count = self.db.cursor.fetchone()[0]
-        return (
-            config_count == 0
-            and prompts_count == 0
-            and options_count == 0
-        )
+        return config_count == 0 and prompts_count == 0 and options_count == 0
 
     def _load_configs(self):
         """Loads configurations, prompts, and options from the database."""
@@ -42,13 +40,9 @@ class ConfigManager:
             self.config[row["key"]] = json.loads(row["value"])
 
         # Load prompts
-        self.db.cursor.execute(
-            "SELECT key, system FROM prompts"
-        )
+        self.db.cursor.execute("SELECT key, system FROM prompts")
         for row in self.db.cursor.fetchall():
-            self.prompts[row["key"]] = {
-                "system": row["system"]
-            }
+            self.prompts[row["key"]] = {"system": row["system"]}
 
         # Load options
         self.options = {}
@@ -116,9 +110,11 @@ class ConfigManager:
 
         # Update only if the key is present and convert types
         for key, value in new_options.items():
-            if (key in self.options[category] or
-                key == "num_ctx" or
-                key == "temperature"):
+            if (
+                key in self.options[category]
+                or key == "num_ctx"
+                or key == "temperature"
+            ):
 
                 # Convert types before saving
                 if key == "temperature":
@@ -177,7 +173,7 @@ class ConfigManager:
             "quick_chat_2_prompt": "Any additional investigations",
             "quick_chat_3_title": "Any differentials to consider",
             "quick_chat_3_prompt": "Any differentials to consider",
-            "default_letter_template_id": None
+            "default_letter_template_id": None,
         }
 
     def update_user_settings(self, settings):
@@ -202,7 +198,7 @@ class ConfigManager:
                 settings["quick_chat_2_prompt"],
                 settings["quick_chat_3_title"],
                 settings["quick_chat_3_prompt"],
-                settings.get("default_letter_template_id")
+                settings.get("default_letter_template_id"),
             ),
         )
         self.db.commit()

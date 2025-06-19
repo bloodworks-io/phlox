@@ -2,14 +2,13 @@ import json
 import logging
 from typing import List, Dict, Optional, Any
 from datetime import datetime
-from server.database.connection import PatientDatabase
+from server.database.connection import db
 from server.database.templates import get_template_by_key, get_persistent_fields
 from server.schemas.patient import Patient
 from server.database.jobs import (
     generate_jobs_list_from_plan,
     are_all_jobs_completed,
 )
-db = PatientDatabase()
 
 
 def save_patient(patient: Patient) -> int:
@@ -19,11 +18,13 @@ def save_patient(patient: Patient) -> int:
 
         # Generate jobs list from plan if one exists
         jobs_list = []
-        if hasattr(patient, 'template_data'):
-            template_data = (json.loads(patient.template_data)
-                           if isinstance(patient.template_data, str)
-                           else patient.template_data)
-            if plan := template_data.get('plan'):
+        if hasattr(patient, "template_data"):
+            template_data = (
+                json.loads(patient.template_data)
+                if isinstance(patient.template_data, str)
+                else patient.template_data
+            )
+            if plan := template_data.get("plan"):
                 jobs_list = generate_jobs_list_from_plan(plan)
 
         # Check if all jobs are completed
@@ -31,9 +32,9 @@ def save_patient(patient: Patient) -> int:
 
         # Ensure jobs_list is properly serialized as JSON string
         jobs_list_json = (
-            json.dumps(jobs_list) if isinstance(jobs_list, (list, dict))
-            else jobs_list if isinstance(jobs_list, str)
-            else "[]"
+            json.dumps(jobs_list)
+            if isinstance(jobs_list, (list, dict))
+            else jobs_list if isinstance(jobs_list, str) else "[]"
         )
         db.cursor.execute(
             """
@@ -58,14 +59,14 @@ def save_patient(patient: Patient) -> int:
                 patient.raw_transcription,
                 patient.transcription_duration,
                 patient.process_duration,
-                getattr(patient, 'primary_condition', None),
-                getattr(patient, 'final_letter', None),
+                getattr(patient, "primary_condition", None),
+                getattr(patient, "final_letter", None),
                 jobs_list_json,  # Use generated jobs list instead of getting from patient
                 all_jobs_completed,
-                getattr(patient, 'encounter_summary', None),
+                getattr(patient, "encounter_summary", None),
                 now,
-                now
-            )
+                now,
+            ),
         )
         db.commit()
         return db.cursor.lastrowid
@@ -73,6 +74,7 @@ def save_patient(patient: Patient) -> int:
         db.db.rollback()
         logging.error(f"Error saving patient: {e}")
         raise
+
 
 def update_patient(patient: Patient) -> None:
     """
@@ -142,7 +144,7 @@ def update_patient(patient: Patient) -> None:
                     jobs_list = []
 
         # If no jobs list exists but we have patient jobs list data
-        if not jobs_list and hasattr(patient, 'jobs_list'):
+        if not jobs_list and hasattr(patient, "jobs_list"):
             try:
                 jobs_list = (
                     json.loads(patient.jobs_list)
@@ -168,11 +170,10 @@ def update_patient(patient: Patient) -> None:
 
     # Ensure jobs_list is properly serialized as JSON string
     jobs_list_json = (
-        json.dumps(jobs_list) if isinstance(jobs_list, (list, dict))
-        else jobs_list if isinstance(jobs_list, str)
-        else "[]"
+        json.dumps(jobs_list)
+        if isinstance(jobs_list, (list, dict))
+        else jobs_list if isinstance(jobs_list, str) else "[]"
     )
-
 
     # Update the database
     db.cursor.execute(
@@ -218,6 +219,7 @@ def update_patient(patient: Patient) -> None:
     )
     db.commit()
 
+
 def update_patient_reasoning(patient_id: int, reasoning_output: dict) -> None:
     """
     Update the reasoning_output field for the specified patient.
@@ -230,7 +232,7 @@ def update_patient_reasoning(patient_id: int, reasoning_output: dict) -> None:
         reasoning_output_json = json.dumps(reasoning_output)
         db.cursor.execute(
             "UPDATE patients SET reasoning_output = ? WHERE id = ?",
-            (reasoning_output_json, patient_id)
+            (reasoning_output_json, patient_id),
         )
         db.commit()
     except Exception as e:
@@ -238,10 +240,9 @@ def update_patient_reasoning(patient_id: int, reasoning_output: dict) -> None:
         logging.error(f"Error updating patient reasoning: {e}")
         raise
 
+
 def get_patients_by_date(
-    date: str,
-    template_key: Optional[str] = None,
-    include_data: bool = False
+    date: str, template_key: Optional[str] = None, include_data: bool = False
 ) -> List[Dict[str, Any]]:
     """
     Retrieve patients with encounters on a specific date.
@@ -299,7 +300,9 @@ def get_patients_by_date(
                 # Process reasoning output if present
                 if patient.get("reasoning_output"):
                     try:
-                        patient["reasoning_output"] = json.loads(patient["reasoning_output"])
+                        patient["reasoning_output"] = json.loads(
+                            patient["reasoning_output"]
+                        )
                     except json.JSONDecodeError:
                         patient["reasoning_output"] = None
 
@@ -308,6 +311,7 @@ def get_patients_by_date(
     except Exception as e:
         logging.error(f"Error fetching patients by date: {e}")
         raise
+
 
 def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -320,10 +324,7 @@ def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
         Optional[Dict[str, Any]]: Patient data if found.
     """
     try:
-        db.cursor.execute(
-            "SELECT * FROM patients WHERE id = ?",
-            (patient_id,)
-        )
+        db.cursor.execute("SELECT * FROM patients WHERE id = ?", (patient_id,))
         row = db.cursor.fetchone()
         if row:
             patient = dict(row)
@@ -332,7 +333,9 @@ def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
 
             if patient.get("reasoning_output"):
                 try:
-                    patient["reasoning_output"] = json.loads(patient["reasoning_output"])
+                    patient["reasoning_output"] = json.loads(
+                        patient["reasoning_output"]
+                    )
                 except json.JSONDecodeError:
                     patient["reasoning_output"] = None
             return patient
@@ -340,6 +343,7 @@ def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logging.error(f"Error fetching patient by ID: {e}")
         raise
+
 
 def get_patient_history(ur_number: str) -> List[Dict[str, Any]]:
     """
@@ -359,7 +363,7 @@ def get_patient_history(ur_number: str) -> List[Dict[str, Any]]:
             WHERE ur_number = ?
             ORDER BY encounter_date DESC
             """,
-            (ur_number,)
+            (ur_number,),
         )
 
         encounters = []
@@ -369,24 +373,29 @@ def get_patient_history(ur_number: str) -> List[Dict[str, Any]]:
                 continue
 
             persistent_fields = get_persistent_fields(row["template_key"])
-            template_data = json.loads(row["template_data"]) if row["template_data"] else {}
+            template_data = (
+                json.loads(row["template_data"]) if row["template_data"] else {}
+            )
 
             persistent_data = {
                 field.field_key: template_data.get(field.field_key)
                 for field in persistent_fields
             }
 
-            encounters.append({
-                "id": row["id"],
-                "encounter_date": row["encounter_date"],
-                "template_key": row["template_key"],
-                "template_data": persistent_data
-            })
+            encounters.append(
+                {
+                    "id": row["id"],
+                    "encounter_date": row["encounter_date"],
+                    "template_key": row["template_key"],
+                    "template_data": persistent_data,
+                }
+            )
 
         return encounters
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
         raise
+
 
 def search_patient_by_ur_number(ur_number: str) -> List[Dict[str, Any]]:
     """
@@ -407,7 +416,7 @@ def search_patient_by_ur_number(ur_number: str) -> List[Dict[str, Any]]:
             ORDER BY encounter_date DESC
             LIMIT 1
             """,
-            (ur_number,)
+            (ur_number,),
         )
 
         encounters = []
@@ -416,28 +425,35 @@ def search_patient_by_ur_number(ur_number: str) -> List[Dict[str, Any]]:
             template = get_template_by_key(row["template_key"])
             if template:
                 persistent_fields = get_persistent_fields(row["template_key"])
-                template_data = json.loads(row["template_data"]) if row["template_data"] else {}
+                template_data = (
+                    json.loads(row["template_data"])
+                    if row["template_data"]
+                    else {}
+                )
 
                 persistent_data = {
                     field.field_key: template_data.get(field.field_key)
                     for field in persistent_fields
                 }
 
-                encounters.append({
-                    "id": row["id"],
-                    "name": row["name"],
-                    "gender": row["gender"],
-                    "dob": row["dob"],
-                    "ur_number": row["ur_number"],
-                    "encounter_date": row["encounter_date"],
-                    "template_key": row["template_key"],
-                    "template_data": persistent_data
-                })
+                encounters.append(
+                    {
+                        "id": row["id"],
+                        "name": row["name"],
+                        "gender": row["gender"],
+                        "dob": row["dob"],
+                        "ur_number": row["ur_number"],
+                        "encounter_date": row["encounter_date"],
+                        "template_key": row["template_key"],
+                        "template_data": persistent_data,
+                    }
+                )
 
         return encounters
     except Exception as e:
         logging.error(f"Error searching patients: {e}")
         raise
+
 
 def delete_patient_by_id(patient_id: int) -> bool:
     """
@@ -450,10 +466,7 @@ def delete_patient_by_id(patient_id: int) -> bool:
         bool: True if deleted successfully.
     """
     try:
-        db.cursor.execute(
-            "DELETE FROM patients WHERE id = ?",
-            (patient_id,)
-        )
+        db.cursor.execute("DELETE FROM patients WHERE id = ?", (patient_id,))
         db.commit()
         return db.cursor.rowcount > 0
     except Exception as e:

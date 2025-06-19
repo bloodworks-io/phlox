@@ -1,9 +1,7 @@
 import traceback
 import json
 import logging
-from server.database.connection import PatientDatabase
-
-db = PatientDatabase()
+from server.database.connection import db
 
 
 def generate_jobs_list_from_plan(plan):
@@ -27,6 +25,7 @@ def generate_jobs_list_from_plan(plan):
         logging.error(f"Error generating jobs list: {e}")
         return "[]"
 
+
 def are_all_jobs_completed(jobs_list):
     """Checks if all jobs in a jobs list are completed."""
     logging.info("Checking if all jobs are completed")
@@ -42,6 +41,7 @@ def are_all_jobs_completed(jobs_list):
     except (json.JSONDecodeError, AttributeError) as e:
         logging.error(f"Error checking jobs completion: {e}")
         return False
+
 
 def get_patients_with_outstanding_jobs():
     """Retrieve patients with outstanding (incomplete) jobs.
@@ -73,7 +73,9 @@ def get_patients_with_outstanding_jobs():
             # Process reasoning output
             if patient.get("reasoning_output"):
                 try:
-                    patient["reasoning_output"] = json.loads(patient["reasoning_output"])
+                    patient["reasoning_output"] = json.loads(
+                        patient["reasoning_output"]
+                    )
                 except json.JSONDecodeError:
                     patient["reasoning_output"] = None
             patients.append(patient)
@@ -83,15 +85,16 @@ def get_patients_with_outstanding_jobs():
         logging.error(f"Error fetching patients with outstanding jobs: {e}")
         raise
 
+
 def update_patient_jobs_list(patient_id: int, jobs_list: list):
     """Updates a patient's jobs list in the database."""
     try:
         # Need to fix this; sloppy
         serializable_jobs = []
         for job in jobs_list:
-            if hasattr(job, 'dict'):
+            if hasattr(job, "dict"):
                 serializable_jobs.append(job.dict())
-            elif hasattr(job, '__dict__'):
+            elif hasattr(job, "__dict__"):
                 serializable_jobs.append(job.__dict__)
             else:
 
@@ -100,7 +103,9 @@ def update_patient_jobs_list(patient_id: int, jobs_list: list):
         serialized_jobs_list = json.dumps(serializable_jobs)
 
         # Check if all jobs are completed
-        all_jobs_completed = all(job.get("completed", False) for job in serializable_jobs)
+        all_jobs_completed = all(
+            job.get("completed", False) for job in serializable_jobs
+        )
 
         db.cursor.execute(
             "UPDATE patients SET jobs_list = ?, all_jobs_completed = ? WHERE id = ?",
@@ -112,6 +117,7 @@ def update_patient_jobs_list(patient_id: int, jobs_list: list):
     except Exception as e:
         logging.error(f"Error updating jobs list: {e}")
         raise
+
 
 def count_incomplete_jobs():
     """Counts the number of incomplete jobs across all patients."""
@@ -133,12 +139,15 @@ def count_incomplete_jobs():
 
                 # Count incomplete jobs
                 incomplete_jobs_count += sum(
-                    1 for job in jobs
+                    1
+                    for job in jobs
                     if isinstance(job, dict) and not job.get("completed", False)
                 )
 
             except json.JSONDecodeError:
-                logging.warning(f"Could not parse jobs list: {row['jobs_list']}")
+                logging.warning(
+                    f"Could not parse jobs list: {row['jobs_list']}"
+                )
                 continue
 
         logging.info(f"Total incomplete jobs: {incomplete_jobs_count}")

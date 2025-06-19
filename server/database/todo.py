@@ -1,4 +1,4 @@
-from server.database.connection import PatientDatabase
+from server.database.connection import db
 from typing import List, Dict
 from icalendar import Calendar, Todo
 from datetime import datetime
@@ -6,7 +6,6 @@ from pathlib import Path
 from server.constants import DATA_DIR
 import os
 
-db = PatientDatabase()
 ICS_FILE_PATH = DATA_DIR / "todos.ics"
 
 

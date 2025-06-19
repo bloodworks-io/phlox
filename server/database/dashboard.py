@@ -1,7 +1,5 @@
-from server.database.connection import PatientDatabase
+from server.database.connection import db
 import logging
-
-db = PatientDatabase()
 
 
 def add_rss_feed(url: str, title: str):

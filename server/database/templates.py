@@ -2,12 +2,17 @@ from typing import List, Dict, Optional, Any
 from datetime import datetime
 import json
 import logging
-from server.database.connection import PatientDatabase
-from server.schemas.templates import FormatStyle, ClinicalTemplate, TemplateField
-# Initialize database connection
-db = PatientDatabase()
+from server.database.connection import db
+from server.schemas.templates import (
+    FormatStyle,
+    ClinicalTemplate,
+    TemplateField,
+)
 
-def get_template_by_key(template_key: str, exact_match: bool = True) -> Optional[Dict[str, Any]]:
+
+def get_template_by_key(
+    template_key: str, exact_match: bool = True
+) -> Optional[Dict[str, Any]]:
     """
     Retrieve a template by its key.
 
@@ -23,11 +28,11 @@ def get_template_by_key(template_key: str, exact_match: bool = True) -> Optional
                 FROM clinical_templates
                 WHERE template_key = ?
                 """,
-                (template_key,)
+                (template_key,),
             )
         else:
             # Get latest version of template
-            base_key = template_key.split('_')[0]
+            base_key = template_key.split("_")[0]
             db.cursor.execute(
                 """
                 SELECT template_key, template_name, fields
@@ -35,7 +40,7 @@ def get_template_by_key(template_key: str, exact_match: bool = True) -> Optional
                 WHERE template_key LIKE ? AND deleted = FALSE
                 ORDER BY template_key DESC LIMIT 1
                 """,
-                (f"{base_key}_%",)
+                (f"{base_key}_%",),
             )
 
         row = db.cursor.fetchone()
@@ -43,13 +48,14 @@ def get_template_by_key(template_key: str, exact_match: bool = True) -> Optional
             return {
                 "template_key": row["template_key"],
                 "template_name": row["template_name"],
-                "fields": json.loads(row["fields"])
+                "fields": json.loads(row["fields"]),
             }
         return None
 
     except Exception as e:
         logging.error(f"Error fetching template: {e}")
         raise
+
 
 def get_all_templates() -> List[Dict[str, Any]]:
     """
@@ -66,15 +72,18 @@ def get_all_templates() -> List[Dict[str, Any]]:
         )
         templates = []
         for row in db.cursor.fetchall():
-            templates.append({
-                "template_key": row["template_key"],
-                "template_name": row["template_name"],
-                "fields": json.loads(row["fields"])
-            })
+            templates.append(
+                {
+                    "template_key": row["template_key"],
+                    "template_name": row["template_name"],
+                    "fields": json.loads(row["fields"]),
+                }
+            )
         return templates
     except Exception as e:
         logging.error(f"Error fetching templates: {e}")
         raise
+
 
 def save_template(template: ClinicalTemplate) -> str:
     """
@@ -91,7 +100,9 @@ def save_template(template: ClinicalTemplate) -> str:
     """
     try:
         if template_exists(template.template_key):
-            raise ValueError(f"Template with key {template.template_key} already exists")
+            raise ValueError(
+                f"Template with key {template.template_key} already exists"
+            )
 
         now = datetime.now().isoformat()
         db.cursor.execute(
@@ -105,8 +116,8 @@ def save_template(template: ClinicalTemplate) -> str:
                 template.template_name,
                 json.dumps([field.dict() for field in template.fields]),
                 now,
-                now
-            )
+                now,
+            ),
         )
         db.commit()
         return template.template_key
@@ -114,13 +125,14 @@ def save_template(template: ClinicalTemplate) -> str:
         logging.error(f"Error saving template: {e}")
         raise
 
+
 def update_template(template: ClinicalTemplate) -> str:
     """
     Update a template by creating a new version only if the content has changed.
     Returns the template key (either existing or new version).
     """
     try:
-        base_key = template.template_key.split('_')[0]
+        base_key = template.template_key.split("_")[0]
 
         # Get the current version of the template
         db.cursor.execute(
@@ -130,7 +142,7 @@ def update_template(template: ClinicalTemplate) -> str:
             WHERE template_key LIKE ? AND deleted = FALSE
             ORDER BY template_key DESC LIMIT 1
             """,
-            (f"{base_key}_%",)
+            (f"{base_key}_%",),
         )
         current = db.cursor.fetchone()
 
@@ -140,7 +152,9 @@ def update_template(template: ClinicalTemplate) -> str:
             new_fields = [field.dict() for field in template.fields]
 
             # Copy over previous adaptive refinement instructions
-            current_fields_map = {f["field_key"]: f for f in current_fields if "field_key" in f}
+            current_fields_map = {
+                f["field_key"]: f for f in current_fields if "field_key" in f
+            }
             for field in new_fields:
                 prev = current_fields_map.get(field.get("field_key"))
                 if prev:
@@ -154,9 +168,13 @@ def update_template(template: ClinicalTemplate) -> str:
                                 "adaptive_refinement_instructions"
                             ]
             # Only update if there are actual changes
-            if (current["template_name"] == template.template_name and
-                current_fields == new_fields):
-                return current["template_key"]  # Return existing key if no changes
+            if (
+                current["template_name"] == template.template_name
+                and current_fields == new_fields
+            ):
+                return current[
+                    "template_key"
+                ]  # Return existing key if no changes
 
         # If we get here, there are changes, so create new version
         # Check if this template is currently the default
@@ -164,8 +182,10 @@ def update_template(template: ClinicalTemplate) -> str:
             "SELECT default_template_key FROM user_settings LIMIT 1"
         )
         settings = db.cursor.fetchone()
-        is_default = settings and settings["default_template_key"] == template.template_key
-
+        is_default = (
+            settings
+            and settings["default_template_key"] == template.template_key
+        )
 
         # Get the latest version number
         db.cursor.execute(
@@ -174,14 +194,14 @@ def update_template(template: ClinicalTemplate) -> str:
             WHERE template_key LIKE ?
             ORDER BY template_key DESC LIMIT 1
             """,
-            (f"{base_key}_%",)
+            (f"{base_key}_%",),
         )
         result = db.cursor.fetchone()
 
         current_version = 0
         if result:
             try:
-                current_version = int(result['template_key'].split('_')[-1])
+                current_version = int(result["template_key"].split("_")[-1])
             except ValueError:
                 current_version = 0
 
@@ -196,7 +216,7 @@ def update_template(template: ClinicalTemplate) -> str:
             SET deleted = TRUE
             WHERE template_key LIKE ? AND deleted = FALSE
             """,
-            (f"{base_key}_%",)
+            (f"{base_key}_%",),
         )
 
         # Insert new version
@@ -212,8 +232,8 @@ def update_template(template: ClinicalTemplate) -> str:
                 template.template_name,
                 json.dumps([field.dict() for field in template.fields]),
                 now,
-                now
-            )
+                now,
+            ),
         )
 
         # If this was the default template, update the default to the new version
@@ -224,9 +244,11 @@ def update_template(template: ClinicalTemplate) -> str:
                 SET default_template_key = ?
                 WHERE default_template_key = ?
                 """,
-                (new_template_key, template.template_key)
+                (new_template_key, template.template_key),
             )
-            logging.info(f"Updated default template to new version: {new_template_key}")
+            logging.info(
+                f"Updated default template to new version: {new_template_key}"
+            )
 
         db.commit()
         return new_template_key
@@ -234,6 +256,7 @@ def update_template(template: ClinicalTemplate) -> str:
     except Exception as e:
         logging.error(f"Error updating template: {e}")
         raise
+
 
 def soft_delete_template(template_key: str) -> bool:
     """
@@ -254,13 +277,14 @@ def soft_delete_template(template_key: str) -> bool:
                 updated_at = ?
             WHERE template_key = ?
             """,
-            (now, template_key)
+            (now, template_key),
         )
         db.commit()
         return db.cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error soft deleting template: {e}")
         raise
+
 
 def restore_template(template_key: str) -> bool:
     """
@@ -281,13 +305,14 @@ def restore_template(template_key: str) -> bool:
                 updated_at = ?
             WHERE template_key = ?
             """,
-            (now, template_key)
+            (now, template_key),
         )
         db.commit()
         return db.cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error restoring template: {e}")
         raise
+
 
 def template_exists(template_key: str) -> bool:
     """
@@ -302,13 +327,14 @@ def template_exists(template_key: str) -> bool:
     try:
         db.cursor.execute(
             "SELECT COUNT(*) FROM clinical_templates WHERE template_key = ?",
-            (template_key,)
+            (template_key,),
         )
         count = db.cursor.fetchone()[0]
         return count > 0
     except Exception as e:
         logging.error(f"Error checking template existence: {e}")
         raise
+
 
 def get_template_fields(template_key: str) -> List[TemplateField]:
     """
@@ -333,6 +359,7 @@ def get_template_fields(template_key: str) -> List[TemplateField]:
         logging.error(f"Error getting template fields: {e}")
         raise
 
+
 def get_persistent_fields(template_key: str) -> List[TemplateField]:
     """
     Get only the persistent fields for a template.
@@ -350,9 +377,9 @@ def get_persistent_fields(template_key: str) -> List[TemplateField]:
         logging.error(f"Error getting persistent fields: {e}")
         raise
 
+
 def get_template_field(
-    template_key: str,
-    field_key: str
+    template_key: str, field_key: str
 ) -> Optional[TemplateField]:
     """
     Get a specific field from a template.
@@ -374,7 +401,10 @@ def get_template_field(
         logging.error(f"Error getting template field: {e}")
         raise
 
-def validate_template_data(template_key: str, template_data: Dict[str, Any]) -> bool:
+
+def validate_template_data(
+    template_key: str, template_data: Dict[str, Any]
+) -> bool:
     """
     Validate template data against template fields.
     Ensures plan is properly formatted.
@@ -394,15 +424,22 @@ def validate_template_data(template_key: str, template_data: Dict[str, Any]) -> 
                     raise ValueError("Plan is required")
 
                 # Check if plan items are numbered
-                lines = [line.strip() for line in plan_text.split('\n') if line.strip()]
+                lines = [
+                    line.strip()
+                    for line in plan_text.split("\n")
+                    if line.strip()
+                ]
                 for line in lines:
-                    if not line[0].isdigit() or '.' not in line:
-                        raise ValueError("Plan items must be numbered (e.g., '1. Action item')")
+                    if not line[0].isdigit() or "." not in line:
+                        raise ValueError(
+                            "Plan items must be numbered (e.g., '1. Action item')"
+                        )
 
         return True
     except Exception as e:
         logging.error(f"Error validating template data: {e}")
         raise
+
 
 def set_default_template(template_key: str) -> None:
     """
@@ -415,7 +452,7 @@ def set_default_template(template_key: str) -> None:
         # Verify template exists
         db.cursor.execute(
             "SELECT template_key, deleted FROM clinical_templates WHERE template_key = ?",
-            (template_key,)
+            (template_key,),
         )
         template = db.cursor.fetchone()
         logging.info(f"Found template: {dict(template) if template else None}")
@@ -423,7 +460,9 @@ def set_default_template(template_key: str) -> None:
         if not template:
             raise ValueError(f"Template with key {template_key} does not exist")
         if template["deleted"]:
-            raise ValueError(f"Template with key {template_key} is marked as deleted")
+            raise ValueError(
+                f"Template with key {template_key} is marked as deleted"
+            )
 
         # Get the first user settings record or create if none exists
         db.cursor.execute("SELECT id FROM user_settings LIMIT 1")
@@ -433,20 +472,23 @@ def set_default_template(template_key: str) -> None:
             # Update existing settings
             db.cursor.execute(
                 "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
-                (template_key, row["id"])
+                (template_key, row["id"]),
             )
         else:
             # Create new settings record
             db.cursor.execute(
                 "INSERT INTO user_settings (default_template_key) VALUES (?)",
-                (template_key,)
+                (template_key,),
             )
 
         db.commit()
-        print(f"Successfully set default template to {template_key} in database")
+        print(
+            f"Successfully set default template to {template_key} in database"
+        )
     except Exception as e:
         logging.error(f"Error setting default template: {e}")
         raise
+
 
 def get_default_template() -> Optional[Dict[str, Any]]:
     """
@@ -460,12 +502,16 @@ def get_default_template() -> Optional[Dict[str, Any]]:
             "SELECT default_template_key FROM user_settings LIMIT 1"
         )
         row = db.cursor.fetchone()
-        logging.info(f"Retrieved user settings row: {dict(row) if row else None}")
+        logging.info(
+            f"Retrieved user settings row: {dict(row) if row else None}"
+        )
 
         if row and row["default_template_key"]:
             template_key = row["default_template_key"]
             template = get_template_by_key(template_key)
-            logging.info(f"Retrieved template for key {template_key}: {template}")
+            logging.info(
+                f"Retrieved template for key {template_key}: {template}"
+            )
             return template
 
         logging.info("No default template set")
@@ -474,10 +520,9 @@ def get_default_template() -> Optional[Dict[str, Any]]:
         logging.error(f"Error getting default template: {e}")
         raise
 
+
 def update_field_adaptive_instructions(
-    template_key: str,
-    field_key: str,
-    new_instructions: List[str]
+    template_key: str, field_key: str, new_instructions: List[str]
 ) -> bool:
     """
     Update the adaptive_refinement_instructions for a specific field within a template.
@@ -497,7 +542,9 @@ def update_field_adaptive_instructions(
         # Fetch the current template data using exact match
         template_data = get_template_by_key(template_key, exact_match=True)
         if not template_data:
-            logging.error(f"Template '{template_key}' not found for updating field instructions.")
+            logging.error(
+                f"Template '{template_key}' not found for updating field instructions."
+            )
             # As per instruction: "raise a ValueError or log an error and return False"
             # Choosing to log and return False for consistency with some other functions
             # that don't directly interact with API layer HTTPExceptions.
@@ -515,9 +562,14 @@ def update_field_adaptive_instructions(
         updated_fields_list = []
 
         for field_dict in fields_list:
-            if isinstance(field_dict, dict) and field_dict.get("field_key") == field_key:
+            if (
+                isinstance(field_dict, dict)
+                and field_dict.get("field_key") == field_key
+            ):
                 field_found = True
-                field_dict["adaptive_refinement_instructions"] = new_instructions
+                field_dict["adaptive_refinement_instructions"] = (
+                    new_instructions
+                )
                 logging.info(
                     f"Updated instructions for field '{field_key}' in template '{template_key}'."
                 )
@@ -540,7 +592,7 @@ def update_field_adaptive_instructions(
             SET fields = ?, updated_at = ?
             WHERE template_key = ?
             """,
-            (updated_fields_json, current_timestamp, template_key)
+            (updated_fields_json, current_timestamp, template_key),
         )
         db.commit()
 
@@ -550,12 +602,15 @@ def update_field_adaptive_instructions(
         return True
 
     except json.JSONDecodeError as je:
-        logging.error(f"JSON decode error for template '{template_key}': {je}", exc_info=True)
+        logging.error(
+            f"JSON decode error for template '{template_key}': {je}",
+            exc_info=True,
+        )
         return False
     except Exception as e:
         logging.error(
             f"Error updating adaptive instructions for template '{template_key}', field '{field_key}': {e}",
-            exc_info=True
+            exc_info=True,
         )
         # Attempt to rollback in case of partial transaction failure if applicable, though simple UPDATEs are often atomic.
         # db.rollback() # db object does not seem to have rollback based on PatientDatabase structure

@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from server.database.connection import PatientDatabase
+from server.database.connection import db
 from server.database.patient import get_patients_by_date
 from server.utils.helpers import run_clinical_reasoning
 from server.database.config import config_manager
@@ -10,7 +10,6 @@ from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
 import random
 import asyncio
 
-db = PatientDatabase()
 logger = logging.getLogger(__name__)
 
 
@@ -57,13 +56,15 @@ async def _generate_analysis_with_llm(patient_data):
 
     try:
         if is_qwen3:
-            logger.info(f"Qwen3 model detected: {model_name}. Using thinking step for analysis.")
+            logger.info(
+                f"Qwen3 model detected: {model_name}. Using thinking step for analysis."
+            )
 
             # First, get the thinking step
             thinking_messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
-                {"role": "assistant", "content": "<think>"}
+                {"role": "assistant", "content": "<think>"},
             ]
 
             # Create thinking-specific options that stop at </think>
@@ -74,7 +75,7 @@ async def _generate_analysis_with_llm(patient_data):
             thinking_response = await client.chat(
                 model=model,
                 messages=thinking_messages,
-                options=thinking_options
+                options=thinking_options,
             )
 
             # Extract thinking content
@@ -84,7 +85,10 @@ async def _generate_analysis_with_llm(patient_data):
             full_messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
-                {"role": "assistant", "content": f"<think>{thinking}</think>{initial_assistant_content}"}
+                {
+                    "role": "assistant",
+                    "content": f"<think>{thinking}</think>{initial_assistant_content}",
+                },
             ]
 
             # Get the final response with structured format
@@ -92,7 +96,7 @@ async def _generate_analysis_with_llm(patient_data):
                 model=model,
                 messages=full_messages,
                 format=response_format,
-                options=options
+                options=options,
             )
 
         else:
@@ -107,7 +111,7 @@ async def _generate_analysis_with_llm(patient_data):
                 model=model,
                 messages=request_body,
                 format=response_format,
-                options=options
+                options=options,
             )
 
         content = response["message"]["content"].strip()
@@ -254,7 +258,9 @@ async def generate_previous_visit_summary(patient_data):
     options = config_manager.get_prompts_and_options()["options"]["secondary"]
 
     # Calculate time since last visit
-    last_visit_date = datetime.strptime(patient_data["encounter_date"], "%Y-%m-%d")
+    last_visit_date = datetime.strptime(
+        patient_data["encounter_date"], "%Y-%m-%d"
+    )
     today = datetime.now()
     days_ago = (today - last_visit_date).days
 
@@ -262,10 +268,14 @@ async def generate_previous_visit_summary(patient_data):
     note_text = ""
     if "template_data" in patient_data:
         for key, value in patient_data["template_data"].items():
-            if key != "plan" and value:  # Skip plan field as we'll use jobs_list
+            if (
+                key != "plan" and value
+            ):  # Skip plan field as we'll use jobs_list
                 # Remove markdown headers and clean up the text
                 cleaned_value = value.replace("#", "").strip()
-                note_text += f"{key.replace('_', ' ').title()}:\n{cleaned_value}\n\n"
+                note_text += (
+                    f"{key.replace('_', ' ').title()}:\n{cleaned_value}\n\n"
+                )
 
     # Parse jobs list into readable format
     formatted_jobs = "No jobs listed"
@@ -276,7 +286,9 @@ async def generate_previous_visit_summary(patient_data):
         else:
             logger.warning(f"jobs_list is not a list: {jobs_list}")
     except (json.JSONDecodeError, TypeError) as e:
-        logger.error(f"Error parsing jobs_list: {e}. jobs_list: {patient_data.get('jobs_list')}")
+        logger.error(
+            f"Error parsing jobs_list: {e}. jobs_list: {patient_data.get('jobs_list')}"
+        )
 
     # Fetch user settings
     user_settings = config_manager.get_user_settings()
@@ -314,7 +326,9 @@ async def generate_previous_visit_summary(patient_data):
 
     # Add /no_think for Qwen3 models
     if is_qwen3:
-        logger.info(f"Qwen3 model detected: {model_name}. Adding /no_think and empty think tags.")
+        logger.info(
+            f"Qwen3 model detected: {model_name}. Adding /no_think and empty think tags."
+        )
         user_prompt = f"{user_prompt} /no_think"
 
     request_body = [
@@ -325,7 +339,9 @@ async def generate_previous_visit_summary(patient_data):
 
     # For Qwen3 models, add empty think tags
     if is_qwen3:
-        request_body.append({"role": "assistant", "content": "<think>\n</think>"})
+        request_body.append(
+            {"role": "assistant", "content": "<think>\n</think>"}
+        )
 
     response_format = PreviousVisitSummary.model_json_schema()
 
@@ -334,10 +350,10 @@ async def generate_previous_visit_summary(patient_data):
             model=model,
             messages=request_body,
             options=options,
-            format=response_format
+            format=response_format,
         )
 
-        content = response['message']['content'].strip()
+        content = response["message"]["content"].strip()
 
         try:
             # Try to parse as JSON first (in case it returned structured output)
@@ -355,6 +371,7 @@ async def generate_previous_visit_summary(patient_data):
         logger.error(f"Error generating previous visit summary: {e}")
         raise
 
+
 async def run_nightly_reasoning():
     """Run reasoning analysis on patients from yesterday and today."""
     logging.info("Starting nightly reasoning job")
@@ -367,12 +384,18 @@ async def run_nightly_reasoning():
         today = datetime.now().strftime("%Y-%m-%d")
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-        patients = get_patients_by_date(yesterday, include_data=True) + get_patients_by_date(today, include_data=True)
-        logging.info(f"Found {len(patients)} patients to process for dates {yesterday} and {today}")
+        patients = get_patients_by_date(
+            yesterday, include_data=True
+        ) + get_patients_by_date(today, include_data=True)
+        logging.info(
+            f"Found {len(patients)} patients to process for dates {yesterday} and {today}"
+        )
 
         patients_to_process = [
-            patient for patient in patients
-            if not patient.get("reasoning_output") and patient.get("template_data")
+            patient
+            for patient in patients
+            if not patient.get("reasoning_output")
+            and patient.get("template_data")
         ]
 
         if not patients_to_process:
@@ -387,29 +410,30 @@ async def run_nightly_reasoning():
             async with sem:
                 try:
                     reasoning_output = await run_clinical_reasoning(
-                                    patient["template_data"],
-                                    patient["dob"],
-                                    patient["encounter_date"],
-                                    patient["gender"]
-                                )
+                        patient["template_data"],
+                        patient["dob"],
+                        patient["encounter_date"],
+                        patient["gender"],
+                    )
                     return {
                         "patient_id": patient_id,
                         "success": True,
-                        "reasoning": reasoning_output
+                        "reasoning": reasoning_output,
                     }
                 except Exception as e:
-                    logging.error(f"Error processing reasoning for patient {patient_id}: {str(e)}")
+                    logging.error(
+                        f"Error processing reasoning for patient {patient_id}: {str(e)}"
+                    )
                     return {
                         "patient_id": patient_id,
                         "success": False,
-                        "error": str(e)
+                        "error": str(e),
                     }
 
         results = await asyncio.gather(
             *[process_patient(patient) for patient in patients_to_process]
         )
 
-        db = PatientDatabase()
         successful_updates = 0
         failed_updates = 0
 
@@ -419,15 +443,14 @@ async def run_nightly_reasoning():
                 try:
                     db.cursor.execute(
                         "UPDATE patients SET reasoning_output = ? WHERE id = ?",
-                        (
-                            json.dumps(result["reasoning"].dict()),
-                            patient_id
-                        )
+                        (json.dumps(result["reasoning"].dict()), patient_id),
                     )
                     successful_updates += 1
                 except Exception as e:
                     failed_updates += 1
-                    logging.error(f"Database update failed for patient {patient_id}: {str(e)}")
+                    logging.error(
+                        f"Database update failed for patient {patient_id}: {str(e)}"
+                    )
             else:
                 failed_updates += 1
 

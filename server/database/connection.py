@@ -1,6 +1,7 @@
 import os
-import sqlcipher3 as sqlite3  # Updated import
+import sqlcipher3 as sqlite3
 import json
+import threading
 import logging
 from pathlib import Path
 from server.constants import DATA_DIR
@@ -12,6 +13,15 @@ from server.database.defaults.letters import DefaultLetters
 
 class PatientDatabase:
     SCHEMA_VERSION = 3  # Current schema version
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, db_dir=None):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(PatientDatabase, cls).__new__(cls)
+                cls._instance._initialized = False
+            return cls._instance
 
     def connect_to_database(self):
         """Establish encrypted database connection."""
@@ -134,6 +144,10 @@ class PatientDatabase:
             raise
 
     def __init__(self, db_dir=None):
+        # Only initialize once
+        if self._initialized:
+            return
+
         if db_dir is None:
             self.db_dir = str(DATA_DIR)
         else:
@@ -156,6 +170,8 @@ class PatientDatabase:
         self.run_migrations()  # Run migrations first to create tables
         self.ensure_default_templates()  # Then ensure default templates
         self._set_initial_default_template()  # Set phlox as default template
+
+        self._initialized = True  # Mark as initialized
 
     def _initialize_templates(self):
         """Create default templates if they don't exist."""
@@ -768,3 +784,6 @@ class PatientDatabase:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+
+db = PatientDatabase()

@@ -8,7 +8,7 @@ from typing import List, Dict
 # Add the parent directory of 'server' to the Python path
 sys.path.append("/usr/src/app")
 
-from server.database.connection import PatientDatabase
+from server.database.connection import db as patient_db
 from server.database.templates import save_template
 from server.schemas.templates import ClinicalTemplate, TemplateField
 from server.database.defaults.templates import DefaultTemplates
@@ -16,8 +16,6 @@ from server.database.defaults.templates import DefaultTemplates
 # Get the directory of the current script
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Create an instance of PatientDatabase
-patient_db = PatientDatabase()
 
 def generate_jobs_list_from_plan(plan: str) -> List[Dict]:
     """Generate a jobs list from a numbered plan."""
@@ -32,6 +30,7 @@ def generate_jobs_list_from_plan(plan: str) -> List[Dict]:
     ]
     return jobs_list
 
+
 def clear_database():
     """Clear existing database tables."""
     print("Clearing existing database...")
@@ -40,6 +39,7 @@ def clear_database():
     patient_db.db.commit()
     print("Database cleared.")
 
+
 def initialize_templates():
     """Initialize default templates."""
     print("Initializing default templates...")
@@ -47,10 +47,13 @@ def initialize_templates():
         template = ClinicalTemplate(
             template_key=template_data["template_key"],
             template_name=template_data["template_name"],
-            fields=[TemplateField(**field) for field in template_data["fields"]]
+            fields=[
+                TemplateField(**field) for field in template_data["fields"]
+            ],
         )
         save_template(template)
     print("Templates initialized.")
+
 
 def initialize_fake_patients():
     """Initialize database with fake patients using the Phlox template."""
@@ -74,7 +77,7 @@ def initialize_fake_patients():
             "investigations": patient_data["investigations"],
             "clinical_history": patient_data["clinical_history"],
             "impression": patient_data["impression"],
-            "plan": patient_data["plan"]
+            "plan": patient_data["plan"],
         }
 
         # Generate jobs list from the plan in template data
@@ -92,10 +95,12 @@ def initialize_fake_patients():
             "transcription_duration": round(random.uniform(5.0, 15.0), 2),
             "process_duration": round(random.uniform(10.0, 30.0), 2),
             "final_letter": f"Final letter for {patient_data['name']}'s appointment",
-            "primary_condition": patient_data.get("encounter_summary", "").split(" with ")[-1].strip("."),  # Extract primary condition from summary
+            "primary_condition": patient_data.get("encounter_summary", "")
+            .split(" with ")[-1]
+            .strip("."),  # Extract primary condition from summary
             "jobs_list": json.dumps(jobs_list),
             "all_jobs_completed": False,
-            "encounter_summary": patient_data["encounter_summary"]
+            "encounter_summary": patient_data["encounter_summary"],
         }
 
         fake_patients.append(patient)
@@ -127,12 +132,13 @@ def initialize_fake_patients():
                 patient["all_jobs_completed"],
                 patient["final_letter"],
                 patient["primary_condition"],
-                patient["encounter_summary"]
+                patient["encounter_summary"],
             ),
         )
 
     patient_db.db.commit()
     print(f"Initialized {len(fake_patients)} fake patients.")
+
 
 def main():
     try:
@@ -146,6 +152,7 @@ def main():
         raise
     finally:
         patient_db.close()
+
 
 if __name__ == "__main__":
     main()

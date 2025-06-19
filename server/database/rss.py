@@ -6,7 +6,7 @@ import logging
 import feedparser
 from ollama import AsyncClient
 import json
-from server.database.connection import PatientDatabase
+from server.database.connection import db
 from server.schemas.dashboard import RssFeed, RssItem
 from server.utils.rss import (
     generate_item_digest,
@@ -14,7 +14,6 @@ from server.utils.rss import (
     fetch_rss_feed,
 )
 
-db = PatientDatabase()
 logger = logging.getLogger(__name__)
 
 
@@ -120,7 +119,6 @@ async def fetch_and_insert_initial_items(
             *(process_item(item) for item in new_items)
         )
 
-        db = PatientDatabase()
         try:
             for result in processed_items:
                 item = result["item"]
