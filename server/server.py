@@ -31,14 +31,17 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(generate_daily_analysis, "cron", hour=3)
     scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
 
-    # Run initial analysis
-    await generate_daily_analysis()
-
     yield
 
     # Shutdown
     scheduler.shutdown()
 
+
+# Initialize config_manager and run migrations
+logger.info("Initializing database and running migrations...")
+from server.database.config import config_manager
+
+logger.info("Database initialized")
 
 app = FastAPI(
     title=APP_NAME,
@@ -54,10 +57,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Initialize config_manager and run migrations
-logger.info("Initializing database and running migrations...")
-from server.database.config import config_manager
 
 # Then load API submodules
 from server.api import (
@@ -76,24 +75,6 @@ from server.database.analysis import (
     generate_daily_analysis,
     run_nightly_reasoning,
 )
-
-
-# Start the scheduler when the app starts
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    scheduler.start()
-    # Schedule jobs
-    scheduler.add_job(generate_daily_analysis, "cron", hour=3)
-    scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
-
-    # Run initial analysis
-    await generate_daily_analysis()
-
-    yield
-
-    # Shutdown
-    scheduler.shutdown()
 
 
 @app.get("/test-db")
@@ -184,7 +165,7 @@ if __name__ == "__main__":
             timeout_keep_alive=300,
             timeout_graceful_shutdown=10,
             loop="asyncio",
-            workers=int(os.getenv("WORKERS", 4)),
+            workers=1,
             http="httptools",
             ws_ping_interval=None,
             ws_ping_timeout=None,
