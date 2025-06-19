@@ -6,6 +6,7 @@ import App from "./App";
 import "./index.css";
 import theme from "./theme";
 import { CustomToast } from "./components/common/Toast";
+import { ServerConnectionCheck } from "./components/common/ServerConnectionCheck";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
