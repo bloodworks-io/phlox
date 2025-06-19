@@ -5,6 +5,7 @@ import re
 import logging
 from typing import Dict, List, Union
 from server.utils.llm_client import AsyncLLMClient, LLMProviderType, get_llm_client
+from server.constants import add_thinking_to_schema
 from server.database.config import config_manager
 from server.utils.helpers import refine_field_content
 from server.schemas.templates import TemplateField, TemplateResponse
@@ -168,17 +169,8 @@ async def process_template_field(
         # Initialize the appropriate client based on config
         client = get_llm_client()
 
-        response_format = FieldResponse.model_json_schema()
-
-        # Check if using Qwen3 model
-        model_name = config["PRIMARY_MODEL"].lower()
-        is_qwen3 = "qwen3" in model_name
-
-        # Prepare user content, adding /no_think for Qwen3 models with Ollama
-        user_content = transcript_text
-        if is_qwen3:
-            user_content = f"{transcript_text} /no_think"
-            logger.info(f"Qwen3 model detected: {model_name}. Adding /no_think and empty think tags.")
+        base_schema = FieldResponse.model_json_schema()
+        response_format = add_thinking_to_schema(base_schema, config["PRIMARY_MODEL"])
 
         request_body = [
             {"role": "system", "content": (
@@ -186,12 +178,8 @@ async def process_template_field(
                 "Extract and return key points as a JSON array."
             )},
             {"role": "system", "content": _build_patient_context(patient_context)},
-            {"role": "user", "content": user_content},
+            {"role": "user", "content": transcript_text},
         ]
-
-        # For Qwen3 models with Ollama, add empty think tags
-        if is_qwen3:
-            request_body.append({"role": "assistant", "content": "<think>\n</think>"})
 
         response = await client.chat(
             model=config["PRIMARY_MODEL"],

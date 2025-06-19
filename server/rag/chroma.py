@@ -54,73 +54,23 @@ class ChromaManager:
         )
         self.extracted_text_store = None
 
-        # Check if using a model that requires the thinking step
-        model_name = self.config["PRIMARY_MODEL"].lower()
-        self.uses_thinking_step = "qwen3" in model_name
+    async def get_structured_response(self, messages, schema, options=None):
+        """Get structured response using the thinking-aware schema."""
+        from server.constants import add_thinking_to_schema
 
-    async def process_with_thinking(
-        self, messages, options=None, completion_prompt=None
-    ):
-        """
-        Process a request with or without thinking step based on model.
+        options = config_manager.get_prompts_and_options()["options"]["general"]
 
-        Args:
-            messages (list): The message list for the chat
-            options (dict, optional): Custom options for the API call
-            completion_prompt (str, optional): Text to add to assistant's response to complete it
+        # Add thinking support to schema
+        response_format = add_thinking_to_schema(schema, self.config["PRIMARY_MODEL"])
 
-        Returns:
-            dict: The response from the LLM
-        """
-        if options is None:
-            options = {
-                **self.prompts["options"]["chat"],  # Unpack the chat options
-                "stop": [".", "(", "\n", "/"],  # Add the stop tokens
-            }
-
-        if not self.uses_thinking_step:
-            # For models that don't need thinking step
-            if completion_prompt:
-                messages.append(
-                    {"role": "assistant", "content": completion_prompt}
-                )
-            return await self.llm_client.chat(
-                model=self.config["PRIMARY_MODEL"],
-                messages=messages,
-                options=options,
-            )
-
-        # For models that use thinking step
-        thinking_messages = messages.copy()
-        thinking_messages.append({"role": "assistant", "content": "<think>"})
-
-        thinking_options = options.copy()
-        thinking_options["stop"] = ["</think>"]
-
-        thinking_response = await self.llm_client.chat(
+        response = await self.llm_client.chat(
             model=self.config["PRIMARY_MODEL"],
-            messages=thinking_messages,
-            options=thinking_options,
-        )
-
-        thinking = (
-            "<think>" + thinking_response["message"]["content"] + "</think>"
-        )
-
-        # Complete message with thinking
-        complete_messages = messages.copy()
-        complete_messages.append({"role": "assistant", "content": thinking})
-
-        if completion_prompt:
-            complete_messages.append(
-                {"role": "assistant", "content": completion_prompt}
-            )
-
-        return await self.llm_client.chat(
-            model=self.config["PRIMARY_MODEL"],
-            messages=complete_messages,
+            messages=messages,
+            format=response_format,
             options=options,
         )
+
+        return response["message"]["content"]
 
     def commit_to_vectordb(
         self, disease_name, focus_area, document_source, filename
@@ -364,10 +314,10 @@ class ChromaManager:
         Determines the disease name from the extracted text.
 
         Args:
-            text (str): Extracted text from the document.
+            Text (str): Extracted text from the document.
 
         Returns:
-            str: Determined disease name.
+                str: Determined disease name.
         """
         from server.schemas.grammars import DiseaseNameResponse
 
@@ -383,174 +333,33 @@ class ChromaManager:
         disease_question_options["stop"] = [".", " "]
 
         # Initial disease question messages
-        initial_messages = [
+        disease_messages = [
             {
                 "role": "system",
                 "content": self.prompts["prompts"]["chat"]["system"],
             },
             {
                 "role": "user",
-                "content": f"{sample_text}\n\nIs the above block of specifically addressing any of the following list of diseases? {collection_names_string}\nAnswer Yes or No.",
+                "content": f"""Analyze this text sample and determine the disease it discusses:
+
+                Text: {sample_text}
+
+                Available collections: {collection_names_string}
+
+                If the text primarily relates to one of the available collections, use that exact name.
+                Otherwise, identify the main disease discussed in American English (no acronyms).
+                Provide the disease name in lowercase with underscores instead of spaces.""",
             },
         ]
 
-        disease_question = await self.process_with_thinking(
-            initial_messages, disease_question_options
+        disease_response = await self.get_structured_response(
+            disease_messages,
+            DiseaseNameResponse.model_json_schema()
         )
 
-        # Reset disease_question_options
-        disease_question_options = {
-            **prompts["options"]["chat"],  # Unpack the chat options
-        }
-        disease_answer = disease_question["message"]["content"].strip()
-        sanitized_disease_answer = disease_answer.lower().replace(" ", "_")
+        disease_data = DiseaseNameResponse.model_validate_json(disease_response)
 
-        if sanitized_disease_answer == "yes":
-            # Initial messages for "Yes" path
-            initial_messages = [
-                {
-                    "role": "system",
-                    "content": self.prompts["prompts"]["chat"]["system"],
-                },
-                {
-                    "role": "user",
-                    "content": f"{sample_text}\n\nIs the above block of text *primarily* related to any of the following list of diseases? {collection_names_string}\nAnswer Yes or No. ONLY",
-                },
-                {
-                    "role": "assistant",
-                    "content": "Yes",
-                },
-                {
-                    "role": "user",
-                    "content": f"Here is the list again:\n{collection_names_string}\nIdentify the disease name from this list that the text is about. Return the disease name in lowercase with underscores instead of spaces and in valid JSON.",
-                },
-            ]
-
-            # Get response with structured format
-            response_format = {
-                "type": "json_object",
-                "schema": DiseaseNameResponse.schema(),
-            }
-
-            # For models that use thinking step
-            if self.uses_thinking_step:
-                # First get thinking
-                thinking_messages = initial_messages.copy()
-                thinking_messages.append(
-                    {"role": "assistant", "content": "<think>"}
-                )
-
-                thinking_options = disease_question_options.copy()
-                thinking_options["stop"] = ["</think>"]
-
-                thinking_response = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=thinking_messages,
-                    options=thinking_options,
-                )
-
-                thinking = (
-                    "<think>"
-                    + thinking_response["message"]["content"]
-                    + "</think>"
-                )
-
-                # Complete message with thinking
-                complete_messages = initial_messages.copy()
-                complete_messages.append(
-                    {"role": "assistant", "content": thinking}
-                )
-                print(f"HERE: {complete_messages}", flush=True)
-                disease_choice = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=complete_messages,
-                    format=response_format,
-                    options=disease_question_options,
-                )
-            else:
-                disease_choice = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=initial_messages,
-                    format=response_format,
-                    options=disease_question_options,
-                )
-
-            disease_name = disease_choice["message"]["content"]["disease_name"]
-        else:
-            # Initial messages for "No" path
-            initial_messages = [
-                {
-                    "role": "system",
-                    "content": self.prompts["prompts"]["chat"]["system"],
-                },
-                {
-                    "role": "user",
-                    "content": f"{sample_text}\n\nIs the above block of text related to any of the following list of diseases? {collection_names_string}\nAnswer Yes or No.",
-                },
-                {
-                    "role": "assistant",
-                    "content": "No",
-                },
-                {
-                    "role": "user",
-                    "content": f"{sample_text}\n\nWhat is the disease that the above block of text is referring to? Identify the disease name and return it in lowercase with underscores instead of spaces. Do not use acronyms. If there is more than one disease, then respond with only the name of the main disease of the text. Respond in valid JSON.",
-                },
-            ]
-
-            # Get response with structured format
-            response_format = DiseaseNameResponse.model_json_schema()
-
-            # For models that use thinking step
-            if self.uses_thinking_step:
-                # First get thinking
-                thinking_messages = initial_messages.copy()
-                thinking_messages.append(
-                    {"role": "assistant", "content": "<think>"}
-                )
-
-                thinking_options = disease_question_options.copy()
-                thinking_options["stop"] = ["</think>"]
-
-                thinking_response = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=thinking_messages,
-                    options=thinking_options,
-                )
-
-                thinking = (
-                    "<think>"
-                    + thinking_response["message"]["content"]
-                    + "</think>"
-                )
-
-                # Complete message with thinking
-                complete_messages = initial_messages.copy()
-                complete_messages.append(
-                    {"role": "assistant", "content": thinking}
-                )
-
-                disease_choice = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=complete_messages,
-                    format=response_format,
-                    options=disease_question_options,
-                )
-
-            else:
-                disease_choice = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=initial_messages,
-                    format=response_format,
-                    options=disease_question_options,
-                )
-
-            validated_response = DiseaseNameResponse.model_validate_json(
-                disease_choice["message"]["content"]
-            )
-
-        disease_name = validated_response.disease_name
-
-        return disease_name
+        return disease_data.disease_name
 
     async def get_focus_area(self, text):
         """
@@ -567,10 +376,6 @@ class ChromaManager:
         words = text.split()
         sample_text = " ".join(words[:500])
 
-        disease_question_options = {
-            **prompts["options"]["chat"],  # Unpack the chat options
-        }
-
         # Focus area determination
         focus_area_messages = [
             {
@@ -579,61 +384,24 @@ class ChromaManager:
             },
             {
                 "role": "user",
-                "content": f"{sample_text}\n\nIdentify whether the block of text is primarily focused on guidelines, diagnosis, treatment, epidemiology, pathophysiology, prognosis, clinical features, prevention, or miscellaneous. Return the PRIAMRY focus area in lowercase, and with underscores instead of spaces. Answer in valid JSON.",
-            },
-        ]
+                "content": f"""Analyze this text and determine its primary focus area:
 
-        # Get response with structured format
-        response_format = FocusAreaResponse.model_json_schema()
+                Text: {sample_text}
 
-        # For models that use thinking step
-        if self.uses_thinking_step:
-            # First get thinking
-            thinking_messages = focus_area_messages.copy()
-            thinking_messages.append(
-                {"role": "assistant", "content": "<think>"}
+                Choose the most appropriate focus area from: guidelines, diagnosis, treatment, epidemiology, pathophysiology, prognosis, clinical_features, prevention, or miscellaneous.
+
+                Provide the focus area in lowercase with underscores instead of spaces.""",
+                },
+            ]
+
+        focus_response = await self.get_structured_response(
+                focus_area_messages,
+                FocusAreaResponse.model_json_schema()
             )
 
-            thinking_options = disease_question_options.copy()
-            thinking_options["stop"] = ["</think>"]
+        focus_data = FocusAreaResponse.model_validate_json(focus_response)
 
-            thinking_response = await self.llm_client.chat(
-                model=self.config["PRIMARY_MODEL"],
-                messages=thinking_messages,
-                options=thinking_options,
-            )
-
-            thinking = (
-                "<think>" + thinking_response["message"]["content"] + "</think>"
-            )
-
-            # Complete message with thinking
-            complete_messages = focus_area_messages.copy()
-            complete_messages.append({"role": "assistant", "content": thinking})
-
-            focus_area_response = await self.llm_client.chat(
-                model=self.config["PRIMARY_MODEL"],
-                messages=complete_messages,
-                format=response_format,
-                options=disease_question_options,
-            )
-
-        else:
-            focus_area_response = await self.llm_client.chat(
-                model=self.config["PRIMARY_MODEL"],
-                messages=focus_area_messages,
-                format=response_format,
-                options=disease_question_options,
-            )
-
-        # Add validation step here
-        validated_response = FocusAreaResponse.model_validate_json(
-            focus_area_response["message"]["content"]
-        )
-
-        focus_area = validated_response.focus_area
-
-        return focus_area
+        return focus_data.focus_area
 
     async def get_document_source(self, text):
         """
@@ -653,157 +421,31 @@ class ChromaManager:
         existing_sources = self.list_sources_from_all_collections()
         existing_sources_string = ", ".join(existing_sources)
 
-        disease_question_options = {
-            **prompts["options"]["chat"],  # Unpack the chat options
-        }
-
         # Document source determination
-        source_question_messages = [
+        source_messages = [
             {
                 "role": "system",
                 "content": self.prompts["prompts"]["chat"]["system"],
             },
             {
                 "role": "user",
-                "content": f"{sample_text}\n\nIs the source of this document one of the following? {existing_sources_string}\nAnswer Yes or No.",
-            },
-        ]
+                "content": f"""Identify the source of this document:
 
-        document_source_question = await self.process_with_thinking(
-            source_question_messages, disease_question_options
-        )
+                Text: {sample_text}
 
-        source_answer = (
-            document_source_question["message"]["content"].strip().lower()
-        )
+                Available sources: {existing_sources_string}
 
-        if source_answer == "yes":
-            # Initial messages for "Yes" source path
-            initial_messages = [
-                {
-                    "role": "system",
-                    "content": self.prompts["prompts"]["chat"]["system"],
-                },
-                {
-                    "role": "user",
-                    "content": f"{sample_text}\n\nWhich of the following sources is this document from? {existing_sources_string}\nIdentify the source name and return it in lowercase with underscores instead of spaces.",
+                If the document matches one of the available sources, use that exact name.
+                Otherwise, provide the actual source name of the document.
+                Provide the source in lowercase with underscores instead of spaces.""",
                 },
             ]
 
-            # Get response with structured format
-            response_format = DocumentSourceResponse.model_json_schema()
+        source_response = await self.get_structured_response(
+            source_messages,
+            DocumentSourceResponse.model_json_schema()
+        )
 
-            # For models that use thinking step
-            if self.uses_thinking_step:
-                # First get thinking
-                thinking_messages = initial_messages.copy()
-                thinking_messages.append(
-                    {"role": "assistant", "content": "<think>"}
-                )
+        source_data = DocumentSourceResponse.model_validate_json(source_response)
 
-                thinking_options = disease_question_options.copy()
-                thinking_options["stop"] = ["</think>"]
-
-                thinking_response = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=thinking_messages,
-                    options=thinking_options,
-                )
-
-                thinking = (
-                    "<think>"
-                    + thinking_response["message"]["content"]
-                    + "</think>"
-                )
-
-                # Complete message with thinking
-                complete_messages = initial_messages.copy()
-                complete_messages.append(
-                    {"role": "assistant", "content": thinking}
-                )
-
-                document_source_choice = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=complete_messages,
-                    format=response_format,
-                    options=disease_question_options,
-                )
-            else:
-                document_source_choice = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=initial_messages,
-                    format=response_format,
-                    options=disease_question_options,
-                )
-
-            # Add validation
-            validated_response = DocumentSourceResponse.model_validate_json(
-                document_source_choice["message"]["content"]
-            )
-            document_source = validated_response.source
-        else:
-            # Initial messages for "No" source path
-            initial_messages = [
-                {
-                    "role": "system",
-                    "content": self.prompts["prompts"]["chat"]["system"],
-                },
-                {
-                    "role": "user",
-                    "content": f"{sample_text}\n\nWhat is the source of this document? Identify the source name and return it in lowercase with underscores instead of spaces.",
-                },
-            ]
-
-            # Get response with structured format
-            response_format = DocumentSourceResponse.model_json_schema()
-
-            # For models that use thinking step
-            if self.uses_thinking_step:
-                # First get thinking
-                thinking_messages = initial_messages.copy()
-                thinking_messages.append(
-                    {"role": "assistant", "content": "<think>"}
-                )
-
-                thinking_options = disease_question_options.copy()
-                thinking_options["stop"] = ["</think>"]
-
-                thinking_response = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=thinking_messages,
-                    options=thinking_options,
-                )
-
-                thinking = (
-                    "<think>"
-                    + thinking_response["message"]["content"]
-                    + "</think>"
-                )
-
-                # Complete message with thinking
-                complete_messages = initial_messages.copy()
-                complete_messages.append(
-                    {"role": "assistant", "content": thinking}
-                )
-
-                document_source_response = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=complete_messages,
-                    format=response_format,
-                    options=disease_question_options,
-                )
-            else:
-                document_source_response = await self.llm_client.chat(
-                    model=self.config["PRIMARY_MODEL"],
-                    messages=initial_messages,
-                    format=response_format,
-                    options=disease_question_options,
-                )
-
-            # Add validation
-            validated_response = DocumentSourceResponse.model_validate_json(
-                document_source_response["message"]["content"]
-            )
-            document_source = validated_response.source
-
-        return document_source
+        return source_data.source

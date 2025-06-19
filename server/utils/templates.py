@@ -7,6 +7,7 @@ from server.database.defaults.templates import DefaultTemplates
 from server.schemas.templates import FormatStyle, ClinicalTemplate, TemplateField, ExtractedTemplate
 from server.database.config import config_manager
 from server.utils.llm_client import get_llm_client
+from server.constants import add_thinking_to_schema
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
@@ -42,61 +43,22 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
 
         base_messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Analyze this clinical note and extract template sections with their format patterns. Return as JSON:\n\n{example_note}"}
+            {"role": "user", "content": f"Analyze this clinical note and extract template sections with their format patterns. Return as JSON.Do not include any tab characters, extra whitespace, or formatting characters. Your response should be compact JSON without pretty-printing.\n\n{example_note}"}
         ]
 
-        if "qwen3" in model_name:
-            logger.info(f"Qwen3 model detected: {model_name}. Getting explicit thinking step.")
+        # Set up response format for structured output with thinking support
+        base_schema = ExtractedTemplate.model_json_schema()
+        response_format = add_thinking_to_schema(base_schema, config["PRIMARY_MODEL"])
 
-            # Create a copy of base_messages for the thinking step
-            thinking_messages = base_messages.copy()
-            thinking_messages.append({
-                "role": "assistant",
-                "content": "<think>\n"
-            })
-
-            # Make initial call for thinking only
-            thinking_options = options.copy()
-            thinking_options["stop"] = ["</think>"]
-
-            thinking_response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=thinking_messages,
-                options=thinking_options
-            )
-
-            # Extract thinking content
-            thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
-
-            # Add thinking to the main request
-            full_messages = base_messages.copy()
-            full_messages.append({
-                "role": "assistant",
-                "content": thinking
-            })
-
-
-
-            # Now make the structured output call with the thinking included
-            response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=full_messages,
-                format=ExtractedTemplate.model_json_schema(),
-                options={"temperature": 0}
-            )
-
-        else:
-            # Standard approach for other models
-            response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=base_messages,
-                format=ExtractedTemplate.model_json_schema(),
-                options={"temperature": 0}
-            )
-
-
-        content = response['message']['content']
-        extracted = ExtractedTemplate.model_validate_json(content)
+        # Generate the template analysis with structured output
+        response = await client.chat(
+            model=config["PRIMARY_MODEL"],
+            messages=base_messages,
+            format=response_format,
+        )
+        print(response,flush=True)
+        parsed_response = response["message"]["content"]
+        extracted = ExtractedTemplate.model_validate_json(parsed_response)
 
         # Convert extracted sections to TemplateField objects
         template_fields = []

@@ -7,6 +7,7 @@ from server.utils.helpers import run_clinical_reasoning
 from server.database.config import config_manager
 from server.utils.llm_client import get_llm_client
 from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
+from server.constants import add_thinking_to_schema
 import random
 import asyncio
 
@@ -47,92 +48,28 @@ async def _generate_analysis_with_llm(patient_data):
 
     initial_assistant_content = """Hi there Doctor, here's todays digest:"""
 
-    # Check if using Qwen3 model
-    model_name = model.lower()
-    is_qwen3 = "qwen3" in model_name
-
     # Create response format schema
-    response_format = PatientAnalysis.model_json_schema()
+    base_schema = PatientAnalysis.model_json_schema()
+    response_format = add_thinking_to_schema(base_schema, config["PRIMARY_MODEL"])
 
-    try:
-        if is_qwen3:
-            logger.info(
-                f"Qwen3 model detected: {model_name}. Using thinking step for analysis."
-            )
+    request_body = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+            {"role": "assistant", "content": initial_assistant_content},
+        ]
 
-            # First, get the thinking step
-            thinking_messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-                {"role": "assistant", "content": "<think>"},
-            ]
+    response = await client.chat(
+            model=model,
+            messages=request_body,
+            format=response_format,
+            options=options,
+        )
 
-            # Create thinking-specific options that stop at </think>
-            thinking_options = options.copy()
-            thinking_options["stop"] = ["</think>"]
+    parsed_response = response["message"]["content"]
+    print(parsed_response,flush=True)
+    analysis_content = PatientAnalysis.model_validate_json(parsed_response)
 
-            # Get the thinking content
-            thinking_response = await client.chat(
-                model=model,
-                messages=thinking_messages,
-                options=thinking_options,
-            )
-
-            # Extract thinking content
-            thinking = thinking_response["message"]["content"]
-
-            # Now make the full request with the thinking included
-            full_messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-                {
-                    "role": "assistant",
-                    "content": f"<think>{thinking}</think>{initial_assistant_content}",
-                },
-            ]
-
-            # Get the final response with structured format
-            response = await client.chat(
-                model=model,
-                messages=full_messages,
-                format=response_format,
-                options=options,
-            )
-
-        else:
-            # Standard approach for other models
-            request_body = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-                {"role": "assistant", "content": initial_assistant_content},
-            ]
-
-            response = await client.chat(
-                model=model,
-                messages=request_body,
-                format=response_format,
-                options=options,
-            )
-
-        content = response["message"]["content"].strip()
-
-        try:
-            # Try to parse as JSON
-            analysis_data = PatientAnalysis.model_validate_json(content)
-            cleaned_response = analysis_data.analysis
-        except Exception as e:
-            logger.warning(f"Failed to parse response as JSON: {e}")
-            # Just use content as is
-            cleaned_response = content
-
-        # Make sure it starts with the initial assistant content
-        if not cleaned_response.startswith(initial_assistant_content):
-            cleaned_response = f"{initial_assistant_content} {cleaned_response}"
-
-        return cleaned_response
-    except Exception as e:
-        logger.error(f"Error generating analysis with LLM: {e}")
-        raise
+    return analysis_content.analysis
 
 
 async def generate_daily_analysis(force=False):
@@ -308,42 +245,14 @@ async def generate_previous_visit_summary(patient_data):
     Outstanding Tasks:
     {formatted_jobs}"""
 
-    # List of possible intro phrases
-    intro_phrases = [
-        "At their last visit",
-        "During the previous consultation",
-        "In their last review",
-        f"{days_ago} days ago",
-        "At their most recent appointment",
-    ]
-
-    selected_intro = random.choice(intro_phrases)
-    initial_assistant_content = f"{selected_intro}, "
-
-    # Check if using Qwen3 model
-    model_name = model.lower()
-    is_qwen3 = "qwen3" in model_name
-
-    # Add /no_think for Qwen3 models
-    if is_qwen3:
-        logger.info(
-            f"Qwen3 model detected: {model_name}. Adding /no_think and empty think tags."
-        )
-        user_prompt = f"{user_prompt} /no_think"
+    # Create response format schema
+    base_schema = PreviousVisitSummary.model_json_schema()
+    response_format = add_thinking_to_schema(base_schema, model)
 
     request_body = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
-        {"role": "assistant", "content": initial_assistant_content},
     ]
-
-    # For Qwen3 models, add empty think tags
-    if is_qwen3:
-        request_body.append(
-            {"role": "assistant", "content": "<think>\n</think>"}
-        )
-
-    response_format = PreviousVisitSummary.model_json_schema()
 
     try:
         response = await client.chat(
@@ -353,20 +262,11 @@ async def generate_previous_visit_summary(patient_data):
             format=response_format,
         )
 
-        content = response["message"]["content"].strip()
+        parsed_response = response["message"]["content"]
+        print(parsed_response,flush=True)
+        previous_visit_summary = PreviousVisitSummary.model_validate_json(parsed_response)
 
-        try:
-            # Try to parse as JSON first (in case it returned structured output)
-            summary_data = PreviousVisitSummary.model_validate_json(content)
-            summary = f"{initial_assistant_content}{summary_data.summary}"
-        except:
-            # If not JSON, just use the raw content
-            if content.startswith(initial_assistant_content):
-                summary = content
-            else:
-                summary = f"{initial_assistant_content}{content}"
-
-        return summary
+        return previous_visit_summary.summary
     except Exception as e:
         logger.error(f"Error generating previous visit summary: {e}")
         raise

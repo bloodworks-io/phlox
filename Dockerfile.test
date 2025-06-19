@@ -22,6 +22,7 @@ COPY server/ /usr/src/app/server/
 ENV PYTHONPATH=/usr/src/app
 ENV TESTING=true
 ENV DB_ENCRYPTION_KEY=test_key_12345
+ENV DOCKER_CONTAINER=true
 
 # Create required directories
 RUN mkdir -p /usr/src/app/build /usr/src/app/data

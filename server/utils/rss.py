@@ -50,75 +50,26 @@ async def generate_item_digest(item: RssItem) -> str:
         Source: {item.feed_title}
         Content: {item.description}"""
 
-        # Check if using Qwen3 model
-        model_name = model.lower()
-        is_qwen3 = "qwen3" in model_name
+        # Set up response format for structured output with thinking support
+        base_schema = ItemDigest.model_json_schema()
+        response_format = add_thinking_to_schema(base_schema, model)
 
-        # Create response format
-        response_format = ItemDigest.model_json_schema()
+        request_body = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
 
-        if is_qwen3:
-            logger.info(f"Qwen3 model detected: {model_name}. Using thinking step for item digest.")
-
-            # First, get the thinking step
-            thinking_messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-                {"role": "assistant", "content": "<think>"}
-            ]
-
-            # Create thinking-specific options that stop at </think>
-            thinking_options = options.copy()
-            thinking_options["stop"] = ["</think>"]
-
-            # Get the thinking content
-            thinking_response = await client.chat(
-                model=model,
-                messages=thinking_messages,
-                options=thinking_options
-            )
-
-            # Extract thinking content
-            thinking = thinking_response["message"]["content"]
-
-            # Now make the full request with the thinking included
-            full_messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-                {"role": "assistant", "content": f"<think>{thinking}</think>"}
-            ]
-
-            # Get the final response with structured format
-            response = await client.chat(
-                model=model,
-                messages=full_messages,
-                format=response_format,
-                options=options
-            )
-        else:
-            # Standard approach for other models
-            request_body = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
-
-            response = await client.chat(
-                model=model,
-                messages=request_body,
-                format=response_format,
-                options=options
-            )
+        response = await client.chat(
+            model=model,
+            messages=request_body,
+            format=response_format,
+            options=options
+        )
 
         content = response["message"]["content"].strip()
+        digest_data = ItemDigest.model_validate_json(content)
 
-        try:
-            # Try to parse as JSON
-            digest_data = ItemDigest.model_validate_json(content)
-            return digest_data.digest
-        except Exception as e:
-            logger.warning(f"Failed to parse item digest response as JSON: {e}")
-            # Just use content as is
-            return content
+        return digest_data.digest
 
     except Exception as e:
         logger.error(f"Error generating item digest: {e}")
@@ -154,75 +105,26 @@ async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
 
         {article_text}"""
 
-        # Check if using Qwen3 model
-        model_name = model.lower()
-        is_qwen3 = "qwen3" in model_name
+        # Set up response format for structured output with thinking support
+        base_schema = NewsDigest.model_json_schema()
+        response_format = add_thinking_to_schema(base_schema, model)
 
-        # Create response format
-        response_format = NewsDigest.model_json_schema()
+        request_body = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
 
-        if is_qwen3:
-            logger.info(f"Qwen3 model detected: {model_name}. Using thinking step for combined digest.")
-
-            # First, get the thinking step
-            thinking_messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-                {"role": "assistant", "content": "<think>"}
-            ]
-
-            # Create thinking-specific options that stop at </think>
-            thinking_options = options.copy()
-            thinking_options["stop"] = ["</think>"]
-
-            # Get the thinking content
-            thinking_response = await client.chat(
-                model=model,
-                messages=thinking_messages,
-                options=thinking_options
-            )
-
-            # Extract thinking content
-            thinking = thinking_response["message"]["content"]
-
-            # Now make the full request with the thinking included
-            full_messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-                {"role": "assistant", "content": f"<think>{thinking}</think>"}
-            ]
-
-            # Get the final response with structured format
-            response = await client.chat(
-                model=model,
-                messages=full_messages,
-                format=response_format,
-                options=options
-            )
-        else:
-            # Standard approach for other models
-            request_body = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
-
-            response = await client.chat(
-                model=model,
-                messages=request_body,
-                format=response_format,
-                options=options
-            )
+        response = await client.chat(
+            model=model,
+            messages=request_body,
+            format=response_format,
+            options=options
+        )
 
         content = response["message"]["content"].strip()
+        digest_data = NewsDigest.model_validate_json(content)
 
-        try:
-            # Try to parse as JSON
-            digest_data = NewsDigest.model_validate_json(content)
-            return digest_data.digest
-        except Exception as e:
-            logger.warning(f"Failed to parse combined digest response as JSON: {e}")
-            # Just use content as is
-            return content
+        return digest_data.digest
 
     except Exception as e:
         logger.error(f"Error generating combined digest: {e}")

@@ -1,9 +1,11 @@
 import random
 import logging
+import json
 from fastapi import HTTPException
 from server.database.config import config_manager
 from server.schemas.grammars import LetterDraft
 from server.utils.llm_client import get_llm_client
+from server.constants import add_thinking_to_schema
 
 async def generate_letter_content(
     patient_name: str,
@@ -58,46 +60,12 @@ async def generate_letter_content(
             context_messages = context.copy()
             request_body.extend(context_messages)
 
-        # Check if using Qwen3 model
-        model_name = config["PRIMARY_MODEL"].lower()
-        thinking = ""
-
-        if "qwen3" in model_name:
-            print(f"Qwen3 model detected: {model_name}. Getting explicit thinking step.", flush=True)
-
-            # Create a copy of request_body for the thinking step
-            thinking_messages = request_body.copy()
-            thinking_messages.append(user_message)
-            thinking_messages.append({
-                "role": "assistant",
-                "content": "<think>"
-            })
-
-            # Make initial call for thinking only
-            thinking_options = prompts["options"]["general"].copy()
-            thinking_options["stop"] = ["</think>"]
-
-            thinking_response = await llm_client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=thinking_messages,
-                options=thinking_options
-            )
-
-            # Extract thinking content
-            thinking = thinking_response["message"]["content"] + "</think>"
-
         # Add user message to the main request body
         request_body.append(user_message)
 
-        # If we have thinking, add it to the conversation
-        if thinking:
-            request_body.append({
-                "role": "assistant",
-                "content": thinking
-            })
-
-        # Set up response format for structured output
-        response_format = LetterDraft.model_json_schema()
+        # Set up response format for structured output with thinking support
+        base_schema = LetterDraft.model_json_schema()
+        response_format = add_thinking_to_schema(base_schema, config["PRIMARY_MODEL"])
 
         # Letter options
         options = prompts["options"]["general"].copy() # General options
@@ -112,34 +80,16 @@ async def generate_letter_content(
         )
 
         # Parse the JSON response
-        letter_response = LetterDraft.model_validate_json(response["message"]["content"])
+        parsed_response = response["message"]["content"]
+        letter_content = LetterDraft.model_validate_json(parsed_response)
 
-        return letter_response.content.strip()
+        return letter_content.content
 
     except Exception as e:
         logging.error(f"Error generating letter content: {e}")
         raise HTTPException(
             status_code=500, detail=f"Error generating letter content: {e}"
         )
-
-
-def _choose_random_pleasantry():
-    """
-    Selects a random pleasantry from a predefined list.
-
-    Returns:
-        str: A randomly chosen pleasantry.
-    """
-    pleasantries = [
-        "Kind regards",
-        "Best wishes",
-        "Sincerely",
-        "Warm regards",
-        "Yours truly",
-        "With best regards",
-    ]
-    return pleasantries[random.randint(0, len(pleasantries) - 1)]
-
 
 def _format_name(patient_name):
     """

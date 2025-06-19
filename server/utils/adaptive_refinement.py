@@ -6,7 +6,6 @@ import Levenshtein
 
 from server.utils.llm_client import get_llm_client
 from server.database.config import config_manager
-from server.schemas.grammars import RefinementInstructions, RefinedContent
 
 logger = logging.getLogger(__name__)
 
@@ -123,44 +122,7 @@ async def generate_adaptive_refinement_suggestions(
     ]
 
     try:
-        # Handle Qwen3 thinking step if needed
-        thinking = ""
-        model_name_lower = model_name.lower()
-
-        if "qwen3" in model_name_lower:
-            logger.info(f"Qwen3 model detected: {model_name}. Getting explicit thinking step.")
-            thinking_messages = base_messages.copy()
-            thinking_messages.append({
-                "role": "assistant",
-                "content": "<think>\n"
-            })
-
-            thinking_options = options.copy()
-            thinking_options["stop"] = ["</think>"]
-
-            thinking_response = await client.chat(
-                model=model_name,
-                messages=thinking_messages,
-                options=thinking_options
-            )
-
-            thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
-
-        # Make tool call to manage instructions
-        if thinking:
-            messages_with_thinking = base_messages.copy()
-            messages_with_thinking.append({
-                "role": "assistant",
-                "content": thinking
-            })
-            response = await client.chat(
-                model=model_name,
-                messages=messages_with_thinking,
-                tools=tools,
-                options=options
-            )
-        else:
-            response = await client.chat(
+        response = await client.chat(
                 model=model_name,
                 messages=base_messages,
                 tools=tools,

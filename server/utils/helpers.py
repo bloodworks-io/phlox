@@ -5,6 +5,7 @@ from server.utils.llm_client import AsyncLLMClient, LLMProviderType, get_llm_cli
 from server.schemas.patient import Patient, Condition
 from server.database.config import config_manager
 from server.schemas.grammars import ClinicalReasoning
+from server.constants import add_thinking_to_schema
 import logging
 import asyncio
 import re
@@ -122,7 +123,7 @@ async def run_clinical_reasoning(template_data: dict, dob: str, encounter_date: 
     reasoning_options = prompts["options"].get("reasoning", {})
     reasoning_prompt = prompts["prompts"]["reasoning"]["system"]
 
-    # Format the clinical note more naturally
+    # Format the clinical note
     formatted_note = ""
     for section_name, content in template_data.items():
         if content:
@@ -149,72 +150,14 @@ async def run_clinical_reasoning(template_data: dict, dob: str, encounter_date: 
 
     The key is to provide additional clinical considerations to the doctor, so feel free to take a critical eye to the clinician's perspective if appropriate."""
 
-    # Create a modified schema that doesn't include the thinking field for the final response
-    # We'll add it back later for Qwen models
-    modified_schema = {
-        "type": "object",
-        "properties": {
-            "summary": {"type": "string"},
-            "differentials": {"type": "array", "items": {"type": "string"}},
-            "investigations": {"type": "array", "items": {"type": "string"}},
-            "clinical_considerations": {"type": "array", "items": {"type": "string"}}
-        },
-        "required": ["summary", "differentials", "investigations", "clinical_considerations"]
-    }
-
-    # Check if using Qwen3 model
-    model_name = config["REASONING_MODEL"].lower()
-    thinking = ""
-
-    if "qwen3" in model_name:
-        logger.info(f"Qwen3 model detected: {model_name}. Getting explicit thinking step.")
-
-        # First message for thinking only
-        thinking_messages = [
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": "<think>"}
-        ]
-
-        # Make initial call for thinking only
-        thinking_options = reasoning_options.copy()
-        thinking_options["stop"] = ["</think>"]
-
-        thinking_response = await client.chat(
-            model=config["REASONING_MODEL"],
-            messages=thinking_messages,
-            options=thinking_options
-        )
-
-        # Extract thinking content
-        thinking = thinking_response["message"]["content"]
-
-        # Now make the structured output call with thinking included
-        response = await client.chat(
-            model=config["REASONING_MODEL"],
-            messages=[
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": f"<think>{thinking}</think>"}
-            ],
-            format=modified_schema,
-            options=reasoning_options
-        )
-
-        # Create the full response with thinking included
-        result_dict = json.loads(response["message"]["content"])
-        result_dict["thinking"] = thinking
-
-        # Convert to ClinicalReasoning model
-        return ClinicalReasoning.model_validate(result_dict)
-    else:
-        # Standard approach for other models
-        response = await client.chat(
+    response = await client.chat(
             model=config["REASONING_MODEL"],
             messages=[{"role": "user", "content": prompt}],
             format=ClinicalReasoning.model_json_schema(),
             options=reasoning_options
         )
 
-        return ClinicalReasoning.model_validate_json(response.message.content)
+    return ClinicalReasoning.model_validate_json(response.message.content)
 
 def calculate_age(dob: str, encounter_date: str = None) -> int:
     """
@@ -280,68 +223,25 @@ async def refine_field_content(
         options = prompts["options"]["general"]
 
         # Determine format details
-        format_details = determine_format_details(field, prompts)
+        format_details = determine_format_details(field, prompts, config["PRIMARY_MODEL"])
 
         # Build system prompt with style example if available
         system_prompt = build_system_prompt(field, format_details, prompts)
 
-        # Create base messages for all models
         base_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": content}
         ]
 
-        # Check if using Qwen3 model
-        model_name = config["PRIMARY_MODEL"].lower()
-        thinking = ""
 
-        if "qwen3" in model_name:
-            logger.info(f"Qwen3 model detected: {model_name}. Getting explicit thinking step.")
-
-            # Create a copy of base_messages for the thinking step
-            thinking_messages = base_messages.copy()
-            thinking_messages.append({
-                "role": "assistant",
-                "content": "<think>\n"
-            })
-
-            # Make initial call for thinking only
-            thinking_options = options.copy()
-            thinking_options["stop"] = ["</think>"]
-
-            thinking_response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=thinking_messages,
-                options=thinking_options
-            )
-
-            # Extract thinking content
-            thinking = "<think>" + thinking_response["message"]["content"] + "</think>"
-
-            # Add thinking to the main request
-            full_messages = base_messages.copy()
-            full_messages.append({
-                "role": "assistant",
-                "content": thinking
-            })
-
-            # Now make the structured output call with the thinking included
-            response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=full_messages,
-                format=format_details["response_format"],
-                options=options
-            )
-        else:
-            # Standard approach for other models
-            response = await client.chat(
+        response = await client.chat(
                 model=config["PRIMARY_MODEL"],
                 messages=base_messages,
                 format=format_details["response_format"],
                 options=options
             )
 
-        logger.debug(f"Response received for field {field.field_key}")
+        logger.info(f"Response received for field {field.field_key}: {response}")
 
         # Format the response appropriately
         return format_refined_response(response, field, format_details)
@@ -350,8 +250,9 @@ async def refine_field_content(
         logger.error(f"Error refining field {field.field_key}: {e}")
         raise
 
-def determine_format_details(field: TemplateField, prompts: dict) -> dict:
+def determine_format_details(field: TemplateField, prompts: dict, model_name: str) -> dict:
     """Determine response format and format type based on field schema."""
+
     format_type = None
     if field.format_schema and "type" in field.format_schema:
         format_type = field.format_schema["type"]
@@ -359,7 +260,7 @@ def determine_format_details(field: TemplateField, prompts: dict) -> dict:
         if format_type == "narrative":
             return {
                 "format_type": "narrative",
-                "response_format": NarrativeResponse.model_json_schema(),
+                "response_format": add_thinking_to_schema(base_schema, model_name),
                 "base_prompt": "Format the following content as a cohesive narrative paragraph."
             }
 
@@ -370,9 +271,10 @@ def determine_format_details(field: TemplateField, prompts: dict) -> dict:
     elif format_type == "bullet":
         format_guidance = "Format the key points as a bulleted list (•) prefixes)."
 
+    base_schema = RefinedResponse.model_json_schema()
     return {
         "format_type": format_type,
-        "response_format": RefinedResponse.model_json_schema(),
+        "response_format": add_thinking_to_schema(base_schema, model_name),
         "base_prompt": prompts["prompts"]["refinement"]["system"],
         "format_guidance": format_guidance
     }
