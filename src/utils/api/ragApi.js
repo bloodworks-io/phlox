@@ -1,85 +1,106 @@
 // API functions for RAG related operations.
-import { handleApiRequest } from "../helpers/apiHelpers";
+import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
+import { buildApiUrl } from "../helpers/apiConfig";
 
 export const ragApi = {
-    fetchCollections: () => {
-        return handleApiRequest({
-            apiCall: () => fetch("/api/rag/files"),
-            errorMessage: "Failed to fetch collections",
-        });
-    },
+  fetchCollections: async () => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/rag/files");
+        return universalFetch(url);
+      },
+      errorMessage: "Failed to fetch collections",
+    });
+  },
 
-    fetchCollectionFiles: (collectionName) => {
-        return handleApiRequest({
-            apiCall: () => fetch(`/api/rag/collection_files/${collectionName}`),
-            errorMessage: `Error loading files for ${collectionName}`,
-        });
-    },
+  fetchCollectionFiles: async (collectionName) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(
+          `/api/rag/collection_files/${collectionName}`,
+        );
+        return universalFetch(url);
+      },
+      errorMessage: `Error loading files for ${collectionName}`,
+    });
+  },
 
-    renameCollection: (oldName, newName) => {
-        return handleApiRequest({
-            apiCall: () =>
-                fetch("/api/rag/modify", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        old_name: oldName,
-                        new_name: newName,
-                    }),
-                }),
-            successMessage: `Successfully renamed to ${newName}`,
-            errorMessage: "Failed to rename collection",
+  renameCollection: async (oldName, newName) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/rag/modify");
+        return universalFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            old_name: oldName,
+            new_name: newName,
+          }),
         });
-    },
+      },
+      successMessage: `Successfully renamed to ${newName}`,
+      errorMessage: "Failed to rename collection",
+    });
+  },
 
-    deleteCollection: (collectionName) => {
-        return handleApiRequest({
-            apiCall: () =>
-                fetch(`/api/rag/delete-collection/${collectionName}`, {
-                    method: "DELETE",
-                }),
-            successMessage: `Successfully deleted ${collectionName}`,
-            errorMessage: "Failed to delete collection",
+  deleteCollection: async (collectionName) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(
+          `/api/rag/delete-collection/${collectionName}`,
+        );
+        return universalFetch(url, {
+          method: "DELETE",
         });
-    },
+      },
+      successMessage: `Successfully deleted ${collectionName}`,
+      errorMessage: "Failed to delete collection",
+    });
+  },
 
-    deleteFile: (collectionName, fileName) => {
-        return handleApiRequest({
-            apiCall: () =>
-                fetch("/api/rag/delete-file", {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        collection_name: collectionName,
-                        file_name: fileName,
-                    }),
-                }),
-            successMessage: `Successfully deleted ${fileName}`,
-            errorMessage: "Failed to delete file",
+  deleteFile: async (collectionName, fileName) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/rag/delete-file");
+        return universalFetch(url, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            collection_name: collectionName,
+            file_name: fileName,
+          }),
         });
-    },
+      },
+      successMessage: `Successfully deleted ${fileName}`,
+      errorMessage: "Failed to delete file",
+    });
+  },
 
-    extractPdfInfo: (formData) => {
-        return handleApiRequest({
-            apiCall: () =>
-                fetch("/api/rag/extract-pdf-info", {
-                    method: "POST",
-                    body: formData,
-                }),
-            errorMessage: "Failed to extract PDF information",
+  extractPdfInfo: async (formData) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/rag/extract-pdf-info");
+        return universalFetch(url, {
+          method: "POST",
+          body: formData,
         });
-    },
+      },
+      errorMessage: "Failed to extract PDF information",
+    });
+  },
 
-    commitToDatabase: (data) => {
-        return handleApiRequest({
-            apiCall: () =>
-                fetch("/api/rag/commit-to-vectordb", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data),
-                }),
-            successMessage: "Successfully committed to database",
-            errorMessage: "Failed to commit data to database",
+  commitToDatabase: async (data) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/rag/commit-to-vectordb");
+        return universalFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
         });
-    },
+      },
+      successMessage: "Successfully committed to database",
+      errorMessage: "Failed to commit data to database",
+    });
+  },
 };

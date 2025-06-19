@@ -1,108 +1,131 @@
-import { handleApiRequest } from "../helpers/apiHelpers";
+import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
+import { buildApiUrl } from "../helpers/apiConfig";
 
 export const letterApi = {
-    fetchLetterTemplates: () =>
-        handleApiRequest({
-            apiCall: () => fetch("/api/letter/templates"),
-            errorMessage: "Failed to fetch letter templates",
-        }),
+  fetchLetterTemplates: async () =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/letter/templates");
+        return universalFetch(url);
+      },
+      errorMessage: "Failed to fetch letter templates",
+    }),
 
-    getLetterTemplate: (templateId) =>
-        handleApiRequest({
-            apiCall: () => fetch(`/api/letter/templates/${templateId}`),
-            errorMessage: "Failed to fetch letter template",
-        }),
+  getLetterTemplate: async (templateId) =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(`/api/letter/templates/${templateId}`);
+        return universalFetch(url);
+      },
+      errorMessage: "Failed to fetch letter template",
+    }),
 
-    createLetterTemplate: (template) =>
-        handleApiRequest({
-            apiCall: () =>
-                fetch("/api/letter/templates", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(template),
-                }),
-            successMessage: "Letter template created successfully",
-            errorMessage: "Failed to create letter template",
-        }),
+  createLetterTemplate: async (template) =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/letter/templates");
+        return universalFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(template),
+        });
+      },
+      successMessage: "Letter template created successfully",
+      errorMessage: "Failed to create letter template",
+    }),
 
-    updateLetterTemplate: (templateId, template) =>
-        handleApiRequest({
-            apiCall: () =>
-                fetch(`/api/letter/templates/${templateId}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(template),
-                }),
-            successMessage: "Letter template updated successfully",
-            errorMessage: "Failed to update letter template",
-        }),
+  updateLetterTemplate: async (templateId, template) =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(`/api/letter/templates/${templateId}`);
+        return universalFetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(template),
+        });
+      },
+      successMessage: "Letter template updated successfully",
+      errorMessage: "Failed to update letter template",
+    }),
 
-    deleteLetterTemplate: (templateId) =>
-        handleApiRequest({
-            apiCall: () =>
-                fetch(`/api/letter/templates/${templateId}`, {
-                    method: "DELETE",
-                }),
-            successMessage: "Letter template deleted successfully",
-            errorMessage: "Failed to delete letter template",
-        }),
+  deleteLetterTemplate: async (templateId) =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(`/api/letter/templates/${templateId}`);
+        return universalFetch(url, {
+          method: "DELETE",
+        });
+      },
+      successMessage: "Letter template deleted successfully",
+      errorMessage: "Failed to delete letter template",
+    }),
 
-    resetLetterTemplates: () =>
-        handleApiRequest({
-            apiCall: () =>
-                fetch("/api/letter/letter/templates/reset", {
-                    method: "POST",
-                }),
-            successMessage: "Letter templates reset to defaults",
-            errorMessage: "Failed to reset letter templates",
-        }),
+  resetLetterTemplates: async () =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/letter/letter/templates/reset");
+        return universalFetch(url, {
+          method: "POST",
+        });
+      },
+      successMessage: "Letter templates reset to defaults",
+      errorMessage: "Failed to reset letter templates",
+    }),
 
-    generateLetter: async ({
-        patientName,
-        gender,
-        template_data,
-        context,
-        additional_instruction,
-    }) => {
-        console.log("Letter Generation Request:", {
+  generateLetter: async ({
+    patientName,
+    gender,
+    template_data,
+    context,
+    additional_instruction,
+  }) => {
+    console.log("Letter Generation Request:", {
+      patientName,
+      gender,
+      template_data,
+      context,
+      additional_instruction,
+    });
+
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/letter/generate");
+        return universalFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             patientName,
             gender,
             template_data,
-            context,
             additional_instruction,
+            context,
+          }),
         });
+      },
+      errorMessage: "Failed to generate letter",
+    });
+  },
 
-        return handleApiRequest({
-            apiCall: () =>
-                fetch("/api/letter/generate", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        patientName,
-                        gender,
-                        template_data,
-                        additional_instruction,
-                        context,
-                    }),
-                }),
-            errorMessage: "Failed to generate letter",
+  fetchLetter: async (patientId) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(
+          `/api/letter/fetch-letter?patientId=${patientId}`,
+        );
+        return universalFetch(url);
+      },
+    });
+  },
+
+  saveLetter: async (patientId, content) =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/letter/save");
+        return universalFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ patientId, letter: content }),
         });
-    },
-
-    fetchLetter: async (patientId) => {
-        return handleApiRequest({
-            apiCall: () =>
-                fetch(`/api/letter/fetch-letter?patientId=${patientId}`),
-        });
-    },
-
-    saveLetter: (patientId, content) =>
-        handleApiRequest({
-            apiCall: () =>
-                fetch("/api/letter/save", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ patientId, letter: content }),
-                }),
-        }),
+      },
+    }),
 };
