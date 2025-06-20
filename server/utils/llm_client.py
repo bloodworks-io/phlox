@@ -110,9 +110,9 @@ class AsyncLLMClient:
         """
         Send a chat completion request with structured output, handling thinking models properly.
 
-        For thinking models like Qwen, this does a 2-call approach:
-        1. First call to get thinking with <think> tags
-        2. Second call with thinking + structured output
+        For thinking models:
+        - Ollama: 3-step approach with explicit transition
+        - Other providers: 2-call approach
 
         For non-thinking models, this does a single structured output call.
 
@@ -135,7 +135,68 @@ class AsyncLLMClient:
             )
             return response["message"]["content"]
 
-        # Thinking models: 2-call approach
+        # Thinking models: different approaches for different providers
+        if self.provider_type == LLMProviderType.OLLAMA:
+            return await self._ollama_thinking_structured_output(model, messages, schema, options)
+        else:
+            return await self._openai_thinking_structured_output(model, messages, schema, options)
+
+    async def _ollama_thinking_structured_output(self,
+                                               model: str,
+                                               messages: List[Dict[str, str]],
+                                               schema: Dict,
+                                               options: Optional[Dict] = None) -> str:
+        """
+        Handle thinking models for Ollama with explicit transition.
+        """
+        # First call: get thinking
+        thinking_messages = messages.copy()
+        thinking_messages.append({
+            "role": "assistant",
+            "content": "<think>"
+        })
+
+        thinking_options = (options or {}).copy()
+        thinking_options["stop"] = ["</think>"]
+
+        thinking_response = await self.chat(
+            model=model,
+            messages=thinking_messages,
+            options=thinking_options
+        )
+
+        thinking_content = "<think>" + thinking_response["message"]["content"] + "</think>"
+
+        # Build conversation with explicit transition for Ollama
+        final_messages = messages.copy()
+        final_messages.append({
+            "role": "assistant",
+            "content": thinking_content + "\n\nI have a plan for how I will tackle this problem."
+        })
+        final_messages.append({
+            "role": "user",
+            "content": "Please go ahead. Answer in JSON format according to the specified schema."
+        })
+
+        final_response = await self.chat(
+            model=model,
+            messages=final_messages,
+            format=schema,
+            options=options
+        )
+
+        return final_response["message"]["content"]
+
+    async def _openai_thinking_structured_output(self,
+                                               model: str,
+                                               messages: List[Dict[str, str]],
+                                               schema: Dict,
+                                               options: Optional[Dict] = None) -> str:
+        """
+        Handle thinking models for OpenAI-compatible providers.
+
+        Uses a 2-call approach.
+        """
         # First call: get thinking
         thinking_messages = messages.copy()
         thinking_messages.append({
@@ -167,7 +228,7 @@ class AsyncLLMClient:
             format=schema,
             options=options
         )
-
+        print(final_response,flush=True)
         return final_response["message"]["content"]
 
     async def chat(self,
