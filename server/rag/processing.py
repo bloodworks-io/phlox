@@ -7,7 +7,6 @@ import asyncio
 from server.database.config import config_manager
 from server.schemas.grammars import ClinicalSuggestionList
 from server.utils.llm_client import get_llm_client
-from server.constants import add_thinking_to_schema
 
 # Initialize ConfigManager
 config = config_manager.get_config()
@@ -65,25 +64,20 @@ async def generate_specialty_suggestions():
             {"role": "user", "content": suggestion_prompt},
         ]
 
-        # Use structured output with thinking support
-        response_format = add_thinking_to_schema(
-            ClinicalSuggestionList.model_json_schema(),
-            config["PRIMARY_MODEL"]
-        )
-
-        response = await client.chat(
+        # Use chat_with_structured_output instead of manual chat + format
+        response_json = await client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],
             messages=messages,
-            format=response_format,
+            schema=ClinicalSuggestionList.model_json_schema(),
             options={
                 **prompts["options"]["secondary"],
                 "temperature": "0.7",
             },
         )
 
-        suggestions = ClinicalSuggestionList.model_validate_json(
-            response["message"]["content"]
-        )
+        suggestions = ClinicalSuggestionList.model_validate_json(response_json)
+
+        return [s.question for s in suggestions.suggestions]
 
         return [s.question for s in suggestions.suggestions]
 

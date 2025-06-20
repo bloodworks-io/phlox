@@ -5,7 +5,6 @@ import re
 import logging
 from typing import Dict, List, Union
 from server.utils.llm_client import AsyncLLMClient, LLMProviderType, get_llm_client
-from server.constants import add_thinking_to_schema
 from server.database.config import config_manager
 from server.utils.helpers import refine_field_content
 from server.schemas.templates import TemplateField, TemplateResponse
@@ -170,7 +169,6 @@ async def process_template_field(
         client = get_llm_client()
 
         base_schema = FieldResponse.model_json_schema()
-        response_format = add_thinking_to_schema(base_schema, config["PRIMARY_MODEL"])
 
         request_body = [
             {"role": "system", "content": (
@@ -181,17 +179,16 @@ async def process_template_field(
             {"role": "user", "content": transcript_text},
         ]
 
-        response = await client.chat(
+        # Use chat_with_structured_output instead of chat
+        response_json = await client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],
             messages=request_body,
-            format=response_format,
+            schema=base_schema,
             options={**options, "temperature": 0}
         )
 
-        # Extract content from response based on provider type
-        content = response['message']['content']
-
-        field_response = FieldResponse.model_validate_json(content)
+        # Parse the JSON response directly
+        field_response = FieldResponse.model_validate_json(response_json)
 
         # Convert key points into a nicely formatted string
         formatted_content = "\n".join(f"• {point.strip()}" for point in field_response.key_points)

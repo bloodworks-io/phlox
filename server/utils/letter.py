@@ -5,7 +5,6 @@ from fastapi import HTTPException
 from server.database.config import config_manager
 from server.schemas.grammars import LetterDraft
 from server.utils.llm_client import get_llm_client
-from server.constants import add_thinking_to_schema
 
 async def generate_letter_content(
     patient_name: str,
@@ -65,24 +64,21 @@ async def generate_letter_content(
 
         # Set up response format for structured output with thinking support
         base_schema = LetterDraft.model_json_schema()
-        response_format = add_thinking_to_schema(base_schema, config["PRIMARY_MODEL"])
 
         # Letter options
         options = prompts["options"]["general"].copy() # General options
         options["temperature"] = prompts["options"]["letter"]["temperature"] # User defined temperature
 
         # Generate the letter content with structured output
-        response = await llm_client.chat(
+        response_json = await llm_client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],
             messages=request_body,
-            format=response_format,
+            schema=base_schema,
             options=options
         )
 
         # Parse the JSON response
-        parsed_response = response["message"]["content"]
-        letter_content = LetterDraft.model_validate_json(parsed_response)
-
+        letter_content = LetterDraft.model_validate_json(response_json)
         return letter_content.content
 
     except Exception as e:

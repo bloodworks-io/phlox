@@ -11,6 +11,49 @@ class LLMProviderType(Enum):
     OLLAMA = "ollama"
     OPENAI_COMPATIBLE = "openai"
 
+# Models that support/require thinking steps
+THINKING_MODELS = [
+    "qwen3",
+    "deespeek-r"
+]
+
+def is_thinking_model(model_name: str) -> bool:
+    """Check if a model requires thinking steps."""
+    if not model_name:
+        return False
+    model_lower = model_name.lower()
+    return any(thinking_model in model_lower for thinking_model in THINKING_MODELS)
+
+def add_thinking_to_schema(base_schema: dict, model_name: str) -> dict:
+    """Add thinking field to schema if model supports thinking."""
+    if not is_thinking_model(model_name):
+        return base_schema
+
+    # Create a copy of the schema
+    thinking_schema = base_schema.copy()
+
+    # Create new properties dict with thinking first
+    new_properties = {
+        "thinking": {
+            "type": "string",
+            "description": "Internal reasoning and thought process before providing the final response"
+        }
+    }
+
+    # Add existing properties after thinking
+    if "properties" in thinking_schema:
+        new_properties.update(thinking_schema["properties"])
+
+    thinking_schema["properties"] = new_properties
+
+    # Update required fields - thinking should be first in required too
+    if "required" in thinking_schema:
+        thinking_schema["required"] = ["thinking"] + thinking_schema["required"]
+    else:
+        thinking_schema["required"] = ["thinking"]
+
+    return thinking_schema
+
 class AsyncLLMClient:
     """A unified client interface for LLM providers (Ollama, OpenAI-compatible endpoints)."""
 
@@ -58,6 +101,74 @@ class AsyncLLMClient:
                 )
             except ImportError:
                 raise ImportError("OpenAI client not installed. Install with 'pip install openai'")
+
+    async def chat_with_structured_output(self,
+                                        model: str,
+                                        messages: List[Dict[str, str]],
+                                        schema: Dict,
+                                        options: Optional[Dict] = None) -> str:
+        """
+        Send a chat completion request with structured output, handling thinking models properly.
+
+        For thinking models like Qwen, this does a 2-call approach:
+        1. First call to get thinking with <think> tags
+        2. Second call with thinking + structured output
+
+        For non-thinking models, this does a single structured output call.
+
+        Args:
+            model: Model name
+            messages: List of message dictionaries
+            schema: JSON schema for structured output
+            options: Additional options for the model
+
+        Returns:
+            JSON string response
+        """
+        if not is_thinking_model(model):
+            # Non-thinking models: single structured call
+            response = await self.chat(
+                model=model,
+                messages=messages,
+                format=schema,
+                options=options
+            )
+            return response["message"]["content"]
+
+        # Thinking models: 2-call approach
+        # First call: get thinking
+        thinking_messages = messages.copy()
+        thinking_messages.append({
+            "role": "assistant",
+            "content": "<think>"
+        })
+
+        thinking_options = (options or {}).copy()
+        thinking_options["stop"] = ["</think>"]
+
+        thinking_response = await self.chat(
+            model=model,
+            messages=thinking_messages,
+            options=thinking_options
+        )
+
+        thinking_content = "<think>" + thinking_response["message"]["content"] + "</think>"
+
+        # Second call: structured output with thinking
+        final_messages = messages.copy()
+        final_messages.append({
+            "role": "assistant",
+            "content": thinking_content
+        })
+
+        final_response = await self.chat(
+            model=model,
+            messages=final_messages,
+            format=schema,
+            options=options
+        )
+
+        return final_response["message"]["content"]
 
     async def chat(self,
                 model: str,

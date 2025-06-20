@@ -7,7 +7,6 @@ from server.database.defaults.templates import DefaultTemplates
 from server.schemas.templates import FormatStyle, ClinicalTemplate, TemplateField, ExtractedTemplate
 from server.database.config import config_manager
 from server.utils.llm_client import get_llm_client
-from server.constants import add_thinking_to_schema
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
@@ -46,19 +45,18 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
             {"role": "user", "content": f"Analyze this clinical note and extract template sections with their format patterns. Return as JSON.Do not include any tab characters, extra whitespace, or formatting characters. Your response should be compact JSON without pretty-printing.\n\n{example_note}"}
         ]
 
-        # Set up response format for structured output with thinking support
+        # Set up response format for structured output
         base_schema = ExtractedTemplate.model_json_schema()
-        response_format = add_thinking_to_schema(base_schema, config["PRIMARY_MODEL"])
 
         # Generate the template analysis with structured output
-        response = await client.chat(
+        response_json = await client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],
             messages=base_messages,
-            format=response_format,
+            schema=base_schema,
+            options=options
         )
-        print(response,flush=True)
-        parsed_response = response["message"]["content"]
-        extracted = ExtractedTemplate.model_validate_json(parsed_response)
+
+        extracted = ExtractedTemplate.model_validate_json(response_json)
 
         # Convert extracted sections to TemplateField objects
         template_fields = []

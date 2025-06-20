@@ -7,7 +7,6 @@ from server.utils.helpers import run_clinical_reasoning
 from server.database.config import config_manager
 from server.utils.llm_client import get_llm_client
 from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
-from server.constants import add_thinking_to_schema
 import random
 import asyncio
 
@@ -50,7 +49,6 @@ async def _generate_analysis_with_llm(patient_data):
 
     # Create response format schema
     base_schema = PatientAnalysis.model_json_schema()
-    response_format = add_thinking_to_schema(base_schema, config["PRIMARY_MODEL"])
 
     request_body = [
             {"role": "system", "content": system_prompt},
@@ -58,17 +56,16 @@ async def _generate_analysis_with_llm(patient_data):
             {"role": "assistant", "content": initial_assistant_content},
         ]
 
-    response = await client.chat(
-            model=model,
-            messages=request_body,
-            format=response_format,
-            options=options,
-        )
+    # Generate analysis with structured output
+    response_json = await client.chat_with_structured_output(
+        model=model,
+        messages=request_body,
+        schema=base_schema,
+        options=options
+    )
 
-    parsed_response = response["message"]["content"]
-    print(parsed_response,flush=True)
-    analysis_content = PatientAnalysis.model_validate_json(parsed_response)
-
+    # Parse the JSON response
+    analysis_content = PatientAnalysis.model_validate_json(response_json)
     return analysis_content.analysis
 
 

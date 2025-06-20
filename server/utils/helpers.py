@@ -5,7 +5,6 @@ from server.utils.llm_client import AsyncLLMClient, LLMProviderType, get_llm_cli
 from server.schemas.patient import Patient, Condition
 from server.database.config import config_manager
 from server.schemas.grammars import ClinicalReasoning
-from server.constants import add_thinking_to_schema
 import logging
 import asyncio
 import re
@@ -85,31 +84,25 @@ async def summarize_encounter(patient: Patient) -> tuple[str, Optional[str]]:
         return initial_summary_content + summary_content
 
     async def fetch_condition():
-        response = await client.chat(
+        response_json = await client.chat_with_structured_output(
             model=config["SECONDARY_MODEL"],
             messages=condition_request_body,
-            format=Condition.model_json_schema(),
-            options=prompts["options"]["secondary"],
+            schema=Condition.model_json_schema(),
+            options=prompts["options"]["secondary"]
         )
         try:
-            condition_response = Condition.model_validate_json(
-                response["message"][
-                    "content"
-                ]
-            )
-
+            condition_response = Condition.model_validate_json(response_json)
             condition_name = condition_response.condition_name
-
             logging.info(f"Condition: {condition_name}")
             return condition_name
         except Exception as e:
             logging.error(
-                f"Error extracting condition: {e}, response content:{response['message']['content']}"
+                f"Error extracting condition: {e}, response content:{response_json}"
             )
             return None
 
     summary, condition = await asyncio.gather(
-        fetch_summary(), fetch_condition()
+            fetch_summary(), fetch_condition()
     )
 
     return summary, condition
@@ -150,14 +143,14 @@ async def run_clinical_reasoning(template_data: dict, dob: str, encounter_date: 
 
     The key is to provide additional clinical considerations to the doctor, so feel free to take a critical eye to the clinician's perspective if appropriate."""
 
-    response = await client.chat(
-            model=config["REASONING_MODEL"],
-            messages=[{"role": "user", "content": prompt}],
-            format=ClinicalReasoning.model_json_schema(),
-            options=reasoning_options
-        )
+    response_json = await client.chat_with_structured_output(
+        model=config["REASONING_MODEL"],
+        messages=[{"role": "user", "content": prompt}],
+        schema=ClinicalReasoning.model_json_schema(),
+        options=reasoning_options
+    )
 
-    return ClinicalReasoning.model_validate_json(response.message.content)
+    return ClinicalReasoning.model_validate_json(response_json)
 
 def calculate_age(dob: str, encounter_date: str = None) -> int:
     """
@@ -234,17 +227,17 @@ async def refine_field_content(
         ]
 
 
-        response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=base_messages,
-                format=format_details["response_format"],
-                options=options
-            )
+        response_json = await client.chat_with_structured_output(
+            model=config["PRIMARY_MODEL"],
+            messages=base_messages,
+            schema=format_details["response_format"],
+            options=options
+        )
 
-        logger.info(f"Response received for field {field.field_key}: {response}")
+        logger.info(f"Response received for field {field.field_key}: {response_json}")
 
         # Format the response appropriately
-        return format_refined_response(response, field, format_details)
+        return format_refined_response(response_json, field, format_details)
 
     except Exception as e:
         logger.error(f"Error refining field {field.field_key}: {e}")
@@ -260,7 +253,7 @@ def determine_format_details(field: TemplateField, prompts: dict, model_name: st
         if format_type == "narrative":
             return {
                 "format_type": "narrative",
-                "response_format": add_thinking_to_schema(base_schema, model_name),
+                "response_format": NarrativeResponse.model_json_schema(),
                 "base_prompt": "Format the following content as a cohesive narrative paragraph."
             }
 
@@ -271,10 +264,9 @@ def determine_format_details(field: TemplateField, prompts: dict, model_name: st
     elif format_type == "bullet":
         format_guidance = "Format the key points as a bulleted list (•) prefixes)."
 
-    base_schema = RefinedResponse.model_json_schema()
     return {
         "format_type": format_type,
-        "response_format": add_thinking_to_schema(base_schema, model_name),
+        "response_format": RefinedResponse.model_json_schema(),
         "base_prompt": prompts["prompts"]["refinement"]["system"],
         "format_guidance": format_guidance
     }
@@ -338,11 +330,11 @@ def format_refined_response(response: dict, field: TemplateField, format_details
     format_type = format_details["format_type"]
 
     if format_type == "narrative":
-        narrative_response = NarrativeResponse.model_validate_json(response['message']['content'])
+        narrative_response = NarrativeResponse.model_validate_json(response)
         return narrative_response.narrative
 
     # Handle non-narrative formats
-    refined_response = RefinedResponse.model_validate_json(response['message']['content'])
+    refined_response = RefinedResponse.model_validate_json(response)
 
     if format_type == "numbered":
         return format_numbered_list(refined_response.key_points)
