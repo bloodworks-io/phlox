@@ -12,7 +12,7 @@ from server.database.defaults.letters import DefaultLetters
 
 
 class PatientDatabase:
-    SCHEMA_VERSION = 3  # Current schema version
+    SCHEMA_VERSION = 4  # Current schema version
     _instance = None
     _lock = threading.Lock()
 
@@ -685,6 +685,19 @@ class PatientDatabase:
 
         except Exception as e:
             logging.error(f"Error during v3 migration: {e}")
+            self.db.rollback()
+            raise
+
+    def _migrate_to_v4(self):
+        """Add has_completed_splash_screen column to user_settings table"""
+        try:
+            self.cursor.execute(
+                "ALTER TABLE user_settings ADD COLUMN has_completed_splash_screen BOOLEAN DEFAULT FALSE"
+            )
+            self.db.commit()
+            logging.info("Successfully added has_completed_splash_screen column")
+        except Exception as e:
+            logging.error(f"Error during v4 migration: {e}")
             self.db.rollback()
             raise
 

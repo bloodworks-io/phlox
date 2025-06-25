@@ -25,8 +25,13 @@ import {
 } from "./utils/patient/patientHandlers";
 import { usePatient } from "./utils/hooks/usePatient";
 import { useBreakpointValue } from "@chakra-ui/react";
+import theme from "./theme"; // Assuming theme is exported from here for ChakraProvider
+import SplashScreen from "./components/common/SplashScreen"; // Import SplashScreen
+import { settingsService } from "./utils/settings/settingsUtils"; // Import settingsService
 
 function AppContent() {
+    const [showSplashScreen, setShowSplashScreen] = useState(undefined);
+    const [isLoadingSplashCheck, setIsLoadingSplashCheck] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
     const [isModified, setIsModified] = useState(false);
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -176,6 +181,45 @@ function AppContent() {
         }
     }, [defaultCollapsed]);
 
+    // Splash screen logic
+    useEffect(() => {
+        const checkSplashStatus = async () => {
+            try {
+                await settingsService.fetchUserSettings((userData) => {
+                    if (
+                        userData &&
+                        typeof userData.has_completed_splash_screen ===
+                            "boolean"
+                    ) {
+                        setShowSplashScreen(
+                            !userData.has_completed_splash_screen,
+                        );
+                    } else {
+                        setShowSplashScreen(true); // Default to showing splash if flag is missing/invalid
+                    }
+                });
+            } catch (error) {
+                console.error("Error checking splash screen status:", error);
+                setShowSplashScreen(true); // Default to showing splash on error
+            } finally {
+                setIsLoadingSplashCheck(false);
+            }
+        };
+
+        checkSplashStatus();
+    }, []);
+
+    const handleSplashComplete = () => {
+        setShowSplashScreen(false);
+    };
+
+    if (isLoadingSplashCheck) {
+        return null; // or a loading spinner
+    }
+
+    if (showSplashScreen) {
+        return <SplashScreen onComplete={handleSplashComplete} />;
+    }
     return (
         <Flex position="relative">
             {/* Floating hamburger button for small screens */}
