@@ -58,10 +58,10 @@ class AsyncLLMClient:
     """A unified client interface for LLM providers (Ollama, OpenAI-compatible endpoints)."""
 
     def __init__(self,
-                 provider_type: Union[str, LLMProviderType],
-                 base_url: str,
-                 api_key: Optional[str] = None,
-                 timeout: int = 120):
+            provider_type: Union[str, LLMProviderType],
+            base_url: str,
+            api_key: Optional[str] = None,
+            timeout: int = 120):
         """
         Initialize the LLM client.
 
@@ -188,14 +188,12 @@ class AsyncLLMClient:
         return final_response["message"]["content"]
 
     async def _openai_thinking_structured_output(self,
-                                               model: str,
-                                               messages: List[Dict[str, str]],
-                                               schema: Dict,
-                                               options: Optional[Dict] = None) -> str:
+            model: str,
+            messages: List[Dict[str, str]],
+            schema: Dict,
+            options: Optional[Dict] = None) -> str:
         """
         Handle thinking models for OpenAI-compatible providers.
-
-        Uses a 2-call approach.
         """
         # First call: get thinking
         thinking_messages = messages.copy()
@@ -232,12 +230,12 @@ class AsyncLLMClient:
         return final_response["message"]["content"]
 
     async def chat(self,
-                model: str,
-                messages: List[Dict[str, str]],
-                format: Optional[Dict] = None,
-                options: Optional[Dict] = None,
-                tools: Optional[List[Dict]] = None,
-                stream: bool = False) -> Union[Dict[str, Any], AsyncGenerator]:
+            model: str,
+            messages: List[Dict[str, str]],
+            format: Optional[Dict] = None,
+            options: Optional[Dict] = None,
+            tools: Optional[List[Dict]] = None,
+            stream: bool = False) -> Union[Dict[str, Any], AsyncGenerator]:
         """
         Send a chat completion request.
 
@@ -258,12 +256,12 @@ class AsyncLLMClient:
             return await self._openai_compatible_chat(model, messages, format, options, tools, stream)
 
     async def _ollama_chat(self,
-                          model: str,
-                          messages: List[Dict[str, str]],
-                          format: Optional[Dict] = None,
-                          options: Optional[Dict] = None,
-                          tools: Optional[List[Dict]] = None,
-                          stream: bool = False) -> Union[Dict[str, Any], AsyncGenerator]:
+            model: str,
+            messages: List[Dict[str, str]],
+            format: Optional[Dict] = None,
+            options: Optional[Dict] = None,
+            tools: Optional[List[Dict]] = None,
+            stream: bool = False) -> Union[Dict[str, Any], AsyncGenerator]:
         """Send chat request to Ollama."""
         try:
             kwargs = {

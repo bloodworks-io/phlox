@@ -293,7 +293,6 @@ class ChatEngine:
         tools = self._get_tools_definition(collection_names)
 
         try:
-            # Use the unified LLM client instead of directly calling Ollama
             response = await self.llm_client.chat(
                 model=self.config["PRIMARY_MODEL"],
                 messages=message_list,
@@ -458,7 +457,12 @@ class ChatEngine:
                                 "content": f"The following information was found in the transcript:\n\n{cleaned_transcript_info}",
                             }
                         )
+                        # Clean think tags again
+                        cleaned_message_list = clean_think_tags(message_list)
 
+                        self.logger.info(
+                            f"Transcript query messagelist: {cleaned_message_list}..."
+                        )
                         # Send generating response status
                         yield {
                             "type": "status",
@@ -472,7 +476,7 @@ class ChatEngine:
                         # Stream the answer
                         async for chunk in await self.llm_client.chat(
                             model=self.config["PRIMARY_MODEL"],
-                            messages=message_list,
+                            messages=cleaned_message_list,
                             options=context_question_options,
                             stream=True,
                         ):
