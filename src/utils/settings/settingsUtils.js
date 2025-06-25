@@ -234,6 +234,16 @@ export const settingsService = {
             throw error;
         }
     },
+
+    saveUserSettings: async (userSettings) => {
+        try {
+            return await settingsApi.saveUserSettings(userSettings);
+        } catch (error) {
+            console.error("Error saving user settings:", error);
+            throw error;
+        }
+    },
+
     updateConfig: async (config, key, value) => {
         // Simply return new config without API call
         return {

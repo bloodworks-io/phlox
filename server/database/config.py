@@ -176,64 +176,63 @@ class ConfigManager:
             "default_letter_template_id": None,
         }
 
-def get_user_settings(self):
-    """Retrieves user settings from the database."""
-    self.db.cursor.execute(
-        """
-        SELECT name, specialty,
-            quick_chat_1_title, quick_chat_1_prompt,
-            quick_chat_2_title, quick_chat_2_prompt,
-            quick_chat_3_title, quick_chat_3_prompt,
-            default_letter_template_id,
-            has_completed_splash_screen
-        FROM user_settings LIMIT 1
-        """
-    )
-    result = self.db.cursor.fetchone()
-
-    if result:
-        return dict(result)
-    return {
-        "name": "",
-        "specialty": "",
-        "quick_chat_1_title": "Critique my plan",
-        "quick_chat_1_prompt": "Critique my plan",
-        "quick_chat_2_title": "Any additional investigations",
-        "quick_chat_2_prompt": "Any additional investigations",
-        "quick_chat_3_title": "Any differentials to consider",
-        "quick_chat_3_prompt": "Any differentials to consider",
-        "default_letter_template_id": None,
-        "has_completed_splash_screen": False,
-    }
-
-
-def update_user_settings(self, settings: dict):
-    self.db.cursor.execute("DELETE FROM user_settings")
-    self.db.cursor.execute(
-        """
-        INSERT INTO user_settings (
-            name, specialty,
-            quick_chat_1_title, quick_chat_1_prompt,
-            quick_chat_2_title, quick_chat_2_prompt,
-            quick_chat_3_title, quick_chat_3_prompt,
-            default_letter_template_id,
-            has_completed_splash_screen
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            settings.get("name", ""),
-            settings.get("specialty", ""),
-            settings.get("quick_chat_1_title", "Critique my plan"),
-            settings.get("quick_chat_1_prompt", "Critique my plan"),
-            settings.get("quick_chat_2_title", "Any additional investigations"),
-            settings.get("quick_chat_2_prompt", "Any additional investigations"),
-            settings.get("quick_chat_3_title", "Any differentials to consider"),
-            settings.get("quick_chat_3_prompt", "Any differentials to consider"),
-            settings.get("default_letter_template_id"),
-            bool(settings.get("has_completed_splash_screen", False))
+    def get_user_settings(self):
+        """Retrieves user settings from the database."""
+        self.db.cursor.execute(
+            """
+            SELECT name, specialty,
+                quick_chat_1_title, quick_chat_1_prompt,
+                quick_chat_2_title, quick_chat_2_prompt,
+                quick_chat_3_title, quick_chat_3_prompt,
+                default_letter_template_id,
+                has_completed_splash_screen
+            FROM user_settings LIMIT 1
+            """
         )
-    )
-    self.db.commit()
+        result = self.db.cursor.fetchone()
+
+        if result:
+            return dict(result)
+        return {
+            "name": "",
+            "specialty": "",
+            "quick_chat_1_title": "Critique my plan",
+            "quick_chat_1_prompt": "Critique my plan",
+            "quick_chat_2_title": "Any additional investigations",
+            "quick_chat_2_prompt": "Any additional investigations",
+            "quick_chat_3_title": "Any differentials to consider",
+            "quick_chat_3_prompt": "Any differentials to consider",
+            "default_letter_template_id": None,
+            "has_completed_splash_screen": False,
+        }
+
+    def update_user_settings(self, settings: dict):
+        self.db.cursor.execute("DELETE FROM user_settings")
+        self.db.cursor.execute(
+            """
+            INSERT INTO user_settings (
+                name, specialty,
+                quick_chat_1_title, quick_chat_1_prompt,
+                quick_chat_2_title, quick_chat_2_prompt,
+                quick_chat_3_title, quick_chat_3_prompt,
+                default_letter_template_id,
+                has_completed_splash_screen
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                settings.get("name", ""),
+                settings.get("specialty", ""),
+                settings.get("quick_chat_1_title", "Critique my plan"),
+                settings.get("quick_chat_1_prompt", "Critique my plan"),
+                settings.get("quick_chat_2_title", "Any additional investigations"),
+                settings.get("quick_chat_2_prompt", "Any additional investigations"),
+                settings.get("quick_chat_3_title", "Any differentials to consider"),
+                settings.get("quick_chat_3_prompt", "Any differentials to consider"),
+                settings.get("default_letter_template_id"),
+                bool(settings.get("has_completed_splash_screen", False))
+            )
+        )
+        self.db.commit()
 
 
 
