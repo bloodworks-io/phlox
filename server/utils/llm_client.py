@@ -389,6 +389,46 @@ class AsyncLLMClient:
             logger.error(f"Error in OpenAI-compatible chat request: {e}")
             raise
 
+    async def ps(self) -> Dict[str, Any]:
+        """
+        List models that are currently loaded into memory.
+
+        For Ollama: Returns actual running models
+        For OpenAI-compatible: Returns a graceful fallback response
+
+        Returns:
+            Dictionary with models information
+        """
+        if self.provider_type == LLMProviderType.OLLAMA:
+            try:
+                async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout)) as session:
+                    async with session.get(f"{self.base_url}/api/ps") as response:
+                        if response.status == 200:
+                            result = await response.json()
+                            return result
+                        else:
+                            error_text = await response.text()
+                            logger.error(f"Ollama ps request failed with status {response.status}: {error_text}")
+                            return {
+                                "models": [],
+                                "error": f"Request failed with status {response.status}"
+                            }
+            except Exception as e:
+                logger.error(f"Unexpected error getting Ollama process info: {e}")
+                return {
+                    "models": [],
+                    "error": f"Unexpected error: {str(e)}"
+                }
+        else:
+            # For OpenAI-compatible providers, we can't get "running" models
+            # Return a graceful response indicating this feature isn't available
+            return {
+                "models": [],
+                "message": "Model process information not available for OpenAI-compatible providers",
+                "provider_type": self.provider_type.value
+            }
+
+
 def get_llm_client():
     """Create and return an LLM client with configuration from config manager."""
     config = config_manager.get_config()

@@ -30,7 +30,7 @@ from server.database.analysis import (
     generate_daily_analysis,
     get_latest_analysis,
 )
-from ollama import AsyncClient
+from server.utils.llm_client import get_llm_client
 from server.database.config import config_manager
 
 router = APIRouter()
@@ -224,12 +224,10 @@ async def trigger_analysis(background_tasks: BackgroundTasks):
 
 @router.get("/server/info")
 async def get_server_info():
-    """Get Ollama server information including running models."""
+    """Get server information including running models (when available)."""
     try:
-        config = config_manager.get_config()
-        client = AsyncClient(host=config["LLM_BASE_URL"])
+        client = get_llm_client()
         process_info = await client.ps()
-
         return process_info
     except Exception as e:
         logger.error(f"Error getting server info: {e}")
