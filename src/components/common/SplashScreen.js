@@ -19,6 +19,16 @@ import {
     Progress,
     Tooltip,
     Badge,
+    Textarea,
+    SimpleGrid,
+    Card,
+    CardBody,
+    CardHeader,
+    Divider,
+    Alert,
+    AlertIcon,
+    AlertTitle,
+    AlertDescription,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import {
@@ -29,6 +39,9 @@ import {
     FaArrowLeft,
     FaInfoCircle,
     FaCheckCircle,
+    FaFileAlt,
+    FaComments,
+    FaEnvelope,
 } from "react-icons/fa";
 import { InfoIcon } from "@chakra-ui/icons";
 import { settingsService } from "../../utils/settings/settingsUtils";
@@ -47,12 +60,18 @@ const STEPS = {
     PERSONAL: 0,
     LLM: 1,
     TRANSCRIPTION: 2,
+    TEMPLATES: 3,
+    QUICK_CHAT: 4,
+    LETTERS: 5,
 };
 
 const STEP_TITLES = {
     [STEPS.PERSONAL]: "Personal Information",
     [STEPS.LLM]: "Language Model Setup",
     [STEPS.TRANSCRIPTION]: "Transcription Setup",
+    [STEPS.TEMPLATES]: "Choose Default Template",
+    [STEPS.QUICK_CHAT]: "Quick Chat Buttons",
+    [STEPS.LETTERS]: "Letter Templates",
 };
 
 const STEP_DESCRIPTIONS = {
@@ -60,6 +79,19 @@ const STEP_DESCRIPTIONS = {
     [STEPS.LLM]: "Configure your AI language model for medical assistance",
     [STEPS.TRANSCRIPTION]:
         "Set up voice transcription (optional but recommended)",
+    [STEPS.TEMPLATES]: "Select your preferred clinical note template",
+    [STEPS.QUICK_CHAT]: "Customize your quick chat buttons for common queries",
+    [STEPS.LETTERS]: "Choose your default letter template for correspondence",
+};
+
+// Template descriptions for tooltips
+const TEMPLATE_DESCRIPTIONS = {
+    phlox_01:
+        "Designed for haematology consultations with sections for primary condition, other problems, investigations, current history, impression, and plan.",
+    soap_01:
+        "Standard SOAP format with Subjective, Objective, Assessment, and Plan sections - ideal for general consultations.",
+    progress_01:
+        "Perfect for follow-up visits with sections for interval history, current status, and plan.",
 };
 
 const SplashScreen = ({ onComplete }) => {
@@ -82,6 +114,8 @@ const SplashScreen = ({ onComplete }) => {
     );
     const [primaryModel, setPrimaryModel] = useState("");
     const [availableModels, setAvailableModels] = useState([]);
+    const [llmUrlValidated, setLlmUrlValidated] = useState(false);
+    const [lastValidatedLlmUrl, setLastValidatedLlmUrl] = useState("");
 
     // Whisper Configuration
     const [whisperBaseUrl, setWhisperBaseUrl] = useState(
@@ -91,18 +125,135 @@ const SplashScreen = ({ onComplete }) => {
     const [availableWhisperModels, setAvailableWhisperModels] = useState([]);
     const [whisperModelListAvailable, setWhisperModelListAvailable] =
         useState(false);
+    const [whisperUrlValidated, setWhisperUrlValidated] = useState(false);
+    const [lastValidatedWhisperUrl, setLastValidatedWhisperUrl] = useState("");
+
+    // Template Configuration
+    const [availableTemplates, setAvailableTemplates] = useState([]);
+    const [selectedTemplate, setSelectedTemplate] = useState("");
+
+    // Quick Chat Configuration
+    const [quickChat1Title, setQuickChat1Title] = useState("Critique my plan");
+    const [quickChat1Prompt, setQuickChat1Prompt] =
+        useState("Critique my plan");
+    const [quickChat2Title, setQuickChat2Title] = useState(
+        "Any additional investigations",
+    );
+    const [quickChat2Prompt, setQuickChat2Prompt] = useState(
+        "Any additional investigations",
+    );
+    const [quickChat3Title, setQuickChat3Title] = useState(
+        "Any differentials to consider",
+    );
+    const [quickChat3Prompt, setQuickChat3Prompt] = useState(
+        "Any differentials to consider",
+    );
+
+    // Letter Template Configuration
+    const [availableLetterTemplates, setAvailableLetterTemplates] = useState(
+        [],
+    );
+    const [selectedLetterTemplate, setSelectedLetterTemplate] = useState("");
 
     // Loading states
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingLLMModels, setIsFetchingLLMModels] = useState(false);
     const [isFetchingWhisperModels, setIsFetchingWhisperModels] =
         useState(false);
+    const [isFetchingTemplates, setIsFetchingTemplates] = useState(false);
+    const [isFetchingLetterTemplates, setIsFetchingLetterTemplates] =
+        useState(false);
+
+    // Fetch templates when reaching the templates step
+    const fetchTemplates = useCallback(async () => {
+        if (
+            currentStep === STEPS.TEMPLATES &&
+            availableTemplates.length === 0
+        ) {
+            setIsFetchingTemplates(true);
+            try {
+                await settingsService.fetchTemplates((templates) => {
+                    setAvailableTemplates(templates);
+                    // Auto-select first template if none selected
+                    if (!selectedTemplate && templates.length > 0) {
+                        setSelectedTemplate(templates[0].template_key);
+                    }
+                });
+            } catch (error) {
+                toast({
+                    title: "Error fetching templates",
+                    description: error.message || "Could not load templates",
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            } finally {
+                setIsFetchingTemplates(false);
+            }
+        }
+    }, [currentStep, availableTemplates.length, selectedTemplate, toast]);
+
+    // Fetch letter templates when reaching the letters step
+    const fetchLetterTemplates = useCallback(async () => {
+        if (
+            currentStep === STEPS.LETTERS &&
+            availableLetterTemplates.length === 0
+        ) {
+            setIsFetchingLetterTemplates(true);
+            try {
+                const response = await settingsService.fetchLetterTemplates();
+                setAvailableLetterTemplates(response.templates || []);
+                // Auto-select first template if none selected
+                if (
+                    !selectedLetterTemplate &&
+                    response.templates &&
+                    response.templates.length > 0
+                ) {
+                    setSelectedLetterTemplate(
+                        response.templates[0].id.toString(),
+                    );
+                }
+            } catch (error) {
+                toast({
+                    title: "Error fetching letter templates",
+                    description:
+                        error.message || "Could not load letter templates",
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            } finally {
+                setIsFetchingLetterTemplates(false);
+            }
+        }
+    }, [
+        currentStep,
+        availableLetterTemplates.length,
+        selectedLetterTemplate,
+        toast,
+    ]);
+
+    useEffect(() => {
+        fetchTemplates();
+    }, [fetchTemplates]);
+
+    useEffect(() => {
+        fetchLetterTemplates();
+    }, [fetchLetterTemplates]);
 
     const fetchLLMModelsCallback = useCallback(async () => {
         if (!llmBaseUrl || !llmProvider) {
             setAvailableModels([]);
+            setLlmUrlValidated(false);
+            setLastValidatedLlmUrl("");
             return;
         }
+
+        // Skip if URL is already validated and hasn't changed
+        if (llmUrlValidated && llmBaseUrl === lastValidatedLlmUrl) {
+            return;
+        }
+
         setIsFetchingLLMModels(true);
         try {
             let models = [];
@@ -113,6 +264,15 @@ const SplashScreen = ({ onComplete }) => {
                 },
             );
             setAvailableModels(models);
+
+            // Lock the URL if models were successfully fetched
+            if (models.length > 0) {
+                setLlmUrlValidated(true);
+                setLastValidatedLlmUrl(llmBaseUrl);
+            } else {
+                setLlmUrlValidated(false);
+                setLastValidatedLlmUrl("");
+            }
         } catch (error) {
             toast({
                 title: "Error fetching LLM models",
@@ -124,10 +284,12 @@ const SplashScreen = ({ onComplete }) => {
                 isClosable: true,
             });
             setAvailableModels([]);
+            setLlmUrlValidated(false);
+            setLastValidatedLlmUrl("");
         } finally {
             setIsFetchingLLMModels(false);
         }
-    }, [llmBaseUrl, llmProvider, toast]);
+    }, [llmBaseUrl, llmProvider, toast, llmUrlValidated, lastValidatedLlmUrl]);
 
     useEffect(() => {
         if (currentStep === STEPS.LLM) {
@@ -139,8 +301,16 @@ const SplashScreen = ({ onComplete }) => {
         if (!whisperBaseUrl) {
             setAvailableWhisperModels([]);
             setWhisperModelListAvailable(false);
+            setWhisperUrlValidated(false);
+            setLastValidatedWhisperUrl("");
             return;
         }
+
+        // Skip if URL is already validated and hasn't changed
+        if (whisperUrlValidated && whisperBaseUrl === lastValidatedWhisperUrl) {
+            return;
+        }
+
         setIsFetchingWhisperModels(true);
         try {
             let models = [];
@@ -156,6 +326,10 @@ const SplashScreen = ({ onComplete }) => {
             );
             setAvailableWhisperModels(models);
             setWhisperModelListAvailable(listAvailable);
+
+            // Lock the URL if connection was successful
+            setWhisperUrlValidated(true);
+            setLastValidatedWhisperUrl(whisperBaseUrl);
         } catch (error) {
             toast({
                 title: "Error fetching Whisper models",
@@ -168,10 +342,12 @@ const SplashScreen = ({ onComplete }) => {
             });
             setAvailableWhisperModels([]);
             setWhisperModelListAvailable(false);
+            setWhisperUrlValidated(false);
+            setLastValidatedWhisperUrl("");
         } finally {
             setIsFetchingWhisperModels(false);
         }
-    }, [whisperBaseUrl, toast]);
+    }, [whisperBaseUrl, toast, whisperUrlValidated, lastValidatedWhisperUrl]);
 
     useEffect(() => {
         if (currentStep === STEPS.TRANSCRIPTION) {
@@ -212,6 +388,25 @@ const SplashScreen = ({ onComplete }) => {
         return true;
     };
 
+    const validateTemplatesStep = () => {
+        return selectedTemplate !== "";
+    };
+
+    const validateQuickChatStep = () => {
+        return (
+            quickChat1Title.trim() &&
+            quickChat1Prompt.trim() &&
+            quickChat2Title.trim() &&
+            quickChat2Prompt.trim() &&
+            quickChat3Title.trim() &&
+            quickChat3Prompt.trim()
+        );
+    };
+
+    const validateLettersStep = () => {
+        return selectedLetterTemplate !== "";
+    };
+
     const canProceedToNext = () => {
         switch (currentStep) {
             case STEPS.PERSONAL:
@@ -220,6 +415,12 @@ const SplashScreen = ({ onComplete }) => {
                 return validateLLMStep();
             case STEPS.TRANSCRIPTION:
                 return validateTranscriptionStep();
+            case STEPS.TEMPLATES:
+                return validateTemplatesStep();
+            case STEPS.QUICK_CHAT:
+                return validateQuickChatStep();
+            case STEPS.LETTERS:
+                return validateLettersStep();
             default:
                 return false;
         }
@@ -240,6 +441,16 @@ const SplashScreen = ({ onComplete }) => {
                     message =
                         "Please configure the Whisper model if you've entered a URL.";
                     break;
+                case STEPS.TEMPLATES:
+                    message = "Please select a default template.";
+                    break;
+                case STEPS.QUICK_CHAT:
+                    message =
+                        "Please fill in all quick chat button titles and prompts.";
+                    break;
+                case STEPS.LETTERS:
+                    message = "Please select a default letter template.";
+                    break;
             }
             toast({
                 title: "Missing Information",
@@ -253,7 +464,7 @@ const SplashScreen = ({ onComplete }) => {
 
         setCompletedSteps((prev) => new Set([...prev, currentStep]));
 
-        if (currentStep < STEPS.TRANSCRIPTION) {
+        if (currentStep < STEPS.LETTERS) {
             setCurrentStep(currentStep + 1);
         } else {
             handleComplete();
@@ -269,17 +480,29 @@ const SplashScreen = ({ onComplete }) => {
     const handleComplete = async () => {
         setIsLoading(true);
         try {
+            // Save user settings including quick chat buttons and default letter template
             let currentUserSettings = {};
             await settingsService.fetchUserSettings((data) => {
                 currentUserSettings = data;
             });
+
             const userSettingsToSave = {
                 ...currentUserSettings,
                 name,
                 specialty,
+                quick_chat_1_title: quickChat1Title,
+                quick_chat_1_prompt: quickChat1Prompt,
+                quick_chat_2_title: quickChat2Title,
+                quick_chat_2_prompt: quickChat2Prompt,
+                quick_chat_3_title: quickChat3Title,
+                quick_chat_3_prompt: quickChat3Prompt,
+                default_letter_template_id: selectedLetterTemplate
+                    ? parseInt(selectedLetterTemplate)
+                    : null,
             };
             await settingsService.saveUserSettings(userSettingsToSave);
 
+            // Save global config
             const currentGlobalConfig = await settingsService.fetchConfig();
             const configToSave = {
                 ...currentGlobalConfig,
@@ -299,12 +522,21 @@ const SplashScreen = ({ onComplete }) => {
                 await settingsService.updateConfig(configToSave);
             }
 
+            // Set default template
+            if (selectedTemplate) {
+                await settingsService.setDefaultTemplate(
+                    selectedTemplate,
+                    toast,
+                );
+            }
+
             await settingsService.markSplashCompleted();
             toast({
                 title: "Setup Complete!",
-                description: "Your initial settings have been saved.",
+                description:
+                    "Your initial settings have been saved. You can change any of these settings later in the Settings panel.",
                 status: "success",
-                duration: 3000,
+                duration: 5000,
                 isClosable: true,
             });
             onComplete();
@@ -376,6 +608,12 @@ const SplashScreen = ({ onComplete }) => {
                 return FaRobot;
             case STEPS.TRANSCRIPTION:
                 return FaMicrophone;
+            case STEPS.TEMPLATES:
+                return FaFileAlt;
+            case STEPS.QUICK_CHAT:
+                return FaComments;
+            case STEPS.LETTERS:
+                return FaEnvelope;
             default:
                 return FaInfoCircle;
         }
@@ -419,7 +657,7 @@ const SplashScreen = ({ onComplete }) => {
                         </Tooltip>
                     </HStack>
                     <Input
-                        placeholder="Dr. Ada Lovelace"
+                        placeholder="Ada Lovelace"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="input-style"
@@ -556,7 +794,14 @@ const SplashScreen = ({ onComplete }) => {
                                 : "e.g., http://localhost:11434"
                         }
                         value={llmBaseUrl}
-                        onChange={(e) => setLlmBaseUrl(e.target.value)}
+                        onChange={(e) => {
+                            const newUrl = e.target.value;
+                            setLlmBaseUrl(newUrl);
+                            // Reset validation if URL changed
+                            if (newUrl !== lastValidatedLlmUrl) {
+                                setLlmUrlValidated(false);
+                            }
+                        }}
                         onBlur={fetchLLMModelsCallback}
                         className="input-style"
                         size="md"
@@ -695,7 +940,14 @@ const SplashScreen = ({ onComplete }) => {
                     <Input
                         placeholder="e.g., http://localhost:8080"
                         value={whisperBaseUrl}
-                        onChange={(e) => setWhisperBaseUrl(e.target.value)}
+                        onChange={(e) => {
+                            const newUrl = e.target.value;
+                            setWhisperBaseUrl(newUrl);
+                            // Reset validation if URL changed
+                            if (newUrl !== lastValidatedWhisperUrl) {
+                                setWhisperUrlValidated(false);
+                            }
+                        }}
                         onBlur={fetchWhisperModelsCallback}
                         className="input-style"
                         size="md"
@@ -781,6 +1033,370 @@ const SplashScreen = ({ onComplete }) => {
         </MotionVStack>
     );
 
+    const renderTemplatesStep = () => (
+        <MotionVStack
+            key="templates"
+            variants={stepVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            spacing={6}
+            w="100%"
+        >
+            <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <Box>
+                    <AlertTitle>Choose Your Default Template</AlertTitle>
+                    <AlertDescription>
+                        Select a clinical note template that best fits your
+                        workflow. You can create custom templates and change
+                        this setting later in the Settings panel.
+                    </AlertDescription>
+                </Box>
+            </Alert>
+
+            {isFetchingTemplates ? (
+                <Flex align="center" justify="center" py={8}>
+                    <Spinner size="lg" color={currentColors.primaryButton} />
+                    <Text ml={4} color={currentColors.textSecondary}>
+                        Loading templates...
+                    </Text>
+                </Flex>
+            ) : (
+                <SimpleGrid columns={1} spacing={4} w="100%">
+                    {availableTemplates.map((template) => (
+                        <Card
+                            key={template.template_key}
+                            cursor="pointer"
+                            onClick={() =>
+                                setSelectedTemplate(template.template_key)
+                            }
+                            borderWidth="2px"
+                            borderColor={
+                                selectedTemplate === template.template_key
+                                    ? currentColors.primaryButton
+                                    : "transparent"
+                            }
+                            bg={
+                                selectedTemplate === template.template_key
+                                    ? currentColors.surface + "40"
+                                    : currentColors.surface
+                            }
+                            _hover={{
+                                borderColor: currentColors.primaryButton + "80",
+                                transform: "translateY(-2px)",
+                            }}
+                            transition="all 0.2s"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack justify="space-between">
+                                    <Heading
+                                        size="md"
+                                        color={currentColors.textPrimary}
+                                    >
+                                        {template.template_name}
+                                    </Heading>
+                                    {selectedTemplate ===
+                                        template.template_key && (
+                                        <Icon
+                                            as={FaCheckCircle}
+                                            color="green.500"
+                                        />
+                                    )}
+                                </HStack>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <Text
+                                    fontSize="sm"
+                                    color={currentColors.textSecondary}
+                                    mb={3}
+                                >
+                                    {TEMPLATE_DESCRIPTIONS[
+                                        template.template_key
+                                    ] ||
+                                        "A custom template for clinical documentation."}
+                                </Text>
+                                <Text
+                                    fontSize="xs"
+                                    color={currentColors.textSecondary}
+                                    fontWeight="medium"
+                                >
+                                    Fields:{" "}
+                                    {template.fields
+                                        ?.map((f) => f.field_name)
+                                        .join(", ") || "Loading..."}
+                                </Text>
+                            </CardBody>
+                        </Card>
+                    ))}
+                </SimpleGrid>
+            )}
+        </MotionVStack>
+    );
+
+    const renderQuickChatStep = () => (
+        <MotionVStack
+            key="quickchat"
+            variants={stepVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            spacing={6}
+            w="100%"
+        >
+            <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <Box>
+                    <AlertTitle>Customize Quick Chat Buttons</AlertTitle>
+                    <AlertDescription>
+                        Set up three quick chat buttons for common queries.
+                        These will appear in your chat interface for easy
+                        access. You can change these anytime in Settings.
+                    </AlertDescription>
+                </Box>
+            </Alert>
+
+            <VStack spacing={6} w="100%">
+                {/* Quick Chat Button 1 */}
+                <Box w="100%" p={4} borderRadius="md" className="floating-main">
+                    <Text
+                        fontWeight="medium"
+                        mb={3}
+                        color={currentColors.textPrimary}
+                    >
+                        Quick Chat Button 1
+                    </Text>
+                    <VStack spacing={3}>
+                        <FormControl isRequired>
+                            <FormLabel
+                                fontSize="sm"
+                                color={currentColors.textSecondary}
+                            >
+                                Button Title
+                            </FormLabel>
+                            <Input
+                                placeholder="e.g., Critique my plan"
+                                value={quickChat1Title}
+                                onChange={(e) =>
+                                    setQuickChat1Title(e.target.value)
+                                }
+                                className="input-style"
+                                size="sm"
+                            />
+                        </FormControl>
+                        <FormControl isRequired>
+                            <FormLabel
+                                fontSize="sm"
+                                color={currentColors.textSecondary}
+                            >
+                                Prompt
+                            </FormLabel>
+                            <Textarea
+                                placeholder="e.g., Please critique my management plan and suggest any improvements"
+                                value={quickChat1Prompt}
+                                onChange={(e) =>
+                                    setQuickChat1Prompt(e.target.value)
+                                }
+                                className="input-style"
+                                size="sm"
+                                rows={2}
+                            />
+                        </FormControl>
+                    </VStack>
+                </Box>
+
+                {/* Quick Chat Button 2 */}
+                <Box w="100%" p={4} borderRadius="md" className="floating-main">
+                    <Text
+                        fontWeight="medium"
+                        mb={3}
+                        color={currentColors.textPrimary}
+                    >
+                        Quick Chat Button 2
+                    </Text>
+                    <VStack spacing={3}>
+                        <FormControl isRequired>
+                            <FormLabel
+                                fontSize="sm"
+                                color={currentColors.textSecondary}
+                            >
+                                Button Title
+                            </FormLabel>
+                            <Input
+                                placeholder="e.g., Additional investigations"
+                                value={quickChat2Title}
+                                onChange={(e) =>
+                                    setQuickChat2Title(e.target.value)
+                                }
+                                className="input-style"
+                                size="sm"
+                            />
+                        </FormControl>
+                        <FormControl isRequired>
+                            <FormLabel
+                                fontSize="sm"
+                                color={currentColors.textSecondary}
+                            >
+                                Prompt
+                            </FormLabel>
+                            <Textarea
+                                placeholder="e.g., What additional investigations should I consider for this patient?"
+                                value={quickChat2Prompt}
+                                onChange={(e) =>
+                                    setQuickChat2Prompt(e.target.value)
+                                }
+                                className="input-style"
+                                size="sm"
+                                rows={2}
+                            />
+                        </FormControl>
+                    </VStack>
+                </Box>
+
+                {/* Quick Chat Button 3 */}
+                <Box w="100%" p={4} borderRadius="md" className="floating-main">
+                    <Text
+                        fontWeight="medium"
+                        mb={3}
+                        color={currentColors.textPrimary}
+                    >
+                        Quick Chat Button 3
+                    </Text>
+                    <VStack spacing={3}>
+                        <FormControl isRequired>
+                            <FormLabel
+                                fontSize="sm"
+                                color={currentColors.textSecondary}
+                            >
+                                Button Title
+                            </FormLabel>
+                            <Input
+                                placeholder="e.g., Differential diagnoses"
+                                value={quickChat3Title}
+                                onChange={(e) =>
+                                    setQuickChat3Title(e.target.value)
+                                }
+                                className="input-style"
+                                size="sm"
+                            />
+                        </FormControl>
+                        <FormControl isRequired>
+                            <FormLabel
+                                fontSize="sm"
+                                color={currentColors.textSecondary}
+                            >
+                                Prompt
+                            </FormLabel>
+                            <Textarea
+                                placeholder="e.g., What other differential diagnoses should I consider for this presentation?"
+                                value={quickChat3Prompt}
+                                onChange={(e) =>
+                                    setQuickChat3Prompt(e.target.value)
+                                }
+                                className="input-style"
+                                size="sm"
+                                rows={2}
+                            />
+                        </FormControl>
+                    </VStack>
+                </Box>
+            </VStack>
+        </MotionVStack>
+    );
+
+    const renderLettersStep = () => (
+        <MotionVStack
+            key="letters"
+            variants={stepVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            spacing={6}
+            w="100%"
+        >
+            <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <Box>
+                    <AlertTitle>Choose Default Letter Template</AlertTitle>
+                    <AlertDescription>
+                        Select your preferred letter template for generating
+                        correspondence. You can create custom letter templates
+                        and change this setting later.
+                    </AlertDescription>
+                </Box>
+            </Alert>
+
+            {isFetchingLetterTemplates ? (
+                <Flex align="center" justify="center" py={8}>
+                    <Spinner size="lg" color={currentColors.primaryButton} />
+                    <Text ml={4} color={currentColors.textSecondary}>
+                        Loading letter templates...
+                    </Text>
+                </Flex>
+            ) : (
+                <SimpleGrid columns={1} spacing={4} w="100%">
+                    {availableLetterTemplates.map((template) => (
+                        <Card
+                            key={template.id}
+                            cursor="pointer"
+                            onClick={() =>
+                                setSelectedLetterTemplate(
+                                    template.id.toString(),
+                                )
+                            }
+                            borderWidth="2px"
+                            borderColor={
+                                selectedLetterTemplate ===
+                                template.id.toString()
+                                    ? currentColors.primaryButton
+                                    : "transparent"
+                            }
+                            bg={
+                                selectedLetterTemplate ===
+                                template.id.toString()
+                                    ? currentColors.surface + "40"
+                                    : currentColors.surface
+                            }
+                            _hover={{
+                                borderColor: currentColors.primaryButton + "80",
+                                transform: "translateY(-2px)",
+                            }}
+                            transition="all 0.2s"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack justify="space-between">
+                                    <Heading
+                                        size="md"
+                                        color={currentColors.textPrimary}
+                                    >
+                                        {template.name}
+                                    </Heading>
+                                    {selectedLetterTemplate ===
+                                        template.id.toString() && (
+                                        <Icon
+                                            as={FaCheckCircle}
+                                            color="green.500"
+                                        />
+                                    )}
+                                </HStack>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <Text
+                                    fontSize="sm"
+                                    color={currentColors.textSecondary}
+                                    noOfLines={2}
+                                >
+                                    {template.content ||
+                                        "A template for generating professional correspondence."}
+                                </Text>
+                            </CardBody>
+                        </Card>
+                    ))}
+                </SimpleGrid>
+            )}
+        </MotionVStack>
+    );
+
     const renderCurrentStep = () => {
         switch (currentStep) {
             case STEPS.PERSONAL:
@@ -789,6 +1405,12 @@ const SplashScreen = ({ onComplete }) => {
                 return renderLLMStep();
             case STEPS.TRANSCRIPTION:
                 return renderTranscriptionStep();
+            case STEPS.TEMPLATES:
+                return renderTemplatesStep();
+            case STEPS.QUICK_CHAT:
+                return renderQuickChatStep();
+            case STEPS.LETTERS:
+                return renderLettersStep();
             default:
                 return null;
         }
@@ -812,10 +1434,12 @@ const SplashScreen = ({ onComplete }) => {
                 boxShadow="2xl"
                 className="panels-bg"
                 border={`1px solid ${currentColors.surface}`}
-                w={{ base: "100%", sm: "90%", md: "600px" }}
-                maxW="600px"
+                w={{ base: "100%", sm: "90%", md: "700px" }}
+                maxW="700px"
                 position="relative"
                 overflow="hidden"
+                maxH="90vh"
+                overflowY="auto"
             >
                 {/* Background gradient overlay */}
                 <Box
@@ -878,7 +1502,7 @@ const SplashScreen = ({ onComplete }) => {
                     {/* Progress Bar */}
                     <MotionBox variants={itemVariants}>
                         <Progress
-                            value={((currentStep + 1) / 3) * 100}
+                            value={((currentStep + 1) / 6) * 100}
                             colorScheme="blue"
                             borderRadius="full"
                             size="sm"
@@ -890,7 +1514,7 @@ const SplashScreen = ({ onComplete }) => {
                             textAlign="center"
                             sx={{ fontFamily: '"Roboto", sans-serif' }}
                         >
-                            Step {currentStep + 1} of 3
+                            Step {currentStep + 1} of 6
                         </Text>
                     </MotionBox>
 
@@ -955,15 +1579,14 @@ const SplashScreen = ({ onComplete }) => {
 
                         <Button
                             rightIcon={
-                                currentStep ===
-                                STEPS.TRANSCRIPTION ? undefined : (
+                                currentStep === STEPS.LETTERS ? undefined : (
                                     <FaArrowRight />
                                 )
                             }
                             onClick={handleNext}
                             isLoading={isLoading}
                             loadingText={
-                                currentStep === STEPS.TRANSCRIPTION
+                                currentStep === STEPS.LETTERS
                                     ? "Completing setup..."
                                     : "Processing..."
                             }
@@ -975,7 +1598,7 @@ const SplashScreen = ({ onComplete }) => {
                                 fontWeight: "600",
                             }}
                         >
-                            {currentStep === STEPS.TRANSCRIPTION
+                            {currentStep === STEPS.LETTERS
                                 ? "Complete Setup"
                                 : "Next"}
                         </Button>
