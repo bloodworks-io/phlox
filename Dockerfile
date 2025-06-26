@@ -40,7 +40,7 @@ RUN mkdir -p /usr/src/app/static
 RUN mkdir -p /usr/src/app/temp
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r /usr/src/app/server/requirements.txt
+RUN pip install --no-cache-dir -r /usr/src/app/server/requirements-docker.txt
 
 # Expose necessary ports
 EXPOSE 5000
