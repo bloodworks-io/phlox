@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Query, Path, Body
 from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import httpx
 from server.database.config import config_manager
+from server.utils.llm_client import LocalModelManager
+from server.constants import IS_DOCKER
 import logging
 import re
+import os
+import json
+from typing import Optional, List, Dict, Any
 
 router = APIRouter()
 
@@ -14,26 +19,22 @@ async def get_prompts():
     """Retrieve the current prompts configuration."""
     return JSONResponse(content=config_manager.get_prompts())
 
-
 @router.post("/prompts")
 async def update_prompts(data: dict):
     """Update prompts configuration with provided data."""
     config_manager.update_prompts(data)
     return {"message": "prompts.js updated successfully"}
 
-
 @router.get("/global")
 async def get_config():
     """Retrieve the current global configuration."""
     return JSONResponse(content=config_manager.get_config())
-
 
 @router.post("/global")
 async def update_config(data: dict):
     """Update other configuration items with provided data."""
     config_manager.update_config(data)
     return {"message": "config.js updated successfully"}
-
 
 @router.get("/validate-url")
 async def validate_url(
@@ -97,22 +98,48 @@ async def validate_url(
         logging.error(f"Error validating URL: {str(e)}")
         return {"valid": False, "error": "An internal error has occurred while validating the URL."}
 
-
 @router.get("/ollama")
 async def get_all_options():
     """Retrieve all Ollama-related configuration options."""
     return JSONResponse(content=config_manager.get_all_options())
 
-
 @router.get("/llm/models")
 async def get_llm_models(
-    provider: str = Query(..., description="LLM provider type (ollama or openai)"),
-    baseUrl: str = Query(..., description="The base URL for the LLM API"),
+    provider: str = Query(..., description="LLM provider type (ollama, openai, or local)"),
+    baseUrl: str = Query(None, description="The base URL for the LLM API"),
     apiKey: str = Query(None, description="API key (required for OpenAI)")
 ):
     """Fetch available models from the configured LLM provider."""
     try:
-        if provider.lower() == "ollama":
+        if provider.lower() == "local":
+            # For local models, return downloaded models
+            if IS_DOCKER:
+                return {"models": [], "error": "Local models not available in Docker"}
+
+            try:
+                model_manager = LocalModelManager()
+                models_dir = model_manager.models_dir
+
+                if not models_dir.exists():
+                    return {"models": []}
+
+                models = []
+                for repo_dir in models_dir.iterdir():
+                    if repo_dir.is_dir():
+                        repo_id = repo_dir.name.replace("_", "/")
+                        for model_file in repo_dir.iterdir():
+                            if model_file.suffix.lower() == '.gguf':
+                                models.append(f"{repo_id}/{model_file.name}")
+
+                return {"models": models}
+            except Exception as e:
+                logging.error(f"Error fetching local models: {e}")
+                return {"models": [], "error": "Failed to fetch local models"}
+
+        elif provider.lower() == "ollama":
+            if not baseUrl:
+                raise HTTPException(status_code=400, detail="baseUrl is required for Ollama")
+
             async with httpx.AsyncClient() as client:
                 url = f"{baseUrl}/api/tags"
                 response = await client.get(url, timeout=5.0)
@@ -126,6 +153,9 @@ async def get_llm_models(
                     )
 
         elif provider.lower() == "openai":
+            if not baseUrl:
+                raise HTTPException(status_code=400, detail="baseUrl is required for OpenAI")
+
             # For OpenAI-compatible endpoints
             headers = {"Authorization": f"Bearer {apiKey}"} if apiKey else {}
 
@@ -155,12 +185,11 @@ async def get_llm_models(
                     return {"models": []}
 
         else:
-            raise HTTPException(status_code=400, detail="Unsupported provider type")
+            raise HTTPException(status_code=400, detail="Unsupported provider type. Must be 'ollama', 'openai', or 'local'")
 
     except Exception as e:
         logging.error(f"Error fetching LLM models: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
 
 @router.get("/ollama/{category}")
 async def get_options_by_category(
@@ -175,7 +204,6 @@ async def get_options_by_category(
             status_code=404, detail=f"No options found for category: {category}"
         )
 
-
 @router.post("/ollama/{category}")
 async def update_options(
     category: str = Path(..., description="The category of options to update"),
@@ -186,7 +214,6 @@ async def update_options(
     return {
         "message": f"Options for category '{category}' updated successfully"
     }
-
 
 @router.get("/ollama/models")
 async def get_models(
@@ -210,7 +237,6 @@ async def get_models(
     except Exception as e:
         logging.error(f"Error fetching models: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
 
 @router.get("/whisper/models")
 async def get_whisper_models(
@@ -248,19 +274,16 @@ async def get_whisper_models(
         logging.error(f"Error in get_whisper_models: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-
 @router.post("/reset-to-defaults")
 async def reset_to_defaults():
     """Reset configuration settings to their default values."""
     config_manager.reset_to_defaults()
     return {"message": "All configurations reset to defaults"}
 
-
 @router.get("/user")
 async def get_user_settings():
     """Retrieve the current user settings."""
     return JSONResponse(content=config_manager.get_user_settings())
-
 
 @router.post("/user")
 async def update_user_settings(data: dict):
@@ -297,7 +320,6 @@ async def mark_splash_complete():
     config_manager.update_user_settings(current_settings)
     return {"message": "Splash screen marked as completed."}
 
-
 @router.get("/changelog")
 async def get_changelog():
     """Retrieve the full changelog content."""
@@ -309,7 +331,6 @@ async def get_changelog():
     except Exception as e:
         logging.error(f"Error retrieving changelog: {str(e)}")
         return {"content": "Error retrieving changelog."}
-
 
 @router.get("/version")
 async def get_version():
@@ -329,7 +350,6 @@ async def get_version():
     except Exception as e:
         logging.error(f"Error getting version from CHANGELOG.md: {str(e)}")
         return {"version": "unknown"}
-
 
 @router.get("/status")
 async def get_server_status():
@@ -373,3 +393,270 @@ async def get_server_status():
     except Exception as e:
         logging.error(f"Error checking server status: {str(e)}")
         return status
+
+        return status
+    except Exception as e:
+        logging.error(f"Error checking server status: {str(e)}")
+        return status
+
+@router.get("/local/models")
+async def get_local_models():
+    """Get list of downloaded local models."""
+    if IS_DOCKER:
+        raise HTTPException(status_code=400, detail="Local models are only available in Tauri builds")
+
+    try:
+        model_manager = LocalModelManager()
+        models_dir = model_manager.models_dir
+
+        if not models_dir.exists():
+            return {"models": []}
+
+        models = []
+        for repo_dir in models_dir.iterdir():
+            if repo_dir.is_dir():
+                repo_id = repo_dir.name.replace("_", "/")
+                for model_file in repo_dir.iterdir():
+                    if model_file.suffix.lower() == '.gguf':
+                        file_size = model_file.stat().st_size
+                        models.append({
+                            "repo_id": repo_id,
+                            "filename": model_file.name,
+                            "path": str(model_file),
+                            "size": file_size,
+                            "size_mb": round(file_size / (1024 * 1024), 2)
+                        })
+
+        return {"models": models}
+    except Exception as e:
+        logging.error(f"Error getting local models: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get local models")
+
+@router.post("/local/models/download")
+async def download_local_model(
+    repo_id: str = Body(..., description="Hugging Face repository ID"),
+    filename: str = Body(None, description="Specific filename to download (optional)"),
+    quantization: str = Body("Q4_K_M", description="Quantization level (default: Q4_K_M)")
+):
+    """Download a model from Hugging Face Hub."""
+    if IS_DOCKER:
+        raise HTTPException(status_code=400, detail="Local models are only available in Tauri builds")
+
+    try:
+        model_manager = LocalModelManager()
+
+        # If no specific filename provided, try to find a Q4_K_M quantized model
+        if not filename:
+            try:
+                from huggingface_hub import list_repo_files
+                files = list_repo_files(repo_id)
+
+                # Look for GGUF files with the specified quantization
+                gguf_files = [f for f in files if f.endswith('.gguf')]
+
+                # Prefer files with the specified quantization
+                preferred_files = [f for f in gguf_files if quantization.lower() in f.lower()]
+
+                if preferred_files:
+                    filename = preferred_files[0]
+                elif gguf_files:
+                    filename = gguf_files[0]
+                else:
+                    raise HTTPException(status_code=404, detail="No GGUF files found in repository")
+
+            except ImportError:
+                raise HTTPException(status_code=500, detail="huggingface_hub not installed")
+            except Exception as e:
+                raise HTTPException(status_code=404, detail=f"Repository not found or error listing files: {e}")
+
+        # Check if model is already downloaded
+        if model_manager.is_model_downloaded(repo_id, filename):
+            return {"message": "Model already downloaded", "repo_id": repo_id, "filename": filename}
+
+        # Download the model
+        downloaded_path = await model_manager.download_model(repo_id, filename)
+
+        return {
+            "message": "Model downloaded successfully",
+            "repo_id": repo_id,
+            "filename": filename,
+            "path": downloaded_path
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error downloading model {repo_id}/{filename}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to download model: {str(e)}")
+
+@router.delete("/local/models")
+async def delete_local_model(
+    repo_id: str = Query(..., description="Repository ID"),
+    filename: str = Query(..., description="Model filename")
+):
+    """Delete a downloaded local model."""
+    if IS_DOCKER:
+        raise HTTPException(status_code=400, detail="Local models are only available in Tauri builds")
+
+    try:
+        model_manager = LocalModelManager()
+        model_path = Path(model_manager.get_model_path(repo_id, filename))
+
+        if not model_path.exists():
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        # Delete the model file
+        model_path.unlink()
+
+        # If the directory is empty, remove it too
+        if model_path.parent.is_dir() and not any(model_path.parent.iterdir()):
+            model_path.parent.rmdir()
+
+        return {"message": "Model deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting model {repo_id}/{filename}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete model")
+
+@router.get("/local/models/search")
+async def search_huggingface_models(
+    query: str = Query(..., description="Search query"),
+    limit: int = Query(20, description="Maximum number of results")
+):
+    """Search for GGUF models on Hugging Face Hub."""
+    try:
+        from huggingface_hub import HfApi
+
+        api = HfApi()
+
+        # Search for models with GGUF in the name or tags
+        models = api.list_models(
+            search=f"{query} gguf",
+            limit=limit,
+            sort="downloads",
+            direction=-1
+        )
+
+        results = []
+        for model in models:
+            # Get basic model info
+            model_info = {
+                "repo_id": model.id,
+                "author": model.author,
+                "downloads": getattr(model, 'downloads', 0),
+                "likes": getattr(model, 'likes', 0),
+                "tags": getattr(model, 'tags', []),
+                "description": getattr(model, 'description', ''),
+            }
+
+            # Try to get GGUF files for this model
+            try:
+                files = api.list_repo_files(model.id)
+                gguf_files = [f for f in files if f.endswith('.gguf')]
+                model_info["gguf_files"] = gguf_files[:10]  # Limit to first 10 files
+                model_info["has_gguf"] = len(gguf_files) > 0
+            except:
+                model_info["gguf_files"] = []
+                model_info["has_gguf"] = False
+
+            # Only include models that have GGUF files
+            if model_info["has_gguf"]:
+                results.append(model_info)
+
+        return {"models": results}
+
+    except ImportError:
+        raise HTTPException(status_code=500, detail="huggingface_hub not installed")
+    except Exception as e:
+        logging.error(f"Error searching models: {e}")
+        raise HTTPException(status_code=500, detail="Failed to search models")
+
+@router.get("/local/models/repo/{repo_id:path}")
+async def get_repo_gguf_files(repo_id: str):
+    """Get GGUF files available in a specific repository."""
+    try:
+        from huggingface_hub import list_repo_files
+
+        files = list_repo_files(repo_id)
+        gguf_files = [f for f in files if f.endswith('.gguf')]
+
+        # Organize by quantization type
+        quantizations = {}
+        for file in gguf_files:
+            # Extract quantization info from filename
+            filename_lower = file.lower()
+            if 'q4_k_m' in filename_lower:
+                quant_type = 'Q4_K_M'
+            elif 'q4_0' in filename_lower:
+                quant_type = 'Q4_0'
+            elif 'q5_k_m' in filename_lower:
+                quant_type = 'Q5_K_M'
+            elif 'q6_k' in filename_lower:
+                quant_type = 'Q6_K'
+            elif 'q8_0' in filename_lower:
+                quant_type = 'Q8_0'
+            elif 'f16' in filename_lower:
+                quant_type = 'F16'
+            elif 'f32' in filename_lower:
+                quant_type = 'F32'
+            else:
+                quant_type = 'Other'
+
+            if quant_type not in quantizations:
+                quantizations[quant_type] = []
+            quantizations[quant_type].append(file)
+
+        return {
+            "repo_id": repo_id,
+            "gguf_files": gguf_files,
+            "quantizations": quantizations
+        }
+
+    except ImportError:
+        raise HTTPException(status_code=500, detail="huggingface_hub not installed")
+    except Exception as e:
+        logging.error(f"Error getting repo files for {repo_id}: {e}")
+        raise HTTPException(status_code=404, detail="Repository not found or error accessing files")
+
+@router.get("/local/status")
+async def get_local_model_status():
+    """Get status of local model support."""
+    if IS_DOCKER:
+        return {
+            "available": False,
+            "reason": "Local models are only available in Tauri builds"
+        }
+
+    try:
+        # Check if required dependencies are installed
+        try:
+            import llama_cpp
+            llama_cpp_available = True
+        except ImportError:
+            llama_cpp_available = False
+
+        try:
+            import huggingface_hub
+            hf_hub_available = True
+        except ImportError:
+            hf_hub_available = False
+
+        model_manager = LocalModelManager()
+        models_dir_exists = model_manager.models_dir.exists()
+
+        return {
+            "available": llama_cpp_available and hf_hub_available,
+            "llama_cpp_installed": llama_cpp_available,
+            "huggingface_hub_installed": hf_hub_available,
+            "models_directory": str(model_manager.models_dir),
+            "models_directory_exists": models_dir_exists
+        }
+
+    except Exception as e:
+        logging.error(f"Error checking local model status: {e}")
+        return {
+            "available": False,
+            "reason": f"Error checking status: {str(e)}"
+        }

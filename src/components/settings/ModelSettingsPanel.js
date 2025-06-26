@@ -19,6 +19,7 @@ import {
     CheckCircleIcon,
 } from "@chakra-ui/icons";
 import { FaCog } from "react-icons/fa";
+import LocalModelManager from "./LocalModelManager";
 
 const ModelSettingsPanel = ({
     isCollapsed,
@@ -163,42 +164,45 @@ const ModelSettingsPanel = ({
                         >
                             <option value="ollama">Ollama</option>
                             <option value="openai">OpenAI-compatible</option>
+                            <option value="local">Local Models</option>
                         </Select>
                     </Box>
 
-                    <Box>
-                        <Tooltip label="Base URL for the LLM API">
-                            <Text fontSize="sm" mt="2">
-                                {config?.LLM_PROVIDER === "openai"
-                                    ? "OpenAI-compatible API Base URL"
-                                    : "Ollama Base URL"}
-                            </Text>
-                        </Tooltip>
-                        <InputGroup size="sm">
-                            <Input
-                                value={config?.LLM_BASE_URL || ""}
-                                onChange={(e) =>
-                                    handleConfigChange(
-                                        "LLM_BASE_URL",
-                                        e.target.value,
-                                    )
-                                }
-                                placeholder={
-                                    config?.LLM_PROVIDER === "openai"
-                                        ? "https://api.openai.com"
-                                        : "http://localhost:11434"
-                                }
-                                className="input-style"
-                            />
-                            {urlStatus.llm && ( // Changed from urlStatus.ollama to urlStatus.llm
-                                <InputRightElement>
-                                    <Tooltip label="Connection successful">
-                                        <CheckCircleIcon color="green.500" />
-                                    </Tooltip>
-                                </InputRightElement>
-                            )}
-                        </InputGroup>
-                    </Box>
+                    {config?.LLM_PROVIDER !== "local" && (
+                        <Box>
+                            <Tooltip label="Base URL for the LLM API">
+                                <Text fontSize="sm" mt="2">
+                                    {config?.LLM_PROVIDER === "openai"
+                                        ? "OpenAI-compatible API Base URL"
+                                        : "Ollama Base URL"}
+                                </Text>
+                            </Tooltip>
+                            <InputGroup size="sm">
+                                <Input
+                                    value={config?.LLM_BASE_URL || ""}
+                                    onChange={(e) =>
+                                        handleConfigChange(
+                                            "LLM_BASE_URL",
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder={
+                                        config?.LLM_PROVIDER === "openai"
+                                            ? "https://api.openai.com"
+                                            : "http://localhost:11434"
+                                    }
+                                    className="input-style"
+                                />
+                                {urlStatus.llm && ( // Changed from urlStatus.ollama to urlStatus.llm
+                                    <InputRightElement>
+                                        <Tooltip label="Connection successful">
+                                            <CheckCircleIcon color="green.500" />
+                                        </Tooltip>
+                                    </InputRightElement>
+                                )}
+                            </InputGroup>
+                        </Box>
+                    )}
 
                     {config?.LLM_PROVIDER === "openai" && (
                         <Box>
@@ -323,6 +327,13 @@ const ModelSettingsPanel = ({
                             </Box>
                         </Collapse>
                     </Box>
+
+                    {/* Local Model Manager - only show when local provider is selected */}
+                    {config?.LLM_PROVIDER === "local" && (
+                        <Box mt={4}>
+                            <LocalModelManager />
+                        </Box>
+                    )}
                 </VStack>
             </Collapse>
         </Box>

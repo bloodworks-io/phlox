@@ -51,14 +51,28 @@ export const settingsService = {
     },
 
     // New consolidated method to fetch LLM models - works for both Ollama and OpenAI-compatible
+    // New consolidated method to fetch LLM models - works for Ollama, OpenAI-compatible, and Local
     fetchLLMModels: async (config, setModelOptions) => {
         try {
+            const providerType = config.LLM_PROVIDER || "ollama";
+
+            // For local models, we don't need base URL
+            if (providerType === "local") {
+                const response = await settingsApi.fetchLLMModels(
+                    providerType,
+                    null, // No base URL needed for local
+                    null, // No API key needed for local
+                );
+                setModelOptions(response.models || []);
+                return;
+            }
+
+            // For remote providers, base URL is required
             if (!config.LLM_BASE_URL) {
                 setModelOptions([]);
                 return;
             }
 
-            const providerType = config.LLM_PROVIDER || "ollama";
             const baseUrl = config.LLM_BASE_URL;
             const apiKey = config.LLM_API_KEY || "";
 

@@ -157,33 +157,7 @@ class ConfigManager:
                 quick_chat_1_title, quick_chat_1_prompt,
                 quick_chat_2_title, quick_chat_2_prompt,
                 quick_chat_3_title, quick_chat_3_prompt,
-                default_letter_template_id
-            FROM user_settings LIMIT 1
-        """
-        )
-        result = self.db.cursor.fetchone()
-        if result:
-            return dict(result)
-        return {
-            "name": "",
-            "specialty": "",
-            "quick_chat_1_title": "Critique my plan",
-            "quick_chat_1_prompt": "Critique my plan",
-            "quick_chat_2_title": "Any additional investigations",
-            "quick_chat_2_prompt": "Any additional investigations",
-            "quick_chat_3_title": "Any differentials to consider",
-            "quick_chat_3_prompt": "Any differentials to consider",
-            "default_letter_template_id": None,
-        }
-
-    def get_user_settings(self):
-        """Retrieves user settings from the database."""
-        self.db.cursor.execute(
-            """
-            SELECT name, specialty,
-                quick_chat_1_title, quick_chat_1_prompt,
-                quick_chat_2_title, quick_chat_2_prompt,
-                quick_chat_3_title, quick_chat_3_prompt,
+                default_template_key,
                 default_letter_template_id,
                 has_completed_splash_screen
             FROM user_settings LIMIT 1
@@ -192,7 +166,11 @@ class ConfigManager:
         result = self.db.cursor.fetchone()
 
         if result:
-            return dict(result)
+            settings = dict(result)
+            # Ensure the splash screen flag is a proper boolean
+            if "has_completed_splash_screen" in settings:
+                settings["has_completed_splash_screen"] = bool(settings["has_completed_splash_screen"])
+            return settings
         return {
             "name": "",
             "specialty": "",
@@ -202,6 +180,7 @@ class ConfigManager:
             "quick_chat_2_prompt": "Any additional investigations",
             "quick_chat_3_title": "Any differentials to consider",
             "quick_chat_3_prompt": "Any differentials to consider",
+            "default_template_key": None,
             "default_letter_template_id": None,
             "has_completed_splash_screen": False,
         }
@@ -215,9 +194,10 @@ class ConfigManager:
                 quick_chat_1_title, quick_chat_1_prompt,
                 quick_chat_2_title, quick_chat_2_prompt,
                 quick_chat_3_title, quick_chat_3_prompt,
+                default_template_key,
                 default_letter_template_id,
                 has_completed_splash_screen
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 settings.get("name", ""),
@@ -228,6 +208,7 @@ class ConfigManager:
                 settings.get("quick_chat_2_prompt", "Any additional investigations"),
                 settings.get("quick_chat_3_title", "Any differentials to consider"),
                 settings.get("quick_chat_3_prompt", "Any differentials to consider"),
+                settings.get("default_template_key"),
                 settings.get("default_letter_template_id"),
                 bool(settings.get("has_completed_splash_screen", False))
             )

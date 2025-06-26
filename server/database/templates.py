@@ -470,19 +470,23 @@ def set_default_template(template_key: str) -> None:
 
         if row:
             # Update existing settings
+            logging.info(
+                f"Updating default template to {template_key} in database"
+            )
             db.cursor.execute(
                 "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
                 (template_key, row["id"]),
             )
         else:
             # Create new settings record
+
             db.cursor.execute(
                 "INSERT INTO user_settings (default_template_key) VALUES (?)",
                 (template_key,),
             )
 
         db.commit()
-        print(
+        logging.info(
             f"Successfully set default template to {template_key} in database"
         )
     except Exception as e:
@@ -510,7 +514,7 @@ def get_default_template() -> Optional[Dict[str, Any]]:
             template_key = row["default_template_key"]
             template = get_template_by_key(template_key)
             logging.info(
-                f"Retrieved template for key {template_key}: {template}"
+                f"Successfully retrieved template {template_key}."
             )
             return template
 
