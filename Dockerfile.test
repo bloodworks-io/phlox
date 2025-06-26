@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
 
 # First copy requirements to leverage Docker cache
 COPY server/requirements.txt /usr/src/app/server/
-RUN pip install --no-cache-dir -r server/requirements.txt
+COPY server/requirements-base.txt /usr/src/app/server/
+RUN pip install --no-cache-dir -r server/requirements-base.txt
 RUN pip install --no-cache-dir pytest pytest-asyncio pytest-cov
 
 # Then copy the rest of the application

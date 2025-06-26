@@ -27,7 +27,7 @@ RUN mkdir -p /usr/src/app/build
 
 # Create and activate a Python virtual environment, install dependencies
 RUN python3 -m venv /usr/src/app/venv
-RUN /bin/bash -c "source /usr/src/app/venv/bin/activate && pip install --upgrade pip && pip install --no-cache-dir -r /usr/src/app/server/requirements.txt && pip install --no-cache-dir pytest-asyncio"
+RUN /bin/bash -c "source /usr/src/app/venv/bin/activate && pip install --upgrade pip && pip install --no-cache-dir -r /usr/src/app/server/requirements-base.txt && pip install --no-cache-dir pytest-asyncio"
 
 # Make a shell script to initialize the database and start both React and FastAPI
 RUN echo '#!/bin/bash\n\

@@ -39,8 +39,8 @@ RUN mkdir -p /usr/src/app/data
 RUN mkdir -p /usr/src/app/static
 RUN mkdir -p /usr/src/app/temp
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r /usr/src/app/server/requirements.txt
+# Install Python dependencies (base requirements only)
+RUN pip install --no-cache-dir -r /usr/src/app/server/requirements-base.txt
 
 # Expose necessary ports
 EXPOSE 5000
