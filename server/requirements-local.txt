@@ -1,5 +1,5 @@
 # Local inference requirements (Tauri builds only)
--r requirements-base.txt
+-r requirements.txt
 
 # Local inference dependencies
 llama-cpp-python>=0.2.0
