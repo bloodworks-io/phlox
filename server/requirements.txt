@@ -18,6 +18,5 @@ pytest==8.3.4
 python-dotenv==1.0.1
 python-Levenshtein==0.25.1
 python-multipart==0.0.18
-sqlcipher3_binary==0.5.4
 tiktoken==0.7.0
 uvicorn==0.34.0
