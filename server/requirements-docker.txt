@@ -1,0 +1,4 @@
+# Docker requirements
+-r requirements.txt
+
+sqlcipher3_binary==0.5.4

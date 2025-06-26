@@ -1,3 +1,23 @@
-# Default requirements file - points to base requirements
-# This ensures Docker builds don't get local inference dependencies
--r requirements-base.txt
+aiohttp==3.10.11
+APScheduler==3.10.4
+attr==0.3.2
+chromadb==0.6.3
+fastapi==0.115.8
+feedparser==6.0.11
+fuzzywuzzy==0.18.0
+httpx==0.28.1
+icalendar==5.0.13
+ollama==0.4.7
+openai==1.76.2
+Pillow==11.1.0
+platformdirs==4.3.8
+pydantic==2.10.6
+PyMuPDF==1.24.9
+pytesseract==0.3.13
+pytest==8.3.4
+python-dotenv==1.0.1
+python-Levenshtein==0.25.1
+python-multipart==0.0.18
+sqlcipher3_binary==0.5.4
+tiktoken==0.7.0
+uvicorn==0.34.0
