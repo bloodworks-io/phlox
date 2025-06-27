@@ -6,12 +6,17 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from server.tests.test_database import test_db as test_database
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import socket
 from contextlib import asynccontextmanager, closing
 
-from server.constants import APP_NAME, BUILD_DIR, DATA_DIR, IS_DOCKER
+from server.constants import (
+    APP_NAME,
+    BUILD_DIR,
+    DATA_DIR,
+    IS_DOCKER,
+    IS_TESTING,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,6 +25,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 scheduler = AsyncIOScheduler()
+
+if IS_TESTING:
+    try:
+        from server.tests.test_database import test_db as test_database
+    except ImportError:
+        test_database = None
+else:
+    test_database = None
 
 
 # Start the scheduler when the app starts
@@ -77,17 +90,20 @@ from server.database.analysis import (
 )
 
 
-@app.get("/test-db")
-async def test_db():
-    try:
-        result = test_database()
-        logger.info(f"Database test succeeded: {result}")
-        return {"success": "Database test succeeded", "result": result}
-    except Exception as e:
-        logger.error(f"Database test failed: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Database test failed: {str(e)}"
-        )
+# Only create test endpoint in testing environment
+if IS_TESTING and test_database is not None:
+
+    @app.get("/test-db")
+    async def test_db():
+        try:
+            result = test_database()
+            logger.info(f"Database test succeeded: {result}")
+            return {"success": "Database test succeeded", "result": result}
+        except Exception as e:
+            logger.error(f"Database test failed: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Database test failed: {str(e)}"
+            )
 
 
 # Include routers
