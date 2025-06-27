@@ -40,7 +40,6 @@ build/
 dist/
 .tmp/
 main.*/
-src-tauri/
 
 # Coverage
 coverage/
