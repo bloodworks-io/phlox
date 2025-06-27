@@ -12,6 +12,7 @@ from server.database.config import config_manager
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client import get_llm_client, LLMProviderType
 from server.constants import DATA_DIR
+from server.utils.embeddings import LocalEmbeddingFunction
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -98,6 +99,11 @@ class ChatEngine:
                 model_name=self.config["EMBEDDING_MODEL"],
                 api_key=self.config.get("LLM_API_KEY", "cant-be-empty"),
                 api_base=f"{self.config['LLM_BASE_URL']}/v1",
+            )
+        elif provider_type == LLMProviderType.LOCAL.value:
+            return LocalEmbeddingFunction(
+                model_name=self.config["EMBEDDING_MODEL"],
+                models_dir=self.config.get("LOCAL_MODELS_DIR"),
             )
         else:
             raise ValueError(f"Unsupported LLM provider type: {provider_type}")

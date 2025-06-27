@@ -11,6 +11,7 @@ import asyncio
 from server.constants import DATA_DIR
 from server.database.config import config_manager
 from server.utils.llm_client import get_llm_client, LLMProviderType
+from server.utils.embeddings import LocalEmbeddingFunction
 
 prompts = config_manager.get_prompts_and_options()
 
@@ -41,6 +42,11 @@ class ChromaManager:
                 api_key=self.config.get("LLM_API_KEY", "cant-be-empty"),
                 api_base=f"{self.config['LLM_BASE_URL']}/v1",
             )
+        elif provider_type == LLMProviderType.LOCAL.value:
+            self.embedding_model = LocalEmbeddingFunction(
+                model_name=self.config["EMBEDDING_MODEL"],
+                models_dir=self.config.get("LOCAL_MODELS_DIR"),
+            )
         else:
             raise ValueError(f"Unsupported LLM provider type: {provider_type}")
 
@@ -61,7 +67,9 @@ class ChromaManager:
         options = config_manager.get_prompts_and_options()["options"]["general"]
 
         # Add thinking support to schema
-        response_format = add_thinking_to_schema(schema, self.config["PRIMARY_MODEL"])
+        response_format = add_thinking_to_schema(
+            schema, self.config["PRIMARY_MODEL"]
+        )
 
         response = await self.llm_client.chat(
             model=self.config["PRIMARY_MODEL"],
@@ -353,8 +361,7 @@ class ChromaManager:
         ]
 
         disease_response = await self.get_structured_response(
-            disease_messages,
-            DiseaseNameResponse.model_json_schema()
+            disease_messages, DiseaseNameResponse.model_json_schema()
         )
 
         disease_data = DiseaseNameResponse.model_validate_json(disease_response)
@@ -391,13 +398,12 @@ class ChromaManager:
                 Choose the most appropriate focus area from: guidelines, diagnosis, treatment, epidemiology, pathophysiology, prognosis, clinical_features, prevention, or miscellaneous.
 
                 Provide the focus area in lowercase with underscores instead of spaces.""",
-                },
-            ]
+            },
+        ]
 
         focus_response = await self.get_structured_response(
-                focus_area_messages,
-                FocusAreaResponse.model_json_schema()
-            )
+            focus_area_messages, FocusAreaResponse.model_json_schema()
+        )
 
         focus_data = FocusAreaResponse.model_validate_json(focus_response)
 
@@ -438,14 +444,15 @@ class ChromaManager:
                 If the document matches one of the available sources, use that exact name.
                 Otherwise, provide the actual source name of the document.
                 Provide the source in lowercase with underscores instead of spaces.""",
-                },
-            ]
+            },
+        ]
 
         source_response = await self.get_structured_response(
-            source_messages,
-            DocumentSourceResponse.model_json_schema()
+            source_messages, DocumentSourceResponse.model_json_schema()
         )
 
-        source_data = DocumentSourceResponse.model_validate_json(source_response)
+        source_data = DocumentSourceResponse.model_validate_json(
+            source_response
+        )
 
         return source_data.source
