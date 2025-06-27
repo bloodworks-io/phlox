@@ -34,12 +34,26 @@ fn start_server(app_handle: tauri::AppHandle) -> Result<Child, Box<dyn std::erro
 
     log::info!("Attempting to start server from: {:?}", server_path);
 
+    // Check if server binary exists
+    if !server_path.exists() {
+        return Err(format!(
+            "Server binary not found at {:?}. Please run './build-server.sh' to build the Python server first.",
+            server_path
+        ).into());
+    }
+
     let mut cmd = Command::new(&server_path);
 
     cmd.stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit());
 
-    let child = cmd.spawn()?;
+    let child = cmd.spawn().map_err(|e| {
+        format!(
+            "Failed to spawn server process: {}. Make sure the server binary is executable.",
+            e
+        )
+    })?;
+
     log::info!("Server started with PID: {}", child.id());
 
     Ok(child)
