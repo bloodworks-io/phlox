@@ -5,4 +5,4 @@
 llama-cpp-python>=0.2.0
 pywhispercpp>=1.0.0
 huggingface-hub>=0.20.0
-transformers>=4.30.0
+sqlcipher3-wheels==0.5.4

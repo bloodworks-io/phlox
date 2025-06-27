@@ -39,7 +39,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [],
+    "resources": ["server_dist"],
     "linux": {
       "deb": {
         "depends": []
