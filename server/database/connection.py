@@ -11,6 +11,7 @@ from server.database.defaults.templates import DefaultTemplates
 from server.database.defaults.letters import DefaultLetters
 
 
+
 class PatientDatabase:
     SCHEMA_VERSION = 4  # Current schema version
     _instance = None
@@ -143,17 +144,26 @@ class PatientDatabase:
             logging.error(f"Error setting initial default template: {e}")
             raise
 
-    def __init__(self, db_dir=None):
-        # Only initialize once
-        if self._initialized:
-            return
+    def __init__(self, db_dir="/usr/src/app/data"):
+        self.db_dir = db_dir
+        self.encryption_key = None
 
-        if db_dir is None:
-            self.db_dir = str(DATA_DIR)
-        else:
-            self.db_dir = db_dir
+        # Try Podman secret file first
+        secret_file = "/run/secrets/db_key"
+        if os.path.exists(secret_file):
+            try:
+                with open(secret_file, "r") as f:
+                    self.encryption_key = f.read().strip()
+                logging.info("Using encryption key from Podman secret")
+            except Exception as e:
+                logging.warning(f"Failed to read secret file: {e}")
 
-        self.encryption_key = os.environ.get("DB_ENCRYPTION_KEY")
+        # Fallback to environment variable
+        if not self.encryption_key:
+            self.encryption_key = os.environ.get("DB_ENCRYPTION_KEY")
+            if self.encryption_key:
+                logging.info("Using encryption key from environment variable")
+
         if not self.encryption_key:
             logging.error("DB_ENCRYPTION_KEY environment variable not set!")
             raise ValueError("Database encryption key must be provided")
