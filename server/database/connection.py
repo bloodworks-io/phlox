@@ -149,7 +149,7 @@ class PatientDatabase:
         self.encryption_key = None
 
         # Try Podman secret file first
-        secret_file = "/run/secrets/db_key"
+        secret_file = "/run/secrets/db_encryption_key"
         if os.path.exists(secret_file):
             try:
                 with open(secret_file, "r") as f:
