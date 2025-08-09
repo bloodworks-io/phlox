@@ -1,3 +1,8 @@
+if __name__ == "__main__":
+    import multiprocessing
+
+    multiprocessing.freeze_support()
+
 import logging
 import os
 from pathlib import Path
@@ -60,6 +65,19 @@ app = FastAPI(
     title=APP_NAME,
     lifespan=lifespan,  # Add the lifespan context manager
 )
+
+
+# Add this after creating the app but before adding other middleware
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logger.info(
+        f"=== REQUEST - PID: {os.getpid()} - {request.method} {request.url} ==="
+    )
+    response = await call_next(request)
+    logger.info(
+        f"=== RESPONSE - PID: {os.getpid()} - {response.status_code} ==="
+    )
+    return response
 
 
 # CORS configuration
@@ -148,6 +166,7 @@ def find_free_port():
 
 def start_server_for_desktop():
     """Start server with dynamic port for desktop app"""
+    logger.info(f"Desktop environment detected")
     port = find_free_port()
 
     # Write port to a file that Tauri can read
@@ -161,7 +180,7 @@ def start_server_for_desktop():
         timeout_keep_alive=300,
         timeout_graceful_shutdown=10,
         loop="asyncio",
-        workers=1,
+        workers=0,
         http="httptools",
     )
     server = uvicorn.Server(config)

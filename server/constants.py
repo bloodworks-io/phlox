@@ -11,6 +11,7 @@ IS_DOCKER = (
 APP_NAME = "Phlox"
 APP_AUTHOR = "bloodworks.io"
 
+
 def get_app_directories():
     """Get appropriate directories based on environment"""
     if IS_DOCKER:
@@ -22,6 +23,7 @@ def get_app_directories():
         build_dir = None  # No need to serve static files
 
     return data_dir, build_dir
+
 
 # Get directories
 DATA_DIR, BUILD_DIR = get_app_directories()

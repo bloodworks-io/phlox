@@ -150,16 +150,8 @@ async def get_llm_models(
 
             try:
                 model_manager = LocalModelManager()
-                models_dir = model_manager.models_dir
-
-                if not models_dir.exists():
-                    return {"models": []}
-
-                models = []
-                for model_file in models_dir.iterdir():
-                    if model_file.suffix.lower() == ".gguf":
-                        models.append({model_file.name})
-                return {"models": models}
+                models = await model_manager.list_models()
+                return {"models": [model["name"] for model in models]}
             except Exception as e:
                 logging.error(f"Error fetching local models: {e}")
                 return {"models": [], "error": "Failed to fetch local models"}
@@ -486,25 +478,20 @@ async def get_local_models():
 
     try:
         model_manager = LocalModelManager()
-        models_dir = model_manager.models_dir
+        models = await model_manager.list_models()
 
-        if not models_dir.exists():
-            return {"models": []}
+        formatted_models = []
+        for model in models:
+            formatted_models.append(
+                {
+                    "name": model["name"],
+                    "size": model.get("size", 0),
+                    "modified_at": model.get("modified_at", ""),
+                }
+            )
 
-        models = []
-        for model_file in models_dir.iterdir():
-            if model_file.suffix.lower() == ".gguf":
-                file_size = model_file.stat().st_size
-                models.append(
-                    {
-                        "filename": model_file.name,
-                        "path": str(model_file),
-                        "size": file_size,
-                        "size_mb": round(file_size / (1024 * 1024), 2),
-                    }
-                )
+        return {"models": formatted_models}
 
-        return {"models": models}
     except Exception as e:
         logging.error(f"Error getting local models: {e}")
         raise HTTPException(
@@ -709,43 +696,133 @@ async def get_repo_gguf_files(repo_id: str):
 
 @router.get("/local/status")
 async def get_local_model_status():
-    """Get status of local model support."""
-    if IS_DOCKER:
-        return {
-            "available": False,
-            "reason": "Local models are only available in Tauri builds",
-        }
+    """Get status using bundled Ollama."""
+    from server.utils.llm_client import LocalModelManager
 
-    try:
-        # Check if required dependencies are installed
-        try:
-            import llama_cpp
+    manager = LocalModelManager()
+    models = await manager.list_models()
 
-            llama_cpp_available = True
-        except ImportError:
-            llama_cpp_available = False
+    return {
+        "available": len(models) > 0,
+        "ollama_running": True,  # Assume running since we started it
+        "models": models,
+        "models_count": len(models),
+    }
 
-        try:
-            import huggingface_hub
 
-            hf_hub_available = True
-        except ImportError:
-            hf_hub_available = False
+@router.get("/local/model-recommendations")
+async def get_model_recommendations():
+    """Get model recommendations based on system capabilities"""
 
-        model_manager = LocalModelManager()
-        models_dir_exists = model_manager.models_dir.exists()
+    model_recommendations = [
+        {
+            "name": "qwen3:0.6b",
+            "display_name": "Qwen3 0.6B (Small)",
+            "size": "523MB",
+            "min_ram_gb": 1,
+            "recommended_ram_gb": 2,
+            "description": "Fastest responses, good for basic tasks",
+            "category": "small",
+            "quality": "Basic",
+            "speed": "Very Fast",
+        },
+        {
+            "name": "qwen3:1.7b",
+            "display_name": "Qwen3 1.7B (Small)",
+            "size": "1.4GB",
+            "min_ram_gb": 2,
+            "recommended_ram_gb": 4,
+            "description": "Good balance of speed and quality for most tasks",
+            "category": "small",
+            "quality": "Good",
+            "speed": "Fast",
+        },
+        {
+            "name": "qwen3:4b",
+            "display_name": "Qwen3 4B (Medium)",
+            "size": "2.6GB",
+            "min_ram_gb": 4,
+            "recommended_ram_gb": 8,
+            "description": "Better quality responses, moderate speed",
+            "category": "medium",
+            "quality": "Very Good",
+            "speed": "Moderate",
+        },
+        {
+            "name": "qwen3:8b",
+            "display_name": "Qwen3 8B (Medium)",
+            "size": "5.2GB",
+            "min_ram_gb": 6,
+            "recommended_ram_gb": 12,
+            "description": "High quality responses, recommended for most users",
+            "category": "medium",
+            "quality": "Excellent",
+            "speed": "Moderate",
+        },
+        {
+            "name": "qwen3:14b",
+            "display_name": "Qwen3 14B (Large)",
+            "size": "9.3GB",
+            "min_ram_gb": 12,
+            "recommended_ram_gb": 16,
+            "description": "Very high quality responses, slower generation",
+            "category": "large",
+            "quality": "Outstanding",
+            "speed": "Slow",
+        },
+        {
+            "name": "qwen3:30b",
+            "display_name": "Qwen3 30B (Large)",
+            "size": "19GB",
+            "min_ram_gb": 24,
+            "recommended_ram_gb": 32,
+            "description": "Exceptional quality, requires high-end hardware",
+            "category": "large",
+            "quality": "Exceptional",
+            "speed": "Very Slow",
+        },
+        {
+            "name": "qwen3:32b",
+            "display_name": "Qwen3 32B (Large)",
+            "size": "20GB",
+            "min_ram_gb": 24,
+            "recommended_ram_gb": 32,
+            "description": "Top-tier quality, requires high-end hardware",
+            "category": "large",
+            "quality": "Exceptional",
+            "speed": "Very Slow",
+        },
+    ]
 
-        return {
-            "available": llama_cpp_available and hf_hub_available,
-            "llama_cpp_installed": llama_cpp_available,
-            "huggingface_hub_installed": hf_hub_available,
-            "models_directory": str(model_manager.models_dir),
-            "models_directory_exists": models_dir_exists,
-        }
+    return {"models": model_recommendations}
 
-    except Exception as e:
-        logging.error(f"Error checking local model status: {e}")
-        return {
-            "available": False,
-            "reason": f"Error checking status: {str(e)}",
-        }
+
+@router.post("/local/pull-ollama-model")
+async def pull_ollama_model(request: dict):
+    """Pull a model using Ollama"""
+    model_name = request.get("model_name")
+    if not model_name:
+        raise HTTPException(status_code=400, detail="Model name is required")
+
+    from server.utils.local_ollama import LocalOllamaClient
+
+    async with LocalOllamaClient() as client:
+        success = await client.pull_model(model_name)
+        if success:
+            return {
+                "message": f"Successfully pulled model {model_name}",
+                "success": True,
+            }
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to pull model {model_name}"
+            )
+
+
+@router.get("/local/list")
+async def list_ollama_models():
+    """List all Ollama models"""
+    from server.utils.local_ollama import LocalOllamaClient
+
+    async with LocalOllamaClient() as client:
+        return await client.list_models()
