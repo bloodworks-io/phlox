@@ -14,30 +14,13 @@ DEFAULT_PROMPTS = {
         },
         "reasoning": {
             "system": "You are an expert medical reasoning assistant. Analyze clinical cases thoroughly and provide structured insights on differentials, investigations, and key considerations. Focus on providing actionable clinical insights."
-        }
+        },
     },
     "options": {
-        "chat": {
-            "temperature": 0.1,
-            "num_ctx": 7168
-        },
-        "general": {
-            "temperature": 0.1,
-            "num_ctx": 7168,
-            "stop": ["\n\n"]
-        },
-        "letter": {
-            "temperature": 0.6,
-            "num_ctx": 7168,
-            "stop": ["```"]
-        },
-        "secondary": {
-            "temperature": 0.1,
-            "num_ctx": 1024
-        },
-        "reasoning": {
-            "temperature": 0.1,
-            "num_ctx": 4096
-        }
-    }
+        "chat": {"temperature": 0.1, "num_ctx": 7168},
+        "general": {"temperature": 0.1, "num_ctx": 7168},
+        "letter": {"temperature": 0.6, "num_ctx": 7168},
+        "secondary": {"temperature": 0.1, "num_ctx": 1024},
+        "reasoning": {"temperature": 0.1, "num_ctx": 4096},
+    },
 }
