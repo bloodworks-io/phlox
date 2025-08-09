@@ -1,5 +1,6 @@
 import aiohttp
 import json
+import re
 import logging
 import os
 import platform
@@ -11,6 +12,7 @@ from server.constants import DATA_DIR, IS_DOCKER
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
 
 
 class LLMProviderType(Enum):
@@ -194,6 +196,33 @@ class LocalLLMClient:
             elif role == "assistant":
                 prompt_parts.append(f"Assistant: {content}")
         return "\n".join(prompt_parts) + "\nAssistant: "
+
+
+
+def _clean_json_response(content: str) -> str:
+    """
+    Clean JSON response content by removing markdown code blocks and extra whitespace.
+    Needed for some models like GLM-4.5-Air.
+
+    Args:
+        content (str): Raw response content that may contain markdown code blocks
+
+    Returns:
+        str: Cleaned JSON string
+    """
+    if not content or not content.strip():
+        return content
+
+    # Remove markdown code blocks (```json ... ``` or ``` ... ```)
+    content = re.sub(
+        r"^```(?:json)?\s*\n?", "", content.strip(), flags=re.MULTILINE
+    )
+    content = re.sub(r"\n?```\s*$", "", content.strip(), flags=re.MULTILINE)
+
+    # Remove any leading/trailing whitespace
+    content = content.strip()
+
+    return content
 
 
 class AsyncLLMClient:
@@ -559,8 +588,14 @@ class AsyncLLMClient:
             else:
                 # Make the API call
                 response = await self._client.chat.completions.create(**params)
-
+                logger.info(f"LLM response: {response}")
                 # Convert to Ollama-like format for consistency
+                content = response.choices[0].message.content or ""
+
+                # Clean JSON response content only if we're expecting JSON (format parameter provided)
+                if format:
+                    content = _clean_json_response(content)
+
                 result = {
                     "model": model,
                     "message": {
