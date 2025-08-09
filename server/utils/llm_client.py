@@ -70,349 +70,130 @@ def is_arm_mac() -> bool:
 
 
 class LocalModelManager:
-    """Manages local model downloads and caching."""
+    """Manages local models through bundled Ollama."""
 
-    def __init__(self, models_dir: Optional[str] = None):
-        if models_dir:
-            self.models_dir = models_dir
-        else:
-            # Use the app's data directory for consistency
-            self.models_dir = DATA_DIR / "models"
+    def __init__(self, ollama_url: str = "http://127.0.0.1:11434"):
+        self.ollama_url = ollama_url
 
-        # Ensure it's a Path object and create the directory
-        self.models_dir = Path(self.models_dir)
-        self.models_dir.mkdir(parents=True, exist_ok=True)
+    async def _ollama_request(
+        self, endpoint: str, method: str = "GET", json_data=None
+    ):
+        """Make request to local Ollama instance."""
+        import aiohttp
 
-    def get_model_path(self, filename: str) -> str:
-        """Get the local path for a model file using hf_hub_download structure."""
-        # hf_hub_download creates: local_dir/repo_id/filename
-        model_path = self.models_dir / filename
-        logger.info(f"self.models_dir {self.models_dir}")
-        logger.info(f"filename {filename}")
-        logger.info(f"get_model_path dir {model_path}")
-        return str(model_path)
-
-    def is_model_downloaded(self, filename: str) -> bool:
-        """Check if a model is already downloaded."""
-        model_path = Path(self.get_model_path(filename))
-        return model_path.exists()
-
-    async def download_model(
-        self,
-        repo_id: str,
-        filename: Optional[str] = None,
-        quantization: str = "Q4_K_M",
-        progress_callback=None,
-    ) -> str:
-        """
-        Download a model from Hugging Face Hub with auto-detection.
-        """
-        try:
-            from huggingface_hub import hf_hub_download, list_repo_files
-        except ImportError:
-            raise ImportError(
-                "huggingface_hub not installed. Install with 'pip install huggingface_hub'"
-            )
-
-        try:
-            # Auto-detect filename if not provided
-            if not filename:
-                logger.info(f"Auto-detecting GGUF files for {repo_id}")
-
-                try:
-                    files = list_repo_files(repo_id)
-                    gguf_files = [f for f in files if f.endswith(".gguf")]
-
-                    if not gguf_files:
-                        raise ValueError(
-                            f"No GGUF files found in repository {repo_id}"
-                        )
-
-                    logger.info(
-                        f"Found {len(gguf_files)} GGUF files in {repo_id}"
+        async with aiohttp.ClientSession() as session:
+            url = f"{self.ollama_url}/api/{endpoint}"
+            if method == "GET":
+                async with session.get(url) as response:
+                    return (
+                        await response.json()
+                        if response.status == 200
+                        else None
+                    )
+            elif method == "POST":
+                async with session.post(url, json=json_data) as response:
+                    return (
+                        await response.json()
+                        if response.status == 200
+                        else None
                     )
 
-                    # Look for files with the specified quantization
-                    preferred_files = [
-                        f
-                        for f in gguf_files
-                        if quantization.lower() in f.lower()
-                    ]
+    async def list_models(self):
+        """List available models in Ollama."""
+        result = await self._ollama_request("tags")
+        return result.get("models", []) if result else []
 
-                    if preferred_files:
-                        filename = preferred_files[0]
-                        logger.info(
-                            f"Selected preferred quantization file: {filename}"
-                        )
-                    elif gguf_files:
-                        filename = gguf_files[0]
-                        logger.info(
-                            f"No {quantization} files found, selected: {filename}"
-                        )
-                    else:
-                        raise ValueError(
-                            f"No GGUF files found in repository {repo_id}"
-                        )
+    async def is_model_available(self, model_name: str) -> bool:
+        """Check if model is available in Ollama."""
+        models = await self.list_models()
+        return any(model["name"] == model_name for model in models)
 
-                except Exception as e:
-                    if "Repository not found" in str(e) or "404" in str(e):
-                        raise ValueError(
-                            f"Repository {repo_id} not found or not accessible"
-                        )
-                    else:
-                        raise ValueError(
-                            f"Error listing files in repository {repo_id}: {e}"
-                        )
+    async def pull_model(self, model_name: str, progress_callback=None):
+        """Pull model using Ollama."""
+        import aiohttp
 
-            # Check if model is already downloaded
-            if self.is_model_downloaded(repo_id, filename):
-                existing_path = self.get_model_path(filename)
-                logger.info(
-                    f"Model {repo_id}/{filename} already exists at {existing_path}"
-                )
-                return existing_path
+        async with aiohttp.ClientSession() as session:
+            url = f"{self.ollama_url}/api/pull"
+            data = {"name": model_name}
 
-            logger.info(f"Starting download of {repo_id}/{filename}")
+            async with session.post(url, json=data) as response:
+                if response.status == 200:
+                    async for line in response.content:
+                        if line and progress_callback:
+                            try:
+                                import json
 
-            # Download the model using hf_hub_download's default structure
-            # This will create: models_dir/repo_id/filename
-            downloaded_path = hf_hub_download(
-                repo_id=repo_id,
-                filename=filename,
-                local_dir=str(self.models_dir),
-                local_dir_use_symlinks=False,
-            )
+                                status = json.loads(line.decode())
+                                progress_callback(status)
+                            except:
+                                continue
+                    return True
+        return False
 
-            # Verify the download was successful
-            if not os.path.exists(downloaded_path):
-                raise Exception(
-                    f"Download completed but file not found at {downloaded_path}"
-                )
+    async def delete_model(self, model_name: str):
+        """Delete model from Ollama."""
+        import aiohttp
 
-            file_size = os.path.getsize(downloaded_path)
-            file_size_mb = round(file_size / (1024 * 1024), 2)
-
-            logger.info(
-                f"Successfully downloaded {repo_id}/{filename} to {downloaded_path} "
-                f"({file_size_mb} MB)"
-            )
-
-            return downloaded_path
-
-        except ImportError:
-            raise
-        except ValueError:
-            raise
-        except Exception as e:
-            error_msg = f"Error downloading model {repo_id}"
-            if filename:
-                error_msg += f"/{filename}"
-            error_msg += f": {e}"
-
-            logger.error(error_msg)
-
-            # Clean up any partially downloaded files
-            try:
-                if filename:  # Only try cleanup if we have a filename
-                    model_path = Path(self.get_model_path(filename))
-                    if model_path.exists() and model_path.stat().st_size == 0:
-                        model_path.unlink()
-                        logger.info(f"Cleaned up empty file: {model_path}")
-            except:
-                pass  # Don't fail on cleanup errors
-
-            raise Exception(error_msg)
+        async with aiohttp.ClientSession() as session:
+            url = f"{self.ollama_url}/api/delete"
+            data = {"name": model_name}
+            async with session.delete(url, json=data) as response:
+                return response.status == 200
 
 
 class LocalLLMClient:
-    """Local LLM inference client using llama-cpp-python."""
+    """Local LLM client using bundled Ollama."""
 
-    def __init__(self, models_dir: Optional[str] = None, **kwargs):
-        if IS_DOCKER:
-            raise RuntimeError(
-                "Local inference is only available in Tauri builds"
+    def __init__(self, ollama_url: str = "http://127.0.0.1:11434"):
+        self.ollama_url = ollama_url
+        self.current_model = None
+
+    async def load_model(self, model_name: str) -> None:
+        """Load model in Ollama (models are auto-loaded on first use)."""
+        manager = LocalModelManager(self.ollama_url)
+        if not await manager.is_model_available(model_name):
+            raise FileNotFoundError(
+                f"Model {model_name} not found. Pull it first."
             )
+        self.current_model = model_name
 
-        self.model_manager = LocalModelManager(models_dir)
-        self._llm = None
-        self._current_model = None
-        self.kwargs = kwargs
-        self._model_loading = False  # Flag to prevent concurrent loading
+    async def chat(self, messages, **kwargs):
+        """Chat using Ollama API."""
+        if not self.current_model:
+            raise ValueError("No model loaded")
 
-        self._set_default_params()
+        # Convert messages to Ollama format
+        prompt = self._messages_to_prompt(messages)
 
-    def _set_default_params(self):
-        """Set optimal default parameters based on platform."""
-        if is_arm_mac():
-            # Optimize for Apple Silicon with Metal
-            self.kwargs.setdefault("n_gpu_layers", -1)  # Use Metal
-            self.kwargs.setdefault("n_ctx", 4096)
-            self.kwargs.setdefault("verbose", False)
-        else:
-            # Default CPU settings
-            self.kwargs.setdefault("n_ctx", 2048)
-            self.kwargs.setdefault("verbose", False)
+        import aiohttp
 
-    async def load_model(self, filename: str) -> None:
-        """Load a model for inference."""
-        try:
-            from llama_cpp import Llama
-        except ImportError:
-            raise ImportError(
-                "llama-cpp-python not installed. Install with appropriate backend support."
-            )
+        async with aiohttp.ClientSession() as session:
+            url = f"{self.ollama_url}/api/generate"
+            data = {
+                "model": self.current_model,
+                "prompt": prompt,
+                "stream": False,
+                **kwargs,
+            }
+            async with session.post(url, json=data) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result.get("response", "")
+        return ""
 
-        # Determine if this is a local path or HF repo
-        if filename is not None:
-            # This is a HF repo specification - check if already downloaded
-            if not self.model_manager.is_model_downloaded(filename):
-                raise FileNotFoundError(
-                    f"Model {filename} not found locally. "
-                    f"Please download the model first before loading."
-                )
-            model_path = self.model_manager.get_model_path(filename)
-        else:
-            # This is a local path
-            model_path = self.model_manager.get_model_path(filename)
-
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model file not found: {model_path}")
-
-        # Load the model in executor to avoid blocking
-        logger.info(f"Loading model from {model_path}")
-        self._llm = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: Llama(model_path=model_path, **self.kwargs)
-        )
-        self._current_model = filename
-        logger.info(f"Model loaded successfully: {self._current_model}")
-
-    async def chat(
-        self, messages: List[Dict[str, str]], **kwargs
-    ) -> Dict[str, Any]:
-        """Generate a chat completion using create_chat_completion."""
-        await self._ensure_model_loaded()
-
-        # Format messages
-        formatted_messages = self._format_messages_for_chat(messages)
-
-        # Prepare chat completion parameters
-        chat_params = {
-            "messages": formatted_messages,
-            "max_tokens": kwargs.get("max_tokens", 512),
-            "temperature": kwargs.get("temperature", 0.7),
-            "top_p": kwargs.get("top_p", 0.9),
-            "stop": kwargs.get("stop", None),
-        }
-
-        # Generate response using chat completion
-        response = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._llm.create_chat_completion(**chat_params)
-        )
-
-        # Format response to match expected structure
-        return {
-            "model": self._current_model,
-            "message": {
-                "role": "assistant",
-                "content": response["choices"][0]["message"]["content"],
-            },
-        }
-
-    async def chat_with_structured_output(
-        self, messages: List[Dict[str, str]], schema: Dict, **kwargs
-    ) -> str:
-        """Generate structured output using JSON schema mode."""
-        await self._ensure_model_loaded()
-
-        # Handle thinking models
-        if is_thinking_model(self._current_model):
-            schema = add_thinking_to_schema(schema, self._current_model)
-
-        # Prepare parameters for structured output
-        chat_params = {
-            "messages": messages,
-            "response_format": {"type": "json_object", "schema": schema},
-            "max_tokens": kwargs.get("max_tokens", 1024),
-            "temperature": kwargs.get(
-                "temperature", 0.1
-            ),  # Lower temp for structured output
-        }
-
-        # Generate structured response
-        response = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._llm.create_chat_completion(**chat_params)
-        )
-
-        return response["choices"][0]["message"]["content"]
-
-    async def stream_chat(
-        self, messages: List[Dict[str, str]], **kwargs
-    ) -> AsyncGenerator[Dict[str, Any], None]:
-        """Stream chat completion responses."""
-        await self._ensure_model_loaded()
-
-        chat_params = {
-            "messages": messages,
-            "max_tokens": kwargs.get("max_tokens", 512),
-            "temperature": kwargs.get("temperature", 0.7),
-            "stream": True,
-        }
-
-        # Create the streaming response in executor
-        stream = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._llm.create_chat_completion(**chat_params)
-        )
-
-        # Yield chunks as they come
-        for chunk in stream:
-            if chunk["choices"][0]["delta"].get("content"):
-                yield {
-                    "model": self._current_model,
-                    "message": {
-                        "role": "assistant",
-                        "content": chunk["choices"][0]["delta"]["content"],
-                    },
-                }
-
-    async def _ensure_model_loaded(self):
-        """Ensure a model is loaded, loading the default model if necessary."""
-        if self._llm is not None:
-            return
-
-        if self._model_loading:
-            # Wait for concurrent loading to complete
-            while self._model_loading:
-                await asyncio.sleep(0.1)
-            return
-
-        self._model_loading = True
-        try:
-            # Get the primary model from configuration
-            from server.database.config import config_manager
-
-            config = config_manager.get_config()
-            primary_model = config.get("PRIMARY_MODEL")
-
-            if not primary_model or primary_model == "&nbsp;":
-                raise RuntimeError(
-                    "No PRIMARY_MODEL configured. Please set a model in the configuration."
-                )
-
-            await self.load_model(primary_model)
-
-        finally:
-            self._model_loading = False
-
-    def get_model_info(self) -> Dict[str, Any]:
-        """Get information about the currently loaded model."""
-        if self._llm is None:
-            return {"loaded": False, "model": None}
-
-        return {
-            "loaded": True,
-            "model": self._current_model,
-            "context_length": self._llm.n_ctx(),
-        }
+    def _messages_to_prompt(self, messages):
+        """Convert OpenAI-style messages to prompt."""
+        prompt_parts = []
+        for msg in messages:
+            role = msg.get("role", "")
+            content = msg.get("content", "")
+            if role == "system":
+                prompt_parts.append(f"System: {content}")
+            elif role == "user":
+                prompt_parts.append(f"User: {content}")
+            elif role == "assistant":
+                prompt_parts.append(f"Assistant: {content}")
+        return "\n".join(prompt_parts) + "\nAssistant: "
 
 
 class AsyncLLMClient:
@@ -887,12 +668,10 @@ def get_llm_client():
     api_key = config.get("LLM_API_KEY", None)
 
     if provider_type == "local":
-        # For local provider, base_url and api_key are not needed
+        # For local provider, use Ollama pointing to bundled instance
         return AsyncLLMClient(
-            provider_type=provider_type,
-            models_dir=config.get(
-                "LOCAL_MODELS_DIR"
-            ),  # Optional custom models directory
+            provider_type="ollama",
+            base_url="http://127.0.0.1:11434",  # Bundled Ollama URL
         )
     else:
         return AsyncLLMClient(
