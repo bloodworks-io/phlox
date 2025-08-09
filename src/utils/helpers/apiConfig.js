@@ -5,10 +5,6 @@ const isTauri = () => {
   return window.__TAURI__ !== undefined;
 };
 
-// Cache for the server port to avoid repeated calls
-let serverPort = null;
-let serverBaseUrl = null;
-
 // Get the base URL for API calls
 export const getApiBaseUrl = async () => {
   if (!isTauri()) {
@@ -16,22 +12,14 @@ export const getApiBaseUrl = async () => {
     return "";
   }
 
-  // In Tauri environment, we need to get the server port
-  if (serverBaseUrl) {
-    return serverBaseUrl; // Return cached value
-  }
-
+  // In Tauri environment, always get the current server port
   try {
-    if (!serverPort) {
-      serverPort = await invoke("get_server_port");
-    }
-    serverBaseUrl = `http://localhost:${serverPort}`;
-    return serverBaseUrl;
+    const serverPort = await invoke("get_server_port");
+    return `http://localhost:${serverPort}`;
   } catch (error) {
     console.error("Failed to get server port from Tauri:", error);
     // Fallback to default port
-    serverBaseUrl = "http://localhost:5000";
-    return serverBaseUrl;
+    return "http://localhost:5000";
   }
 };
 
@@ -41,10 +29,9 @@ export const buildApiUrl = async (endpoint) => {
   return `${baseUrl}${endpoint}`;
 };
 
-// Reset cached values (useful for testing or if server restarts)
+// Reset function is no longer needed since we don't cache
 export const resetApiConfig = () => {
-  serverPort = null;
-  serverBaseUrl = null;
+  // No-op for backward compatibility
 };
 
 export { isTauri };

@@ -4,6 +4,7 @@ import { Box, Text, Grid, VStack, useToast } from "@chakra-ui/react";
 import { FaFileAlt } from "react-icons/fa";
 import { landingApi } from "../utils/api/landingApi";
 import { universalFetch } from "../utils/helpers/apiHelpers";
+import { buildApiUrl } from "../utils/helpers/apiConfig";
 import DailyAnalysisPanel from "../components/landing/DailyAnalysisPanel";
 import NewsDigestPanel from "../components/landing/NewsDigestPanel";
 import TaskManagerPanel from "../components/landing/TaskManagerPanel";
@@ -66,7 +67,8 @@ const LandingPage = () => {
 
   const fetchTodos = async () => {
     try {
-      const response = await universalFetch("/api/dashboard/todos");
+      const url = await buildApiUrl("/api/dashboard/todos");
+      const response = await universalFetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

@@ -1,6 +1,15 @@
 import { buildApiUrl, isTauri } from "./apiConfig";
 
 export const universalFetch = async (url, options = {}) => {
+  // Log the URL being called for debugging
+  console.log(`[universalFetch] Calling URL: ${url}`, {
+    method: options.method || "GET",
+    headers: options.headers,
+    // Don't log body content for security, just indicate if it exists
+    hasBody: !!options.body,
+    stack: new Error().stack,
+  });
+
   if (isTauri()) {
     const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
     return tauriFetch(url, options);

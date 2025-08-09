@@ -27,7 +27,7 @@ import {
 } from "@chakra-ui/icons";
 import { FaCog, FaDesktop, FaCloud } from "react-icons/fa";
 import { useState, useEffect } from "react";
-import LocalModelManager from "./LocalModelManager";
+
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 
@@ -40,6 +40,8 @@ const ModelSettingsPanel = ({
   whisperModelOptions = [],
   whisperModelListAvailable = false,
   urlStatus = { whisper: false, ollama: false },
+  onOpenLocalModelManager,
+  showLocalManagerButton,
 }) => {
   const [localStatus, setLocalStatus] = useState(null);
   const [isDocker, setIsDocker] = useState(false);
@@ -214,8 +216,19 @@ const ModelSettingsPanel = ({
                 </Select>
               </Box>
 
-              {/* Local Model Manager */}
-              <LocalModelManager />
+              {/* Local Model Manager Trigger */}
+              {showLocalManagerButton &&
+                typeof onOpenLocalModelManager === "function" && (
+                  <Button
+                    onClick={onOpenLocalModelManager}
+                    variant="outline"
+                    size="sm"
+                    alignSelf="flex-start"
+                    className="nav-button"
+                  >
+                    Manage Local Models
+                  </Button>
+                )}
 
               {/* Optional: Reasoning Settings for Local (if you want to keep this) */}
               <Box>
