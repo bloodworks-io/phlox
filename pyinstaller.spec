@@ -1,33 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs
+from PyInstaller.utils.hooks import collect_all
 import os
 
 # Collect everything from chromadb
 chromadb_datas, chromadb_binaries, chromadb_hiddenimports = collect_all('chromadb')
 
-# Collect llama-cpp-python binaries and data
-llama_cpp_datas, llama_cpp_binaries, llama_cpp_hiddenimports = collect_all('llama_cpp')
-
-# Collect dynamic libraries for llama-cpp-python
-llama_cpp_dynamic_libs = collect_dynamic_libs('llama_cpp')
-
 # Get the correct path to server.py
 script_path = os.path.join(os.path.dirname(os.path.abspath(SPEC)), 'server', 'server.py')
 
 a = Analysis(
-    [script_path],
-    pathex=[os.path.dirname(script_path)],
-    binaries=chromadb_binaries + llama_cpp_binaries + llama_cpp_dynamic_libs,
-    datas=chromadb_datas + llama_cpp_datas,
+    [script_path],  # Use absolute path to server.py
+    pathex=[os.path.dirname(script_path)],  # Path to server directory
+    binaries=chromadb_binaries,
+    datas=chromadb_datas,
     hiddenimports=[
         "onnxruntime",
         "tokenizers",
         "tqdm",
-        "llama_cpp",
-        "llama_cpp.llama_cpp",
-        "llama_cpp.llama",
-        "_ctypes",  # Often needed for ctypes-based libraries
-    ] + chromadb_hiddenimports + llama_cpp_hiddenimports,
+    ] + chromadb_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

@@ -4,3 +4,6 @@
 /gen/schemas
 /binaries/
 /server_dist/
+*.so
+ollama
+*.dylib
