@@ -1,5 +1,6 @@
 import aiohttp
 import asyncio
+import json
 import time
 import re
 import logging
@@ -54,9 +55,7 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
 
             transcription_start = time.perf_counter()
 
-            headers = {
-                "Authorization": f"Bearer {config['WHISPER_KEY']}"
-            }
+            headers = {"Authorization": f"Bearer {config['WHISPER_KEY']}"}
 
             async with session.post(
                 f"{config['WHISPER_BASE_URL']}/v1/audio/transcriptions",
@@ -175,33 +174,53 @@ async def process_template_field(
         # Initialize the appropriate client based on config
         client = get_llm_client()
 
-        base_schema = FieldResponse.model_json_schema()
+        response_format = FieldResponse.model_json_schema()
+        schema_str = json.dumps(FieldResponse.model_json_schema(), indent=2)
+
+        # Check if using Qwen3 model
+        model_name = config["PRIMARY_MODEL"].lower()
+        is_qwen3 = "qwen3" in model_name
+
+        # Prepare user content, adding /no_think for Qwen3 models with Ollama
+        user_content = transcript_text
+        if is_qwen3:
+            user_content = f"{transcript_text} /no_think"
+            logger.info(
+                f"Qwen3 model detected: {model_name}. Adding /no_think and empty think tags."
+            )
 
         request_body = [
             {
                 "role": "system",
                 "content": (
-                    f"{field.system_prompt}\n"
-                    "Extract and return key points as a JSON array."
+                    f"{field.system_prompt}\n\n"
+                    f"Return your response as single valid JSON matching this exact schema with no code fences or prose:\n{schema_str}"
                 ),
             },
             {
                 "role": "system",
                 "content": _build_patient_context(patient_context),
             },
-            {"role": "user", "content": transcript_text},
+            {"role": "user", "content": user_content},
         ]
 
-        # Use chat_with_structured_output instead of chat
-        response_json = await client.chat_with_structured_output(
+        # For Qwen3 models with Ollama, add empty think tags
+        if is_qwen3:
+            request_body.append(
+                {"role": "assistant", "content": "<think>\n</think>"}
+            )
+
+        response = await client.chat(
             model=config["PRIMARY_MODEL"],
             messages=request_body,
-            schema=base_schema,
+            format=response_format,
             options={**options, "temperature": 0},
         )
 
-        # Parse the JSON response directly
-        field_response = FieldResponse.model_validate_json(response_json)
+        # Extract content from response based on provider type
+        content = response["message"]["content"]
+
+        field_response = FieldResponse.model_validate_json(content)
 
         # Convert key points into a nicely formatted string
         formatted_content = "\n".join(

@@ -11,12 +11,13 @@ logger = logging.getLogger(__name__)
 
 MAX_INSTRUCTIONS = 10
 
+
 async def generate_adaptive_refinement_suggestions(
     initial_content: str,
     modified_content: str,
     existing_instructions: Optional[List[str]] = None,
     model_name: Optional[str] = None,
-    change_threshold: float = 0.4
+    change_threshold: float = 0.4,
 ) -> List[str]:
     """
     Generates adaptive refinement suggestions by comparing initial and modified content,
@@ -39,17 +40,25 @@ async def generate_adaptive_refinement_suggestions(
     )
 
     if not modified_content.strip():
-        logger.warning("Modified content is empty. Returning existing instructions.")
+        logger.warning(
+            "Modified content is empty. Returning existing instructions."
+        )
         return existing_instructions or []
 
     if initial_content == modified_content:
-        logger.info("Initial and modified content are identical. Returning existing instructions.")
+        logger.info(
+            "Initial and modified content are identical. Returning existing instructions."
+        )
         return existing_instructions or []
 
     # Check if content has changed enough to warrant adaptive refinement
-    change_ratio = calculate_content_change_ratio(initial_content, modified_content)
+    change_ratio = calculate_content_change_ratio(
+        initial_content, modified_content
+    )
     if change_ratio < change_threshold:
-        logger.info(f"Content change ratio {change_ratio:.2f} is below threshold {change_threshold}. Skipping adaptive refinement.")
+        logger.info(
+            f"Content change ratio {change_ratio:.2f} is below threshold {change_threshold}. Skipping adaptive refinement."
+        )
         return existing_instructions or []
 
     # Get configuration and client
@@ -63,7 +72,9 @@ async def generate_adaptive_refinement_suggestions(
     model_name = model_name or config.get("PRIMARY_MODEL")
 
     # Initialize with existing instructions
-    current_instructions = list(existing_instructions) if existing_instructions else []
+    current_instructions = (
+        list(existing_instructions) if existing_instructions else []
+    )
 
     # Create system prompt for tool-based instruction management
     system_prompt = """You are an expert writing analyst. Your task is to compare two versions of text, identify specific improvements made, and make ONE targeted update to a list of writing refinement instructions.
@@ -94,7 +105,9 @@ async def generate_adaptive_refinement_suggestions(
     Make only ONE change that captures the most important improvement."""
 
     # Prepare instruction list display
-    instructions_display = _format_instructions_for_display(current_instructions)
+    instructions_display = _format_instructions_for_display(
+        current_instructions
+    )
 
     user_prompt = f"""Compare these two versions of text and make ONE targeted update to the refinement instruction list:
 
@@ -118,19 +131,60 @@ async def generate_adaptive_refinement_suggestions(
 
     base_messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
+        {"role": "user", "content": user_prompt},
     ]
 
     try:
-        response = await client.chat(
+        # Handle Qwen3 thinking step if needed
+        thinking = ""
+        model_name_lower = model_name.lower()
+
+        if "qwen3" in model_name_lower:
+            logger.info(
+                f"Qwen3 model detected: {model_name}. Getting explicit thinking step."
+            )
+            thinking_messages = base_messages.copy()
+            thinking_messages.append(
+                {"role": "assistant", "content": "<think>\n"}
+            )
+
+            thinking_options = options.copy()
+            thinking_options["stop"] = ["</think>"]
+
+            thinking_response = await client.chat(
+                model=model_name,
+                messages=thinking_messages,
+                options=thinking_options,
+            )
+
+            thinking = (
+                "<think>" + thinking_response["message"]["content"] + "</think>"
+            )
+
+        # Make tool call to manage instructions
+        if thinking:
+            messages_with_thinking = base_messages.copy()
+            messages_with_thinking.append(
+                {"role": "assistant", "content": thinking}
+            )
+            response = await client.chat(
+                model=model_name,
+                messages=messages_with_thinking,
+                tools=tools,
+                options=options,
+            )
+        else:
+            response = await client.chat(
                 model=model_name,
                 messages=base_messages,
                 tools=tools,
-                options=options
+                options=options,
             )
 
         # Process tool calls to update instructions (limited to one change)
-        updated_instructions = await _process_single_tool_call(response, current_instructions, client, model_name, options)
+        updated_instructions = await _process_single_tool_call(
+            response, current_instructions, client, model_name, options
+        )
 
         logger.info(f"Final updated instructions: {updated_instructions}")
         return updated_instructions
@@ -138,6 +192,7 @@ async def generate_adaptive_refinement_suggestions(
     except Exception as e:
         logger.error(f"Error during LLM call or processing: {e}", exc_info=True)
         return existing_instructions or []
+
 
 def _get_instruction_management_tools():
     """Define tools for managing refinement instructions."""
@@ -152,18 +207,18 @@ def _get_instruction_management_tools():
                     "properties": {
                         "index_to_replace": {
                             "type": "integer",
-                            "description": "The index (0-based) of the instruction to replace"
+                            "description": "The index (0-based) of the instruction to replace",
                         },
                         "new_instruction": {
                             "type": "string",
-                            "description": "The new instruction to add in place of the old one"
-                        }
+                            "description": "The new instruction to add in place of the old one",
+                        },
                     },
                     "required": ["index_to_replace", "new_instruction"],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
-            }
+                "strict": True,
+            },
         },
         {
             "type": "function",
@@ -175,18 +230,18 @@ def _get_instruction_management_tools():
                     "properties": {
                         "index_to_modify": {
                             "type": "integer",
-                            "description": "The index (0-based) of the instruction to modify"
+                            "description": "The index (0-based) of the instruction to modify",
                         },
                         "modified_instruction": {
                             "type": "string",
-                            "description": "The updated version of the instruction"
-                        }
+                            "description": "The updated version of the instruction",
+                        },
                     },
                     "required": ["index_to_modify", "modified_instruction"],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
-            }
+                "strict": True,
+            },
         },
         {
             "type": "function",
@@ -198,14 +253,14 @@ def _get_instruction_management_tools():
                     "properties": {
                         "new_instruction": {
                             "type": "string",
-                            "description": "The new instruction to add to the list"
+                            "description": "The new instruction to add to the list",
                         }
                     },
                     "required": ["new_instruction"],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
-            }
+                "strict": True,
+            },
         },
         {
             "type": "function",
@@ -216,12 +271,13 @@ def _get_instruction_management_tools():
                     "type": "object",
                     "properties": {},
                     "required": [],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
-            }
-        }
+                "strict": True,
+            },
+        },
     ]
+
 
 def _format_instructions_for_display(instructions: List[str]) -> str:
     """Format instruction list for display to the LLM."""
@@ -234,7 +290,14 @@ def _format_instructions_for_display(instructions: List[str]) -> str:
 
     return "\n".join(formatted)
 
-async def _process_single_tool_call(response, current_instructions: List[str], client, model_name: str, options: dict) -> List[str]:
+
+async def _process_single_tool_call(
+    response,
+    current_instructions: List[str],
+    client,
+    model_name: str,
+    options: dict,
+) -> List[str]:
     """Process a single tool call to update the instruction list."""
 
     # Get tool calls from response
@@ -243,7 +306,10 @@ async def _process_single_tool_call(response, current_instructions: List[str], c
     # Import the enum for proper comparison
     from server.utils.llm_client import LLMProviderType
 
-    if config.get("LLM_PROVIDER", "ollama").lower() == LLMProviderType.OPENAI_COMPATIBLE.value:
+    if (
+        config.get("LLM_PROVIDER", "ollama").lower()
+        == LLMProviderType.OPENAI_COMPATIBLE.value
+    ):
         tool_calls = response["message"].get("tool_calls")
     else:
         tool_calls = response.get("tool_calls")
@@ -254,7 +320,9 @@ async def _process_single_tool_call(response, current_instructions: List[str], c
 
     # Only process the first tool call
     if len(tool_calls) > 1:
-        logger.warning(f"LLM made {len(tool_calls)} tool calls, but only processing the first one")
+        logger.warning(
+            f"LLM made {len(tool_calls)} tool calls, but only processing the first one"
+        )
 
     tool_call = tool_calls[0]
     logger.info(f"Processing single tool call: {tool_call['function']['name']}")
@@ -262,26 +330,30 @@ async def _process_single_tool_call(response, current_instructions: List[str], c
     # Work with a copy of current instructions
     updated_instructions = current_instructions.copy()
 
-    function_name = tool_call['function']['name']
+    function_name = tool_call["function"]["name"]
 
     # Parse arguments
     try:
-        if isinstance(tool_call['function']['arguments'], str):
-            function_arguments = json.loads(tool_call['function']['arguments'])
+        if isinstance(tool_call["function"]["arguments"], str):
+            function_arguments = json.loads(tool_call["function"]["arguments"])
         else:
-            function_arguments = tool_call['function']['arguments']
+            function_arguments = tool_call["function"]["arguments"]
     except json.JSONDecodeError:
         logger.error("Failed to parse function arguments JSON")
         return current_instructions
 
-    logger.info(f"Processing tool call: {function_name} with args: {function_arguments}")
+    logger.info(
+        f"Processing tool call: {function_name} with args: {function_arguments}"
+    )
 
     if function_name == "replace_instruction":
         index = function_arguments.get("index_to_replace")
         new_instruction = function_arguments.get("new_instruction")
 
         if 0 <= index < len(updated_instructions):
-            logger.info(f"Replacing instruction at index {index}: '{updated_instructions[index]}' -> '{new_instruction}'")
+            logger.info(
+                f"Replacing instruction at index {index}: '{updated_instructions[index]}' -> '{new_instruction}'"
+            )
             updated_instructions[index] = new_instruction
         else:
             logger.warning(f"Invalid index {index} for replace_instruction")
@@ -291,7 +363,9 @@ async def _process_single_tool_call(response, current_instructions: List[str], c
         modified_instruction = function_arguments.get("modified_instruction")
 
         if 0 <= index < len(updated_instructions):
-            logger.info(f"Modifying instruction at index {index}: '{updated_instructions[index]}' -> '{modified_instruction}'")
+            logger.info(
+                f"Modifying instruction at index {index}: '{updated_instructions[index]}' -> '{modified_instruction}'"
+            )
             updated_instructions[index] = modified_instruction
         else:
             logger.warning(f"Invalid index {index} for modify_instruction")
@@ -303,7 +377,9 @@ async def _process_single_tool_call(response, current_instructions: List[str], c
             logger.info(f"Adding new instruction: '{new_instruction}'")
             updated_instructions.append(new_instruction)
         else:
-            logger.warning(f"Cannot add instruction - already at maximum ({MAX_INSTRUCTIONS})")
+            logger.warning(
+                f"Cannot add instruction - already at maximum ({MAX_INSTRUCTIONS})"
+            )
 
     elif function_name == "keep_unchanged":
         logger.info("LLM chose to keep instructions unchanged")
@@ -322,11 +398,16 @@ async def _process_single_tool_call(response, current_instructions: List[str], c
     # Enforce maximum limit
     if len(unique_instructions) > MAX_INSTRUCTIONS:
         unique_instructions = unique_instructions[:MAX_INSTRUCTIONS]
-        logger.info(f"Truncated instructions to maximum limit of {MAX_INSTRUCTIONS}")
+        logger.info(
+            f"Truncated instructions to maximum limit of {MAX_INSTRUCTIONS}"
+        )
 
     return unique_instructions
 
-def calculate_content_change_ratio(initial_content: str, modified_content: str) -> float:
+
+def calculate_content_change_ratio(
+    initial_content: str, modified_content: str
+) -> float:
     """
     Calculate the ratio of content that has changed using Levenshtein distance.
 
@@ -347,6 +428,8 @@ def calculate_content_change_ratio(initial_content: str, modified_content: str) 
     similarity = Levenshtein.ratio(initial_content, modified_content)
     change_ratio = 1.0 - similarity
 
-    logger.info(f"Levenshtein similarity for adaptive refinement: {similarity:.3f}, change ratio: {change_ratio:.3f}")
+    logger.info(
+        f"Levenshtein similarity for adaptive refinement: {similarity:.3f}, change ratio: {change_ratio:.3f}"
+    )
 
     return change_ratio
