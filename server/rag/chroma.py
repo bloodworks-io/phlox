@@ -11,7 +11,6 @@ import asyncio
 from server.constants import DATA_DIR
 from server.database.config import config_manager
 from server.utils.llm_client import get_llm_client, LLMProviderType
-from server.utils.embeddings import LocalEmbeddingFunction
 
 prompts = config_manager.get_prompts_and_options()
 
@@ -43,9 +42,10 @@ class ChromaManager:
                 api_base=f"{self.config['LLM_BASE_URL']}/v1",
             )
         elif provider_type == LLMProviderType.LOCAL.value:
-            self.embedding_model = LocalEmbeddingFunction(
+            # Use OllamaEmbeddingFunction pointing to bundled Ollama
+            self.embedding_model = OllamaEmbeddingFunction(
+                url="http://127.0.0.1:11434/api/embeddings",
                 model_name=self.config["EMBEDDING_MODEL"],
-                models_dir=self.config.get("LOCAL_MODELS_DIR"),
             )
         else:
             raise ValueError(f"Unsupported LLM provider type: {provider_type}")
