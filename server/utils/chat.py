@@ -11,6 +11,7 @@ import re
 from server.database.config import config_manager
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client import get_llm_client, LLMProviderType
+from server.utils.chat_tools import get_tools_definition
 from server.constants import DATA_DIR
 
 logger = logging.getLogger(__name__)
@@ -215,65 +216,6 @@ class ChatEngine:
             )
             return "No relevant literature available"
 
-    def _get_tools_definition(self, collection_names):
-        """
-        Get the tools definition based on available collections.
-        """
-        collection_names_string = ", ".join(collection_names)
-        return [
-            {
-                "type": "function",
-                "function": {
-                    "name": "transcript_search",
-                    "description": "Use this tool if the user asks about something from the transcript, interview, or conversation with the patient. This will search the transcript for relevant information.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {},
-                        "required": [],
-                        "additionalProperties": False,
-                    },
-                    "strict": True,
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_relevant_literature",
-                    "description": f"Only use this tool if answering the most recent message from the user would benefit from a literature search. Available disease areas: {collection_names_string}, other",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "disease_name": {
-                                "type": "string",
-                                "description": f"The disease that this question is referring to (must be one of: {collection_names_string}, other)",
-                            },
-                            "question": {
-                                "type": "string",
-                                "description": "The question to be answered. Try and be specific and succinct.",
-                            },
-                        },
-                        "required": ["disease_name", "question"],
-                        "additionalProperties": False,
-                    },
-                    "strict": True,
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "direct_response",
-                    "description": "Use this tool if the most recent question from the user is a non-medical query (greetings, chat, clarifications).",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {},
-                        "required": [],
-                        "additionalProperties": False,
-                    },
-                    "strict": True,
-                },
-            },
-        ]
-
     async def get_streaming_response(
         self, conversation_history: list, raw_transcription=None
     ):
@@ -296,7 +238,7 @@ class ChatEngine:
         self.logger.info("Initial LLM call to determine tool usage...")
 
         # Get tool definitions
-        tools = self._get_tools_definition(collection_names)
+        tools = get_tools_definition(collection_names)
 
         try:
             response = await self.llm_client.chat(
