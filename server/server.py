@@ -67,19 +67,6 @@ app = FastAPI(
 )
 
 
-# Add this after creating the app but before adding other middleware
-@app.middleware("http")
-async def log_requests(request, call_next):
-    logger.info(
-        f"=== REQUEST - PID: {os.getpid()} - {request.method} {request.url} ==="
-    )
-    response = await call_next(request)
-    logger.info(
-        f"=== RESPONSE - PID: {os.getpid()} - {response.status_code} ==="
-    )
-    return response
-
-
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
