@@ -49,3 +49,5 @@ coverage.lcov
 .coveralls.yml
 __pycache__/
 *.pyc
+package-lock.old
+package-lock.old
