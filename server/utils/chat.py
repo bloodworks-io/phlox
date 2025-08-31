@@ -11,7 +11,7 @@ import re
 from server.database.config import config_manager
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client import get_llm_client, LLMProviderType
-from server.utils.chat_tools import get_tools_definition
+from server.utils.chat_tools import get_tools_definition, execute_tool_call
 from server.constants import DATA_DIR
 
 logger = logging.getLogger(__name__)
@@ -229,7 +229,7 @@ class ChatEngine:
         context_question_options.pop("stop", None)
         print(context_question_options)
 
-        # Clean <think> tags from conversation history as these are not required for new model responses and take up valuable context.
+        # Clean <tool_call> tags from conversation history as these are not required for new model responses and take up valuable context.
         cleaned_conversation_history = clean_think_tags(conversation_history)
 
         message_list = self.CHAT_SYSTEM_MESSAGE + cleaned_conversation_history
@@ -278,238 +278,23 @@ class ChatEngine:
                             "content": chunk["message"]["content"],
                         }
             else:
-                # Extract the tool call information
-                tool = tool_calls[0]
-                function_name = tool["function"]["name"]
-                function_arguments = None
-
-                if "arguments" in tool["function"]:
-                    # Parse function arguments from JSON string if needed
-                    try:
-                        if isinstance(tool["function"]["arguments"], str):
-                            function_arguments = json.loads(
-                                tool["function"]["arguments"]
-                            )
-                        else:
-                            function_arguments = tool["function"]["arguments"]
-                    except json.JSONDecodeError:
-                        self.logger.error(
-                            "Failed to parse function arguments JSON"
-                        )
-                        function_arguments = {}
-
-                self.logger.info(f"LLM chose tool: {function_name}")
-
                 # Add the tool call to the message list
                 message_list.append(response["message"])
 
-                if function_name == "direct_response":
-                    self.logger.info("Executing direct response...")
-                    yield {
-                        "type": "status",
-                        "content": "Generating response...",
-                    }
-
-                    # For direct response, we don't need to add tool results, just stream response
-                    async for chunk in await self.llm_client.chat(
-                        model=self.config["PRIMARY_MODEL"],
-                        messages=message_list,
-                        options=context_question_options,
-                        stream=True,
-                    ):
-                        if "message" in chunk and "content" in chunk["message"]:
-                            yield {
-                                "type": "chunk",
-                                "content": chunk["message"]["content"],
-                            }
-
-                elif function_name == "transcript_search":
-                    self.logger.info("Executing query_transcript tool...")
-                    # Check if transcript is available
-                    if not raw_transcription:
-                        self.logger.info("No transcript available.")
-                        yield {
-                            "type": "status",
-                            "content": "Generating response...",
-                        }
-                        # No transcript available, inform the user
-                        message_list.append(
-                            {
-                                "role": "tool",
-                                "tool_call_id": tool.get("id", ""),
-                                "content": "No transcript is available to query. Please answer the user's question without transcript information.",
-                            }
-                        )
-
-                        async for chunk in await self.llm_client.chat(
-                            model=self.config["PRIMARY_MODEL"],
-                            messages=message_list,
-                            options=context_question_options,
-                            stream=True,
-                        ):
-                            if (
-                                "message" in chunk
-                                and "content" in chunk["message"]
-                            ):
-                                yield {
-                                    "type": "chunk",
-                                    "content": chunk["message"]["content"],
-                                }
+                # Execute the tool call using the centralized tool execution function
+                function_response = None
+                async for result in execute_tool_call(
+                    tool_call=tool_calls[0],
+                    chat_engine=self,
+                    message_list=message_list,
+                    conversation_history=conversation_history,
+                    raw_transcription=raw_transcription,
+                    context_question_options=context_question_options
+                ):
+                    if result["type"] == "function_response":
+                        function_response = result["content"]
                     else:
-                        self.logger.info("Searching transcript for query...")
-                        yield {
-                            "type": "status",
-                            "content": "Searching through transcript...",
-                        }
-
-                        # Create a query to extract information from the transcript
-                        query = conversation_history[-1]["content"]
-
-                        # Create a new message list with the transcript and query
-                        transcript_query_messages = [
-                            {
-                                "role": "system",
-                                "content": "You are a helpful medical assistant. Extract the relevant information from the provided transcript to answer the user's question. Only include information that is present in the transcript and include direct quotes. The transcript was generated by an automated system therefore it may contain errors.",
-                            },
-                            {
-                                "role": "user",
-                                "content": f"Here is the transcript of a patient conversation:\n\n{raw_transcription}\n\nBased on this transcript only, please answer the following question: {query}",
-                            },
-                        ]
-
-                        # Get information from transcript
-                        transcript_response = await self.llm_client.chat(
-                            model=self.config["PRIMARY_MODEL"],
-                            messages=transcript_query_messages,
-                            options=context_question_options,
-                        )
-
-                        transcript_info = transcript_response["message"][
-                            "content"
-                        ]
-
-                        # Clean think tags
-                        cleaned_transcript_info = clean_think_tags(
-                            [{"content": transcript_info}]
-                        )[0]["content"]
-
-                        self.logger.info(
-                            f"Transcript query result: {cleaned_transcript_info[:200]}..."
-                        )
-
-                        # Add transcript info to original conversation as a tool response
-                        message_list.append(
-                            {
-                                "role": "tool",
-                                "tool_call_id": tool.get("id", ""),
-                                "content": f"The following information was found in the transcript:\n\n{cleaned_transcript_info}",
-                            }
-                        )
-                        # Clean think tags again
-                        cleaned_message_list = clean_think_tags(message_list)
-
-                        self.logger.info(
-                            f"Transcript query messagelist: {cleaned_message_list}..."
-                        )
-                        # Send generating response status
-                        yield {
-                            "type": "status",
-                            "content": "Generating response with transcript information...",
-                        }
-
-                        self.logger.info(
-                            f"Starting response stream to frontend"
-                        )
-
-                        # Stream the answer
-                        async for chunk in await self.llm_client.chat(
-                            model=self.config["PRIMARY_MODEL"],
-                            messages=cleaned_message_list,
-                            options=context_question_options,
-                            stream=True,
-                        ):
-                            if (
-                                "message" in chunk
-                                and "content" in chunk["message"]
-                            ):
-                                yield {
-                                    "type": "chunk",
-                                    "content": chunk["message"]["content"],
-                                }
-
-                        function_response = None  # No need to send the tools response to the frontend
-                else:  # get_relevant_literature
-                    self.logger.info(
-                        "Executing get_relevant_literature tool..."
-                    )
-                    # Send RAG status message
-                    yield {
-                        "type": "status",
-                        "content": "Searching medical literature...",
-                    }
-
-                    # Get disease_name and question from function arguments
-                    disease_name = function_arguments.get("disease_name", "")
-                    question = function_arguments.get("question", "")
-
-                    function_response_list = self.get_relevant_literature(
-                        disease_name,
-                        question,
-                    )
-
-                    if (
-                        function_response_list
-                        == "No relevant literature available"
-                    ):
-                        self.logger.info(
-                            "No relevant literature found in database."
-                        )
-                        # Add the tool response to the message list
-                        message_list.append(
-                            {
-                                "role": "tool",
-                                "tool_call_id": tool.get("id", ""),
-                                "content": "No relevant literature available in the database. Answer the user's question but inform them that you were unable to find any relevant information.",
-                            }
-                        )
-                        function_response = None
-                    else:
-                        self.logger.info(
-                            f"Retrieved relevant literature for disease: {disease_name}"
-                        )
-                        function_response_string = "\n".join(
-                            function_response_list
-                        )
-
-                        # Add the tool response to the message list
-                        message_list.append(
-                            {
-                                "role": "tool",
-                                "tool_call_id": tool.get("id", ""),
-                                "content": f"The below text excerpts are taken from relevant sections of the guidelines; these may help you answer the user's question. The user has not sent you these documents, they have come from your own database.\n\n{function_response_string}",
-                            }
-                        )
-
-                        function_response = function_response_list
-
-                    # Send generating response status
-                    yield {
-                        "type": "status",
-                        "content": "Generating response with retrieved information...",
-                    }
-
-                    # Stream the context answer
-                    async for chunk in await self.llm_client.chat(
-                        model=self.config["PRIMARY_MODEL"],
-                        messages=message_list,
-                        options=context_question_options,
-                        stream=True,
-                    ):
-                        if "message" in chunk and "content" in chunk["message"]:
-                            yield {
-                                "type": "chunk",
-                                "content": chunk["message"]["content"],
-                            }
+                        yield result
 
         except Exception as e:
             self.logger.error(f"Error processing tool call: {str(e)}")
@@ -530,8 +315,6 @@ class ChatEngine:
                         "type": "chunk",
                         "content": chunk["message"]["content"],
                     }
-
-            function_response = None
 
         # Signal end of stream with function_response if available
         self.logger.info("Streaming chat completed.")
