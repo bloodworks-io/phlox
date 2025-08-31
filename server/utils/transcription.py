@@ -177,25 +177,22 @@ async def process_template_field(
         response_format = FieldResponse.model_json_schema()
         schema_str = json.dumps(FieldResponse.model_json_schema(), indent=2)
 
-        # Check if using Qwen3 model
-        model_name = config["PRIMARY_MODEL"].lower()
-        is_qwen3 = "qwen3" in model_name
+        # Check thinking behavior
+        from server.utils.llm_client import (
+            get_model_thinking_behavior,
+            ModelThinkingBehavior,
+        )
 
-        # Prepare user content, adding /no_think for Qwen3 models with Ollama
+        model_name = config["PRIMARY_MODEL"]
+        behavior = get_model_thinking_behavior(model_name)
+
+        # Prepare user content
         user_content = transcript_text
-        if is_qwen3:
-            user_content = f"{transcript_text} /no_think"
-            logger.info(
-                f"Qwen3 model detected: {model_name}. Adding /no_think and empty think tags."
-            )
 
         request_body = [
             {
                 "role": "system",
-                "content": (
-                    f"{field.system_prompt}\n\n"
-                    f"Return your response as single valid JSON matching this exact schema with no code fences or prose:\n{schema_str}"
-                ),
+                "content": (f"{field.system_prompt}\n"),
             },
             {
                 "role": "system",
@@ -204,14 +201,14 @@ async def process_template_field(
             {"role": "user", "content": user_content},
         ]
 
-        # For Qwen3 models with Ollama, add empty think tags
-        if is_qwen3:
+        # For think-tag models, add empty think tags to delimit reasoning (if desired)
+        if behavior == ModelThinkingBehavior.TAGS:
             request_body.append(
                 {"role": "assistant", "content": "<think>\n</think>"}
             )
 
         response = await client.chat(
-            model=config["PRIMARY_MODEL"],
+            model=model_name,
             messages=request_body,
             format=response_format,
             options={**options, "temperature": 0},

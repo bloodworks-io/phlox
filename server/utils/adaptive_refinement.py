@@ -135,13 +135,13 @@ async def generate_adaptive_refinement_suggestions(
     ]
 
     try:
-        # Handle Qwen3 thinking step if needed
+        # Handle models that use explicit <think> tags
         thinking = ""
-        model_name_lower = model_name.lower()
+        from server.utils.llm_client import is_thinking_model
 
-        if "qwen3" in model_name_lower:
+        if is_thinking_model(model_name):
             logger.info(
-                f"Qwen3 model detected: {model_name}. Getting explicit thinking step."
+                f"Model detected as think-tag style: {model_name}. Getting explicit thinking step."
             )
             thinking_messages = base_messages.copy()
             thinking_messages.append(
