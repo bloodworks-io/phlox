@@ -698,10 +698,26 @@ class PatientDatabase:
             raise
 
     def _migrate_to_v4(self):
-        """Add has_completed_splash_screen column to user_settings table"""
+        """Add has_completed_splash_screen column to user_settings table
+        Add model_capabilities table for storing model thinking behavior"""
         try:
             self.cursor.execute(
                 "ALTER TABLE user_settings ADD COLUMN has_completed_splash_screen BOOLEAN DEFAULT TRUE"
+            )
+            self.cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS model_capabilities (
+                    provider TEXT NOT NULL,
+                    model TEXT NOT NULL,
+                    capability_type TEXT NOT NULL, -- 'none' | 'tags' | 'field'
+                    tag_names TEXT,                -- JSON array of tag names if capability_type='tags'
+                    reasoning_field_name TEXT,     -- e.g., 'reasoning_content' if capability_type='field'
+                    sample_raw_response TEXT,      -- raw JSON string from probe
+                    probed_at TEXT,                -- ISO timestamp
+                    notes TEXT,
+                    PRIMARY KEY (provider, model)
+                )
+                """
             )
             self.db.commit()
             logging.info(
@@ -802,6 +818,101 @@ class PatientDatabase:
             except Exception as e:
                 logging.error(f"Failed to clear test database: {str(e)}")
                 raise
+
+    def upsert_model_capability(
+        self,
+        provider: str,
+        model: str,
+        capability_type: str,
+        tag_names=None,
+        reasoning_field_name: str = None,
+        sample_raw_response: str = None,
+        notes: str = None,
+    ):
+        """Insert or update model thinking behavior."""
+        try:
+            now = datetime.utcnow().isoformat()
+            tag_names_json = json.dumps(tag_names or [])
+            self.cursor.execute(
+                """
+                INSERT INTO model_capabilities (
+                    provider, model, capability_type, tag_names, reasoning_field_name, sample_raw_response, probed_at, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(provider, model) DO UPDATE SET
+                    capability_type=excluded.capability_type,
+                    tag_names=excluded.tag_names,
+                    reasoning_field_name=excluded.reasoning_field_name,
+                    sample_raw_response=excluded.sample_raw_response,
+                    probed_at=excluded.probed_at,
+                    notes=excluded.notes
+                """,
+                (
+                    provider,
+                    model,
+                    capability_type,
+                    tag_names_json,
+                    reasoning_field_name,
+                    sample_raw_response,
+                    now,
+                    notes,
+                ),
+            )
+            self.db.commit()
+        except Exception as e:
+            logging.error(f"Error upserting model_capability: {e}")
+            self.db.rollback()
+            raise
+
+    def get_model_capability(self, provider: str, model: str):
+        """Fetch stored model thinking behavior."""
+        try:
+            self.cursor.execute(
+                """
+                SELECT provider, model, capability_type, tag_names, reasoning_field_name, sample_raw_response, probed_at, notes
+                FROM model_capabilities
+                WHERE provider = ? AND model = ?
+                """,
+                (provider, model),
+            )
+            row = self.cursor.fetchone()
+            if not row:
+                return None
+            return {
+                "provider": row["provider"],
+                "model": row["model"],
+                "capability_type": row["capability_type"],
+                "tag_names": json.loads(row["tag_names"] or "[]"),
+                "reasoning_field_name": row["reasoning_field_name"],
+                "sample_raw_response": row["sample_raw_response"],
+                "probed_at": row["probed_at"],
+                "notes": row["notes"],
+            }
+        except Exception as e:
+            logging.error(f"Error getting model_capability: {e}")
+            raise
+
+    def get_unique_primary_conditions(self):
+        """
+        Retrieve all unique primary conditions from the patients table.
+
+        Returns:
+            list: A list of unique primary condition strings, excluding None values.
+        """
+        try:
+            self.cursor.execute(
+                """
+                SELECT DISTINCT primary_condition
+                FROM patients
+                WHERE primary_condition IS NOT NULL
+                AND primary_condition != ''
+                ORDER BY primary_condition ASC
+                """
+            )
+            results = self.cursor.fetchall()
+            return [row['primary_condition'] for row in results]
+        except Exception as e:
+            logging.error(f"Error getting unique primary conditions: {e}")
+            return []
 
     def __enter__(self):
         return self

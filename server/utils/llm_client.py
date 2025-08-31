@@ -10,9 +10,9 @@ from typing import Dict, List, Any, Optional, Union, AsyncGenerator
 from server.database.config import config_manager
 from server.constants import DATA_DIR, IS_DOCKER
 from enum import Enum
+from server.database.connection import db
 
 logger = logging.getLogger(__name__)
-
 
 
 class LLMProviderType(Enum):
@@ -22,17 +22,51 @@ class LLMProviderType(Enum):
 
 
 # Models that support/require thinking steps
-THINKING_MODELS = ["qwen3", "deespeek-r"]
+class ModelThinkingBehavior(Enum):
+    NONE = "none"
+    TAGS = "tags"  # model emits <think>/<thinking>/<reasoning> tags in content
+    FIELD = "field"  # model returns separate reasoning field (e.g., reasoning_content)
+
+
+def get_model_thinking_behavior(model_name: str) -> ModelThinkingBehavior:
+    """
+    Dynamic behavior lookup:
+    - Use stored DB probe if available.
+    - Fallback to name heuristic.
+    """
+    config = config_manager.get_config()
+    provider = config.get("LLM_PROVIDER", "ollama").lower()
+    rec = db.get_model_capability(provider, model_name) if model_name else None
+    if rec:
+        cap = rec.get("capability_type", "none")
+        if cap == "tags":
+            return ModelThinkingBehavior.TAGS
+        if cap == "field":
+            return ModelThinkingBehavior.FIELD
+        return ModelThinkingBehavior.NONE
+    return _fallback_behavior_from_name(model_name)
 
 
 def is_thinking_model(model_name: str) -> bool:
-    """Check if a model requires thinking steps."""
-    if not model_name:
-        return False
-    model_lower = model_name.lower()
-    return any(
-        thinking_model in model_lower for thinking_model in THINKING_MODELS
-    )
+    """Backwards compatibility: True only for 'tags' behavior."""
+    return get_model_thinking_behavior(model_name) == ModelThinkingBehavior.TAGS
+
+
+def add_thinking_guidance_to_messages(
+    messages: List[Dict[str, str]], model_name: str
+) -> List[Dict[str, str]]:
+    behavior = get_model_thinking_behavior(model_name)
+    if behavior == ModelThinkingBehavior.NONE:
+        return messages
+
+    # You can keep one guidance text, or tailor it per behavior
+    content = "Keep your reasoning concise and focused. Don't overthink the task - provide just enough reasoning to arrive at a good solution."
+
+    thinking_guidance = {
+        "role": "system",
+        "content": content,
+    }
+    return messages + [thinking_guidance]
 
 
 def add_thinking_to_schema(base_schema: dict, model_name: str) -> dict:
@@ -198,7 +232,6 @@ class LocalLLMClient:
         return "\n".join(prompt_parts) + "\nAssistant: "
 
 
-
 def _clean_json_response(content: str) -> str:
     """
     Clean JSON response content by removing markdown code blocks and extra whitespace.
@@ -233,7 +266,7 @@ class AsyncLLMClient:
         provider_type: Union[str, LLMProviderType],
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
-        timeout: int = 120,
+        timeout: int = 80,
         **local_kwargs,
     ):
         """
@@ -287,6 +320,7 @@ class AsyncLLMClient:
                     api_key=self.api_key,
                     base_url=f"{self.base_url}/v1",
                     timeout=timeout,
+                    max_retries=0,
                 )
             except ImportError:
                 raise ImportError(
@@ -334,12 +368,15 @@ class AsyncLLMClient:
                 messages, schema, **(options or {})
             )
 
+
         if not is_thinking_model(model):
             # Non-thinking models: single structured call
             response = await self.chat(
                 model=model, messages=messages, format=schema, options=options
             )
             return response["message"]["content"]
+
+        logging.info("Model with think tags called")
 
         # Thinking models: different approaches for different providers
         if self.provider_type == LLMProviderType.OLLAMA:
@@ -361,6 +398,12 @@ class AsyncLLMClient:
         """
         Handle thinking models for Ollama with explicit transition.
         """
+        # Add thinking guidance
+        guided_messages = add_thinking_guidance_to_messages(messages, model)
+
+        # First call: get thinking
+        thinking_messages = guided_messages.copy()
+
         # First call: get thinking
         thinking_messages = messages.copy()
         thinking_messages.append({"role": "assistant", "content": "<think>"})
@@ -372,8 +415,11 @@ class AsyncLLMClient:
             model=model, messages=thinking_messages, options=thinking_options
         )
 
+        content = thinking_response["message"]["content"]
         thinking_content = (
-            "<think>" + thinking_response["message"]["content"] + "</think>"
+            ("" if content.startswith("<think>") else "<think>")
+            + content
+            + ("" if content.endswith("</think>") else "</think>")
         )
 
         # Build conversation with explicit transition for Ollama
@@ -408,6 +454,12 @@ class AsyncLLMClient:
         """
         Handle thinking models for OpenAI-compatible providers.
         """
+        # Add thinking guidance
+        guided_messages = add_thinking_guidance_to_messages(messages, model)
+
+        # First call: get thinking
+        thinking_messages = guided_messages.copy()
+
         # First call: get thinking
         thinking_messages = messages.copy()
         thinking_messages.append({"role": "assistant", "content": "<think>"})
@@ -419,8 +471,11 @@ class AsyncLLMClient:
             model=model, messages=thinking_messages, options=thinking_options
         )
 
+        content = thinking_response["message"]["content"]
         thinking_content = (
-            "<think>" + thinking_response["message"]["content"] + "</think>"
+            ("" if content.startswith("<think>") else "<think>")
+            + content
+            + ("" if content.endswith("</think>") else "</think>")
         )
 
         # Second call: structured output with thinking
@@ -432,7 +487,7 @@ class AsyncLLMClient:
         final_response = await self.chat(
             model=model, messages=final_messages, format=schema, options=options
         )
-        print(final_response, flush=True)
+
         return final_response["message"]["content"]
 
     async def chat(
@@ -444,32 +499,26 @@ class AsyncLLMClient:
         tools: Optional[List[Dict]] = None,
         stream: bool = False,
     ) -> Union[Dict[str, Any], AsyncGenerator]:
-        """
-        Send a chat completion request.
+        """Send a chat completion request."""
+        # Add thinking guidance for thinking models
+        guided_messages = add_thinking_guidance_to_messages(messages, model)
 
-        Args:
-            model: Model name
-            messages: List of message dictionaries with 'role' and 'content'
-            format: Format specification (Ollama-specific)
-            options: Additional options for the model
-            tools: Optional list of tools/functions for function calling
-            stream: Whether to stream the response
-
-        Returns:
-            Response dictionary or async generator for streaming
-        """
         if self.provider_type == LLMProviderType.LOCAL:
             if stream:
-                return self._client.stream_chat(messages, **(options or {}))
+                return self._client.stream_chat(
+                    guided_messages, **(options or {})
+                )
             else:
-                return await self._client.chat(messages, **(options or {}))
+                return await self._client.chat(
+                    guided_messages, **(options or {})
+                )
         elif self.provider_type == LLMProviderType.OLLAMA:
             return await self._ollama_chat(
-                model, messages, format, options, tools, stream
+                model, guided_messages, format, options, tools, stream
             )
         else:
             return await self._openai_compatible_chat(
-                model, messages, format, options, tools, stream
+                model, guided_messages, format, options, tools, stream
             )
 
     async def _ollama_chat(
@@ -587,8 +636,9 @@ class AsyncLLMClient:
                 return response_generator()
             else:
                 # Make the API call
+
                 response = await self._client.chat.completions.create(**params)
-                logger.info(f"LLM response: {response}")
+
                 # Convert to Ollama-like format for consistency
                 content = response.choices[0].message.content or ""
 
@@ -603,6 +653,18 @@ class AsyncLLMClient:
                         "content": response.choices[0].message.content or "",
                     },
                 }
+
+                # Preserve reasoning_content if provided by the backend
+                try:
+                    reasoning_content = getattr(
+                        response.choices[0].message, "reasoning_content", None
+                    )
+                    if reasoning_content:
+                        result["message"][
+                            "reasoning_content"
+                        ] = reasoning_content
+                except Exception:
+                    pass
 
                 # Add tool_calls if present
                 if (
