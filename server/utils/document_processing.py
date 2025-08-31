@@ -1,10 +1,16 @@
 import aiohttp
 import asyncio
 import logging
-from ollama import AsyncClient as AsyncOllamaClient
+import json
+from server.utils.llm_client import (
+    AsyncLLMClient,
+    LLMProviderType,
+    get_llm_client,
+)
 from server.database.config import config_manager
 from server.utils.helpers import calculate_age, refine_field_content
 from server.schemas.templates import TemplateResponse
+from server.schemas.grammars import FieldResponse
 import fitz  # PyMuPDF for PDF processing
 import io
 import pytesseract
@@ -66,7 +72,7 @@ async def process_document_content(
         Returns:
             Extracted and formatted content for the section
         """
-        client = AsyncOllamaClient(host=config["OLLAMA_BASE_URL"])
+        client = get_llm_client()
         messages = [
             {"role": "system", "content": system_prompt},
             {
@@ -202,9 +208,9 @@ async def process_document_with_template(
     config = config_manager.get_config()
     prompts = config_manager.get_prompts_and_options()
     options = prompts["options"]["general"].copy()
-    del options["stop"]
 
     # Extract text from document using OCR
+    logging.info("Extracting text from document")
     extracted_text = await extract_text_from_document(
         document_buffer, content_type
     )
@@ -280,11 +286,10 @@ async def process_document_field(
     """
     try:
         config = config_manager.get_config()
-        client = AsyncOllamaClient(host=config["OLLAMA_BASE_URL"])
+        client = get_llm_client()
         options = config_manager.get_prompts_and_options()["options"]["general"].copy()
 
         # Use FieldResponse for structured output
-        from server.schemas.grammars import FieldResponse
         response_format = FieldResponse.model_json_schema()
 
         # Get the field name and system prompt
