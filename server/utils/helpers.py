@@ -5,16 +5,19 @@ from server.utils.llm_client import (
     AsyncLLMClient,
     LLMProviderType,
     get_llm_client,
+    is_thinking_model,
 )
-from server.schemas.patient import Patient, Condition
+from server.schemas.patient import Patient, Condition, Summary
 from server.database.config import config_manager
 from server.schemas.grammars import ClinicalReasoning
 import logging
 import asyncio
 import re
+import Levenshtein
 from pydantic import BaseModel
 from typing import Optional, List, Union, Dict
 import json
+from server.database.connection import db
 from server.schemas.grammars import (
     FieldResponse,
     RefinedResponse,
@@ -26,6 +29,98 @@ from server.schemas.templates import TemplateField, TemplateResponse
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+def find_best_condition_match(condition_name: str, existing_conditions: List[str], threshold: float = 0.8) -> Optional[str]:
+    """
+    Find the best fuzzy match for a condition name from existing conditions.
+
+    Args:
+        condition_name: The condition name to match
+        existing_conditions: List of existing condition names
+        threshold: Minimum similarity threshold (0.0 to 1.0)
+
+    Returns:
+        The best matching existing condition name, or None if no good match found
+    """
+    if not condition_name or not existing_conditions:
+        return None
+
+    # Normalize for comparison
+    normalized_input = condition_name.lower().strip()
+
+    best_match = None
+    best_ratio = 0.0
+
+    for existing in existing_conditions:
+        normalized_existing = existing.lower().strip()
+
+        # Try different similarity measures
+        ratios = [
+            Levenshtein.ratio(normalized_input, normalized_existing),
+            # Also check if one is contained in the other (for cases like "Iron deficiency" vs "iron deficiency anaemia")
+            max(
+                len(normalized_input) / len(normalized_existing) if normalized_input in normalized_existing else 0,
+                len(normalized_existing) / len(normalized_input) if normalized_existing in normalized_input else 0
+            ) * 0.9  # Slightly lower weight for containment
+        ]
+
+        max_ratio = max(ratios)
+
+        if max_ratio > best_ratio and max_ratio >= threshold:
+            best_ratio = max_ratio
+            best_match = existing
+
+    if best_match:
+        logger.info(f"Fuzzy matched '{condition_name}' to '{best_match}' (similarity: {best_ratio:.3f})")
+
+    return best_match
+
+def create_condition_prompt_with_constraints(existing_conditions: List[str], combined_text: str, is_secondary_thinking: bool) -> tuple[str, str]:
+    """
+    Create system and user prompts with condition constraints.
+    """
+    if not existing_conditions:
+        # Fallback to original prompts
+        condition_system = (
+            "You are a medical AI that is skilled at extracting the primary diagnosis for a medical encounter. "
+            "Return a JSON formatted string with a single field called `condition_name` that represents the primary problem "
+            "according to the ICD-10 WHO classifications. "
+            "Important: `condition_name` must contain only the condition itself (no descriptors such as 'recurrent', 'relapsed', 'mild', or 'bilateral', "
+            "with no staging/grade/severity terms) and avoid acronyms/abbreviations (prefer full disease names)."
+        )
+
+        condition_user = (
+            f"Patient note: {combined_text}. Provide the primary condition they are being treated for according to the WHO ICD-10 classification. "
+            f"Do not include the ICD code. Respond only with the common name of the condition (no descriptors like 'recurrent', 'relapsed', 'mild', or 'bilateral' ). "
+            f"Avoid acronyms/abbreviations—prefer the full disease name."
+        )
+    else:
+        # Create constrained prompts with existing conditions
+        display_conditions = existing_conditions[:20]  # Limit to avoid overwhelming prompt
+        conditions_list = "\n".join([f"- {condition}" for condition in display_conditions])
+        more_text = f"\n(and {len(existing_conditions) - 20} more)" if len(existing_conditions) > 20 else ""
+
+        condition_system = (
+            "You are a medical AI that extracts the primary diagnosis for a medical encounter. "
+            "You must choose from the existing conditions in our database when possible. "
+            "If the patient's condition closely matches one of the existing conditions, use that exact name including the exact letter casing. "
+            "Only set is_new_condition to true if the condition is genuinely different from all existing options. "
+            "The `condition_name` must contain only the condition itself (no descriptors such as 'recurrent', 'relapsed', 'mild', or 'bilateral', with no staging/grade/severity terms) "
+            "and avoid acronyms/abbreviations (prefer full disease names). "
+            "Return JSON with 'condition_name' and 'is_new_condition' fields."
+        )
+
+        condition_user = (
+            f"Patient note: {combined_text}\n\n"
+            f"Existing conditions in database:\n{conditions_list}{more_text}\n\n"
+            f"Select the primary condition. If it matches an existing condition, use the exact name and letter casing from the list above. "
+            f"If it's a new condition not represented in the list, provide the condition name and set is_new_condition to true. "
+            f"Respond only with the condition itself (no descriptors like 'recurrent', 'relapsed', 'mild', or 'bilateral' and avoid acronyms/abbreviations—prefer full disease names."
+        )
+
+    if is_secondary_thinking:
+        condition_user = f"{condition_user} /no_think"
+
+    return condition_system, condition_user
 
 async def summarize_encounter(patient: Patient) -> tuple[str, Optional[str]]:
     """
@@ -57,7 +152,7 @@ async def summarize_encounter(patient: Patient) -> tuple[str, Optional[str]]:
 
     age = calculate_age(patient.dob, patient.encounter_date)
     initial_summary_content = (
-        f"{age} year old {'male' if patient.gender == 'M' else 'female'} with"
+        f"{age} year old {'male' if patient.gender == 'M' else 'female'} with "
     )
 
     summary_request_body = [
@@ -66,25 +161,43 @@ async def summarize_encounter(patient: Patient) -> tuple[str, Optional[str]]:
         {"role": "assistant", "content": initial_summary_content},
     ]
 
+    is_secondary_thinking = is_thinking_model(config["SECONDARY_MODEL"])
+
+    condition_system = (
+        "You are a medical AI that is skilled at extracting the primary diagnosis for a medical encounter. "
+        "Return a JSON formatted string with a single field called `condition_name` that represents the primary problem "
+        "according to the ICD-10 WHO classifications. "
+        "Important: `condition_name` must contain only the condition itself (no descriptors such as 'recurrent', 'relapsed', 'mild', or 'bilateral' "
+        "no staging/grade/severity terms) and avoid acronyms/abbreviations (prefer full disease names)."
+    )
+
+    condition_user = (
+        f"Patient note: {combined_text}. Provide the primary condition they are being treated for according to the WHO ICD-10 classification. "
+        f"Do not include the ICD code. Respond only with the common name of the condition (no descriptors like 'recurrent', 'relapsed', 'mild', or 'bilateral'). "
+        f"Avoid acronyms/abbreviations—prefer the full disease name."
+    )
+
+    if is_secondary_thinking:
+        logger.info("Secondary thinking model detected.")
+        condition_user = f"{condition_user} /no_think"
+
     condition_request_body = [
-        {
-            "role": "system",
-            "content": "You are a medical AI that is skilled at extracting the primary diagnosis for a medical encounter. You should return a JSON formatted string that has a singular field called `condition_name` that represents the primary problem according to the ICD-10 WHO classifications",
-        },
-        {
-            "role": "user",
-            "content": f"Patient note: {combined_text}. Please provide the primary condition they are being treated for according to the WHO ICD-10 classification. Please do not include the ICD code, rather, just respond with the common name of the condition.",
-        },
+        {"role": "system", "content": condition_system},
+        {"role": "user", "content": condition_user},
     ]
 
     async def fetch_summary():
-
-        response = await client.chat(
+        logging.info(summary_request_body)
+        response_json = await client.chat_with_structured_output(
             model=config["SECONDARY_MODEL"],
             messages=summary_request_body,
-            options=prompts["options"]["secondary"],
+            schema=Summary.model_json_schema(),
+            options={**prompts["options"]["secondary"], "temperature": 0.7},
         )
-        summary_content = response["message"]["content"]
+        summary_response = Summary.model_validate_json(response_json)
+        summary_content = summary_response.summary_text
+
+        summary_content = clean_think_tags(summary_content)
 
         # Truncate at the first empty line
         summary_content = summary_content.split("\n\n")[0]
@@ -92,36 +205,128 @@ async def summarize_encounter(patient: Patient) -> tuple[str, Optional[str]]:
 
         return initial_summary_content + summary_content
 
+
+
     async def fetch_condition():
+        # Get existing conditions from database
+        existing_conditions = db.get_unique_primary_conditions()
+        logging.info(f"Found {len(existing_conditions)} existing conditions in database")
+
+        # PASS 1: Initial condition extraction
+        condition_system, condition_user = create_condition_prompt_with_constraints(
+            existing_conditions, combined_text, is_secondary_thinking
+        )
+
+        condition_request_body_constrained = [
+            {"role": "system", "content": condition_system},
+            {"role": "user", "content": condition_user},
+        ]
+
+        # Use ConstrainedCondition schema if we have existing conditions, otherwise fallback
+        schema_to_use = Condition if existing_conditions else Condition
+
         response_json = await client.chat_with_structured_output(
             model=config["SECONDARY_MODEL"],
-            messages=condition_request_body,
-            schema=Condition.model_json_schema(),
-            options=prompts["options"]["secondary"]
+            messages=condition_request_body_constrained,
+            schema=schema_to_use.model_json_schema(),
+            options=prompts["options"]["secondary"],
         )
-        try:
-            condition_response = Condition.model_validate_json(
-                response["message"]["content"]
-            )
 
+        try:
+            condition_response = Condition.model_validate_json(response_json)
             condition_name = condition_response.condition_name
-            logging.info(f"Condition: {condition_name}")
-            return condition_name
+
+            # Normalize: remove disallowed descriptors and canonicalize case to existing DB names
+            cleaned_condition = re.sub(r"\b(recurrent|relapsed)\b", "", condition_name, flags=re.IGNORECASE)
+            cleaned_condition = re.sub(r"\s+", " ", cleaned_condition).strip()
+
+            if existing_conditions:
+                # Try fuzzy matching with existing conditions to prevent duplicates
+                fuzzy_match = find_best_condition_match(cleaned_condition, existing_conditions, threshold=0.85)
+
+                if fuzzy_match:
+                    cleaned_condition = fuzzy_match
+                    logger.info(f"Pass 1: Using fuzzy matched condition: {fuzzy_match}")
+                else:
+                    # PASS 2: No good match found, try disambiguation with top candidates
+                    logger.info(f"Pass 1: No good fuzzy match for '{cleaned_condition}', trying disambiguation pass")
+
+                    # Get top 10 most similar conditions for disambiguation
+                    candidates = []
+                    for existing in existing_conditions:
+                        similarity = Levenshtein.ratio(cleaned_condition.lower(), existing.lower())
+                        candidates.append((existing, similarity))
+
+                    # Sort by similarity and take top 10
+                    candidates.sort(key=lambda x: x[1], reverse=True)
+                    top_candidates = [cand[0] for cand in candidates[:10]]
+
+                    if top_candidates:
+                        candidates_list = "\n".join([f"- {cand}" for cand in top_candidates])
+
+                        disambig_system = (
+                            "You are a medical AI that selects the best matching condition from a curated list. "
+                            "Choose the condition that best matches the patient's primary diagnosis. "
+                            "If none of the options are appropriate, respond with 'NEW_CONDITION'. "
+                            "Return JSON with 'condition_name' field containing either the exact condition name from the list or 'NEW_CONDITION'."
+                        )
+
+                        disambig_user = (
+                            f"Patient note: {combined_text}\n\n"
+                            f"Initial extraction suggested: '{cleaned_condition}'\n\n"
+                            f"Select the best match from these similar conditions:\n{candidates_list}\n\n"
+                            f"Choose the condition that best matches this patient's primary diagnosis, or respond with 'NEW_CONDITION' if none fit."
+                        )
+
+                        if is_secondary_thinking:
+                            disambig_user = f"{disambig_user} /no_think"
+
+                        disambig_request_body = [
+                            {"role": "system", "content": disambig_system},
+                            {"role": "user", "content": disambig_user},
+                        ]
+
+                        disambig_response_json = await client.chat_with_structured_output(
+                            model=config["SECONDARY_MODEL"],
+                            messages=disambig_request_body,
+                            schema=Condition.model_json_schema(),
+                            options=prompts["options"]["secondary"],
+                        )
+
+                        disambig_response = Condition.model_validate_json(disambig_response_json)
+                        disambig_condition = disambig_response.condition_name
+
+                        if disambig_condition != "NEW_CONDITION" and disambig_condition in top_candidates:
+                            cleaned_condition = disambig_condition
+                            logger.info(f"Pass 2: Disambiguation selected: {disambig_condition}")
+                        else:
+                            logger.info(f"Pass 2: Keeping original condition as new: {cleaned_condition}")
+
+            if existing_conditions:
+                if getattr(condition_response, "is_new_condition", False):
+                    logging.info(f"New condition identified: {condition_name} -> normalized: {cleaned_condition}")
+                else:
+                    logging.info(f"Existing condition selected: {condition_name} -> normalized: {cleaned_condition}")
+            else:
+                logging.info(f"Condition (no constraints): {condition_name} -> normalized: {cleaned_condition}")
+
+            return cleaned_condition
+
         except Exception as e:
-            logging.error(
-                f"Error extracting condition: {e}, response content:{response_json}"
-            )
+            logging.error(f"Error extracting condition: {e}, response content: {response_json}")
             return None
 
+
     summary, condition = await asyncio.gather(
-            fetch_summary(), fetch_condition()
+        fetch_summary(), fetch_condition()
     )
 
     return summary, condition
 
 
+
 async def run_clinical_reasoning(
-    template_data: dict, dob: str, encounter_date: str, gender: str
+template_data: dict, dob: str, encounter_date: str, gender: str
 ):
     config = config_manager.get_config()
     prompts = config_manager.get_prompts_and_options()
@@ -179,13 +384,12 @@ async def run_clinical_reasoning(
         ],
     }
 
-    # Check if using Qwen3 model
     model_name = config["REASONING_MODEL"].lower()
     thinking = ""
 
-    if "qwen3" in model_name:
+    if is_thinking_model(model_name):
         logger.info(
-            f"Qwen3 model detected: {model_name}. Getting explicit thinking step."
+            f"Thinking model detected: {model_name}. Getting explicit thinking step."
         )
 
         # First message for thinking only
@@ -279,28 +483,19 @@ async def refine_field_content(
 ) -> Union[str, Dict]:
     """
     Refine the content of a single field using style examples and format schema.
-    Handles special case for Qwen3 models, allowing for a thinking step before structured output.
-
-    Args:
-        content (Union[str, Dict]): The raw content to refine.
-        field (TemplateField): The field being processed.
-
-    Returns:
-        Union[str, Dict]: The refined content.
+    Handles special case for thinking models via the client abstraction.
     """
     try:
-        # If content is already structured (dict), return as is
         if isinstance(content, dict):
             return content
 
-        # Get configuration and client
         config = config_manager.get_config()
         client = get_llm_client()
         prompts = config_manager.get_prompts_and_options()
         options = prompts["options"]["general"]
 
         # Determine format details
-        format_details = determine_format_details(field, prompts, config["PRIMARY_MODEL"])
+        format_details = determine_format_details(field, prompts)
 
         # Build system prompt with style example if available
         system_prompt = build_system_prompt(field, format_details, prompts)
@@ -310,60 +505,17 @@ async def refine_field_content(
             {"role": "user", "content": content},
         ]
 
-        # Check if using Qwen3 model
-        model_name = config["PRIMARY_MODEL"].lower()
-        thinking = ""
+        # Always use structured output helper; it handles thinking models internally
+        response_json = await client.chat_with_structured_output(
+            model=config["PRIMARY_MODEL"],
+            messages=base_messages,
+            schema=format_details["response_format"],
+            options=options,
+        )
 
-        if "qwen3" in model_name:
-            logger.info(
-                f"Qwen3 model detected: {model_name}. Getting explicit thinking step."
-            )
-
-            # Create a copy of base_messages for the thinking step
-            thinking_messages = base_messages.copy()
-            thinking_messages.append(
-                {"role": "assistant", "content": "<think>\n"}
-            )
-
-            # Make initial call for thinking only
-            thinking_options = options.copy()
-            thinking_options["stop"] = ["</think>"]
-
-            thinking_response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=thinking_messages,
-                options=thinking_options,
-            )
-
-            # Extract thinking content
-            thinking = (
-                "<think>" + thinking_response["message"]["content"] + "</think>"
-            )
-
-            # Add thinking to the main request
-            full_messages = base_messages.copy()
-            full_messages.append({"role": "assistant", "content": thinking})
-
-            # Now make the structured output call with the thinking included
-            response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=full_messages,
-                format=format_details["response_format"],
-                options=options,
-            )
-        else:
-            # Standard approach for other models
-            response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=base_messages,
-                format=format_details["response_format"],
-                options=options,
-            )
-
-        logger.info(f"Response received for field {field.field_key}: {response_json}")
-
-        # Format the response appropriately
-        return format_refined_response(response_json, field, format_details)
+        # Reuse existing formatter by wrapping the JSON string
+        pseudo_response = {"message": {"content": response_json}}
+        return format_refined_response(pseudo_response, field, format_details)
 
     except Exception as e:
         logger.error(f"Error refining field {field.field_key}: {e}")
@@ -431,9 +583,9 @@ def build_system_prompt(
         - Preserve ALL important clinical details from the original text; information which is irrelevant to the clinical encounter should be removed.
         - Do not add information not present in the input
         - If the style example uses abbreviations like "SNT" or "HSM", use similar appropriate medical abbreviations
+        - Return JSON
 
-        Return your response as single valid JSON matching this exact schema with no code fences or prose:
-        {schema_str}"""
+        FORMAT THE FOLLOWING MEDICAL INFORMATION:"""
     else:
         # If no style example, start with base prompt
         system_prompt = format_details["base_prompt"]
@@ -451,11 +603,7 @@ def build_system_prompt(
                 if rule in prompts["prompts"]["refinement"]:
                     system_prompt = prompts["prompts"]["refinement"][rule]
                     break
-        # Add schema information for all cases
-        system_prompt += f"""
 
-        Return your response as valid JSON matching this exact schema:
-        {schema_str}"""
     # Add adaptive_refinement_instructions if they exist
     # This should be appended regardless of whether a style_example or refinement_rule was applied,
     # as they are supplementary.
