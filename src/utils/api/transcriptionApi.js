@@ -26,7 +26,7 @@ export const transcriptionApi = {
           signal: signal,
         });
       },
-      timeout: 45000, // 45 seconds for reprocessing
+      timeout: 120000,
       errorMessage: "Error reprocessing transcription",
     });
   },

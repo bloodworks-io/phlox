@@ -21,7 +21,7 @@ export const universalFetch = async (url, options = {}) => {
 // Helper functions for common API request handling.
 export const handleApiRequest = async ({
   apiCall,
-  timeout = 120000, // Default 120 second timeout
+  timeout = 120000,
   setLoading = null,
   onSuccess = null,
   onError = null,
@@ -38,6 +38,7 @@ export const handleApiRequest = async ({
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, timeout);
+  console.log("Timeout set:", timeout);
 
   try {
     // Pass the abort signal to the apiCall
