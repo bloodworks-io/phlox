@@ -75,6 +75,7 @@ export const letterApi = {
   generateLetter: async ({
     patientName,
     gender,
+    dob,
     template_data,
     context,
     additional_instruction,
@@ -82,6 +83,7 @@ export const letterApi = {
     console.log("Letter Generation Request:", {
       patientName,
       gender,
+      dob,
       template_data,
       context,
       additional_instruction,
@@ -96,6 +98,7 @@ export const letterApi = {
           body: JSON.stringify({
             patientName,
             gender,
+            dob,
             template_data,
             additional_instruction,
             context,

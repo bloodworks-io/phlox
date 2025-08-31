@@ -28,6 +28,7 @@ export const useLetter = (setIsModified) => {
             validateLetterData({
                 patientName: patient.name,
                 gender: patient.gender,
+                dob: patient.dob,
             });
 
             // If no additional instructions were provided, use default instructions from the template
@@ -53,6 +54,7 @@ export const useLetter = (setIsModified) => {
             const response = await letterApi.generateLetter({
                 patientName: patient.name,
                 gender: patient.gender,
+                dob: patient.dob,
                 template_data: patient.template_data,
                 additional_instruction: additionalInstructions,
                 context: null,
@@ -133,6 +135,7 @@ export const useLetter = (setIsModified) => {
             const response = await letterApi.generateLetter({
                 patientName: patient.name,
                 gender: patient.gender,
+                dob: patient.dob,
                 template_data: patient.template_data,
                 additional_instruction: additionalInstructions,
                 context: truncatedContext,
