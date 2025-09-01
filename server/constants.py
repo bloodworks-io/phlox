@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 from pathlib import Path
 from platformdirs import user_data_dir
 
@@ -11,15 +12,24 @@ IS_DOCKER = (
 APP_NAME = "Phlox"
 APP_AUTHOR = "bloodworks.io"
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 
 def get_app_directories():
     """Get appropriate directories based on environment"""
     if IS_DOCKER:
+        logger.info("Running in Docker environment; setting up directories")
         data_dir = Path("/usr/src/app/data")
         build_dir = Path("/usr/src/app/build")
     else:
         # For Tauri desktop app
+        logger.info("Running in desktop environment; setting up directories")
         data_dir = Path(user_data_dir(APP_NAME, APP_AUTHOR))
+        logger.info("Data directory: %s", data_dir)
         build_dir = None  # No need to serve static files
 
     return data_dir, build_dir

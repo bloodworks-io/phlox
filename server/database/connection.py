@@ -32,8 +32,10 @@ class PatientDatabase:
             self.cursor = self.db.cursor()
 
             if db_exists:
+                logging.info("Database exists, attempting to decrypt...")
                 try:
                     self.cursor.execute(f"PRAGMA key='{self.encryption_key}'")
+                    logging.info("Database decrypted successfully")
                     self.cursor.execute("SELECT count(*) FROM sqlite_master")
                 except sqlite3.DatabaseError:
                     logging.error(
@@ -42,7 +44,7 @@ class PatientDatabase:
                     raise ValueError("Cannot decrypt database - wrong key?")
             else:
                 # New database - set up encryption
-                logging.info("Creating new database...")
+                logging.info("No existing database, creating new database...")
                 self.cursor.execute(f"PRAGMA key='{self.encryption_key}'")
 
             logging.info("Database connection established successfully")
@@ -54,7 +56,8 @@ class PatientDatabase:
         """Ensure the data directory exists."""
         if not os.path.exists(self.db_dir):
             logging.info(
-                "Data directory does not exist. Creating data directory."
+                "Data directory does not exist. Creating data directory at %s",
+                self.db_dir,
             )
             os.makedirs(self.db_dir, exist_ok=True)
         else:
@@ -143,7 +146,7 @@ class PatientDatabase:
             logging.error(f"Error setting initial default template: {e}")
             raise
 
-    def __init__(self, db_dir="/usr/src/app/data"):
+    def __init__(self, db_dir=DATA_DIR):
         self.db_dir = db_dir
         self.encryption_key = None
 
@@ -909,7 +912,7 @@ class PatientDatabase:
                 """
             )
             results = self.cursor.fetchall()
-            return [row['primary_condition'] for row in results]
+            return [row["primary_condition"] for row in results]
         except Exception as e:
             logging.error(f"Error getting unique primary conditions: {e}")
             return []
