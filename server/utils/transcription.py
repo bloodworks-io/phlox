@@ -134,7 +134,7 @@ async def process_transcription(
                 for field in non_persistent_fields
             ]
         )
-
+        logger.info(f" Raw Results: {len(raw_results)}")
         # Refine all results concurrently
         refined_results = await asyncio.gather(
             *[
@@ -142,7 +142,7 @@ async def process_transcription(
                 for result, field in zip(raw_results, non_persistent_fields)
             ]
         )
-
+        logger.info(f" Refined Results: {len(refined_results)}")
         # Combine results into a dictionary
         processed_fields = {
             field.field_key: refined_content
@@ -207,11 +207,12 @@ async def process_template_field(
                 {"role": "assistant", "content": "<think>\n</think>"}
             )
 
+        # Setting temperature to 0 here makes the outputs semi-deterministic which is a problem if the user wants to reprocess because the initial output is not satisfactory; therefore, we set a low temperature to ensure that decoding is not greedy
         response = await client.chat(
             model=model_name,
             messages=request_body,
             format=response_format,
-            options={**options, "temperature": 0},
+            options={**options, "temperature": 0.1},
         )
 
         # Extract content from response based on provider type
