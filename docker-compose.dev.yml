@@ -13,6 +13,7 @@ services:
             - TZ=Australia/Melbourne
         volumes:
             - ./server:/usr/src/app/server
+            - ./public:/usr/src/app/public
             - ./src:/usr/src/app/src
             - ./logs:/usr/src/app/logs
             - ./data:/usr/src/app/data # Only for persistent data
