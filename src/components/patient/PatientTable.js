@@ -142,6 +142,20 @@ const PatientTable = ({
         }
     };
 
+    const sfxVolume = 0.3;
+    const SFX = {
+        tick: "/sfx/tick.mp3",
+        complete: "/sfx/complete.mp3",
+        reset: "/sfx/reset.mp3",
+    };
+    const play = (url) => {
+        try {
+            const a = new Audio(url);
+            a.volume = sfxVolume;
+            a.play().catch(() => {});
+        } catch {}
+    };
+
     const renderPatientRow = (patient, index) => (
         <Tr key={patient.id} backgroundColor={getRowBackgroundColor(index)}>
             <Td width="25%">
@@ -333,14 +347,15 @@ const PatientTable = ({
                             icon={<RepeatIcon />}
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
+                            onClick={() => {
+                                play(SFX.reset);
                                 resetJobsItems(
                                     patient.id,
                                     patients,
                                     setPatients,
                                     refreshSidebar,
-                                )
-                            }
+                                );
+                            }}
                         />
                     </Tooltip>
                     <VStack align="start" spacing={1}>
@@ -349,14 +364,33 @@ const PatientTable = ({
                                 key={index}
                                 className="checkbox task-checkbox"
                                 isChecked={item.completed}
-                                onChange={() =>
+                                onChange={(e) => {
+                                    const nextChecked = e.target.checked; // true = ticking, false = unticking
+
+                                    if (nextChecked) {
+                                        const willBeCompletedList = (
+                                            patient.jobs_list || []
+                                        ).map((it, i) =>
+                                            i === index ? true : !!it.completed,
+                                        );
+                                        const allCompleteAfter =
+                                            willBeCompletedList.length > 0 &&
+                                            willBeCompletedList.every(Boolean);
+
+                                        if (allCompleteAfter) {
+                                            play(SFX.complete);
+                                        } else {
+                                            play(SFX.tick);
+                                        }
+                                    }
+
                                     toggleJobsItem(
                                         patient.id,
                                         index,
                                         patients,
                                         refreshSidebar,
-                                    )
-                                }
+                                    );
+                                }}
                                 alignItems="flex-start"
                                 sx={{
                                     ".chakra-checkbox__label": {
@@ -409,7 +443,7 @@ const PatientTable = ({
                                     </Thead>
                                     <Tbody>
                                         {patients
-                                            .sort((a, b) => b.id - a.id)
+                                            .sort((a, b) => a.id - b.id)
                                             .map((patient, index) =>
                                                 renderPatientRow(
                                                     patient,
@@ -434,9 +468,12 @@ const PatientTable = ({
                             </Tr>
                         </Thead>
                         <Tbody>
-                            {patients.map((patient, index) =>
-                                renderPatientRow(patient, index),
-                            )}
+                            {patients
+                                .slice()
+                                .sort((a, b) => a.id - b.id)
+                                .map((patient, index) =>
+                                    renderPatientRow(patient, index),
+                                )}
                         </Tbody>
                     </Table>
                 </Box>
