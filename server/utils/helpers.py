@@ -1,4 +1,5 @@
 from ast import Try
+import random
 from datetime import datetime
 from numpy import resize
 from server.utils.llm_client import (
@@ -505,12 +506,15 @@ async def refine_field_content(
             {"role": "user", "content": content},
         ]
 
+        # Generate random seed for diversity in outputs
+        random_seed = random.randint(0, 2**32 - 1)
+
         # Always use structured output helper; it handles thinking models internally
         response_json = await client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],
             messages=base_messages,
             schema=format_details["response_format"],
-            options=options,
+            options={**options, "seed": random_seed},
         )
 
         # Reuse existing formatter by wrapping the JSON string

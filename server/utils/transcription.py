@@ -4,6 +4,7 @@ import json
 import time
 import re
 import logging
+import random
 from typing import Dict, List, Union
 from server.utils.llm_client import (
     AsyncLLMClient,
@@ -134,7 +135,7 @@ async def process_transcription(
                 for field in non_persistent_fields
             ]
         )
-        logger.info(f" Raw Results: {len(raw_results)}")
+        logger.info(f" Raw Results: {raw_results}")
         # Refine all results concurrently
         refined_results = await asyncio.gather(
             *[
@@ -142,7 +143,7 @@ async def process_transcription(
                 for result, field in zip(raw_results, non_persistent_fields)
             ]
         )
-        logger.info(f" Refined Results: {len(refined_results)}")
+        logger.info(f" Refined Results: {refined_results}")
         # Combine results into a dictionary
         processed_fields = {
             field.field_key: refined_content
@@ -207,12 +208,15 @@ async def process_template_field(
                 {"role": "assistant", "content": "<think>\n</think>"}
             )
 
-        # Setting temperature to 0 here makes the outputs semi-deterministic which is a problem if the user wants to reprocess because the initial output is not satisfactory; therefore, we set a low temperature to ensure that decoding is not greedy
+        # Generate random seed for diversity in outputs
+        random_seed = random.randint(0, 2**32 - 1)
+
+        # Setting temperature to 0 here makes the outputs semi-deterministic which is a problem if the user wants to reprocess because the initial output is not satisfactory; therefore, we set a low temperature (to ensure that decoding is not greedy) and set a random seed
         response = await client.chat(
             model=model_name,
             messages=request_body,
             format=response_format,
-            options={**options, "temperature": 0.1},
+            options={**options, "seed": random_seed},
         )
 
         # Extract content from response based on provider type
