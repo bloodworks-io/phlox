@@ -1,6 +1,6 @@
 import aiohttp
 import json
-import html
+from unidecode import unidecode
 import re
 import logging
 import os
@@ -233,54 +233,6 @@ class LocalLLMClient:
         return "\n".join(prompt_parts) + "\nAssistant: "
 
 
-def _clean_json_response(content: str) -> str:
-    """
-    Clean JSON response content by removing markdown code blocks and extra whitespace.
-    Needed for some models like GLM-4.5-Air.
-
-    Args:
-        content (str): Raw response content that may contain markdown code blocks
-
-    Returns:
-        str: Cleaned JSON string
-    """
-    if not content or not content.strip():
-        return content
-
-    # Remove markdown code blocks (```json ... ``` or ``` ... ```)
-    content = re.sub(
-        r"^```(?:json)?\s*\n?", "", content.strip(), flags=re.MULTILINE
-    )
-    content = re.sub(r"\n?```\s*$", "", content.strip(), flags=re.MULTILINE)
-
-    # Remove any leading/trailing whitespace
-    content = content.strip()
-
-    return content
-
-def _decode_html_entities(text: str) -> str:
-    """
-    Decode HTML entities in text to their unicode equivalents.
-    """
-    if not text:
-        return text
-
-    # Decode named and numeric HTML entities
-    decoded = html.unescape(text)
-
-    return decoded
-
-
-def _clean_llm_response(text: str) -> str:
-    """
-    Clean LLM response text by decoding HTML entities and normalizing.
-    """
-    if not text:
-        return text
-    text = _decode_html_entities(text)
-
-    return text
-
 class AsyncLLMClient:
     """A unified client interface for LLM providers (Ollama, OpenAI-compatible, Local)."""
 
@@ -397,7 +349,9 @@ class AsyncLLMClient:
             response = await self.chat(
                 model=model, messages=messages, format=schema, options=options
             )
-            return response["message"]["content"]
+
+            # Convert to simple ASCII; handle emdashes
+            return unidecode(response["message"]["content"].replace("—", "-").replace("–", "-"))
 
         logging.info("Model with think tags called")
 
@@ -465,7 +419,8 @@ class AsyncLLMClient:
             model=model, messages=final_messages, format=schema, options=options
         )
 
-        return final_response["message"]["content"]
+        # Convert to simple ASCII; handle emdashes
+        return unidecode(final_response["message"]["content"].replace("—", "-").replace("–", "-"))
 
     async def _openai_thinking_structured_output(
         self,
@@ -511,7 +466,8 @@ class AsyncLLMClient:
             model=model, messages=final_messages, format=schema, options=options
         )
 
-        return final_response["message"]["content"]
+        # Convert to simple ASCII; handle emdashes
+        return unidecode(final_response["message"]["content"].replace("—", "-").replace("–", "-"))
 
     async def chat(
         self,
@@ -570,11 +526,7 @@ class AsyncLLMClient:
                 return await self._client.chat(**kwargs)
             else:
                 result = await self._client.chat(**kwargs)
-                # Clean the content
-                if "message" in result and "content" in result["message"]:
-                    result["message"]["content"] = _clean_llm_response(
-                        result["message"]["content"]
-                    )
+
                 return result
         except Exception as e:
             logger.error(f"Error in Ollama chat request: {e}")
@@ -670,18 +622,11 @@ class AsyncLLMClient:
                 # Convert to Ollama-like format for consistency
                 content = response.choices[0].message.content or ""
 
-                # Clean JSON response content only if we're expecting JSON (format parameter provided)
-                if format:
-                    content = _clean_json_response(content)
-
-                # Decode HTML entities
-                content = _clean_llm_response(content)
-
                 result = {
                     "model": model,
                     "message": {
                         "role": "assistant",
-                        "content": response.choices[0].message.content or "",
+                        "content": content,
                     },
                 }
 
