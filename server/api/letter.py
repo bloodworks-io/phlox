@@ -21,7 +21,7 @@ router = APIRouter()
 @router.post("/generate")
 async def generate_letter(request: LetterRequest):
     """Generates a letter."""
-    logging.info(f"{request}")
+
     try:
         letter_content = await generate_letter_content(
             request.patientName,

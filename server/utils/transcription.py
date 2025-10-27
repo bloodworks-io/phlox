@@ -135,7 +135,7 @@ async def process_transcription(
                 for field in non_persistent_fields
             ]
         )
-        logger.info(f" Raw Results: {raw_results}")
+
         # Refine all results concurrently
         refined_results = await asyncio.gather(
             *[
@@ -143,7 +143,7 @@ async def process_transcription(
                 for result, field in zip(raw_results, non_persistent_fields)
             ]
         )
-        logger.info(f" Refined Results: {refined_results}")
+
         # Combine results into a dictionary
         processed_fields = {
             field.field_key: refined_content
