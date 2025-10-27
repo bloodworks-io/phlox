@@ -365,9 +365,11 @@ const PatientTable = ({
                                 className="checkbox task-checkbox"
                                 isChecked={item.completed}
                                 onChange={(e) => {
-                                    const nextChecked = e.target.checked; // true = ticking, false = unticking
+                                    const nextChecked = e.target.checked;
 
                                     if (nextChecked) {
+                                        play(SFX.tick); // Always play tick on check
+
                                         const willBeCompletedList = (
                                             patient.jobs_list || []
                                         ).map((it, i) =>
@@ -378,9 +380,9 @@ const PatientTable = ({
                                             willBeCompletedList.every(Boolean);
 
                                         if (allCompleteAfter) {
-                                            play(SFX.complete);
-                                        } else {
-                                            play(SFX.tick);
+                                            setTimeout(() => {
+                                                play(SFX.complete);
+                                            }, 300); // Delay before playing 'complete' sound
                                         }
                                     }
 
