@@ -1,16 +1,19 @@
-import fitz  # PyMuPDF
-from .semantic_chunker import ClusterSemanticChunker
+import asyncio
+import re
+
 import chromadb
+import fitz  # PyMuPDF
 from chromadb.config import Settings
 from chromadb.utils.embedding_functions import (
     OllamaEmbeddingFunction,
     OpenAIEmbeddingFunction,
 )
-import re
-import asyncio
+
 from server.constants import DATA_DIR
 from server.database.config import config_manager
-from server.utils.llm_client import get_llm_client, LLMProviderType
+from server.utils.llm_client import LLMProviderType, get_llm_client
+
+from .semantic_chunker import ClusterSemanticChunker
 
 prompts = config_manager.get_prompts_and_options()
 
@@ -61,24 +64,16 @@ class ChromaManager:
         self.extracted_text_store = None
 
     async def get_structured_response(self, messages, schema, options=None):
-        """Get structured response using the thinking-aware schema."""
-        from server.constants import add_thinking_to_schema
+            """Get structured response."""
+            options = config_manager.get_prompts_and_options()["options"]["general"]
 
-        options = config_manager.get_prompts_and_options()["options"]["general"]
-
-        # Add thinking support to schema
-        response_format = add_thinking_to_schema(
-            schema, self.config["PRIMARY_MODEL"]
-        )
-
-        response = await self.llm_client.chat(
-            model=self.config["PRIMARY_MODEL"],
-            messages=messages,
-            format=response_format,
-            options=options,
-        )
-
-        return response["message"]["content"]
+            response_json = await self.llm_client.chat_with_structured_output(
+                model=self.config["PRIMARY_MODEL"],
+                messages=messages,
+                schema=schema,
+                options=options,
+            )
+            return response_json
 
     def commit_to_vectordb(
         self, disease_name, focus_area, document_source, filename
