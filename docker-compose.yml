@@ -1,4 +1,11 @@
 version: "3"
+volumes:
+  ollama-data:
+    driver: local
+  whisper-models:
+    driver: local
+  open-webui-data:
+    driver: local
 services:
     app:
         image: phlox:latest
@@ -14,6 +21,7 @@ services:
             - ./logs:/usr/src/app/logs # Optional: Persist logs
         depends_on:
             - ollama
+            - whisper
         networks:
             - phlox-do-taitai-network            
     ollama:
