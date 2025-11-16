@@ -7,17 +7,20 @@ services:
             - "5000:5000"
         environment:
             - DB_ENCRYPTION_KEY= ${DB_ENCRYPTION_KEY}
-            - REACT_APP_BACKEND_URL= # Replace with your desired URL
+            - REACT_APP_BACKEND_URL= https://http://localhost:5000/ # Replace with your desired URL
             - TZ=America/Sao_Paulo # Replace with your timezone
         volumes:
             - ./data:/usr/src/app/data # Only for persistent data
             - ./logs:/usr/src/app/logs # Optional: Persist logs
+        depends_on:
+            - ollama
     ollama:
-        image: ollama/ollama:latest
-        container_name: phlox-ollama
-        restart: unless-stopped
+        image: docker.io/ollama/ollama:latest
+        container_name: ollama
+        restart: always
+        pull_policy: always
         ports:
-          - "11434:11434"
+          - 7869:11434
         volumes:
           - ollama-data:/root/.ollama
         environment:
