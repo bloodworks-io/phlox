@@ -47,7 +47,7 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
                 content_type=content_type,
             )
             form_data.add_field("model", config["WHISPER_MODEL"])
-            form_data.add_field("language", "en")
+            form_data.add_field("language", "pt")
             form_data.add_field("temperature", "0.1")
             form_data.add_field("vad_filter", "true")
             form_data.add_field("response_format", "verbose_json")

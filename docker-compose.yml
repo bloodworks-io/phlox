@@ -1,4 +1,3 @@
-version: "3"
 volumes:
   ollama-data:
     driver: local
@@ -30,7 +29,7 @@ services:
         restart: always
         pull_policy: always
         ports:
-          - 7869:11434
+          - 11434:11434
         volumes:
           - ollama-data:/root/.ollama
         environment:
@@ -50,7 +49,7 @@ services:
     whisper:
         image: fedirz/faster-whisper-server:latest-cuda
         container_name: phlox-whisper
-        restart: unless-stopped
+        restart: always
         ports:
           - "8000:8000"
         environment:
