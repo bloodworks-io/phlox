@@ -1,5 +1,5 @@
 # Stage 1: Build the React app
-FROM node:23-slim as build
+FROM node:23-slim AS build
 
 # Set the working directory
 WORKDIR /usr/src/app

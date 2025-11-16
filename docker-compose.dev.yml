@@ -2,7 +2,7 @@ version: "3"
 services:
     app:
         # Use either build or image, but not both. Uncomment the needed line.
-        image: localhost/phlox-dev:latest
+        image: phlox:latest
         #build: .
         container_name: phlox-dev
         network_mode: host
@@ -10,7 +10,7 @@ services:
             - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY}
             - NODE_ENV=development
             - REACT_APP_BACKEND_URL= # Backend URL
-            - TZ=Australia/Melbourne
+            - TZ=America/Sao_Paulo
         volumes:
             - ./server:/usr/src/app/server
             - ./src:/usr/src/app/src
