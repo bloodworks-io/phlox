@@ -14,6 +14,8 @@ services:
             - ./logs:/usr/src/app/logs # Optional: Persist logs
         depends_on:
             - ollama
+        networks:
+            - phlox-do-taitai-network            
     ollama:
         image: docker.io/ollama/ollama:latest
         container_name: ollama
@@ -27,7 +29,7 @@ services:
           - OLLAMA_NUM_GPU=1
           - OLLAMA_GPU_MEMORY=4096
         networks:
-          - phlox-network
+          - phlox-do-taitai-network 
         deploy:
           resources:
             limits:
@@ -37,3 +39,6 @@ services:
                 - driver: nvidia
                   count: 1
                   capabilities: [gpu]
+networks:
+  phlox-do-taitai-network:
+    driver: bridge
