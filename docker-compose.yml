@@ -39,6 +39,34 @@ services:
                 - driver: nvidia
                   count: 1
                   capabilities: [gpu]
+    whisper:
+        image: fedirz/faster-whisper-server:latest-cuda
+        container_name: phlox-whisper
+        restart: unless-stopped
+        ports:
+          - "8000:8000"
+        environment:
+          - WHISPER__MODEL=large-v3
+          - WHISPER__INFERENCE__DEVICE=cuda
+          - WHISPER__INFERENCE__COMPUTE_TYPE=float16
+          - WHISPER__INFERENCE__BEAM_SIZE=10
+          - WHISPER__INFERENCE__BEST_OF=10
+          - WHISPER__INFERENCE__TEMPERATURE=0.0
+          - WHISPER__INFERENCE__VAD_FILTER=true
+          - WHISPER__INFERENCE__WORD_TIMESTAMPS=true
+        volumes:
+          - whisper-models:/root/.cache/huggingface
+        networks:
+          - phlox-do-taitai-network
+        deploy:
+          resources:
+            limits:
+              memory: 16G
+            reservations:
+              devices:
+                - driver: nvidia
+                  count: 1
+                  capabilities: [gpu, compute, utility]
 networks:
   phlox-do-taitai-network:
     driver: bridge
