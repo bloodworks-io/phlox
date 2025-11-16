@@ -8,7 +8,7 @@ services:
         environment:
             - DB_ENCRYPTION_KEY= ${DB_ENCRYPTION_KEY}
             - REACT_APP_BACKEND_URL= # Replace with your desired URL
-            - TZ= # Replace with your timezone
+            - TZ=America/Sao_Paulo # Replace with your timezone
         volumes:
             - ./data:/usr/src/app/data # Only for persistent data
             - ./logs:/usr/src/app/logs # Optional: Persist logs
