@@ -12,3 +12,25 @@ services:
         volumes:
             - ./data:/usr/src/app/data # Only for persistent data
             - ./logs:/usr/src/app/logs # Optional: Persist logs
+    ollama:
+        image: ollama/ollama:latest
+        container_name: phlox-ollama
+        restart: unless-stopped
+        ports:
+          - "11434:11434"
+        volumes:
+          - ollama-data:/root/.ollama
+        environment:
+          - OLLAMA_NUM_GPU=1
+          - OLLAMA_GPU_MEMORY=4096
+        networks:
+          - phlox-network
+        deploy:
+          resources:
+            limits:
+              memory: 8G
+            reservations:
+              devices:
+                - driver: nvidia
+                  count: 1
+                  capabilities: [gpu]
