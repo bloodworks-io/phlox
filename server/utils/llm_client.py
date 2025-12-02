@@ -1,16 +1,19 @@
-import aiohttp
+import asyncio
 import json
-from unidecode import unidecode
-import re
 import logging
 import os
 import platform
-from pathlib import Path
-import asyncio
-from typing import Dict, List, Any, Optional, Union, AsyncGenerator
-from server.database.config import config_manager
-from server.constants import DATA_DIR, IS_DOCKER
+import re
 from enum import Enum
+from pathlib import Path
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
+
+import aiohttp
+from numpy import log
+from unidecode import unidecode
+
+from server.constants import DATA_DIR, IS_DOCKER
+from server.database.config import config_manager
 from server.database.connection import db
 
 logger = logging.getLogger(__name__)
@@ -27,6 +30,61 @@ class ModelThinkingBehavior(Enum):
     NONE = "none"
     TAGS = "tags"  # model emits <think>/<thinking>/<reasoning> tags in content
     FIELD = "field"  # model returns separate reasoning field (e.g., reasoning_content)
+
+
+def repair_json(json_str: str) -> str:
+    """Attempt to repair malformed JSON string."""
+    if not json_str:
+        return ""
+
+    json_str = json_str.strip()
+
+    # Remove markdown code blocks
+    if "```" in json_str:
+        json_str = re.sub(r"^```(?:json)?\s*", "", json_str)
+        json_str = re.sub(r"\s*```$", "", json_str)
+        json_str = json_str.strip()
+
+    # Try parsing as is
+    try:
+        json.loads(json_str)
+        logger.info(f"Successfully parsed JSON response")
+        return json_str
+    except json.JSONDecodeError:
+        logging.error(f"Invalid JSON response, attempting to repair...")
+        pass
+
+    # Fix double open braces: { { ... } -> { ... }
+    if re.match(r"^\s*\{\s*\{", json_str):
+        # Try removing the first {
+        temp = re.sub(r"^\s*\{", "", json_str, count=1)
+        try:
+            json.loads(temp)
+            return temp
+        except json.JSONDecodeError:
+            pass
+
+    # Fix double close braces: { ... } } -> { ... }
+    if re.search(r"\}\s*\}\s*$", json_str):
+        # Try removing the last }
+        temp = re.sub(r"\}\s*$", "", json_str, count=1)
+        try:
+            json.loads(temp)
+            return temp
+        except json.JSONDecodeError:
+            pass
+
+    # Fix both: {{ ... }} -> { ... }
+    if re.match(r"^\s*\{\s*\{", json_str) and re.search(r"\}\s*\}\s*$", json_str):
+        temp = re.sub(r"^\s*\{", "", json_str, count=1)
+        temp = re.sub(r"\}\s*$", "", temp, count=1)
+        try:
+            json.loads(temp)
+            return temp
+        except json.JSONDecodeError:
+            pass
+
+    return json_str
 
 
 def get_model_thinking_behavior(model_name: str) -> ModelThinkingBehavior:
@@ -56,11 +114,10 @@ def is_thinking_model(model_name: str) -> bool:
 def add_thinking_guidance_to_messages(
     messages: List[Dict[str, str]], model_name: str
 ) -> List[Dict[str, str]]:
-    behavior = get_model_thinking_behavior(model_name)
-    if behavior == ModelThinkingBehavior.NONE:
+    # Only add guidance for models that use <think> tags
+    if not is_thinking_model(model_name):
         return messages
 
-    # You can keep one guidance text, or tailor it per behavior
     content = "Keep your reasoning concise and focused. Don't overthink the task - provide just enough reasoning to arrive at a good solution."
 
     thinking_guidance = {
@@ -338,32 +395,35 @@ class AsyncLLMClient:
         Returns:
             JSON string response
         """
+        response_str = ""
+
         if self.provider_type == LLMProviderType.LOCAL:
-            return await self._client.chat_with_structured_output(
+            response_str = await self._client.chat_with_structured_output(
                 messages, schema, **(options or {})
             )
-
-
-        if not is_thinking_model(model):
+        elif not is_thinking_model(model):
             # Non-thinking models: single structured call
             response = await self.chat(
                 model=model, messages=messages, format=schema, options=options
             )
 
             # Convert to simple ASCII; handle emdashes
-            return unidecode(response["message"]["content"].replace("—", "-").replace("–", "-"))
-
-        logging.info("Model with think tags called")
-
-        # Thinking models: different approaches for different providers
-        if self.provider_type == LLMProviderType.OLLAMA:
-            return await self._ollama_thinking_structured_output(
-                model, messages, schema, options
-            )
+            response_str = unidecode(response["message"]["content"].replace("—", "-").replace("–", "-"))
         else:
-            return await self._openai_thinking_structured_output(
-                model, messages, schema, options
-            )
+            logging.info("Model with think tags called")
+
+            # Thinking models: different approaches for different providers
+            if self.provider_type == LLMProviderType.OLLAMA:
+                response_str = await self._ollama_thinking_structured_output(
+                    model, messages, schema, options
+                )
+            else:
+                response_str = await self._openai_thinking_structured_output(
+                    model, messages, schema, options
+                )
+
+        return repair_json(response_str)
+
 
     async def _ollama_thinking_structured_output(
         self,
@@ -615,8 +675,6 @@ class AsyncLLMClient:
 
                 return response_generator()
             else:
-                # Make the API call
-
                 response = await self._client.chat.completions.create(**params)
 
                 # Convert to Ollama-like format for consistency
@@ -629,18 +687,6 @@ class AsyncLLMClient:
                         "content": content,
                     },
                 }
-
-                # Preserve reasoning_content if provided by the backend
-                try:
-                    reasoning_content = getattr(
-                        response.choices[0].message, "reasoning_content", None
-                    )
-                    if reasoning_content:
-                        result["message"][
-                            "reasoning_content"
-                        ] = reasoning_content
-                except Exception:
-                    pass
 
                 # Add tool_calls if present
                 if (
