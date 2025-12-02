@@ -1,14 +1,15 @@
+import asyncio
 import json
 import logging
+import random
 from datetime import datetime, timedelta
+
+from server.database.config import config_manager
 from server.database.connection import db
 from server.database.patient import get_patients_by_date
-from server.utils.helpers import run_clinical_reasoning
-from server.database.config import config_manager
-from server.utils.llm_client import get_llm_client
 from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
-import random
-import asyncio
+from server.utils.helpers import run_clinical_reasoning
+from server.utils.llm_client import get_llm_client
 
 logger = logging.getLogger(__name__)
 
@@ -242,9 +243,8 @@ async def generate_previous_visit_summary(patient_data):
     Outstanding Tasks:
     {formatted_jobs}"""
 
-    # Create response format schema
+    # Base schema (no thinking field)
     base_schema = PreviousVisitSummary.model_json_schema()
-    response_format = add_thinking_to_schema(base_schema, model)
 
     request_body = [
         {"role": "system", "content": system_prompt},
@@ -252,22 +252,18 @@ async def generate_previous_visit_summary(patient_data):
     ]
 
     try:
-        response = await client.chat(
+        response_json = await client.chat_with_structured_output(
             model=model,
             messages=request_body,
+            schema=base_schema,
             options=options,
-            format=response_format,
         )
 
-        parsed_response = response["message"]["content"]
-        print(parsed_response,flush=True)
-        previous_visit_summary = PreviousVisitSummary.model_validate_json(parsed_response)
-
+        previous_visit_summary = PreviousVisitSummary.model_validate_json(response_json)
         return previous_visit_summary.summary
     except Exception as e:
         logger.error(f"Error generating previous visit summary: {e}")
         raise
-
 
 async def run_nightly_reasoning():
     """Run reasoning analysis on patients from yesterday and today."""
