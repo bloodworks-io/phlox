@@ -1,13 +1,15 @@
-import httpx
 import json
 import logging
-from typing import Dict, List, Union, Any
-import feedparser
 from datetime import datetime
-from server.schemas.dashboard import RssItem
+from typing import Any, Dict, List, Union
+
+import feedparser
+import httpx
+
 from server.database.config import config_manager
+from server.schemas.dashboard import RssItem
+from server.schemas.grammars import ItemDigest, NewsDigest
 from server.utils.llm_client import get_llm_client
-from server.schemas.grammars import NewsDigest, ItemDigest
 
 logger = logging.getLogger(__name__)
 
@@ -50,25 +52,22 @@ async def generate_item_digest(item: RssItem) -> str:
         Source: {item.feed_title}
         Content: {item.description}"""
 
-        # Set up response format for structured output with thinking support
+        # Base schema for structured output (no thinking field)
         base_schema = ItemDigest.model_json_schema()
-        response_format = add_thinking_to_schema(base_schema, model)
 
         request_body = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
 
-        response = await client.chat(
+        response_json = await client.chat_with_structured_output(
             model=model,
             messages=request_body,
-            format=response_format,
+            schema=base_schema,
             options=options
         )
 
-        content = response["message"]["content"].strip()
-        digest_data = ItemDigest.model_validate_json(content)
-
+        digest_data = ItemDigest.model_validate_json(response_json)
         return digest_data.digest
 
     except Exception as e:
@@ -105,25 +104,22 @@ async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
 
         {article_text}"""
 
-        # Set up response format for structured output with thinking support
+        # Base schema for structured output (no thinking field)
         base_schema = NewsDigest.model_json_schema()
-        response_format = add_thinking_to_schema(base_schema, model)
 
         request_body = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
 
-        response = await client.chat(
+        response_json = await client.chat_with_structured_output(
             model=model,
             messages=request_body,
-            format=response_format,
+            schema=base_schema,
             options=options
         )
 
-        content = response["message"]["content"].strip()
-        digest_data = NewsDigest.model_validate_json(content)
-
+        digest_data = NewsDigest.model_validate_json(response_json)
         return digest_data.digest
 
     except Exception as e:
