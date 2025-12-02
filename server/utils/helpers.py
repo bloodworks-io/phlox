@@ -1,30 +1,32 @@
-from ast import Try
+import asyncio
+import json
+import logging
 import random
+import re
+from ast import Try
 from datetime import datetime
+from typing import Dict, List, Optional, Union
+
+import Levenshtein
 from numpy import resize
+from pydantic import BaseModel
+
+from server.database.config import config_manager
+from server.database.connection import db
+from server.schemas.grammars import (
+    ClinicalReasoning,
+    FieldResponse,
+    NarrativeResponse,
+    RefinedResponse,
+)
+from server.schemas.patient import Condition, Patient, Summary
+from server.schemas.templates import TemplateField, TemplateResponse
 from server.utils.llm_client import (
     AsyncLLMClient,
     LLMProviderType,
     get_llm_client,
     is_thinking_model,
 )
-from server.schemas.patient import Patient, Condition, Summary
-from server.database.config import config_manager
-from server.schemas.grammars import ClinicalReasoning
-import logging
-import asyncio
-import re
-import Levenshtein
-from pydantic import BaseModel
-from typing import Optional, List, Union, Dict
-import json
-from server.database.connection import db
-from server.schemas.grammars import (
-    FieldResponse,
-    RefinedResponse,
-    NarrativeResponse,
-)
-from server.schemas.templates import TemplateField, TemplateResponse
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
