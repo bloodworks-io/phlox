@@ -1,16 +1,20 @@
-from fastapi import (
-    APIRouter,
-    UploadFile,
-    File,
-    Form,
-    HTTPException,
-)
-from server.schemas.patient import TranscribeResponse, DocumentProcessResponse
 import logging
 import time
 from typing import Optional
-from server.utils.transcription import transcribe_audio, process_transcription
+
+from fastapi import (
+    APIRouter,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+)
+
+from server.schemas.patient import DocumentProcessResponse, TranscribeResponse
 from server.utils.document_processing import process_document_with_template
+from server.utils.transcription.audio import transcribe_audio
+from server.utils.transcription.text import process_transcription
+
 router = APIRouter()
 
 

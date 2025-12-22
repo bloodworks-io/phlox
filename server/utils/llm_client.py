@@ -333,7 +333,6 @@ class AsyncLLMClient:
         if extra_body_env:
             try:
                 self.extra_body = json.loads(extra_body_env)
-                logger.info(f"Loaded extra body from LLM_EXTRA_BODY: {self.extra_body}")
             except json.JSONDecodeError:
                 logger.error(f"Failed to parse LLM_EXTRA_BODY environment variable: {extra_body_env}")
 
