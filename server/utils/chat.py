@@ -1,18 +1,20 @@
-import logging
 import json
-from numpy import cos
+import logging
+import re
+
 import chromadb
 from chromadb.config import Settings
 from chromadb.utils.embedding_functions import (
     OllamaEmbeddingFunction,
     OpenAIEmbeddingFunction,
 )
-import re
-from server.database.config import config_manager
-from server.utils.helpers import clean_think_tags
-from server.utils.llm_client import get_llm_client, LLMProviderType
-from server.utils.chat_tools import get_tools_definition, execute_tool_call
+from numpy import cos
+
 from server.constants import DATA_DIR
+from server.database.config import config_manager
+from server.utils.chat_tools import execute_tool_call, get_tools_definition
+from server.utils.helpers import clean_think_tags
+from server.utils.llm_client import LLMProviderType, get_llm_client
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
