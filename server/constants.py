@@ -1,7 +1,8 @@
+import logging
 import os
 import sys
-import logging
 from pathlib import Path
+
 from platformdirs import user_data_dir
 
 # Constants
@@ -12,10 +13,7 @@ IS_DOCKER = (
 APP_NAME = "Phlox"
 APP_AUTHOR = "bloodworks.io"
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+
 logger = logging.getLogger(__name__)
 
 

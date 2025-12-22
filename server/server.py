@@ -5,15 +5,16 @@ if __name__ == "__main__":
 
 import logging
 import os
+import socket
+from contextlib import asynccontextmanager, closing
 from pathlib import Path
+
 import uvicorn
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import socket
-from contextlib import asynccontextmanager, closing
 
 from server.constants import (
     APP_NAME,
@@ -25,8 +26,15 @@ from server.constants import (
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="%(asctime)s %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
+    force=True,
 )
+
+# Silence noisy libraries
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("apscheduler").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 scheduler = AsyncIOScheduler()
@@ -81,11 +89,11 @@ from server.api import (
     chat,
     config,
     dashboard,
+    letter,
     patient,
     rag,
-    transcribe,
     templates,
-    letter,
+    transcribe,
 )
 
 # Then load analysis submodules
@@ -93,7 +101,6 @@ from server.database.analysis import (
     generate_daily_analysis,
     run_nightly_reasoning,
 )
-
 
 # Only create test endpoint in testing environment
 if IS_TESTING and test_database is not None:

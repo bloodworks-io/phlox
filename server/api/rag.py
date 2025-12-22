@@ -1,30 +1,28 @@
 import logging
+import os
+
 from fastapi import (
     APIRouter,
-    UploadFile,
     File,
     HTTPException,
+    UploadFile,
 )
-import os
+
 from server.rag.chroma import ChromaManager
-from server.schemas.rag import (
-    ModifyCollectionRequest,
-    CommitRequest,
-    DeleteFileRequest,
-)
 from server.rag.processing import (
     generate_specialty_suggestions,
+)
+from server.schemas.rag import (
+    CommitRequest,
+    DeleteFileRequest,
+    ModifyCollectionRequest,
 )
 
 router = APIRouter()
 
 chroma_manager = ChromaManager()
 
-logging.basicConfig(
-    level=logging.INFO,
-    force=True,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+
 logger = logging.getLogger(__name__)
 
 @router.get("/files")
