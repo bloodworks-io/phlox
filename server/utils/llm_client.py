@@ -6,6 +6,7 @@ import platform
 import re
 from enum import Enum
 from pathlib import Path
+from threading import Lock
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 import aiohttp
@@ -35,6 +36,7 @@ class ModelThinkingBehavior(Enum):
 def repair_json(json_str: str) -> str:
     """Attempt to repair malformed JSON string."""
     if not json_str:
+        logger.info("Empty JSON response, returning empty string")
         return ""
 
     json_str = json_str.strip()
@@ -325,6 +327,16 @@ class AsyncLLMClient:
         self.api_key = api_key or "not-needed"
         self.timeout = timeout
 
+        # Load extra body from environment variable if present
+        self.extra_body = None
+        extra_body_env = os.getenv("LLM_EXTRA_BODY")
+        if extra_body_env:
+            try:
+                self.extra_body = json.loads(extra_body_env)
+                logger.info(f"Loaded extra body from LLM_EXTRA_BODY: {self.extra_body}")
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse LLM_EXTRA_BODY environment variable: {extra_body_env}")
+
         # Initialize the appropriate client based on provider type
         if self.provider_type == LLMProviderType.LOCAL:
             self._client = LocalLLMClient(**local_kwargs)
@@ -401,7 +413,7 @@ class AsyncLLMClient:
             response_str = await self._client.chat_with_structured_output(
                 messages, schema, **(options or {})
             )
-        elif not is_thinking_model(model):
+        else:
             # Non-thinking models: single structured call
             response = await self.chat(
                 model=model, messages=messages, format=schema, options=options
@@ -409,18 +421,6 @@ class AsyncLLMClient:
 
             # Convert to simple ASCII; handle emdashes
             response_str = unidecode(response["message"]["content"].replace("—", "-").replace("–", "-"))
-        else:
-            logging.info("Model with think tags called")
-
-            # Thinking models: different approaches for different providers
-            if self.provider_type == LLMProviderType.OLLAMA:
-                response_str = await self._ollama_thinking_structured_output(
-                    model, messages, schema, options
-                )
-            else:
-                response_str = await self._openai_thinking_structured_output(
-                    model, messages, schema, options
-                )
 
         return repair_json(response_str)
 
@@ -539,25 +539,24 @@ class AsyncLLMClient:
         stream: bool = False,
     ) -> Union[Dict[str, Any], AsyncGenerator]:
         """Send a chat completion request."""
-        # Add thinking guidance for thinking models
-        guided_messages = add_thinking_guidance_to_messages(messages, model)
+
 
         if self.provider_type == LLMProviderType.LOCAL:
             if stream:
                 return self._client.stream_chat(
-                    guided_messages, **(options or {})
+                    messages, **(options or {})
                 )
             else:
                 return await self._client.chat(
-                    guided_messages, **(options or {})
+                    messages, **(options or {})
                 )
         elif self.provider_type == LLMProviderType.OLLAMA:
             return await self._ollama_chat(
-                model, guided_messages, format, options, tools, stream
+                model, messages, format, options, tools, stream
             )
         else:
             return await self._openai_compatible_chat(
-                model, guided_messages, format, options, tools, stream
+                model, messages, format, options, tools, stream
             )
 
     async def _ollama_chat(
@@ -609,6 +608,9 @@ class AsyncLLMClient:
                 "messages": messages,
             }
 
+            if self.extra_body:
+                params.update(self.extra_body)
+
             if tools:
                 params["tools"] = tools
                 # Only force tool choice to required if explicitly specified
@@ -639,6 +641,7 @@ class AsyncLLMClient:
 
                 # For streaming, return an async generator
                 async def response_generator():
+                    reasoning_started=False
                     async for (
                         chunk
                     ) in await self._client.chat.completions.create(**params):
@@ -650,6 +653,45 @@ class AsyncLLMClient:
                                 if hasattr(delta, "content") and delta.content
                                 else ""
                             )
+
+                            # Check for reasoning in the delta (only used for Chat streaming)
+                            reasoning = (
+                                 getattr(delta, "reasoning", None) or
+                                 getattr(delta, "reasoning_content", None)
+                             )
+
+                             # Normalize reasoning to <think> tags for consistency
+                            if reasoning:
+                                 if not reasoning_started:
+                                     # Inject opening think tag
+                                     yield {
+                                         "model": model,
+                                         "message": {
+                                             "role": "assistant",
+                                             "content": "<think>",
+                                         },
+                                     }
+                                     reasoning_started = True
+
+                                 # Stream reasoning content
+                                 yield {
+                                     "model": model,
+                                     "message": {
+                                         "role": "assistant",
+                                         "content": reasoning,
+                                     },
+                                 }
+                            elif content:  # Only yield content if not empty
+                                 # Close think tag if we were streaming reasoning
+                                if reasoning_started:
+                                     yield {
+                                         "model": model,
+                                         "message": {
+                                             "role": "assistant",
+                                             "content": "</think>\n\n",
+                                         },
+                                     }
+                                     reasoning_started = False
 
                             # Check for tool calls in the delta
                             tool_calls = None
@@ -675,6 +717,7 @@ class AsyncLLMClient:
 
                 return response_generator()
             else:
+
                 response = await self._client.chat.completions.create(**params)
 
                 # Convert to Ollama-like format for consistency
@@ -687,6 +730,13 @@ class AsyncLLMClient:
                         "content": content,
                     },
                 }
+
+                # Add reasoning to result if present
+                reasoning = getattr(response.choices[0].message, 'reasoning', None) or \
+                            getattr(response.choices[0].message, 'reasoning_content', None)
+
+                if reasoning:
+                    result["message"]["reasoning"] = reasoning
 
                 # Add tool_calls if present
                 if (

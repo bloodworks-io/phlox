@@ -7,10 +7,11 @@ services:
         container_name: phlox-dev
         network_mode: host
         environment:
-            - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY}
-            - NODE_ENV=development
-            - REACT_APP_BACKEND_URL= # Backend URL
-            - TZ=Australia/Melbourne
+            DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
+            NODE_ENV: development
+            REACT_APP_BACKEND_URL: ""
+            TZ: Australia/Melbourne
+            LLM_EXTRA_BODY: '{"extra_body": {"chat_template_kwargs": {"enable_thinking": true}}}'
         volumes:
             - ./server:/usr/src/app/server
             - ./public:/usr/src/app/public
