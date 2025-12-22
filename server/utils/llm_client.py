@@ -25,14 +25,6 @@ class LLMProviderType(Enum):
     OPENAI_COMPATIBLE = "openai"
     LOCAL = "local"
 
-
-# Models that support/require thinking steps
-class ModelThinkingBehavior(Enum):
-    NONE = "none"
-    TAGS = "tags"  # model emits <think>/<thinking>/<reasoning> tags in content
-    FIELD = "field"  # model returns separate reasoning field (e.g., reasoning_content)
-
-
 def repair_json(json_str: str) -> str:
     """Attempt to repair malformed JSON string."""
     if not json_str:
@@ -87,78 +79,6 @@ def repair_json(json_str: str) -> str:
             pass
 
     return json_str
-
-
-def get_model_thinking_behavior(model_name: str) -> ModelThinkingBehavior:
-    """
-    Dynamic behavior lookup:
-    - Use stored DB probe if available.
-    - Fallback to name heuristic.
-    """
-    config = config_manager.get_config()
-    provider = config.get("LLM_PROVIDER", "ollama").lower()
-    rec = db.get_model_capability(provider, model_name) if model_name else None
-    if rec:
-        cap = rec.get("capability_type", "none")
-        if cap == "tags":
-            return ModelThinkingBehavior.TAGS
-        if cap == "field":
-            return ModelThinkingBehavior.FIELD
-        return ModelThinkingBehavior.NONE
-    return _fallback_behavior_from_name(model_name)
-
-
-def is_thinking_model(model_name: str) -> bool:
-    """Backwards compatibility: True only for 'tags' behavior."""
-    return get_model_thinking_behavior(model_name) == ModelThinkingBehavior.TAGS
-
-
-def add_thinking_guidance_to_messages(
-    messages: List[Dict[str, str]], model_name: str
-) -> List[Dict[str, str]]:
-    # Only add guidance for models that use <think> tags
-    if not is_thinking_model(model_name):
-        return messages
-
-    content = "Keep your reasoning concise and focused. Don't overthink the task - provide just enough reasoning to arrive at a good solution."
-
-    thinking_guidance = {
-        "role": "system",
-        "content": content,
-    }
-    return messages + [thinking_guidance]
-
-
-def add_thinking_to_schema(base_schema: dict, model_name: str) -> dict:
-    """Add thinking field to schema if model supports thinking."""
-    if not is_thinking_model(model_name):
-        return base_schema
-
-    # Create a copy of the schema
-    thinking_schema = base_schema.copy()
-
-    # Create new properties dict with thinking first
-    new_properties = {
-        "thinking": {
-            "type": "string",
-            "description": "Internal reasoning and thought process before providing the final response",
-        }
-    }
-
-    # Add existing properties after thinking
-    if "properties" in thinking_schema:
-        new_properties.update(thinking_schema["properties"])
-
-    thinking_schema["properties"] = new_properties
-
-    # Update required fields - thinking should be first in required too
-    if "required" in thinking_schema:
-        thinking_schema["required"] = ["thinking"] + thinking_schema["required"]
-    else:
-        thinking_schema["required"] = ["thinking"]
-
-    return thinking_schema
-
 
 def is_arm_mac() -> bool:
     """Check if we're running on an ARM Mac."""
@@ -389,13 +309,7 @@ class AsyncLLMClient:
         options: Optional[Dict] = None,
     ) -> str:
         """
-        Send a chat completion request with structured output, handling thinking models properly.
-
-        For thinking models:
-        - Ollama: 3-step approach with explicit transition
-        - Other providers: 2-call approach
-
-        For non-thinking models, this does a single structured output call.
+        Send a chat completion request with structured output.
 
         Args:
             model: Model name
@@ -413,7 +327,6 @@ class AsyncLLMClient:
                 messages, schema, **(options or {})
             )
         else:
-            # Non-thinking models: single structured call
             response = await self.chat(
                 model=model, messages=messages, format=schema, options=options
             )
@@ -422,111 +335,6 @@ class AsyncLLMClient:
             response_str = unidecode(response["message"]["content"].replace("—", "-").replace("–", "-"))
 
         return repair_json(response_str)
-
-
-    async def _ollama_thinking_structured_output(
-        self,
-        model: str,
-        messages: List[Dict[str, str]],
-        schema: Dict,
-        options: Optional[Dict] = None,
-    ) -> str:
-        """
-        Handle thinking models for Ollama with explicit transition.
-        """
-        # Add thinking guidance
-        guided_messages = add_thinking_guidance_to_messages(messages, model)
-
-        # First call: get thinking
-        thinking_messages = guided_messages.copy()
-
-        # First call: get thinking
-        thinking_messages = messages.copy()
-        thinking_messages.append({"role": "assistant", "content": "<think>"})
-
-        thinking_options = (options or {}).copy()
-        thinking_options["stop"] = ["</think>"]
-
-        thinking_response = await self.chat(
-            model=model, messages=thinking_messages, options=thinking_options
-        )
-
-        content = thinking_response["message"]["content"]
-        thinking_content = (
-            ("" if content.startswith("<think>") else "<think>")
-            + content
-            + ("" if content.endswith("</think>") else "</think>")
-        )
-
-        # Build conversation with explicit transition for Ollama
-        final_messages = messages.copy()
-        final_messages.append(
-            {
-                "role": "assistant",
-                "content": thinking_content
-                + "\n\nI have a plan for how I will tackle this problem.",
-            }
-        )
-        final_messages.append(
-            {
-                "role": "user",
-                "content": "Please go ahead. Answer in JSON format according to the specified schema.",
-            }
-        )
-
-        final_response = await self.chat(
-            model=model, messages=final_messages, format=schema, options=options
-        )
-
-        # Convert to simple ASCII; handle emdashes
-        return unidecode(final_response["message"]["content"].replace("—", "-").replace("–", "-"))
-
-    async def _openai_thinking_structured_output(
-        self,
-        model: str,
-        messages: List[Dict[str, str]],
-        schema: Dict,
-        options: Optional[Dict] = None,
-    ) -> str:
-        """
-        Handle thinking models for OpenAI-compatible providers.
-        """
-        # Add thinking guidance
-        guided_messages = add_thinking_guidance_to_messages(messages, model)
-
-        # First call: get thinking
-        thinking_messages = guided_messages.copy()
-
-        # First call: get thinking
-        thinking_messages = messages.copy()
-        thinking_messages.append({"role": "assistant", "content": "<think>"})
-
-        thinking_options = (options or {}).copy()
-        thinking_options["stop"] = ["</think>"]
-
-        thinking_response = await self.chat(
-            model=model, messages=thinking_messages, options=thinking_options
-        )
-
-        content = thinking_response["message"]["content"]
-        thinking_content = (
-            ("" if content.startswith("<think>") else "<think>")
-            + content
-            + ("" if content.endswith("</think>") else "</think>")
-        )
-
-        # Second call: structured output with thinking
-        final_messages = messages.copy()
-        final_messages.append(
-            {"role": "assistant", "content": thinking_content}
-        )
-
-        final_response = await self.chat(
-            model=model, messages=final_messages, format=schema, options=options
-        )
-
-        # Convert to simple ASCII; handle emdashes
-        return unidecode(final_response["message"]["content"].replace("—", "-").replace("–", "-"))
 
     async def chat(
         self,

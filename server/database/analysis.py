@@ -8,7 +8,7 @@ from server.database.config import config_manager
 from server.database.connection import db
 from server.database.patient import get_patients_by_date
 from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
-from server.utils.helpers import run_clinical_reasoning
+from server.utils.llm.reasoning import run_clinical_reasoning
 from server.utils.llm_client import get_llm_client
 
 logger = logging.getLogger(__name__)

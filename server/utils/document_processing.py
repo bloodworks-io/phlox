@@ -1,22 +1,25 @@
-import aiohttp
 import asyncio
-import logging
+import io
 import json
+import logging
+from typing import Any, Dict, List, Optional, Tuple
+
+import aiohttp
+import fitz  # PyMuPDF for PDF processing
+import numpy as np
+import pytesseract
+from PIL import Image
+
+from server.database.config import config_manager
+from server.schemas.grammars import FieldResponse
+from server.schemas.templates import TemplateResponse
+from server.utils.helpers import calculate_age
 from server.utils.llm_client import (
     AsyncLLMClient,
     LLMProviderType,
     get_llm_client,
 )
-from server.database.config import config_manager
-from server.utils.helpers import calculate_age, refine_field_content
-from server.schemas.templates import TemplateResponse
-from server.schemas.grammars import FieldResponse
-import fitz  # PyMuPDF for PDF processing
-import io
-import pytesseract
-from PIL import Image
-import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
+from server.utils.transcription.refinement import refine_field_content
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)

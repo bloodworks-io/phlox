@@ -1,37 +1,43 @@
+import json
+import logging
+import traceback
+from typing import List, Optional
+
 from fastapi import APIRouter, Body
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
-import traceback
-import json
-from typing import Optional, List
+
+from server.database.analysis import generate_previous_visit_summary
+from server.database.jobs import (
+    count_incomplete_jobs,
+    get_patients_with_outstanding_jobs,
+    update_patient_jobs_list,
+)
 from server.database.patient import (
     delete_patient_by_id,
-    search_patient_by_ur_number,
+    get_patient_by_id,
+    get_patient_history,
+    get_patients_by_date,
     save_patient,
+    search_patient_by_ur_number,
     update_patient,
     update_patient_reasoning,
-    get_patients_by_date,
-    get_patient_by_id,
-    get_patient_history
-)
-from server.schemas.patient import (
-    SavePatientRequest,
-    Patient,
-    JobsListUpdate,
-)
-from server.database.jobs import (
-    update_patient_jobs_list,
-    get_patients_with_outstanding_jobs,
-    count_incomplete_jobs,
 )
 from server.database.templates import (
     get_template_by_key,
     update_field_adaptive_instructions,
 )
-from server.utils.helpers import summarize_encounter, run_clinical_reasoning
-from server.database.analysis import generate_previous_visit_summary
-from server.utils.adaptive_refinement import generate_adaptive_refinement_suggestions
-import logging
+from server.schemas.patient import (
+    JobsListUpdate,
+    Patient,
+    SavePatientRequest,
+)
+from server.utils.llm.adaptive_refinement import (
+    generate_adaptive_refinement_suggestions,
+)
+from server.utils.llm.reasoning import run_clinical_reasoning
+from server.utils.llm.summarisation import summarise_encounter
+
 router = APIRouter()
 
 @router.post("/save")
@@ -41,7 +47,7 @@ async def save_patient_data(request: SavePatientRequest):
 
     try:
         # Summarize the encounter
-        encounter_summary, primary_condition = await summarize_encounter(
+        encounter_summary, primary_condition = await summarise_encounter(
             patient=patient
         )
 

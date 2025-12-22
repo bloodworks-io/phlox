@@ -7,7 +7,7 @@ to determine which actions to take based on user input.
 
 import json
 import logging
-from typing import List, Dict, Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Dict, List
 
 from server.utils.helpers import clean_think_tags
 
@@ -77,7 +77,6 @@ def get_tools_definition(collection_names: List[str]) -> List[Dict[str, Any]]:
             },
         },
     ]
-
 
 async def execute_tool_call(
     tool_call: Dict[str, Any],

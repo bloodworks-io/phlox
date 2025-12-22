@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import random
 import re
@@ -9,10 +8,10 @@ from typing import Dict, List, Union
 from server.database.config import config_manager
 from server.schemas.grammars import FieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
-from server.utils.helpers import refine_field_content
 from server.utils.llm_client import (
     get_llm_client,
 )
+from server.utils.transcription.refinement import refine_field_content
 
 logger = logging.getLogger(__name__)
 

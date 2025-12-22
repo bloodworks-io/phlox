@@ -4,9 +4,11 @@ Assumes your patient-related endpoints are included from server/api/patient.py.
 """
 
 import json
+
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
 from server.api.patient import router as patient_router
 
 # Create a minimal FastAPI app with the patient router.
@@ -46,7 +48,7 @@ def test_search_patient():
 def mock_summarize(monkeypatch):
     async def fake_summarize(*args, **kwargs):
         return "Test summary", "Test condition"
-    monkeypatch.setattr("server.utils.helpers.summarize_encounter", fake_summarize)
+    monkeypatch.setattr("server.utils.llm.summarisation.summarise_encounter", fake_summarize)
     return fake_summarize
 
 # For save and update endpoints, we patch the database functions.
