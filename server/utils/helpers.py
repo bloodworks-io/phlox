@@ -488,44 +488,58 @@ async def refine_field_content(
     Refine the content of a single field using style examples and format schema.
     Handles special case for thinking models via the client abstraction.
     """
-    try:
-        if isinstance(content, dict):
-            return content
 
-        config = config_manager.get_config()
-        client = get_llm_client()
-        prompts = config_manager.get_prompts_and_options()
-        options = prompts["options"]["general"]
+    max_retries = 1
 
-        # Determine format details
-        format_details = determine_format_details(field, prompts)
+    for attempt in range(max_retries + 1):
+        try:
+            if isinstance(content, dict):
+                return content
 
-        # Build system prompt with style example if available
-        system_prompt = build_system_prompt(field, format_details, prompts)
+            config = config_manager.get_config()
+            client = get_llm_client()
+            prompts = config_manager.get_prompts_and_options()
+            options = prompts["options"]["general"]
 
-        base_messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": content},
-        ]
+            # Determine format details
+            format_details = determine_format_details(field, prompts)
 
-        # Generate random seed for diversity in outputs
-        random_seed = random.randint(0, 2**32 - 1)
+            # Build system prompt with style example if available
+            system_prompt = build_system_prompt(field, format_details, prompts)
 
-        # Always use structured output helper; it handles thinking models internally
-        response_json = await client.chat_with_structured_output(
-            model=config["PRIMARY_MODEL"],
-            messages=base_messages,
-            schema=format_details["response_format"],
-            options={**options, "seed": random_seed},
-        )
+            base_messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": content},
+            ]
 
-        # Reuse existing formatter by wrapping the JSON string
-        pseudo_response = {"message": {"content": response_json}}
-        return format_refined_response(pseudo_response, field, format_details)
+            # Generate random seed for diversity in outputs
+            random_seed = random.randint(0, 2**32 - 1)
 
-    except Exception as e:
-        logger.error(f"Error refining field {field.field_key}: {e}")
-        raise
+            logger.info(f"Refining field {field.field_key} (attempt {attempt + 1}/{max_retries + 1})...")
+
+            # Always use structured output helper; it handles thinking models internally
+            response_json = await client.chat_with_structured_output(
+                model=config["PRIMARY_MODEL"],
+                messages=base_messages,
+                schema=format_details["response_format"],
+                options={**options, "seed": random_seed},
+            )
+
+            # Reuse existing formatter by wrapping the JSON string
+            pseudo_response = {"message": {"content": response_json}}
+            return format_refined_response(pseudo_response, field, format_details)
+
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(
+                    f"Error refining field {field.field_key} (attempt {attempt + 1}/{max_retries + 1}): {e}. Retrying..."
+                )
+                continue
+            else:
+                logger.error(
+                    f"Error refining field {field.field_key} after {max_retries + 1} attempts: {e}"
+                )
+                raise
 
 
 def determine_format_details(field: TemplateField, prompts: dict) -> dict:

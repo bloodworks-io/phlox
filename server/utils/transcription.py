@@ -1,23 +1,23 @@
-import aiohttp
 import asyncio
 import json
-import time
-import re
 import logging
 import random
+import re
+import time
 from typing import Dict, List, Union
+
+import aiohttp
+
+from server.database.config import config_manager
+from server.schemas.grammars import FieldResponse
+from server.schemas.templates import TemplateField, TemplateResponse
+from server.utils.helpers import refine_field_content
 from server.utils.llm_client import (
     AsyncLLMClient,
     LLMProviderType,
     get_llm_client,
 )
-from server.database.config import config_manager
-from server.utils.helpers import refine_field_content
-from server.schemas.templates import TemplateField, TemplateResponse
-from server.schemas.grammars import FieldResponse
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -128,21 +128,27 @@ async def process_transcription(
             field for field in template_fields if not field.persistent
         ]
 
+        total_fields = len(non_persistent_fields)
+
         # Process only non-persistent fields concurrently
+        logger.info(f"Processing {total_fields} fields...")
         raw_results = await asyncio.gather(
             *[
                 process_template_field(transcript_text, field, patient_context)
                 for field in non_persistent_fields
             ]
         )
+        logger.info(f"Successfully processed {total_fields} fields")
 
         # Refine all results concurrently
+        logger.info(f"Refining {total_fields} fields...")
         refined_results = await asyncio.gather(
             *[
                 refine_field_content(result.content, field)
                 for result, field in zip(raw_results, non_persistent_fields)
             ]
         )
+        logger.info(f"Successfully refined {total_fields} fields")
 
         # Combine results into a dictionary
         processed_fields = {
@@ -168,74 +174,81 @@ async def process_template_field(
     transcript_text: str, field: TemplateField, patient_context: Dict[str, str]
 ) -> TemplateResponse:
     """Process a single template field by extracting key points from the transcript text using a structured JSON output."""
-    try:
-        config = config_manager.get_config()
-        options = config_manager.get_prompts_and_options()["options"]["general"]
 
-        # Initialize the appropriate client based on config
-        client = get_llm_client()
+    max_retries = 1
 
-        response_format = FieldResponse.model_json_schema()
-        schema_str = json.dumps(FieldResponse.model_json_schema(), indent=2)
+    for attempt in range(max_retries + 1):
+        try:
+            config = config_manager.get_config()
+            options = config_manager.get_prompts_and_options()["options"]["general"]
 
-        # Check thinking behavior
-        from server.utils.llm_client import (
-            get_model_thinking_behavior,
-            ModelThinkingBehavior,
-        )
+            # Initialize the appropriate client based on config
+            client = get_llm_client()
 
-        model_name = config["PRIMARY_MODEL"]
-        behavior = get_model_thinking_behavior(model_name)
+            response_format = FieldResponse.model_json_schema()
+            schema_str = json.dumps(FieldResponse.model_json_schema(), indent=2)
 
-        # Prepare user content
-        user_content = transcript_text
+            model_name = config["PRIMARY_MODEL"]
 
-        request_body = [
-            {
-                "role": "system",
-                "content": (f"{field.system_prompt}\n"),
-            },
-            {
-                "role": "system",
-                "content": _build_patient_context(patient_context),
-            },
-            {"role": "user", "content": user_content},
-        ]
+            # Prepare user content
+            user_content = transcript_text
 
-        # For think-tag models, add empty think tags to delimit reasoning (if desired)
-        if behavior == ModelThinkingBehavior.TAGS:
-            request_body.append(
-                {"role": "assistant", "content": "<think>\n</think>"}
+            request_body = [
+                {
+                    "role": "system",
+                    "content": (f"{field.system_prompt}\n"),
+                },
+                {
+                    "role": "system",
+                    "content": _build_patient_context(patient_context),
+                },
+                {"role": "user", "content": user_content},
+            ]
+
+            # Generate random seed for diversity in outputs
+            random_seed = random.randint(0, 2**32 - 1)
+
+            # Setting temperature to 0 here makes the outputs semi-deterministic which is a problem if the user wants to reprocess because the initial output is not satisfactory; therefore, we set a low temperature (to ensure that decoding is not greedy) and set a random seed
+            logger.info(f"Sending request to LLM (attempt {attempt + 1}/{max_retries + 1})...")
+            response = await client.chat(
+                model=model_name,
+                messages=request_body,
+                format=response_format,
+                options={**options, "seed": random_seed},
             )
 
-        # Generate random seed for diversity in outputs
-        random_seed = random.randint(0, 2**32 - 1)
+            # Extract content from response based on provider type
+            content = response["message"]["content"]
 
-        # Setting temperature to 0 here makes the outputs semi-deterministic which is a problem if the user wants to reprocess because the initial output is not satisfactory; therefore, we set a low temperature (to ensure that decoding is not greedy) and set a random seed
-        response = await client.chat(
-            model=model_name,
-            messages=request_body,
-            format=response_format,
-            options={**options, "seed": random_seed},
-        )
+            # Import repair function
+            from server.utils.llm_client import repair_json
 
-        # Extract content from response based on provider type
-        content = response["message"]["content"]
+            # Attempt to repair JSON before validation
+            repaired_content = repair_json(content)
 
-        field_response = FieldResponse.model_validate_json(content)
+            # Validate the repaired content
+            field_response = FieldResponse.model_validate_json(repaired_content)
 
-        # Convert key points into a nicely formatted string
-        formatted_content = "\n".join(
-            f"• {point.strip()}" for point in field_response.key_points
-        )
+            # Convert key points into a nicely formatted string
+            formatted_content = "\n".join(
+                f"• {point.strip()}" for point in field_response.key_points
+            )
 
-        return TemplateResponse(
-            field_key=field.field_key, content=formatted_content
-        )
+            return TemplateResponse(
+                field_key=field.field_key, content=formatted_content
+            )
 
-    except Exception as e:
-        logger.error(f"Error processing template field {field.field_key}: {e}")
-        raise
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(
+                    f"Error processing template field {field.field_key} (attempt {attempt + 1}/{max_retries + 1}): {e}. Retrying..."
+                )
+                continue
+            else:
+                logger.error(
+                    f"Error processing template field {field.field_key} after {max_retries + 1} attempts: {e}"
+                )
+                raise
 
 
 # Helps to clean up double spaces
