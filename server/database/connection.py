@@ -1,14 +1,16 @@
-import os
-import sqlcipher3 as sqlite3
 import json
-import threading
 import logging
-from pathlib import Path
-from server.constants import DATA_DIR
+import os
+import threading
 from datetime import datetime
-from server.schemas.templates import ClinicalTemplate, TemplateField
-from server.database.defaults.templates import DefaultTemplates
+from pathlib import Path
+
+import sqlcipher3 as sqlite3
+
+from server.constants import DATA_DIR
 from server.database.defaults.letters import DefaultLetters
+from server.database.defaults.templates import DefaultTemplates
+from server.schemas.templates import ClinicalTemplate, TemplateField
 
 
 class PatientDatabase:
@@ -702,10 +704,14 @@ class PatientDatabase:
 
     def _migrate_to_v4(self):
         """Add has_completed_splash_screen column to user_settings table
-        Add model_capabilities table for storing model thinking behavior"""
+        Add model_capabilities table for storing model thinking behavior
+        Remove 'stop' tokens from all option categories."""
         try:
             self.cursor.execute(
                 "ALTER TABLE user_settings ADD COLUMN has_completed_splash_screen BOOLEAN DEFAULT TRUE"
+            )
+            self.cursor.execute(
+                "DELETE FROM options WHERE key = 'stop'"
             )
             self.cursor.execute(
                 """
@@ -726,6 +732,27 @@ class PatientDatabase:
             logging.info(
                 "Successfully added has_completed_splash_screen column"
             )
+
+            # Add Dictation template
+            dictation_instructions = "I'm going to dictate a letter to you. Please adjust the punctuation and wording where required to make it a polished letter; the substance, overall structure MUST remain as dictated. Even the wording should be largely the same. You are not to rephrase the letter in any substantial way.\n\nIMPORTANT: Please adhere to any instructions that may appear in the transcript; for example 'remove that' or 'insert a summary of the patients blood results'. Execute these instructions instead of transcribing them."
+
+            self.cursor.execute(
+                """
+                INSERT INTO letter_templates (name, instructions)
+                SELECT 'Dictation', ?
+                WHERE NOT EXISTS (SELECT 1 FROM letter_templates WHERE name = 'Dictation')
+                """,
+                (dictation_instructions,),
+            )
+
+            # Update in case it already exists (during dev iteration)
+            self.cursor.execute(
+                "UPDATE letter_templates SET instructions = ? WHERE name = 'Dictation'",
+                (dictation_instructions,),
+            )
+            self.db.commit()
+            logging.info("Successfully added Dictation template")
+
         except Exception as e:
             logging.error(f"Error during v4 migration: {e}")
             self.db.rollback()
