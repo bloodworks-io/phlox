@@ -4,14 +4,15 @@ import logging
 from server.database.config import config_manager
 from server.schemas.grammars import ClinicalReasoning
 from server.utils.helpers import calculate_age
-from server.utils.llm_client import get_llm_client
+from server.utils.llm_client.client import get_llm_client
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 async def run_clinical_reasoning(
-template_data: dict, dob: str, encounter_date: str, gender: str
+    template_data: dict, dob: str, encounter_date: str, gender: str
 ):
     config = config_manager.get_config()
     prompts = config_manager.get_prompts_and_options()
@@ -49,11 +50,11 @@ template_data: dict, dob: str, encounter_date: str, gender: str
     The key is to provide additional clinical considerations to the doctor, so feel free to take a critical eye to the clinician's perspective if appropriate."""
 
     response = await client.chat(
-            model=config["REASONING_MODEL"],
-            messages=[{"role": "user", "content": prompt}],
-            format=ClinicalReasoning.model_json_schema(),
-            options=reasoning_options,
-        )
+        model=config["REASONING_MODEL"],
+        messages=[{"role": "user", "content": prompt}],
+        format=ClinicalReasoning.model_json_schema(),
+        options=reasoning_options,
+    )
 
     content_dict = json.loads(response["message"]["content"])
 
@@ -62,7 +63,7 @@ template_data: dict, dob: str, encounter_date: str, gender: str
 
     # 3. Inject it into the data if present (and if not already there)
     if reasoning and "thinking" not in content_dict:
-                content_dict["thinking"] = reasoning
+        content_dict["thinking"] = reasoning
 
     # 4. Validate using the modified dictionary
     return ClinicalReasoning.model_validate(content_dict)

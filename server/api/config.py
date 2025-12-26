@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Query, Path, Body
+import json
+import logging
+import os
+import re
+from typing import Any, Dict, List, Optional
+
+import httpx
+from fastapi import APIRouter, Body, Path, Query
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
-import httpx
-from server.database.config import config_manager
-from server.utils.llm_client import LocalModelManager
-from server.constants import IS_DOCKER
-import logging
-import re
-import os
-import json
-from typing import Optional, List, Dict, Any
 
+from server.constants import IS_DOCKER
+from server.database.config import config_manager
+from server.utils.llm_client.manager import LocalModelManager
 
 router = APIRouter()
 
@@ -41,8 +42,9 @@ async def update_config(data: dict):
 
     # After saving, kick off a background probe for PRIMARY_MODEL if it changed
     try:
-        from server.utils.model_probe import probe_and_store_model_behavior
         import asyncio
+
+        from server.utils.model_probe import probe_and_store_model_behavior
 
         updated = config_manager.get_config()
         provider = updated.get("LLM_PROVIDER", "ollama")
@@ -731,7 +733,7 @@ async def get_local_model_status():
             detail="Local models are only available in Tauri builds",
         )
 
-    from server.utils.llm_client import LocalModelManager
+    from server.utils.llm_client.manager import LocalModelManager
 
     manager = LocalModelManager()
     models = await manager.list_models()

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 
 import chromadb
@@ -11,11 +12,14 @@ from chromadb.utils.embedding_functions import (
 
 from server.constants import DATA_DIR
 from server.database.config import config_manager
-from server.utils.llm_client import LLMProviderType, get_llm_client
+from server.utils.llm_client.base import LLMProviderType
+from server.utils.llm_client.client import get_llm_client
 
 from .semantic_chunker import ClusterSemanticChunker
 
 prompts = config_manager.get_prompts_and_options()
+
+logger = logging.getLogger(__name__)
 
 
 class ChromaManager:
@@ -64,38 +68,36 @@ class ChromaManager:
         self.extracted_text_store = None
 
     async def get_structured_response(self, messages, schema, options=None):
-            """Get structured response."""
-            options = config_manager.get_prompts_and_options()["options"]["general"]
+        """Get structured response."""
+        options = config_manager.get_prompts_and_options()["options"]["general"]
 
-            response_json = await self.llm_client.chat_with_structured_output(
-                model=self.config["PRIMARY_MODEL"],
-                messages=messages,
-                schema=schema,
-                options=options,
-            )
-            return response_json
+        response_json = await self.llm_client.chat_with_structured_output(
+            model=self.config["PRIMARY_MODEL"],
+            messages=messages,
+            schema=schema,
+            options=options,
+        )
+        return response_json
 
     def commit_to_vectordb(
         self, disease_name, focus_area, document_source, filename
     ):
         """
         Commits extracted text to the vector database.
-
-        Args:
-            disease_name (str): Name of the disease.
-            focus_area (str): Focus area of the document.
-            document_source (str): Source of the document.
-            filename (str): Name of the file.
-
-        Raises:
-            ValueError: If extracted text is not available.
         """
-
         try:
             if self.extracted_text_store is None:
                 raise ValueError(
                     "Extracted text not available. Please extract the PDF information first."
                 )
+
+            logger.info(
+                "Committing to vectordb: disease=%s focus_area=%s source=%s filename=%s",
+                disease_name,
+                focus_area,
+                document_source,
+                filename,
+            )
 
             chunker = ClusterSemanticChunker(
                 embedding_function=self.embedding_model,
@@ -104,12 +106,14 @@ class ChromaManager:
             )
 
             texts = chunker.split_text(self.extracted_text_store)
+            logger.info("Chunking complete: %d chunks produced", len(texts))
 
             collection = self.chroma_client.get_or_create_collection(
                 name=disease_name,
                 embedding_function=self.embedding_model,
                 metadata={"hnsw:space": "cosine"},
             )
+            logger.debug("Using Chroma collection: %s", disease_name)
 
             metadatas = [
                 {
@@ -123,9 +127,14 @@ class ChromaManager:
             ids = [f"{filename}_{idx}" for idx in range(len(texts))]
 
             collection.add(documents=texts, metadatas=metadatas, ids=ids)
-            print("Documents successfully added to the collection.")
-        except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.info("Documents successfully added: %d", len(texts))
+
+        except Exception:
+            logger.exception(
+                "Failed to commit to vectordb (disease=%s, filename=%s)",
+                disease_name,
+                filename,
+            )
 
     @staticmethod
     def format_to_collection_name(human_readable_name):
@@ -245,6 +254,22 @@ class ChromaManager:
             return True
         except Exception as e:
             print(f"Error renaming collection '{old_name}':", e)
+            return False
+
+    def reset_database(self):
+        """
+        Resets the entire Chroma persistent database.
+
+        Returns:
+            bool: True if reset was successful, False otherwise.
+        """
+        try:
+            # Requires `allow_reset=True` in Chroma Settings (configured in __init__).
+            self.chroma_client.reset()
+            self.extracted_text_store = None
+            return True
+        except Exception as e:
+            print(f"Error resetting database: {e}")
             return False
 
     def delete_collection(self, name):

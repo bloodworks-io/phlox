@@ -1,11 +1,12 @@
+import json
 import logging
 from posixpath import basename
 from typing import List, Optional
-import json
+
 import Levenshtein
 
-from server.utils.llm_client import get_llm_client
 from server.database.config import config_manager
+from server.utils.llm_client.client import get_llm_client
 
 logger = logging.getLogger(__name__)
 

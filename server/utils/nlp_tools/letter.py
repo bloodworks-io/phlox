@@ -1,11 +1,13 @@
-import random
-import logging
 import json
+import logging
+import random
+
 from fastapi import HTTPException
+
 from server.database.config import config_manager
 from server.schemas.grammars import LetterDraft
-from server.utils.llm_client import get_llm_client
 from server.utils.helpers import calculate_age
+from server.utils.llm_client.client import get_llm_client
 
 
 async def generate_letter_content(
@@ -28,7 +30,8 @@ async def generate_letter_content(
         request_body = [
             {
                 "role": "system",
-                "content": prompts["prompts"]["letter"]["system"] + "\nReturn JSON",
+                "content": prompts["prompts"]["letter"]["system"]
+                + "\nReturn JSON",
             },
             {"role": "system", "content": additional_instruction or ""},
         ]

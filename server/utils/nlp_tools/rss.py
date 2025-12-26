@@ -9,9 +9,10 @@ import httpx
 from server.database.config import config_manager
 from server.schemas.dashboard import RssItem
 from server.schemas.grammars import ItemDigest, NewsDigest
-from server.utils.llm_client import get_llm_client
+from server.utils.llm_client.client import get_llm_client
 
 logger = logging.getLogger(__name__)
+
 
 async def get_feed_title(feed_url: str) -> str:
     """Fetches the title of an RSS feed."""
@@ -42,7 +43,9 @@ async def generate_item_digest(item: RssItem) -> str:
         config = config_manager.get_config()
         client = get_llm_client()
         model = config["SECONDARY_MODEL"]
-        options = config_manager.get_prompts_and_options()["options"]["secondary"]
+        options = config_manager.get_prompts_and_options()["options"][
+            "secondary"
+        ]
 
         system_prompt = """You are a medical news summarizer. Your task is to summarize medical news articles in a concise, informative way for healthcare professionals. Focus on clinical relevance, key findings, and implications for practice. Keep summaries objective and factual."""
 
@@ -57,14 +60,14 @@ async def generate_item_digest(item: RssItem) -> str:
 
         request_body = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt},
         ]
 
         response_json = await client.chat_with_structured_output(
             model=model,
             messages=request_body,
             schema=base_schema,
-            options=options
+            options=options,
         )
 
         digest_data = ItemDigest.model_validate_json(response_json)
@@ -73,6 +76,7 @@ async def generate_item_digest(item: RssItem) -> str:
     except Exception as e:
         logger.error(f"Error generating item digest: {e}")
         return "Unable to generate digest."
+
 
 async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
     """
@@ -109,14 +113,14 @@ async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
 
         request_body = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt},
         ]
 
         response_json = await client.chat_with_structured_output(
             model=model,
             messages=request_body,
             schema=base_schema,
-            options=options
+            options=options,
         )
 
         digest_data = NewsDigest.model_validate_json(response_json)

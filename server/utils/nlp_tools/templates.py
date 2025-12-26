@@ -1,16 +1,23 @@
-from datetime import datetime
 import json
-import re
 import logging
-from server.database.templates import template_exists
-from server.database.defaults.templates import DefaultTemplates
-from server.schemas.templates import FormatStyle, ClinicalTemplate, TemplateField, ExtractedTemplate
+import re
+from datetime import datetime
+
 from server.database.config import config_manager
-from server.utils.llm_client import get_llm_client
+from server.database.defaults.templates import DefaultTemplates
+from server.database.templates import template_exists
+from server.schemas.templates import (
+    ClinicalTemplate,
+    ExtractedTemplate,
+    FormatStyle,
+    TemplateField,
+)
+from server.utils.llm_client.client import get_llm_client
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
     """
@@ -42,7 +49,10 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
 
         base_messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Analyze this clinical note and extract template sections with their format patterns. Return as JSON.Do not include any tab characters, extra whitespace, or formatting characters. Your response should be compact JSON without pretty-printing.\n\n{example_note}"}
+            {
+                "role": "user",
+                "content": f"Analyze this clinical note and extract template sections with their format patterns. Return as JSON.Do not include any tab characters, extra whitespace, or formatting characters. Your response should be compact JSON without pretty-printing.\n\n{example_note}",
+            },
         ]
 
         # Set up response format for structured output
@@ -53,7 +63,7 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
             model=config["PRIMARY_MODEL"],
             messages=base_messages,
             schema=base_schema,
-            options=options
+            options=options,
         )
 
         extracted = ExtractedTemplate.model_validate_json(response_json)
@@ -70,16 +80,14 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
                 if section.format_style == FormatStyle.BULLETS:
                     format_schema = {
                         "type": "bullet",
-                        "bullet_char": section.bullet_type or "-"
+                        "bullet_char": section.bullet_type or "-",
                     }
                 elif section.format_style == FormatStyle.NUMBERED:
-                    format_schema = {
-                        "type": "numbered"
-                    }
+                    format_schema = {"type": "numbered"}
                 elif section.format_style == FormatStyle.HEADING_WITH_BULLETS:
                     format_schema = {
                         "type": "heading_with_bullets",
-                        "bullet_char": section.bullet_type or "-"
+                        "bullet_char": section.bullet_type or "-",
                     }
 
                 field = TemplateField(
@@ -91,14 +99,18 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
                     system_prompt=f"Provide information for {section.field_name} using {section.format_style.value} format.",
                     style_example=section.example_text,  # Use example text
                     format_schema=format_schema,
-                    refinement_rules=["default"] # Deprecated
+                    refinement_rules=["default"],  # Deprecated
                 )
                 template_fields.append(field)
 
         # Update plan field's style example
         plan_section = next(
-            (s for s in extracted.sections if generate_field_key(s.field_name) == "plan"),
-            None
+            (
+                s
+                for s in extracted.sections
+                if generate_field_key(s.field_name) == "plan"
+            ),
+            None,
         )
 
         plan_field = DefaultTemplates.get_plan_field()
@@ -107,11 +119,17 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
             plan_example = plan_section.example_text
 
             # Check if the example is already in a numbered format
-            if not re.match(r'^\s*\d+\.', plan_example.lstrip()):
+            if not re.match(r"^\s*\d+\.", plan_example.lstrip()):
                 # Convert to numbered format if it's not already
-                lines = [line.strip() for line in plan_example.split('\n') if line.strip()]
-                plan_example = '\n'.join(f"{i+1}. {line.lstrip('- •*').strip()}"
-                                        for i, line in enumerate(lines))
+                lines = [
+                    line.strip()
+                    for line in plan_example.split("\n")
+                    if line.strip()
+                ]
+                plan_example = "\n".join(
+                    f"{i+1}. {line.lstrip('- •*').strip()}"
+                    for i, line in enumerate(lines)
+                )
 
             plan_field["style_example"] = plan_example
             plan_field["format_schema"] = {"type": "numbered"}
@@ -119,7 +137,9 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         template_fields.append(TemplateField(**plan_field))
 
         # Generate a unique template key based on the suggested name
-        new_template_key = generate_unique_template_key(extracted.suggested_name)
+        new_template_key = generate_unique_template_key(
+            extracted.suggested_name
+        )
 
         template = ClinicalTemplate(
             template_key=new_template_key,
@@ -135,9 +155,11 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         logging.error(f"Error generating template from note: {e}")
         raise
 
+
 def generate_field_key(field_name: str) -> str:
     """Generate a standardized field key from a field name."""
     return field_name.lower().strip().replace(" ", "_")
+
 
 def generate_unique_template_key(base_name: str) -> str:
     """

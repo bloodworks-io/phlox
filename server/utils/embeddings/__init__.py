@@ -2,9 +2,11 @@
 Shared embedding functions for the Phlox server.
 """
 
-from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
 from typing import Union, cast
-from server.utils.llm_client import LocalModelManager
+
+from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
+
+from server.utils.llm_client.manager import LocalModelManager
 
 
 class LocalEmbeddingFunction(EmbeddingFunction[Documents]):

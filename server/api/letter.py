@@ -1,19 +1,21 @@
-from fastapi import APIRouter, HTTPException, Body
-from fastapi.responses import JSONResponse
-from typing import List
 import logging
+from typing import List
+
+from fastapi import APIRouter, Body, HTTPException
+from fastapi.responses import JSONResponse
+
 from server.database.letter import (
-    get_letter_templates,
+    delete_letter_template,
+    fetch_patient_letter,
     get_letter_template_by_id,
+    get_letter_templates,
+    reset_default_templates,
     save_letter_template,
     update_letter_template,
-    delete_letter_template,
-    reset_default_templates,
     update_patient_letter,
-    fetch_patient_letter,
 )
-from server.schemas.letter import LetterTemplate, LetterRequest, LetterSave
-from server.utils.letter import generate_letter_content
+from server.schemas.letter import LetterRequest, LetterSave, LetterTemplate
+from server.utils.nlp_tools.letter import generate_letter_content
 
 router = APIRouter()
 

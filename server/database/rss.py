@@ -1,17 +1,19 @@
 import asyncio
-from datetime import datetime, timezone
-from typing import List, Optional, Dict
-from fastapi import HTTPException
-import logging
-import feedparser
-from ollama import AsyncClient
 import json
+import logging
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
+
+import feedparser
+from fastapi import HTTPException
+from ollama import AsyncClient
+
 from server.database.connection import db
 from server.schemas.dashboard import RssFeed, RssItem
-from server.utils.rss import (
-    generate_item_digest,
-    generate_combined_digest,
+from server.utils.nlp_tools.rss import (
     fetch_rss_feed,
+    generate_combined_digest,
+    generate_item_digest,
 )
 
 logger = logging.getLogger(__name__)

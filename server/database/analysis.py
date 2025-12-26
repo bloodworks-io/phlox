@@ -8,8 +8,8 @@ from server.database.config import config_manager
 from server.database.connection import db
 from server.database.patient import get_patients_by_date
 from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
-from server.utils.llm.reasoning import run_clinical_reasoning
-from server.utils.llm_client import get_llm_client
+from server.utils.llm_client.client import get_llm_client
+from server.utils.nlp_tools.reasoning import run_clinical_reasoning
 
 logger = logging.getLogger(__name__)
 
@@ -52,17 +52,14 @@ async def _generate_analysis_with_llm(patient_data):
     base_schema = PatientAnalysis.model_json_schema()
 
     request_body = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content},
-            {"role": "assistant", "content": initial_assistant_content},
-        ]
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_content},
+        {"role": "assistant", "content": initial_assistant_content},
+    ]
 
     # Generate analysis with structured output
     response_json = await client.chat_with_structured_output(
-        model=model,
-        messages=request_body,
-        schema=base_schema,
-        options=options
+        model=model, messages=request_body, schema=base_schema, options=options
     )
 
     # Parse the JSON response
@@ -259,11 +256,14 @@ async def generate_previous_visit_summary(patient_data):
             options=options,
         )
 
-        previous_visit_summary = PreviousVisitSummary.model_validate_json(response_json)
+        previous_visit_summary = PreviousVisitSummary.model_validate_json(
+            response_json
+        )
         return previous_visit_summary.summary
     except Exception as e:
         logger.error(f"Error generating previous visit summary: {e}")
         raise
+
 
 async def run_nightly_reasoning():
     """Run reasoning analysis on patients from yesterday and today."""

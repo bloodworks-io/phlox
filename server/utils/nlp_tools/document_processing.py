@@ -14,23 +14,20 @@ from server.database.config import config_manager
 from server.schemas.grammars import FieldResponse
 from server.schemas.templates import TemplateResponse
 from server.utils.helpers import calculate_age
-from server.utils.llm_client import (
-    AsyncLLMClient,
-    LLMProviderType,
-    get_llm_client,
-)
+from server.utils.llm_client.client import get_llm_client
 from server.utils.transcription.refinement import refine_field_content
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 async def process_document_content(
     document_buffer: bytes,
     content_type: str,
     name: Optional[str] = None,
     dob: Optional[str] = None,
-    gender: Optional[str] = None
+    gender: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
     Process document content using OCR first, then pass the extracted text to the LLM.
@@ -146,7 +143,9 @@ async def process_document_content(
         raise
 
 
-async def extract_text_from_document(document_buffer: bytes, content_type: str) -> str:
+async def extract_text_from_document(
+    document_buffer: bytes, content_type: str
+) -> str:
     """
     Extract text from document using OCR or return raw text.
 
@@ -157,7 +156,9 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
     Returns:
         Extracted text from the document
     """
-    logger.info(f"Extracting text from document with content type: {content_type}")
+    logger.info(
+        f"Extracting text from document with content type: {content_type}"
+    )
 
     # If content type is text, return the text directly
     if content_type in ["text/plain", "text/html"]:
@@ -177,7 +178,9 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
             text = pytesseract.image_to_string(img)
             extracted_texts.append(text)
-            logger.debug(f"Extracted text from PDF page {page_num+1}/{pdf_document.page_count}")
+            logger.debug(
+                f"Extracted text from PDF page {page_num+1}/{pdf_document.page_count}"
+            )
     else:
         # Handle single image
         logger.debug("Processing image document with Tesseract OCR")
@@ -192,7 +195,7 @@ async def process_document_with_template(
     document_buffer: bytes,
     content_type: str,
     template_fields: List[Any],
-    patient_context: Dict[str, Any]
+    patient_context: Dict[str, Any],
 ) -> Dict[str, str]:
     """
     Process document content and extract information to fill template fields.
@@ -206,7 +209,9 @@ async def process_document_with_template(
     Returns:
         Dictionary mapping field keys to extracted content
     """
-    logger.info(f"Processing document with template containing {len(template_fields) if template_fields else 0} fields")
+    logger.info(
+        f"Processing document with template containing {len(template_fields) if template_fields else 0} fields"
+    )
 
     config = config_manager.get_config()
     prompts = config_manager.get_prompts_and_options()
@@ -220,14 +225,16 @@ async def process_document_with_template(
 
     # If there are no template fields, use the old method for backward compatibility
     if not template_fields:
-        logger.info("No template fields provided, using legacy processing method")
+        logger.info(
+            "No template fields provided, using legacy processing method"
+        )
         primary_history, additional_history, investigations = (
             await process_document_content(
                 document_buffer,
                 content_type,
-                patient_context.get('name'),
-                patient_context.get('dob'),
-                patient_context.get('gender')
+                patient_context.get("name"),
+                patient_context.get("dob"),
+                patient_context.get("gender"),
             )
         )
 
@@ -235,28 +242,25 @@ async def process_document_with_template(
         return {
             "primary_history": primary_history,
             "additional_history": additional_history,
-            "investigations": investigations
+            "investigations": investigations,
         }
 
     try:
         # Process all template fields concurrently
-        raw_results = await asyncio.gather(*[
-            process_document_field(
-                extracted_text,
-                field,
-                patient_context
-            )
-            for field in template_fields
-        ])
+        raw_results = await asyncio.gather(
+            *[
+                process_document_field(extracted_text, field, patient_context)
+                for field in template_fields
+            ]
+        )
 
         # Refine all results concurrently
-        refined_results = await asyncio.gather(*[
-            refine_field_content(
-                result.content,
-                field
-            )
-            for result, field in zip(raw_results, template_fields)
-        ])
+        refined_results = await asyncio.gather(
+            *[
+                refine_field_content(result.content, field)
+                for result, field in zip(raw_results, template_fields)
+            ]
+        )
 
         # Combine results into a dictionary
         results = {
@@ -273,9 +277,7 @@ async def process_document_with_template(
 
 
 async def process_document_field(
-    document_text: str,
-    field: Any,
-    patient_context: Dict[str, Any]
+    document_text: str, field: Any, patient_context: Dict[str, Any]
 ) -> TemplateResponse:
     """Process a single document field by extracting key points from the document text.
 
@@ -290,14 +292,16 @@ async def process_document_field(
     try:
         config = config_manager.get_config()
         client = get_llm_client()
-        options = config_manager.get_prompts_and_options()["options"]["general"].copy()
+        options = config_manager.get_prompts_and_options()["options"][
+            "general"
+        ].copy()
 
         # Use FieldResponse for structured output
         response_format = FieldResponse.model_json_schema()
 
         # Get the field name and system prompt
         field_name = field.field_name
-        system_prompt = getattr(field, 'system_prompt', "") or ""
+        system_prompt = getattr(field, "system_prompt", "") or ""
 
         # If no system prompt is provided, create a default one
         if not system_prompt:
@@ -308,25 +312,35 @@ async def process_document_field(
         if patient_context:
             # Convert dictionary to format expected by _build_patient_context
             context_str = _build_patient_context(
-                patient_context.get('name'),
-                patient_context.get('dob'),
-                patient_context.get('gender')
+                patient_context.get("name"),
+                patient_context.get("dob"),
+                patient_context.get("gender"),
             )
 
         # Create the request messages
         request_body = [
-            {"role": "system", "content": (
-                f"{system_prompt}\n"
-                "Extract and return key points as a JSON array."
-            )},
+            {
+                "role": "system",
+                "content": (
+                    f"{system_prompt}\n"
+                    "Extract and return key points as a JSON array."
+                ),
+            },
         ]
 
         # Add patient context if available
         if context_str:
-            request_body.append({"role": "system", "content": f"Patient context: {context_str}"})
+            request_body.append(
+                {"role": "system", "content": f"Patient context: {context_str}"}
+            )
 
         # Add the document text as user input
-        request_body.append({"role": "user", "content": f"Please extract the {field_name} from this medical document:\n\n{document_text}"})
+        request_body.append(
+            {
+                "role": "user",
+                "content": f"Please extract the {field_name} from this medical document:\n\n{document_text}",
+            }
+        )
 
         logger.info(f"Processing document field: {field_name}")
 
@@ -338,20 +352,21 @@ async def process_document_field(
             model=config["PRIMARY_MODEL"],
             messages=request_body,
             format=response_format,
-            options=options
+            options=options,
         )
 
         # Parse the response
         field_response = FieldResponse.model_validate_json(
-            response['message']['content']
+            response["message"]["content"]
         )
 
         # Convert key points into a formatted string
-        formatted_content = "\n".join(f"• {point.strip()}" for point in field_response.key_points)
+        formatted_content = "\n".join(
+            f"• {point.strip()}" for point in field_response.key_points
+        )
 
         return TemplateResponse(
-            field_key=field.field_key,
-            content=formatted_content
+            field_key=field.field_key, content=formatted_content
         )
 
     except Exception as e:
@@ -359,10 +374,13 @@ async def process_document_field(
         # Return empty result on error
         return TemplateResponse(
             field_key=field.field_key,
-            content=f"Error extracting {field.field_name}: {str(e)}"
+            content=f"Error extracting {field.field_name}: {str(e)}",
         )
 
-def _build_patient_context(name: Optional[str], dob: Optional[str], gender: Optional[str]) -> str:
+
+def _build_patient_context(
+    name: Optional[str], dob: Optional[str], gender: Optional[str]
+) -> str:
     """
     Build context string from patient details.
 
