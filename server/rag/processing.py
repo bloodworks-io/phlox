@@ -1,12 +1,15 @@
-import fitz  # PyMuPDF
-from .semantic_chunker import ClusterSemanticChunker
-import chromadb
-from chromadb.config import Settings
-import os
 import asyncio
+import os
+
+import chromadb
+import fitz  # PyMuPDF
+from chromadb.config import Settings
+
 from server.database.config import config_manager
 from server.schemas.grammars import ClinicalSuggestionList
-from server.utils.llm_client import get_llm_client
+from server.utils.llm_client.client import get_llm_client
+
+from .semantic_chunker import ClusterSemanticChunker
 
 # Initialize ConfigManager
 config = config_manager.get_config()
@@ -20,6 +23,7 @@ async def process_pdfs_in_directory(directory_path):
         if filename.endswith(".pdf"):
             pdf_path = os.path.join(directory_path, filename)
             await process_single_pdf(pdf_path)
+
 
 async def generate_specialty_suggestions():
     """Generate RAG chat suggestions based on user's specialty from DB."""
