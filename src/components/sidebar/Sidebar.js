@@ -11,8 +11,9 @@ import {
   useColorModeValue,
   Tooltip,
   useToast,
+  useOutsideClick,
 } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaPlus } from "react-icons/fa";
 import { HamburgerIcon } from "@chakra-ui/icons";
 import VersionInfo from "./VersionInfo";
@@ -48,6 +49,19 @@ const Sidebar = ({
   const labelColor = colors.dark.textSecondary;
   const dividerColor = colors.dark.divider;
   const hoverColor = colors.dark.sidebar.hover;
+
+  // Ref for detecting outside clicks on small screens
+  const sidebarRef = useRef(null);
+
+  // Close sidebar when clicking outside on small screens
+  useOutsideClick({
+    ref: sidebarRef,
+    handler: () => {
+      if (isSmallScreen && !isCollapsed) {
+        toggleSidebar();
+      }
+    },
+  });
 
   // Function definitions remain the same
   const fetchPatients = async (date) => {
@@ -127,6 +141,7 @@ const Sidebar = ({
 
   return (
     <Box
+      ref={sidebarRef}
       as="nav"
       pos={shouldFloat ? "fixed" : "fixed"}
       top="0"

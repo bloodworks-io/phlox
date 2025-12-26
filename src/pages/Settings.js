@@ -1,11 +1,11 @@
 // Page component for configuring application settings.
 import {
-  Box,
-  Text,
-  VStack,
-  useToast,
-  Button,
-  useDisclosure,
+    Box,
+    Text,
+    VStack,
+    useToast,
+    Button,
+    useDisclosure,
 } from "@chakra-ui/react";
 import { useState, useEffect, useCallback } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
@@ -42,283 +42,290 @@ const Settings = () => {
   const [templates, setTemplates] = useState({});
   const [letterTemplates, setLetterTemplates] = useState([]);
 
-  const [config, setConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [modelOptions, setModelOptions] = useState([]);
-  const [whisperModelOptions, setWhisperModelOptions] = useState([]);
-  const [whisperModelListAvailable, setWhisperModelListAvailable] =
-    useState(false);
+    const [config, setConfig] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [modelOptions, setModelOptions] = useState([]);
+    const [whisperModelOptions, setWhisperModelOptions] = useState([]);
+    const [whisperModelListAvailable, setWhisperModelListAvailable] =
+        useState(false);
 
-  const toast = useToast();
-  const [urlStatus, setUrlStatus] = useState({
-    whisper: false,
-    ollama: false,
-  });
-  const localModelsDisclosure = useDisclosure();
-  const [collapseStates, setCollapseStates] = useState({
-    userSettings: false,
-    modelSettings: true,
-    promptSettings: true,
-    ragSettings: true,
-    letterTemplates: true,
-    templates: true,
-    chatSettings: true,
-    localModels: true,
-  });
-  const fetchSettings = useCallback(async () => {
-    try {
-      setLoading(true);
-      const configData = await settingsService.fetchConfig();
-      setConfig(configData);
+    const toast = useToast();
+    const [urlStatus, setUrlStatus] = useState({
+        whisper: false,
+        ollama: false,
+    });
+    const localModelsDisclosure = useDisclosure();
+    const [collapseStates, setCollapseStates] = useState({
+        userSettings: false,
+        modelSettings: true,
+        promptSettings: true,
+        ragSettings: true,
+        letterTemplates: true,
+        templates: true,
+        chatSettings: true,
+        localModels: true,
+    });
+    const fetchSettings = useCallback(async () => {
+        try {
+            setLoading(true);
+            const configData = await settingsService.fetchConfig();
+            setConfig(configData);
 
-      await Promise.all([
-        settingsService.fetchPrompts(setPrompts),
-        settingsService.fetchOptions(setOptions),
-        settingsService.fetchUserSettings(setUserSettings),
-        settingsService.fetchTemplates(setTemplates),
-      ]);
+            await Promise.all([
+                settingsService.fetchPrompts(setPrompts),
+                settingsService.fetchOptions(setOptions),
+                settingsService.fetchUserSettings(setUserSettings),
+                settingsService.fetchTemplates(setTemplates),
+            ]);
 
-      // Fetch and merge default template into user settings
-      const defaultTemplate = await templateService.getDefaultTemplate();
-      setUserSettings((prev) => ({
-        ...prev,
-        default_template: defaultTemplate.template_key,
-      }));
+            // Fetch and merge default template into user settings
+            const defaultTemplate = await templateService.getDefaultTemplate();
+            setUserSettings((prev) => ({
+                ...prev,
+                default_template: defaultTemplate.template_key,
+            }));
 
-      if (configData?.LLM_BASE_URL) {
-        await settingsService.fetchLLMModels(configData, setModelOptions);
-      }
+            if (configData?.LLM_BASE_URL) {
+                await settingsService.fetchLLMModels(
+                    configData,
+                    setModelOptions,
+                );
+            }
 
-      if (configData?.WHISPER_BASE_URL) {
-        await settingsService.fetchWhisperModels(
-          configData.WHISPER_BASE_URL,
-          setWhisperModelOptions,
-          setWhisperModelListAvailable,
-        );
-      }
-    } catch (error) {
-      console.error("Error loading settings:", error);
-      toast({
-        title: "Error loading settings",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
-
-  useEffect(() => {
-    const validateUrls = async () => {
-      if (config?.WHISPER_BASE_URL) {
-        const whisperValid = await settingsService.validateUrl(
-          "whisper",
-          config.WHISPER_BASE_URL,
-        );
-        setUrlStatus((prev) => ({ ...prev, whisper: whisperValid }));
-      }
-
-      if (config?.LLM_BASE_URL) {
-        // Use provider type from config for URL validation
-        const providerType = config?.LLM_PROVIDER || "ollama";
-        const llmValid = await settingsService.validateUrl(
-          providerType,
-          config.LLM_BASE_URL,
-        );
-        setUrlStatus((prev) => ({ ...prev, llm: llmValid }));
-      }
-    };
-
-    validateUrls();
-  }, [config?.WHISPER_BASE_URL, config?.LLM_BASE_URL, config?.LLM_PROVIDER]);
-
-  useEffect(() => {
-    const fetchLetterTemplates = async () => {
-      try {
-        const response = await settingsService.fetchLetterTemplates();
-        setLetterTemplates(response.templates);
-
-        if (response.default_template_id !== null) {
-          setUserSettings((prev) => ({
-            ...prev,
-            default_letter_template_id: response.default_template_id,
-          }));
+            if (configData?.WHISPER_BASE_URL) {
+                await settingsService.fetchWhisperModels(
+                    configData.WHISPER_BASE_URL,
+                    setWhisperModelOptions,
+                    setWhisperModelListAvailable,
+                );
+            }
+        } catch (error) {
+            console.error("Error loading settings:", error);
+            toast({
+                title: "Error loading settings",
+                description: error.message,
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
+        } finally {
+            setLoading(false);
         }
-      } catch (error) {
-        console.error("Failed to fetch letter templates:", error);
-      }
+    }, []);
+
+    useEffect(() => {
+        fetchSettings();
+    }, [fetchSettings]);
+
+    useEffect(() => {
+        const validateUrls = async () => {
+            if (config?.WHISPER_BASE_URL) {
+                const whisperValid = await settingsService.validateUrl(
+                    "whisper",
+                    config.WHISPER_BASE_URL,
+                );
+                setUrlStatus((prev) => ({ ...prev, whisper: whisperValid }));
+            }
+
+            if (config?.LLM_BASE_URL) {
+                // Use provider type from config for URL validation
+                const providerType = config?.LLM_PROVIDER || "ollama";
+                const llmValid = await settingsService.validateUrl(
+                    providerType,
+                    config.LLM_BASE_URL,
+                );
+                setUrlStatus((prev) => ({ ...prev, llm: llmValid }));
+            }
+        };
+
+        validateUrls();
+    }, [config?.WHISPER_BASE_URL, config?.LLM_BASE_URL, config?.LLM_PROVIDER]);
+
+    useEffect(() => {
+        const fetchLetterTemplates = async () => {
+            try {
+                const response = await settingsService.fetchLetterTemplates();
+                setLetterTemplates(response.templates);
+
+                if (response.default_template_id !== null) {
+                    setUserSettings((prev) => ({
+                        ...prev,
+                        default_letter_template_id:
+                            response.default_template_id,
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch letter templates:", error);
+            }
+        };
+        fetchLetterTemplates();
+    }, []);
+
+    const toggleCollapse = (section) => {
+        setCollapseStates((prev) => ({
+            ...prev,
+            [section]: !prev[section],
+        }));
     };
-    fetchLetterTemplates();
-  }, []);
 
-  const toggleCollapse = (section) => {
-    setCollapseStates((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
+    const handleSaveChanges = async () => {
+        try {
+            await settingsService.saveSettings({
+                prompts,
+                config,
+                options,
+                userSettings,
+                toast,
+            });
 
-  const handleSaveChanges = async () => {
-    try {
-      await settingsService.saveSettings({
-        prompts,
-        config,
-        options,
-        userSettings,
-        toast,
-      });
+            // Fetch settings again after saving
+            await fetchSettings();
 
-      // Fetch settings again after saving
-      await fetchSettings();
+            toast({
+                title: "Settings saved and refreshed",
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+            });
+        } catch (error) {
+            toast({
+                title: "Error saving settings",
+                description: error.message,
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+    };
 
-      toast({
-        title: "Settings saved and refreshed",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      toast({
-        title: "Error saving settings",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+    const handleRestoreDefaults = async () => {
+        await settingsService.resetToDefaults(fetchSettings, toast);
+    };
+
+    const handlePromptChange = (promptType, field, value) => {
+        setPrompts((prev) => ({
+            ...prev,
+            [promptType]: {
+                ...prev[promptType],
+                [field]: value,
+            },
+        }));
+    };
+
+    const handleOptionChange = (category, key, value) => {
+        setOptions((prev) => ({
+            ...prev,
+            [category]: {
+                ...prev[category],
+                [key]: value,
+            },
+        }));
+    };
+    const handleConfigChange = (key, value) => {
+        // Update local config state only
+        setConfig((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    };
+
+    const handleClearDatabase = async (newEmbeddingModel) => {
+        await settingsService.clearDatabase(newEmbeddingModel, config, toast);
+        // Refresh settings after database clear
+        await fetchSettings();
+    };
+
+    if (loading) {
+        return <Box>Loading...</Box>;
     }
-  };
+    return (
+        <Box p="5" borderRadius="sm" w="100%">
+            <Text as="h2" mb="4">
+                Settings
+            </Text>
+            <VStack spacing="5" align="stretch">
+                <UserSettingsPanel
+                    isCollapsed={collapseStates.userSettings}
+                    setIsCollapsed={() => toggleCollapse("userSettings")}
+                    userSettings={userSettings}
+                    setUserSettings={setUserSettings}
+                    specialties={SPECIALTIES}
+                    templates={templates}
+                    letterTemplates={letterTemplates}
+                    toast={toast}
+                />
 
-  const handleRestoreDefaults = async () => {
-    await settingsService.resetToDefaults(fetchSettings, toast);
-  };
+                <ModelSettingsPanel
+                    isCollapsed={collapseStates.modelSettings}
+                    setIsCollapsed={() => toggleCollapse("modelSettings")}
+                    config={config}
+                    handleConfigChange={handleConfigChange}
+                    modelOptions={modelOptions}
+                    whisperModelOptions={whisperModelOptions}
+                    whisperModelListAvailable={whisperModelListAvailable}
+                    urlStatus={urlStatus}
+                    onOpenLocalModelManager={localModelsDisclosure.onOpen}
+                    showLocalManagerButton
+                />
 
-  const handlePromptChange = (promptType, field, value) => {
-    setPrompts((prev) => ({
-      ...prev,
-      [promptType]: {
-        ...prev[promptType],
-        [field]: value,
-      },
-    }));
-  };
+                <PromptSettingsPanel
+                    isCollapsed={collapseStates.promptSettings}
+                    setIsCollapsed={() => toggleCollapse("promptSettings")}
+                    prompts={prompts}
+                    handlePromptChange={handlePromptChange}
+                    options={options}
+                    handleOptionChange={handleOptionChange}
+                    config={config}
+                />
 
-  const handleOptionChange = (category, key, value) => {
-    setOptions((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [key]: value,
-      },
-    }));
-  };
-  const handleConfigChange = (key, value) => {
-    // Update local config state only
-    setConfig((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
+                <RagSettingsPanel
+                    isCollapsed={collapseStates.ragSettings}
+                    setIsCollapsed={() => toggleCollapse("ragSettings")}
+                    config={config}
+                    modelOptions={modelOptions}
+                    handleClearDatabase={handleClearDatabase}
+                    handleConfigChange={handleConfigChange}
+                />
 
-  const handleClearDatabase = async (newEmbeddingModel) => {
-    await settingsService.clearDatabase(newEmbeddingModel, config, toast);
-    // Refresh settings after database clear
-    await fetchSettings();
-  };
+                <TemplateSettingsPanel
+                    isCollapsed={collapseStates.templates}
+                    setIsCollapsed={() => toggleCollapse("templates")}
+                    templates={templates}
+                    setTemplates={setTemplates}
+                />
 
-  if (loading) {
-    return <Box>Loading...</Box>;
-  }
-  return (
-    <Box p="5" borderRadius="sm" w="100%">
-      <Text as="h2" mb="4">
-        Settings
-      </Text>
-      <VStack spacing="5" align="stretch">
-        <UserSettingsPanel
-          isCollapsed={collapseStates.userSettings}
-          setIsCollapsed={() => toggleCollapse("userSettings")}
-          userSettings={userSettings}
-          setUserSettings={setUserSettings}
-          specialties={SPECIALTIES}
-          templates={templates}
-          letterTemplates={letterTemplates}
-          toast={toast}
-        />
+                <LetterTemplatesPanel
+                    isCollapsed={collapseStates.letterTemplates}
+                    setIsCollapsed={() => toggleCollapse("letterTemplates")}
+                />
 
-        <ModelSettingsPanel
-          isCollapsed={collapseStates.modelSettings}
-          setIsCollapsed={() => toggleCollapse("modelSettings")}
-          config={config}
-          handleConfigChange={handleConfigChange}
-          modelOptions={modelOptions}
-          whisperModelOptions={whisperModelOptions}
-          whisperModelListAvailable={whisperModelListAvailable}
-          urlStatus={urlStatus}
-          onOpenLocalModelManager={localModelsDisclosure.onOpen}
-          showLocalManagerButton
-        />
+                <ChatSettingsPanel
+                    isCollapsed={collapseStates.chatSettings}
+                    setIsCollapsed={() => toggleCollapse("chatSettings")}
+                    userSettings={userSettings}
+                    setUserSettings={setUserSettings}
+                />
 
-        <PromptSettingsPanel
-          isCollapsed={collapseStates.promptSettings}
-          setIsCollapsed={() => toggleCollapse("promptSettings")}
-          prompts={prompts}
-          handlePromptChange={handlePromptChange}
-          options={options}
-          handleOptionChange={handleOptionChange}
-          config={config}
-        />
+                <SettingsActions
+                    onSave={handleSaveChanges}
+                    onRestoreDefaults={handleRestoreDefaults}
+                />
+            </VStack>
 
-        <RagSettingsPanel
-          isCollapsed={collapseStates.ragSettings}
-          setIsCollapsed={() => toggleCollapse("ragSettings")}
-          config={config}
-          modelOptions={modelOptions}
-          handleClearDatabase={handleClearDatabase}
-          handleConfigChange={handleConfigChange}
-        />
-
-        <TemplateSettingsPanel
-          isCollapsed={collapseStates.templates}
-          setIsCollapsed={() => toggleCollapse("templates")}
-          templates={templates}
-          setTemplates={setTemplates}
-        />
-
-        <LetterTemplatesPanel
-          isCollapsed={collapseStates.letterTemplates}
-          setIsCollapsed={() => toggleCollapse("letterTemplates")}
-        />
-
-        <ChatSettingsPanel
-          isCollapsed={collapseStates.chatSettings}
-          setIsCollapsed={() => toggleCollapse("chatSettings")}
-          userSettings={userSettings}
-          setUserSettings={setUserSettings}
-        />
-
-        <SettingsActions
-          onSave={handleSaveChanges}
-          onRestoreDefaults={handleRestoreDefaults}
-        />
-      </VStack>
-
-      <LocalModelManagerModal
-        isOpen={localModelsDisclosure.isOpen}
-        onClose={async () => {
-          localModelsDisclosure.onClose();
-          if (config?.LLM_BASE_URL) {
-            await settingsService.fetchLLMModels(config, setModelOptions);
-          }
-        }}
-      />
-    </Box>
-  );
+            <LocalModelManagerModal
+                isOpen={localModelsDisclosure.isOpen}
+                onClose={async () => {
+                    localModelsDisclosure.onClose();
+                    if (config?.LLM_BASE_URL) {
+                        await settingsService.fetchLLMModels(
+                            config,
+                            setModelOptions,
+                        );
+                    }
+                }}
+            />
+        </Box>
+    );
 };
 
 export default Settings;
