@@ -1,10 +1,12 @@
-from server.database.connection import db
-from typing import List, Dict
-from icalendar import Calendar, Todo
+import os
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List
+
+from icalendar import Calendar, Todo
+
 from server.constants import DATA_DIR
-import os
+from server.database.core.connection import db
 
 ICS_FILE_PATH = DATA_DIR / "todos.ics"
 

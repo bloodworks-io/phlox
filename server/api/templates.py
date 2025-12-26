@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
-from server.database.templates import (
+from server.database.entities.templates import (
     get_all_templates,
     get_default_template,
     get_template_by_key,
@@ -90,7 +90,9 @@ async def reset_adaptive_instructions(template_key: str, field_key: str):
     """
     Reset (clear) the adaptive refinement instructions for a given field in a template.
     """
-    from server.database.templates import update_field_adaptive_instructions
+    from server.database.entities.templates import (
+        update_field_adaptive_instructions,
+    )
 
     result = update_field_adaptive_instructions(template_key, field_key, [])
     if result:

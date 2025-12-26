@@ -5,8 +5,10 @@ We are using a temporary directory for testing and cleaning up afterward.
 
 import os
 import sqlite3
+
 import pytest
-from server.database.connection import db
+
+from server.database.core.connection import db
 
 
 @pytest.fixture(scope="module")

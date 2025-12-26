@@ -1,7 +1,8 @@
 import logging
-from typing import List, Dict, Optional, Any
 from datetime import datetime
-from server.database.connection import db
+from typing import Any, Dict, List, Optional
+
+from server.database.core.connection import db
 from server.schemas.letter import LetterTemplate
 
 

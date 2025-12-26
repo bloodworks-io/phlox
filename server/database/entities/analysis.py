@@ -4,9 +4,9 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from server.database.config import config_manager
-from server.database.connection import db
-from server.database.patient import get_patients_by_date
+from server.database.config.manager import config_manager
+from server.database.core.connection import db
+from server.database.entities.patient import get_patients_by_date
 from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
 from server.utils.llm_client.client import get_llm_client
 from server.utils.nlp_tools.reasoning import run_clinical_reasoning

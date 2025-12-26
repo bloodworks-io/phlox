@@ -1,17 +1,17 @@
-import sys
-import os
-import json
 import datetime
+import json
+import os
 import random
-from typing import List, Dict
+import sys
+from typing import Dict, List
 
 # Add the parent directory of 'server' to the Python path
 sys.path.append("/usr/src/app")
 
-from server.database.connection import db as patient_db
-from server.database.templates import save_template
+from server.database.config.defaults.templates import DefaultTemplates
+from server.database.core.connection import db as patient_db
+from server.database.entities.templates import save_template
 from server.schemas.templates import ClinicalTemplate, TemplateField
-from server.database.defaults.templates import DefaultTemplates
 
 # Get the directory of the current script
 current_dir = os.path.dirname(os.path.abspath(__file__))

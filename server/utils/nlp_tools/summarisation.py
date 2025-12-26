@@ -5,8 +5,8 @@ from typing import List, Optional
 
 import Levenshtein
 
-from server.database.config import config_manager
-from server.database.connection import db
+from server.database.config.manager import config_manager
+from server.database.core.connection import db
 from server.schemas.grammars import (
     ClinicalReasoning,
     NarrativeResponse,
@@ -20,7 +20,10 @@ from server.utils.llm_client import get_llm_client
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-def _find_best_condition_match(condition_name: str, existing_conditions: List[str], threshold: float = 0.8) -> Optional[str]:
+
+def _find_best_condition_match(
+    condition_name: str, existing_conditions: List[str], threshold: float = 0.8
+) -> Optional[str]:
     """
     Find the best fuzzy match for a condition name from existing conditions.
 
@@ -49,9 +52,18 @@ def _find_best_condition_match(condition_name: str, existing_conditions: List[st
             Levenshtein.ratio(normalized_input, normalized_existing),
             # Also check if one is contained in the other (for cases like "Iron deficiency" vs "iron deficiency anaemia")
             max(
-                len(normalized_input) / len(normalized_existing) if normalized_input in normalized_existing else 0,
-                len(normalized_existing) / len(normalized_input) if normalized_existing in normalized_input else 0
-            ) * 0.9  # Slightly lower weight for containment
+                (
+                    len(normalized_input) / len(normalized_existing)
+                    if normalized_input in normalized_existing
+                    else 0
+                ),
+                (
+                    len(normalized_existing) / len(normalized_input)
+                    if normalized_existing in normalized_input
+                    else 0
+                ),
+            )
+            * 0.9,  # Slightly lower weight for containment
         ]
 
         max_ratio = max(ratios)
@@ -61,11 +73,16 @@ def _find_best_condition_match(condition_name: str, existing_conditions: List[st
             best_match = existing
 
     if best_match:
-        logger.info(f"Fuzzy matched '{condition_name}' to '{best_match}' (similarity: {best_ratio:.3f})")
+        logger.info(
+            f"Fuzzy matched '{condition_name}' to '{best_match}' (similarity: {best_ratio:.3f})"
+        )
 
     return best_match
 
-def _create_condition_prompt_with_constraints(existing_conditions: List[str], combined_text: str) -> tuple[str, str]:
+
+def _create_condition_prompt_with_constraints(
+    existing_conditions: List[str], combined_text: str
+) -> tuple[str, str]:
     """
     Create system and user prompts with condition constraints.
     """
@@ -86,9 +103,17 @@ def _create_condition_prompt_with_constraints(existing_conditions: List[str], co
         )
     else:
         # Create constrained prompts with existing conditions
-        display_conditions = existing_conditions[:20]  # Limit to avoid overwhelming prompt
-        conditions_list = "\n".join([f"- {condition}" for condition in display_conditions])
-        more_text = f"\n(and {len(existing_conditions) - 20} more)" if len(existing_conditions) > 20 else ""
+        display_conditions = existing_conditions[
+            :20
+        ]  # Limit to avoid overwhelming prompt
+        conditions_list = "\n".join(
+            [f"- {condition}" for condition in display_conditions]
+        )
+        more_text = (
+            f"\n(and {len(existing_conditions) - 20} more)"
+            if len(existing_conditions) > 20
+            else ""
+        )
 
         condition_system = (
             "You are a medical AI that extracts the primary diagnosis for a medical encounter. "
@@ -109,6 +134,7 @@ def _create_condition_prompt_with_constraints(existing_conditions: List[str], co
         )
 
     return condition_system, condition_user
+
 
 async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
     """
@@ -139,9 +165,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
     combined_text = "\n\n".join(template_values)
 
     age = calculate_age(patient.dob, patient.encounter_date)
-    initial_summary_content = (
-        f"""The patient is {age} years old, and {'male' if patient.gender == 'M' else 'female'}. """
-    )
+    initial_summary_content = f"""The patient is {age} years old, and {'male' if patient.gender == 'M' else 'female'}. """
 
     summary_request_body = [
         {"role": "system", "content": prompts["prompts"]["summary"]["system"]},
@@ -168,16 +192,18 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
 
         return initial_summary_content + summary_content
 
-
-
     async def fetch_condition():
         # Get existing conditions from database
         existing_conditions = db.get_unique_primary_conditions()
-        logging.info(f"Found {len(existing_conditions)} existing conditions in database")
+        logging.info(
+            f"Found {len(existing_conditions)} existing conditions in database"
+        )
 
         # PASS 1: Initial condition extraction
-        condition_system, condition_user = _create_condition_prompt_with_constraints(
-            existing_conditions, combined_text
+        condition_system, condition_user = (
+            _create_condition_prompt_with_constraints(
+                existing_conditions, combined_text
+            )
         )
 
         condition_request_body_constrained = [
@@ -200,24 +226,37 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
             condition_name = condition_response.condition_name
 
             # Normalize: remove disallowed descriptors and canonicalize case to existing DB names
-            cleaned_condition = re.sub(r"\b(recurrent|relapsed)\b", "", condition_name, flags=re.IGNORECASE)
+            cleaned_condition = re.sub(
+                r"\b(recurrent|relapsed)\b",
+                "",
+                condition_name,
+                flags=re.IGNORECASE,
+            )
             cleaned_condition = re.sub(r"\s+", " ", cleaned_condition).strip()
 
             if existing_conditions:
                 # Try fuzzy matching with existing conditions to prevent duplicates
-                fuzzy_match = _find_best_condition_match(cleaned_condition, existing_conditions, threshold=0.85)
+                fuzzy_match = _find_best_condition_match(
+                    cleaned_condition, existing_conditions, threshold=0.85
+                )
 
                 if fuzzy_match:
                     cleaned_condition = fuzzy_match
-                    logger.info(f"Pass 1: Using fuzzy matched condition: {fuzzy_match}")
+                    logger.info(
+                        f"Pass 1: Using fuzzy matched condition: {fuzzy_match}"
+                    )
                 else:
                     # PASS 2: No good match found, try disambiguation with top candidates
-                    logger.info(f"Pass 1: No good fuzzy match for '{cleaned_condition}', trying disambiguation pass")
+                    logger.info(
+                        f"Pass 1: No good fuzzy match for '{cleaned_condition}', trying disambiguation pass"
+                    )
 
                     # Get top 10 most similar conditions for disambiguation
                     candidates = []
                     for existing in existing_conditions:
-                        similarity = Levenshtein.ratio(cleaned_condition.lower(), existing.lower())
+                        similarity = Levenshtein.ratio(
+                            cleaned_condition.lower(), existing.lower()
+                        )
                         candidates.append((existing, similarity))
 
                     # Sort by similarity and take top 10
@@ -225,7 +264,9 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                     top_candidates = [cand[0] for cand in candidates[:10]]
 
                     if top_candidates:
-                        candidates_list = "\n".join([f"- {cand}" for cand in top_candidates])
+                        candidates_list = "\n".join(
+                            [f"- {cand}" for cand in top_candidates]
+                        )
 
                         disambig_system = (
                             "You are a medical AI that selects the best matching condition from a curated list. "
@@ -246,36 +287,54 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                             {"role": "user", "content": disambig_user},
                         ]
 
-                        disambig_response_json = await client.chat_with_structured_output(
-                            model=config["SECONDARY_MODEL"],
-                            messages=disambig_request_body,
-                            schema=Condition.model_json_schema(),
-                            options=prompts["options"]["secondary"],
+                        disambig_response_json = (
+                            await client.chat_with_structured_output(
+                                model=config["SECONDARY_MODEL"],
+                                messages=disambig_request_body,
+                                schema=Condition.model_json_schema(),
+                                options=prompts["options"]["secondary"],
+                            )
                         )
 
-                        disambig_response = Condition.model_validate_json(disambig_response_json)
+                        disambig_response = Condition.model_validate_json(
+                            disambig_response_json
+                        )
                         disambig_condition = disambig_response.condition_name
 
-                        if disambig_condition != "NEW_CONDITION" and disambig_condition in top_candidates:
+                        if (
+                            disambig_condition != "NEW_CONDITION"
+                            and disambig_condition in top_candidates
+                        ):
                             cleaned_condition = disambig_condition
-                            logger.info(f"Pass 2: Disambiguation selected: {disambig_condition}")
+                            logger.info(
+                                f"Pass 2: Disambiguation selected: {disambig_condition}"
+                            )
                         else:
-                            logger.info(f"Pass 2: Keeping original condition as new: {cleaned_condition}")
+                            logger.info(
+                                f"Pass 2: Keeping original condition as new: {cleaned_condition}"
+                            )
 
             if existing_conditions:
                 if getattr(condition_response, "is_new_condition", False):
-                    logging.info(f"New condition identified: {condition_name} -> normalized: {cleaned_condition}")
+                    logging.info(
+                        f"New condition identified: {condition_name} -> normalized: {cleaned_condition}"
+                    )
                 else:
-                    logging.info(f"Existing condition selected: {condition_name} -> normalized: {cleaned_condition}")
+                    logging.info(
+                        f"Existing condition selected: {condition_name} -> normalized: {cleaned_condition}"
+                    )
             else:
-                logging.info(f"Condition (no constraints): {condition_name} -> normalized: {cleaned_condition}")
+                logging.info(
+                    f"Condition (no constraints): {condition_name} -> normalized: {cleaned_condition}"
+                )
 
             return cleaned_condition
 
         except Exception as e:
-            logging.error(f"Error extracting condition: {e}, response content: {response_json}")
+            logging.error(
+                f"Error extracting condition: {e}, response content: {response_json}"
+            )
             return None
-
 
     summary, condition = await asyncio.gather(
         fetch_summary(), fetch_condition()

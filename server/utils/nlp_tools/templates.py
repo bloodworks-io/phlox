@@ -3,9 +3,9 @@ import logging
 import re
 from datetime import datetime
 
-from server.database.config import config_manager
-from server.database.defaults.templates import DefaultTemplates
-from server.database.templates import template_exists
+from server.database.config.defaults.templates import DefaultTemplates
+from server.database.config.manager import config_manager
+from server.database.entities.templates import template_exists
 from server.schemas.templates import (
     ClinicalTemplate,
     ExtractedTemplate,

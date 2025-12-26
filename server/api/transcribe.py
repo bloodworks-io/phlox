@@ -52,7 +52,7 @@ async def transcribe(
         # Get template fields if template key is provided
         template_fields = []
         if templateKey:
-            from server.database.templates import get_template_fields
+            from server.database.entities.templates import get_template_fields
 
             template_fields = get_template_fields(templateKey)
 
@@ -125,7 +125,7 @@ async def reprocess_transcription(
         # Get template fields if template key is provided
         template_fields = []
         if templateKey:
-            from server.database.templates import get_template_fields
+            from server.database.entities.templates import get_template_fields
 
             template_fields = get_template_fields(templateKey)
 
@@ -184,7 +184,7 @@ async def process_document(
         # Get template fields if template key is provided
         template_fields = []
         if templateKey:
-            from server.database.templates import get_template_fields
+            from server.database.entities.templates import get_template_fields
 
             template_fields = get_template_fields(templateKey)
 

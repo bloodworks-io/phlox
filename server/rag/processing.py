@@ -5,7 +5,7 @@ import chromadb
 import fitz  # PyMuPDF
 from chromadb.config import Settings
 
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.schemas.grammars import ClinicalSuggestionList
 from server.utils.llm_client.client import get_llm_client
 

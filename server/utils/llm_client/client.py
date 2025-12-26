@@ -15,8 +15,8 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 from unidecode import unidecode
 
 from server.constants import DATA_DIR, IS_DOCKER
-from server.database.config import config_manager
-from server.database.connection import db
+from server.database.config.manager import config_manager
+from server.database.core.connection import db
 
 from .base import LLMProviderType
 from .manager import LocalModelManager

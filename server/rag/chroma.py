@@ -11,7 +11,7 @@ from chromadb.utils.embedding_functions import (
 )
 
 from server.constants import DATA_DIR
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.utils.llm_client.base import LLMProviderType
 from server.utils.llm_client.client import get_llm_client
 

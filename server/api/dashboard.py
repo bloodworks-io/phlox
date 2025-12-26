@@ -5,12 +5,12 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import HttpUrl, ValidationError
 
-from server.database.analysis import (
+from server.database.config.manager import config_manager
+from server.database.entities.analysis import (
     generate_daily_analysis,
     get_latest_analysis,
 )
-from server.database.config import config_manager
-from server.database.rss import (
+from server.database.entities.rss import (
     add_feed,
     fetch_and_insert_initial_items,
     fetch_rss_items_from_db,
@@ -20,7 +20,7 @@ from server.database.rss import (
     refresh_manager,
     remove_feed,
 )
-from server.database.todo import (
+from server.database.entities.todo import (
     add_todo_item,
     delete_todo_item,
     get_todo_items,

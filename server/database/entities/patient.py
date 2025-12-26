@@ -1,14 +1,18 @@
 import json
 import logging
-from typing import List, Dict, Optional, Any
 from datetime import datetime
-from server.database.connection import db
-from server.database.templates import get_template_by_key, get_persistent_fields
-from server.schemas.patient import Patient
-from server.database.jobs import (
-    generate_jobs_list_from_plan,
+from typing import Any, Dict, List, Optional
+
+from server.database.core.connection import db
+from server.database.entities.jobs import (
     are_all_jobs_completed,
+    generate_jobs_list_from_plan,
 )
+from server.database.entities.templates import (
+    get_persistent_fields,
+    get_template_by_key,
+)
+from server.schemas.patient import Patient
 
 
 def save_patient(patient: Patient) -> int:

@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
-from server.database.letter import (
+from server.database.entities.letter import (
     delete_letter_template,
     fetch_patient_letter,
     get_letter_template_by_id,
@@ -73,7 +73,7 @@ async def get_templates() -> List[LetterTemplate]:
         templates = get_letter_templates()
 
         # Get default template ID from user settings
-        from server.database.config import config_manager
+        from server.database.config.manager import config_manager
 
         user_settings = config_manager.get_user_settings()
         default_template_id = user_settings.get("default_letter_template_id")

@@ -5,7 +5,7 @@ from typing import Dict, Union
 
 import aiohttp
 
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 
 logger = logging.getLogger(__name__)
 

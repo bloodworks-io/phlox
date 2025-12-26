@@ -8,9 +8,9 @@ circular imports with the connection module.
 import json
 import logging
 
-from server.database.defaults.letters import DefaultLetters
-from server.database.defaults.prompts import DEFAULT_PROMPTS
-from server.database.defaults.templates import DefaultTemplates
+from server.database.config.defaults.letters import DefaultLetters
+from server.database.config.defaults.prompts import DEFAULT_PROMPTS
+from server.database.config.defaults.templates import DefaultTemplates
 
 SCHEMA_VERSION = 4
 

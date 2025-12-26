@@ -30,7 +30,7 @@ async def test_transcribe_audio():
     }
 
     # Patch config_manager.get_config() to return fake_config
-    from server.database.config import config_manager
+    from server.database.config.manager import config_manager
     with patch.object(config_manager, "get_config", return_value=fake_config):
         # Create a fake aiohttp response object
         fake_response = AsyncMock()
@@ -176,7 +176,7 @@ async def test_transcribe_audio_api_error():
     }
 
     # Patch config_manager.get_config() to return fake_config
-    from server.database.config import config_manager
+    from server.database.config.manager import config_manager
     with patch.object(config_manager, "get_config", return_value=fake_config):
         # Create a fake aiohttp response object with error
         fake_response = AsyncMock()

@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Union
 import feedparser
 import httpx
 
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.schemas.dashboard import RssItem
 from server.schemas.grammars import ItemDigest, NewsDigest
 from server.utils.llm_client.client import get_llm_client

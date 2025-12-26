@@ -8,7 +8,7 @@ import json
 import logging
 from datetime import datetime
 
-from server.database.defaults.templates import DefaultTemplates
+from server.database.config.defaults.templates import DefaultTemplates
 from server.schemas.templates import ClinicalTemplate, TemplateField
 
 

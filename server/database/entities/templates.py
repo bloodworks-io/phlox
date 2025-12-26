@@ -1,11 +1,12 @@
-from typing import List, Dict, Optional, Any
-from datetime import datetime
 import json
 import logging
-from server.database.connection import db
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from server.database.core.connection import db
 from server.schemas.templates import (
-    FormatStyle,
     ClinicalTemplate,
+    FormatStyle,
     TemplateField,
 )
 
@@ -513,9 +514,7 @@ def get_default_template() -> Optional[Dict[str, Any]]:
         if row and row["default_template_key"]:
             template_key = row["default_template_key"]
             template = get_template_by_key(template_key)
-            logging.info(
-                f"Successfully retrieved template {template_key}."
-            )
+            logging.info(f"Successfully retrieved template {template_key}.")
             return template
 
         logging.info("No default template set")

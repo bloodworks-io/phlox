@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import Levenshtein
 
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.utils.llm_client.client import get_llm_client
 
 logger = logging.getLogger(__name__)

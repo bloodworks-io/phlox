@@ -11,7 +11,7 @@ from chromadb.utils.embedding_functions import (
 from numpy import cos
 
 from server.constants import DATA_DIR
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.utils.chat_tools import execute_tool_call, get_tools_definition
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client.base import LLMProviderType

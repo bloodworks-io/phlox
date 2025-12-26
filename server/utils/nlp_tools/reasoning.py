@@ -1,7 +1,7 @@
 import json
 import logging
 
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.schemas.grammars import ClinicalReasoning
 from server.utils.helpers import calculate_age
 from server.utils.llm_client.client import get_llm_client

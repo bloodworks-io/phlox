@@ -1,7 +1,8 @@
-import traceback
 import json
 import logging
-from server.database.connection import db
+import traceback
+
+from server.database.core.connection import db
 
 
 def generate_jobs_list_from_plan(plan):

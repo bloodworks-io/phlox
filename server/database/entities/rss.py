@@ -8,7 +8,7 @@ import feedparser
 from fastapi import HTTPException
 from ollama import AsyncClient
 
-from server.database.connection import db
+from server.database.core.connection import db
 from server.schemas.dashboard import RssFeed, RssItem
 from server.utils.nlp_tools.rss import (
     fetch_rss_feed,

@@ -4,7 +4,7 @@ import random
 
 from fastapi import HTTPException
 
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.schemas.grammars import LetterDraft
 from server.utils.helpers import calculate_age
 from server.utils.llm_client.client import get_llm_client

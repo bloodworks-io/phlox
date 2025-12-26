@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from typing import Dict, List, Union
 
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.schemas.grammars import (
     NarrativeResponse,
     RefinedResponse,

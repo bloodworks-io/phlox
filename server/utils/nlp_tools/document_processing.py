@@ -10,7 +10,7 @@ import numpy as np
 import pytesseract
 from PIL import Image
 
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.schemas.grammars import FieldResponse
 from server.schemas.templates import TemplateResponse
 from server.utils.helpers import calculate_age

@@ -1,7 +1,7 @@
 import json
 from threading import Lock
 
-from server.database.connection import db
+from server.database.core.connection import db
 
 
 class ConfigManager:
@@ -171,9 +171,13 @@ class ConfigManager:
             settings = dict(result)
             # Ensure the splash screen flag is a proper boolean
             if "has_completed_splash_screen" in settings:
-                settings["has_completed_splash_screen"] = bool(settings["has_completed_splash_screen"])
+                settings["has_completed_splash_screen"] = bool(
+                    settings["has_completed_splash_screen"]
+                )
             if "scribe_is_ambient" in settings:
-                settings["scribe_is_ambient"] = bool(settings["scribe_is_ambient"])
+                settings["scribe_is_ambient"] = bool(
+                    settings["scribe_is_ambient"]
+                )
             return settings
         return {
             "name": "",
@@ -210,18 +214,25 @@ class ConfigManager:
                 settings.get("specialty", ""),
                 settings.get("quick_chat_1_title", "Critique my plan"),
                 settings.get("quick_chat_1_prompt", "Critique my plan"),
-                settings.get("quick_chat_2_title", "Any additional investigations"),
-                settings.get("quick_chat_2_prompt", "Any additional investigations"),
-                settings.get("quick_chat_3_title", "Any differentials to consider"),
-                settings.get("quick_chat_3_prompt", "Any differentials to consider"),
+                settings.get(
+                    "quick_chat_2_title", "Any additional investigations"
+                ),
+                settings.get(
+                    "quick_chat_2_prompt", "Any additional investigations"
+                ),
+                settings.get(
+                    "quick_chat_3_title", "Any differentials to consider"
+                ),
+                settings.get(
+                    "quick_chat_3_prompt", "Any differentials to consider"
+                ),
                 settings.get("default_template_key"),
                 settings.get("default_letter_template_id"),
                 bool(settings.get("has_completed_splash_screen", False)),
-                bool(settings.get("scribe_is_ambient", True))
-            )
+                bool(settings.get("scribe_is_ambient", True)),
+            ),
         )
         self.db.commit()
-
 
 
 config_manager = ConfigManager()

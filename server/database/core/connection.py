@@ -13,11 +13,11 @@ import threading
 import sqlcipher3 as sqlite3
 
 from server.constants import DATA_DIR
-from server.database.initialization import (
+from server.database.core.initialization import (
     initialize_templates,
     set_initial_default_template,
 )
-from server.database.migrations import run_migrations
+from server.database.core.migrations import run_migrations
 from server.database.testing import clear_test_database, run_database_test
 
 

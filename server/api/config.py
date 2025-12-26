@@ -10,7 +10,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from server.constants import IS_DOCKER
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 from server.utils.llm_client.manager import LocalModelManager
 
 router = APIRouter()

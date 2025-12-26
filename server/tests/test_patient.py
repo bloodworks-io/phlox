@@ -16,6 +16,7 @@ app = FastAPI()
 app.include_router(patient_router, prefix="/api/patient")
 client = TestClient(app)
 
+
 def test_get_patients():
     # Assumes that GET /api/patients?date=2023-06-15 returns a list (possibly empty)
     response = client.get("/api/patient/list?date=2023-06-15")
@@ -24,17 +25,24 @@ def test_get_patients():
     # Data should be a list
     assert isinstance(data, list)
 
+
 @pytest.mark.asyncio
 async def test_get_patient_not_found(monkeypatch):
     """Test GET /api/patient/{id} with non-existent ID"""
+
     def fake_get_patient_by_id(*args):
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Patient not found")
 
     # Also need to import HTTPException in server/api/patient.py
-    monkeypatch.setattr("server.database.patient.get_patient_by_id", fake_get_patient_by_id)
+    monkeypatch.setattr(
+        "server.database.entities.patient.get_patient_by_id",
+        fake_get_patient_by_id,
+    )
     response = client.get("/api/patient/id/999999")
     assert response.status_code == 404
+
 
 def test_search_patient():
     # Query search-patient endpoint with a dummy UR number
@@ -44,12 +52,17 @@ def test_search_patient():
     # Expect data to be a list
     assert isinstance(data, list)
 
+
 @pytest.fixture
 def mock_summarize(monkeypatch):
     async def fake_summarize(*args, **kwargs):
         return "Test summary", "Test condition"
-    monkeypatch.setattr("server.utils.llm.summarisation.summarise_encounter", fake_summarize)
+
+    monkeypatch.setattr(
+        "server.utils.llm.summarisation.summarise_encounter", fake_summarize
+    )
     return fake_summarize
+
 
 # For save and update endpoints, we patch the database functions.
 @pytest.mark.asyncio
@@ -57,7 +70,10 @@ async def test_save_patient(monkeypatch):
     # Mock summarize_encounter to avoid actual LLM calls
     async def mock_summarize_encounter(*args, **kwargs):
         return "Test summary", "Test condition"
-    monkeypatch.setattr("server.api.patient.summarize_encounter", mock_summarize_encounter)
+
+    monkeypatch.setattr(
+        "server.api.patient.summarize_encounter", mock_summarize_encounter
+    )
 
     payload = {
         "patientData": {
@@ -73,25 +89,29 @@ async def test_save_patient(monkeypatch):
             "process_duration": 0,
             "primary_condition": "",
             "final_letter": "",
-            "encounter_summary": ""
+            "encounter_summary": "",
         }
     }
 
     def fake_save_patient(*args):
         return 123
+
     monkeypatch.setattr("server.api.patient.save_patient", fake_save_patient)
 
     response = client.post("/api/patient/save", json=payload)
     assert response.status_code == 200
 
+
 def test_delete_patient(monkeypatch):
     # Patch delete_patient_by_id to simulate a successful deletion
-    from server.database.patient import delete_patient_by_id
+    from server.database.entities.patient import delete_patient_by_id
 
     def fake_delete_patient_by_id(pid: int):
         return True
 
-    monkeypatch.setattr("server.api.patient.delete_patient_by_id", fake_delete_patient_by_id)
+    monkeypatch.setattr(
+        "server.api.patient.delete_patient_by_id", fake_delete_patient_by_id
+    )
     response = client.delete("/api/patient/id/123")
     assert response.status_code == 200
     data = response.json()

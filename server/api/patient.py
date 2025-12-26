@@ -7,13 +7,13 @@ from fastapi import APIRouter, Body
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 
-from server.database.analysis import generate_previous_visit_summary
-from server.database.jobs import (
+from server.database.entities.analysis import generate_previous_visit_summary
+from server.database.entities.jobs import (
     count_incomplete_jobs,
     get_patients_with_outstanding_jobs,
     update_patient_jobs_list,
 )
-from server.database.patient import (
+from server.database.entities.patient import (
     delete_patient_by_id,
     get_patient_by_id,
     get_patient_history,
@@ -23,7 +23,7 @@ from server.database.patient import (
     update_patient,
     update_patient_reasoning,
 )
-from server.database.templates import (
+from server.database.entities.templates import (
     get_template_by_key,
     update_field_adaptive_instructions,
 )

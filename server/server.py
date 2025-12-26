@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize config_manager and run migrations
 logger.info("Initializing database and running migrations...")
-from server.database.config import config_manager
+from server.database.config.manager import config_manager
 
 logger.info("Database initialized")
 
@@ -97,7 +97,7 @@ from server.api import (
 )
 
 # Then load analysis submodules
-from server.database.analysis import (
+from server.database.entities.analysis import (
     generate_daily_analysis,
     run_nightly_reasoning,
 )
