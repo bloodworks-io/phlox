@@ -13,6 +13,7 @@ from server.utils.helpers import clean_think_tags
 
 logger = logging.getLogger(__name__)
 
+
 def get_tools_definition(collection_names: List[str]) -> List[Dict[str, Any]]:
     """
     Get the tools definition based on available collections.
@@ -78,13 +79,14 @@ def get_tools_definition(collection_names: List[str]) -> List[Dict[str, Any]]:
         },
     ]
 
+
 async def execute_tool_call(
     tool_call: Dict[str, Any],
     chat_engine: Any,
     message_list: List[Dict[str, str]],
     conversation_history: List[Dict[str, str]],
     raw_transcription: str,
-    context_question_options: Dict[str, Any]
+    context_question_options: Dict[str, Any],
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """
     Execute a tool call and yield streaming responses.
@@ -162,10 +164,7 @@ async def execute_tool_call(
                 options=context_question_options,
                 stream=True,
             ):
-                if (
-                    "message" in chunk
-                    and "content" in chunk["message"]
-                ):
+                if "message" in chunk and "content" in chunk["message"]:
                     yield {
                         "type": "chunk",
                         "content": chunk["message"]["content"],
@@ -199,13 +198,22 @@ async def execute_tool_call(
                 options=context_question_options,
             )
 
-            transcript_info = transcript_response.get("message", {}).get("content", "")
+            transcript_info = transcript_response.get("message", {}).get(
+                "content", ""
+            )
 
             # Clean think tags
             cleaned_transcript_info = ""
             cleaned_result = clean_think_tags([{"content": transcript_info}])
-            if cleaned_result and len(cleaned_result) > 0 and isinstance(cleaned_result[0], dict) and "content" in cleaned_result[0]:
-                cleaned_transcript_info = str(cleaned_result[0].get("content", ""))
+            if (
+                cleaned_result
+                and len(cleaned_result) > 0
+                and isinstance(cleaned_result[0], dict)
+                and "content" in cleaned_result[0]
+            ):
+                cleaned_transcript_info = str(
+                    cleaned_result[0].get("content", "")
+                )
 
             logger.info(
                 f"Transcript query result: {cleaned_transcript_info[:200]}..."
@@ -222,18 +230,13 @@ async def execute_tool_call(
             # Clean think tags again
             cleaned_message_list = clean_think_tags(message_list)
 
-            logger.info(
-                f"Transcript query messagelist: {cleaned_message_list}"
-            )
             # Send generating response status
             yield {
                 "type": "status",
                 "content": "Generating response with transcript information...",
             }
 
-            logger.info(
-                "Starting response stream to frontend"
-            )
+            logger.info("Starting response stream to frontend")
 
             # Stream the answer
             async for chunk in await chat_engine.llm_client.chat(
@@ -242,19 +245,14 @@ async def execute_tool_call(
                 options=context_question_options,
                 stream=True,
             ):
-                if (
-                    "message" in chunk
-                    and "content" in chunk["message"]
-                ):
+                if "message" in chunk and "content" in chunk["message"]:
                     yield {
                         "type": "chunk",
                         "content": chunk["message"]["content"],
                     }
 
     else:  # get_relevant_literature is a method in the ChatEngine class
-        logger.info(
-            "Executing get_relevant_literature tool..."
-        )
+        logger.info("Executing get_relevant_literature tool...")
         # Send RAG status message
         yield {
             "type": "status",
@@ -273,13 +271,8 @@ async def execute_tool_call(
             question,
         )
 
-        if (
-            function_response_list
-            == "No relevant literature available"
-        ):
-            logger.info(
-                "No relevant literature found in database."
-            )
+        if function_response_list == "No relevant literature available":
+            logger.info("No relevant literature found in database.")
             # Add the tool response to the message list
             message_list.append(
                 {
@@ -294,9 +287,7 @@ async def execute_tool_call(
                 f"Retrieved relevant literature for disease: {disease_name}"
             )
             if isinstance(function_response_list, list):
-                function_response_string = "\n".join(
-                    function_response_list
-                )
+                function_response_string = "\n".join(function_response_list)
             else:
                 function_response_string = str(function_response_list)
 
@@ -304,7 +295,9 @@ async def execute_tool_call(
             message_list.append(
                 {
                     "role": "tool",
-                    "tool_call_id": tool_call.get("id", "") if tool_call else "",
+                    "tool_call_id": (
+                        tool_call.get("id", "") if tool_call else ""
+                    ),
                     "content": f"The below text excerpts are taken from relevant sections of the guidelines; these may help you answer the user's question. The user has not sent you these documents, they have come from your own database.\n\n{function_response_string}",
                 }
             )
