@@ -15,6 +15,30 @@ from server.database.entities.templates import (
 from server.schemas.patient import Patient
 
 
+def get_unique_primary_conditions():
+    """
+    Retrieve all unique primary conditions from the patients table.
+
+    Returns:
+        list: A list of unique primary condition strings, excluding None values.
+    """
+    try:
+        db.cursor.execute(
+            """
+            SELECT DISTINCT primary_condition
+            FROM patients
+            WHERE primary_condition IS NOT NULL
+            AND primary_condition != ''
+            ORDER BY primary_condition ASC
+            """
+        )
+        results = db.cursor.fetchall()
+        return [row["primary_condition"] for row in results]
+    except Exception as e:
+        logging.error(f"Error getting unique primary conditions: {e}")
+        return []
+
+
 def save_patient(patient: Patient) -> int:
     """Saves patient data."""
     try:

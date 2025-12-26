@@ -7,6 +7,7 @@ import Levenshtein
 
 from server.database.config.manager import config_manager
 from server.database.core.connection import db
+from server.database.entities.patient import get_unique_primary_conditions
 from server.schemas.grammars import (
     ClinicalReasoning,
     NarrativeResponse,
@@ -194,7 +195,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
 
     async def fetch_condition():
         # Get existing conditions from database
-        existing_conditions = db.get_unique_primary_conditions()
+        existing_conditions = get_unique_primary_conditions()
         logging.info(
             f"Found {len(existing_conditions)} existing conditions in database"
         )
