@@ -87,7 +87,6 @@ app.add_middleware(
 # Then load API submodules
 from server.api import (
     chat,
-    config,
     dashboard,
     letter,
     patient,
@@ -95,6 +94,7 @@ from server.api import (
     templates,
     transcribe,
 )
+from server.api.config import router as config_router
 
 # Then load analysis submodules
 from server.database.entities.analysis import (
@@ -123,7 +123,7 @@ app.include_router(patient.router, prefix="/api/patient")
 app.include_router(transcribe.router, prefix="/api/transcribe")
 app.include_router(dashboard.router, prefix="/api/dashboard")
 app.include_router(rag.router, prefix="/api/rag")
-app.include_router(config.router, prefix="/api/config")
+app.include_router(config_router, prefix="/api/config")
 app.include_router(chat.router, prefix="/api/chat")
 app.include_router(templates.router, prefix="/api/templates")
 app.include_router(letter.router, prefix="/api/letter")
