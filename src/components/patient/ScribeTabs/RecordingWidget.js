@@ -114,6 +114,7 @@ const RecordingWidget = ({
     dob,
     gender,
     templateKey,
+    isAmbient = true,
 }) => {
     const { colorMode } = useColorMode();
     const [isRecording, setIsRecording] = useState(false);
@@ -322,12 +323,16 @@ const RecordingWidget = ({
         setTranscriptionError(null);
 
         try {
-            await transcribeAudio(currentAudioBlob, {
-                name,
-                gender,
-                dob,
-                templateKey,
-            });
+            await transcribeAudio(
+                currentAudioBlob,
+                {
+                    name,
+                    gender,
+                    dob,
+                    templateKey,
+                },
+                isAmbient,
+            );
         } catch (error) {
             console.error("Error in sendRecording:", error);
             setTranscriptionError({
@@ -354,12 +359,16 @@ const RecordingWidget = ({
         setTranscriptionError(null);
 
         try {
-            await transcribeAudio(audioToSend, {
-                name,
-                gender,
-                dob,
-                templateKey,
-            });
+            await transcribeAudio(
+                audioToSend,
+                {
+                    name,
+                    gender,
+                    dob,
+                    templateKey,
+                },
+                isAmbient,
+            );
         } catch (error) {
             console.error("Error retrying transcription:", error);
             setTranscriptionError({

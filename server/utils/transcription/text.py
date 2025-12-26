@@ -8,17 +8,17 @@ from typing import Dict, List, Union
 from server.database.config import config_manager
 from server.schemas.grammars import FieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
-from server.utils.llm_client import (
-    get_llm_client,
-)
+from server.utils.llm_client.client import get_llm_client
 from server.utils.transcription.refinement import refine_field_content
 
 logger = logging.getLogger(__name__)
+
 
 async def process_transcription(
     transcript_text: str,
     template_fields: List[TemplateField],
     patient_context: Dict[str, str],
+    is_ambient: bool = True,
 ) -> Dict[str, Union[str, float]]:
     """
     Process the transcribed text to generate summaries for non-persistent template fields.
@@ -27,7 +27,7 @@ async def process_transcription(
         transcript_text (str): The transcribed text to process.
         template_fields (List[TemplateField]): The fields to process.
         patient_context (Dict[str, str]): Patient context (name, dob, gender, etc.).
-
+        is_ambient (bool): Whether the transcript is from an ambient session (True) or direct dictation (False).
     Returns:
         dict: A dictionary containing:
             - 'fields' (Dict[str, str]): Processed field data.
@@ -43,21 +43,39 @@ async def process_transcription(
 
         total_fields = len(non_persistent_fields)
 
-        # Process only non-persistent fields concurrently
-        logger.info(f"Processing {total_fields} fields...")
-        raw_results = await asyncio.gather(
-            *[
-                process_template_field(transcript_text, field, patient_context)
+        # Process only non-persistent fields concurrently and Summarise only if ambient
+        if is_ambient:
+            # Process only non-persistent fields concurrently
+            logger.info(f"Processing {total_fields} fields (Ambient Mode)...")
+            raw_results = await asyncio.gather(
+                *[
+                    process_template_field(
+                        transcript_text, field, patient_context
+                    )
+                    for field in non_persistent_fields
+                ]
+            )
+            logger.info(f"Successfully summarised {total_fields} fields")
+        else:
+            # Direct Dictation: Skip summarization, pass raw text
+            logger.info(
+                f"Skipping summarization for {total_fields} fields (Direct Dictation)..."
+            )
+            # Wrap raw text in TemplateResponse to match the expected structure for the next step
+            raw_results = [
+                TemplateResponse(
+                    field_key=field.field_key, content=transcript_text
+                )
                 for field in non_persistent_fields
             ]
-        )
-        logger.info(f"Successfully summarised {total_fields} fields")
 
         # Refine all results concurrently
         logger.info(f"Refining {total_fields} fields...")
         refined_results = await asyncio.gather(
             *[
-                refine_field_content(result.content, field)
+                refine_field_content(
+                    result.content, field, is_ambient=is_ambient
+                )
                 for result, field in zip(raw_results, non_persistent_fields)
             ]
         )
@@ -93,7 +111,9 @@ async def process_template_field(
     for attempt in range(max_retries + 1):
         try:
             config = config_manager.get_config()
-            options = config_manager.get_prompts_and_options()["options"]["general"]
+            options = config_manager.get_prompts_and_options()["options"][
+                "general"
+            ]
 
             # Initialize the appropriate client based on config
             client = get_llm_client()
@@ -121,7 +141,9 @@ async def process_template_field(
             random_seed = random.randint(0, 2**32 - 1)
 
             # Setting temperature to 0 here makes the outputs semi-deterministic which is a problem if the user wants to reprocess because the initial output is not satisfactory; therefore, we set a low temperature (to ensure that decoding is not greedy) and set a random seed
-            logger.info(f"Summarising transcript for field {field.field_key} (attempt {attempt + 1}/{max_retries + 1})...")
+            logger.info(
+                f"Summarising transcript for field {field.field_key} (attempt {attempt + 1}/{max_retries + 1})..."
+            )
             response = await client.chat(
                 model=model_name,
                 messages=request_body,

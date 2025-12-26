@@ -11,7 +11,9 @@ from fastapi import (
 )
 
 from server.schemas.patient import DocumentProcessResponse, TranscribeResponse
-from server.utils.document_processing import process_document_with_template
+from server.utils.nlp_tools.document_processing import (
+    process_document_with_template,
+)
 from server.utils.transcription.audio import transcribe_audio
 from server.utils.transcription.text import process_transcription
 
@@ -25,6 +27,7 @@ async def transcribe(
     gender: Optional[str] = Form(None),
     dob: Optional[str] = Form(None),
     templateKey: Optional[str] = Form(None),
+    isAmbient: bool = Form(True),
 ):
     """Transcribes audio and processes the transcription."""
     try:
@@ -50,20 +53,18 @@ async def transcribe(
         template_fields = []
         if templateKey:
             from server.database.templates import get_template_fields
+
             template_fields = get_template_fields(templateKey)
 
         # Create patient context
-        patient_context = {
-            "name": formatted_name,
-            "dob": dob,
-            "gender": gender
-        }
+        patient_context = {"name": formatted_name, "dob": dob, "gender": gender}
 
         # Process the transcription with template fields
         processing_result = await process_transcription(
             transcript_text=transcript_text,
             template_fields=template_fields,
-            patient_context=patient_context
+            patient_context=patient_context,
+            is_ambient=isAmbient,
         )
 
         # Return the response in the expected format
@@ -71,12 +72,13 @@ async def transcribe(
             fields=processing_result["fields"],
             rawTranscription=transcript_text,
             transcriptionDuration=transcription_duration,
-            processDuration=processing_result["process_duration"]
+            processDuration=processing_result["process_duration"],
         )
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/dictate")
 async def dictate(file: UploadFile = File(...)):
@@ -99,6 +101,7 @@ async def dictate(file: UploadFile = File(...)):
         logging.error(f"Error occurred during dictation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/reprocess", response_model=TranscribeResponse)
 async def reprocess_transcription(
     transcript_text: str = Form(...),
@@ -107,6 +110,7 @@ async def reprocess_transcription(
     dob: Optional[str] = Form(None),
     original_transcription_duration: Optional[float] = Form(0),
     templateKey: Optional[str] = Form(None),
+    isAmbient: bool = Form(True),
 ):
     """Reprocesses an existing transcription."""
     try:
@@ -122,21 +126,19 @@ async def reprocess_transcription(
         template_fields = []
         if templateKey:
             from server.database.templates import get_template_fields
+
             template_fields = get_template_fields(templateKey)
 
         # Create patient context
-        patient_context = {
-            "name": formatted_name,
-            "dob": dob,
-            "gender": gender
-        }
+        patient_context = {"name": formatted_name, "dob": dob, "gender": gender}
 
         # Process the transcription with template fields
         processing_start = time.perf_counter()
         processing_result = await process_transcription(
             transcript_text=transcript_text,
             template_fields=template_fields,
-            patient_context=patient_context
+            patient_context=patient_context,
+            is_ambient=isAmbient,
         )
         processing_end = time.perf_counter()
 
@@ -145,14 +147,17 @@ async def reprocess_transcription(
             fields=processing_result["fields"],
             rawTranscription=transcript_text,
             transcriptionDuration=original_transcription_duration,
-            processDuration=processing_result["process_duration"]
+            processDuration=processing_result["process_duration"],
         )
 
     except Exception as e:
         logging.error(f"Error occurred during reprocessing: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/process-document", response_model=TranscribeResponse)  # Changed response model
+
+@router.post(
+    "/process-document", response_model=TranscribeResponse
+)  # Changed response model
 async def process_document(
     file: UploadFile = File(...),
     name: Optional[str] = Form(None),
@@ -180,22 +185,16 @@ async def process_document(
         template_fields = []
         if templateKey:
             from server.database.templates import get_template_fields
+
             template_fields = get_template_fields(templateKey)
 
         # Create patient context
-        patient_context = {
-            "name": formatted_name,
-            "dob": dob,
-            "gender": gender
-        }
+        patient_context = {"name": formatted_name, "dob": dob, "gender": gender}
 
         # Process the document
         process_start = time.perf_counter()
         result = await process_document_with_template(
-            document_buffer,
-            content_type,
-            template_fields,
-            patient_context
+            document_buffer, content_type, template_fields, patient_context
         )
         process_end = time.perf_counter()
         process_duration = process_end - process_start
@@ -203,8 +202,8 @@ async def process_document(
         # The result is already in the format of field key-value pairs
         return TranscribeResponse(
             fields=result,
-            rawTranscription="", # We don't include raw transcription for document uploads
-            transcriptionDuration=0, # No transcription for documents
+            rawTranscription="",  # We don't include raw transcription for document uploads
+            transcriptionDuration=0,  # No transcription for documents
             processDuration=process_duration,
         )
     except Exception as e:

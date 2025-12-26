@@ -8,7 +8,6 @@ import {
     Button,
     Spinner,
     ButtonGroup,
-    IconButton,
     Tooltip,
     Alert,
     AlertIcon,
@@ -33,6 +32,7 @@ import { useTranscription } from "../../../utils/hooks/useTranscription";
 const VoiceInputTab = ({
     mode,
     setMode,
+    isAmbient,
     recordingProps,
     transcriptionDuration,
     processDuration,
@@ -45,6 +45,7 @@ const VoiceInputTab = ({
 
     // Store the original transcription to allow for returning to it
     const [savedTranscription, setSavedTranscription] = useState(null);
+
     const [viewMode, setViewMode] = useState(
         rawTranscription ? "transcription" : "recording",
     );
@@ -59,6 +60,8 @@ const VoiceInputTab = ({
         setTranscriptionError(null);
         setLastAudioBlob(null);
     }, [recordingProps.name, recordingProps.dob, recordingProps.gender]);
+
+    // Ambient/dictation mode is controlled by the parent (AI Scribe header).
 
     // Reset error state when rawTranscription changes
     useEffect(() => {
@@ -116,6 +119,7 @@ const VoiceInputTab = ({
                     templateKey: recordingProps.templateKey,
                 },
                 transcriptionDuration,
+                isAmbient,
             );
         } catch (error) {
             console.error("Failed to reprocess transcription:", error);
@@ -134,12 +138,16 @@ const VoiceInputTab = ({
 
         setTranscriptionError(null);
         try {
-            await transcribeAudio(lastAudioBlob, {
-                name: recordingProps.name,
-                gender: recordingProps.gender,
-                dob: recordingProps.dob,
-                templateKey: recordingProps.templateKey,
-            });
+            await transcribeAudio(
+                lastAudioBlob,
+                {
+                    name: recordingProps.name,
+                    gender: recordingProps.gender,
+                    dob: recordingProps.dob,
+                    templateKey: recordingProps.templateKey,
+                },
+                isAmbient,
+            );
         } catch (error) {
             console.error("Failed to retry transcription:", error);
             setTranscriptionError({
@@ -173,12 +181,16 @@ const VoiceInputTab = ({
                 throw new Error("Empty audio data");
             }
 
-            await transcribeAudio(audioBlob, {
-                name: recordingProps.name,
-                gender: recordingProps.gender,
-                dob: recordingProps.dob,
-                templateKey: recordingProps.templateKey,
-            });
+            await transcribeAudio(
+                audioBlob,
+                {
+                    name: recordingProps.name,
+                    gender: recordingProps.gender,
+                    dob: recordingProps.dob,
+                    templateKey: recordingProps.templateKey,
+                },
+                isAmbient,
+            );
             setTranscriptionError(null);
         } catch (error) {
             console.error("Transcription failed:", error);
@@ -197,6 +209,7 @@ const VoiceInputTab = ({
 
     const enhancedRecordingProps = {
         ...recordingProps,
+        isAmbient,
     };
 
     return (
@@ -412,6 +425,8 @@ const VoiceInputTab = ({
                                 </Flex>
                             </Flex>
                         </Box>
+
+                        {/* Scribe input mode is selected in the AI Scribe header. */}
 
                         <Box style={{ minHeight: "50px" }}>
                             {isTranscribing ? (

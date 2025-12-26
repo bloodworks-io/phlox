@@ -14,7 +14,8 @@ from server.constants import DATA_DIR
 from server.database.config import config_manager
 from server.utils.chat_tools import execute_tool_call, get_tools_definition
 from server.utils.helpers import clean_think_tags
-from server.utils.llm_client import LLMProviderType, get_llm_client
+from server.utils.llm_client.base import LLMProviderType
+from server.utils.llm_client.client import get_llm_client
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -291,7 +292,7 @@ class ChatEngine:
                     message_list=message_list,
                     conversation_history=conversation_history,
                     raw_transcription=raw_transcription,
-                    context_question_options=context_question_options
+                    context_question_options=context_question_options,
                 ):
                     if result["type"] == "function_response":
                         function_response = result["content"]

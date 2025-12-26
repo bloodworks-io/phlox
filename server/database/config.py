@@ -1,5 +1,6 @@
 import json
 from threading import Lock
+
 from server.database.connection import db
 
 
@@ -159,7 +160,8 @@ class ConfigManager:
                 quick_chat_3_title, quick_chat_3_prompt,
                 default_template_key,
                 default_letter_template_id,
-                has_completed_splash_screen
+                has_completed_splash_screen,
+                scribe_is_ambient
             FROM user_settings LIMIT 1
             """
         )
@@ -170,6 +172,8 @@ class ConfigManager:
             # Ensure the splash screen flag is a proper boolean
             if "has_completed_splash_screen" in settings:
                 settings["has_completed_splash_screen"] = bool(settings["has_completed_splash_screen"])
+            if "scribe_is_ambient" in settings:
+                settings["scribe_is_ambient"] = bool(settings["scribe_is_ambient"])
             return settings
         return {
             "name": "",
@@ -183,6 +187,7 @@ class ConfigManager:
             "default_template_key": None,
             "default_letter_template_id": None,
             "has_completed_splash_screen": False,
+            "scribe_is_ambient": True,
         }
 
     def update_user_settings(self, settings: dict):
@@ -196,8 +201,9 @@ class ConfigManager:
                 quick_chat_3_title, quick_chat_3_prompt,
                 default_template_key,
                 default_letter_template_id,
-                has_completed_splash_screen
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                has_completed_splash_screen,
+                scribe_is_ambient
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 settings.get("name", ""),
@@ -210,7 +216,8 @@ class ConfigManager:
                 settings.get("quick_chat_3_prompt", "Any differentials to consider"),
                 settings.get("default_template_key"),
                 settings.get("default_letter_template_id"),
-                bool(settings.get("has_completed_splash_screen", False))
+                bool(settings.get("has_completed_splash_screen", False)),
+                bool(settings.get("scribe_is_ambient", True))
             )
         )
         self.db.commit()
