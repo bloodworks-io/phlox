@@ -1,5 +1,5 @@
 # Stage 1: Build the React app
-FROM node:23-slim as build
+FROM node:lts-slim as build
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -17,7 +17,10 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Run the FastAPI app
-FROM python:3.12.2-slim
+FROM python:3.12-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -34,13 +37,16 @@ RUN apt-get update && apt-get install -y \
 # Copy the build output and Python server files
 COPY --from=build /usr/src/app/build ./build
 COPY --from=build /usr/src/app/CHANGELOG.md ./CHANGELOG.md
-COPY server/ ./server
+COPY server/pyproject.toml server/uv.lock ./server/
 RUN mkdir -p /usr/src/app/data
 RUN mkdir -p /usr/src/app/static
 RUN mkdir -p /usr/src/app/temp
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r /usr/src/app/server/requirements-docker.txt
+RUN uv pip install --system --no-cache ./server[docker]
+
+# Copy remaining server code
+COPY server/ ./server
 
 # Expose necessary ports
 EXPOSE 5000

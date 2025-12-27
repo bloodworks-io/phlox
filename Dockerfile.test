@@ -1,5 +1,8 @@
 # Use an official Python runtime as a parent image
-FROM python:3.12.2-slim
+FROM python:3.12-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Set the working directory inside the image
 WORKDIR /usr/src/app
@@ -10,11 +13,11 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# First copy requirements to leverage Docker cache
-COPY server/requirements.txt /usr/src/app/server/
-COPY server/requirements-docker.txt /usr/src/app/server/
-RUN pip install --no-cache-dir -r server/requirements-docker.txt
-RUN pip install --no-cache-dir pytest pytest-asyncio pytest-cov
+# First copy dependency files to leverage Docker cache
+COPY server/pyproject.toml server/uv.lock /usr/src/app/server/
+
+# Install Python dependencies
+RUN uv pip install --system --no-cache /usr/src/app/server[docker] pytest pytest-asyncio pytest-cov
 
 # Then copy the rest of the application
 COPY server/ /usr/src/app/server/

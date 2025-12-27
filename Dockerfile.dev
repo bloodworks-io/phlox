@@ -1,5 +1,8 @@
 # Use an official Node.js runtime as a parent image
-FROM node:23-slim
+FROM node:lts-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -7,8 +10,8 @@ WORKDIR /usr/src/app
 # Set environment variable
 ENV DOCKER_CONTAINER=true
 
-# Install Python and pip
-RUN apt-get update && apt-get install -y python3 python3-pip python3-venv tesseract-ocr libsqlcipher-dev parallel
+# Install Python and system dependencies
+RUN apt-get update && apt-get install -y python3 tesseract-ocr libsqlcipher-dev parallel
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
@@ -25,13 +28,11 @@ RUN mkdir -p /usr/src/app/static
 RUN mkdir -p /usr/src/app/temp
 RUN mkdir -p /usr/src/app/build
 
-# Create and activate a Python virtual environment, install dependencies
-RUN python3 -m venv /usr/src/app/venv
-RUN /bin/bash -c "source /usr/src/app/venv/bin/activate && pip install --upgrade pip && pip install --no-cache-dir -r /usr/src/app/server/requirements-docker.txt && pip install --no-cache-dir pytest-asyncio"
+# Install Python dependencies using uv
+RUN uv pip install --system ./server[docker] pytest-asyncio
 
 # Make a shell script to initialize the database and start both React and FastAPI
 RUN echo '#!/bin/bash\n\
-source /usr/src/app/venv/bin/activate\n\
 python /usr/src/app/server/demo/demo_db.py\n\
 parallel --tag --line-buffer ::: "npm run start-react" "uvicorn server.server:app --reload --host 0.0.0.0 --port 5000"' > start.sh
 
