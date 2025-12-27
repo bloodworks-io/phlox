@@ -42,6 +42,8 @@ dist/
 main.*/
 
 # Coverage
+CLAUDE.md
+.claude
 coverage/
 .coverage
 coverage.xml

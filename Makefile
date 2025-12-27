@@ -20,6 +20,7 @@ install-local:
 update:
 	cd server && uv lock --upgrade
 	cd server && UV_LINK_MODE=copy uv pip install -r pyproject.toml
+	npm update
 
 outdated:
 	cd server && uv pip list --outdated
