@@ -13,9 +13,11 @@ Public API:
 from .base import LLMProviderType
 from .client import AsyncLLMClient, get_llm_client
 from .manager import LocalModelManager
+from .utils import repair_json
 
 __all__ = [
     "get_llm_client",
+    "repair_json",
     "AsyncLLMClient",
     "LLMProviderType",
     "LocalModelManager",

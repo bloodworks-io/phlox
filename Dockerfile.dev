@@ -1,17 +1,8 @@
-# Use an official Node.js runtime as a parent image
-FROM node:lts-slim
-
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Stage 1: Node.js stage
+FROM node:lts-slim as node-stage
 
 # Set the working directory
 WORKDIR /usr/src/app
-
-# Set environment variable
-ENV DOCKER_CONTAINER=true
-
-# Install Python and system dependencies
-RUN apt-get update && apt-get install -y python3 tesseract-ocr libsqlcipher-dev parallel
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
@@ -22,26 +13,54 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
+# Stage 2: Development runtime
+FROM python:3.12-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Set the working directory
+WORKDIR /usr/src/app
+
+# Set environment variable
+ENV DOCKER_CONTAINER=true
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    libsqlcipher-dev \
+    parallel \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Node.js and npm from the node-stage
+COPY --from=node-stage /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-stage /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+# Copy application files and node_modules from node-stage
+COPY --from=node-stage /usr/src/app/node_modules ./node_modules
+COPY --from=node-stage /usr/src/app .
+
 # Make the application directories
-RUN mkdir -p /usr/src/app/data
-RUN mkdir -p /usr/src/app/static
-RUN mkdir -p /usr/src/app/temp
-RUN mkdir -p /usr/src/app/build
+RUN mkdir -p /usr/src/app/data \
+    /usr/src/app/static \
+    /usr/src/app/temp \
+    /usr/src/app/build
 
 # Install Python dependencies using uv
-RUN uv pip install --system ./server[docker] pytest-asyncio
+RUN uv pip install --system --break-system-packages ./server[docker] pytest-asyncio
 
 # Make a shell script to initialize the database and start both React and FastAPI
 RUN echo '#!/bin/bash\n\
 python /usr/src/app/server/demo/demo_db.py\n\
-parallel --tag --line-buffer ::: "npm run start-react" "uvicorn server.server:app --reload --host 0.0.0.0 --port 5000"' > start.sh
+parallel --tag --line-buffer ::: "npm run start-react" "uvicorn server.server:app --reload --host 0.0.0.0 --port 5000"' > /usr/local/bin/start-phlox-dev.sh
 
 # Make the script executable
-RUN chmod +x start.sh
+RUN chmod +x /usr/local/bin/start-phlox-dev.sh
 
 # Expose necessary ports
 EXPOSE 3000
-#EXPOSE 5000
 
 # Use the script as the CMD
-CMD ["./start.sh"]
+CMD ["/usr/local/bin/start-phlox-dev.sh"]

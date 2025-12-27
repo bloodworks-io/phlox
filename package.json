@@ -2,7 +2,6 @@
   "name": "Phlox",
   "version": "0.7.1",
   "private": true,
-  "proxy": "http://localhost:5000",
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/react": "^2.8.2",
@@ -18,18 +17,16 @@
     "react-icons": "^5.2.1",
     "react-markdown": "^8.0.0",
     "react-router-dom": "^6.23.1",
-    "react-scripts": "~5.0",
     "react-textarea-autosize": "^8.5.3"
   },
   "scripts": {
     "start": "pm2 start server/server.js --name phlox-server",
-    "start-react": "react-scripts start",
+    "start-react": "vite",
     "start-server": "nodemon --ignore '/usr/src/app/venv/*' server/server.js",
     "dev": "parallel --tag --line-buffer ::: \"npm run start-react\" \"uvicorn server.server:app --reload --host 0.0.0.0 --port 6000\"",
-    "build": "react-scripts build",
+    "build": "vite build",
     "build-server": "./build-server.sh",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "test": "vitest",
     "tauri": "tauri",
     "tauri-dev": "tauri dev",
     "tauri-build": "npm run build-server && tauri build"
@@ -59,7 +56,9 @@
   "license": "ISC",
   "devDependencies": {
     "@tauri-apps/cli": "^2.5.0",
+    "@vitejs/plugin-react": "^4.2.1",
     "eslint-config-react-app": "^7.0.1",
-    "nodemon": "^2.0.7"
+    "nodemon": "^2.0.7",
+    "vite": "^5.1.0"
   }
 }
