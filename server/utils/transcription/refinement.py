@@ -11,6 +11,7 @@ from server.schemas.grammars import (
     RefinedResponse,
 )
 from server.schemas.templates import TemplateField
+from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
 
 # Set up module-level logger
@@ -66,11 +67,12 @@ async def refine_field_content(
                 options={**options, "seed": random_seed},
             )
 
+            response_json = repair_json(response_json)
+
             # Reuse existing formatter by wrapping the JSON string
             pseudo_response = {"message": {"content": response_json}}
-            return format_refined_response(
-                pseudo_response, field, format_details
-            )
+            return format_refined_response(pseudo_response, field, format_details)
+
 
         except Exception as e:
             if attempt < max_retries:
@@ -156,7 +158,9 @@ def build_system_prompt(
         - {content_constraint}
         - Do not add information not present in the input
         - If the style example uses abbreviations like "SNT" or "HSM", use similar appropriate medical abbreviations
-        - Return JSON
+        - Return ONLY valid JSON with this top-level shape:
+          { '{"narrative": "..."}' if format_details["format_type"] == "narrative" else '{"key_points": ["..."]}' }
+
 
         FORMAT THE FOLLOWING MEDICAL INFORMATION:"""
     else:

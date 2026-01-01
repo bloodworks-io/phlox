@@ -132,6 +132,10 @@ async def process_template_field(
                 },
                 {
                     "role": "system",
+                    "content": 'Output MUST be ONLY valid JSON with top-level key "key_points" (array of strings). Example: {"key_points":["..."]}',
+                },
+                {
+                    "role": "system",
                     "content": _build_patient_context(patient_context),
                 },
                 {"role": "user", "content": user_content},
