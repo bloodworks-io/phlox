@@ -1,6 +1,6 @@
 [project]
 name = "phlox-server"
-version = "0.1.0"
+version = "0.7.1"
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.10.11",
