@@ -4,13 +4,15 @@ from posixpath import basename
 from typing import List, Optional
 
 import Levenshtein
-
 from server.database.config.manager import config_manager
+from server.schemas.grammars import ConsolidatedInstructions
+from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
 
 logger = logging.getLogger(__name__)
 
-MAX_INSTRUCTIONS = 10
+# Maximum number of instructions after consolidation
+MAX_INSTRUCTIONS = 8
 
 
 async def generate_adaptive_refinement_suggestions(
@@ -36,8 +38,7 @@ async def generate_adaptive_refinement_suggestions(
     """
     logger.info(
         f"Generating adaptive refinement suggestions. Initial content length: {len(initial_content)}, "
-        f"Modified content length: {len(modified_content)}, "
-        f"Existing instructions: {existing_instructions}"
+        f"Modified content length: {len(modified_content)} "
     )
 
     if not modified_content.strip():
@@ -76,6 +77,22 @@ async def generate_adaptive_refinement_suggestions(
     current_instructions = (
         list(existing_instructions) if existing_instructions else []
     )
+
+    # Auto-consolidate if approaching the limit
+    if len(current_instructions) >= MAX_INSTRUCTIONS:
+        logger.info(
+            f"Instruction count ({len(current_instructions)}) >= {MAX_INSTRUCTIONS}, "
+            "triggering auto-consolidation"
+        )
+        consolidation_result = await consolidate_adaptive_instructions(
+            instructions=current_instructions,
+            field_key="auto",
+            field_name="Auto-consolidation",
+            model_name=model_name,
+        )
+        consolidated = consolidation_result["consolidated_instructions"]
+        logger.info(f"Consolidated instructions: {consolidated}")
+        return consolidated
 
     # Create system prompt for tool-based instruction management
     system_prompt = """You are an expert writing analyst. Your task is to compare two versions of text, identify specific improvements made, and make ONE targeted update to a list of writing refinement instructions.
@@ -136,51 +153,12 @@ async def generate_adaptive_refinement_suggestions(
     ]
 
     try:
-        # Handle models that use explicit <think> tags
-        thinking = ""
-        from server.utils.llm_client import is_thinking_model
-
-        if is_thinking_model(model_name):
-            logger.info(
-                f"Model detected as think-tag style: {model_name}. Getting explicit thinking step."
-            )
-            thinking_messages = base_messages.copy()
-            thinking_messages.append(
-                {"role": "assistant", "content": "<think>\n"}
-            )
-
-            thinking_options = options.copy()
-            thinking_options["stop"] = ["</think>"]
-
-            thinking_response = await client.chat(
-                model=model_name,
-                messages=thinking_messages,
-                options=thinking_options,
-            )
-
-            thinking = (
-                "<think>" + thinking_response["message"]["content"] + "</think>"
-            )
-
-        # Make tool call to manage instructions
-        if thinking:
-            messages_with_thinking = base_messages.copy()
-            messages_with_thinking.append(
-                {"role": "assistant", "content": thinking}
-            )
-            response = await client.chat(
-                model=model_name,
-                messages=messages_with_thinking,
-                tools=tools,
-                options=options,
-            )
-        else:
-            response = await client.chat(
-                model=model_name,
-                messages=base_messages,
-                tools=tools,
-                options=options,
-            )
+        response = await client.chat(
+            model=model_name,
+            messages=base_messages,
+            tools=tools,
+            options=options,
+        )
 
         # Process tool calls to update instructions (limited to one change)
         updated_instructions = await _process_single_tool_call(
@@ -434,3 +412,146 @@ def calculate_content_change_ratio(
     )
 
     return change_ratio
+
+
+async def consolidate_adaptive_instructions(
+    instructions: List[str],
+    field_key: str,
+    field_name: str,
+    model_name: Optional[str] = None,
+) -> dict:
+    """
+    Consolidate a list of adaptive refinement instructions into a clean,
+    non-contradictory set of concise instructions.
+
+    This function analyzes accumulated instructions and generates an optimized
+    set that removes contradictions, merges redundancy, simplifies complexity,
+    and generalizes over-specific instructions.
+
+    Args:
+        instructions: Current list of instructions to consolidate
+        field_key: Field identifier (e.g., "plan", "clinical_history")
+        field_name: Human-readable field name for context
+        model_name: Optional model override (uses config default if not provided)
+
+    Returns:
+        dict with keys:
+        - consolidated_instructions: List of 3-8 clean instructions
+        - changes_made: List of change descriptions
+        - reason: Explanation of consolidation approach
+    """
+    logger.info(
+        f"Consolidating {len(instructions)} instructions for field '{field_key}' ({field_name})"
+    )
+
+    if not instructions:
+        return {
+            "consolidated_instructions": [],
+            "changes_made": [],
+            "reason": "No instructions to consolidate",
+        }
+
+    # Get configuration and client
+    config = config_manager.get_config()
+    client = get_llm_client()
+    prompts = config_manager.get_prompts_and_options()
+    options = prompts["options"]["general"].copy()
+
+    # Get default model from config if not specified
+    model_name = model_name or config.get("PRIMARY_MODEL")
+
+    # Build consolidation system prompt
+    system_prompt = """You are an expert at consolidating writing refinement instructions. Your task is to analyze a list of adaptive refinement instructions and produce a clean, optimized set.
+
+    ANALYZE the input instructions for:
+    1. **Contradictions** - Instructions that conflict with each other (e.g., "omit dosages" vs "use precise dosages")
+    2. **Redundancy** - Similar instructions that can be merged
+    3. **Complexity** - Multi-clause instructions that should be simplified
+    4. **Over-specificity** - Instructions that reference specific examples instead of general principles
+
+    CONSOLIDATION RULES:
+    - Remove contradictions by keeping the more specific/actionable instruction
+    - Merge similar instructions into a single, comprehensive one
+    - Simplify multi-clause instructions to one sentence or split if truly distinct
+    - Convert specific examples to general principles (e.g., "Trace PP in one lab..." -> "Clarify lab result discrepancies")
+    - Each instruction must be ONE sentence only (prefer under 25 words)
+    - Start each instruction with a verb (action-oriented)
+    - Keep only instructions that provide actionable guidance
+
+    OUTPUT:
+    Return 3-8 instructions that capture the essence of the input without conflicts or redundancy.
+    If the input is already good quality (no contradictions, concise, generalizable), return it unchanged.
+
+    """
+
+    # Add JSON schema instruction to ensure proper format
+    json_schema_instruction = (
+        "Output MUST be ONLY valid JSON with the following structure:\n"
+        + json.dumps(
+            {
+                "consolidated_instructions": ["Instruction 1", "Instruction 2"],
+                "changes_made": ["Merged similar instructions"],
+                "reason": "Removed redundancy and clarified language",
+            }
+        )
+    )
+
+    instructions_display = "\n".join(
+        [f"{i}: {inst}" for i, inst in enumerate(instructions)]
+    )
+
+    user_prompt = f"""Consolidate the following adaptive refinement instructions for the '{field_name}' field:
+
+    CURRENT INSTRUCTIONS:
+    {instructions_display}
+
+    Produce an optimized set of instructions that removes contradictions, merges redundancy, and ensures each instruction is concise and generalizable."""
+
+    messages = [
+        {
+            "role": "system",
+            "content": system_prompt + "\n\n" + json_schema_instruction,
+        },
+        {"role": "user", "content": user_prompt},
+    ]
+
+    try:
+        # Use structured output for deterministic results
+        response_schema = ConsolidatedInstructions.model_json_schema()
+
+        result = await client.chat_with_structured_output(
+            model=model_name,
+            messages=messages,
+            schema=response_schema,
+            options=options,
+        )
+
+        # Repair JSON for flaky endpoints before validation
+        if isinstance(result, str):
+            result = repair_json(result)
+        else:
+            result = json.dumps(result)
+
+        # Parse the response
+        consolidated = ConsolidatedInstructions.model_validate_json(result)
+
+        logger.info(
+            f"Consolidated {len(instructions)} instructions to {len(consolidated.consolidated_instructions)}"
+        )
+        logger.info(f"Changes: {consolidated.changes_made}")
+        logger.info(f"Reason: {consolidated.reason}")
+
+        return {
+            "consolidated_instructions": consolidated.consolidated_instructions,
+            "changes_made": consolidated.changes_made,
+            "reason": consolidated.reason,
+        }
+
+    except Exception as e:
+        logger.error(f"Error during consolidation: {e}", exc_info=True)
+        # Return original instructions on error
+        return {
+            "consolidated_instructions": instructions,
+            "changes_made": [],
+            "reason": f"Consolidation failed: {str(e)}",
+        }

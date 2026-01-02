@@ -108,6 +108,91 @@ async def reset_adaptive_instructions(template_key: str, field_key: str):
         )
 
 
+@router.post(
+    "/{template_key}/fields/{field_key}/adaptive-instructions/consolidate"
+)
+async def consolidate_adaptive_instructions_endpoint(
+    template_key: str, field_key: str
+):
+    """
+    Consolidate the adaptive refinement instructions for a given field in a template.
+    This resolves contradictions, merges redundancy, and simplifies complex instructions.
+    """
+    from server.database.entities.templates import (
+        get_template_by_key,
+        update_field_adaptive_instructions,
+    )
+    from server.utils.nlp_tools.adaptive_refinement import (
+        consolidate_adaptive_instructions,
+    )
+
+    # Get the template to find the field
+    template_data = get_template_by_key(template_key, exact_match=True)
+    if not template_data:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    # Find the specific field
+    target_field = None
+    for field in template_data.get("fields", []):
+        if field.get("field_key") == field_key:
+            target_field = field
+            break
+
+    if not target_field:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Field '{field_key}' not found in template",
+        )
+
+    # Get current instructions
+    previous_instructions = target_field.get(
+        "adaptive_refinement_instructions", []
+    )
+
+    if not previous_instructions:
+        return JSONResponse(
+            content={
+                "message": "No instructions to consolidate",
+                "previous_instructions": [],
+                "consolidated_instructions": [],
+                "changes_made": [],
+                "reason": "No instructions present",
+            }
+        )
+
+    # Run consolidation
+    consolidation_result = await consolidate_adaptive_instructions(
+        instructions=previous_instructions,
+        field_key=field_key,
+        field_name=target_field.get("field_name", field_key),
+    )
+
+    # Save the consolidated instructions
+    save_success = update_field_adaptive_instructions(
+        template_key=template_key,
+        field_key=field_key,
+        new_instructions=consolidation_result["consolidated_instructions"],
+    )
+
+    if not save_success:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to save consolidated instructions",
+        )
+
+    return JSONResponse(
+        content={
+            "message": f"Adaptive instructions for field '{field_key}' in template '{template_key}' have been consolidated.",
+            "previous_instructions": previous_instructions,
+            "consolidated_instructions": consolidation_result[
+                "consolidated_instructions"
+            ],
+            "changes_made": consolidation_result["changes_made"],
+            "reason": consolidation_result["reason"],
+        }
+    )
+
+
 @router.get("")
 async def get_templates():
     """Get all available templates."""
