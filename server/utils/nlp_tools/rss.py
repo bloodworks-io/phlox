@@ -5,10 +5,11 @@ from typing import Any, Dict, List, Union
 
 import feedparser
 import httpx
-
+from fastapi import HTTPException
 from server.database.config.manager import config_manager
 from server.schemas.dashboard import RssItem
 from server.schemas.grammars import ItemDigest, NewsDigest
+from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,17 @@ async def generate_item_digest(item: RssItem) -> str:
             "secondary"
         ]
 
-        system_prompt = """You are a medical news summarizer. Your task is to summarize medical news articles in a concise, informative way for healthcare professionals. Focus on clinical relevance, key findings, and implications for practice. Keep summaries objective and factual."""
+        json_schema_instruction = (
+            "Output MUST be ONLY valid JSON with top-level key "
+            '"digest" (string). Example: ' + json.dumps({"digest": "..."})
+        )
+
+        system_prompt = (
+            """You are a medical news summarizer. Your task is to summarize medical news articles in a concise, informative way for healthcare professionals. Focus on clinical relevance, key findings, and implications for practice. Keep summaries objective and factual.
+
+"""
+            + json_schema_instruction
+        )
 
         user_prompt = f"""Summarize this medical article in 1-2 concise sentences that highlight the key finding or clinical implication:
 
@@ -69,6 +80,11 @@ async def generate_item_digest(item: RssItem) -> str:
             schema=base_schema,
             options=options,
         )
+
+        if isinstance(response_json, str):
+            response_json = repair_json(response_json)
+        else:
+            response_json = json.dumps(response_json)
 
         digest_data = ItemDigest.model_validate_json(response_json)
         return digest_data.digest
@@ -97,7 +113,17 @@ async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
         model = config["PRIMARY_MODEL"]
         options = config_manager.get_prompts_and_options()["options"]["general"]
 
-        system_prompt = """You are a medical news curator for busy healthcare professionals. Your task is to create a concise digest of recent medical news articles, highlighting their clinical significance. Focus on what's most relevant to medical practice."""
+        json_schema_instruction = (
+            "Output MUST be ONLY valid JSON with top-level key "
+            '"digest" (string). Example: ' + json.dumps({"digest": "..."})
+        )
+
+        system_prompt = (
+            """You are a medical news curator for busy healthcare professionals. Your task is to create a concise digest of recent medical news articles, highlighting their clinical significance. Focus on what's most relevant to medical practice.
+
+"""
+            + json_schema_instruction
+        )
 
         # Format articles for the prompt
         article_text = ""
@@ -122,6 +148,11 @@ async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
             schema=base_schema,
             options=options,
         )
+
+        if isinstance(response_json, str):
+            response_json = repair_json(response_json)
+        else:
+            response_json = json.dumps(response_json)
 
         digest_data = NewsDigest.model_validate_json(response_json)
         return digest_data.digest

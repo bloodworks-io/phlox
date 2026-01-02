@@ -9,7 +9,6 @@ import fitz  # PyMuPDF for PDF processing
 import numpy as np
 import pytesseract
 from PIL import Image
-
 from server.database.config.manager import config_manager
 from server.schemas.grammars import FieldResponse
 from server.schemas.templates import TemplateResponse
@@ -307,6 +306,12 @@ async def process_document_field(
         if not system_prompt:
             system_prompt = f"You are a medical documentation assistant. Extract the {field_name} from the provided medical document."
 
+        json_schema_instruction = (
+            "Output MUST be ONLY valid JSON with top-level key "
+            '"key_points" (array of strings). Example: '
+            + json.dumps({"key_points": ["..."]})
+        )
+
         # Build patient context for the prompt
         context_str = ""
         if patient_context:
@@ -322,8 +327,7 @@ async def process_document_field(
             {
                 "role": "system",
                 "content": (
-                    f"{system_prompt}\n"
-                    "Extract and return key points as a JSON array."
+                    f"{system_prompt}\n\n" f"{json_schema_instruction}"
                 ),
             },
         ]

@@ -1,10 +1,10 @@
 import asyncio
+import json
 import logging
 import re
 from typing import List, Optional
 
 import Levenshtein
-
 from server.database.config.manager import config_manager
 from server.database.core.connection import db
 from server.database.entities.patient import get_unique_primary_conditions
@@ -15,7 +15,7 @@ from server.schemas.grammars import (
 )
 from server.schemas.patient import Condition, Patient, Summary
 from server.utils.helpers import calculate_age, clean_think_tags
-from server.utils.llm_client import get_llm_client
+from server.utils.llm_client import get_llm_client, repair_json
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
@@ -166,23 +166,38 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
     combined_text = "\n\n".join(template_values)
 
     age = calculate_age(patient.dob, patient.encounter_date)
-    initial_summary_content = f"""The patient is {age} years old, and {'male' if patient.gender == 'M' else 'female'}. """
+    initial_summary_content = f"""This patient is {age} years old, and {'male' if patient.gender == 'M' else 'female'}. """
+
+    summary_json_instruction = (
+        "Output MUST be ONLY valid JSON with top-level key "
+        '"summary_text" (string). Example: '
+        + json.dumps({"summary_text": "..."})
+    )
 
     summary_request_body = [
         {"role": "system", "content": prompts["prompts"]["summary"]["system"]},
+        {
+            "role": "system",
+            "content": summary_json_instruction,
+        },
         {"role": "user", "content": combined_text},
         {"role": "system", "content": initial_summary_content},
     ]
 
     async def fetch_summary():
-        logging.info(summary_request_body)
         response_json = await client.chat_with_structured_output(
             model=config["SECONDARY_MODEL"],
             messages=summary_request_body,
             schema=Summary.model_json_schema(),
             options={**prompts["options"]["secondary"], "temperature": 0.7},
         )
-        summary_response = Summary.model_validate_json(response_json)
+
+        # Some providers return a parsed dict; others return a JSON string (sometimes wrapped in text/markdown).
+        if isinstance(response_json, str):
+            response_json = repair_json(response_json)
+            summary_response = Summary.model_validate_json(response_json)
+        else:
+            summary_response = Summary.model_validate(response_json)
         summary_content = summary_response.summary_text
 
         summary_content = clean_think_tags(summary_content)
@@ -207,8 +222,18 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
             )
         )
 
+        condition_json_instruction = (
+            "Output MUST be ONLY valid JSON with top-level keys "
+            '"condition_name" (string), "is_new_condition" (boolean). Example: '
+            + json.dumps({"condition_name": "...", "is_new_condition": False})
+        )
+
         condition_request_body_constrained = [
             {"role": "system", "content": condition_system},
+            {
+                "role": "system",
+                "content": condition_json_instruction,
+            },
             {"role": "user", "content": condition_user},
         ]
 
@@ -222,8 +247,17 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
             options=prompts["options"]["secondary"],
         )
 
+        if isinstance(response_json, str):
+            response_json = repair_json(response_json)
+
         try:
-            condition_response = Condition.model_validate_json(response_json)
+            if isinstance(response_json, str):
+                condition_response = Condition.model_validate_json(
+                    response_json
+                )
+            else:
+                condition_response = Condition.model_validate(response_json)
+
             condition_name = condition_response.condition_name
 
             # Normalize: remove disallowed descriptors and canonicalize case to existing DB names
@@ -269,6 +303,12 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                             [f"- {cand}" for cand in top_candidates]
                         )
 
+                        disambig_json_instruction = (
+                            "Output MUST be ONLY valid JSON with top-level key "
+                            '"condition_name" (string). Example: '
+                            + json.dumps({"condition_name": "..."})
+                        )
+
                         disambig_system = (
                             "You are a medical AI that selects the best matching condition from a curated list. "
                             "Choose the condition that best matches the patient's primary diagnosis. "
@@ -285,6 +325,10 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
 
                         disambig_request_body = [
                             {"role": "system", "content": disambig_system},
+                            {
+                                "role": "system",
+                                "content": disambig_json_instruction,
+                            },
                             {"role": "user", "content": disambig_user},
                         ]
 
@@ -297,9 +341,18 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                             )
                         )
 
-                        disambig_response = Condition.model_validate_json(
-                            disambig_response_json
-                        )
+                        if isinstance(disambig_response_json, str):
+                            disambig_response_json = repair_json(
+                                disambig_response_json
+                            )
+                            disambig_response = Condition.model_validate_json(
+                                disambig_response_json
+                            )
+                        else:
+                            disambig_response = Condition.model_validate(
+                                disambig_response_json
+                            )
+
                         disambig_condition = disambig_response.condition_name
 
                         if (

@@ -47,10 +47,9 @@ async def openai_compatible_chat(
 
         # Handle format (for JSON responses)
         if format:
-            params["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {"name": "field_response", "schema": format},
-            }
+            params["response_format"] = (
+                {"type": "json_schema", "json_schema": format},
+            )
 
         # Add stream parameter if needed
         if stream:
@@ -131,7 +130,6 @@ async def openai_compatible_chat(
             return response_generator()
         else:
             response = await client.chat.completions.create(**params)
-
             # Convert to Ollama-like format for consistency
             content = response.choices[0].message.content or ""
 

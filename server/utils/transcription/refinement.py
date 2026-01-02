@@ -67,12 +67,18 @@ async def refine_field_content(
                 options={**options, "seed": random_seed},
             )
 
+            # Some providers return a parsed dict; normalize to a JSON string first
+            if not isinstance(response_json, str):
+                response_json = json.dumps(response_json)
+
+            # Repair JSON for flaky endpoints that wrap/format the output
             response_json = repair_json(response_json)
 
             # Reuse existing formatter by wrapping the JSON string
             pseudo_response = {"message": {"content": response_json}}
-            return format_refined_response(pseudo_response, field, format_details)
-
+            return format_refined_response(
+                pseudo_response, field, format_details
+            )
 
         except Exception as e:
             if attempt < max_retries:
@@ -180,6 +186,16 @@ def build_system_prompt(
                 if rule in prompts["prompts"]["refinement"]:
                     system_prompt = prompts["prompts"]["refinement"][rule]
                     break
+
+        # Minimal JSON shape hint for flaky endpoints (top-level keys only)
+        system_prompt += (
+            "\n\nReturn ONLY valid JSON with this top-level shape:\n"
+        )
+        system_prompt += (
+            '{"narrative": "..."}'
+            if format_details["format_type"] == "narrative"
+            else '{"key_points": ["..."]}'
+        )
 
     # Add adaptive_refinement_instructions if they exist
     # This should be appended regardless of whether a style_example or refinement_rule was applied,

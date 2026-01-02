@@ -3,10 +3,10 @@ import logging
 import random
 
 from fastapi import HTTPException
-
 from server.database.config.manager import config_manager
 from server.schemas.grammars import LetterDraft
 from server.utils.helpers import calculate_age
+from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
 
 
@@ -25,13 +25,19 @@ async def generate_letter_content(
 
     age = calculate_age(dob)
 
+    json_schema_instruction = (
+        "Output MUST be ONLY valid JSON with top-level key "
+        '"content" (string). Example: ' + json.dumps({"content": "..."})
+    )
+
     try:
         # Always start with system messages
         request_body = [
             {
                 "role": "system",
                 "content": prompts["prompts"]["letter"]["system"]
-                + "\nReturn JSON",
+                + "\n\n"
+                + json_schema_instruction,
             },
             {"role": "system", "content": additional_instruction or ""},
         ]
@@ -85,6 +91,12 @@ async def generate_letter_content(
             schema=base_schema,
             options=options,
         )
+
+        # Repair JSON for flaky endpoints before validation
+        if isinstance(response_json, str):
+            response_json = repair_json(response_json)
+        else:
+            response_json = json.dumps(response_json)
 
         # Parse the JSON response
         letter_content = LetterDraft.model_validate_json(response_json)

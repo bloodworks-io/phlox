@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import random
 import re
@@ -125,19 +126,23 @@ async def process_template_field(
             # Prepare user content
             user_content = transcript_text
 
+            json_schema_instruction = (
+                "Output MUST be ONLY valid JSON with top-level key "
+                '"key_points" (array of strings). Example: '
+                + json.dumps({"key_points": ["..."]})
+            )
+
+            system_content_parts = [
+                (field.system_prompt or "").strip(),
+                _build_patient_context(patient_context).strip(),
+                json_schema_instruction,
+            ]
+            system_content = "\n\n".join(
+                part for part in system_content_parts if part
+            )
+
             request_body = [
-                {
-                    "role": "system",
-                    "content": (f"{field.system_prompt}\n"),
-                },
-                {
-                    "role": "system",
-                    "content": 'Output MUST be ONLY valid JSON with top-level key "key_points" (array of strings). Example: {"key_points":["..."]}',
-                },
-                {
-                    "role": "system",
-                    "content": _build_patient_context(patient_context),
-                },
+                {"role": "system", "content": system_content},
                 {"role": "user", "content": user_content},
             ]
 

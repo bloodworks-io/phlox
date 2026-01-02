@@ -4,6 +4,7 @@ import logging
 from server.database.config.manager import config_manager
 from server.schemas.grammars import ClinicalReasoning
 from server.utils.helpers import calculate_age
+from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
 
 # Set up module-level logger
@@ -30,9 +31,27 @@ async def run_clinical_reasoning(
             section_title = section_name.replace("_", " ").title()
             formatted_note += f"{section_title}:\n{content}\n\n"
 
+    json_schema_instruction = (
+        "Output MUST be ONLY valid JSON with top-level keys "
+        '"thinking" (string), "summary" (string), "differentials" (array of strings), '
+        '"investigations" (array of strings), "clinical_considerations" (array of strings). '
+        "Example: "
+        + json.dumps(
+            {
+                "thinking": "...",
+                "summary": "...",
+                "differentials": ["..."],
+                "investigations": ["..."],
+                "clinical_considerations": ["..."],
+            }
+        )
+    )
+
     prompt = f"""{reasoning_prompt}
 
-    Please analyze this case:
+{json_schema_instruction}
+
+Please analyze this case:
 
     Demographics: {age} year old {'male' if gender == 'M' else 'female'}
 
@@ -56,7 +75,9 @@ async def run_clinical_reasoning(
         options=reasoning_options,
     )
 
-    content_dict = json.loads(response["message"]["content"])
+    raw_content = response["message"]["content"]
+    repaired_content = repair_json(raw_content)
+    content_dict = json.loads(repaired_content)
 
     # Check if the client captured a reasoning key
     reasoning = response["message"].get("reasoning")

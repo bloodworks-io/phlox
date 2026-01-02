@@ -12,6 +12,7 @@ from server.schemas.templates import (
     FormatStyle,
     TemplateField,
 )
+from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
 
 # Set up module-level logger
@@ -47,11 +48,40 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         - example_text (the actual text from the note for this section)
         """
 
+        json_schema_instruction = (
+            "Return ONLY valid JSON with top-level keys "
+            '"sections" (array), "suggested_name" (string), "note_type" (string). '
+            "Example: "
+            + json.dumps(
+                {
+                    "sections": [
+                        {
+                            "field_name": "History of Present Illness",
+                            "format_style": "bullets",
+                            "bullet_type": "-",
+                            "section_starter": "HPI:\n-",
+                            "example_text": "...",
+                            "persistent": False,
+                            "required": False,
+                        }
+                    ],
+                    "suggested_name": "...",
+                    "note_type": "...",
+                }
+            )
+        )
+
         base_messages = [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": f"Analyze this clinical note and extract template sections with their format patterns. Return as JSON.Do not include any tab characters, extra whitespace, or formatting characters. Your response should be compact JSON without pretty-printing.\n\n{example_note}",
+                "content": f"""Analyze this clinical note and extract template sections with their format patterns.
+
+{json_schema_instruction}
+
+Do not include any tab characters, extra whitespace, markdown, code fences, or formatting characters. Your response should be compact JSON without pretty-printing.
+
+{example_note}""",
             },
         ]
 
@@ -65,6 +95,12 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
             schema=base_schema,
             options=options,
         )
+
+        # Some endpoints ignore structured-output constraints and may wrap JSON in text/markdown.
+        if isinstance(response_json, str):
+            response_json = repair_json(response_json)
+        else:
+            response_json = json.dumps(response_json)
 
         extracted = ExtractedTemplate.model_validate_json(response_json)
 

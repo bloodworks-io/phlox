@@ -39,7 +39,15 @@ async def _generate_analysis_with_llm(patient_data):
     elif specialty:
         doctor_context += f" for a {specialty} specialist"
 
-    system_prompt = f"""{doctor_context}. Today's date is {today}. Your task is to analyze patient records with outstanding tasks and provide a prioritized analysis of what needs attention. Consider the recency of encounters and the nature of outstanding tasks when determining urgency. Focus on tasks that the doctor will need to arrange once the patient leaves the rooms (such as ordering CT scans). Names are formatted as Last, First. Please just use the patient's last name. Avoid use of markdown or other formatting"""
+    # JSON schema instruction for flaky endpoints
+    json_schema_instruction = (
+        "Output MUST be ONLY valid JSON with top-level key "
+        '"analysis" (string). Example: ' + json.dumps({"analysis": "..."})
+    )
+
+    system_prompt = f"""{doctor_context}. Today's date is {today}. Your task is to analyze patient records with outstanding tasks and provide a prioritized analysis of what needs attention. Consider the recency of encounters and the nature of outstanding tasks when determining urgency. Focus on tasks that the doctor will need to arrange once the patient leaves the rooms (such as ordering CT scans). Names are formatted as Last, First. Please just use the patient's last name. Avoid use of markdown or other formatting
+
+    {json_schema_instruction}"""
 
     user_content = f"""Please analyze these patients with outstanding tasks and provide a narrative digest, in just 1 short paragraph of 3-4 sentences, of the most pressing tasks that need to be completed.
 
@@ -226,7 +234,15 @@ async def generate_previous_visit_summary(patient_data):
     user_settings = config_manager.get_user_settings()
     specialty = user_settings.get("specialty", "medical")
 
-    system_prompt = f"""You are a medical assistant summarizing a recent patient visit for the doctor, a {specialty} specialist. The doctor is about to see the patient again for a follow-up. Keep your summary concise and focused on key clinical findings and outstanding investigations, but maintain a friendly tone"""
+    # JSON schema instruction for flaky endpoints
+    json_schema_instruction = (
+        "Output MUST be ONLY valid JSON with top-level key "
+        '"summary" (string). Example: ' + json.dumps({"summary": "..."})
+    )
+
+    system_prompt = f"""You are a medical assistant summarizing a recent patient visit for the doctor, a {specialty} specialist. The doctor is about to see the patient again for a follow-up. Keep your summary concise and focused on key clinical findings and outstanding investigations, but maintain a friendly tone
+
+    {json_schema_instruction}"""
 
     user_prompt = f"""Briefly summarize in 2-3 sentences what happened in this patient's visit {days_ago} days ago. For example, tests that were ordered and what the key findings were. Focus on the key clinical findings and outstanding tasks from the last review with the patient.
 

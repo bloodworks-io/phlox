@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 
 import chromadb
@@ -39,6 +40,15 @@ async def generate_specialty_suggestions():
         # Initialize the LLM client
         client = get_llm_client()
 
+        # JSON schema instruction for flaky endpoints
+        json_schema_instruction = (
+            "Output MUST be ONLY valid JSON with top-level key "
+            '"suggestions" (array of objects with "question" string). Example: '
+            + json.dumps(
+                {"suggestions": [{"question": "..."}, {"question": "..."}]}
+            )
+        )
+
         suggestion_prompt = f"""As an expert in {specialty}, generate 3 brief, focused clinical questions that are 4-5 words long.
 
         Rules:
@@ -49,21 +59,13 @@ async def generate_specialty_suggestions():
         Examples of good questions:
         - "What are the ET diagnostic criteria?"
         - "Best treatment for severe sepsis?"
-        - "What's the diagnostic approach for RA?"
-
-        Format your response as structured JSON matching this schema:
-        {{
-            "suggestions": [
-                {{
-                    "question": "string",
-                }}
-            ]
-        }}"""
+        - "What's the diagnostic approach for RA?" """
 
         messages = [
             {
                 "role": "system",
-                "content": "You are a medical education assistant. Keep all responses extremely concise.",
+                "content": "You are a medical education assistant. Keep all responses extremely concise.\n\n"
+                + json_schema_instruction,
             },
             {"role": "user", "content": suggestion_prompt},
         ]
@@ -80,8 +82,6 @@ async def generate_specialty_suggestions():
         )
 
         suggestions = ClinicalSuggestionList.model_validate_json(response_json)
-
-        return [s.question for s in suggestions.suggestions]
 
         return [s.question for s in suggestions.suggestions]
 

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import re
 
@@ -154,12 +155,13 @@ class ChromaManager:
         Lists all collections in the Chroma database.
 
         Returns:
-            list: List of collection names.
+            list: List of collection names (strings).
         """
         try:
             collections = self.chroma_client.list_collections()
             print(f"Collections:{collections}")
-            return sorted(collections)
+            collection_names = [collection.name for collection in collections]
+            return sorted(collection_names)
         except Exception as e:
             print("Error retrieving collections:", e)
             return []
@@ -349,7 +351,9 @@ class ChromaManager:
         """
         from server.schemas.grammars import DiseaseNameResponse
 
-        collection_names = self.chroma_client.list_collections()
+        collection_names = [
+            c.name for c in self.chroma_client.list_collections()
+        ]
         collection_names_string = ", ".join(collection_names)
 
         words = text.split()
@@ -360,11 +364,20 @@ class ChromaManager:
         }
         disease_question_options["stop"] = [".", " "]
 
+        # JSON schema instruction for flaky endpoints
+        json_schema_instruction = (
+            "Output MUST be ONLY valid JSON with top-level key "
+            '"disease_name" (string). Example: '
+            + json.dumps({"disease_name": "..."})
+        )
+
         # Initial disease question messages
         disease_messages = [
             {
                 "role": "system",
-                "content": self.prompts["prompts"]["chat"]["system"],
+                "content": self.prompts["prompts"]["chat"]["system"]
+                + "\n\n"
+                + json_schema_instruction,
             },
             {
                 "role": "user",
@@ -403,11 +416,20 @@ class ChromaManager:
         words = text.split()
         sample_text = " ".join(words[:500])
 
+        # JSON schema instruction for flaky endpoints
+        json_schema_instruction = (
+            "Output MUST be ONLY valid JSON with top-level key "
+            '"focus_area" (string). Example: '
+            + json.dumps({"focus_area": "..."})
+        )
+
         # Focus area determination
         focus_area_messages = [
             {
                 "role": "system",
-                "content": self.prompts["prompts"]["chat"]["system"],
+                "content": self.prompts["prompts"]["chat"]["system"]
+                + "\n\n"
+                + json_schema_instruction,
             },
             {
                 "role": "user",
@@ -447,11 +469,19 @@ class ChromaManager:
         existing_sources = self.list_sources_from_all_collections()
         existing_sources_string = ", ".join(existing_sources)
 
+        # JSON schema instruction for flaky endpoints
+        json_schema_instruction = (
+            "Output MUST be ONLY valid JSON with top-level key "
+            '"source" (string). Example: ' + json.dumps({"source": "..."})
+        )
+
         # Document source determination
         source_messages = [
             {
                 "role": "system",
-                "content": self.prompts["prompts"]["chat"]["system"],
+                "content": self.prompts["prompts"]["chat"]["system"]
+                + "\n\n"
+                + json_schema_instruction,
             },
             {
                 "role": "user",
