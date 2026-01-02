@@ -34,25 +34,27 @@ def run_migrations(patient_db):
         """
         )
 
-        # Get current version
-        cursor.execute("SELECT version FROM schema_version")
+        # Get current version (be tolerant if table is empty)
+        cursor.execute("SELECT MAX(version) AS version FROM schema_version")
         result = cursor.fetchone()
-        current_version = result[0] if result else 0
+        current_version = (result["version"] if result else None) or 0
 
         if current_version < SCHEMA_VERSION:
             logging.info(
-                f"Updating database from version {current_version} to {SCHEMA_VERSION}"
+                f"Updating database from version {current_version + 1} to {SCHEMA_VERSION}"
             )
 
             # Run all necessary migrations in order
             for version in range(current_version + 1, SCHEMA_VERSION + 1):
-                migration_func = getattr(
-                    globals(), f"migrate_to_v{version}", None
-                )
-                if migration_func:
-                    logging.info(f"Running migration to version {version}")
-                    print(f"Running migration to version {version}")
-                    migration_func(cursor, db)
+                migration_func = globals().get(f"migrate_to_v{version}")
+                if not migration_func:
+                    raise RuntimeError(
+                        f"Missing migration function: migrate_to_v{version}"
+                    )
+
+                logging.info(f"Running migration to version {version}")
+                print(f"Running migration to version {version}")
+                migration_func(cursor, db)
 
             # Update schema version
             cursor.execute("DELETE FROM schema_version")
