@@ -22,20 +22,17 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "python-Levenshtein>=0.25.1",
     "python-multipart>=0.0.18",
+    "sqlcipher3-wheels>=0.5.4",
     "tiktoken>=0.7.0",
     "Unidecode>=1.4.0",
     "uvicorn>=0.34.0",
 ]
 
 [project.optional-dependencies]
-docker = [
-    "sqlcipher3-binary>=0.5.4",
-]
 local = [
     "llama-cpp-python>=0.2.0",
     "pywhispercpp>=1.0.0",
     "huggingface-hub>=0.20.0",
-    "sqlcipher3-wheels>=0.5.4",
 ]
 dev = [
     "pytest>=8.3.4",
@@ -45,6 +42,7 @@ dev = [
 
 [dependency-groups]
 dev = [
+    "pyinstaller>=6.0.0",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=5.0.0",

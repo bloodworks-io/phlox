@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 
 # Build the server from the server directory
 cd server
-pyinstaller ../pyinstaller.spec --clean --noconfirm
+uv run pyinstaller ../pyinstaller.spec --clean --noconfirm
 
 # Create Tauri binaries directory if it doesn't exist
 mkdir -p ../src-tauri/binaries
