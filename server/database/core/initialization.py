@@ -87,10 +87,10 @@ def set_initial_default_template(cursor, db):
         count = cursor.fetchone()[0]
 
         if count == 0:
-            # Create initial settings with default template
+            # Create initial settings with default template and splash screen status False
             cursor.execute(
-                "INSERT INTO user_settings (default_template_key) VALUES (?)",
-                (default_template_key,),
+                "INSERT INTO user_settings (default_template_key, has_completed_splash_screen) VALUES (?, ?)",
+                (default_template_key, False),
             )
             logging.info(
                 f"Created initial user settings with default template: {default_template_key}"
