@@ -54,6 +54,7 @@ const Settings = () => {
     ollama: false,
   });
   const localModelsDisclosure = useDisclosure();
+  const [modelManagerRefreshKey, setModelManagerRefreshKey] = useState(0);
   const [collapseStates, setCollapseStates] = useState({
     userSettings: false,
     modelSettings: true,
@@ -72,7 +73,16 @@ const Settings = () => {
 
       await Promise.all([
         settingsService.fetchPrompts(setPrompts),
-        settingsService.fetchOptions(setOptions),
+        // Only fetch Ollama options if NOT using local models
+        configData?.LLM_PROVIDER !== "local"
+          ? settingsService.fetchOptions(setOptions)
+          : Promise.resolve(
+              setOptions({
+                general: { num_ctx: 0 },
+                secondary: { num_ctx: 0 },
+                letter: { temperature: 0 },
+              }),
+            ),
         settingsService.fetchUserSettings(setUserSettings),
         settingsService.fetchTemplates(setTemplates),
       ]);
@@ -261,6 +271,7 @@ const Settings = () => {
           urlStatus={urlStatus}
           onOpenLocalModelManager={localModelsDisclosure.onOpen}
           showLocalManagerButton
+          modelManagerRefreshKey={modelManagerRefreshKey}
         />
 
         <PromptSettingsPanel
@@ -314,6 +325,8 @@ const Settings = () => {
           if (config?.LLM_BASE_URL) {
             await settingsService.fetchLLMModels(config, setModelOptions);
           }
+          // Trigger refresh in ModelSettingsPanel for Whisper model
+          setModelManagerRefreshKey((prev) => prev + 1);
         }}
       />
     </Box>

@@ -24,6 +24,7 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   CheckCircleIcon,
+  InfoIcon,
 } from "@chakra-ui/icons";
 import { FaCog, FaDesktop, FaCloud } from "react-icons/fa";
 import { useState, useEffect } from "react";
@@ -42,9 +43,11 @@ const ModelSettingsPanel = ({
   urlStatus = { whisper: false, ollama: false },
   onOpenLocalModelManager,
   showLocalManagerButton,
+  modelManagerRefreshKey = 0,
 }) => {
   const [localStatus, setLocalStatus] = useState(null);
   const [isDocker, setIsDocker] = useState(false);
+  const [downloadedWhisperModel, setDownloadedWhisperModel] = useState(null);
 
   // Determine if we're using local inference
   const isLocalInference = config?.LLM_PROVIDER === "local";
@@ -52,7 +55,32 @@ const ModelSettingsPanel = ({
   useEffect(() => {
     checkLocalStatus();
     checkIfDocker();
+    fetchDownloadedWhisperModel();
   }, []);
+
+  useEffect(() => {
+    // Refresh Whisper model when model manager closes
+    if (modelManagerRefreshKey > 0) {
+      fetchDownloadedWhisperModel();
+    }
+  }, [modelManagerRefreshKey]);
+
+  const fetchDownloadedWhisperModel = async () => {
+    try {
+      const response = await universalFetch(
+        await buildApiUrl("/api/config/local/whisper/models/downloaded"),
+      );
+      if (response.ok) {
+        const data = await response.json();
+        // Set the downloaded model (there should only be one)
+        if (data.models && data.models.length > 0) {
+          setDownloadedWhisperModel(data.models[0].id);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching downloaded Whisper model:", error);
+    }
+  };
 
   const checkLocalStatus = async () => {
     try {
@@ -171,19 +199,22 @@ const ModelSettingsPanel = ({
 
               {/* Primary Model Selection for Local */}
               <Box>
-                <Tooltip label="Primary model for local inference">
-                  <Text fontSize="sm" mb="2">
-                    Primary Model (Local)
-                  </Text>
-                </Tooltip>
+                <HStack mb="2">
+                  <Tooltip label="Primary model for local inference">
+                    <Text fontSize="sm">Primary Model (Local)</Text>
+                  </Tooltip>
+                  <Tooltip label="Manage local models through the Model Manager below">
+                    <InfoIcon color="gray.400" boxSize="3" />
+                  </Tooltip>
+                </HStack>
                 <Select
                   size="sm"
                   value={config?.PRIMARY_MODEL || ""}
-                  onChange={(e) =>
-                    handleConfigChange("PRIMARY_MODEL", e.target.value)
-                  }
+                  isDisabled={true}
                   placeholder="Select downloaded model"
                   className="input-style"
+                  cursor="not-allowed"
+                  opacity={0.7}
                 >
                   {modelOptions.map((model) => (
                     <option key={model} value={model}>
@@ -195,24 +226,47 @@ const ModelSettingsPanel = ({
 
               {/* Local Whisper Model Selection */}
               <Box>
-                <Tooltip label="Whisper model for local transcription">
-                  <Text fontSize="sm" mb="2">
-                    Whisper Model (Local)
-                  </Text>
-                </Tooltip>
+                <HStack mb="2">
+                  <Tooltip label="Whisper model for local transcription">
+                    <Text fontSize="sm">Whisper Model (Local)</Text>
+                  </Tooltip>
+                  <Tooltip label="Manage local models through the Model Manager below">
+                    <InfoIcon color="gray.400" boxSize="3" />
+                  </Tooltip>
+                </HStack>
                 <Select
                   size="sm"
-                  value={config?.WHISPER_MODEL || "whisper-1"}
-                  onChange={(e) =>
-                    handleConfigChange("WHISPER_MODEL", e.target.value)
+                  value={
+                    downloadedWhisperModel || config?.WHISPER_MODEL || "base"
                   }
+                  isDisabled={true}
                   className="input-style"
+                  cursor="not-allowed"
+                  opacity={0.7}
                 >
-                  <option value="whisper-1">whisper-1 (Base)</option>
-                  <option value="whisper-large">whisper-large</option>
-                  <option value="whisper-medium">whisper-medium</option>
-                  <option value="whisper-small">whisper-small</option>
-                  <option value="whisper-tiny">whisper-tiny</option>
+                  <option value="tiny">tiny (39MB) - Fastest</option>
+                  <option value="tiny.en">tiny.en (39MB) - English-only</option>
+                  <option value="base">base (74MB) - Multilingual</option>
+                  <option value="base.en">
+                    base.en (74MB) - English-only, Recommended
+                  </option>
+                  <option value="small">small (244MB) - Better accuracy</option>
+                  <option value="small.en">
+                    small.en (244MB) - English-only
+                  </option>
+                  <option value="medium">medium (769MB) - High accuracy</option>
+                  <option value="medium.en">
+                    medium.en (769MB) - English-only
+                  </option>
+                  <option value="large-v1">
+                    large-v1 (1.5GB) - Best accuracy V1
+                  </option>
+                  <option value="large-v2">
+                    large-v2 (1.5GB) - Best accuracy V2
+                  </option>
+                  <option value="large-v3">
+                    large-v3 (1.5GB) - Best accuracy V3
+                  </option>
                 </Select>
               </Box>
 
