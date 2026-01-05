@@ -28,6 +28,7 @@ import { useBreakpointValue } from "@chakra-ui/react";
 import theme from "./theme"; // Assuming theme is exported from here for ChakraProvider
 import SplashScreen from "./components/common/SplashScreen"; // Import SplashScreen
 import { settingsService } from "./utils/settings/settingsUtils"; // Import settingsService
+import { isTauri } from "./utils/helpers/apiConfig"; // Import isTauri
 
 function AppContent() {
   const [showSplashScreen, setShowSplashScreen] = useState(undefined);
@@ -247,80 +248,97 @@ function AppContent() {
       <Box
         flex="1"
         ml={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
-        p={isSmallScreen ? "6" : "0"}
-        pt={isSmallScreen ? "50px" : "0"}
-        className="main-bg"
         minH="100vh"
         transition="margin-left 0.3s ease"
+        bg={
+          isTauri()
+            ? colorMode === "light"
+              ? "#232634"
+              : "#1e2030"
+            : "transparent"
+        }
+        display="flex"
+        flexDirection="column"
       >
-        <IconButton
-          position="absolute"
-          top={5}
-          right={5}
-          aria-label="Toggle color mode"
-          icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
-          className="dark-toggle"
-          onClick={toggleColorMode}
-        />
-        <Routes>
-          <Route
-            path="/new-patient"
-            element={
-              <PatientDetails
-                patient={patient}
-                setPatient={setPatient}
-                selectedDate={selectedDate}
-                refreshSidebar={refreshSidebar}
-                setIsModified={setIsModified}
-                finalCorrespondence={finalCorrespondence}
-                setFinalCorrespondence={setFinalCorrespondence}
-                templateKey={templateKey}
-                setTemplateKey={setTemplateKey}
-                onResetLetter={setResetLetter}
-              />
-            }
+        <Box
+          m={isTauri() ? "5px" : "0"}
+          borderRadius={isTauri() ? "16px" : "0"}
+          p={isTauri() ? "6" : "0"}
+          pt={isSmallScreen && isTauri() ? "50px" : isTauri() ? "6" : "0"}
+          className="main-bg"
+          height={isTauri() ? "calc(100vh - 10px)" : "100vh"}
+          overflowY="auto"
+          position="relative"
+        >
+          <IconButton
+            position="absolute"
+            top={5}
+            right={5}
+            aria-label="Toggle color mode"
+            icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
+            className="dark-toggle"
+            onClick={toggleColorMode}
           />
-          <Route
-            path="/patient/:id"
-            element={
-              <PatientDetails
-                patient={patient}
-                setPatient={setPatient}
-                selectedDate={selectedDate}
-                refreshSidebar={refreshSidebar}
-                setIsModified={setIsModified}
-                finalCorrespondence={finalCorrespondence}
-                setFinalCorrespondence={setFinalCorrespondence}
-                templateKey={templateKey}
-                setTemplateKey={setTemplateKey}
-              />
-            }
-          />
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/rag" element={<Rag />} />
-          <Route
-            path="/clinic-summary"
-            element={
-              <ClinicSummary
-                selectedDate={selectedDate}
-                handleSelectPatient={handleSelectPatient}
-                refreshSidebar={refreshSidebar}
-              />
-            }
-          />
-          <Route
-            path="/outstanding-jobs"
-            element={
-              <OutstandingJobs
-                handleSelectPatient={(patient) =>
-                  handleSelectPatient(patient, true)
-                }
-                refreshSidebar={refreshSidebar}
-              />
-            }
-          />
-        </Routes>
+          <Routes>
+            <Route
+              path="/new-patient"
+              element={
+                <PatientDetails
+                  patient={patient}
+                  setPatient={setPatient}
+                  selectedDate={selectedDate}
+                  refreshSidebar={refreshSidebar}
+                  setIsModified={setIsModified}
+                  finalCorrespondence={finalCorrespondence}
+                  setFinalCorrespondence={setFinalCorrespondence}
+                  templateKey={templateKey}
+                  setTemplateKey={setTemplateKey}
+                  onResetLetter={setResetLetter}
+                />
+              }
+            />
+            <Route
+              path="/patient/:id"
+              element={
+                <PatientDetails
+                  patient={patient}
+                  setPatient={setPatient}
+                  selectedDate={selectedDate}
+                  refreshSidebar={refreshSidebar}
+                  setIsModified={setIsModified}
+                  finalCorrespondence={finalCorrespondence}
+                  setFinalCorrespondence={setFinalCorrespondence}
+                  templateKey={templateKey}
+                  setTemplateKey={setTemplateKey}
+                />
+              }
+            />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/rag" element={<Rag />} />
+            <Route
+              path="/clinic-summary"
+              element={
+                <ClinicSummary
+                  selectedDate={selectedDate}
+                  handleSelectPatient={handleSelectPatient}
+                  refreshSidebar={refreshSidebar}
+                />
+              }
+            />
+            <Route
+              path="/outstanding-jobs"
+              element={
+                <OutstandingJobs
+                  handleSelectPatient={(patient) =>
+                    handleSelectPatient(patient, true)
+                  }
+                  refreshSidebar={refreshSidebar}
+                />
+              }
+            />
+          </Routes>
+        </Box>
       </Box>
       <ConfirmLeaveModal
         isOpen={isOpen}
