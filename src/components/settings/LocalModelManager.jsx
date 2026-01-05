@@ -42,6 +42,7 @@ import {
   TabPanel,
   InputGroup,
   InputRightElement,
+  Collapse,
 } from "@chakra-ui/react";
 import {
   FaExclamationTriangle,
@@ -96,6 +97,7 @@ const LocalModelManager = ({ className }) => {
   const [modelToDelete, setModelToDelete] = useState(null);
   const [whisperModelToDelete, setWhisperModelToDelete] = useState(null);
   const [customModelInput, setCustomModelInput] = useState("");
+  const [showOtherModels, setShowOtherModels] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -191,93 +193,42 @@ const LocalModelManager = ({ className }) => {
     return models.some((m) => m.filename === model.filename);
   };
 
-  // Get smart recommendations based on system specs
+  // Get smart recommendations - based on RAM tiers
   const getSmartRecommendations = () => {
     if (!systemSpecs || !availableModels.length) return [];
 
-    const availableRAM = systemSpecs.total_memory_gb;
+    const ram = systemSpecs.total_memory_gb;
 
-    // Filter models that fit within recommended RAM
-    const wellSuitedModels = availableModels.filter(
-      (model) => availableRAM >= model.recommended_ram_gb,
-    );
-
-    // Fallback to models that meet minimum RAM
-    const minimalModels = availableModels.filter(
-      (model) =>
-        availableRAM >= model.min_ram_gb &&
-        availableRAM < model.recommended_ram_gb,
-    );
-
-    const recommendations = [];
-    const addedModelNames = new Set();
-
-    const addModel = (model, type, isLimited = false) => {
-      if (model && !addedModelNames.has(model.id)) {
-        recommendations.push({
-          ...model,
-          recommendedType: type,
-          isLimited,
-        });
-        addedModelNames.add(model.id);
-        return true;
-      }
-      return false;
-    };
-
-    // Prioritize well-suited models
-    if (wellSuitedModels.length > 0) {
-      // 1. FASTEST: Smallest model by RAM requirement
-      const fastModel = wellSuitedModels
-        .filter((m) => m.category === "tiny" || m.category === "small")
-        .sort((a, b) => a.recommended_ram_gb - b.recommended_ram_gb)[0];
-
-      if (fastModel) addModel(fastModel, "fastest");
-
-      // 2. RECOMMENDED: Medium/balanced model
-      const recommendedModel = wellSuitedModels
-        .filter((m) => !addedModelNames.has(m.id))
-        .filter((m) => m.category === "medium")
-        .sort((a, b) => a.recommended_ram_gb - b.recommended_ram_gb)[0];
-
-      if (recommendedModel) {
-        addModel(recommendedModel, "recommended");
-      } else {
-        // Fallback: Pick the second smallest model as recommended
-        const fallbackRecommended = wellSuitedModels
-          .filter((m) => !addedModelNames.has(m.id))
-          .sort((a, b) => a.recommended_ram_gb - b.recommended_ram_gb)[0];
-        if (fallbackRecommended) addModel(fallbackRecommended, "recommended");
-      }
-
-      // 3. BEST QUALITY: Largest model that fits
-      const qualityModel = wellSuitedModels
-        .filter((m) => !addedModelNames.has(m.id))
-        .sort((a, b) => b.recommended_ram_gb - a.recommended_ram_gb)[0];
-
-      if (qualityModel) addModel(qualityModel, "best_quality");
+    // Determine tier based on machine RAM
+    // Tier 1: 8-16GB (base Macs)
+    // Tier 2: 16-32GB (mid-high-end Macs)
+    // Tier 3: 32GB+ (workstations)
+    let tier;
+    if (ram < 16) {
+      tier = 1;
+    } else if (ram < 32) {
+      tier = 2;
+    } else {
+      tier = 3;
     }
 
-    // If we still don't have 3, add from minimal models with warning
-    if (recommendations.length < 3 && minimalModels.length > 0) {
-      const remainingSlots = 3 - recommendations.length;
-      const bestMinimalModels = minimalModels
-        .filter((m) => !addedModelNames.has(m.id))
-        .sort((a, b) => a.min_ram_gb - b.min_ram_gb)
-        .slice(0, remainingSlots);
+    // Filter models that are in this tier AND fit in RAM
+    const fittingModels = availableModels.filter(
+      (m) => (m.tier || []).includes(tier) && ram >= m.recommended_ram_gb,
+    );
 
-      bestMinimalModels.forEach((model, index) => {
-        if (recommendations.length === 0) {
-          addModel(model, "fastest", true);
-        } else if (recommendations.length === 1) {
-          addModel(model, "recommended", true);
-        } else {
-          addModel(model, "best_quality", true);
-        }
-      });
-    }
+    // Map to recommended types
+    return fittingModels.map((model, index) => ({
+      ...model,
+      recommendedType:
+        index === 0 ? "fastest" : index === 1 ? "recommended" : "best_quality",
+    }));
+  };
 
-    return recommendations.slice(0, 3);
+  // Get other models - ones that don't fit or are deprioritized
+  const getOtherModels = () => {
+    const recommendedIds = new Set(getSmartRecommendations().map((m) => m.id));
+    return availableModels.filter((m) => !recommendedIds.has(m.id));
   };
 
   const SmartRecommendationCard = ({ model }) => {
@@ -286,15 +237,17 @@ const LocalModelManager = ({ className }) => {
 
     const getRecommendationBadge = () => {
       if (model.recommendedType === "fastest")
-        return { text: "⚡ Fastest", color: "blue" };
+        return { text: "⚡ Fast", color: "blue" };
       if (model.recommendedType === "recommended")
         return { text: "⭐ Recommended", color: "purple" };
       if (model.recommendedType === "best_quality")
-        return { text: "🎯 Best Quality", color: "green" };
+        return { text: "🎯 Best", color: "green" };
       return null;
     };
 
     const badge = getRecommendationBadge();
+    const needsMoreMemory =
+      systemSpecs && systemSpecs.total_memory_gb < model.recommended_ram_gb;
 
     return (
       <Box
@@ -304,7 +257,6 @@ const LocalModelManager = ({ className }) => {
         borderWidth="2px"
         borderColor={badge?.color === "purple" ? "purple.200" : "gray.200"}
         position="relative"
-        opacity={model.isLimited ? 0.8 : 1}
       >
         <HStack position="absolute" top="-2" right="2" spacing={1}>
           {badge && (
@@ -312,22 +264,14 @@ const LocalModelManager = ({ className }) => {
               {badge.text}
             </Badge>
           )}
-          {model.isLimited && (
-            <Badge colorScheme="yellow" fontSize="xs">
-              ⚠️ Limited
-            </Badge>
-          )}
         </HStack>
 
         <VStack align="stretch" spacing={3}>
           <VStack align="start" spacing={1}>
             <Text fontSize="md" fontWeight="bold">
-              {model.description?.split(" - ")[0] || model.id}
+              {model.simple_name || model.id}
             </Text>
             <Text fontSize="sm" className="pill-box-icons">
-              {model.size_mb}MB • {model.category}
-            </Text>
-            <Text fontSize="xs" className="pill-box-icons">
               {model.description}
             </Text>
           </VStack>
@@ -335,8 +279,11 @@ const LocalModelManager = ({ className }) => {
           {systemSpecs && (
             <Box>
               <Text fontSize="xs" className="pill-box-icons" mb={1}>
-                Needs {model.recommended_ram_gb}GB RAM (you have{" "}
-                {systemSpecs.total_memory_gb.toFixed(1)}GB)
+                {needsMoreMemory
+                  ? `Needs ${model.recommended_ram_gb}GB RAM (you have ${systemSpecs.total_memory_gb.toFixed(
+                      0,
+                    )}GB)`
+                  : `${model.size_mb}MB • Works on your system`}
               </Text>
               <Progress
                 value={Math.min(
@@ -344,7 +291,7 @@ const LocalModelManager = ({ className }) => {
                     100,
                   100,
                 )}
-                colorScheme={model.isLimited ? "yellow" : "green"}
+                colorScheme={needsMoreMemory ? "yellow" : "green"}
                 size="sm"
               />
             </Box>
@@ -372,6 +319,7 @@ const LocalModelManager = ({ className }) => {
   };
 
   const smartRecommendations = getSmartRecommendations();
+  const otherModels = getOtherModels();
 
   if (!localStatus) {
     return (
@@ -461,10 +409,10 @@ const LocalModelManager = ({ className }) => {
                     Choose Your Model
                   </Text>
                   <Text fontSize="xs" className="pill-box-icons" mb="4">
-                    We've selected the best 3 options for your system. Most
-                    users should choose "Recommended". Only one model can be
-                    installed at a time — downloading a new model will replace
-                    the current one.
+                    We've selected the best options for your system. Most users
+                    should choose "Recommended". Only one model can be installed
+                    at a time — downloading a new model will replace the current
+                    one.
                   </Text>
 
                   <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
@@ -472,6 +420,40 @@ const LocalModelManager = ({ className }) => {
                       <SmartRecommendationCard key={model.id} model={model} />
                     ))}
                   </SimpleGrid>
+                </Box>
+              )}
+
+              {/* Other Models - collapsible */}
+              {otherModels.length > 0 && (
+                <Box>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowOtherModels(!showOtherModels)}
+                    fontSize="xs"
+                    className="pill-box-icons"
+                  >
+                    {showOtherModels ? "▼" : "▶"} Show {otherModels.length}{" "}
+                    more options
+                  </Button>
+                  <Collapse in={showOtherModels} animateOpacity>
+                    <Box mt="3">
+                      <Text fontSize="xs" className="pill-box-icons" mb="3">
+                        These models need more memory or may be slower:
+                      </Text>
+                      <SimpleGrid
+                        columns={{ base: 1, md: 2, lg: 3 }}
+                        spacing={4}
+                      >
+                        {otherModels.map((model) => (
+                          <SmartRecommendationCard
+                            key={model.id}
+                            model={model}
+                          />
+                        ))}
+                      </SimpleGrid>
+                    </Box>
+                  </Collapse>
                 </Box>
               )}
 
@@ -698,14 +680,12 @@ const LocalModelManager = ({ className }) => {
               {/* Whisper Recommendations */}
               {whisperRecommendations.length > 0 && (
                 <Box>
-                  <Flex align="center" mb="3">
-                    <Text fontSize="sm" fontWeight="semibold">
-                      Available Models
-                    </Text>
-                    <Badge ml="2" colorScheme="orange" fontSize="xs">
-                      Downloading will replace current model
-                    </Badge>
-                  </Flex>
+                  <Text fontSize="sm" fontWeight="semibold" mb="2">
+                    Choose Your Transcription Model
+                  </Text>
+                  <Text fontSize="xs" className="pill-box-icons" mb="4">
+                    Only one model can be installed at a time.
+                  </Text>
                   <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
                     {whisperRecommendations.map((model) => {
                       const isDownloaded = isWhisperModelDownloaded(model.id);
@@ -720,32 +700,34 @@ const LocalModelManager = ({ className }) => {
                           className="summary-panels"
                           borderWidth="2px"
                           borderColor={
-                            model.recommended ? "purple.200" : "gray.200"
+                            model.badge_color === "purple"
+                              ? "purple.200"
+                              : "gray.200"
                           }
                           position="relative"
                         >
-                          {model.recommended && (
+                          {model.badge && (
                             <Badge
-                              colorScheme="purple"
+                              colorScheme={model.badge_color}
                               fontSize="xs"
                               position="absolute"
                               top="-2"
                               right="2"
                             >
-                              Recommended
+                              {model.badge}
                             </Badge>
                           )}
 
                           <VStack align="stretch" spacing={3}>
                             <VStack align="start" spacing={1}>
                               <Text fontSize="md" fontWeight="bold">
-                                {model.display_name}
-                              </Text>
-                              <Text fontSize="sm" className="pill-box-icons">
-                                {model.size} • {model.quality} • {model.speed}
+                                {model.simple_name}
                               </Text>
                               <Text fontSize="xs" className="pill-box-icons">
                                 {model.description}
+                              </Text>
+                              <Text fontSize="xs" className="pill-box-icons">
+                                {model.size}
                               </Text>
                             </VStack>
 

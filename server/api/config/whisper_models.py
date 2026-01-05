@@ -104,71 +104,55 @@ async def get_whisper_status():
 
 @router.get("/local/whisper/model-recommendations")
 async def get_whisper_model_recommendations():
-    """Get Whisper model recommendations based on system capabilities.
+    """Get Whisper model recommendations.
 
-    Returns recommendations for different use cases.
+    Returns a curated list of models with plain English descriptions.
     """
     model_recommendations = [
         {
             "id": "tiny.en",
             "name": "tiny.en",
-            "display_name": "Tiny English-only",
+            "simple_name": "Tiny",
             "size": "39MB",
-            "min_ram_gb": 1,
-            "recommended_ram_gb": 2,
-            "description": "Fastest transcription, good for real-time",
-            "category": "tiny",
-            "quality": "Basic",
-            "speed": "Very Fast",
+            "description": "Great for real-time transcription during appointments",
+            "badge": "⚡ Fast",
+            "badge_color": "blue",
         },
         {
             "id": "base.en",
             "name": "base.en",
-            "display_name": "Base English-only",
+            "simple_name": "Standard",
             "size": "74MB",
-            "min_ram_gb": 1,
-            "recommended_ram_gb": 2,
-            "description": "Good balance of speed and accuracy",
-            "category": "base",
-            "quality": "Good",
-            "speed": "Fast",
-            "recommended": True,
+            "description": "A good balance of speed and accuracy for everyday use",
+            "badge": "⭐ Recommended",
+            "badge_color": "purple",
         },
         {
             "id": "small.en",
             "name": "small.en",
-            "display_name": "Small English-only",
+            "simple_name": "Accurate",
             "size": "244MB",
-            "min_ram_gb": 2,
-            "recommended_ram_gb": 4,
-            "description": "Better accuracy, still fast",
-            "category": "small",
-            "quality": "Very Good",
-            "speed": "Moderate",
+            "description": "Better accuracy, still quick enough for most uses",
+            "badge": "🎯 Best Quality",
+            "badge_color": "green",
         },
         {
             "id": "medium.en",
             "name": "medium.en",
-            "display_name": "Medium English-only",
+            "simple_name": "Professional",
             "size": "769MB",
-            "min_ram_gb": 4,
-            "recommended_ram_gb": 8,
-            "description": "High accuracy for clinical use",
-            "category": "medium",
-            "quality": "Excellent",
-            "speed": "Slower",
+            "description": "High accuracy when quality matters most",
+            "badge": "💎 Premium",
+            "badge_color": "orange",
         },
         {
             "id": "large-v3",
             "name": "large-v3",
-            "display_name": "Large V3 (Latest)",
+            "simple_name": "Multilingual",
             "size": "1.5GB",
-            "min_ram_gb": 8,
-            "recommended_ram_gb": 16,
-            "description": "Best accuracy, multilingual support",
-            "category": "large",
-            "quality": "Outstanding",
-            "speed": "Slow",
+            "description": "Best accuracy, supports many languages",
+            "badge": "🌍 Multi",
+            "badge_color": "teal",
         },
     ]
 
