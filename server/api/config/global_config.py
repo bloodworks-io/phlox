@@ -29,10 +29,8 @@ async def update_config(data: dict = Body(...)):
         base_url = updated.get("LLM_BASE_URL")
         api_key = updated.get("LLM_API_KEY")
 
-        # Define models to check - only include REASONING_MODEL if reasoning is enabled
+        # Define models to check
         models_to_check = ["PRIMARY_MODEL", "SECONDARY_MODEL"]
-        if updated.get("REASONING_ENABLED", False):
-            models_to_check.append("REASONING_MODEL")
 
         for key in models_to_check:
             model = updated.get(key)

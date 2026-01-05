@@ -1,21 +1,11 @@
 // Page component listing patients with outstanding jobs.
 import { useEffect, useState } from "react";
 import PatientTable from "../components/patient/PatientTable";
-import { settingsService } from "../utils/settings/settingsUtils";
 import { buildApiUrl } from "../utils/helpers/apiConfig";
 import { universalFetch } from "../utils/helpers/apiHelpers";
 
 const OutstandingJobs = ({ handleSelectPatient, refreshSidebar }) => {
   const [patients, setPatients] = useState([]);
-  const [reasoningEnabled, setReasoningEnabled] = useState(false);
-
-  useEffect(() => {
-    const fetchConfig = async () => {
-      const config = await settingsService.fetchConfig();
-      setReasoningEnabled(config.REASONING_ENABLED);
-    };
-    fetchConfig();
-  }, []);
 
   const fetchPatientsWithJobs = async () => {
     try {
@@ -49,7 +39,6 @@ const OutstandingJobs = ({ handleSelectPatient, refreshSidebar }) => {
       refreshSidebar={refreshSidebar}
       title="Outstanding Jobs"
       groupByDate={true}
-      reasoningEnabled={reasoningEnabled}
     />
   );
 };

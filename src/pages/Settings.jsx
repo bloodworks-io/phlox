@@ -37,7 +37,6 @@ const Settings = () => {
     general: { num_ctx: 0 },
     secondary: { num_ctx: 0 },
     letter: { temperature: 0 },
-    reasoning: { num_ctx: 0, temperature: 0 },
   });
   const [templates, setTemplates] = useState({});
   const [letterTemplates, setLetterTemplates] = useState([]);

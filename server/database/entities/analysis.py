@@ -285,10 +285,6 @@ async def run_nightly_reasoning():
     """Run reasoning analysis on patients from yesterday and today."""
     logging.info("Starting nightly reasoning job")
 
-    if not config_manager.get_config().get("REASONING_ENABLED", False):
-        logging.info("Reasoning analysis is disabled")
-        return
-
     try:
         today = datetime.now().strftime("%Y-%m-%d")
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")

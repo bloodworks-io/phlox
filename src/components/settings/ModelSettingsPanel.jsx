@@ -229,51 +229,6 @@ const ModelSettingsPanel = ({
                     Manage Local Models
                   </Button>
                 )}
-
-              {/* Optional: Reasoning Settings for Local (if you want to keep this) */}
-              <Box>
-                <Tooltip label="Enable clinical reasoning analysis">
-                  <Flex align="center" gap="2">
-                    <Text fontSize="sm">Enable Reasoning Analysis</Text>
-                    <Switch
-                      size="sm"
-                      isChecked={config?.REASONING_ENABLED === true}
-                      onChange={(e) =>
-                        handleConfigChange(
-                          "REASONING_ENABLED",
-                          e.target.checked,
-                        )
-                      }
-                    />
-                  </Flex>
-                </Tooltip>
-
-                <Collapse
-                  in={config?.REASONING_ENABLED === true}
-                  animateOpacity
-                >
-                  <Box mt="2">
-                    <Tooltip label="Model for clinical reasoning analysis">
-                      <Text fontSize="sm">Reasoning Model</Text>
-                    </Tooltip>
-                    <Select
-                      size="sm"
-                      value={config?.REASONING_MODEL || ""}
-                      onChange={(e) =>
-                        handleConfigChange("REASONING_MODEL", e.target.value)
-                      }
-                      placeholder="Select model"
-                      className="input-style"
-                    >
-                      {modelOptions.map((model) => (
-                        <option key={model} value={model}>
-                          {model}
-                        </option>
-                      ))}
-                    </Select>
-                  </Box>
-                </Collapse>
-              </Box>
             </VStack>
           ) : (
             /* Remote Inference Settings */
@@ -501,54 +456,6 @@ const ModelSettingsPanel = ({
                         </option>
                       ))}
                     </Select>
-                  </Box>
-
-                  {/* Reasoning Settings */}
-                  <Box>
-                    <Tooltip label="Enable clinical reasoning analysis">
-                      <Flex align="center" gap="2">
-                        <Text fontSize="sm">Enable Reasoning Analysis</Text>
-                        <Switch
-                          size="sm"
-                          isChecked={config?.REASONING_ENABLED === true}
-                          onChange={(e) =>
-                            handleConfigChange(
-                              "REASONING_ENABLED",
-                              e.target.checked,
-                            )
-                          }
-                        />
-                      </Flex>
-                    </Tooltip>
-
-                    <Collapse
-                      in={config?.REASONING_ENABLED === true}
-                      animateOpacity
-                    >
-                      <Box mt="2">
-                        <Tooltip label="Model for clinical reasoning analysis">
-                          <Text fontSize="sm">Reasoning Model</Text>
-                        </Tooltip>
-                        <Select
-                          size="sm"
-                          value={config?.REASONING_MODEL || ""}
-                          onChange={(e) =>
-                            handleConfigChange(
-                              "REASONING_MODEL",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Select model"
-                          className="input-style"
-                        >
-                          {modelOptions.map((model) => (
-                            <option key={model} value={model}>
-                              {model}
-                            </option>
-                          ))}
-                        </Select>
-                      </Box>
-                    </Collapse>
                   </Box>
                 </VStack>
               </Box>
