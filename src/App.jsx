@@ -260,6 +260,20 @@ function AppContent() {
         display="flex"
         flexDirection="column"
       >
+        {/* Tauri titlebar drag region for macOS */}
+        {isTauri() && (
+          <Box
+            data-tauri-drag-region
+            height="25px"
+            position="fixed"
+            top="0"
+            right="0"
+            left={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
+            zIndex="1000"
+            transition="left 0.3s ease"
+          />
+        )}
+
         <Box
           m={isTauri() ? "5px" : "0"}
           borderRadius={isTauri() ? "16px" : "0"}

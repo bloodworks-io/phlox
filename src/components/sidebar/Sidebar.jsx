@@ -24,6 +24,7 @@ import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { colors } from "../../theme/colors";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
+import { isTauri } from "../../utils/helpers/apiConfig";
 
 const Sidebar = ({
   onNewPatient,
@@ -148,6 +149,7 @@ const Sidebar = ({
       left="0"
       h="100vh"
       p={isCollapsed ? "2" : "4"}
+      pt={isCollapsed ? (isTauri() ? "6" : "2") : isTauri() ? "8" : "4"}
       bg={sidebarBg}
       boxShadow={shouldFloat ? "lg" : "md"}
       display="flex"
@@ -165,7 +167,7 @@ const Sidebar = ({
           icon={<HamburgerIcon />}
           onClick={toggleSidebar}
           position="absolute"
-          top="12px"
+          top={isTauri() ? "32px" : "12px"}
           right="15px"
           size="sm"
           borderRadius="full"
@@ -187,7 +189,7 @@ const Sidebar = ({
             icon={<HamburgerIcon />}
             onClick={toggleSidebar}
             position="absolute"
-            top="12px"
+            top={isTauri() ? "32px" : "12px"}
             right="15px"
             size="sm"
             borderRadius="full"
@@ -208,7 +210,15 @@ const Sidebar = ({
         display="flex"
         justifyContent="center"
         width="100%"
-        mt={isCollapsed ? "40px" : "5px"}
+        mt={
+          isCollapsed
+            ? isTauri()
+              ? "50px"
+              : "40px"
+            : isTauri()
+              ? "15px"
+              : "5px"
+        }
         mb={isCollapsed ? "10px" : "15px"}
       >
         <Image
