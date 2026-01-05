@@ -7,3 +7,5 @@
 *.so
 ollama
 *.dylib
+/whisper-cpp
+whisper-server

@@ -57,6 +57,41 @@ fn main() {
         } else {
             println!("cargo:warning=Ollama binary not found at {:?}", ollama_src);
         }
+
+        // Copy whisper-server binary to target directory
+        let whisper_src = if cfg!(target_os = "windows") {
+            Path::new("whisper-server.exe")
+        } else {
+            Path::new("whisper-server")
+        };
+
+        if whisper_src.exists() {
+            let whisper_dest = target_dir.join(whisper_src.file_name().unwrap());
+            if let Err(e) = fs::copy(&whisper_src, &whisper_dest) {
+                println!("cargo:warning=Failed to copy whisper-server binary: {}", e);
+            } else {
+                println!(
+                    "cargo:warning=Copied whisper-server binary to {:?}",
+                    whisper_dest
+                );
+                // Make sure it's executable on Unix systems
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    let mut perms = fs::metadata(&whisper_dest).unwrap().permissions();
+                    perms.set_mode(0o755);
+                    let _ = fs::set_permissions(&whisper_dest, perms);
+                }
+            }
+        } else {
+            println!(
+                "cargo:warning=whisper-server binary not found at {:?}",
+                whisper_src
+            );
+            println!(
+                "cargo:warning=Run './src-tauri/build-whisper.sh' to build whisper.cpp server"
+            );
+        }
     }
 
     tauri_build::build()

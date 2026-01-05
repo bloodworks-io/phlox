@@ -1,17 +1,47 @@
 import logging
+import os
 import re
+import sys
 import time
 from typing import Dict, Union
 
 import aiohttp
-
 from server.database.config.manager import config_manager
 
 logger = logging.getLogger(__name__)
 
+
+def _get_data_dir():
+    """Get platform-specific data directory for reading port files."""
+    if os.name == "nt":  # Windows
+        return os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
+    elif sys.platform == "darwin":  # macOS
+        return os.path.expanduser("~/Library/Application Support")
+    else:  # Linux and others
+        return os.environ.get(
+            "XDG_DATA_HOME", os.path.expanduser("~/.local/share")
+        )
+
+
+def _get_whisper_port() -> str:
+    """Read the whisper server port from the port file."""
+    data_dir = _get_data_dir()
+    if data_dir:
+        port_file = os.path.join(data_dir, "phlox", "whisper_port.txt")
+        if os.path.exists(port_file):
+            try:
+                with open(port_file, "r") as f:
+                    return f.read().strip()
+            except Exception as e:
+                logger.warning(f"Failed to read whisper port file: {e}")
+    return "8081"  # Default fallback
+
+
 async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
     """
     Transcribe an audio buffer using a Whisper endpoint.
+
+    Supports both external API and local whisper.cpp server.
 
     Args:
         audio_buffer (bytes): The audio data to be transcribed.
@@ -26,37 +56,59 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
     """
     try:
         config = config_manager.get_config()
-        filename, content_type = _detect_audio_format(audio_buffer)
-        async with aiohttp.ClientSession() as session:
-            form_data = aiohttp.FormData()
-            form_data.add_field(
-                "file",
-                audio_buffer,
-                filename=filename,
-                content_type=content_type,
-            )
-            form_data.add_field("model", config["WHISPER_MODEL"])
-            form_data.add_field("language", "en")
-            form_data.add_field("temperature", "0.1")
-            form_data.add_field("vad_filter", "true")
-            form_data.add_field("response_format", "verbose_json")
-            form_data.add_field("timestamp_granularities[]", "segment")
 
-            transcription_start = time.perf_counter()
+        # Determine if using local whisper
+        # Local mode is: LLM_PROVIDER is "local" AND WHISPER_BASE_URL is empty
+        is_local_whisper = config.get(
+            "LLM_PROVIDER"
+        ) == "local" and not config.get("WHISPER_BASE_URL")
 
-            headers = {"Authorization": f"Bearer {config['WHISPER_KEY']}"}
+        if is_local_whisper:
+            logger.debug("Using local whisper.cpp server for transcription")
+            return await _transcribe_local_whisper(audio_buffer, config)
+        else:
+            logger.debug("Using external API for transcription")
+            return await _transcribe_external_api(audio_buffer, config)
+    except Exception as error:
+        logger.error(f"Error in transcribe_audio function: {error}")
+        raise
 
-            async with session.post(
-                f"{config['WHISPER_BASE_URL']}/v1/audio/transcriptions",
-                data=form_data,
-                headers=headers,
-            ) as response:
+
+async def _transcribe_local_whisper(
+    audio_buffer: bytes, config: dict
+) -> Dict[str, Union[str, float]]:
+    """Transcribe using local whisper.cpp server."""
+    whisper_port = _get_whisper_port()
+    whisper_url = f"http://127.0.0.1:{whisper_port}/inference"
+
+    logger.info(f"Sending audio to local whisper server at {whisper_url}")
+
+    filename, content_type = _detect_audio_format(audio_buffer)
+
+    async with aiohttp.ClientSession() as session:
+        form_data = aiohttp.FormData()
+        form_data.add_field(
+            "file",
+            audio_buffer,
+            filename=filename,
+            content_type=content_type,
+        )
+        form_data.add_field("response_format", "verbose_json")
+        form_data.add_field("language", "en")
+        form_data.add_field("temperature", "0.0")
+
+        transcription_start = time.perf_counter()
+
+        try:
+            async with session.post(whisper_url, data=form_data) as response:
                 transcription_end = time.perf_counter()
                 transcription_duration = transcription_end - transcription_start
 
                 if response.status != 200:
                     error_text = await response.text()
-                    raise ValueError(f"Transcription failed: {error_text}")
+                    raise ValueError(
+                        f"Whisper local server error: {error_text}"
+                    )
 
                 try:
                     data = await response.json()
@@ -64,12 +116,9 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
                     raise ValueError(f"Failed to parse response: {e}")
 
                 if "text" not in data:
-                    raise ValueError(
-                        "Transcription failed, no text in response"
-                    )
+                    raise ValueError("No text in whisper.cpp response")
 
                 if "segments" in data:
-                    # Extract text from each segment and join with newlines
                     transcript_text = "\n".join(
                         segment["text"].strip() for segment in data["segments"]
                     )
@@ -85,9 +134,70 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
                         f"{transcription_duration:.2f}"
                     ),
                 }
-    except Exception as error:
-        logger.error(f"Error in transcribe_audio function: {error}")
-        raise
+        except aiohttp.ClientError as e:
+            raise ValueError(f"Cannot connect to local whisper server: {e}")
+
+
+async def _transcribe_external_api(
+    audio_buffer: bytes, config: dict
+) -> Dict[str, Union[str, float]]:
+    """Transcribe using external Whisper API (existing logic)."""
+    filename, content_type = _detect_audio_format(audio_buffer)
+    async with aiohttp.ClientSession() as session:
+        form_data = aiohttp.FormData()
+        form_data.add_field(
+            "file",
+            audio_buffer,
+            filename=filename,
+            content_type=content_type,
+        )
+        form_data.add_field("model", config["WHISPER_MODEL"])
+        form_data.add_field("language", "en")
+        form_data.add_field("temperature", "0.1")
+        form_data.add_field("vad_filter", "true")
+        form_data.add_field("response_format", "verbose_json")
+        form_data.add_field("timestamp_granularities[]", "segment")
+
+        transcription_start = time.perf_counter()
+
+        headers = {"Authorization": f"Bearer {config['WHISPER_KEY']}"}
+
+        async with session.post(
+            f"{config['WHISPER_BASE_URL']}/v1/audio/transcriptions",
+            data=form_data,
+            headers=headers,
+        ) as response:
+            transcription_end = time.perf_counter()
+            transcription_duration = transcription_end - transcription_start
+
+            if response.status != 200:
+                error_text = await response.text()
+                raise ValueError(f"Transcription failed: {error_text}")
+
+            try:
+                data = await response.json()
+            except Exception as e:
+                raise ValueError(f"Failed to parse response: {e}")
+
+            if "text" not in data:
+                raise ValueError("Transcription failed, no text in response")
+
+            if "segments" in data:
+                # Extract text from each segment and join with newlines
+                transcript_text = "\n".join(
+                    segment["text"].strip() for segment in data["segments"]
+                )
+            else:
+                transcript_text = data["text"]
+
+            # Clean repetitive text patterns
+            transcript_text = _clean_repetitive_text(transcript_text)
+
+            return {
+                "text": transcript_text,
+                "transcriptionDuration": float(f"{transcription_duration:.2f}"),
+            }
+
 
 def _clean_repetitive_text(text: str) -> str:
     """
