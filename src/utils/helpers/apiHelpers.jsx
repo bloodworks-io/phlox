@@ -10,6 +10,14 @@ export const universalFetch = async (url, options = {}) => {
     stack: new Error().stack,
   });
 
+  console.log(`[universalFetch] Calling URL: ${url}`, {
+    method: options.method || "GET",
+    headers: options.headers,
+    // Log body content for debugging
+    body: options.body,
+    stack: new Error().stack,
+  });
+
   if (isTauri()) {
     const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
     return tauriFetch(url, options);

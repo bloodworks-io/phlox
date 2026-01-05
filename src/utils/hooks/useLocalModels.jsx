@@ -18,6 +18,12 @@ export const useLocalModels = () => {
   const [downloadProgress, setDownloadProgress] = useState({});
   const [activeDownloads, setActiveDownloads] = useState(new Set());
 
+  // Whisper models state
+  const [whisperModels, setWhisperModels] = useState([]);
+  const [whisperRecommendations, setWhisperRecommendations] = useState([]);
+  const [whisperStatus, setWhisperStatus] = useState(null);
+  const [pullingWhisperModel, setPullingWhisperModel] = useState(null);
+
   const toast = useToast();
 
   // Fetch system specifications
@@ -134,168 +140,183 @@ export const useLocalModels = () => {
   }, []);
 
   // Pull Ollama model
-  const pullOllamaModel = useCallback(async (modelName) => {
-    setPullingModel(modelName);
-    try {
-      await localModelApi.pullOllamaModel(modelName);
-      await Promise.all([fetchLocalModels(), fetchOllamaModels()]);
-      toast({
-        title: "Success",
-        description: `Model ${modelName} downloaded successfully`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error("Error pulling model:", error);
-      toast({
-        title: "Error",
-        description: `Failed to download ${modelName}: ${error.message}`,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setPullingModel(null);
-    }
-  }, [fetchLocalModels, fetchOllamaModels, toast]);
+  const pullOllamaModel = useCallback(
+    async (modelName) => {
+      setPullingModel(modelName);
+      try {
+        await localModelApi.pullOllamaModel(modelName);
+        await Promise.all([fetchLocalModels(), fetchOllamaModels()]);
+        toast({
+          title: "Success",
+          description: `Model ${modelName} downloaded successfully`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error("Error pulling model:", error);
+        toast({
+          title: "Error",
+          description: `Failed to download ${modelName}: ${error.message}`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setPullingModel(null);
+      }
+    },
+    [fetchLocalModels, fetchOllamaModels, toast],
+  );
 
   // Download model
-  const downloadModel = useCallback(async (repoId, filename) => {
-    const downloadId = `${repoId}:${filename}`;
-    setActiveDownloads(prev => new Set([...prev, downloadId]));
+  const downloadModel = useCallback(
+    async (repoId, filename) => {
+      const downloadId = `${repoId}:${filename}`;
+      setActiveDownloads((prev) => new Set([...prev, downloadId]));
 
-    try {
-      const response = await localModelApi.downloadModel(repoId, filename);
+      try {
+        const response = await localModelApi.downloadModel(repoId, filename);
 
-      // Start progress polling if download ID is returned
-      if (response.download_id) {
-        pollDownloadProgress(response.download_id);
+        // Start progress polling if download ID is returned
+        if (response.download_id) {
+          pollDownloadProgress(response.download_id);
+        }
+
+        await fetchLocalModels();
+
+        toast({
+          title: "Success",
+          description: "Model download started successfully",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error("Error downloading model:", error);
+        setActiveDownloads((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(downloadId);
+          return newSet;
+        });
+        toast({
+          title: "Error",
+          description: `Failed to download model: ${error.message}`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
       }
-
-      await fetchLocalModels();
-
-      toast({
-        title: "Success",
-        description: "Model download started successfully",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error("Error downloading model:", error);
-      setActiveDownloads(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(downloadId);
-        return newSet;
-      });
-      toast({
-        title: "Error",
-        description: `Failed to download model: ${error.message}`,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  }, [fetchLocalModels, toast]);
+    },
+    [fetchLocalModels, toast],
+  );
 
   // Delete model
-  const deleteModel = useCallback(async (modelName) => {
-    try {
-      await localModelApi.deleteModel(modelName);
-      await fetchLocalModels();
-      toast({
-        title: "Success",
-        description: `Model ${modelName} deleted successfully`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error("Error deleting model:", error);
-      toast({
-        title: "Error",
-        description: `Failed to delete ${modelName}: ${error.message}`,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  }, [fetchLocalModels, toast]);
+  const deleteModel = useCallback(
+    async (modelName) => {
+      try {
+        await localModelApi.deleteModel(modelName);
+        await fetchLocalModels();
+        toast({
+          title: "Success",
+          description: `Model ${modelName} deleted successfully`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error("Error deleting model:", error);
+        toast({
+          title: "Error",
+          description: `Failed to delete ${modelName}: ${error.message}`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    },
+    [fetchLocalModels, toast],
+  );
 
   // Poll download progress
-  const pollDownloadProgress = useCallback((downloadId) => {
-    const interval = setInterval(async () => {
-      try {
-        const progress = await localModelApi.getDownloadProgress(downloadId);
+  const pollDownloadProgress = useCallback(
+    (downloadId) => {
+      const interval = setInterval(async () => {
+        try {
+          const progress = await localModelApi.getDownloadProgress(downloadId);
 
-        setDownloadProgress(prev => ({
-          ...prev,
-          [downloadId]: progress
-        }));
+          setDownloadProgress((prev) => ({
+            ...prev,
+            [downloadId]: progress,
+          }));
 
-        // Stop polling if download is complete or failed
-        if (progress.status === 'completed' || progress.status === 'failed') {
-          clearInterval(interval);
-          setActiveDownloads(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(downloadId);
-            return newSet;
-          });
-
-          if (progress.status === 'completed') {
-            await fetchLocalModels();
-            toast({
-              title: "Success",
-              description: "Model download completed",
-              status: "success",
-              duration: 3000,
-              isClosable: true,
+          // Stop polling if download is complete or failed
+          if (progress.status === "completed" || progress.status === "failed") {
+            clearInterval(interval);
+            setActiveDownloads((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(downloadId);
+              return newSet;
             });
-          } else if (progress.status === 'failed') {
-            toast({
-              title: "Error",
-              description: `Model download failed: ${progress.error}`,
-              status: "error",
-              duration: 5000,
-              isClosable: true,
-            });
+
+            if (progress.status === "completed") {
+              await fetchLocalModels();
+              toast({
+                title: "Success",
+                description: "Model download completed",
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+              });
+            } else if (progress.status === "failed") {
+              toast({
+                title: "Error",
+                description: `Model download failed: ${progress.error}`,
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+              });
+            }
           }
+        } catch (error) {
+          console.error("Error polling download progress:", error);
+          clearInterval(interval);
         }
-      } catch (error) {
-        console.error("Error polling download progress:", error);
-        clearInterval(interval);
-      }
-    }, 1000); // Poll every second
+      }, 1000); // Poll every second
 
-    return () => clearInterval(interval);
-  }, [fetchLocalModels, toast]);
+      return () => clearInterval(interval);
+    },
+    [fetchLocalModels, toast],
+  );
 
   // Cancel download
-  const cancelDownload = useCallback(async (downloadId) => {
-    try {
-      await localModelApi.cancelDownload(downloadId);
-      setActiveDownloads(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(downloadId);
-        return newSet;
-      });
-      setDownloadProgress(prev => {
-        const newProgress = { ...prev };
-        delete newProgress[downloadId];
-        return newProgress;
-      });
-    } catch (error) {
-      console.error("Error cancelling download:", error);
-      toast({
-        title: "Error",
-        description: "Failed to cancel download",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  }, [toast]);
+  const cancelDownload = useCallback(
+    async (downloadId) => {
+      try {
+        await localModelApi.cancelDownload(downloadId);
+        setActiveDownloads((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(downloadId);
+          return newSet;
+        });
+        setDownloadProgress((prev) => {
+          const newProgress = { ...prev };
+          delete newProgress[downloadId];
+          return newProgress;
+        });
+      } catch (error) {
+        console.error("Error cancelling download:", error);
+        toast({
+          title: "Error",
+          description: "Failed to cancel download",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    },
+    [toast],
+  );
 
   // Get filtered recommendations based on system specs
   const getFilteredRecommendations = useCallback(() => {
@@ -304,7 +325,7 @@ export const useLocalModels = () => {
     }
 
     // Filter based on RAM and other specs
-    return modelRecommendations.filter(model => {
+    return modelRecommendations.filter((model) => {
       if (model.min_ram_gb && systemSpecs.total_memory_gb) {
         return systemSpecs.total_memory_gb >= model.min_ram_gb;
       }
@@ -313,17 +334,136 @@ export const useLocalModels = () => {
   }, [systemSpecs, modelRecommendations]);
 
   // Check if model is compatible with system
-  const checkModelCompatibility = useCallback(async (modelName) => {
-    if (!systemSpecs) return null;
+  const checkModelCompatibility = useCallback(
+    async (modelName) => {
+      if (!systemSpecs) return null;
 
+      try {
+        const response = await localModelApi.validateModelCompatibility(
+          modelName,
+          systemSpecs,
+        );
+        return response;
+      } catch (error) {
+        console.error("Error checking model compatibility:", error);
+        return null;
+      }
+    },
+    [systemSpecs],
+  );
+
+  // ========== Whisper Model Functions ==========
+
+  // Fetch Whisper models
+  const fetchWhisperModels = useCallback(async () => {
     try {
-      const response = await localModelApi.validateModelCompatibility(modelName, systemSpecs);
+      const response = await localModelApi.fetchWhisperModels();
+      setWhisperModels(response.models || []);
+      return response.models || [];
+    } catch (error) {
+      console.error("Error fetching Whisper models:", error);
+      setWhisperModels([]);
+      return [];
+    }
+  }, []);
+
+  // Fetch Whisper model recommendations
+  const fetchWhisperRecommendations = useCallback(async () => {
+    try {
+      const response = await localModelApi.fetchWhisperRecommendations();
+      setWhisperRecommendations(response.models || []);
+      return response.models || [];
+    } catch (error) {
+      console.error("Error fetching Whisper recommendations:", error);
+      setWhisperRecommendations([]);
+      return [];
+    }
+  }, []);
+
+  // Fetch Whisper status
+  const fetchWhisperStatus = useCallback(async () => {
+    try {
+      const response = await localModelApi.fetchWhisperStatus();
+      setWhisperStatus(response);
       return response;
     } catch (error) {
-      console.error("Error checking model compatibility:", error);
+      console.error("Error fetching Whisper status:", error);
+      setWhisperStatus(null);
       return null;
     }
-  }, [systemSpecs]);
+  }, []);
+
+  // Download Whisper model
+  const downloadWhisperModel = useCallback(
+    async (modelId) => {
+      setPullingWhisperModel(modelId);
+      try {
+        await localModelApi.downloadWhisperModel(modelId);
+        await fetchWhisperModels();
+
+        // Restart the whisper server to use the new model
+        try {
+          await localModelApi.restartWhisperServer();
+          toast({
+            title: "Success",
+            description: `Whisper model ${modelId} downloaded and server restarted`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        } catch (restartError) {
+          // Model downloaded but restart failed - still notify user of success
+          console.error("Error restarting Whisper server:", restartError);
+          toast({
+            title: "Model Downloaded",
+            description: `Whisper model ${modelId} downloaded. Please restart the app to use it.`,
+            status: "info",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      } catch (error) {
+        console.error("Error downloading Whisper model:", error);
+        toast({
+          title: "Error",
+          description: `Failed to download Whisper model: ${error.message}`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setPullingWhisperModel(null);
+      }
+    },
+    [fetchWhisperModels, toast],
+  );
+
+  // Delete Whisper model
+  const deleteWhisperModel = useCallback(
+    async (modelId) => {
+      try {
+        await localModelApi.deleteWhisperModel(modelId);
+        await fetchWhisperModels();
+        toast({
+          title: "Success",
+          description: `Whisper model ${modelId} deleted successfully`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error("Error deleting Whisper model:", error);
+        toast({
+          title: "Error",
+          description: `Failed to delete Whisper model: ${error.message}`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    },
+    [fetchWhisperModels, toast],
+  );
 
   // Initialize data on mount
   useEffect(() => {
@@ -334,6 +474,9 @@ export const useLocalModels = () => {
         fetchModelRecommendations(),
         fetchOllamaModels(),
         checkLocalStatus(),
+        fetchWhisperModels(),
+        fetchWhisperRecommendations(),
+        fetchWhisperStatus(),
       ]);
     };
 
@@ -344,6 +487,9 @@ export const useLocalModels = () => {
     fetchModelRecommendations,
     fetchOllamaModels,
     checkLocalStatus,
+    fetchWhisperModels,
+    fetchWhisperRecommendations,
+    fetchWhisperStatus,
   ]);
 
   // Refresh all data
@@ -354,11 +500,19 @@ export const useLocalModels = () => {
         fetchLocalModels(),
         fetchOllamaModels(),
         checkLocalStatus(),
+        fetchWhisperModels(),
+        fetchWhisperStatus(),
       ]);
     } finally {
       setLoading(false);
     }
-  }, [fetchLocalModels, fetchOllamaModels, checkLocalStatus]);
+  }, [
+    fetchLocalModels,
+    fetchOllamaModels,
+    checkLocalStatus,
+    fetchWhisperModels,
+    fetchWhisperStatus,
+  ]);
 
   return {
     // State
@@ -378,6 +532,12 @@ export const useLocalModels = () => {
     downloadProgress,
     activeDownloads,
 
+    // Whisper state
+    whisperModels,
+    whisperRecommendations,
+    whisperStatus,
+    pullingWhisperModel,
+
     // Actions
     searchModels,
     fetchRepoFiles,
@@ -387,6 +547,11 @@ export const useLocalModels = () => {
     cancelDownload,
     refreshData,
     checkModelCompatibility,
+
+    // Whisper actions
+    downloadWhisperModel,
+    deleteWhisperModel,
+    restartWhisperServer: () => localModelApi.restartWhisperServer(),
 
     // Computed values
     filteredRecommendations: getFilteredRecommendations(),

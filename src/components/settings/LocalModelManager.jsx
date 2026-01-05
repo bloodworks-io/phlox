@@ -35,8 +35,18 @@ import {
   Icon,
   Divider,
   Center,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
 } from "@chakra-ui/react";
-import { FaExclamationTriangle, FaMicrochip, FaMemory } from "react-icons/fa";
+import {
+  FaExclamationTriangle,
+  FaMicrochip,
+  FaMemory,
+  FaMicrophone,
+} from "react-icons/fa";
 import {
   DeleteIcon,
   DownloadIcon,
@@ -74,15 +84,28 @@ const LocalModelManager = ({ className }) => {
     downloadModel,
     deleteModel,
     refreshData,
+    // Whisper
+    whisperModels,
+    whisperRecommendations,
+    whisperStatus,
+    pullingWhisperModel,
+    downloadWhisperModel,
+    deleteWhisperModel,
   } = useLocalModels();
 
   const [modelToDelete, setModelToDelete] = useState(null);
+  const [whisperModelToDelete, setWhisperModelToDelete] = useState(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isDeleteOpen,
     onOpen: onDeleteOpen,
     onClose: onDeleteClose,
+  } = useDisclosure();
+  const {
+    isOpen: isWhisperDeleteOpen,
+    onOpen: onWhisperDeleteOpen,
+    onClose: onWhisperDeleteClose,
   } = useDisclosure();
 
   // Handle search
@@ -118,6 +141,31 @@ const LocalModelManager = ({ className }) => {
       setModelToDelete(null);
       onDeleteClose();
     }
+  };
+
+  // Handle Whisper model download
+  const handleWhisperDownload = async (modelId) => {
+    await downloadWhisperModel(modelId);
+  };
+
+  // Handle Whisper delete click
+  const handleWhisperDeleteClick = (modelId) => {
+    setWhisperModelToDelete({ modelId });
+    onWhisperDeleteOpen();
+  };
+
+  // Confirm Whisper delete
+  const confirmWhisperDelete = async () => {
+    if (whisperModelToDelete?.modelId) {
+      await deleteWhisperModel(whisperModelToDelete.modelId);
+      setWhisperModelToDelete(null);
+      onWhisperDeleteClose();
+    }
+  };
+
+  // Check if Whisper model is downloaded
+  const isWhisperModelDownloaded = (modelId) => {
+    return whisperModels.some((m) => m.id === modelId || m.name === modelId);
   };
 
   // Fixed: More precise model download detection
@@ -381,18 +429,6 @@ const LocalModelManager = ({ className }) => {
 
   return (
     <VStack spacing={4} align="stretch" className={className}>
-      {!localStatus.available && localStatus.ollama_running && (
-        <Alert status="info" borderRadius="md" size="sm">
-          <AlertIcon />
-          <Box>
-            <AlertDescription fontSize="xs">
-              Ollama is running but local inference may have limited
-              functionality. You can still download and manage models.
-            </AlertDescription>
-          </Box>
-        </Alert>
-      )}
-
       {/* System Information */}
       {systemSpecs && (
         <HStack
@@ -414,200 +450,427 @@ const LocalModelManager = ({ className }) => {
         </HStack>
       )}
 
-      {/* Smart Recommendations */}
-      {smartRecommendations.length > 0 && (
-        <Box>
-          <Text fontSize="sm" fontWeight="semibold" mb="3">
-            Choose Your Model
-          </Text>
-          <Text fontSize="xs" className="pill-box-icons" mb="4">
-            We've selected the best 3 options for your system. Most users should
-            choose "Recommended".
-          </Text>
+      {/* Tabs for LLM and Whisper models */}
+      <Tabs variant="enclosed">
+        <TabList>
+          <Tab>
+            <HStack>
+              <Icon as={FaMicrochip} />
+              <Text>LLM Models</Text>
+            </HStack>
+          </Tab>
+          <Tab>
+            <HStack>
+              <Icon as={FaMicrophone} />
+              <Text>Whisper Models</Text>
+            </HStack>
+          </Tab>
+        </TabList>
 
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-            {smartRecommendations.map((model) => (
-              <SmartRecommendationCard key={model.name} model={model} />
-            ))}
-          </SimpleGrid>
-        </Box>
-      )}
+        <TabPanels>
+          {/* LLM Models Tab */}
+          <TabPanel>
+            <VStack spacing={4} align="stretch">
+              {!localStatus.available && !localStatus?.ollama_running && (
+                <Alert status="warning" borderRadius="md">
+                  <AlertIcon as={FaExclamationTriangle} />
+                  <Box>
+                    <AlertTitle fontSize="sm">
+                      Local Models Not Available
+                    </AlertTitle>
+                    <AlertDescription fontSize="xs">
+                      {localStatus?.reason}
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+              )}
 
-      <Divider />
+              {!localStatus.available && localStatus?.ollama_running && (
+                <Alert status="info" borderRadius="md" size="sm">
+                  <AlertIcon />
+                  <Box>
+                    <AlertDescription fontSize="xs">
+                      Ollama is running but local inference may have limited
+                      functionality. You can still download and manage models.
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+              )}
 
-      {/* Search Section */}
-      <Box>
-        <Text fontSize="sm" mb="2" fontWeight="semibold">
-          Search Other Hugging Face Models
-        </Text>
-        <HStack>
-          <Input
-            size="sm"
-            placeholder="Search for models (e.g., 'llama', 'mistral', 'codellama')"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-            className="input-style"
-          />
-          <Button
-            size="sm"
-            leftIcon={<SearchIcon />}
-            onClick={handleSearch}
-            isLoading={loading}
-            className="nav-button"
-          >
-            Search
-          </Button>
-        </HStack>
-      </Box>
+              {/* Smart Recommendations */}
+              {smartRecommendations.length > 0 && (
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" mb="3">
+                    Choose Your Model
+                  </Text>
+                  <Text fontSize="xs" className="pill-box-icons" mb="4">
+                    We've selected the best 3 options for your system. Most
+                    users should choose "Recommended".
+                  </Text>
 
-      {/* Search Results */}
-      {searchResults.length > 0 && (
-        <Box>
-          <Text fontSize="sm" mb="2" fontWeight="semibold">
-            Search Results
-          </Text>
-          <Box maxHeight="200px" overflowY="auto" className="custom-scrollbar">
-            <Table size="sm">
-              <Thead>
-                <Tr>
-                  <Th fontSize="xs">Model</Th>
-                  <Th fontSize="xs">Downloads</Th>
-                  <Th fontSize="xs">Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {searchResults.map((model) => (
-                  <Tr key={model.repo_id}>
-                    <Td>
-                      <VStack align="start" spacing={0}>
-                        <Text fontSize="xs" fontWeight="bold">
-                          {model.repo_id}
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                    {smartRecommendations.map((model) => (
+                      <SmartRecommendationCard key={model.name} model={model} />
+                    ))}
+                  </SimpleGrid>
+                </Box>
+              )}
+
+              <Divider />
+
+              {/* Search Section */}
+              <Box>
+                <Text fontSize="sm" mb="2" fontWeight="semibold">
+                  Search Other Hugging Face Models
+                </Text>
+                <HStack>
+                  <Input
+                    size="sm"
+                    placeholder="Search for models (e.g., 'llama', 'mistral', 'codellama')"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    className="input-style"
+                  />
+                  <Button
+                    size="sm"
+                    leftIcon={<SearchIcon />}
+                    onClick={handleSearch}
+                    isLoading={loading}
+                    className="nav-button"
+                  >
+                    Search
+                  </Button>
+                </HStack>
+              </Box>
+
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <Box>
+                  <Text fontSize="sm" mb="2" fontWeight="semibold">
+                    Search Results
+                  </Text>
+                  <Box
+                    maxHeight="200px"
+                    overflowY="auto"
+                    className="custom-scrollbar"
+                  >
+                    <Table size="sm">
+                      <Thead>
+                        <Tr>
+                          <Th fontSize="xs">Model</Th>
+                          <Th fontSize="xs">Downloads</Th>
+                          <Th fontSize="xs">Actions</Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {searchResults.map((model) => (
+                          <Tr key={model.repo_id}>
+                            <Td>
+                              <VStack align="start" spacing={0}>
+                                <Text fontSize="xs" fontWeight="bold">
+                                  {model.repo_id}
+                                </Text>
+                                <Text fontSize="xs" className="pill-box-icons">
+                                  by {model.author}
+                                </Text>
+                              </VStack>
+                            </Td>
+                            <Td>
+                              <Text fontSize="xs">
+                                {model.downloads?.toLocaleString()}
+                              </Text>
+                            </Td>
+                            <Td>
+                              <GreenButton
+                                size="xs"
+                                leftIcon={<DownloadIcon />}
+                                onClick={() =>
+                                  handleRepoSelection(model.repo_id)
+                                }
+                              >
+                                Download
+                              </GreenButton>
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </Box>
+                </Box>
+              )}
+
+              {/* Downloaded Models */}
+              <Box>
+                <Flex align="center" mb="2">
+                  <Text fontSize="sm" fontWeight="semibold">
+                    Downloaded Models
+                  </Text>
+                  <Spacer />
+                  <SettingsButton size="xs" onClick={refreshData}>
+                    Refresh
+                  </SettingsButton>
+                </Flex>
+
+                {ollamaModels.length === 0 && models.length === 0 ? (
+                  <Text fontSize="xs" className="pill-box-icons">
+                    No models downloaded yet
+                  </Text>
+                ) : (
+                  <Box
+                    maxHeight="200px"
+                    overflowY="auto"
+                    className="custom-scrollbar"
+                  >
+                    <Table size="sm">
+                      <Thead>
+                        <Tr>
+                          <Th fontSize="xs">Model</Th>
+                          <Th fontSize="xs">Size</Th>
+                          <Th fontSize="xs">Type</Th>
+                          <Th fontSize="xs">Actions</Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {/* Ollama Models */}
+                        {ollamaModels.map((model) => (
+                          <Tr key={`ollama-${model.name}`}>
+                            <Td>
+                              <Text fontSize="xs" fontWeight="bold">
+                                {model.name}
+                              </Text>
+                            </Td>
+                            <Td>
+                              <Badge colorScheme="green" size="sm">
+                                {model.size
+                                  ? localModelHelpers.formatModelSize(
+                                      model.size,
+                                    )
+                                  : "Unknown"}
+                              </Badge>
+                            </Td>
+                            <Td>
+                              <Badge colorScheme="blue" size="sm">
+                                Ollama
+                              </Badge>
+                            </Td>
+                            <Td>
+                              <Tooltip label="Delete model">
+                                <IconButton
+                                  size="xs"
+                                  icon={<DeleteIcon />}
+                                  onClick={() => handleDeleteClick(model.name)}
+                                  className="red-button"
+                                  variant="outline"
+                                />
+                              </Tooltip>
+                            </Td>
+                          </Tr>
+                        ))}
+                        {/* HuggingFace Models */}
+                        {models.map((model) => (
+                          <Tr key={`hf-${model.filename}`}>
+                            <Td>
+                              <Text fontSize="xs" fontWeight="bold">
+                                {model.filename}
+                              </Text>
+                            </Td>
+                            <Td>
+                              <Badge colorScheme="purple" size="sm">
+                                {model.size_mb
+                                  ? `${model.size_mb} MB`
+                                  : "Unknown"}
+                              </Badge>
+                            </Td>
+                            <Td>
+                              <Badge colorScheme="orange" size="sm">
+                                GGUF
+                              </Badge>
+                            </Td>
+                            <Td>
+                              <Tooltip label="Delete model">
+                                <IconButton
+                                  size="xs"
+                                  icon={<DeleteIcon />}
+                                  onClick={() =>
+                                    handleDeleteClick(model.filename)
+                                  }
+                                  className="red-button"
+                                  variant="outline"
+                                />
+                              </Tooltip>
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </Box>
+                )}
+              </Box>
+            </VStack>
+          </TabPanel>
+
+          {/* Whisper Models Tab */}
+          <TabPanel>
+            <VStack spacing={4} align="stretch">
+              <Box>
+                <Text fontSize="sm" fontWeight="semibold" mb="2">
+                  Whisper Speech-to-Text Models
+                </Text>
+                <Text fontSize="xs" className="pill-box-icons">
+                  Download a Whisper model for local transcription. Only one
+                  model can be installed at a time — downloading a new model
+                  will replace the current one.
+                </Text>
+              </Box>
+
+              {/* Whisper Recommendations */}
+              {whisperRecommendations.length > 0 && (
+                <Box>
+                  <Flex align="center" mb="3">
+                    <Text fontSize="sm" fontWeight="semibold">
+                      Available Models
+                    </Text>
+                    <Badge ml="2" colorScheme="orange" fontSize="xs">
+                      Downloading will replace current model
+                    </Badge>
+                  </Flex>
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                    {whisperRecommendations.map((model) => {
+                      const isDownloaded = isWhisperModelDownloaded(model.id);
+                      const isPulling = pullingWhisperModel === model.id;
+
+                      return (
+                        <Box
+                          key={model.id}
+                          p="4"
+                          borderRadius="md"
+                          className="summary-panels"
+                          borderWidth="2px"
+                          borderColor={
+                            model.recommended ? "purple.200" : "gray.200"
+                          }
+                          position="relative"
+                        >
+                          {model.recommended && (
+                            <Badge
+                              colorScheme="purple"
+                              fontSize="xs"
+                              position="absolute"
+                              top="-2"
+                              right="2"
+                            >
+                              Recommended
+                            </Badge>
+                          )}
+
+                          <VStack align="stretch" spacing={3}>
+                            <VStack align="start" spacing={1}>
+                              <Text fontSize="md" fontWeight="bold">
+                                {model.display_name}
+                              </Text>
+                              <Text fontSize="sm" className="pill-box-icons">
+                                {model.size} • {model.quality} • {model.speed}
+                              </Text>
+                              <Text fontSize="xs" className="pill-box-icons">
+                                {model.description}
+                              </Text>
+                            </VStack>
+
+                            {isDownloaded ? (
+                              <GreenButton
+                                size="sm"
+                                isDisabled
+                                leftIcon={<CheckIcon />}
+                              >
+                                Downloaded
+                              </GreenButton>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => handleWhisperDownload(model.id)}
+                                isLoading={isPulling}
+                                loadingText="Downloading..."
+                                className="nav-button"
+                                leftIcon={<DownloadIcon />}
+                              >
+                                Download {model.size}
+                              </Button>
+                            )}
+                          </VStack>
+                        </Box>
+                      );
+                    })}
+                  </SimpleGrid>
+                </Box>
+              )}
+
+              <Divider />
+
+              {/* Downloaded Whisper Model */}
+              <Box>
+                <Flex align="center" mb="2">
+                  <Text fontSize="sm" fontWeight="semibold">
+                    Current Model
+                  </Text>
+                  <Spacer />
+                  <SettingsButton size="xs" onClick={refreshData}>
+                    Refresh
+                  </SettingsButton>
+                </Flex>
+
+                {whisperModels.length === 0 ? (
+                  <Text fontSize="xs" className="pill-box-icons">
+                    No Whisper model downloaded. Download a model above to
+                    enable local transcription.
+                  </Text>
+                ) : (
+                  <HStack
+                    spacing={4}
+                    p="3"
+                    borderWidth="1px"
+                    borderRadius="md"
+                    borderColor="green.200"
+                  >
+                    <CheckIcon color="green.500" boxSize={5} />
+                    <VStack align="start" spacing={1}>
+                      <HStack>
+                        <Text fontSize="sm" fontWeight="bold">
+                          {whisperModels[0].name || whisperModels[0].id}
                         </Text>
-                        <Text fontSize="xs" className="pill-box-icons">
-                          by {model.author}
-                        </Text>
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <Text fontSize="xs">
-                        {model.downloads?.toLocaleString()}
+                        <Badge colorScheme="green" size="sm">
+                          Active
+                        </Badge>
+                      </HStack>
+                      <Text fontSize="xs" className="pill-box-icons">
+                        {whisperModels[0].size_mb
+                          ? `${whisperModels[0].size_mb} MB`
+                          : "Unknown size"}{" "}
+                        •{" "}
+                        {whisperModels[0].description ||
+                          whisperModels[0].category ||
+                          "whisper"}
                       </Text>
-                    </Td>
-                    <Td>
-                      <GreenButton
+                    </VStack>
+                    <Spacer />
+                    <Tooltip label="Delete model">
+                      <IconButton
                         size="xs"
-                        leftIcon={<DownloadIcon />}
-                        onClick={() => handleRepoSelection(model.repo_id)}
-                      >
-                        Download
-                      </GreenButton>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
-        </Box>
-      )}
-
-      {/* Downloaded Models */}
-      <Box>
-        <Flex align="center" mb="2">
-          <Text fontSize="sm" fontWeight="semibold">
-            Downloaded Models
-          </Text>
-          <Spacer />
-          <SettingsButton size="xs" onClick={refreshData}>
-            Refresh
-          </SettingsButton>
-        </Flex>
-
-        {ollamaModels.length === 0 && models.length === 0 ? (
-          <Text fontSize="xs" className="pill-box-icons">
-            No models downloaded yet
-          </Text>
-        ) : (
-          <Box maxHeight="200px" overflowY="auto" className="custom-scrollbar">
-            <Table size="sm">
-              <Thead>
-                <Tr>
-                  <Th fontSize="xs">Model</Th>
-                  <Th fontSize="xs">Size</Th>
-                  <Th fontSize="xs">Type</Th>
-                  <Th fontSize="xs">Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {/* Ollama Models */}
-                {ollamaModels.map((model) => (
-                  <Tr key={`ollama-${model.name}`}>
-                    <Td>
-                      <Text fontSize="xs" fontWeight="bold">
-                        {model.name}
-                      </Text>
-                    </Td>
-                    <Td>
-                      <Badge colorScheme="green" size="sm">
-                        {model.size
-                          ? localModelHelpers.formatModelSize(model.size)
-                          : "Unknown"}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <Badge colorScheme="blue" size="sm">
-                        Ollama
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <Tooltip label="Delete model">
-                        <IconButton
-                          size="xs"
-                          icon={<DeleteIcon />}
-                          onClick={() => handleDeleteClick(model.name)}
-                          className="red-button"
-                          variant="outline"
-                        />
-                      </Tooltip>
-                    </Td>
-                  </Tr>
-                ))}
-                {/* HuggingFace Models */}
-                {models.map((model) => (
-                  <Tr key={`hf-${model.filename}`}>
-                    <Td>
-                      <Text fontSize="xs" fontWeight="bold">
-                        {model.filename}
-                      </Text>
-                    </Td>
-                    <Td>
-                      <Badge colorScheme="purple" size="sm">
-                        {model.size_mb ? `${model.size_mb} MB` : "Unknown"}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <Badge colorScheme="orange" size="sm">
-                        GGUF
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <Tooltip label="Delete model">
-                        <IconButton
-                          size="xs"
-                          icon={<DeleteIcon />}
-                          onClick={() => handleDeleteClick(model.filename)}
-                          className="red-button"
-                          variant="outline"
-                        />
-                      </Tooltip>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
-        )}
-      </Box>
+                        icon={<DeleteIcon />}
+                        onClick={() =>
+                          handleWhisperDeleteClick(whisperModels[0].id)
+                        }
+                        className="red-button"
+                        variant="outline"
+                      />
+                    </Tooltip>
+                  </HStack>
+                )}
+              </Box>
+            </VStack>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
 
       {/* Download Modal for HuggingFace models */}
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
@@ -652,7 +915,7 @@ const LocalModelManager = ({ className }) => {
         </ModalContent>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal for LLM models */}
       <Modal isOpen={isDeleteOpen} onClose={onDeleteClose}>
         <ModalOverlay />
         <ModalContent className="modal-style">
@@ -670,6 +933,28 @@ const LocalModelManager = ({ className }) => {
               Delete
             </RedButton>
             <GreenButton onClick={onDeleteClose}>Cancel</GreenButton>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Modal for Whisper models */}
+      <Modal isOpen={isWhisperDeleteOpen} onClose={onWhisperDeleteClose}>
+        <ModalOverlay />
+        <ModalContent className="modal-style">
+          <ModalHeader>Confirm Delete</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            Are you sure you want to delete the Whisper model{" "}
+            <Text as="span" fontWeight="bold">
+              {whisperModelToDelete?.modelId}
+            </Text>
+            ? This action cannot be undone.
+          </ModalBody>
+          <ModalFooter>
+            <RedButton mr={3} onClick={confirmWhisperDelete}>
+              Delete
+            </RedButton>
+            <GreenButton onClick={onWhisperDeleteClose}>Cancel</GreenButton>
           </ModalFooter>
         </ModalContent>
       </Modal>

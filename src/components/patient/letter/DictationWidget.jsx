@@ -14,6 +14,7 @@ import { FaMicrophone, FaStop } from "react-icons/fa";
 import { universalFetch } from "../../../utils/helpers/apiHelpers";
 import { buildApiUrl } from "../../../utils/helpers/apiConfig";
 import { letterApi } from "../../../utils/api/letterApi";
+import { convertAudioToWav } from "../../../utils/hooks/useTranscription";
 
 const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
   const theme = useTheme();
@@ -186,9 +187,12 @@ const DictationWidget = ({
     if (setLoading) setLoading(true);
 
     try {
+      // Convert audio to WAV format if in Tauri (macOS)
+      const wavBlob = await convertAudioToWav(audioBlob);
+
       // 1. Transcribe
       const formData = new FormData();
-      formData.append("file", audioBlob, "dictation.wav");
+      formData.append("file", wavBlob, "dictation.wav");
 
       const transcribeUrl = await buildApiUrl("/api/transcribe/dictate");
       const transcribeResponse = await universalFetch(transcribeUrl, {
