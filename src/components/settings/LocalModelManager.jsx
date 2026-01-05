@@ -40,6 +40,8 @@ import {
   Tab,
   TabPanels,
   TabPanel,
+  InputGroup,
+  InputRightElement,
 } from "@chakra-ui/react";
 import {
   FaExclamationTriangle,
@@ -53,6 +55,7 @@ import {
   SearchIcon,
   CheckIcon,
   WarningIcon,
+  SmallCloseIcon,
 } from "@chakra-ui/icons";
 import {
   GreenButton,
@@ -61,11 +64,11 @@ import {
   SettingsButton,
 } from "../common/Buttons";
 import { useLocalModels } from "../../utils/hooks/useLocalModels";
-import { localModelHelpers } from "../../utils/helpers/localModelHelpers";
 
 const LocalModelManager = ({ className }) => {
   const {
     models,
+    availableModels,
     searchResults,
     loading,
     searchQuery,
@@ -75,26 +78,24 @@ const LocalModelManager = ({ className }) => {
     repoFiles,
     localStatus,
     systemSpecs,
-    modelRecommendations,
-    pullingModel,
-    ollamaModels,
+    downloadingModel,
     searchModels,
     fetchRepoFiles,
-    pullOllamaModel,
-    downloadModel,
-    deleteModel,
+    downloadLlmModel,
+    deleteLlmModel,
     refreshData,
     // Whisper
     whisperModels,
     whisperRecommendations,
     whisperStatus,
-    pullingWhisperModel,
+    downloadingWhisperModel,
     downloadWhisperModel,
     deleteWhisperModel,
   } = useLocalModels();
 
   const [modelToDelete, setModelToDelete] = useState(null);
   const [whisperModelToDelete, setWhisperModelToDelete] = useState(null);
+  const [customModelInput, setCustomModelInput] = useState("");
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -124,8 +125,22 @@ const LocalModelManager = ({ className }) => {
 
   // Handle model download
   const handleDownload = async (repoId, filename) => {
-    await downloadModel(repoId, filename);
+    await downloadLlmModel(`${repoId}/${filename}`);
     onClose();
+  };
+
+  // Handle pre-configured model download
+  const handlePreconfiguredDownload = async (modelId) => {
+    await downloadLlmModel(modelId);
+  };
+
+  // Handle custom model download
+  const handleCustomDownload = async () => {
+    const input = customModelInput.trim();
+    if (input) {
+      await downloadLlmModel(input);
+      setCustomModelInput("");
+    }
   };
 
   // Handle delete click
@@ -137,7 +152,7 @@ const LocalModelManager = ({ className }) => {
   // Confirm delete
   const confirmDelete = async () => {
     if (modelToDelete?.filename) {
-      await deleteModel(modelToDelete.filename);
+      await deleteLlmModel(modelToDelete.filename);
       setModelToDelete(null);
       onDeleteClose();
     }
@@ -168,49 +183,27 @@ const LocalModelManager = ({ className }) => {
     return whisperModels.some((m) => m.id === modelId || m.name === modelId);
   };
 
-  // Fixed: More precise model download detection
-  const isModelDownloaded = (modelName) => {
-    if (!modelName) return false;
-
-    const normalizedModelName = modelName.toLowerCase().replace(/[:\-_]/g, "");
-
-    // Check Ollama models
-    const ollamaMatch = ollamaModels.some((m) => {
-      if (!m || !m.name) return false;
-      const ollamaName = m.name.toLowerCase().replace(/[:\-_]/g, "");
-      return (
-        ollamaName === normalizedModelName ||
-        ollamaName.startsWith(normalizedModelName) ||
-        normalizedModelName.startsWith(ollamaName)
-      );
-    });
-
-    // Check local GGUF models
-    const localMatch = models.some((m) => {
-      if (!m || !m.filename) return false;
-      const fileName = m.filename.toLowerCase().replace(/[:\-_]/g, "");
-      return (
-        fileName.includes(normalizedModelName) ||
-        normalizedModelName.includes(fileName)
-      );
-    });
-
-    return ollamaMatch || localMatch;
+  // Check if LLM model is downloaded
+  const isModelDownloaded = (modelId) => {
+    if (!modelId) return false;
+    const model = availableModels.find((m) => m.id === modelId);
+    if (!model) return false;
+    return models.some((m) => m.filename === model.filename);
   };
 
-  // Fixed: Better smart recommendations logic
+  // Get smart recommendations based on system specs
   const getSmartRecommendations = () => {
-    if (!systemSpecs || !modelRecommendations.length) return [];
+    if (!systemSpecs || !availableModels.length) return [];
 
     const availableRAM = systemSpecs.total_memory_gb;
 
     // Filter models that fit within recommended RAM
-    const wellSuitedModels = modelRecommendations.filter(
+    const wellSuitedModels = availableModels.filter(
       (model) => availableRAM >= model.recommended_ram_gb,
     );
 
     // Fallback to models that meet minimum RAM
-    const minimalModels = modelRecommendations.filter(
+    const minimalModels = availableModels.filter(
       (model) =>
         availableRAM >= model.min_ram_gb &&
         availableRAM < model.recommended_ram_gb,
@@ -220,13 +213,13 @@ const LocalModelManager = ({ className }) => {
     const addedModelNames = new Set();
 
     const addModel = (model, type, isLimited = false) => {
-      if (model && !addedModelNames.has(model.name)) {
+      if (model && !addedModelNames.has(model.id)) {
         recommendations.push({
           ...model,
           recommendedType: type,
           isLimited,
         });
-        addedModelNames.add(model.name);
+        addedModelNames.add(model.id);
         return true;
       }
       return false;
@@ -236,39 +229,30 @@ const LocalModelManager = ({ className }) => {
     if (wellSuitedModels.length > 0) {
       // 1. FASTEST: Smallest model by RAM requirement
       const fastModel = wellSuitedModels
-        .filter((m) => m.category === "fast" || m.category === "small")
+        .filter((m) => m.category === "tiny" || m.category === "small")
         .sort((a, b) => a.recommended_ram_gb - b.recommended_ram_gb)[0];
 
       if (fastModel) addModel(fastModel, "fastest");
 
-      // 2. RECOMMENDED: Medium/balanced model - look for medium category or mid-range models
+      // 2. RECOMMENDED: Medium/balanced model
       const recommendedModel = wellSuitedModels
-        .filter((m) => !addedModelNames.has(m.name))
-        .filter(
-          (m) =>
-            m.category === "medium" ||
-            (m.recommended_ram_gb >= 6 && m.recommended_ram_gb <= 14),
-        )
-        .sort((a, b) => {
-          // Prefer models using ~50% of available RAM (12GB out of 24GB)
-          const aDistance = Math.abs(a.recommended_ram_gb - availableRAM * 0.5);
-          const bDistance = Math.abs(b.recommended_ram_gb - availableRAM * 0.5);
-          return aDistance - bDistance;
-        })[0];
+        .filter((m) => !addedModelNames.has(m.id))
+        .filter((m) => m.category === "medium")
+        .sort((a, b) => a.recommended_ram_gb - b.recommended_ram_gb)[0];
 
       if (recommendedModel) {
         addModel(recommendedModel, "recommended");
       } else {
         // Fallback: Pick the second smallest model as recommended
         const fallbackRecommended = wellSuitedModels
-          .filter((m) => !addedModelNames.has(m.name))
+          .filter((m) => !addedModelNames.has(m.id))
           .sort((a, b) => a.recommended_ram_gb - b.recommended_ram_gb)[0];
         if (fallbackRecommended) addModel(fallbackRecommended, "recommended");
       }
 
       // 3. BEST QUALITY: Largest model that fits
       const qualityModel = wellSuitedModels
-        .filter((m) => !addedModelNames.has(m.name))
+        .filter((m) => !addedModelNames.has(m.id))
         .sort((a, b) => b.recommended_ram_gb - a.recommended_ram_gb)[0];
 
       if (qualityModel) addModel(qualityModel, "best_quality");
@@ -278,7 +262,7 @@ const LocalModelManager = ({ className }) => {
     if (recommendations.length < 3 && minimalModels.length > 0) {
       const remainingSlots = 3 - recommendations.length;
       const bestMinimalModels = minimalModels
-        .filter((m) => !addedModelNames.has(m.name))
+        .filter((m) => !addedModelNames.has(m.id))
         .sort((a, b) => a.min_ram_gb - b.min_ram_gb)
         .slice(0, remainingSlots);
 
@@ -297,12 +281,8 @@ const LocalModelManager = ({ className }) => {
   };
 
   const SmartRecommendationCard = ({ model }) => {
-    const isPulling = pullingModel === model.name;
-    const isDownloaded = isModelDownloaded(model.name);
-    const compatibility = localModelHelpers.isModelCompatible(
-      model,
-      systemSpecs,
-    );
+    const isDownloading = downloadingModel === model.id;
+    const isDownloaded = isModelDownloaded(model.id);
 
     const getRecommendationBadge = () => {
       if (model.recommendedType === "fastest")
@@ -332,7 +312,7 @@ const LocalModelManager = ({ className }) => {
               {badge.text}
             </Badge>
           )}
-          {(model.isLimited || !compatibility.compatible) && (
+          {model.isLimited && (
             <Badge colorScheme="yellow" fontSize="xs">
               ⚠️ Limited
             </Badge>
@@ -342,21 +322,14 @@ const LocalModelManager = ({ className }) => {
         <VStack align="stretch" spacing={3}>
           <VStack align="start" spacing={1}>
             <Text fontSize="md" fontWeight="bold">
-              {model.display_name}
+              {model.description?.split(" - ")[0] || model.id}
             </Text>
             <Text fontSize="sm" className="pill-box-icons">
-              {model.size} • {model.speed} • {model.quality}
+              {model.size_mb}MB • {model.category}
             </Text>
             <Text fontSize="xs" className="pill-box-icons">
-              {model.use_case}
+              {model.description}
             </Text>
-            {(model.isLimited || !compatibility.compatible) && (
-              <Text fontSize="xs" className="yellow-icon">
-                {model.isLimited
-                  ? "May run slower than optimal"
-                  : compatibility.reason}
-              </Text>
-            )}
           </VStack>
 
           {systemSpecs && (
@@ -371,11 +344,7 @@ const LocalModelManager = ({ className }) => {
                     100,
                   100,
                 )}
-                colorScheme={
-                  compatibility.compatible && !model.isLimited
-                    ? "green"
-                    : "yellow"
-                }
+                colorScheme={model.isLimited ? "yellow" : "green"}
                 size="sm"
               />
             </Box>
@@ -388,13 +357,13 @@ const LocalModelManager = ({ className }) => {
           ) : (
             <Button
               size="sm"
-              onClick={() => pullOllamaModel(model.name)}
-              isLoading={isPulling}
+              onClick={() => handlePreconfiguredDownload(model.id)}
+              isLoading={isDownloading}
               loadingText="Downloading..."
               className="nav-button"
               leftIcon={<DownloadIcon />}
             >
-              Download {model.size}
+              Download {model.size_mb}MB
             </Button>
           )}
         </VStack>
@@ -413,14 +382,14 @@ const LocalModelManager = ({ className }) => {
     );
   }
 
-  if (!localStatus.available && !localStatus.ollama_running) {
+  if (!localStatus.available && !localStatus.llama_server_running) {
     return (
       <Alert status="warning" borderRadius="md">
         <AlertIcon as={FaExclamationTriangle} />
         <Box>
           <AlertTitle fontSize="sm">Local Models Not Available</AlertTitle>
           <AlertDescription fontSize="xs">
-            {localStatus.reason}
+            Local models are only available in Tauri builds.
           </AlertDescription>
         </Box>
       </Alert>
@@ -471,7 +440,7 @@ const LocalModelManager = ({ className }) => {
           {/* LLM Models Tab */}
           <TabPanel>
             <VStack spacing={4} align="stretch">
-              {!localStatus.available && !localStatus?.ollama_running && (
+              {!localStatus.available && !localStatus?.llama_server_running && (
                 <Alert status="warning" borderRadius="md">
                   <AlertIcon as={FaExclamationTriangle} />
                   <Box>
@@ -479,19 +448,7 @@ const LocalModelManager = ({ className }) => {
                       Local Models Not Available
                     </AlertTitle>
                     <AlertDescription fontSize="xs">
-                      {localStatus?.reason}
-                    </AlertDescription>
-                  </Box>
-                </Alert>
-              )}
-
-              {!localStatus.available && localStatus?.ollama_running && (
-                <Alert status="info" borderRadius="md" size="sm">
-                  <AlertIcon />
-                  <Box>
-                    <AlertDescription fontSize="xs">
-                      Ollama is running but local inference may have limited
-                      functionality. You can still download and manage models.
+                      Local models are only available in Tauri builds.
                     </AlertDescription>
                   </Box>
                 </Alert>
@@ -505,12 +462,14 @@ const LocalModelManager = ({ className }) => {
                   </Text>
                   <Text fontSize="xs" className="pill-box-icons" mb="4">
                     We've selected the best 3 options for your system. Most
-                    users should choose "Recommended".
+                    users should choose "Recommended". Only one model can be
+                    installed at a time — downloading a new model will replace
+                    the current one.
                   </Text>
 
                   <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
                     {smartRecommendations.map((model) => (
-                      <SmartRecommendationCard key={model.name} model={model} />
+                      <SmartRecommendationCard key={model.id} model={model} />
                     ))}
                   </SimpleGrid>
                 </Box>
@@ -518,15 +477,62 @@ const LocalModelManager = ({ className }) => {
 
               <Divider />
 
+              {/* Custom Model Input */}
+              <Box>
+                <Text fontSize="sm" mb="2" fontWeight="semibold">
+                  Custom Model from HuggingFace
+                </Text>
+                <Text fontSize="xs" className="pill-box-icons" mb="2">
+                  Download any GGUF model by entering the repo ID and filename.
+                  Format: <code>repo_id/filename.gguf</code>
+                </Text>
+                <HStack>
+                  <InputGroup>
+                    <Input
+                      size="sm"
+                      placeholder="e.g., unsloth/CustomModel-GGUF/Q4_K_M.gguf"
+                      value={customModelInput}
+                      onChange={(e) => setCustomModelInput(e.target.value)}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" && handleCustomDownload()
+                      }
+                      className="input-style"
+                    />
+                    {customModelInput && (
+                      <InputRightElement>
+                        <IconButton
+                          size="xs"
+                          icon={<SmallCloseIcon />}
+                          onClick={() => setCustomModelInput("")}
+                          variant="ghost"
+                        />
+                      </InputRightElement>
+                    )}
+                  </InputGroup>
+                  <Button
+                    size="sm"
+                    leftIcon={<DownloadIcon />}
+                    onClick={handleCustomDownload}
+                    isLoading={downloadingModel}
+                    loadingText="Downloading..."
+                    className="nav-button"
+                  >
+                    Download
+                  </Button>
+                </HStack>
+              </Box>
+
+              <Divider />
+
               {/* Search Section */}
               <Box>
                 <Text fontSize="sm" mb="2" fontWeight="semibold">
-                  Search Other Hugging Face Models
+                  Browse HuggingFace Models
                 </Text>
                 <HStack>
                   <Input
                     size="sm"
-                    placeholder="Search for models (e.g., 'llama', 'mistral', 'codellama')"
+                    placeholder="Search for models (e.g., 'llama', 'mistral')"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -589,7 +595,7 @@ const LocalModelManager = ({ className }) => {
                                   handleRepoSelection(model.repo_id)
                                 }
                               >
-                                Download
+                                Browse
                               </GreenButton>
                             </Td>
                           </Tr>
@@ -604,7 +610,7 @@ const LocalModelManager = ({ className }) => {
               <Box>
                 <Flex align="center" mb="2">
                   <Text fontSize="sm" fontWeight="semibold">
-                    Downloaded Models
+                    Current Model
                   </Text>
                   <Spacer />
                   <SettingsButton size="xs" onClick={refreshData}>
@@ -612,9 +618,9 @@ const LocalModelManager = ({ className }) => {
                   </SettingsButton>
                 </Flex>
 
-                {ollamaModels.length === 0 && models.length === 0 ? (
+                {models.length === 0 ? (
                   <Text fontSize="xs" className="pill-box-icons">
-                    No models downloaded yet
+                    No model downloaded. Select a model above to get started.
                   </Text>
                 ) : (
                   <Box
@@ -627,64 +633,29 @@ const LocalModelManager = ({ className }) => {
                         <Tr>
                           <Th fontSize="xs">Model</Th>
                           <Th fontSize="xs">Size</Th>
-                          <Th fontSize="xs">Type</Th>
                           <Th fontSize="xs">Actions</Th>
                         </Tr>
                       </Thead>
                       <Tbody>
-                        {/* Ollama Models */}
-                        {ollamaModels.map((model) => (
-                          <Tr key={`ollama-${model.name}`}>
-                            <Td>
-                              <Text fontSize="xs" fontWeight="bold">
-                                {model.name}
-                              </Text>
-                            </Td>
-                            <Td>
-                              <Badge colorScheme="green" size="sm">
-                                {model.size
-                                  ? localModelHelpers.formatModelSize(
-                                      model.size,
-                                    )
-                                  : "Unknown"}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              <Badge colorScheme="blue" size="sm">
-                                Ollama
-                              </Badge>
-                            </Td>
-                            <Td>
-                              <Tooltip label="Delete model">
-                                <IconButton
-                                  size="xs"
-                                  icon={<DeleteIcon />}
-                                  onClick={() => handleDeleteClick(model.name)}
-                                  className="red-button"
-                                  variant="outline"
-                                />
-                              </Tooltip>
-                            </Td>
-                          </Tr>
-                        ))}
-                        {/* HuggingFace Models */}
                         {models.map((model) => (
-                          <Tr key={`hf-${model.filename}`}>
+                          <Tr key={model.filename}>
                             <Td>
-                              <Text fontSize="xs" fontWeight="bold">
-                                {model.filename}
-                              </Text>
+                              <VStack align="start" spacing={0}>
+                                <Text fontSize="xs" fontWeight="bold">
+                                  {model.filename}
+                                </Text>
+                                {model.is_selected && (
+                                  <Badge colorScheme="green" size="xs">
+                                    Active
+                                  </Badge>
+                                )}
+                              </VStack>
                             </Td>
                             <Td>
                               <Badge colorScheme="purple" size="sm">
                                 {model.size_mb
                                   ? `${model.size_mb} MB`
                                   : "Unknown"}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              <Badge colorScheme="orange" size="sm">
-                                GGUF
                               </Badge>
                             </Td>
                             <Td>
@@ -738,7 +709,8 @@ const LocalModelManager = ({ className }) => {
                   <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
                     {whisperRecommendations.map((model) => {
                       const isDownloaded = isWhisperModelDownloaded(model.id);
-                      const isPulling = pullingWhisperModel === model.id;
+                      const isDownloading =
+                        downloadingWhisperModel === model.id;
 
                       return (
                         <Box
@@ -789,7 +761,7 @@ const LocalModelManager = ({ className }) => {
                               <Button
                                 size="sm"
                                 onClick={() => handleWhisperDownload(model.id)}
-                                isLoading={isPulling}
+                                isLoading={isDownloading}
                                 loadingText="Downloading..."
                                 className="nav-button"
                                 leftIcon={<DownloadIcon />}

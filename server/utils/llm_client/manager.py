@@ -1,77 +1,82 @@
-"""Local model manager for Ollama model lifecycle management."""
+"""Local model manager for GGUF model file listing."""
 
 import logging
+from pathlib import Path
+from typing import Dict, List
+
+from server.constants import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
 
 class LocalModelManager:
-    """Manages local models through bundled Ollama."""
+    """Manages local GGUF models by scanning the models directory."""
 
-    def __init__(self, ollama_url: str = "http://127.0.0.1:11434"):
-        self.ollama_url = ollama_url
+    def __init__(self):
+        # Models stored in DATA_DIR/llm_models
+        self.models_dir = DATA_DIR / "llm_models"
+        self.models_dir.mkdir(parents=True, exist_ok=True)
 
-    async def _ollama_request(
-        self, endpoint: str, method: str = "GET", json_data=None
-    ):
-        """Make request to local Ollama instance."""
-        import aiohttp
+    async def list_models(self) -> List[Dict]:
+        """List available GGUF models in the models directory."""
+        models = []
 
-        async with aiohttp.ClientSession() as session:
-            url = f"{self.ollama_url}/api/{endpoint}"
-            if method == "GET":
-                async with session.get(url) as response:
-                    return (
-                        await response.json()
-                        if response.status == 200
-                        else None
-                    )
-            elif method == "POST":
-                async with session.post(url, json=json_data) as response:
-                    return (
-                        await response.json()
-                        if response.status == 200
-                        else None
-                    )
+        # First, check if we have a model selection file
+        selection_file = DATA_DIR / "llm_model.txt"
+        selected_filename = None
+        if selection_file.exists():
+            selected_filename = selection_file.read_text().strip()
 
-    async def list_models(self):
-        """List available models in Ollama."""
-        result = await self._ollama_request("tags")
-        return result.get("models", []) if result else []
+        for model_file in self.models_dir.glob("*.gguf"):
+            size_bytes = model_file.stat().st_size
+            size_mb = round(size_bytes / (1024 * 1024), 1)
+            filename = model_file.name
 
-    async def is_model_available(self, model_name: str) -> bool:
-        """Check if model is available in Ollama."""
-        models = await self.list_models()
-        return any(model["name"] == model_name for model in models)
+            models.append(
+                {
+                    "name": filename,
+                    "filename": filename,
+                    "size": size_bytes,
+                    "size_mb": size_mb,
+                    "modified_at": model_file.stat().st_mtime,
+                    "path": str(model_file),
+                    "is_selected": selected_filename == filename,
+                }
+            )
+
+        return sorted(models, key=lambda m: m["size"])
+
+    async def is_model_available(self, filename: str) -> bool:
+        """Check if a model file exists."""
+        model_path = self.models_dir / filename
+        return model_path.exists()
+
+    def get_model_path(self, repo_id: str, filename: str) -> str:
+        """Get the full path to a model file."""
+        # repo_id is ignored for GGUF files, we use the flat structure
+        model_path = self.models_dir / filename
+        if model_path.exists():
+            return str(model_path)
+        return None
 
     async def pull_model(self, model_name: str, progress_callback=None):
-        """Pull model using Ollama."""
-        import aiohttp
+        """Pull model - not supported for GGUF files (use download_model instead)."""
+        raise NotImplementedError(
+            "pull_model is not supported for GGUF files. "
+            "Use the download_model API endpoint instead."
+        )
 
-        async with aiohttp.ClientSession() as session:
-            url = f"{self.ollama_url}/api/pull"
-            data = {"name": model_name}
-
-            async with session.post(url, json=data) as response:
-                if response.status == 200:
-                    async for line in response.content:
-                        if line and progress_callback:
-                            try:
-                                import json
-
-                                status = json.loads(line.decode())
-                                progress_callback(status)
-                            except:
-                                continue
-                    return True
+    async def delete_model(self, filename: str):
+        """Delete a model file."""
+        model_path = self.models_dir / filename
+        if model_path.exists():
+            model_path.unlink()
+            # Also clean up the model selection file if it exists
+            selection_file = DATA_DIR / "llm_model.txt"
+            if selection_file.exists():
+                try:
+                    selection_file.unlink()
+                except Exception:
+                    pass
+            return True
         return False
-
-    async def delete_model(self, model_name: str):
-        """Delete model from Ollama."""
-        import aiohttp
-
-        async with aiohttp.ClientSession() as session:
-            url = f"{self.ollama_url}/api/delete"
-            data = {"name": model_name}
-            async with session.delete(url, json=data) as response:
-                return response.status == 200

@@ -32,30 +32,37 @@ fn main() {
             }
         }
 
-        // Copy Ollama binary to target directory
-        let ollama_src = if cfg!(target_os = "windows") {
-            Path::new("ollama.exe")
+        // Copy llama-server binary to target directory
+        let llama_src = if cfg!(target_os = "windows") {
+            Path::new("llama-server.exe")
         } else {
-            Path::new("ollama")
+            Path::new("llama-server")
         };
 
-        if ollama_src.exists() {
-            let ollama_dest = target_dir.join(ollama_src.file_name().unwrap());
-            if let Err(e) = fs::copy(&ollama_src, &ollama_dest) {
-                println!("cargo:warning=Failed to copy Ollama binary: {}", e);
+        if llama_src.exists() {
+            let llama_dest = target_dir.join(llama_src.file_name().unwrap());
+            if let Err(e) = fs::copy(&llama_src, &llama_dest) {
+                println!("cargo:warning=Failed to copy llama-server binary: {}", e);
             } else {
-                println!("cargo:warning=Copied Ollama binary to {:?}", ollama_dest);
+                println!(
+                    "cargo:warning=Copied llama-server binary to {:?}",
+                    llama_dest
+                );
                 // Make sure it's executable on Unix systems
                 #[cfg(unix)]
                 {
                     use std::os::unix::fs::PermissionsExt;
-                    let mut perms = fs::metadata(&ollama_dest).unwrap().permissions();
+                    let mut perms = fs::metadata(&llama_dest).unwrap().permissions();
                     perms.set_mode(0o755);
-                    let _ = fs::set_permissions(&ollama_dest, perms);
+                    let _ = fs::set_permissions(&llama_dest, perms);
                 }
             }
         } else {
-            println!("cargo:warning=Ollama binary not found at {:?}", ollama_src);
+            println!(
+                "cargo:warning=llama-server binary not found at {:?}",
+                llama_src
+            );
+            println!("cargo:warning=Run './src-tauri/build-llama.sh' to build llama.cpp server");
         }
 
         // Copy whisper-server binary to target directory

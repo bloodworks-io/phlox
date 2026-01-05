@@ -5,24 +5,21 @@ import { invoke } from "@tauri-apps/api/core";
 
 export const useLocalModels = () => {
   const [models, setModels] = useState([]);
+  const [availableModels, setAvailableModels] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRepo, setSelectedRepo] = useState("");
-  const [repoFiles, setRepoFiles] = useState([]);
+  const [repoFiles, setRepoFiles] = useState({});
   const [localStatus, setLocalStatus] = useState(null);
   const [systemSpecs, setSystemSpecs] = useState(null);
-  const [modelRecommendations, setModelRecommendations] = useState([]);
-  const [pullingModel, setPullingModel] = useState(null);
-  const [ollamaModels, setOllamaModels] = useState([]);
-  const [downloadProgress, setDownloadProgress] = useState({});
-  const [activeDownloads, setActiveDownloads] = useState(new Set());
+  const [downloadingModel, setDownloadingModel] = useState(null);
 
   // Whisper models state
   const [whisperModels, setWhisperModels] = useState([]);
   const [whisperRecommendations, setWhisperRecommendations] = useState([]);
   const [whisperStatus, setWhisperStatus] = useState(null);
-  const [pullingWhisperModel, setPullingWhisperModel] = useState(null);
+  const [downloadingWhisperModel, setDownloadingWhisperModel] = useState(null);
 
   const toast = useToast();
 
@@ -45,7 +42,7 @@ export const useLocalModels = () => {
     }
   }, [toast]);
 
-  // Fetch local models
+  // Fetch downloaded local models
   const fetchLocalModels = useCallback(async () => {
     try {
       const response = await localModelApi.fetchLocalModels();
@@ -58,31 +55,23 @@ export const useLocalModels = () => {
     }
   }, []);
 
-  // Fetch model recommendations
-  const fetchModelRecommendations = useCallback(async () => {
+  // Fetch available pre-configured models
+  const fetchAvailableModels = useCallback(async () => {
     try {
-      const response = await localModelApi.fetchModelRecommendations();
-      setModelRecommendations(response.models || []);
+      const response = await localModelApi.fetchAvailableLlmModels();
+      setAvailableModels(response.models || []);
       return response.models || [];
     } catch (error) {
-      console.error("Error fetching model recommendations:", error);
-      setModelRecommendations([]);
+      console.error("Error fetching available models:", error);
+      setAvailableModels([]);
       return [];
     }
   }, []);
 
-  // Fetch Ollama models
-  const fetchOllamaModels = useCallback(async () => {
-    try {
-      const response = await localModelApi.fetchOllamaModels();
-      setOllamaModels(response || []);
-      return response || [];
-    } catch (error) {
-      console.error("Error fetching Ollama models:", error);
-      setOllamaModels([]);
-      return [];
-    }
-  }, []);
+  // Fetch model recommendations (same as available models now)
+  const fetchModelRecommendations = useCallback(async () => {
+    return await fetchAvailableModels();
+  }, [fetchAvailableModels]);
 
   // Check local status
   const checkLocalStatus = useCallback(async () => {
@@ -97,7 +86,7 @@ export const useLocalModels = () => {
     }
   }, []);
 
-  // Search models
+  // Search models on HuggingFace
   const searchModels = useCallback(async (query) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -121,84 +110,55 @@ export const useLocalModels = () => {
   // Get repository files
   const fetchRepoFiles = useCallback(async (repoId) => {
     if (!repoId) {
-      setRepoFiles([]);
-      return [];
+      setRepoFiles({});
+      return {};
     }
 
     setLoading(true);
     try {
       const response = await localModelApi.getRepoFiles(repoId);
-      setRepoFiles(response.files || []);
-      return response.files || [];
+      setRepoFiles(response.quantizations || {});
+      return response;
     } catch (error) {
       console.error("Error fetching repo files:", error);
-      setRepoFiles([]);
-      return [];
+      setRepoFiles({});
+      return {};
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Pull Ollama model
-  const pullOllamaModel = useCallback(
-    async (modelName) => {
-      setPullingModel(modelName);
+  // Download LLM model (supports both pre-configured and custom)
+  const downloadLlmModel = useCallback(
+    async (modelId) => {
+      setDownloadingModel(modelId);
       try {
-        await localModelApi.pullOllamaModel(modelName);
-        await Promise.all([fetchLocalModels(), fetchOllamaModels()]);
-        toast({
-          title: "Success",
-          description: `Model ${modelName} downloaded successfully`,
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } catch (error) {
-        console.error("Error pulling model:", error);
-        toast({
-          title: "Error",
-          description: `Failed to download ${modelName}: ${error.message}`,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        setPullingModel(null);
-      }
-    },
-    [fetchLocalModels, fetchOllamaModels, toast],
-  );
-
-  // Download model
-  const downloadModel = useCallback(
-    async (repoId, filename) => {
-      const downloadId = `${repoId}:${filename}`;
-      setActiveDownloads((prev) => new Set([...prev, downloadId]));
-
-      try {
-        const response = await localModelApi.downloadModel(repoId, filename);
-
-        // Start progress polling if download ID is returned
-        if (response.download_id) {
-          pollDownloadProgress(response.download_id);
-        }
-
+        await localModelApi.downloadLlmModel(modelId);
         await fetchLocalModels();
 
-        toast({
-          title: "Success",
-          description: "Model download started successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
+        // Restart the llama server to use the new model
+        try {
+          await localModelApi.restartLlamaServer();
+          toast({
+            title: "Success",
+            description: `Model downloaded and server restarted`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        } catch (restartError) {
+          // Model downloaded but restart failed - still notify user of success
+          console.error("Error restarting llama server:", restartError);
+          toast({
+            title: "Model Downloaded",
+            description: `Model downloaded. Please restart the app to use it.`,
+            status: "info",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
       } catch (error) {
         console.error("Error downloading model:", error);
-        setActiveDownloads((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(downloadId);
-          return newSet;
-        });
         toast({
           title: "Error",
           description: `Failed to download model: ${error.message}`,
@@ -206,20 +166,22 @@ export const useLocalModels = () => {
           duration: 5000,
           isClosable: true,
         });
+      } finally {
+        setDownloadingModel(null);
       }
     },
     [fetchLocalModels, toast],
   );
 
-  // Delete model
-  const deleteModel = useCallback(
-    async (modelName) => {
+  // Delete LLM model
+  const deleteLlmModel = useCallback(
+    async (filename) => {
       try {
-        await localModelApi.deleteModel(modelName);
+        await localModelApi.deleteLlmModel(filename);
         await fetchLocalModels();
         toast({
           title: "Success",
-          description: `Model ${modelName} deleted successfully`,
+          description: `Model deleted successfully`,
           status: "success",
           duration: 3000,
           isClosable: true,
@@ -228,7 +190,7 @@ export const useLocalModels = () => {
         console.error("Error deleting model:", error);
         toast({
           title: "Error",
-          description: `Failed to delete ${modelName}: ${error.message}`,
+          description: `Failed to delete model: ${error.message}`,
           status: "error",
           duration: 5000,
           isClosable: true,
@@ -236,120 +198,6 @@ export const useLocalModels = () => {
       }
     },
     [fetchLocalModels, toast],
-  );
-
-  // Poll download progress
-  const pollDownloadProgress = useCallback(
-    (downloadId) => {
-      const interval = setInterval(async () => {
-        try {
-          const progress = await localModelApi.getDownloadProgress(downloadId);
-
-          setDownloadProgress((prev) => ({
-            ...prev,
-            [downloadId]: progress,
-          }));
-
-          // Stop polling if download is complete or failed
-          if (progress.status === "completed" || progress.status === "failed") {
-            clearInterval(interval);
-            setActiveDownloads((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(downloadId);
-              return newSet;
-            });
-
-            if (progress.status === "completed") {
-              await fetchLocalModels();
-              toast({
-                title: "Success",
-                description: "Model download completed",
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-              });
-            } else if (progress.status === "failed") {
-              toast({
-                title: "Error",
-                description: `Model download failed: ${progress.error}`,
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-              });
-            }
-          }
-        } catch (error) {
-          console.error("Error polling download progress:", error);
-          clearInterval(interval);
-        }
-      }, 1000); // Poll every second
-
-      return () => clearInterval(interval);
-    },
-    [fetchLocalModels, toast],
-  );
-
-  // Cancel download
-  const cancelDownload = useCallback(
-    async (downloadId) => {
-      try {
-        await localModelApi.cancelDownload(downloadId);
-        setActiveDownloads((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(downloadId);
-          return newSet;
-        });
-        setDownloadProgress((prev) => {
-          const newProgress = { ...prev };
-          delete newProgress[downloadId];
-          return newProgress;
-        });
-      } catch (error) {
-        console.error("Error cancelling download:", error);
-        toast({
-          title: "Error",
-          description: "Failed to cancel download",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    },
-    [toast],
-  );
-
-  // Get filtered recommendations based on system specs
-  const getFilteredRecommendations = useCallback(() => {
-    if (!systemSpecs || !modelRecommendations.length) {
-      return modelRecommendations;
-    }
-
-    // Filter based on RAM and other specs
-    return modelRecommendations.filter((model) => {
-      if (model.min_ram_gb && systemSpecs.total_memory_gb) {
-        return systemSpecs.total_memory_gb >= model.min_ram_gb;
-      }
-      return true;
-    });
-  }, [systemSpecs, modelRecommendations]);
-
-  // Check if model is compatible with system
-  const checkModelCompatibility = useCallback(
-    async (modelName) => {
-      if (!systemSpecs) return null;
-
-      try {
-        const response = await localModelApi.validateModelCompatibility(
-          modelName,
-          systemSpecs,
-        );
-        return response;
-      } catch (error) {
-        console.error("Error checking model compatibility:", error);
-        return null;
-      }
-    },
-    [systemSpecs],
   );
 
   // ========== Whisper Model Functions ==========
@@ -396,7 +244,7 @@ export const useLocalModels = () => {
   // Download Whisper model
   const downloadWhisperModel = useCallback(
     async (modelId) => {
-      setPullingWhisperModel(modelId);
+      setDownloadingWhisperModel(modelId);
       try {
         await localModelApi.downloadWhisperModel(modelId);
         await fetchWhisperModels();
@@ -432,7 +280,7 @@ export const useLocalModels = () => {
           isClosable: true,
         });
       } finally {
-        setPullingWhisperModel(null);
+        setDownloadingWhisperModel(null);
       }
     },
     [fetchWhisperModels, toast],
@@ -471,8 +319,7 @@ export const useLocalModels = () => {
       await Promise.all([
         fetchSystemSpecs(),
         fetchLocalModels(),
-        fetchModelRecommendations(),
-        fetchOllamaModels(),
+        fetchAvailableModels(),
         checkLocalStatus(),
         fetchWhisperModels(),
         fetchWhisperRecommendations(),
@@ -484,8 +331,7 @@ export const useLocalModels = () => {
   }, [
     fetchSystemSpecs,
     fetchLocalModels,
-    fetchModelRecommendations,
-    fetchOllamaModels,
+    fetchAvailableModels,
     checkLocalStatus,
     fetchWhisperModels,
     fetchWhisperRecommendations,
@@ -498,7 +344,7 @@ export const useLocalModels = () => {
     try {
       await Promise.all([
         fetchLocalModels(),
-        fetchOllamaModels(),
+        fetchAvailableModels(),
         checkLocalStatus(),
         fetchWhisperModels(),
         fetchWhisperStatus(),
@@ -508,7 +354,7 @@ export const useLocalModels = () => {
     }
   }, [
     fetchLocalModels,
-    fetchOllamaModels,
+    fetchAvailableModels,
     checkLocalStatus,
     fetchWhisperModels,
     fetchWhisperStatus,
@@ -517,6 +363,7 @@ export const useLocalModels = () => {
   return {
     // State
     models,
+    availableModels,
     searchResults,
     loading,
     searchQuery,
@@ -526,34 +373,25 @@ export const useLocalModels = () => {
     repoFiles,
     localStatus,
     systemSpecs,
-    modelRecommendations,
-    pullingModel,
-    ollamaModels,
-    downloadProgress,
-    activeDownloads,
+    modelRecommendations: availableModels,
+    downloadingModel,
 
     // Whisper state
     whisperModels,
     whisperRecommendations,
     whisperStatus,
-    pullingWhisperModel,
+    downloadingWhisperModel,
 
     // Actions
     searchModels,
     fetchRepoFiles,
-    pullOllamaModel,
-    downloadModel,
-    deleteModel,
-    cancelDownload,
+    downloadLlmModel,
+    deleteLlmModel,
     refreshData,
-    checkModelCompatibility,
 
     // Whisper actions
     downloadWhisperModel,
     deleteWhisperModel,
     restartWhisperServer: () => localModelApi.restartWhisperServer(),
-
-    // Computed values
-    filteredRecommendations: getFilteredRecommendations(),
   };
 };

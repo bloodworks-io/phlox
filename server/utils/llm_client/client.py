@@ -243,10 +243,12 @@ def get_llm_client():
     api_key = config.get("LLM_API_KEY", None)
 
     if provider_type == "local":
-        # For local provider, use Ollama pointing to bundled instance
+        # For local provider, use llama-server via OpenAI-compatible API
+        # llama-server provides /v1/chat/completions endpoint
         return AsyncLLMClient(
-            provider_type="ollama",
-            base_url="http://127.0.0.1:11434",  # Bundled Ollama URL
+            provider_type="openai",
+            base_url="http://127.0.0.1:8082",  # llama-server port
+            api_key="not-needed",
         )
     else:
         return AsyncLLMClient(
