@@ -92,11 +92,12 @@ async def generate_letter_content(
             options=options,
         )
 
-        # Repair JSON for flaky endpoints before validation
-        if isinstance(response_json, str):
-            response_json = repair_json(response_json)
-        else:
+        # Some providers return a parsed dict; normalize to a JSON string first
+        if not isinstance(response_json, str):
             response_json = json.dumps(response_json)
+
+        # Repair JSON for flaky endpoints that wrap/format the output
+        response_json = repair_json(response_json)
 
         # Parse the JSON response
         letter_content = LetterDraft.model_validate_json(response_json)

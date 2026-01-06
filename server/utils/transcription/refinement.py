@@ -108,21 +108,10 @@ def determine_format_details(field: TemplateField, prompts: dict) -> dict:
             }
 
     # Default to RefinedResponse for non-narrative formats
-    format_guidance = ""
-    if format_type == "numbered":
-        format_guidance = (
-            "Format the key points as a numbered list (1., 2., etc.)."
-        )
-    elif format_type == "bullet":
-        format_guidance = (
-            "Format the key points as a bulleted list (•) prefixes)."
-        )
-
     return {
         "format_type": format_type,
         "response_format": RefinedResponse.model_json_schema(),
         "base_prompt": prompts["prompts"]["refinement"]["system"],
-        "format_guidance": format_guidance,
     }
 
 
@@ -172,13 +161,6 @@ def build_system_prompt(
     else:
         # If no style example, start with base prompt
         system_prompt = format_details["base_prompt"]
-
-        # Add format guidance if available
-        if (
-            "format_guidance" in format_details
-            and format_details["format_guidance"]
-        ):
-            system_prompt += "\n" + format_details["format_guidance"]
 
         # Apply custom refinement rules if specified and no style example exists
         if field.refinement_rules:
