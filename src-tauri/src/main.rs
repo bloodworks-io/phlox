@@ -11,8 +11,8 @@ use commands::{
     convert_audio_to_wav, get_service_status, get_system_specs, restart_llama, restart_whisper,
 };
 use process::{
-    cleanup_stale_files, kill_all_processes, monitor_processes, LlamaProcess, ServerProcess,
-    WhisperProcess,
+    cleanup_stale_files, kill_all_processes, monitor_processes, LlamaProcess, RestartCoordinator,
+    ServerProcess, WhisperProcess,
 };
 use services::{start_llama, start_server, start_whisper, wait_for_server, wait_for_service};
 
@@ -36,6 +36,7 @@ pub fn run() {
         .manage(ServerProcess(std::sync::Mutex::new(None)))
         .manage(LlamaProcess(std::sync::Mutex::new(None)))
         .manage(WhisperProcess(std::sync::Mutex::new(None)))
+        .manage(RestartCoordinator::default())
         .invoke_handler(tauri::generate_handler![
             commands::get_server_port,
             commands::get_llm_port,
@@ -65,6 +66,10 @@ pub fn run() {
                             1.0,
                         );
                         ns_window.setBackgroundColor_(bg_color);
+                        // Hide the title text while keeping the title bar buttons visible
+                        ns_window.setTitleVisibility_(
+                            cocoa::appkit::NSWindowTitleVisibility::NSWindowTitleHidden,
+                        );
                     }
                 }
             }

@@ -1,11 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use std::thread;
-use std::time::Duration;
 use sysinfo::System;
 use tauri::Manager;
 
-use crate::process::{LlamaProcess, ServerProcess, WhisperProcess};
+use crate::process::{LlamaProcess, RestartCoordinator, ServerProcess, WhisperProcess};
 use crate::services;
 
 #[derive(Serialize, Deserialize)]
@@ -75,13 +73,28 @@ pub fn get_service_status(
 pub fn restart_whisper(app_handle: tauri::AppHandle) -> Result<String, String> {
     log::info!("Restarting whisper-server...");
 
+    let coordinator = app_handle.state::<RestartCoordinator>();
+
+    // Set restarting flag to prevent monitor loop interference
+    coordinator
+        .whisper_restarting
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+
     // Kill existing whisper process if running
     if let Ok(mut process_guard) = app_handle.state::<WhisperProcess>().0.lock() {
         if let Some(mut child) = process_guard.take() {
-            log::info!("Killing existing whisper process PID: {}", child.id());
+            let pid = child.id();
+            log::info!("Killing existing whisper process PID: {}", pid);
             let _ = child.kill();
-            let _ = child.wait();
-            thread::sleep(Duration::from_millis(500));
+            let _ = child.wait(); // Wait for actual termination
+        }
+    }
+
+    // Clean up PID file
+    if let Some(data_dir) = dirs::data_dir() {
+        let pid_file = data_dir.join("phlox").join("whisper.pid");
+        if pid_file.exists() {
+            let _ = std::fs::remove_file(&pid_file);
         }
     }
 
@@ -91,10 +104,22 @@ pub fn restart_whisper(app_handle: tauri::AppHandle) -> Result<String, String> {
             let pid = new_child.id();
             *app_handle.state::<WhisperProcess>().0.lock().unwrap() = Some(new_child);
             log::info!("Whisper restarted with PID: {}", pid);
+
+            // Clear restarting flag
+            coordinator
+                .whisper_restarting
+                .store(false, std::sync::atomic::Ordering::SeqCst);
+
             Ok(format!("Whisper server restarted with PID: {}", pid))
         }
         Err(e) => {
             log::error!("Failed to restart Whisper: {}", e);
+
+            // Clear restarting flag even on error
+            coordinator
+                .whisper_restarting
+                .store(false, std::sync::atomic::Ordering::SeqCst);
+
             Err(format!("Failed to restart Whisper: {}", e))
         }
     }
@@ -104,13 +129,28 @@ pub fn restart_whisper(app_handle: tauri::AppHandle) -> Result<String, String> {
 pub fn restart_llama(app_handle: tauri::AppHandle) -> Result<String, String> {
     log::info!("Restarting llama-server...");
 
+    let coordinator = app_handle.state::<RestartCoordinator>();
+
+    // Set restarting flag to prevent monitor loop interference
+    coordinator
+        .llama_restarting
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+
     // Kill existing llama process if running
     if let Ok(mut process_guard) = app_handle.state::<LlamaProcess>().0.lock() {
         if let Some(mut child) = process_guard.take() {
-            log::info!("Killing existing llama process PID: {}", child.id());
+            let pid = child.id();
+            log::info!("Killing existing llama process PID: {}", pid);
             let _ = child.kill();
-            let _ = child.wait();
-            thread::sleep(Duration::from_millis(500));
+            let _ = child.wait(); // Wait for actual termination
+        }
+    }
+
+    // Clean up PID file
+    if let Some(data_dir) = dirs::data_dir() {
+        let pid_file = data_dir.join("phlox").join("llama.pid");
+        if pid_file.exists() {
+            let _ = std::fs::remove_file(&pid_file);
         }
     }
 
@@ -120,10 +160,22 @@ pub fn restart_llama(app_handle: tauri::AppHandle) -> Result<String, String> {
             let pid = new_child.id();
             *app_handle.state::<LlamaProcess>().0.lock().unwrap() = Some(new_child);
             log::info!("Llama restarted with PID: {}", pid);
+
+            // Clear restarting flag
+            coordinator
+                .llama_restarting
+                .store(false, std::sync::atomic::Ordering::SeqCst);
+
             Ok(format!("Llama server restarted with PID: {}", pid))
         }
         Err(e) => {
             log::error!("Failed to restart Llama: {}", e);
+
+            // Clear restarting flag even on error
+            coordinator
+                .llama_restarting
+                .store(false, std::sync::atomic::Ordering::SeqCst);
+
             Err(format!("Failed to restart Llama: {}", e))
         }
     }

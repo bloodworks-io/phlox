@@ -2,6 +2,9 @@ use std::process::{Child, Command};
 use std::thread;
 use std::time::Duration;
 
+// Import process management utilities
+use crate::process::{is_process_running_from_pid, write_pid_file};
+
 pub fn find_llama_model(models_dir: &std::path::Path) -> Option<std::path::PathBuf> {
     // First try reading from llm_model.txt if it exists
     if let Some(data_dir) = dirs::data_dir() {
@@ -32,6 +35,11 @@ pub fn find_llama_model(models_dir: &std::path::Path) -> Option<std::path::PathB
 }
 
 pub fn start_llama() -> Result<Child, Box<dyn std::error::Error>> {
+    // Check if already running via PID file
+    if let Some(pid) = is_process_running_from_pid("llama") {
+        return Err(format!("Llama server already running with PID {}", pid).into());
+    }
+
     let current_exe = std::env::current_exe().expect("failed to get current executable path");
     let exe_dir = current_exe
         .parent()
@@ -117,7 +125,11 @@ pub fn start_llama() -> Result<Child, Box<dyn std::error::Error>> {
         .spawn()
         .map_err(|e| format!("Failed to spawn llama-server process: {}", e))?;
 
-    log::info!("llama-server started with PID: {}", child.id());
+    let pid = child.id();
+    log::info!("llama-server started with PID: {}", pid);
+
+    // Write PID file
+    write_pid_file("llama", pid);
 
     // Write the port to file immediately (we use fixed port 8082)
     if let Some(data_dir) = dirs::data_dir() {
@@ -164,6 +176,11 @@ pub fn find_whisper_model(models_dir: &std::path::Path) -> Option<std::path::Pat
 }
 
 pub fn start_whisper() -> Result<Child, Box<dyn std::error::Error>> {
+    // Check if already running via PID file
+    if let Some(pid) = is_process_running_from_pid("whisper") {
+        return Err(format!("Whisper server already running with PID {}", pid).into());
+    }
+
     let current_exe = std::env::current_exe().expect("failed to get current executable path");
     let exe_dir = current_exe
         .parent()
@@ -234,7 +251,11 @@ pub fn start_whisper() -> Result<Child, Box<dyn std::error::Error>> {
         .spawn()
         .map_err(|e| format!("Failed to spawn whisper-server process: {}", e))?;
 
-    log::info!("Whisper server started with PID: {}", child.id());
+    let pid = child.id();
+    log::info!("Whisper server started with PID: {}", pid);
+
+    // Write PID file
+    write_pid_file("whisper", pid);
 
     // Write the port to file immediately (we use fixed port 8081)
     if let Some(data_dir) = dirs::data_dir() {
@@ -249,6 +270,11 @@ pub fn start_whisper() -> Result<Child, Box<dyn std::error::Error>> {
 }
 
 pub fn start_server() -> Result<Child, Box<dyn std::error::Error>> {
+    // Check if already running via PID file
+    if let Some(pid) = is_process_running_from_pid("server") {
+        return Err(format!("Server already running with PID {}", pid).into());
+    }
+
     let current_exe = std::env::current_exe().expect("failed to get current executable path");
     let exe_dir = current_exe
         .parent()
@@ -280,7 +306,12 @@ pub fn start_server() -> Result<Child, Box<dyn std::error::Error>> {
         .spawn()
         .map_err(|e| format!("Failed to spawn server process: {}", e))?;
 
-    log::info!("Server started with PID: {}", child.id());
+    let pid = child.id();
+    log::info!("Server started with PID: {}", pid);
+
+    // Write PID file
+    write_pid_file("server", pid);
+
     Ok(child)
 }
 

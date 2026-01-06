@@ -33,6 +33,12 @@ tauri-plugin-shell = "2"
 [target."cfg(target_os = \"macos\")".dependencies]
 cocoa = "0.26"
 
+[target."cfg(unix)".dependencies]
+libc = "0.2"
+
+[target."cfg(windows)".dependencies]
+windows = { version = "0.58", features = ["Win32_Foundation", "Win32_System_Threading"] }
+
 [[bin]]
 name = "phlox"
 path = "src/main.rs"
