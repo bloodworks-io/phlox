@@ -1,9 +1,12 @@
+import asyncio
+import json
 import logging
 import os
 from pathlib import Path
 
 from fastapi import APIRouter, Body
 from fastapi.exceptions import HTTPException
+from fastapi.responses import StreamingResponse
 
 from server.constants import IS_DOCKER
 from server.utils.llama_models import llama_model_manager
@@ -92,6 +95,78 @@ async def download_llm_model(
         raise HTTPException(
             status_code=500, detail=f"Failed to download model: {str(e)}"
         )
+
+
+@router.get("/local/models/download/stream")
+async def download_llm_model_stream(model_id: str):
+    """Stream download progress for LLM model using SSE.
+
+    model_id can be:
+    - A pre-configured model ID like "qwen3-4b"
+    - A custom model in format "repo_id/filename.gguf" (URL encoded)
+    """
+    if IS_DOCKER:
+        raise HTTPException(
+            status_code=400,
+            detail="Local models are only available in Tauri builds",
+        )
+
+    if not model_id:
+        raise HTTPException(status_code=422, detail="model_id is required")
+
+    async def generate():
+        queue = asyncio.Queue()
+
+        async def progress_callback(progress):
+            """Callback to queue progress events."""
+            await queue.put(
+                {
+                    "type": "progress",
+                    "percentage": progress.percentage,
+                    "downloaded_bytes": progress.downloaded_bytes,
+                    "total_bytes": progress.total_bytes,
+                    "speed_bytes_per_sec": progress.speed_bytes_per_sec,
+                    "eta_seconds": progress.eta_seconds,
+                    "current_file": progress.current_file,
+                }
+            )
+
+        # Start download in background task
+        download_task = asyncio.create_task(
+            llama_model_manager.download_model(
+                model_id, progress_callback=progress_callback
+            )
+        )
+
+        # Send start event
+        yield f"data: {json.dumps({'type': 'start', 'model_id': model_id})}\n\n"
+
+        try:
+            while not download_task.done():
+                try:
+                    progress = await asyncio.wait_for(queue.get(), timeout=0.5)
+                    yield f"data: {json.dumps(progress)}\n\n"
+                except asyncio.TimeoutError:
+                    # Send keepalive to prevent connection timeout
+                    yield ": keepalive\n\n"
+
+            # Get final result
+            downloaded_path = await download_task
+
+            # Get file info for response
+            file_size = os.path.getsize(downloaded_path)
+            file_size_mb = round(file_size / (1024 * 1024), 2)
+            actual_filename = os.path.basename(downloaded_path)
+
+            yield f"data: {json.dumps({'type': 'complete', 'path': downloaded_path, 'filename': actual_filename, 'size_mb': file_size_mb})}\n\n"
+
+        except ValueError as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        except Exception as e:
+            logging.error(f"Download error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @router.delete("/local/models/{filename:path}")
@@ -232,12 +307,29 @@ async def get_local_model_status():
         )
 
     models = llama_model_manager.get_downloaded_models()
+    selected_model_id = llama_model_manager.get_selected_model_id()
 
     return {
         "available": len(models) > 0,
         "llama_server_running": True,  # Assume running since we started it
         "models": models,
         "models_count": len(models),
+        "selected_model_id": selected_model_id,
+    }
+
+
+@router.get("/local/selected-model")
+async def get_selected_model():
+    """Get the currently selected local model ID."""
+    if IS_DOCKER:
+        raise HTTPException(
+            status_code=400,
+            detail="Local models are only available in Tauri builds",
+        )
+
+    selected_model_id = llama_model_manager.get_selected_model_id()
+    return {
+        "selected_model_id": selected_model_id,
     }
 
 

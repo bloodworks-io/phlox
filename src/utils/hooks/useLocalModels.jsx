@@ -13,13 +13,25 @@ export const useLocalModels = () => {
   const [repoFiles, setRepoFiles] = useState({});
   const [localStatus, setLocalStatus] = useState(null);
   const [systemSpecs, setSystemSpecs] = useState(null);
-  const [downloadingModel, setDownloadingModel] = useState(null);
+
+  // Download progress state for LLM models
+  const [downloadProgress, setDownloadProgress] = useState({
+    llm: null, // { percentage, downloadedBytes, totalBytes, speedBytesPerSec, etaSeconds }
+    whisper: null,
+  });
+  const [isDownloading, setIsDownloading] = useState({
+    llm: false,
+    whisper: false,
+  });
+  const [downloadingModelId, setDownloadingModelId] = useState({
+    llm: null,
+    whisper: null,
+  });
 
   // Whisper models state
   const [whisperModels, setWhisperModels] = useState([]);
   const [whisperRecommendations, setWhisperRecommendations] = useState([]);
   const [whisperStatus, setWhisperStatus] = useState(null);
-  const [downloadingWhisperModel, setDownloadingWhisperModel] = useState(null);
 
   const toast = useToast();
 
@@ -131,31 +143,61 @@ export const useLocalModels = () => {
   // Download LLM model (supports both pre-configured and custom)
   const downloadLlmModel = useCallback(
     async (modelId) => {
-      setDownloadingModel(modelId);
-      try {
-        await localModelApi.downloadLlmModel(modelId);
-        await fetchLocalModels();
+      setIsDownloading((prev) => ({ ...prev, llm: true }));
+      setDownloadingModelId((prev) => ({ ...prev, llm: modelId }));
+      setDownloadProgress((prev) => ({ ...prev, llm: { percentage: 0 } }));
 
-        // Restart the llama server to use the new model
-        try {
-          await localModelApi.restartLlamaServer();
-          toast({
-            title: "Success",
-            description: `Model downloaded and server restarted`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-        } catch (restartError) {
-          // Model downloaded but restart failed - still notify user of success
-          console.error("Error restarting llama server:", restartError);
-          toast({
-            title: "Model Downloaded",
-            description: `Model downloaded. Please restart the app to use it.`,
-            status: "info",
-            duration: 5000,
-            isClosable: true,
-          });
+      try {
+        for await (const event of localModelApi.streamDownloadLlmModel(
+          modelId,
+        )) {
+          if (event.type === "start") {
+            // Download started
+            setDownloadProgress((prev) => ({
+              ...prev,
+              llm: { percentage: 0, status: "starting" },
+            }));
+          } else if (event.type === "progress") {
+            // Update progress
+            setDownloadProgress((prev) => ({
+              ...prev,
+              llm: {
+                percentage: event.percentage,
+                downloadedBytes: event.downloaded_bytes,
+                totalBytes: event.total_bytes,
+                speedBytesPerSec: event.speed_bytes_per_sec,
+                etaSeconds: event.eta_seconds,
+                currentFile: event.current_file,
+              },
+            }));
+          } else if (event.type === "complete") {
+            // Download complete
+            await fetchLocalModels();
+
+            // Restart the llama server to use the new model
+            try {
+              await localModelApi.restartLlamaServer();
+              toast({
+                title: "Success",
+                description: `Model downloaded and server restarted`,
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+              });
+            } catch (restartError) {
+              // Model downloaded but restart failed - still notify user of success
+              console.error("Error restarting llama server:", restartError);
+              toast({
+                title: "Model Downloaded",
+                description: `Model downloaded. Please restart the app to use it.`,
+                status: "info",
+                duration: 5000,
+                isClosable: true,
+              });
+            }
+          } else if (event.type === "error") {
+            throw new Error(event.message);
+          }
         }
       } catch (error) {
         console.error("Error downloading model:", error);
@@ -167,7 +209,9 @@ export const useLocalModels = () => {
           isClosable: true,
         });
       } finally {
-        setDownloadingModel(null);
+        setIsDownloading((prev) => ({ ...prev, llm: false }));
+        setDownloadingModelId((prev) => ({ ...prev, llm: null }));
+        setDownloadProgress((prev) => ({ ...prev, llm: null }));
       }
     },
     [fetchLocalModels, toast],
@@ -244,31 +288,61 @@ export const useLocalModels = () => {
   // Download Whisper model
   const downloadWhisperModel = useCallback(
     async (modelId) => {
-      setDownloadingWhisperModel(modelId);
-      try {
-        await localModelApi.downloadWhisperModel(modelId);
-        await fetchWhisperModels();
+      setIsDownloading((prev) => ({ ...prev, whisper: true }));
+      setDownloadingModelId((prev) => ({ ...prev, whisper: modelId }));
+      setDownloadProgress((prev) => ({ ...prev, whisper: { percentage: 0 } }));
 
-        // Restart the whisper server to use the new model
-        try {
-          await localModelApi.restartWhisperServer();
-          toast({
-            title: "Success",
-            description: `Whisper model ${modelId} downloaded and server restarted`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-        } catch (restartError) {
-          // Model downloaded but restart failed - still notify user of success
-          console.error("Error restarting Whisper server:", restartError);
-          toast({
-            title: "Model Downloaded",
-            description: `Whisper model ${modelId} downloaded. Please restart the app to use it.`,
-            status: "info",
-            duration: 5000,
-            isClosable: true,
-          });
+      try {
+        for await (const event of localModelApi.streamDownloadWhisperModel(
+          modelId,
+        )) {
+          if (event.type === "start") {
+            // Download started
+            setDownloadProgress((prev) => ({
+              ...prev,
+              whisper: { percentage: 0, status: "starting" },
+            }));
+          } else if (event.type === "progress") {
+            // Update progress
+            setDownloadProgress((prev) => ({
+              ...prev,
+              whisper: {
+                percentage: event.percentage,
+                downloadedBytes: event.downloaded_bytes,
+                totalBytes: event.total_bytes,
+                speedBytesPerSec: event.speed_bytes_per_sec,
+                etaSeconds: event.eta_seconds,
+                currentFile: event.current_file,
+              },
+            }));
+          } else if (event.type === "complete") {
+            // Download complete
+            await fetchWhisperModels();
+
+            // Restart the whisper server to use the new model
+            try {
+              await localModelApi.restartWhisperServer();
+              toast({
+                title: "Success",
+                description: `Whisper model ${modelId} downloaded and server restarted`,
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+              });
+            } catch (restartError) {
+              // Model downloaded but restart failed - still notify user of success
+              console.error("Error restarting Whisper server:", restartError);
+              toast({
+                title: "Model Downloaded",
+                description: `Whisper model ${modelId} downloaded. Please restart the app to use it.`,
+                status: "info",
+                duration: 5000,
+                isClosable: true,
+              });
+            }
+          } else if (event.type === "error") {
+            throw new Error(event.message);
+          }
         }
       } catch (error) {
         console.error("Error downloading Whisper model:", error);
@@ -280,7 +354,9 @@ export const useLocalModels = () => {
           isClosable: true,
         });
       } finally {
-        setDownloadingWhisperModel(null);
+        setIsDownloading((prev) => ({ ...prev, whisper: false }));
+        setDownloadingModelId((prev) => ({ ...prev, whisper: null }));
+        setDownloadProgress((prev) => ({ ...prev, whisper: null }));
       }
     },
     [fetchWhisperModels, toast],
@@ -374,13 +450,14 @@ export const useLocalModels = () => {
     localStatus,
     systemSpecs,
     modelRecommendations: availableModels,
-    downloadingModel,
+    downloadProgress,
+    isDownloading,
+    downloadingModelId,
 
     // Whisper state
     whisperModels,
     whisperRecommendations,
     whisperStatus,
-    downloadingWhisperModel,
 
     // Actions
     searchModels,

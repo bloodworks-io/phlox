@@ -20,6 +20,7 @@ import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel"
 import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
 import { templateService } from "../utils/services/templateService";
 import LocalModelManagerModal from "../components/settings/LocalModelManagerModal";
+import { localModelApi } from "../utils/api/localModelApi";
 
 const Settings = () => {
   const [userSettings, setUserSettings] = useState({
@@ -94,7 +95,19 @@ const Settings = () => {
         default_template: defaultTemplate.template_key,
       }));
 
-      if (configData?.LLM_BASE_URL) {
+      // Fetch models based on provider
+      if (configData?.LLM_PROVIDER === "local") {
+        // Fetch local downloaded models
+        try {
+          const localModels = await localModelApi.fetchLocalModels();
+          const modelNames = localModels.models.map(
+            (m) => m.name || m.filename,
+          );
+          setModelOptions(modelNames);
+        } catch (error) {
+          console.error("Error loading local models:", error);
+        }
+      } else if (configData?.LLM_BASE_URL) {
         await settingsService.fetchLLMModels(configData, setModelOptions);
       }
 
@@ -322,7 +335,18 @@ const Settings = () => {
         isOpen={localModelsDisclosure.isOpen}
         onClose={async () => {
           localModelsDisclosure.onClose();
-          if (config?.LLM_BASE_URL) {
+          // Refresh model list based on provider
+          if (config?.LLM_PROVIDER === "local") {
+            try {
+              const localModels = await localModelApi.fetchLocalModels();
+              const modelNames = localModels.models.map(
+                (m) => m.name || m.filename,
+              );
+              setModelOptions(modelNames);
+            } catch (error) {
+              console.error("Error loading local models:", error);
+            }
+          } else if (config?.LLM_BASE_URL) {
             await settingsService.fetchLLMModels(config, setModelOptions);
           }
           // Trigger refresh in ModelSettingsPanel for Whisper model

@@ -9,13 +9,28 @@ import logging
 import os
 import shutil
 import sys
+import time
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DownloadProgress:
+    """Rich progress information for model downloads."""
+
+    percentage: float  # 0-100
+    downloaded_bytes: int
+    total_bytes: int
+    speed_bytes_per_sec: float
+    eta_seconds: Optional[float]
+    current_file: str  # "model" or "coreml"
+
 
 # Official whisper.cpp model downloads from HuggingFace
 # Source: https://huggingface.co/ggerganov/whisper.cpp
@@ -247,6 +262,11 @@ class WhisperModelManager:
         # httpx does NOT follow redirects by default, so enable it here.
         timeout = httpx.Timeout(600.0)
 
+        # Track download speed and ETA
+        start_time = time.time()
+        last_update_time = start_time
+        last_downloaded = 0
+
         try:
             # Download the main .bin model file
             async with httpx.AsyncClient(
@@ -263,9 +283,35 @@ class WhisperModelManager:
                         async for chunk in response.aiter_bytes(8192):
                             f.write(chunk)
                             downloaded += len(chunk)
-                            if progress_callback and total_size:
-                                progress = (downloaded / total_size) * 100
+
+                            # Calculate speed and ETA (update every ~0.5 seconds)
+                            current_time = time.time()
+                            if (
+                                progress_callback
+                                and total_size
+                                and (current_time - last_update_time) > 0.5
+                            ):
+                                speed = (downloaded - last_downloaded) / (
+                                    current_time - last_update_time
+                                )
+                                eta = (
+                                    (total_size - downloaded) / speed
+                                    if speed > 0
+                                    else None
+                                )
+
+                                progress = DownloadProgress(
+                                    percentage=(downloaded / total_size) * 100,
+                                    downloaded_bytes=downloaded,
+                                    total_bytes=total_size,
+                                    speed_bytes_per_sec=speed,
+                                    eta_seconds=eta,
+                                    current_file="model",
+                                )
                                 await progress_callback(progress)
+
+                                last_update_time = current_time
+                                last_downloaded = downloaded
 
             logger.info(f"Successfully downloaded {model_id} to {model_file}")
 
@@ -280,6 +326,11 @@ class WhisperModelManager:
                 )
 
                 try:
+                    # Reset tracking for CoreML download
+                    coreml_start_time = time.time()
+                    coreml_last_update = coreml_start_time
+                    coreml_last_downloaded = 0
+
                     async with httpx.AsyncClient(
                         timeout=timeout,
                         follow_redirects=True,
@@ -296,11 +347,37 @@ class WhisperModelManager:
                                 async for chunk in response.aiter_bytes(8192):
                                     f.write(chunk)
                                     downloaded += len(chunk)
-                                    if progress_callback and total_size:
-                                        progress = (
-                                            downloaded / total_size
-                                        ) * 100
+
+                                    # Calculate speed and ETA for CoreML
+                                    current_time = time.time()
+                                    if (
+                                        progress_callback
+                                        and total_size
+                                        and (current_time - coreml_last_update)
+                                        > 0.5
+                                    ):
+                                        speed = (
+                                            downloaded - coreml_last_downloaded
+                                        ) / (current_time - coreml_last_update)
+                                        eta = (
+                                            (total_size - downloaded) / speed
+                                            if speed > 0
+                                            else None
+                                        )
+
+                                        progress = DownloadProgress(
+                                            percentage=(downloaded / total_size)
+                                            * 100,
+                                            downloaded_bytes=downloaded,
+                                            total_bytes=total_size,
+                                            speed_bytes_per_sec=speed,
+                                            eta_seconds=eta,
+                                            current_file="coreml",
+                                        )
                                         await progress_callback(progress)
+
+                                        coreml_last_update = current_time
+                                        coreml_last_downloaded = downloaded
 
                     # Extract the zip file
                     logger.info(f"Extracting Core ML model to {coreml_dir}")

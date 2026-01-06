@@ -4,9 +4,12 @@ Whisper model management API endpoints.
 Provides endpoints for downloading, listing, and deleting Whisper models.
 """
 
+import asyncio
+import json
 import logging
 
 from fastapi import APIRouter, Body, HTTPException
+from fastapi.responses import StreamingResponse
 
 from server.constants import IS_DOCKER
 from server.utils.whisper_models import whisper_model_manager
@@ -64,6 +67,67 @@ async def download_whisper_model(
         raise HTTPException(
             status_code=500, detail=f"Failed to download model: {str(e)}"
         )
+
+
+@router.get("/local/whisper/models/download/stream")
+async def download_whisper_model_stream(model_id: str):
+    """Stream download progress for Whisper model using SSE."""
+    if IS_DOCKER:
+        raise HTTPException(
+            status_code=400,
+            detail="Whisper models are only available in Tauri builds",
+        )
+
+    if not model_id:
+        raise HTTPException(status_code=422, detail="model_id is required")
+
+    async def generate():
+        queue = asyncio.Queue()
+
+        async def progress_callback(progress):
+            """Callback to queue progress events."""
+            await queue.put(
+                {
+                    "type": "progress",
+                    "percentage": progress.percentage,
+                    "downloaded_bytes": progress.downloaded_bytes,
+                    "total_bytes": progress.total_bytes,
+                    "speed_bytes_per_sec": progress.speed_bytes_per_sec,
+                    "eta_seconds": progress.eta_seconds,
+                    "current_file": progress.current_file,
+                }
+            )
+
+        # Start download in background task
+        download_task = asyncio.create_task(
+            whisper_model_manager.download_model(
+                model_id, progress_callback=progress_callback
+            )
+        )
+
+        # Send start event
+        yield f"data: {json.dumps({'type': 'start', 'model_id': model_id})}\n\n"
+
+        try:
+            while not download_task.done():
+                try:
+                    progress = await asyncio.wait_for(queue.get(), timeout=0.5)
+                    yield f"data: {json.dumps(progress)}\n\n"
+                except asyncio.TimeoutError:
+                    # Send keepalive to prevent connection timeout
+                    yield ": keepalive\n\n"
+
+            # Get final result
+            downloaded_path = await download_task
+            yield f"data: {json.dumps({'type': 'complete', 'path': downloaded_path})}\n\n"
+
+        except ValueError as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        except Exception as e:
+            logger.error(f"Download error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @router.delete("/local/whisper/models/{model_id}")

@@ -6,6 +6,13 @@ use tauri::Manager;
 use crate::process::{LlamaProcess, RestartCoordinator, ServerProcess, WhisperProcess};
 use crate::services;
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AppleSiliconInfo {
+    pub is_apple_silicon: bool,
+    pub generation: Option<u8>,
+    pub tier: Option<String>,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct SystemSpecs {
     pub total_memory_gb: f64,
@@ -14,6 +21,40 @@ pub struct SystemSpecs {
     pub cpu_brand: String,
     pub os: String,
     pub arch: String,
+    pub apple_silicon: Option<AppleSiliconInfo>,
+}
+
+fn parse_apple_silicon(cpu_brand: &str) -> Option<AppleSiliconInfo> {
+    let brand = cpu_brand.trim();
+
+    // Check if it's an Apple Silicon chip
+    if !brand.starts_with("Apple ") || !brand.contains('M') {
+        return None;
+    }
+
+    // Parse "Apple M3 Pro" -> gen=3, tier="Pro"
+    // Extract the number after "M"
+    let m_pos = brand.find('M')?;
+    let after_m = &brand[m_pos + 1..];
+
+    // Parse generation (1-4, potentially more in future)
+    let gen_str: String = after_m.chars().take_while(|c| c.is_ascii_digit()).collect();
+    let generation: u8 = gen_str.parse().ok()?;
+
+    // Parse tier (Pro/Max/Ultra) - case insensitive
+    let remaining = after_m[gen_str.len()..].trim().to_lowercase();
+    let tier = match remaining.as_str() {
+        "pro" => "Pro".to_string(),
+        "max" => "Max".to_string(),
+        "ultra" => "Ultra".to_string(),
+        _ => "Base".to_string(),
+    };
+
+    Some(AppleSiliconInfo {
+        is_apple_silicon: true,
+        generation: Some(generation),
+        tier: Some(tier),
+    })
 }
 
 #[tauri::command]
@@ -287,6 +328,8 @@ pub fn get_system_specs() -> SystemSpecs {
         .map(|cpu| cpu.brand().to_string())
         .unwrap_or_else(|| "Unknown".to_string());
 
+    let apple_silicon = parse_apple_silicon(&cpu_brand);
+
     SystemSpecs {
         total_memory_gb: total_memory,
         available_memory_gb: available_memory,
@@ -294,5 +337,6 @@ pub fn get_system_specs() -> SystemSpecs {
         cpu_brand,
         os: std::env::consts::OS.to_string(),
         arch: std::env::consts::ARCH.to_string(),
+        apple_silicon,
     }
 }

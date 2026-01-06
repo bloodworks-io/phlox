@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   VStack,
@@ -64,7 +64,12 @@ import {
   RedButton,
   SettingsButton,
 } from "../common/Buttons";
+import { ModelDownloadProgress } from "../common/ModelDownloadProgress";
 import { useLocalModels } from "../../utils/hooks/useLocalModels";
+import {
+  calculateLLMPerformance,
+  parseAppleSilicon,
+} from "../../utils/performanceUtils";
 
 const LocalModelManager = ({ className }) => {
   const {
@@ -79,7 +84,9 @@ const LocalModelManager = ({ className }) => {
     repoFiles,
     localStatus,
     systemSpecs,
-    downloadingModel,
+    downloadProgress,
+    isDownloading,
+    downloadingModelId,
     searchModels,
     fetchRepoFiles,
     downloadLlmModel,
@@ -89,7 +96,6 @@ const LocalModelManager = ({ className }) => {
     whisperModels,
     whisperRecommendations,
     whisperStatus,
-    downloadingWhisperModel,
     downloadWhisperModel,
     deleteWhisperModel,
   } = useLocalModels();
@@ -110,6 +116,12 @@ const LocalModelManager = ({ className }) => {
     onOpen: onWhisperDeleteOpen,
     onClose: onWhisperDeleteClose,
   } = useDisclosure();
+
+  // Parse Apple Silicon info from system specs
+  const appleSiliconInfo = useMemo(() => {
+    if (!systemSpecs?.cpu_brand) return null;
+    return parseAppleSilicon(systemSpecs.cpu_brand);
+  }, [systemSpecs]);
 
   // Handle search
   const handleSearch = () => {
@@ -232,7 +244,9 @@ const LocalModelManager = ({ className }) => {
   };
 
   const SmartRecommendationCard = ({ model }) => {
-    const isDownloading = downloadingModel === model.id;
+    const isDownloadingLlm =
+      isDownloading.llm && downloadingModelId.llm === model.id;
+    const llmProgress = isDownloadingLlm ? downloadProgress.llm : null;
     const isDownloaded = isModelDownloaded(model.id);
 
     const getRecommendationBadge = () => {
@@ -249,6 +263,20 @@ const LocalModelManager = ({ className }) => {
     const needsMoreMemory =
       systemSpecs && systemSpecs.total_memory_gb < model.recommended_ram_gb;
 
+    // Get performance tag for Apple Silicon
+    const getPerformanceTag = () => {
+      if (!appleSiliconInfo || !model.parameters_billions) return null;
+      const perf = calculateLLMPerformance(
+        appleSiliconInfo.generation,
+        appleSiliconInfo.tier,
+        model.parameters_billions,
+        model.active_parameters_billions,
+      );
+      return perf.displayText;
+    };
+
+    const performanceTag = getPerformanceTag();
+
     return (
       <Box
         p="4"
@@ -262,6 +290,11 @@ const LocalModelManager = ({ className }) => {
           {badge && (
             <Badge colorScheme={badge.color} fontSize="xs">
               {badge.text}
+            </Badge>
+          )}
+          {performanceTag && (
+            <Badge colorScheme="gray" fontSize="xs" variant="outline">
+              {performanceTag}
             </Badge>
           )}
         </HStack>
@@ -301,11 +334,13 @@ const LocalModelManager = ({ className }) => {
             <GreenButton size="sm" isDisabled leftIcon={<CheckIcon />}>
               Downloaded
             </GreenButton>
+          ) : isDownloadingLlm && llmProgress ? (
+            <ModelDownloadProgress progress={llmProgress} />
           ) : (
             <Button
               size="sm"
               onClick={() => handlePreconfiguredDownload(model.id)}
-              isLoading={isDownloading}
+              isLoading={isDownloadingLlm && !llmProgress}
               loadingText="Downloading..."
               className="nav-button"
               leftIcon={<DownloadIcon />}
@@ -495,7 +530,7 @@ const LocalModelManager = ({ className }) => {
                     size="sm"
                     leftIcon={<DownloadIcon />}
                     onClick={handleCustomDownload}
-                    isLoading={downloadingModel}
+                    isLoading={isDownloading.llm && !downloadProgress.llm}
                     loadingText="Downloading..."
                     className="nav-button"
                   >
@@ -689,8 +724,12 @@ const LocalModelManager = ({ className }) => {
                   <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
                     {whisperRecommendations.map((model) => {
                       const isDownloaded = isWhisperModelDownloaded(model.id);
-                      const isDownloading =
-                        downloadingWhisperModel === model.id;
+                      const isDownloadingWhisper =
+                        isDownloading.whisper &&
+                        downloadingModelId.whisper === model.id;
+                      const whisperProgress = isDownloadingWhisper
+                        ? downloadProgress.whisper
+                        : null;
 
                       return (
                         <Box
@@ -739,11 +778,17 @@ const LocalModelManager = ({ className }) => {
                               >
                                 Downloaded
                               </GreenButton>
+                            ) : isDownloadingWhisper && whisperProgress ? (
+                              <ModelDownloadProgress
+                                progress={whisperProgress}
+                              />
                             ) : (
                               <Button
                                 size="sm"
                                 onClick={() => handleWhisperDownload(model.id)}
-                                isLoading={isDownloading}
+                                isLoading={
+                                  isDownloadingWhisper && !whisperProgress
+                                }
                                 loadingText="Downloading..."
                                 className="nav-button"
                                 leftIcon={<DownloadIcon />}

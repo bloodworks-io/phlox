@@ -2,6 +2,39 @@ import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 
 export const localModelApi = {
+  // Streaming download helper for SSE
+  streamSSE: async function* (url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n\n");
+
+      for (const line of lines) {
+        if (line.trim() && line.startsWith("data: ")) {
+          // Skip keepalive comments
+          if (line.startsWith(": ")) continue;
+
+          try {
+            const data = JSON.parse(line.slice(6));
+            yield data;
+          } catch (error) {
+            console.error("Error parsing SSE chunk:", error, line);
+          }
+        }
+      }
+    }
+  },
+
   // LLM Model Management (llama-server)
   fetchAvailableLlmModels: async () =>
     handleApiRequest({
@@ -56,6 +89,12 @@ export const localModelApi = {
       timeout: 600000, // 10 minutes for larger models
     }),
 
+  streamDownloadLlmModel: async function* (modelId) {
+    const baseUrl = await buildApiUrl("");
+    const url = `${baseUrl}/api/config/local/models/download/stream?model_id=${encodeURIComponent(modelId)}`;
+    yield* this.streamSSE(url);
+  },
+
   deleteLlmModel: async (filename) =>
     handleApiRequest({
       apiCall: async () => {
@@ -103,6 +142,15 @@ export const localModelApi = {
         return universalFetch(url);
       },
       errorMessage: "Failed to fetch repository files",
+    }),
+
+  getSelectedModel: async () =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/config/local/selected-model");
+        return universalFetch(url);
+      },
+      errorMessage: "Failed to get selected model",
     }),
 
   // Legacy method names (deprecated, kept for compatibility)
@@ -173,6 +221,12 @@ export const localModelApi = {
       errorMessage: "Failed to download Whisper model",
       timeout: 300000, // 5 minutes for model downloads
     }),
+
+  streamDownloadWhisperModel: async function* (modelId) {
+    const baseUrl = await buildApiUrl("");
+    const url = `${baseUrl}/api/config/local/whisper/models/download/stream?model_id=${encodeURIComponent(modelId)}`;
+    yield* this.streamSSE(url);
+  },
 
   deleteWhisperModel: async (modelId) =>
     handleApiRequest({

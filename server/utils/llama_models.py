@@ -6,6 +6,8 @@ from HuggingFace. Follows the Whisper pattern: 1 model at a time.
 """
 
 import logging
+import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -14,6 +16,19 @@ import httpx
 from server.constants import DATA_DIR
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DownloadProgress:
+    """Rich progress information for model downloads."""
+
+    percentage: float  # 0-100
+    downloaded_bytes: int
+    total_bytes: int
+    speed_bytes_per_sec: float
+    eta_seconds: Optional[float]
+    current_file: str  # "model" or "coreml"
+
 
 # Pre-configured Unsloth Qwen3 models from HuggingFace
 # Source: https://huggingface.co/unsloth
@@ -29,6 +44,7 @@ PRECONFIGURED_MODELS = {
         "recommended_ram_gb": 2,
         "simple_name": "Tiny",
         "tier": [],
+        "parameters_billions": 0.6,
     },
     "qwen3-1.7b": {
         "repo_id": "unsloth/Qwen3-1.7B-GGUF",
@@ -40,6 +56,7 @@ PRECONFIGURED_MODELS = {
         "recommended_ram_gb": 4,
         "simple_name": "Small",
         "tier": [1],
+        "parameters_billions": 1.7,
     },
     "qwen3-4b": {
         "repo_id": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
@@ -51,6 +68,7 @@ PRECONFIGURED_MODELS = {
         "recommended_ram_gb": 8,
         "simple_name": "Balanced",
         "tier": [1, 2],
+        "parameters_billions": 4.0,
     },
     "qwen3-8b": {
         "repo_id": "unsloth/Qwen3-8B-GGUF",
@@ -62,6 +80,7 @@ PRECONFIGURED_MODELS = {
         "recommended_ram_gb": 12,
         "simple_name": "Large",
         "tier": [1, 2, 3],
+        "parameters_billions": 8.0,
     },
     "qwen3-14b": {
         "repo_id": "unsloth/Qwen3-14B-GGUF",
@@ -73,6 +92,7 @@ PRECONFIGURED_MODELS = {
         "recommended_ram_gb": 16,
         "simple_name": "Extra Large",
         "tier": [2, 3],
+        "parameters_billions": 14.0,
     },
     "qwen3-30b": {
         "repo_id": "unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF",
@@ -84,6 +104,8 @@ PRECONFIGURED_MODELS = {
         "recommended_ram_gb": 32,
         "simple_name": "Premium",
         "tier": [3],
+        "parameters_billions": 30.0,
+        "active_parameters_billions": 3.0,  # A3B architecture - only 3B active
     },
     "qwen3-32b": {
         "repo_id": "unsloth/Qwen3-32B-GGUF",
@@ -95,6 +117,7 @@ PRECONFIGURED_MODELS = {
         "recommended_ram_gb": 32,
         "simple_name": "Ultra",
         "tier": [],
+        "parameters_billions": 32.0,
     },
 }
 
@@ -125,6 +148,10 @@ class LlamaModelManager:
                 "filename": info["filename"],
                 "simple_name": info.get("simple_name", model_id),
                 "tier": info.get("tier", []),
+                "parameters_billions": info.get("parameters_billions"),
+                "active_parameters_billions": info.get(
+                    "active_parameters_billions"
+                ),
             }
             for model_id, info in PRECONFIGURED_MODELS.items()
         ]
@@ -255,6 +282,11 @@ class LlamaModelManager:
 
         timeout = httpx.Timeout(600.0)
 
+        # Track download speed and ETA
+        start_time = time.time()
+        last_update_time = start_time
+        last_downloaded = 0
+
         try:
             async with httpx.AsyncClient(
                 timeout=timeout,
@@ -270,9 +302,47 @@ class LlamaModelManager:
                         async for chunk in response.aiter_bytes(8192):
                             f.write(chunk)
                             downloaded += len(chunk)
-                            if progress_callback and total_size:
-                                progress = (downloaded / total_size) * 100
+
+                            # Calculate speed and ETA (update every ~0.5 seconds)
+                            current_time = time.time()
+                            if (
+                                progress_callback
+                                and total_size
+                                and (current_time - last_update_time) > 0.5
+                            ):
+                                speed = (downloaded - last_downloaded) / (
+                                    current_time - last_update_time
+                                )
+                                eta = (
+                                    (total_size - downloaded) / speed
+                                    if speed > 0
+                                    else None
+                                )
+
+                                progress = DownloadProgress(
+                                    percentage=(downloaded / total_size) * 100,
+                                    downloaded_bytes=downloaded,
+                                    total_bytes=total_size,
+                                    speed_bytes_per_sec=speed,
+                                    eta_seconds=eta,
+                                    current_file="model",
+                                )
                                 await progress_callback(progress)
+
+                                last_update_time = current_time
+                                last_downloaded = downloaded
+
+            # Send final 100% progress
+            if progress_callback and total_size:
+                progress = DownloadProgress(
+                    percentage=100.0,
+                    downloaded_bytes=total_size,
+                    total_bytes=total_size,
+                    speed_bytes_per_sec=0,
+                    eta_seconds=0,
+                    current_file="model",
+                )
+                await progress_callback(progress)
 
             logger.info(f"Successfully downloaded {filename} to {model_file}")
 
@@ -332,6 +402,26 @@ class LlamaModelManager:
     def get_default_model_filename(self) -> str:
         """Get the filename for the default model (qwen3-4b)."""
         return PRECONFIGURED_MODELS["qwen3-4b"]["filename"]
+
+    def get_selected_model_id(self) -> Optional[str]:
+        """Get the model_id of the currently selected model.
+
+        Reads the llm_model.txt file and maps the filename back to model_id
+        for pre-configured models. Returns None if no model is selected.
+        """
+        selection_file = self._get_model_selection_file_path()
+        if not selection_file.exists():
+            return None
+
+        selected_filename = selection_file.read_text().strip()
+
+        # Try to map filename to model_id for pre-configured models
+        for model_id, info in PRECONFIGURED_MODELS.items():
+            if info["filename"].lower() == selected_filename.lower():
+                return model_id
+
+        # For custom models, return the filename (or repo_id/filename format if applicable)
+        return selected_filename
 
     def ensure_default_model_exists(self) -> bool:
         """Check if any model exists."""
