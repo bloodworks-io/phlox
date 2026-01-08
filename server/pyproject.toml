@@ -12,6 +12,7 @@ dependencies = [
     "fuzzywuzzy>=0.18.0",
     "httpx>=0.28.1",
     "icalendar>=5.0.13",
+    "json-repair>=0.55.0",
     "ollama>=0.4.7",
     "openai>=1.76.2",
     "Pillow>=11.1.0",
