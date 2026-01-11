@@ -52,9 +52,16 @@ RUN mkdir -p /usr/src/app/data \
 RUN uv pip install --system --break-system-packages ./server[docker] pytest-asyncio
 
 # Make a shell script to initialize the database and start both React and FastAPI
-RUN echo '#!/bin/bash\n\
-python /usr/src/app/server/demo/demo_db.py\n\
-parallel --tag --line-buffer ::: "npm run start-react" "uvicorn server.server:app --reload --host \${SERVER_HOST:-127.0.0.1} --port 5000"' > /usr/local/bin/start-phlox-dev.sh
+RUN printf '%s\n' \
+'#!/usr/bin/env bash' \
+'set -euo pipefail' \
+'set -x' \
+'' \
+'python /usr/src/app/server/demo/demo_db.py' \
+'# Set default value if SERVER_HOST is not set, then export it for subshells' \
+'export SERVER_HOST=${SERVER_HOST:-0.0.0.0}' \
+'parallel --tag --line-buffer ::: "npm run start-react" "uvicorn server.server:app --reload --host $SERVER_HOST --port 5000"' \
+> /usr/local/bin/start-phlox-dev.sh
 
 # Make the script executable
 RUN chmod +x /usr/local/bin/start-phlox-dev.sh
