@@ -35,11 +35,10 @@ async def generate_letter_content(
         request_body = [
             {
                 "role": "system",
-                "content": prompts["prompts"]["letter"]["system"]
+                "content": "You are a professional medical correspondence writer. The user is a specialist physician; they will give you a medical consultation note. You are to convert it into a brief correspondence for another health professional."
                 + "\n\n"
                 + json_schema_instruction,
             },
-            {"role": "system", "content": additional_instruction or ""},
         ]
 
         # Add doctor context if available
@@ -62,18 +61,24 @@ async def generate_letter_content(
         )
 
         # Always include initial patient data as first user message
-        user_message = {
-            "role": "user",
-            "content": f"Patient Name: {patient_name}\nGender: {gender}\nAge: {age}\n\nClinic Note:\n{clinic_note}",
-        }
+        request_body.append(
+            {
+                "role": "user",
+                "content": f"Patient Name: {patient_name}\nGender: {gender}\nAge: {age}\n\nClinic Note:\n{clinic_note}",
+            }
+        )
+        request_body.append(
+            {
+                "role": "user",
+                "content": f"Based on the above information:\n{additional_instruction}"
+                or "",
+            }
+        )
 
         # Add any context from the frontend
         if context:
             context_messages = context.copy()
             request_body.extend(context_messages)
-
-        # Add user message to the main request body
-        request_body.append(user_message)
 
         # Set up response format for structured output with thinking support
         base_schema = LetterDraft.model_json_schema()
@@ -83,6 +88,8 @@ async def generate_letter_content(
         options["temperature"] = prompts["options"]["letter"][
             "temperature"
         ]  # User defined temperature
+
+        logging.info("Generating letter content with request %s", request_body)
 
         # Generate the letter content with structured output
         response_json = await llm_client.chat_with_structured_output(
