@@ -1,7 +1,7 @@
 import logging
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from server.constants import IS_DOCKER
@@ -9,6 +9,20 @@ from server.database.config.manager import config_manager
 from server.utils.llm_client.manager import LocalModelManager
 
 router = APIRouter()
+
+
+@router.get("/ollama")
+async def get_options():
+    """Retrieve all options configuration (for backward compatibility)."""
+    prompts_and_options = config_manager.get_prompts_and_options()
+    return JSONResponse(content=prompts_and_options["options"])
+
+
+@router.post("/ollama/{category}")
+async def update_options(category: str, data: dict = Body(...)):
+    """Update options for a specific category (for backward compatibility)."""
+    config_manager.update_options(category, data)
+    return {"message": f"{category} options updated successfully"}
 
 
 @router.get("/llm/models")

@@ -10,8 +10,28 @@ from fastapi.responses import StreamingResponse
 
 from server.constants import IS_DOCKER
 from server.utils.llama_models import llama_model_manager
+from server.utils.whisper_models import whisper_model_manager
 
 router = APIRouter()
+
+
+@router.get("/local/whisper/models/downloaded")
+async def get_downloaded_whisper_models():
+    """Get list of downloaded Whisper models."""
+    if IS_DOCKER:
+        raise HTTPException(
+            status_code=400,
+            detail="Local models are only available in Tauri builds",
+        )
+
+    try:
+        models = whisper_model_manager.get_downloaded_models()
+        return {"models": models}
+    except Exception as e:
+        logging.error(f"Error getting downloaded Whisper models: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to get downloaded Whisper models"
+        )
 
 
 @router.get("/local/models/available")
