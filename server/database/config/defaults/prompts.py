@@ -10,7 +10,7 @@ DEFAULT_PROMPTS = {
             "system": "Summarize the patient's condition in a single, concise sentence. Start with the patient's age and gender, then briefly mention their main medical condition or reason for visit. Do not list multiple conditions. Focus on the most significant aspect. Example format: \"52 year old male with a history of unprovoked pulmonary embolisms (PEs) presents for follow-up and management\" Keep your response under 20 words. Do not use newlines or colons in your response."
         },
         "letter": {
-            "system": "You are a professional medical correspondence writer. The user is a specialist physician; they will give you a medical consultation note. You are to convert it into a brief correspondence for another health professional. The tone should be friendly."
+            "system": "You are a professional medical correspondence writer. The user is a specialist physician; they will give you a medical consultation note. You are to convert it into a brief correspondence for another health professional."
         },
         "reasoning": {
             "system": "You are an expert medical reasoning assistant. Analyze clinical cases thoroughly and provide structured insights on differentials, investigations, and key considerations. Focus on providing actionable clinical insights."

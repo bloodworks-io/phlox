@@ -35,7 +35,7 @@ async def generate_letter_content(
         request_body = [
             {
                 "role": "system",
-                "content": "You are a professional medical correspondence writer. The user is a specialist physician; they will give you a medical consultation note. You are to convert it into a brief correspondence for another health professional."
+                "content": prompts["prompts"]["letter"]["system"]
                 + "\n\n"
                 + json_schema_instruction,
             },
@@ -60,18 +60,17 @@ async def generate_letter_content(
             if value
         )
 
-        # Always include initial patient data as first user message
         request_body.append(
             {
                 "role": "user",
-                "content": f"Patient Name: {patient_name}\nGender: {gender}\nAge: {age}\n\nClinic Note:\n{clinic_note}",
+                "content": f"Before we proceed with the task; please take note of the following additional instructions:\n{additional_instruction}"
+                or "",
             }
         )
         request_body.append(
             {
                 "role": "user",
-                "content": f"Based on the above information:\n{additional_instruction}"
-                or "",
+                "content": f"Patient Name: {patient_name}\nGender: {gender}\nAge: {age}\n\nClinic Note:\n{clinic_note}",
             }
         )
 
