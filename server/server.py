@@ -189,7 +189,7 @@ if __name__ == "__main__":
         # Docker mode
         config = uvicorn.Config(
             app,
-            host="0.0.0.0",
+            host=os.getenv("SERVER_HOST", "127.0.0.1"),
             port=int(os.getenv("PORT", 5000)),
             timeout_keep_alive=300,
             timeout_graceful_shutdown=10,

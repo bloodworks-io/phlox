@@ -52,4 +52,5 @@ COPY server/ ./server
 EXPOSE 5000
 
 # Define the command to run the FastAPI app
-CMD ["uvicorn", "server.server:app", "--host", "0.0.0.0", "--port", "5000"]
+# Uses python -m to respect SERVER_HOST environment variable
+CMD ["python", "-m", "server.server"]

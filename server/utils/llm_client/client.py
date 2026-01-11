@@ -251,6 +251,9 @@ def get_llm_client():
             api_key="not-needed",
         )
     else:
+        # Use default Ollama URL if not configured
+        if not base_url:
+            base_url = "http://127.0.0.1:11434"
         return AsyncLLMClient(
             provider_type=provider_type, base_url=base_url, api_key=api_key
         )

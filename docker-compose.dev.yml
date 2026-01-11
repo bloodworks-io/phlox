@@ -11,8 +11,8 @@ services:
       NODE_ENV: development
       VITE_BACKEND_URL: ""
       TZ: Australia/Melbourne
+      SERVER_HOST: ${SERVER_HOST:-127.0.0.1}
     volumes:
       - .:/usr/src/app
-      - /usr/src/app/node_modules
       - ./data:/usr/src/app/data # Only for persistent data
       - ./logs:/usr/src/app/logs # Optional: Persist logs

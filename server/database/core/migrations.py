@@ -246,14 +246,14 @@ def migrate_to_v1(cursor, db):
 
     # Initialize config with default entries
     default_config = {
-        "WHISPER_BASE_URL": "&nbsp;",
-        "WHISPER_MODEL": "&nbsp;",
-        "WHISPER_KEY": "&nbsp;",
-        "OLLAMA_BASE_URL": "&nbsp;",
-        "PRIMARY_MODEL": "&nbsp;",
-        "SECONDARY_MODEL": "&nbsp;",
-        "EMBEDDING_MODEL": "&nbsp;",
-        "DAILY_SUMMARY": "&nbsp;",
+        "WHISPER_BASE_URL": "",
+        "WHISPER_MODEL": "",
+        "WHISPER_KEY": "",
+        "OLLAMA_BASE_URL": "",
+        "PRIMARY_MODEL": "",
+        "SECONDARY_MODEL": "",
+        "EMBEDDING_MODEL": "",
+        "DAILY_SUMMARY": "",
     }
 
     for key, value in default_config.items():
@@ -321,7 +321,7 @@ def migrate_to_v2(cursor, db):
                 ('REASONING_MODEL', ?),
                 ('REASONING_ENABLED', ?)
         """,
-            (json.dumps("&nbsp;"), json.dumps(False)),
+            (json.dumps(""), json.dumps(False)),
         )
 
         defaults = DEFAULT_PROMPTS
@@ -367,30 +367,28 @@ def migrate_to_v3(cursor, db):
             existing_config[row["key"]] = json.loads(row["value"])
 
         # Determine LLM provider and base URL based on existing config
-        ollama_base_url = existing_config.get("OLLAMA_BASE_URL", "&nbsp;")
+        ollama_base_url = existing_config.get("OLLAMA_BASE_URL", "")
 
         # If user has Ollama configured, migrate to new structure
-        if ollama_base_url != "&nbsp;" and ollama_base_url:
+        if ollama_base_url:
             llm_provider = "ollama"
             llm_base_url = ollama_base_url
-            llm_api_key = "&nbsp;"  # Ollama doesn't need API key
+            llm_api_key = ""  # Ollama doesn't need API key
         else:
             # No existing Ollama setup, use defaults
             llm_provider = "ollama"
-            llm_base_url = "&nbsp;"
-            llm_api_key = "&nbsp;"
+            llm_base_url = ""
+            llm_api_key = ""
 
         # Mapping of config values to preserve/migrate
         config_mapping = {
-            "WHISPER_BASE_URL": existing_config.get(
-                "WHISPER_BASE_URL", "&nbsp;"
-            ),
-            "WHISPER_MODEL": existing_config.get("WHISPER_MODEL", "&nbsp;"),
-            "WHISPER_KEY": existing_config.get("WHISPER_KEY", "&nbsp;"),
-            "PRIMARY_MODEL": existing_config.get("PRIMARY_MODEL", "&nbsp;"),
-            "SECONDARY_MODEL": existing_config.get("SECONDARY_MODEL", "&nbsp;"),
-            "EMBEDDING_MODEL": existing_config.get("EMBEDDING_MODEL", "&nbsp;"),
-            "REASONING_MODEL": existing_config.get("REASONING_MODEL", "&nbsp;"),
+            "WHISPER_BASE_URL": existing_config.get("WHISPER_BASE_URL", ""),
+            "WHISPER_MODEL": existing_config.get("WHISPER_MODEL", ""),
+            "WHISPER_KEY": existing_config.get("WHISPER_KEY", ""),
+            "PRIMARY_MODEL": existing_config.get("PRIMARY_MODEL", ""),
+            "SECONDARY_MODEL": existing_config.get("SECONDARY_MODEL", ""),
+            "EMBEDDING_MODEL": existing_config.get("EMBEDDING_MODEL", ""),
+            "REASONING_MODEL": existing_config.get("REASONING_MODEL", ""),
             "REASONING_ENABLED": existing_config.get(
                 "REASONING_ENABLED", False
             ),
@@ -455,7 +453,7 @@ def migrate_to_v3(cursor, db):
                             template_base
                         ][field["field_key"]]
                         updated_field["style_example"] = default_field.get(
-                            "style_example", "&nbsp;"
+                            "style_example", ""
                         )
 
                         # Also update format_schema if it's changed in defaults
@@ -465,7 +463,7 @@ def migrate_to_v3(cursor, db):
                             ]
                     else:
                         # Custom template, use placeholder
-                        updated_field["style_example"] = "&nbsp;"
+                        updated_field["style_example"] = ""
 
                 updated_fields.append(updated_field)
 
@@ -488,6 +486,7 @@ def migrate_to_v4(cursor, db):
     """Add has_completed_splash_screen and scribe_is_ambient columns to user_settings table.
     Add Dictation letter template.
     Remove 'stop' tokens from all option categories.
+    Replace &nbsp; with empty string in config and template fields.
     """
     try:
         cursor.execute(
@@ -520,6 +519,39 @@ def migrate_to_v4(cursor, db):
         )
         db.commit()
         logging.info("Successfully added Dictation template")
+
+        # Replace &nbsp; with empty string in config table
+        cursor.execute("SELECT key, value FROM config")
+        for row in cursor.fetchall():
+            key = row["key"]
+            value = json.loads(row["value"])
+            if value == "&nbsp;":
+                cursor.execute(
+                    "UPDATE config SET value = ? WHERE key = ?",
+                    (json.dumps(""), key),
+                )
+        db.commit()
+        logging.info("Successfully replaced &nbsp; with empty string in config")
+
+        # Replace &nbsp; with empty string in template style_example fields
+        cursor.execute("SELECT template_key, fields FROM clinical_templates")
+        for row in cursor.fetchall():
+            template_key = row["template_key"]
+            fields = json.loads(row["fields"])
+            updated = False
+            for field in fields:
+                if field.get("style_example") == "&nbsp;":
+                    field["style_example"] = ""
+                    updated = True
+            if updated:
+                cursor.execute(
+                    "UPDATE clinical_templates SET fields = ? WHERE template_key = ?",
+                    (json.dumps(fields), template_key),
+                )
+        db.commit()
+        logging.info(
+            "Successfully replaced &nbsp; with empty string in templates"
+        )
 
     except Exception as e:
         logging.error(f"Error during v4 migration: {e}")

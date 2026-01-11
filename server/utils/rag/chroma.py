@@ -38,16 +38,19 @@ class ChromaManager:
         # Initialize embedding function based on provider type
         provider_type = self.config.get("LLM_PROVIDER", "ollama").lower()
 
+        # Get base URL with default for Ollama
+        base_url = self.config.get("LLM_BASE_URL") or "http://127.0.0.1:11434"
+
         if provider_type == LLMProviderType.OLLAMA.value:
             self.embedding_model = OllamaEmbeddingFunction(
-                url=f"{self.config['LLM_BASE_URL']}/api/embeddings",
+                url=f"{base_url}/api/embeddings",
                 model_name=self.config["EMBEDDING_MODEL"],
             )
         elif provider_type == LLMProviderType.OPENAI_COMPATIBLE.value:
             self.embedding_model = OpenAIEmbeddingFunction(
                 model_name=self.config["EMBEDDING_MODEL"],
-                api_key=self.config.get("LLM_API_KEY", "cant-be-empty"),
-                api_base=f"{self.config['LLM_BASE_URL']}/v1",
+                api_key=self.config.get("LLM_API_KEY") or "cant-be-empty",
+                api_base=f"{base_url}/v1",
             )
         elif provider_type == LLMProviderType.LOCAL.value:
             # Use OllamaEmbeddingFunction pointing to bundled Ollama
