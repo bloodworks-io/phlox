@@ -89,7 +89,7 @@ def _get_relevant_literature(
         for j, doc in enumerate(doc_list):
             distance = context["distances"][i][j]
             logger.info(f"Document {j+1}: distance={distance}")
-            if distance > distance_threshold:
+            if distance < distance_threshold:
                 source = context["metadatas"][i][j]["source"]
                 formatted_source = source.replace("_", " ").title()
                 cleaned_doc = doc.strip().replace("\n", " ")
