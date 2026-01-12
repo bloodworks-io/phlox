@@ -88,8 +88,6 @@ async def generate_letter_content(
             "temperature"
         ]  # User defined temperature
 
-        logging.info("Generating letter content with request %s", request_body)
-
         # Generate the letter content with structured output
         response_json = await llm_client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],
