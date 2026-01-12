@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 from platformdirs import user_data_dir
@@ -38,3 +39,17 @@ DATA_DIR, BUILD_DIR = get_app_directories()
 
 # Create directories if they don't exist
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def get_temp_directory():
+    """Get appropriate temporary directory based on environment"""
+    if IS_DOCKER:
+        temp_dir = Path("/usr/src/app/temp")
+    else:
+        # Use system temp directory with app-specific subdirectory
+        temp_dir = Path(tempfile.gettempdir()) / "phlox"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    return temp_dir
+
+
+TEMP_DIR = get_temp_directory()

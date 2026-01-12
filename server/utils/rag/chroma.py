@@ -8,6 +8,7 @@ import fitz  # PyMuPDF
 from chromadb.config import Settings
 from chromadb.utils.embedding_functions import (
     OllamaEmbeddingFunction,
+    ONNXMiniLM_L6_V2,
     OpenAIEmbeddingFunction,
 )
 
@@ -53,11 +54,8 @@ class ChromaManager:
                 api_base=f"{base_url}/v1",
             )
         elif provider_type == LLMProviderType.LOCAL.value:
-            # Use OllamaEmbeddingFunction pointing to bundled Ollama
-            self.embedding_model = OllamaEmbeddingFunction(
-                url="http://127.0.0.1:11434/api/embeddings",
-                model_name=self.config["EMBEDDING_MODEL"],
-            )
+            # Use Chroma's built-in ONNX embedding function (local only)
+            self.embedding_model = ONNXMiniLM_L6_V2()
         else:
             raise ValueError(f"Unsupported LLM provider type: {provider_type}")
 

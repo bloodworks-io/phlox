@@ -8,6 +8,7 @@ from fastapi import (
     UploadFile,
 )
 
+from server.constants import TEMP_DIR
 from server.schemas.rag import (
     CommitRequest,
     DeleteFileRequest,
@@ -110,7 +111,7 @@ async def extract_pdf_info(file: UploadFile = File(...)):
     logger.info(
         f"Request received for /extract-pdf-info: filename='{file.filename}'"
     )
-    temp_dir = "/usr/src/app/temp"
+    temp_dir = TEMP_DIR
     os.makedirs(temp_dir, exist_ok=True)  # Ensure temp dir exists
     file_location = os.path.join(temp_dir, file.filename)
 

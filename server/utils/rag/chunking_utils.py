@@ -1,33 +1,37 @@
-from enum import Enum
-import re
-from fuzzywuzzy import fuzz, process
 import os
-from chromadb.utils import embedding_functions
-import tiktoken
+import re
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import List
+
+import tiktoken
+from chromadb.utils import embedding_functions
+from fuzzywuzzy import fuzz, process
+
 
 class BaseChunker(ABC):
     @abstractmethod
     def split_text(self, text: str) -> List[str]:
         pass
 
+
 def find_query_despite_whitespace(document, query):
 
     # Normalize spaces and newlines in the query
-    normalized_query = re.sub(r'\s+', ' ', query).strip()
+    normalized_query = re.sub(r"\s+", " ", query).strip()
 
     # Create a regex pattern from the normalized query to match any whitespace characters between words
-    pattern = r'\s*'.join(re.escape(word) for word in normalized_query.split())
+    pattern = r"\s*".join(re.escape(word) for word in normalized_query.split())
 
     # Compile the regex to ignore case and search for it in the document
     regex = re.compile(pattern, re.IGNORECASE)
     match = regex.search(document)
 
     if match:
-        return document[match.start(): match.end()], match.start(), match.end()
+        return document[match.start() : match.end()], match.start(), match.end()
     else:
         return None
+
 
 def rigorous_document_search(document: str, target: str):
     """
@@ -46,7 +50,7 @@ def rigorous_document_search(document: str, target: str):
         tuple: A tuple containing the best match found in the document, its start index, and its end index.
         If no match is found, returns None.
     """
-    if target.endswith('.'):
+    if target.endswith("."):
         target = target[:-1]
 
     if target in document:
@@ -59,10 +63,12 @@ def rigorous_document_search(document: str, target: str):
             return raw_search
 
     # Split the text into sentences
-    sentences = re.split(r'[.!?]\s*|\n', document)
+    sentences = re.split(r"[.!?]\s*|\n", document)
 
     # Find the sentence that matches the query best
-    best_match = process.extractOne(target, sentences, scorer=fuzz.token_sort_ratio)
+    best_match = process.extractOne(
+        target, sentences, scorer=fuzz.token_sort_ratio
+    )
 
     if best_match[1] < 98:
         return None
@@ -74,22 +80,33 @@ def rigorous_document_search(document: str, target: str):
 
     return reference, start_index, end_index
 
+
 def get_openai_embedding_function():
-    openai_api_key = os.getenv('OPENAI_API_KEY')
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     if openai_api_key is None:
-        raise ValueError("You need to set an embedding function or set an OPENAI_API_KEY environment variable.")
+        raise ValueError(
+            "You need to set an embedding function or set an OPENAI_API_KEY environment variable."
+        )
     embedding_function = embedding_functions.OpenAIEmbeddingFunction(
-        api_key=os.getenv('OPENAI_API_KEY'),
-        model_name="text-embedding-3-large"
+        api_key=os.getenv("OPENAI_API_KEY"), model_name="text-embedding-3-large"
     )
     return embedding_function
 
+
 # Count the number of tokens in each page_content
 def openai_token_count(string: str) -> int:
-    """Returns the number of tokens in a text string."""
-    encoding = tiktoken.get_encoding("cl100k_base")
-    num_tokens = len(encoding.encode(string, disallowed_special=()))
-    return num_tokens
+    """Returns the number of tokens in a text string.
+    Falls back to character count if tiktoken is unavailable.
+    """
+    try:
+        encoding = tiktoken.get_encoding("cl100k_base")
+        num_tokens = len(encoding.encode(string, disallowed_special=()))
+        return num_tokens
+    except (ImportError, ValueError):
+        # Fallback to character count if tiktoken unavailable
+        # Use a rough approximation: 1 token ~ 4 characters
+        return len(string) // 4
+
 
 class Language(str, Enum):
     """Enum of the programming languages."""
