@@ -99,7 +99,8 @@ pub fn start_llama() -> Result<Child, Box<dyn std::error::Error>> {
         .arg("--ctx-size")
         .arg("8192")
         .arg("--n-gpu-layers")
-        .arg("99"); // Use GPU for all layers on macOS
+        .arg("99") // Use GPU for all layers on macOS
+        .arg("--jinja");
 
     // Check if model is Qwen3 - need to disable thinking in chat template
     let model_filename = model_path
