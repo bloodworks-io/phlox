@@ -11,7 +11,6 @@ import os
 import threading
 
 import sqlcipher3 as sqlite3
-
 from server.constants import DATA_DIR
 from server.database.core.initialization import (
     initialize_templates,
@@ -116,8 +115,29 @@ class PatientDatabase:
                 logging.info("Using encryption key from environment variable")
 
         if not self.encryption_key:
-            logging.error("DB_ENCRYPTION_KEY environment variable not set!")
-            raise ValueError("Database encryption key must be provided")
+            # Check if this is a first-run scenario
+            db_path = os.path.join(self.db_dir, self.db_name)
+            if not os.path.exists(db_path):
+                # New database - this is acceptable if key will be provided
+                logging.warning(
+                    "No encryption key provided for new database. "
+                    "Encryption setup must be completed via the desktop app."
+                )
+                raise ValueError(
+                    "Database encryption key not configured. "
+                    "Please complete the encryption setup process in the Phlox app."
+                )
+            else:
+                # Existing database without key - data loss scenario
+                logging.error(
+                    "Existing database found but no encryption key was provided. "
+                    "The database cannot be decrypted without the correct key."
+                )
+                raise ValueError(
+                    "Cannot decrypt existing database. "
+                    "Please provide the correct encryption passphrase in the Phlox app. "
+                    "If you have forgotten your passphrase, your data cannot be recovered."
+                )
 
         self.is_test = os.environ.get("TESTING", "False").lower() == "true"
         self.db_name = (

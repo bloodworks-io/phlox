@@ -1,4 +1,5 @@
 mod commands;
+mod encryption;
 mod process;
 mod services;
 
@@ -8,7 +9,9 @@ use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{
-    convert_audio_to_wav, get_service_status, get_system_specs, restart_llama, restart_whisper,
+    change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
+    get_service_status, get_system_specs, has_database, has_encryption_setup, has_keychain_entry,
+    restart_llama, restart_whisper, setup_encryption, unlock_with_passphrase,
 };
 use process::{
     cleanup_stale_files, kill_all_processes, monitor_processes, LlamaProcess, RestartCoordinator,
@@ -45,7 +48,16 @@ pub fn run() {
             get_system_specs,
             restart_whisper,
             restart_llama,
-            convert_audio_to_wav
+            convert_audio_to_wav,
+            // Encryption commands
+            has_encryption_setup,
+            has_database,
+            has_keychain_entry,
+            setup_encryption,
+            unlock_with_passphrase,
+            change_passphrase,
+            clear_keychain,
+            get_encryption_status
         ])
         .setup(|app| {
             // Set transparent titlebar with custom dark background color on macOS
@@ -111,7 +123,7 @@ pub fn run() {
                 }
 
                 // Now start the server (this should always work)
-                match start_server() {
+                match start_server(app_handle.clone()) {
                     Ok(server_child) => {
                         let server_pid = server_child.id();
                         *app_handle.state::<ServerProcess>().0.lock().unwrap() = Some(server_child);

@@ -3,6 +3,7 @@ use std::process::Command;
 use sysinfo::System;
 use tauri::Manager;
 
+use crate::encryption::{self, EncryptionError};
 use crate::process::{LlamaProcess, RestartCoordinator, ServerProcess, WhisperProcess};
 use crate::services;
 
@@ -339,4 +340,98 @@ pub fn get_system_specs() -> SystemSpecs {
         arch: std::env::consts::ARCH.to_string(),
         apple_silicon,
     }
+}
+
+// ============================================================================
+// Encryption Commands
+// ============================================================================
+
+/// Check if encryption has been set up (wrapped_key.bin exists)
+#[tauri::command]
+pub fn has_encryption_setup() -> bool {
+    encryption::has_encryption_setup()
+}
+
+/// Check if database file exists
+#[tauri::command]
+pub fn has_database() -> bool {
+    encryption::database_exists()
+}
+
+/// Check if master key is in keychain
+#[tauri::command]
+pub fn has_keychain_entry(app_handle: tauri::AppHandle) -> bool {
+    encryption::get_master_key_from_keychain(&app_handle)
+        .map(|k| k.is_some())
+        .unwrap_or(false)
+}
+
+/// Set up encryption with a new passphrase
+#[tauri::command]
+pub fn setup_encryption(app_handle: tauri::AppHandle, passphrase: String) -> Result<(), String> {
+    log::info!("setup_encryption called");
+
+    encryption::setup_encryption(&app_handle, &passphrase).map_err(|e| match e {
+        EncryptionError::InvalidFormat(msg) => msg,
+        _ => format!("Failed to set up encryption: {}", e),
+    })
+}
+
+/// Unlock with passphrase and cache in keychain
+#[tauri::command]
+pub fn unlock_with_passphrase(
+    app_handle: tauri::AppHandle,
+    passphrase: String,
+) -> Result<(), String> {
+    log::info!("unlock_with_passphrase called");
+
+    encryption::unlock_with_passphrase(&app_handle, &passphrase).map_err(|e| match e {
+        EncryptionError::DecryptionFailed => "Incorrect passphrase".to_string(),
+        EncryptionError::VerificationFailed => "Incorrect passphrase".to_string(),
+        _ => format!("Failed to unlock: {}", e),
+    })
+}
+
+/// Change passphrase (future enhancement - placeholder)
+#[tauri::command]
+pub fn change_passphrase(
+    _app_handle: tauri::AppHandle,
+    _old_passphrase: String,
+    _new_passphrase: String,
+) -> Result<(), String> {
+    log::info!("change_passphrase called - not yet implemented");
+
+    // TODO: Implement passphrase change
+    // This would:
+    // 1. Unlock with old passphrase
+    // 2. Generate new salt
+    // 3. Re-wrap master key with new passphrase
+    // 4. Update wrapped_key.bin
+
+    Err("Passphrase change is not yet implemented".to_string())
+}
+
+/// Delete key from keychain (for testing/logout)
+#[tauri::command]
+pub fn clear_keychain(app_handle: tauri::AppHandle) -> Result<(), String> {
+    log::info!("clear_keychain called");
+
+    encryption::delete_master_key_from_keychain(&app_handle)
+        .map_err(|e| format!("Failed to clear keychain: {}", e))
+}
+
+/// Get encryption setup status for UI
+#[tauri::command]
+pub fn get_encryption_status(app_handle: tauri::AppHandle) -> serde_json::Value {
+    let has_setup = encryption::has_encryption_setup();
+    let has_db = encryption::database_exists();
+    let has_keychain = encryption::get_master_key_from_keychain(&app_handle)
+        .map(|k| k.is_some())
+        .unwrap_or(false);
+
+    serde_json::json!({
+        "has_setup": has_setup,
+        "has_database": has_db,
+        "has_keychain": has_keychain
+    })
 }

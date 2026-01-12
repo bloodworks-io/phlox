@@ -27,14 +27,24 @@ import { usePatient } from "./utils/hooks/usePatient";
 import { useBreakpointValue } from "@chakra-ui/react";
 import theme from "./theme"; // Assuming theme is exported from here for ChakraProvider
 import SplashScreen from "./components/common/SplashScreen"; // Import SplashScreen
+import EncryptionSetup from "./components/setup/EncryptionSetup"; // Import EncryptionSetup
+import EncryptionUnlock from "./components/setup/EncryptionUnlock"; // Import EncryptionUnlock
 import { settingsService } from "./utils/settings/settingsUtils"; // Import settingsService
 import { isTauri } from "./utils/helpers/apiConfig"; // Import isTauri
+import { encryptionApi } from "./utils/api/encryptionApi"; // Import encryptionApi
 
 function AppContent() {
   const [showSplashScreen, setShowSplashScreen] = useState(undefined);
   const [isLoadingSplashCheck, setIsLoadingSplashCheck] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isModified, setIsModified] = useState(false);
+
+  // Encryption state
+  const [encryptionStatus, setEncryptionStatus] = useState(null);
+  const [showEncryptionSetup, setShowEncryptionSetup] = useState(false);
+  const [showEncryptionUnlock, setShowEncryptionUnlock] = useState(false);
+  const [isLoadingEncryptionCheck, setIsLoadingEncryptionCheck] =
+    useState(true);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const navigate = useNavigate();
@@ -210,8 +220,60 @@ function AppContent() {
     setShowSplashScreen(false);
   };
 
+  // Encryption check logic - only for Tauri builds
+  useEffect(() => {
+    if (!isTauri()) {
+      setIsLoadingEncryptionCheck(false);
+      return;
+    }
+
+    const checkEncryptionStatus = async () => {
+      try {
+        const status = await encryptionApi.getStatus();
+        setEncryptionStatus(status);
+
+        // Determine what to show based on status
+        if (!status.has_setup && !status.has_database) {
+          // First-time setup - no encryption, no database
+          setShowEncryptionSetup(true);
+        } else if (status.has_setup && !status.has_keychain) {
+          // Has encrypted data but not unlocked
+          setShowEncryptionUnlock(true);
+        }
+        // If has_keychain is true, proceed to app normally
+      } catch (error) {
+        console.error("Error checking encryption status:", error);
+        // On error, allow proceeding (may be in dev mode)
+      } finally {
+        setIsLoadingEncryptionCheck(false);
+      }
+    };
+
+    checkEncryptionStatus();
+  }, []);
+
+  const handleEncryptionSetupComplete = () => {
+    setShowEncryptionSetup(false);
+    // After setup, the key is in keychain, so we can proceed
+  };
+
+  const handleEncryptionUnlockComplete = () => {
+    setShowEncryptionUnlock(false);
+    // After unlock, the key is in keychain, so we can proceed
+  };
+
   if (isLoadingSplashCheck) {
     return null; // or a loading spinner
+  }
+
+  // Show encryption setup first (before splash screen)
+  if (showEncryptionSetup) {
+    return <EncryptionSetup onComplete={handleEncryptionSetupComplete} />;
+  }
+
+  // Show encryption unlock if needed
+  if (showEncryptionUnlock) {
+    return <EncryptionUnlock onComplete={handleEncryptionUnlockComplete} />;
   }
 
   if (showSplashScreen) {

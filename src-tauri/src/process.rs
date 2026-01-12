@@ -268,7 +268,7 @@ pub fn monitor_processes(app_handle: tauri::AppHandle, monitor_whisper: bool) {
 
                             // Only restart if not already being restarted manually
                             if !coordinator.server_restarting.load(Ordering::SeqCst) {
-                                match services::start_server() {
+                                match services::start_server(app_handle.clone()) {
                                     Ok(new_child) => {
                                         log::info!("Server restarted with PID: {}", new_child.id());
                                         *process_guard = Some(new_child);
