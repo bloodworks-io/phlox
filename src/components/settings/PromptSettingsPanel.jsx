@@ -7,17 +7,30 @@ import {
   Text,
   Collapse,
   Textarea,
+  Button,
+  Tabs,
+  TabList,
+  TabPanels,
+  TabPanel,
+  Tab,
   Tooltip,
   NumberInput,
   NumberInputField,
   HStack,
+  VStack,
   Alert,
   AlertIcon,
   AlertDescription,
   CloseButton,
 } from "@chakra-ui/react";
 import { ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons";
-import { FaPencilAlt } from "react-icons/fa";
+import {
+  FaPencilAlt,
+  FaFileAlt,
+  FaComments,
+  FaEnvelope,
+  FaCog,
+} from "react-icons/fa";
 import { FiRefreshCw } from "react-icons/fi";
 
 const PromptSettingsPanel = ({
@@ -31,19 +44,7 @@ const PromptSettingsPanel = ({
   config,
 }) => {
   const [isAlertDismissed, setIsAlertDismissed] = useState(false);
-  const [
-    isClinicalHistoryPromptCollapsed,
-    setIsClinicalHistoryPromptCollapsed,
-  ] = useState(true);
-  const [isPlanPromptCollapsed, setIsPlanPromptCollapsed] = useState(true);
-  const [isRefinementPromptCollapsed, setIsRefinementPromptCollapsed] =
-    useState(true);
-  const [isChatCollapsed, setIsChatCollapsed] = useState(true);
-  const [isSummaryPromptCollapsed, setIsSummaryPromptCollapsed] =
-    useState(true);
-  const [isLetterPromptCollapsed, setIsLetterPromptCollapsed] = useState(true);
-  const [isPromptOptionsCollapsed, setIsPromptOptionsCollapsed] =
-    useState(true);
+  const [tabIndex, setTabIndex] = useState(0);
 
   return (
     <Box className="panels-bg" p="4" borderRadius="sm">
@@ -81,229 +82,200 @@ const PromptSettingsPanel = ({
             />
           </Alert>
         )}
-        <Box mt="4" borderRadius="sm">
-          <Box mt="4">
-            <IconButton
-              icon={
-                isRefinementPromptCollapsed ? (
-                  <ChevronRightIcon />
-                ) : (
-                  <ChevronDownIcon />
-                )
-              }
-              onClick={() =>
-                setIsRefinementPromptCollapsed(!isRefinementPromptCollapsed)
-              }
-              aria-label="Toggle Refinement Prompt"
-              variant="outline"
-              size="10"
-              mr="2"
-              className="collapse-toggle"
-            />
-            <HStack spacing={2} align="center">
-              <Tooltip label="Reset to default">
-                <IconButton
-                  icon={<FiRefreshCw />}
-                  onClick={() =>
-                    handlePromptReset && handlePromptReset("refinement")
+        <Tabs
+          variant="enclosed"
+          mt={4}
+          index={tabIndex}
+          onChange={(index) => setTabIndex(index)}
+        >
+          <TabList>
+            <Tooltip label="System prompt used for refining the generated outputs">
+              <Tab className="tab-style">
+                <HStack>
+                  <FaPencilAlt />
+                  <Text>Refinement</Text>
+                </HStack>
+              </Tab>
+            </Tooltip>
+            <Tooltip label="System prompt used for generating summaries">
+              <Tab className="tab-style">
+                <HStack>
+                  <FaFileAlt />
+                  <Text>Summary</Text>
+                </HStack>
+              </Tab>
+            </Tooltip>
+            <Tooltip label="System prompt used for chat interactions">
+              <Tab className="tab-style">
+                <HStack>
+                  <FaComments />
+                  <Text>Chat</Text>
+                </HStack>
+              </Tab>
+            </Tooltip>
+            <Tooltip label="System prompt used for generating letters">
+              <Tab className="tab-style">
+                <HStack>
+                  <FaEnvelope />
+                  <Text>Letter</Text>
+                </HStack>
+              </Tab>
+            </Tooltip>
+            <Tooltip label="Technical settings for model configuration">
+              <Tab className="tab-style">
+                <HStack>
+                  <FaCog />
+                  <Text>Advanced</Text>
+                </HStack>
+              </Tab>
+            </Tooltip>
+          </TabList>
+          <TabPanels>
+            <TabPanel className="floating-main">
+              <VStack spacing={4} align="stretch">
+                <Flex justify="space-between" align="center">
+                  <Box>
+                    <Text fontSize="md" fontWeight="bold">
+                      Refinement Prompt
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      System prompt used for refining the generated outputs
+                    </Text>
+                  </Box>
+                  <Button
+                    leftIcon={<FiRefreshCw />}
+                    size="sm"
+                    minH={"15px"}
+                    onClick={() =>
+                      handlePromptReset && handlePromptReset("refinement")
+                    }
+                    className="red-button"
+                  >
+                    Reset to Default
+                  </Button>
+                </Flex>
+                <Textarea
+                  value={prompts?.refinement?.system || ""}
+                  onChange={(e) =>
+                    handlePromptChange("refinement", "system", e.target.value)
                   }
-                  aria-label="Reset Refinement Prompt"
-                  variant="ghost"
-                  size="xs"
-                  colorScheme="orange"
+                  rows={10}
+                  className="textarea-style"
                 />
-              </Tooltip>
-              <Tooltip label="System prompt used for refining the generated outputs">
-                <Text fontSize="sm" mb="1" mt="4" display="inline">
-                  Refinement Prompt
-                </Text>
-              </Tooltip>
-            </HStack>
-            <Collapse in={!isRefinementPromptCollapsed} animateOpacity>
-              <Textarea
-                size="sm"
-                mt="4"
-                value={prompts?.refinement?.system}
-                onChange={(e) =>
-                  handlePromptChange("refinement", "system", e.target.value)
-                }
-                rows={10}
-                className="textarea-style"
-              />
-            </Collapse>
-          </Box>
-          <Box mt="4">
-            <IconButton
-              icon={
-                isSummaryPromptCollapsed ? (
-                  <ChevronRightIcon />
-                ) : (
-                  <ChevronDownIcon />
-                )
-              }
-              onClick={() =>
-                setIsSummaryPromptCollapsed(!isSummaryPromptCollapsed)
-              }
-              aria-label="Toggle Summary Prompt"
-              variant="outline"
-              size="10"
-              mr="2"
-              className="collapse-toggle"
-            />
-            <HStack spacing={2} align="center">
-              <Tooltip label="Reset to default">
-                <IconButton
-                  icon={<FiRefreshCw />}
-                  onClick={() =>
-                    handlePromptReset && handlePromptReset("summary")
-                  }
-                  aria-label="Reset Summary Prompt"
-                  variant="ghost"
-                  size="xs"
-                  colorScheme="orange"
-                />
-              </Tooltip>
-              <Tooltip label="System prompt used for generating summaries">
-                <Text fontSize="sm" mb="1" mt="4" display="inline">
-                  Summary Prompt
-                </Text>
-              </Tooltip>
-            </HStack>
-            <Collapse in={!isSummaryPromptCollapsed} animateOpacity>
-              <Textarea
-                size="sm"
-                value={prompts?.summary?.system}
-                onChange={(e) =>
-                  handlePromptChange("summary", "system", e.target.value)
-                }
-                rows={10}
-                mt="4"
-                className="textarea-style"
-              />
-            </Collapse>
-          </Box>
-          <Box mt="4">
-            <IconButton
-              icon={
-                isChatCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />
-              }
-              onClick={() => setIsChatCollapsed(!isChatCollapsed)}
-              aria-label="Toggle Chat Prompt"
-              variant="outline"
-              size="10"
-              mr="2"
-              className="collapse-toggle"
-            />
-            <HStack spacing={2} align="center">
-              <Tooltip label="Reset to default">
-                <IconButton
-                  icon={<FiRefreshCw />}
-                  onClick={() => handlePromptReset && handlePromptReset("chat")}
-                  aria-label="Reset Chat Prompt"
-                  variant="ghost"
-                  size="xs"
-                  colorScheme="orange"
-                />
-              </Tooltip>
-              <Tooltip label="System prompt used for chat interactions">
-                <Text fontSize="sm" mb="1" mt="4" display="inline">
-                  Chat Prompt
-                </Text>
-              </Tooltip>
-            </HStack>
-            <Collapse in={!isChatCollapsed} animateOpacity>
-              <Textarea
-                size="sm"
-                value={prompts?.chat?.system}
-                onChange={(e) =>
-                  handlePromptChange("chat", "system", e.target.value)
-                }
-                rows={10}
-                className="textarea-style"
-              />
-            </Collapse>
-          </Box>
-          <Box mt="4">
-            <IconButton
-              icon={
-                isLetterPromptCollapsed ? (
-                  <ChevronRightIcon />
-                ) : (
-                  <ChevronDownIcon />
-                )
-              }
-              onClick={() =>
-                setIsLetterPromptCollapsed(!isLetterPromptCollapsed)
-              }
-              aria-label="Toggle Letter Prompt"
-              variant="outline"
-              size="10"
-              mr="2"
-              className="collapse-toggle"
-            />
-            <HStack spacing={2} align="center">
-              <Tooltip label="Reset to default">
-                <IconButton
-                  icon={<FiRefreshCw />}
-                  onClick={() =>
-                    handlePromptReset && handlePromptReset("letter")
-                  }
-                  aria-label="Reset Letter Prompt"
-                  variant="ghost"
-                  size="xs"
-                  colorScheme="orange"
-                />
-              </Tooltip>
-              <Tooltip label="System prompt used for generating letters">
-                <Text fontSize="sm" mb="1" mt="4" display="inline">
-                  Letter Prompt
-                </Text>
-              </Tooltip>
-            </HStack>
-            <Collapse in={!isLetterPromptCollapsed} animateOpacity>
-              <Textarea
-                size="sm"
-                value={prompts?.letter?.system}
-                onChange={(e) =>
-                  handlePromptChange("letter", "system", e.target.value)
-                }
-                rows={10}
-                className="textarea-style"
-              />
-            </Collapse>
-          </Box>
+              </VStack>
+            </TabPanel>
 
-          <Box mt="4">
-            <IconButton
-              icon={
-                isPromptOptionsCollapsed ? (
-                  <ChevronRightIcon />
-                ) : (
-                  <ChevronDownIcon />
-                )
-              }
-              onClick={() =>
-                setIsPromptOptionsCollapsed(!isPromptOptionsCollapsed)
-              }
-              aria-label="Toggle Prompt Options"
-              variant="outline"
-              size="10"
-              mr="2"
-              className="collapse-toggle"
-            />
-            <Text fontSize="sm" mb="1" mt="4" display="inline">
-              Advanced Options
-            </Text>
-            <Collapse in={!isPromptOptionsCollapsed} animateOpacity>
-              <HStack mt="2" spacing="24" wrap="wrap">
-                <Box mt="4">
-                  <Text fontSize="md" fontWeight="bold">
+            <TabPanel className="floating-main">
+              <VStack spacing={4} align="stretch">
+                <Flex justify="space-between" align="center">
+                  <Box>
+                    <Text fontSize="md" fontWeight="bold">
+                      Summary Prompt
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      System prompt used for generating summaries
+                    </Text>
+                  </Box>
+                  <Button
+                    leftIcon={<FiRefreshCw />}
+                    size="sm"
+                    onClick={() =>
+                      handlePromptReset && handlePromptReset("summary")
+                    }
+                  >
+                    Reset to Default
+                  </Button>
+                </Flex>
+                <Textarea
+                  value={prompts?.summary?.system || ""}
+                  onChange={(e) =>
+                    handlePromptChange("summary", "system", e.target.value)
+                  }
+                  rows={10}
+                  className="textarea-style"
+                />
+              </VStack>
+            </TabPanel>
+
+            <TabPanel className="floating-main">
+              <VStack spacing={4} align="stretch">
+                <Flex justify="space-between" align="center">
+                  <Box>
+                    <Text fontSize="md" fontWeight="bold">
+                      Chat Prompt
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      System prompt used for chat interactions
+                    </Text>
+                  </Box>
+                  <Button
+                    leftIcon={<FiRefreshCw />}
+                    size="sm"
+                    onClick={() =>
+                      handlePromptReset && handlePromptReset("chat")
+                    }
+                  >
+                    Reset to Default
+                  </Button>
+                </Flex>
+                <Textarea
+                  value={prompts?.chat?.system || ""}
+                  onChange={(e) =>
+                    handlePromptChange("chat", "system", e.target.value)
+                  }
+                  rows={10}
+                  className="textarea-style"
+                />
+              </VStack>
+            </TabPanel>
+
+            <TabPanel className="floating-main">
+              <VStack spacing={4} align="stretch">
+                <Flex justify="space-between" align="center">
+                  <Box>
+                    <Text fontSize="md" fontWeight="bold">
+                      Letter Prompt
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      System prompt used for generating letters
+                    </Text>
+                  </Box>
+                  <Button
+                    leftIcon={<FiRefreshCw />}
+                    size="sm"
+                    onClick={() =>
+                      handlePromptReset && handlePromptReset("letter")
+                    }
+                  >
+                    Reset to Default
+                  </Button>
+                </Flex>
+                <Textarea
+                  value={prompts?.letter?.system || ""}
+                  onChange={(e) =>
+                    handlePromptChange("letter", "system", e.target.value)
+                  }
+                  rows={10}
+                  className="textarea-style"
+                />
+              </VStack>
+            </TabPanel>
+
+            <TabPanel className="floating-main">
+              <VStack spacing={6} align="stretch">
+                <Text fontSize="md" fontWeight="bold">
+                  Model Configuration
+                </Text>
+
+                <Box>
+                  <Text fontSize="sm" fontWeight="bold" mb={2}>
                     Primary Model
                   </Text>
-                  <Box>
-                    <Tooltip label="Context window size for the primary model">
-                      <Text fontSize="sm">num_ctx</Text>
-                    </Tooltip>
+                  <Text fontSize="xs" color="gray.500" mb={2}>
+                    Context window size for the primary model
+                  </Text>
+                  <HStack>
+                    <Text fontSize="sm">num_ctx</Text>
                     <NumberInput
                       size="sm"
                       value={options?.general?.num_ctx}
@@ -313,16 +285,18 @@ const PromptSettingsPanel = ({
                     >
                       <NumberInputField className="input-style" width="100px" />
                     </NumberInput>
-                  </Box>
+                  </HStack>
                 </Box>
-                <Box mt="4">
-                  <Text fontSize="md" fontWeight="bold">
+
+                <Box>
+                  <Text fontSize="sm" fontWeight="bold" mb={2}>
                     Secondary Model
                   </Text>
-                  <Box>
-                    <Tooltip label="Context window size for the secondary model">
-                      <Text fontSize="sm">num_ctx</Text>
-                    </Tooltip>
+                  <Text fontSize="xs" color="gray.500" mb={2}>
+                    Context window size for the secondary model
+                  </Text>
+                  <HStack>
+                    <Text fontSize="sm">num_ctx</Text>
                     <NumberInput
                       size="sm"
                       value={options?.secondary?.num_ctx}
@@ -332,16 +306,18 @@ const PromptSettingsPanel = ({
                     >
                       <NumberInputField className="input-style" width="100px" />
                     </NumberInput>
-                  </Box>
+                  </HStack>
                 </Box>
-                <Box mt="4">
-                  <Text fontSize="md" fontWeight="bold">
-                    Letter Options
+
+                <Box>
+                  <Text fontSize="sm" fontWeight="bold" mb={2}>
+                    Letter Generation
                   </Text>
-                  <Box>
-                    <Tooltip label="Temperature setting for the letter generation model">
-                      <Text fontSize="sm">temperature</Text>
-                    </Tooltip>
+                  <Text fontSize="xs" color="gray.500" mb={2}>
+                    Temperature setting for the letter generation model
+                  </Text>
+                  <HStack>
+                    <Text fontSize="sm">temperature</Text>
                     <NumberInput
                       size="sm"
                       value={options?.letter?.temperature}
@@ -351,12 +327,12 @@ const PromptSettingsPanel = ({
                     >
                       <NumberInputField className="input-style" width="100px" />
                     </NumberInput>
-                  </Box>
+                  </HStack>
                 </Box>
-              </HStack>
-            </Collapse>
-          </Box>
-        </Box>
+              </VStack>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </Collapse>
     </Box>
   );
