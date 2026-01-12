@@ -21,7 +21,7 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
-  CloseButton,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import {
@@ -33,6 +33,24 @@ import {
 } from "react-icons/fa";
 import { FiRefreshCw } from "react-icons/fi";
 
+const ResetToDefaultButton = ({
+  onClick,
+  children = "Reset to Default",
+  ...props
+}) => (
+  <Button
+    leftIcon={<FiRefreshCw />}
+    size="sm"
+    h="30px"
+    minH="30px"
+    className="red-button"
+    onClick={onClick}
+    {...props}
+  >
+    {children}
+  </Button>
+);
+
 const PromptSettingsPanel = ({
   isCollapsed,
   setIsCollapsed,
@@ -43,8 +61,9 @@ const PromptSettingsPanel = ({
   handleOptionChange,
   config,
 }) => {
-  const [isAlertDismissed, setIsAlertDismissed] = useState(false);
   const [tabIndex, setTabIndex] = useState(0);
+
+  const warningIconColor = useColorModeValue("#df8e1d", "#eed49f");
 
   return (
     <Box className="panels-bg" p="4" borderRadius="sm">
@@ -64,24 +83,13 @@ const PromptSettingsPanel = ({
         </Flex>
       </Flex>
       <Collapse in={!isCollapsed} animateOpacity>
-        {!isAlertDismissed && (
-          <Alert status="warning" mt={4} borderRadius="sm">
-            <AlertIcon />
-            <Box flex="1">
-              <AlertDescription fontSize="sm">
-                These prompts are carefully crafted defaults. We recommend not
-                changing them unless you have a specific reason.
-              </AlertDescription>
-            </Box>
-            <CloseButton
-              alignSelf="flex-start"
-              position="relative"
-              right={-1}
-              top={-1}
-              onClick={() => setIsAlertDismissed(true)}
-            />
-          </Alert>
-        )}
+        <Alert status="warning" mt={4} borderRadius="sm">
+          <AlertIcon color={warningIconColor} />
+          <AlertDescription fontSize="sm">
+            These prompts are carefully crafted defaults. We recommend not
+            changing them unless you have a specific reason.
+          </AlertDescription>
+        </Alert>
         <Tabs
           variant="enclosed"
           mt={4}
@@ -142,17 +150,11 @@ const PromptSettingsPanel = ({
                       System prompt used for refining the generated outputs
                     </Text>
                   </Box>
-                  <Button
-                    leftIcon={<FiRefreshCw />}
-                    size="sm"
-                    minH={"15px"}
+                  <ResetToDefaultButton
                     onClick={() =>
                       handlePromptReset && handlePromptReset("refinement")
                     }
-                    className="red-button"
-                  >
-                    Reset to Default
-                  </Button>
+                  />
                 </Flex>
                 <Textarea
                   value={prompts?.refinement?.system || ""}
@@ -176,15 +178,11 @@ const PromptSettingsPanel = ({
                       System prompt used for generating summaries
                     </Text>
                   </Box>
-                  <Button
-                    leftIcon={<FiRefreshCw />}
-                    size="sm"
+                  <ResetToDefaultButton
                     onClick={() =>
                       handlePromptReset && handlePromptReset("summary")
                     }
-                  >
-                    Reset to Default
-                  </Button>
+                  />
                 </Flex>
                 <Textarea
                   value={prompts?.summary?.system || ""}
@@ -208,15 +206,11 @@ const PromptSettingsPanel = ({
                       System prompt used for chat interactions
                     </Text>
                   </Box>
-                  <Button
-                    leftIcon={<FiRefreshCw />}
-                    size="sm"
+                  <ResetToDefaultButton
                     onClick={() =>
                       handlePromptReset && handlePromptReset("chat")
                     }
-                  >
-                    Reset to Default
-                  </Button>
+                  />
                 </Flex>
                 <Textarea
                   value={prompts?.chat?.system || ""}
@@ -240,15 +234,11 @@ const PromptSettingsPanel = ({
                       System prompt used for generating letters
                     </Text>
                   </Box>
-                  <Button
-                    leftIcon={<FiRefreshCw />}
-                    size="sm"
+                  <ResetToDefaultButton
                     onClick={() =>
                       handlePromptReset && handlePromptReset("letter")
                     }
-                  >
-                    Reset to Default
-                  </Button>
+                  />
                 </Flex>
                 <Textarea
                   value={prompts?.letter?.system || ""}

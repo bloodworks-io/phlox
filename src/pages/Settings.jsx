@@ -12,7 +12,6 @@ import { settingsService } from "../utils/settings/settingsUtils";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
-import RagSettingsPanel from "../components/settings/RagSettingsPanel";
 import LetterTemplatesPanel from "../components/settings/LetterTemplatesPanel";
 import SettingsActions from "../components/settings/SettingsActions";
 import { SPECIALTIES } from "../utils/constants/index.jsx";
@@ -60,7 +59,6 @@ const Settings = () => {
     userSettings: false,
     modelSettings: true,
     promptSettings: true,
-    ragSettings: true,
     letterTemplates: true,
     templates: true,
     chatSettings: true,
@@ -319,15 +317,6 @@ const Settings = () => {
           options={options}
           handleOptionChange={handleOptionChange}
           config={config}
-        />
-
-        <RagSettingsPanel
-          isCollapsed={collapseStates.ragSettings}
-          setIsCollapsed={() => toggleCollapse("ragSettings")}
-          config={config}
-          modelOptions={modelOptions}
-          handleClearDatabase={handleClearDatabase}
-          handleConfigChange={handleConfigChange}
         />
 
         <TemplateSettingsPanel
