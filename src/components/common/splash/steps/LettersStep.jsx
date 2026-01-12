@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback } from "react";
 import {
   VStack,
   SimpleGrid,
@@ -18,70 +17,13 @@ import {
   Box,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { useToast } from "@chakra-ui/react";
 import { FaCheckCircle } from "react-icons/fa";
-import { SPLASH_STEPS } from "../constants";
 import { stepVariants } from "../constants";
-import { validateLettersStep } from "../../../../utils/splash/validators";
-import { settingsService } from "../../../../utils/settings/settingsUtils";
+import { useLettersStep } from "../../../../utils/hooks/splash/useLettersStep";
 
 const MotionVStack = motion(VStack);
 
-export const useLettersStep = (currentStep) => {
-  const toast = useToast();
-  const [availableLetterTemplates, setAvailableLetterTemplates] = useState([]);
-  const [selectedLetterTemplate, setSelectedLetterTemplate] = useState("");
-  const [isFetchingLetterTemplates, setIsFetchingLetterTemplates] =
-    useState(false);
-
-  const fetchLetterTemplates = useCallback(async () => {
-    if (
-      currentStep === SPLASH_STEPS.LETTERS &&
-      availableLetterTemplates.length === 0
-    ) {
-      setIsFetchingLetterTemplates(true);
-      try {
-        const response = await settingsService.fetchLetterTemplates();
-        setAvailableLetterTemplates(response.templates || []);
-        if (
-          !selectedLetterTemplate &&
-          response.templates &&
-          response.templates.length > 0
-        ) {
-          setSelectedLetterTemplate(response.templates[0].id.toString());
-        }
-      } catch (error) {
-        toast({
-          title: "Error fetching letter templates",
-          description: error.message || "Could not load letter templates",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsFetchingLetterTemplates(false);
-      }
-    }
-  }, [
-    currentStep,
-    availableLetterTemplates.length,
-    selectedLetterTemplate,
-    toast,
-  ]);
-
-  useEffect(() => {
-    fetchLetterTemplates();
-  }, [fetchLetterTemplates]);
-
-  return {
-    availableLetterTemplates,
-    selectedLetterTemplate,
-    setSelectedLetterTemplate,
-    isFetchingLetterTemplates,
-    validate: () => validateLettersStep(selectedLetterTemplate),
-    getData: () => ({ selectedLetterTemplate }),
-  };
-};
+export { useLettersStep };
 
 export const LettersStep = ({
   availableLetterTemplates,
@@ -105,8 +47,7 @@ export const LettersStep = ({
         <AlertTitle>Choose Default Letter Template</AlertTitle>
         <AlertDescription>
           Select your preferred letter template for generating correspondence.
-          You can create custom letter templates and change this setting
-          later.
+          You can create custom letter templates and change this setting later.
         </AlertDescription>
       </Box>
     </Alert>
@@ -124,9 +65,7 @@ export const LettersStep = ({
           <Card
             key={template.id}
             cursor="pointer"
-            onClick={() =>
-              setSelectedLetterTemplate(template.id.toString())
-            }
+            onClick={() => setSelectedLetterTemplate(template.id.toString())}
             borderWidth="2px"
             borderColor={
               selectedLetterTemplate === template.id.toString()

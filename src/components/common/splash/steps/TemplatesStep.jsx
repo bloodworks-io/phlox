@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback } from "react";
 import {
   VStack,
   SimpleGrid,
@@ -18,59 +17,14 @@ import {
   Box,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { useToast } from "@chakra-ui/react";
 import { FaCheckCircle } from "react-icons/fa";
-import { SPLASH_STEPS } from "../constants";
 import { stepVariants } from "../constants";
 import { TEMPLATE_DESCRIPTIONS } from "../constants";
-import { validateTemplatesStep } from "../../../../utils/splash/validators";
-import { settingsService } from "../../../../utils/settings/settingsUtils";
+import { useTemplatesStep } from "../../../../utils/hooks/splash/useTemplatesStep";
 
 const MotionVStack = motion(VStack);
 
-export const useTemplatesStep = (currentStep) => {
-  const toast = useToast();
-  const [availableTemplates, setAvailableTemplates] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [isFetchingTemplates, setIsFetchingTemplates] = useState(false);
-
-  const fetchTemplates = useCallback(async () => {
-    if (currentStep === SPLASH_STEPS.TEMPLATES && availableTemplates.length === 0) {
-      setIsFetchingTemplates(true);
-      try {
-        await settingsService.fetchTemplates((templates) => {
-          setAvailableTemplates(templates);
-          if (!selectedTemplate && templates.length > 0) {
-            setSelectedTemplate(templates[0].template_key);
-          }
-        });
-      } catch (error) {
-        toast({
-          title: "Error fetching templates",
-          description: error.message || "Could not load templates",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsFetchingTemplates(false);
-      }
-    }
-  }, [currentStep, availableTemplates.length, selectedTemplate, toast]);
-
-  useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
-
-  return {
-    availableTemplates,
-    selectedTemplate,
-    setSelectedTemplate,
-    isFetchingTemplates,
-    validate: () => validateTemplatesStep(selectedTemplate),
-    getData: () => ({ selectedTemplate }),
-  };
-};
+export { useTemplatesStep };
 
 export const TemplatesStep = ({
   availableTemplates,
@@ -93,9 +47,9 @@ export const TemplatesStep = ({
       <Box>
         <AlertTitle>Choose Your Default Template</AlertTitle>
         <AlertDescription>
-          Select a clinical note template that best fits your workflow. You
-          can create custom templates and change this setting later in the
-          Settings panel.
+          Select a clinical note template that best fits your workflow. You can
+          create custom templates and change this setting later in the Settings
+          panel.
         </AlertDescription>
       </Box>
     </Alert>
