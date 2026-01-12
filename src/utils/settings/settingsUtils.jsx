@@ -42,13 +42,11 @@ export const settingsService = {
     }
   },
 
-    fetchOptions: (setOptions) => {
-        return settingsApi
-            .fetchOptions()
-            .then((data) =>
-                setOptions(settingsHelpers.processOptionsData(data)),
-            );
-    },
+  fetchOptions: (setOptions) => {
+    return settingsApi
+      .fetchOptions()
+      .then((data) => setOptions(settingsHelpers.processOptionsData(data)));
+  },
 
   // New consolidated method to fetch LLM models - works for Ollama, OpenAI-compatible, and Local
   fetchLLMModels: async (config, setModelOptions) => {
@@ -400,6 +398,30 @@ export const settingsService = {
       });
     } catch (error) {
       console.error("Error saving ambient mode setting:", error);
+      throw error;
+    }
+  },
+
+  resetIndividualPrompt: async (promptType) => {
+    try {
+      // Fetch defaults
+      const defaults = await settingsApi.fetchDefaultPrompts();
+
+      // Get current prompts
+      const currentPrompts = await settingsApi.fetchPrompts();
+
+      // Merge: replace only the specified prompt with default
+      const updatedPrompts = {
+        ...currentPrompts,
+        [promptType]: defaults[promptType],
+      };
+
+      // Save updated prompts
+      await settingsApi.savePrompts(updatedPrompts);
+
+      return updatedPrompts;
+    } catch (error) {
+      console.error("Error resetting prompt:", error);
       throw error;
     }
   },

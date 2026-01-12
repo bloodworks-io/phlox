@@ -11,19 +11,26 @@ import {
   NumberInput,
   NumberInputField,
   HStack,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  CloseButton,
 } from "@chakra-ui/react";
 import { ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { FaPencilAlt } from "react-icons/fa";
+import { FiRefreshCw } from "react-icons/fi";
 
 const PromptSettingsPanel = ({
   isCollapsed,
   setIsCollapsed,
   prompts,
   handlePromptChange,
+  handlePromptReset,
   options,
   handleOptionChange,
   config,
 }) => {
+  const [isAlertDismissed, setIsAlertDismissed] = useState(false);
   const [
     isClinicalHistoryPromptCollapsed,
     setIsClinicalHistoryPromptCollapsed,
@@ -56,6 +63,24 @@ const PromptSettingsPanel = ({
         </Flex>
       </Flex>
       <Collapse in={!isCollapsed} animateOpacity>
+        {!isAlertDismissed && (
+          <Alert status="warning" mt={4} borderRadius="sm">
+            <AlertIcon />
+            <Box flex="1">
+              <AlertDescription fontSize="sm">
+                These prompts are carefully crafted defaults. We recommend not
+                changing them unless you have a specific reason.
+              </AlertDescription>
+            </Box>
+            <CloseButton
+              alignSelf="flex-start"
+              position="relative"
+              right={-1}
+              top={-1}
+              onClick={() => setIsAlertDismissed(true)}
+            />
+          </Alert>
+        )}
         <Box mt="4" borderRadius="sm">
           <Box mt="4">
             <IconButton
@@ -75,11 +100,25 @@ const PromptSettingsPanel = ({
               mr="2"
               className="collapse-toggle"
             />
-            <Tooltip label="System prompt used for refining the generated outputs">
-              <Text fontSize="sm" mb="1" mt="4" display="inline">
-                Refinement Prompt
-              </Text>
-            </Tooltip>
+            <HStack spacing={2} align="center">
+              <Tooltip label="Reset to default">
+                <IconButton
+                  icon={<FiRefreshCw />}
+                  onClick={() =>
+                    handlePromptReset && handlePromptReset("refinement")
+                  }
+                  aria-label="Reset Refinement Prompt"
+                  variant="ghost"
+                  size="xs"
+                  colorScheme="orange"
+                />
+              </Tooltip>
+              <Tooltip label="System prompt used for refining the generated outputs">
+                <Text fontSize="sm" mb="1" mt="4" display="inline">
+                  Refinement Prompt
+                </Text>
+              </Tooltip>
+            </HStack>
             <Collapse in={!isRefinementPromptCollapsed} animateOpacity>
               <Textarea
                 size="sm"
@@ -111,11 +150,25 @@ const PromptSettingsPanel = ({
               mr="2"
               className="collapse-toggle"
             />
-            <Tooltip label="System prompt used for generating summaries">
-              <Text fontSize="sm" mb="1" mt="4" display="inline">
-                Summary Prompt
-              </Text>
-            </Tooltip>
+            <HStack spacing={2} align="center">
+              <Tooltip label="Reset to default">
+                <IconButton
+                  icon={<FiRefreshCw />}
+                  onClick={() =>
+                    handlePromptReset && handlePromptReset("summary")
+                  }
+                  aria-label="Reset Summary Prompt"
+                  variant="ghost"
+                  size="xs"
+                  colorScheme="orange"
+                />
+              </Tooltip>
+              <Tooltip label="System prompt used for generating summaries">
+                <Text fontSize="sm" mb="1" mt="4" display="inline">
+                  Summary Prompt
+                </Text>
+              </Tooltip>
+            </HStack>
             <Collapse in={!isSummaryPromptCollapsed} animateOpacity>
               <Textarea
                 size="sm"
@@ -141,11 +194,23 @@ const PromptSettingsPanel = ({
               mr="2"
               className="collapse-toggle"
             />
-            <Tooltip label="System prompt used for chat interactions">
-              <Text fontSize="sm" mb="1" mt="4" display="inline">
-                Chat Prompt
-              </Text>
-            </Tooltip>
+            <HStack spacing={2} align="center">
+              <Tooltip label="Reset to default">
+                <IconButton
+                  icon={<FiRefreshCw />}
+                  onClick={() => handlePromptReset && handlePromptReset("chat")}
+                  aria-label="Reset Chat Prompt"
+                  variant="ghost"
+                  size="xs"
+                  colorScheme="orange"
+                />
+              </Tooltip>
+              <Tooltip label="System prompt used for chat interactions">
+                <Text fontSize="sm" mb="1" mt="4" display="inline">
+                  Chat Prompt
+                </Text>
+              </Tooltip>
+            </HStack>
             <Collapse in={!isChatCollapsed} animateOpacity>
               <Textarea
                 size="sm"
@@ -176,11 +241,25 @@ const PromptSettingsPanel = ({
               mr="2"
               className="collapse-toggle"
             />
-            <Tooltip label="System prompt used for generating letters">
-              <Text fontSize="sm" mb="1" mt="4" display="inline">
-                Letter Prompt
-              </Text>
-            </Tooltip>
+            <HStack spacing={2} align="center">
+              <Tooltip label="Reset to default">
+                <IconButton
+                  icon={<FiRefreshCw />}
+                  onClick={() =>
+                    handlePromptReset && handlePromptReset("letter")
+                  }
+                  aria-label="Reset Letter Prompt"
+                  variant="ghost"
+                  size="xs"
+                  colorScheme="orange"
+                />
+              </Tooltip>
+              <Tooltip label="System prompt used for generating letters">
+                <Text fontSize="sm" mb="1" mt="4" display="inline">
+                  Letter Prompt
+                </Text>
+              </Tooltip>
+            </HStack>
             <Collapse in={!isLetterPromptCollapsed} animateOpacity>
               <Textarea
                 size="sm"

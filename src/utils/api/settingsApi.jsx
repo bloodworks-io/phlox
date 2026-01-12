@@ -20,6 +20,15 @@ export const settingsApi = {
       errorMessage: "Failed to fetch prompts",
     }),
 
+  fetchDefaultPrompts: async () =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/config/prompts/defaults");
+        return universalFetch(url);
+      },
+      errorMessage: "Failed to fetch default prompts",
+    }),
+
   fetchConfig: async () =>
     handleApiRequest({
       apiCall: async () => {

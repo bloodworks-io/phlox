@@ -220,6 +220,29 @@ const Settings = () => {
     await settingsService.resetToDefaults(fetchSettings, toast);
   };
 
+  const handlePromptReset = async (promptType) => {
+    try {
+      const updatedPrompts =
+        await settingsService.resetIndividualPrompt(promptType);
+      setPrompts(updatedPrompts);
+      toast({
+        title: "Success",
+        description: `${promptType} prompt reset to default`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reset prompt",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   const handlePromptChange = (promptType, field, value) => {
     setPrompts((prev) => ({
       ...prev,
@@ -292,6 +315,7 @@ const Settings = () => {
           setIsCollapsed={() => toggleCollapse("promptSettings")}
           prompts={prompts}
           handlePromptChange={handlePromptChange}
+          handlePromptReset={handlePromptReset}
           options={options}
           handleOptionChange={handleOptionChange}
           config={config}
