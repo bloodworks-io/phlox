@@ -27,9 +27,6 @@ async def openai_compatible_chat(
             "messages": messages,
         }
 
-        if extra_body:
-            params.update(extra_body)
-
         if tools:
             params["tools"] = tools
             # Only force tool choice to required if explicitly specified
@@ -53,6 +50,8 @@ async def openai_compatible_chat(
 
         # Add stream parameter if needed
         if stream:
+            # Don't apply extra_body to streaming requests
+            pass
             params["stream"] = stream
 
             # For streaming, return an async generator
@@ -129,6 +128,9 @@ async def openai_compatible_chat(
 
             return response_generator()
         else:
+            # Only apply extra_body to non-streaming requests as it seems to break some endpoints
+            if extra_body:
+                params.update(extra_body)
             response = await client.chat.completions.create(**params)
             # Convert to Ollama-like format for consistency
             content = response.choices[0].message.content or ""

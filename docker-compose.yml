@@ -9,7 +9,7 @@ services:
       - DB_ENCRYPTION_KEY= ${DB_ENCRYPTION_KEY}
       - VITE_BACKEND_URL= # Replace with your desired URL
       - TZ= # Replace with your timezone
-      - LLM_EXTRA_BODY= # Optional: JSON string for extra_body params (e.g., '{"chat_template_kwargs": {"thinking": true}}')
+      - LLM_EXTRA_BODY= # Optional: JSON string for extra_body params (e.g., '{"chat_template_kwargs": {"thinking": true}}'); does not apply to streaming requests
     volumes:
       - ./data:/usr/src/app/data # Only for persistent data
       - ./logs:/usr/src/app/logs # Optional: Persist logs
