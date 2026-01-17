@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
 import { FaPlus } from "react-icons/fa";
-import { HamburgerIcon } from "@chakra-ui/icons";
+
 import VersionInfo from "./VersionInfo";
 import SidebarPatientList from "./SidebarPatientList";
 import SidebarNavigation from "./SidebarNavigation";
@@ -25,6 +25,37 @@ import { colors } from "../../theme/colors";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { isTauri } from "../../utils/helpers/apiConfig";
+
+const CollapseIcon = ({ boxSize = "20px" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    width={boxSize}
+    height={boxSize}
+  >
+    <rect
+      x="3"
+      y="3"
+      width="18"
+      height="18"
+      rx="5"
+      ry="5"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <path
+      d="M9.5 21V3"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 const Sidebar = ({
   onNewPatient,
@@ -164,7 +195,7 @@ const Sidebar = ({
       {/* Small screen close button - only show when expanded */}
       {isSmallScreen && !isCollapsed && (
         <IconButton
-          icon={<HamburgerIcon />}
+          icon={<CollapseIcon boxSize="20px" />}
           onClick={toggleSidebar}
           position="absolute"
           top={isTauri() ? "32px" : "12px"}
@@ -179,14 +210,12 @@ const Sidebar = ({
         />
       )}
 
-      {/* Regular toggle button - only for larger screens */}
-      {!isSmallScreen && (
-        <Tooltip
-          label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          placement="right"
-        >
+      {/* Regular toggle button - only show when expanded on larger screens */}
+      {!isSmallScreen && !isCollapsed && (
+        <Tooltip label="Collapse Sidebar" placement="right">
           <IconButton
-            icon={<HamburgerIcon />}
+            icon={<CollapseIcon boxSize="20px" />}
+            cursor={isCollapsed ? "pointer" : "w-resize"}
             onClick={toggleSidebar}
             position="absolute"
             top={isTauri() ? "32px" : "12px"}
@@ -205,8 +234,8 @@ const Sidebar = ({
       {/* Logo Area */}
       <Box
         as="button"
-        onClick={() => handleNavigation("/")}
-        cursor="pointer"
+        onClick={() => (isCollapsed ? toggleSidebar() : handleNavigation("/"))}
+        cursor={isCollapsed ? "e-resize" : "pointer"}
         display="flex"
         justifyContent="center"
         width="100%"
@@ -214,18 +243,39 @@ const Sidebar = ({
           isCollapsed
             ? isTauri()
               ? "50px"
-              : "40px"
+              : "12px"
             : isTauri()
               ? "15px"
               : "5px"
         }
         mb={isCollapsed ? "10px" : "15px"}
       >
-        <Image
-          src="/logo.webp"
-          alt="Logo"
-          width={isCollapsed ? "35px" : "100px"}
-        />
+        {isCollapsed ? (
+          <Tooltip label="Expand Sidebar" placement="right">
+            <Box position="relative" width="35px" height="35px" role="group">
+              <Image
+                src="/logo.webp"
+                alt="Logo"
+                width="35px"
+                position="absolute"
+                transition="opacity 0.2s"
+                _groupHover={{ opacity: 0 }}
+              />
+              <Box
+                position="absolute"
+                top="0"
+                left="0"
+                opacity="0"
+                transition="opacity 0.2s"
+                _groupHover={{ opacity: 1 }}
+              >
+                <CollapseIcon boxSize="35px" />
+              </Box>
+            </Box>
+          </Tooltip>
+        ) : (
+          <Image src="/logo.webp" alt="Logo" width="100px" />
+        )}
       </Box>
 
       {/* Main Content Area - Restructured for better collapsed view */}
