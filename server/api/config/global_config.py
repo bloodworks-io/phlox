@@ -19,28 +19,4 @@ async def get_config():
 async def update_config(data: dict = Body(...)):
     """Update other configuration items with provided data."""
     config_manager.update_config(data)
-
-    # After saving, kick off a background probe for PRIMARY_MODEL if it changed
-    try:
-        from server.utils.model_probe import probe_and_store_model_behavior
-
-        updated = config_manager.get_config()
-        provider = updated.get("LLM_PROVIDER", "ollama")
-        base_url = updated.get("LLM_BASE_URL")
-        api_key = updated.get("LLM_API_KEY")
-
-        # Define models to check
-        models_to_check = ["PRIMARY_MODEL", "SECONDARY_MODEL"]
-
-        for key in models_to_check:
-            model = updated.get(key)
-            if model and provider:
-                asyncio.create_task(
-                    probe_and_store_model_behavior(
-                        provider, base_url, api_key, model
-                    )
-                )
-    except Exception as e:
-        logging.warning(f"Failed to schedule model probe: {e}")
-
     return {"message": "config.js updated successfully"}
