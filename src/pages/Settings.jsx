@@ -300,12 +300,14 @@ const Settings = () => {
           config={config}
           handleConfigChange={handleConfigChange}
           modelOptions={modelOptions}
+          embeddingModelOptions={modelOptions}
           whisperModelOptions={whisperModelOptions}
           whisperModelListAvailable={whisperModelListAvailable}
           urlStatus={urlStatus}
           onOpenLocalModelManager={localModelsDisclosure.onOpen}
           showLocalManagerButton
           modelManagerRefreshKey={modelManagerRefreshKey}
+          handleClearDatabase={handleClearDatabase}
         />
 
         <PromptSettingsPanel
