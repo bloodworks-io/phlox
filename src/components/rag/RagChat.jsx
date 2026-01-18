@@ -25,8 +25,9 @@ import ReactMarkdown from "react-markdown";
 import { MdChat } from "react-icons/md";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
+import { useChat } from "../../utils/hooks/useChat";
 
-// Function to parse message content with <think> tags
+// Function to parse message content with </think> tags
 const parseMessageContent = (content) => {
   const thinkRegex = /<think>(.*?)<\/think>/s; // 's' flag allows '.' to match newlines
   const match = content.match(thinkRegex);
@@ -68,18 +69,20 @@ const parseMessageContent = (content) => {
   };
 };
 
-const RagChat = ({
-  isCollapsed,
-  setIsCollapsed,
-  chatLoading,
-  setChatLoading,
-  messages,
-  setMessages,
-  userInput,
-  setUserInput,
-  showSuggestions,
-  setShowSuggestions,
-}) => {
+const RagChat = ({ isCollapsed, setIsCollapsed }) => {
+  // Use the chat hook in RAG mode (no patient/template required)
+  const {
+    messages,
+    setMessages,
+    userInput,
+    setUserInput,
+    showSuggestions,
+    setShowSuggestions,
+    loading: chatLoading,
+    sendMessage,
+    clearChat,
+  } = useChat({ mode: "rag" });
+
   const messagesEndRef = useRef(null);
   const [showTooltip, setShowTooltip] = useState(null);
   const [ragSuggestions, setRagSuggestions] = useState([]);
@@ -109,139 +112,12 @@ const RagChat = ({
   };
 
   const handleSendMessage = (message) => {
-    if (message.trim()) {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { role: "user", content: message },
-      ]);
-      handleChat(message, messages);
-      setUserInput("");
-      setShowSuggestions(false);
-    }
+    sendMessage(message); // No patient/template needed for RAG mode
+    setShowSuggestions(false);
   };
 
   const handleUserInputSend = () => {
     handleSendMessage(userInput);
-  };
-
-  const handleChat = async (userInput, messages) => {
-    if (!userInput.trim()) return;
-    setChatLoading(true);
-
-    // Initial system message
-    const initialMessage = {
-      role: "system",
-      content:
-        "The user is a healthcare professional. They will ask you questions about medical treatment and guidelines,",
-    };
-
-    const messagesForRequest = [
-      initialMessage,
-      ...messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      { role: "user", content: userInput },
-    ];
-
-    try {
-      const response = await universalFetch(`/api/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: messagesForRequest,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      let fullContent = "";
-      let isFirstChunk = true;
-
-      // Get the response reader
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n\n");
-
-        for (const line of lines) {
-          if (line.trim() && line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (isFirstChunk) {
-                setChatLoading(false);
-                isFirstChunk = false;
-              }
-
-              if (data.type === "chunk") {
-                fullContent += data.content;
-                setMessages((prev) => {
-                  const newMessages = [...prev];
-                  if (
-                    newMessages.length === 0 ||
-                    newMessages[newMessages.length - 1].role !== "assistant"
-                  ) {
-                    newMessages.push({
-                      role: "assistant",
-                      content: fullContent,
-                    });
-                  } else {
-                    newMessages[newMessages.length - 1] = {
-                      role: "assistant",
-                      content: fullContent,
-                    };
-                  }
-                  return newMessages;
-                });
-              } else if (data.type === "end" && data.function_response) {
-                // Handle context at the end of stream
-                setMessages((prev) => {
-                  const newMessages = [...prev];
-                  const lastMessage = newMessages[newMessages.length - 1];
-                  if (lastMessage && lastMessage.role === "assistant") {
-                    lastMessage.context = data.function_response.reduce(
-                      (acc, item, index) => {
-                        acc[index + 1] = item;
-                        return acc;
-                      },
-                      {},
-                    );
-                  }
-                  return newMessages;
-                });
-              }
-
-              await new Promise((resolve) => setTimeout(resolve, 0));
-            } catch (error) {
-              console.error("Error parsing chunk:", error);
-            }
-          }
-        }
-      }
-
-      setUserInput("");
-    } catch (error) {
-      console.error("Error in chat:", error);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          role: "assistant",
-          content: `Error: ${error.message}`,
-        },
-      ]);
-    } finally {
-      setChatLoading(false);
-    }
   };
 
   useEffect(() => {
@@ -306,7 +182,7 @@ const RagChat = ({
               // Skip system messages for rendering
               if (message.role === "system") return null;
 
-              // Parse the content for <think> tags
+              // Parse the content for  tags
               const parsed = parseMessageContent(message.content || "");
               // Determine if the 'Thinking' section is expanded for this message
               const isThinkingExpanded = message.isThinkingExpanded ?? false;
@@ -331,7 +207,7 @@ const RagChat = ({
                       <Spinner size="sm" mt="1" />
                     ) : (
                       <VStack align="start" spacing={1} width="100%">
-                        {/* Render content before <think> tag */}
+                        {/* Render content before  tag */}
                         {parsed.hasThinkTag && parsed.beforeContent && (
                           <Text whiteSpace="pre-wrap">
                             {parsed.beforeContent}
@@ -390,12 +266,14 @@ const RagChat = ({
                           </Box>
                         )}
 
-                        {/* Render content after <think> tag or full content if no tag */}
-                        <Text whiteSpace="pre-wrap">
-                          {parsed.hasThinkTag
-                            ? parsed.afterContent
-                            : parsed.content}
-                        </Text>
+                        {/* Render content after  tag or full content if no tag */}
+                        <Box fontSize="sm !important">
+                          <ReactMarkdown>
+                            {parsed.hasThinkTag
+                              ? parsed.afterContent
+                              : parsed.content}
+                          </ReactMarkdown>
+                        </Box>
 
                         {/* Render context links */}
                         {message.role === "assistant" && message.context && (
@@ -440,20 +318,6 @@ const RagChat = ({
                 </Flex>
               );
             })}
-
-            {chatLoading && (
-              <Flex justify="flex-start" mb="2">
-                <Box
-                  className="message-box assistant"
-                  px="4"
-                  py="2"
-                  maxWidth="80%"
-                  fontSize="12pt"
-                >
-                  <Spinner size="sm" />
-                </Box>
-              </Flex>
-            )}
 
             {showSuggestions && (
               <Flex justify="center" align="center" mt="100" flexWrap="wrap">

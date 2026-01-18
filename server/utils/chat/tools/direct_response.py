@@ -36,6 +36,11 @@ async def execute(
         Dict[str, Any]: Streaming response chunks.
     """
     logger.info("Executing direct response...")
+    # Remove the assistant's tool call message from history since direct_response
+    # doesn't use tools - the tool call was just for routing, not for LLM context
+    if message_list and message_list[-1].get("role") == "assistant":
+        message_list.pop()
+
     yield status_message("Generating response...")
 
     async for chunk in stream_llm_response(
