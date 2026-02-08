@@ -1,9 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all
 import os
-
-# Collect everything from chromadb
-chromadb_datas, chromadb_binaries, chromadb_hiddenimports = collect_all('chromadb')
 
 # Get the correct path to server.py
 script_path = os.path.join(os.path.dirname(os.path.abspath(SPEC)), 'server', 'server.py')
@@ -11,17 +7,23 @@ script_path = os.path.join(os.path.dirname(os.path.abspath(SPEC)), 'server', 'se
 a = Analysis(
     [script_path],  # Use absolute path to server.py
     pathex=[os.path.dirname(script_path)],  # Path to server directory
-    binaries=chromadb_binaries,
-    datas=chromadb_datas,
+    binaries=[],
+    datas=[],
     hiddenimports=[
-        "onnxruntime",
         "tokenizers",
         "tqdm",
-    ] + chromadb_hiddenimports,
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        # Exclude RAG-related packages not needed for desktop
+        "chromadb",
+        "onnxruntime",
+        "fitz",
+        "PyMuPDF",
+        "pytesseract",
+    ],
     noarchive=False,
     optimize=0,
 )
