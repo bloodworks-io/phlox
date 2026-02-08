@@ -14,22 +14,36 @@ from server.schemas.rag import (
     DeleteFileRequest,
     ModifyCollectionRequest,
 )
-from server.utils.rag.chroma import ChromaManager
+from server.utils.rag.chroma import CHROMADB_AVAILABLE, ChromaManager
 from server.utils.rag.processing import (
     generate_specialty_suggestions,
 )
 
 router = APIRouter()
 
-chroma_manager = ChromaManager()
+# Only initialize chroma_manager if dependencies are available
+if CHROMADB_AVAILABLE:
+    chroma_manager = ChromaManager()
+else:
+    chroma_manager = None
 
 
 logger = logging.getLogger(__name__)
 
 
+# Helper function to check if RAG is available
+def _check_rag_available():
+    if not CHROMADB_AVAILABLE or chroma_manager is None:
+        raise HTTPException(
+            status_code=503,
+            detail="RAG features are not available.",
+        )
+
+
 @router.get("/files")
 async def get_files():
     """API endpoint to retrieve the list of document collections."""
+    _check_rag_available()
     try:
         collections = chroma_manager.list_collections()
         return {"files": collections}
@@ -42,6 +56,7 @@ async def get_files():
 @router.get("/collection_files/{collection_name}")
 async def get_collection_files(collection_name: str):
     """API endpoint to retrieve files for a specific collection."""
+    _check_rag_available()
     try:
         files = chroma_manager.get_files_for_collection(collection_name)
         return {"files": files}
@@ -55,6 +70,7 @@ async def get_collection_files(collection_name: str):
 @router.post("/modify")
 async def modify_collection(request: ModifyCollectionRequest):
     """API endpoint to modify the name of a collection."""
+    _check_rag_available()
     try:
         success = chroma_manager.modify_collection_name(
             request.old_name, request.new_name
@@ -73,6 +89,7 @@ async def modify_collection(request: ModifyCollectionRequest):
 @router.delete("/delete-collection/{name}")
 async def delete_collection_endpoint(name: str):
     """API endpoint to delete a collection."""
+    _check_rag_available()
     try:
         success = chroma_manager.delete_collection(name)
         if not success:
@@ -89,6 +106,7 @@ async def delete_collection_endpoint(name: str):
 @router.delete("/delete-file")
 async def delete_file_endpoint(request: DeleteFileRequest):
     """API endpoint to delete a file from a collection."""
+    _check_rag_available()
     try:
         success = chroma_manager.delete_file_from_collection(
             request.collection_name, request.file_name
@@ -108,6 +126,7 @@ async def delete_file_endpoint(request: DeleteFileRequest):
 @router.post("/extract-pdf-info")
 async def extract_pdf_info(file: UploadFile = File(...)):
     """API endpoint to extract information from a PDF."""
+    _check_rag_available()
     logger.info(
         f"Request received for /extract-pdf-info: filename='{file.filename}'"
     )
@@ -208,6 +227,7 @@ async def extract_pdf_info(file: UploadFile = File(...)):
 @router.post("/commit-to-vectordb")
 async def commit_to_db(request: CommitRequest):
     """API endpoint to commit data to the database."""
+    _check_rag_available()
     try:
         chroma_manager.commit_to_vectordb(
             request.disease_name,
@@ -227,6 +247,7 @@ async def commit_to_db(request: CommitRequest):
 @router.get("/suggestions")
 async def get_rag_suggestions():
     """Get specialty-specific RAG chat suggestions."""
+    _check_rag_available()
     try:
         suggestions = await generate_specialty_suggestions()
         return {"suggestions": suggestions}
@@ -239,6 +260,7 @@ async def get_rag_suggestions():
 @router.post("/clear-database")
 async def clear_database():
     """API endpoint to clear the entire RAG database."""
+    _check_rag_available()
     try:
         success = chroma_manager.reset_database()
         if not success:

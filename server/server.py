@@ -36,7 +36,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
-
+logger.info("Initializing application...")
 scheduler = AsyncIOScheduler()
 
 if IS_TESTING:
@@ -86,11 +86,9 @@ app.add_middleware(
 
 # Then load API submodules
 from server.api import (
-    chat,
     dashboard,
     letter,
     patient,
-    rag,
     templates,
     transcribe,
 )
@@ -101,6 +99,7 @@ from server.database.entities.analysis import (
     generate_daily_analysis,
     run_nightly_reasoning,
 )
+from server.utils.rag.chroma import CHROMADB_AVAILABLE
 
 # Only create test endpoint in testing environment
 if IS_TESTING and test_database is not None:
@@ -122,9 +121,22 @@ if IS_TESTING and test_database is not None:
 app.include_router(patient.router, prefix="/api/patient")
 app.include_router(transcribe.router, prefix="/api/transcribe")
 app.include_router(dashboard.router, prefix="/api/dashboard")
-app.include_router(rag.router, prefix="/api/rag")
+
+# Conditionally include RAG routers if dependencies are available
+if CHROMADB_AVAILABLE:
+    from server.api import (
+        chat,
+        rag,
+    )
+
+    app.include_router(rag.router, prefix="/api/rag")
+    app.include_router(chat.router, prefix="/api/chat")
+else:
+    logger.warning(
+        "RAG/Chat features disabled - dependencies not available."
+    )
+
 app.include_router(config_router, prefix="/api/config")
-app.include_router(chat.router, prefix="/api/chat")
 app.include_router(templates.router, prefix="/api/templates")
 app.include_router(letter.router, prefix="/api/letter")
 

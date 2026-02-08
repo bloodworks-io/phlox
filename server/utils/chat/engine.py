@@ -28,7 +28,7 @@ from server.utils.chat.tools.transcript_search import (
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client.base import LLMProviderType
 from server.utils.llm_client.client import get_llm_client
-from server.utils.rag.chroma import ChromaManager
+from server.utils.rag.chroma import CHROMADB_AVAILABLE, ChromaManager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -57,8 +57,14 @@ class ChatEngine:
         # Get the unified LLM client
         self.llm_client = get_llm_client()
 
-        # Initialize ChromaManager (replaces LiteratureService)
-        self.chroma_manager = ChromaManager()
+        # Initialize ChromaManager if RAG dependencies are available
+        if CHROMADB_AVAILABLE:
+            self.chroma_manager = ChromaManager()
+        else:
+            self.chroma_manager = None
+            self.logger.warning(
+                "RAG dependencies not available. Literature search disabled."
+            )
 
         self.last_successful_collection = "misc"
 
@@ -69,7 +75,11 @@ class ChatEngine:
         Generate a streaming response based on the conversation history and relevant literature.
         """
         prompts = config_manager.get_prompts_and_options()
-        collection_names = self.chroma_manager.list_collections()
+        collection_names = (
+            self.chroma_manager.list_collections()
+            if self.chroma_manager is not None
+            else []
+        )
 
         context_question_options = prompts["options"]["general"]
         context_question_options.pop("stop", None)
@@ -83,8 +93,10 @@ class ChatEngine:
         # First call to determine if we need literature or direct response
         self.logger.info("Initial LLM call to determine tool usage...")
 
-        # Get tool definitions
-        tools = get_tools_definition(collection_names)
+        # Get tool definitions (empty list if no collections available)
+        tools = (
+            get_tools_definition(collection_names) if collection_names else []
+        )
 
         try:
             response = await self.llm_client.chat(
@@ -204,15 +216,30 @@ class ChatEngine:
                 yield result
 
         else:  # get_relevant_literature
-            async for result in execute_literature_search(
-                tool_call=tool_call,
-                llm_client=self.llm_client,
-                config=self.config,
-                chroma_manager=self.chroma_manager,
-                message_list=message_list,
-                context_question_options=context_question_options,
-            ):
-                yield result
+            # Check if RAG is available before executing literature search
+            if self.chroma_manager is None:
+                self.logger.warning(
+                    "Literature search requested but RAG dependencies not available. Falling back to direct response."
+                )
+                # Fall back to direct response
+                async for result in execute_direct_response(
+                    tool_call=tool_call,
+                    llm_client=self.llm_client,
+                    config=self.config,
+                    message_list=message_list,
+                    context_question_options=context_question_options,
+                ):
+                    yield result
+            else:
+                async for result in execute_literature_search(
+                    tool_call=tool_call,
+                    llm_client=self.llm_client,
+                    config=self.config,
+                    chroma_manager=self.chroma_manager,
+                    message_list=message_list,
+                    context_question_options=context_question_options,
+                ):
+                    yield result
 
     async def stream_chat(
         self, conversation_history: list, raw_transcription=None

@@ -5,10 +5,20 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
-import fitz  # PyMuPDF for PDF processing
 import numpy as np
-import pytesseract
 from PIL import Image
+
+# Optional OCR dependencies
+try:
+    import fitz  # PyMuPDF for PDF processing
+    import pytesseract
+
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    fitz = None
+    pytesseract = None
+
 from server.database.config.manager import config_manager
 from server.schemas.grammars import FieldResponse
 from server.schemas.templates import TemplateResponse
@@ -154,7 +164,15 @@ async def extract_text_from_document(
 
     Returns:
         Extracted text from the document
+
+    Raises:
+        RuntimeError: If OCR dependencies are not available
     """
+    if not OCR_AVAILABLE:
+        raise RuntimeError(
+            "Document processing requires PyMuPDF and pytesseract."
+        )
+
     logger.info(
         f"Extracting text from document with content type: {content_type}"
     )

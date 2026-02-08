@@ -3,21 +3,29 @@ import json
 import logging
 import re
 
-import chromadb
-import fitz  # PyMuPDF
-from chromadb.config import Settings
-from chromadb.utils.embedding_functions import (
-    OllamaEmbeddingFunction,
-    ONNXMiniLM_L6_V2,
-    OpenAIEmbeddingFunction,
-)
+# Optional RAG dependencies
+try:
+    import chromadb
+    import fitz  # PyMuPDF
+    from chromadb.config import Settings
+    from chromadb.utils.embedding_functions import (
+        OllamaEmbeddingFunction,
+        ONNXMiniLM_L6_V2,
+        OpenAIEmbeddingFunction,
+    )
+
+    from .semantic_chunker import ClusterSemanticChunker
+
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    CHROMADB_AVAILABLE = False
+    chromadb = None
+    fitz = None
 
 from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
 from server.utils.llm_client.base import LLMProviderType
 from server.utils.llm_client.client import get_llm_client
-
-from .semantic_chunker import ClusterSemanticChunker
 
 prompts = config_manager.get_prompts_and_options()
 
@@ -33,6 +41,11 @@ class ChromaManager:
         """
         Initializes the ChromaManager with configuration settings and clients.
         """
+        if not CHROMADB_AVAILABLE:
+            raise RuntimeError(
+                "RAG features require chromadb and PyMuPDF. "
+            )
+
         self.config = config_manager.get_config()
         self.prompts = config_manager.get_prompts_and_options()
 
