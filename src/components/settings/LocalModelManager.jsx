@@ -40,8 +40,6 @@ import {
   Tab,
   TabPanels,
   TabPanel,
-  InputGroup,
-  InputRightElement,
   Collapse,
 } from "@chakra-ui/react";
 import {
@@ -53,10 +51,8 @@ import {
 import {
   DeleteIcon,
   DownloadIcon,
-  SearchIcon,
   CheckIcon,
   WarningIcon,
-  SmallCloseIcon,
 } from "@chakra-ui/icons";
 import {
   GreenButton,
@@ -75,20 +71,11 @@ const LocalModelManager = ({ className }) => {
   const {
     models,
     availableModels,
-    searchResults,
-    loading,
-    searchQuery,
-    setSearchQuery,
-    selectedRepo,
-    setSelectedRepo,
-    repoFiles,
     localStatus,
     systemSpecs,
     downloadProgress,
     isDownloading,
     downloadingModelId,
-    searchModels,
-    fetchRepoFiles,
     downloadLlmModel,
     deleteLlmModel,
     refreshData,
@@ -102,10 +89,8 @@ const LocalModelManager = ({ className }) => {
 
   const [modelToDelete, setModelToDelete] = useState(null);
   const [whisperModelToDelete, setWhisperModelToDelete] = useState(null);
-  const [customModelInput, setCustomModelInput] = useState("");
   const [showOtherModels, setShowOtherModels] = useState(false);
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isDeleteOpen,
     onOpen: onDeleteOpen,
@@ -122,40 +107,6 @@ const LocalModelManager = ({ className }) => {
     if (!systemSpecs?.cpu_brand) return null;
     return parseAppleSilicon(systemSpecs.cpu_brand);
   }, [systemSpecs]);
-
-  // Handle search
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      searchModels(searchQuery);
-    }
-  };
-
-  // Handle repository file selection
-  const handleRepoSelection = async (repoId) => {
-    setSelectedRepo(repoId);
-    await fetchRepoFiles(repoId);
-    onOpen();
-  };
-
-  // Handle model download
-  const handleDownload = async (repoId, filename) => {
-    await downloadLlmModel(`${repoId}/${filename}`);
-    onClose();
-  };
-
-  // Handle pre-configured model download
-  const handlePreconfiguredDownload = async (modelId) => {
-    await downloadLlmModel(modelId);
-  };
-
-  // Handle custom model download
-  const handleCustomDownload = async () => {
-    const input = customModelInput.trim();
-    if (input) {
-      await downloadLlmModel(input);
-      setCustomModelInput("");
-    }
-  };
 
   // Handle delete click
   const handleDeleteClick = (filename) => {
@@ -320,11 +271,26 @@ const LocalModelManager = ({ className }) => {
               </Text>
               <Progress
                 value={Math.min(
-                  (systemSpecs.total_memory_gb / model.recommended_ram_gb) *
+                  (model.recommended_ram_gb / systemSpecs.total_memory_gb) *
                     100,
                   100,
                 )}
-                colorScheme={needsMoreMemory ? "yellow" : "green"}
+                colorScheme={
+                  Math.min(
+                    (model.recommended_ram_gb / systemSpecs.total_memory_gb) *
+                      100,
+                    100,
+                  ) >= 80
+                    ? "red"
+                    : Math.min(
+                          (model.recommended_ram_gb /
+                            systemSpecs.total_memory_gb) *
+                            100,
+                          100,
+                        ) >= 60
+                      ? "yellow"
+                      : "green"
+                }
                 size="sm"
               />
             </Box>
@@ -339,7 +305,7 @@ const LocalModelManager = ({ className }) => {
           ) : (
             <Button
               size="sm"
-              onClick={() => handlePreconfiguredDownload(model.id)}
+              onClick={() => downloadLlmModel(model.id)}
               isLoading={isDownloadingLlm && !llmProgress}
               loadingText="Downloading..."
               className="nav-button"
@@ -468,8 +434,8 @@ const LocalModelManager = ({ className }) => {
                     fontSize="xs"
                     className="pill-box-icons"
                   >
-                    {showOtherModels ? "▼" : "▶"} Show {otherModels.length}{" "}
-                    more options
+                    {showOtherModels ? "▼" : "▶"} Show {otherModels.length} more
+                    options
                   </Button>
                   <Collapse in={showOtherModels} animateOpacity>
                     <Box mt="3">
@@ -489,137 +455,6 @@ const LocalModelManager = ({ className }) => {
                       </SimpleGrid>
                     </Box>
                   </Collapse>
-                </Box>
-              )}
-
-              <Divider />
-
-              {/* Custom Model Input */}
-              <Box>
-                <Text fontSize="sm" mb="2" fontWeight="semibold">
-                  Custom Model from HuggingFace
-                </Text>
-                <Text fontSize="xs" className="pill-box-icons" mb="2">
-                  Download any GGUF model by entering the repo ID and filename.
-                  Format: <code>repo_id/filename.gguf</code>
-                </Text>
-                <HStack>
-                  <InputGroup>
-                    <Input
-                      size="sm"
-                      placeholder="e.g., unsloth/CustomModel-GGUF/Q4_K_M.gguf"
-                      value={customModelInput}
-                      onChange={(e) => setCustomModelInput(e.target.value)}
-                      onKeyPress={(e) =>
-                        e.key === "Enter" && handleCustomDownload()
-                      }
-                      className="input-style"
-                    />
-                    {customModelInput && (
-                      <InputRightElement>
-                        <IconButton
-                          size="xs"
-                          icon={<SmallCloseIcon />}
-                          onClick={() => setCustomModelInput("")}
-                          variant="ghost"
-                        />
-                      </InputRightElement>
-                    )}
-                  </InputGroup>
-                  <Button
-                    size="sm"
-                    leftIcon={<DownloadIcon />}
-                    onClick={handleCustomDownload}
-                    isLoading={isDownloading.llm && !downloadProgress.llm}
-                    loadingText="Downloading..."
-                    className="nav-button"
-                  >
-                    Download
-                  </Button>
-                </HStack>
-              </Box>
-
-              <Divider />
-
-              {/* Search Section */}
-              <Box>
-                <Text fontSize="sm" mb="2" fontWeight="semibold">
-                  Browse HuggingFace Models
-                </Text>
-                <HStack>
-                  <Input
-                    size="sm"
-                    placeholder="Search for models (e.g., 'llama', 'mistral')"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                    className="input-style"
-                  />
-                  <Button
-                    size="sm"
-                    leftIcon={<SearchIcon />}
-                    onClick={handleSearch}
-                    isLoading={loading}
-                    className="nav-button"
-                  >
-                    Search
-                  </Button>
-                </HStack>
-              </Box>
-
-              {/* Search Results */}
-              {searchResults.length > 0 && (
-                <Box>
-                  <Text fontSize="sm" mb="2" fontWeight="semibold">
-                    Search Results
-                  </Text>
-                  <Box
-                    maxHeight="200px"
-                    overflowY="auto"
-                    className="custom-scrollbar"
-                  >
-                    <Table size="sm">
-                      <Thead>
-                        <Tr>
-                          <Th fontSize="xs">Model</Th>
-                          <Th fontSize="xs">Downloads</Th>
-                          <Th fontSize="xs">Actions</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {searchResults.map((model) => (
-                          <Tr key={model.repo_id}>
-                            <Td>
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="xs" fontWeight="bold">
-                                  {model.repo_id}
-                                </Text>
-                                <Text fontSize="xs" className="pill-box-icons">
-                                  by {model.author}
-                                </Text>
-                              </VStack>
-                            </Td>
-                            <Td>
-                              <Text fontSize="xs">
-                                {model.downloads?.toLocaleString()}
-                              </Text>
-                            </Td>
-                            <Td>
-                              <GreenButton
-                                size="xs"
-                                leftIcon={<DownloadIcon />}
-                                onClick={() =>
-                                  handleRepoSelection(model.repo_id)
-                                }
-                              >
-                                Browse
-                              </GreenButton>
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </Box>
                 </Box>
               )}
 
@@ -870,49 +705,6 @@ const LocalModelManager = ({ className }) => {
           </TabPanel>
         </TabPanels>
       </Tabs>
-
-      {/* Download Modal for HuggingFace models */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalOverlay />
-        <ModalContent className="modal-style">
-          <ModalHeader>Download Model: {selectedRepo}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Text fontSize="sm">
-                Choose a quantization level. Q4_K_M is recommended for most use
-                cases.
-              </Text>
-
-              {Object.entries(repoFiles).map(([quantType, files]) => (
-                <Box key={quantType}>
-                  <Text fontSize="sm" fontWeight="bold" mb="2">
-                    {quantType}
-                  </Text>
-                  {files.map((file) => (
-                    <HStack key={file} mb="2">
-                      <Text fontSize="sm" flex="1">
-                        {file}
-                      </Text>
-                      <Button
-                        size="sm"
-                        onClick={() => handleDownload(selectedRepo, file)}
-                        isLoading={loading}
-                        className="nav-button"
-                      >
-                        Download
-                      </Button>
-                    </HStack>
-                  ))}
-                </Box>
-              ))}
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <GreyButton onClick={onClose}>Cancel</GreyButton>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
 
       {/* Delete Confirmation Modal for LLM models */}
       <Modal isOpen={isDeleteOpen} onClose={onDeleteClose}>

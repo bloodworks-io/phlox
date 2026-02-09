@@ -98,7 +98,7 @@ PRECONFIGURED_MODELS = {
         "repo_id": "unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF",
         "filename": "Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf",
         "size_mb": 19000,
-        "description": "Fast and excellent quality (special architecture)",
+        "description": "Fast and excellent quality (MoE)",
         "category": "large",
         "min_ram_gb": 24,
         "recommended_ram_gb": 32,
