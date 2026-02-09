@@ -2,11 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 
 /**
  * Encryption API for Tauri commands
- * Handles key wrapping, passphrase setup, and keychain operations
+ * Handles passphrase setup and unlock for SQLCipher database encryption.
+ * No keychain caching - user must re-enter passphrase on every session (PHI requirement).
  */
 export const encryptionApi = {
   /**
-   * Check if encryption has been set up (wrapped_key.bin exists)
+   * Check if encryption has been set up (database file exists)
    */
   hasSetup: async () => {
     try {
@@ -30,7 +31,8 @@ export const encryptionApi = {
   },
 
   /**
-   * Check if master key is cached in keychain
+   * Check if passphrase is cached in keychain
+   * Always returns false since we don't use keychain caching (PHI requirement)
    */
   hasKeychain: async () => {
     try {
@@ -60,14 +62,16 @@ export const encryptionApi = {
   /**
    * Set up encryption with a new passphrase
    * @param {string} passphrase - User's passphrase (min 12 characters)
+   * @returns {string} Hex-encoded passphrase to pass to start_server_command
    */
   setup: async (passphrase) => {
     return await invoke("setup_encryption", { passphrase });
   },
 
   /**
-   * Unlock with passphrase and cache in keychain
+   * Unlock with passphrase
    * @param {string} passphrase - User's passphrase
+   * @returns {string} Hex-encoded passphrase to pass to start_server_command
    */
   unlock: async (passphrase) => {
     return await invoke("unlock_with_passphrase", { passphrase });
@@ -84,7 +88,7 @@ export const encryptionApi = {
   },
 
   /**
-   * Clear key from keychain (for testing/logout)
+   * Clear keychain (no-op since we don't use keychain)
    */
   clearKeychain: async () => {
     return await invoke("clear_keychain");

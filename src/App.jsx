@@ -312,147 +312,147 @@ function AppContent() {
   }
   return (
     <Flex position="relative">
-      {/* Floating hamburger button for small screens */}
-      {isSmallScreen && isSidebarCollapsed && (
-        <IconButton
-          icon={<CollapseIcon />}
-          onClick={toggleSidebar}
-          position="fixed"
-          top="6"
-          left="6"
-          zIndex="101"
-          aria-label="Toggle sidebar"
-          className="dark-toggle"
-        />
-      )}
-
-      <Sidebar
-        onNewPatient={handleNewPatient}
-        onSelectPatient={handleSelectPatient}
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-        refreshKey={refreshKey}
-        handleNavigation={handleNavigation}
-        isCollapsed={isSidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        isSmallScreen={isSmallScreen}
-      />
-
-      <Box
-        flex="1"
-        ml={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
-        minH="100vh"
-        transition="margin-left 0.3s ease"
-        bg={
-          isTauri()
-            ? colorMode === "light"
-              ? "#232634"
-              : "#1e2030"
-            : "transparent"
-        }
-        display="flex"
-        flexDirection="column"
-      >
-        {/* Tauri titlebar drag region for macOS */}
-        {isTauri() && (
-          <Box
-            data-tauri-drag-region
-            height="25px"
+        {/* Floating hamburger button for small screens */}
+        {isSmallScreen && isSidebarCollapsed && (
+          <IconButton
+            icon={<CollapseIcon />}
+            onClick={toggleSidebar}
             position="fixed"
-            top="0"
-            right="0"
-            left={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
-            zIndex="1000"
-            transition="left 0.3s ease"
+            top="6"
+            left="6"
+            zIndex="101"
+            aria-label="Toggle sidebar"
+            className="dark-toggle"
           />
         )}
 
+        <Sidebar
+          onNewPatient={handleNewPatient}
+          onSelectPatient={handleSelectPatient}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          refreshKey={refreshKey}
+          handleNavigation={handleNavigation}
+          isCollapsed={isSidebarCollapsed}
+          toggleSidebar={toggleSidebar}
+          isSmallScreen={isSmallScreen}
+        />
+
         <Box
-          m={isTauri() ? "5px" : "0"}
-          borderRadius={isTauri() ? "16px" : "0"}
-          p={isTauri() ? "6" : "0"}
-          pt={isSmallScreen && isTauri() ? "50px" : isTauri() ? "6" : "0"}
-          className="main-bg"
-          height={isTauri() ? "calc(100vh - 10px)" : "100vh"}
-          overflowY="auto"
-          position="relative"
+          flex="1"
+          ml={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
+          minH="100vh"
+          transition="margin-left 0.3s ease"
+          bg={
+            isTauri()
+              ? colorMode === "light"
+                ? "#232634"
+                : "#1e2030"
+              : "transparent"
+          }
+          display="flex"
+          flexDirection="column"
         >
-          <IconButton
-            position="absolute"
-            top={5}
-            right={5}
-            aria-label="Toggle color mode"
-            icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
-            className="dark-toggle"
-            onClick={toggleColorMode}
-          />
-          <Routes>
-            <Route
-              path="/new-patient"
-              element={
-                <PatientDetails
-                  patient={patient}
-                  setPatient={setPatient}
-                  selectedDate={selectedDate}
-                  refreshSidebar={refreshSidebar}
-                  setIsModified={setIsModified}
-                  finalCorrespondence={finalCorrespondence}
-                  setFinalCorrespondence={setFinalCorrespondence}
-                  templateKey={templateKey}
-                  setTemplateKey={setTemplateKey}
-                  onResetLetter={setResetLetter}
-                />
-              }
+          {/* Tauri titlebar drag region for macOS */}
+          {isTauri() && (
+            <Box
+              data-tauri-drag-region
+              height="25px"
+              position="fixed"
+              top="0"
+              right="0"
+              left={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
+              zIndex="1000"
+              transition="left 0.3s ease"
             />
-            <Route
-              path="/patient/:id"
-              element={
-                <PatientDetails
-                  patient={patient}
-                  setPatient={setPatient}
-                  selectedDate={selectedDate}
-                  refreshSidebar={refreshSidebar}
-                  setIsModified={setIsModified}
-                  finalCorrespondence={finalCorrespondence}
-                  setFinalCorrespondence={setFinalCorrespondence}
-                  templateKey={templateKey}
-                  setTemplateKey={setTemplateKey}
-                />
-              }
+          )}
+
+          <Box
+            m={isTauri() ? "5px" : "0"}
+            borderRadius={isTauri() ? "16px" : "0"}
+            p={isTauri() ? "6" : "0"}
+            pt={isSmallScreen && isTauri() ? "50px" : isTauri() ? "6" : "0"}
+            className="main-bg"
+            height={isTauri() ? "calc(100vh - 10px)" : "100vh"}
+            overflowY="auto"
+            position="relative"
+          >
+            <IconButton
+              position="absolute"
+              top={5}
+              right={5}
+              aria-label="Toggle color mode"
+              icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
+              className="dark-toggle"
+              onClick={toggleColorMode}
             />
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/rag" element={<Rag />} />
-            <Route
-              path="/clinic-summary"
-              element={
-                <ClinicSummary
-                  selectedDate={selectedDate}
-                  handleSelectPatient={handleSelectPatient}
-                  refreshSidebar={refreshSidebar}
-                />
-              }
-            />
-            <Route
-              path="/outstanding-jobs"
-              element={
-                <OutstandingJobs
-                  handleSelectPatient={(patient) =>
-                    handleSelectPatient(patient, true)
-                  }
-                  refreshSidebar={refreshSidebar}
-                />
-              }
-            />
-          </Routes>
+            <Routes>
+              <Route
+                path="/new-patient"
+                element={
+                  <PatientDetails
+                    patient={patient}
+                    setPatient={setPatient}
+                    selectedDate={selectedDate}
+                    refreshSidebar={refreshSidebar}
+                    setIsModified={setIsModified}
+                    finalCorrespondence={finalCorrespondence}
+                    setFinalCorrespondence={setFinalCorrespondence}
+                    templateKey={templateKey}
+                    setTemplateKey={setTemplateKey}
+                    onResetLetter={setResetLetter}
+                  />
+                }
+              />
+              <Route
+                path="/patient/:id"
+                element={
+                  <PatientDetails
+                    patient={patient}
+                    setPatient={setPatient}
+                    selectedDate={selectedDate}
+                    refreshSidebar={refreshSidebar}
+                    setIsModified={setIsModified}
+                    finalCorrespondence={finalCorrespondence}
+                    setFinalCorrespondence={setFinalCorrespondence}
+                    templateKey={templateKey}
+                    setTemplateKey={setTemplateKey}
+                  />
+                }
+              />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/rag" element={<Rag />} />
+              <Route
+                path="/clinic-summary"
+                element={
+                  <ClinicSummary
+                    selectedDate={selectedDate}
+                    handleSelectPatient={handleSelectPatient}
+                    refreshSidebar={refreshSidebar}
+                  />
+                }
+              />
+              <Route
+                path="/outstanding-jobs"
+                element={
+                  <OutstandingJobs
+                    handleSelectPatient={(patient) =>
+                      handleSelectPatient(patient, true)
+                    }
+                    refreshSidebar={refreshSidebar}
+                  />
+                }
+              />
+            </Routes>
+          </Box>
         </Box>
-      </Box>
-      <ConfirmLeaveModal
-        isOpen={isOpen}
-        onClose={cancelNavigation}
-        confirmNavigation={confirmNavigation}
-      />
-    </Flex>
+        <ConfirmLeaveModal
+          isOpen={isOpen}
+          onClose={cancelNavigation}
+          confirmNavigation={confirmNavigation}
+        />
+      </Flex>
   );
 }
 

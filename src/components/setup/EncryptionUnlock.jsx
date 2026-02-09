@@ -1,10 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   Box,
   Button,
   Heading,
+  HStack,
   VStack,
   useToast,
+  useColorMode,
   Text,
   Input,
   Flex,
@@ -44,7 +47,23 @@ const EncryptionUnlock = ({ onComplete }) => {
 
     setIsSubmitting(true);
     try {
-      await encryptionApi.unlock(passphrase);
+      // Unlock and get hex passphrase
+      const hexPassphrase = await encryptionApi.unlock(passphrase);
+
+      // Start the server with the hex passphrase
+      try {
+        await invoke("start_server_command", { passphraseHex: hexPassphrase });
+      } catch (serverError) {
+        console.error("Server start failed:", serverError);
+        toast({
+          title: "Server Warning",
+          description: serverError.toString(),
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+
       toast({
         title: "Unlocked",
         description: "Your database has been unlocked successfully.",
@@ -76,7 +95,7 @@ const EncryptionUnlock = ({ onComplete }) => {
         handleSubmit();
       }
     },
-    [passphrase, handleSubmit]
+    [passphrase, handleSubmit],
   );
 
   return (

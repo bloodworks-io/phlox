@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   Box,
   Button,
   Heading,
   VStack,
   useToast,
+  useColorMode,
   Text,
   Input,
   Flex,
@@ -18,7 +20,10 @@ import {
 import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
-import { encryptionApi, calculatePassphraseStrength } from "../../utils/api/encryptionApi";
+import {
+  encryptionApi,
+  calculatePassphraseStrength,
+} from "../../utils/api/encryptionApi";
 
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
@@ -55,8 +60,8 @@ const EncryptionSetup = ({ onComplete }) => {
           passphrase.length < 12
             ? "Passphrase must be at least 12 characters"
             : passphrase !== confirmPassphrase
-            ? "Passphrases do not match"
-            : "Please use a stronger passphrase",
+              ? "Passphrases do not match"
+              : "Please use a stronger passphrase",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -66,7 +71,23 @@ const EncryptionSetup = ({ onComplete }) => {
 
     setIsSubmitting(true);
     try {
-      await encryptionApi.setup(passphrase);
+      // Setup encryption and get hex passphrase
+      const hexPassphrase = await encryptionApi.setup(passphrase);
+
+      // Start the server with the hex passphrase
+      try {
+        await invoke("start_server_command", { passphraseHex: hexPassphrase });
+      } catch (serverError) {
+        console.error("Server start failed:", serverError);
+        toast({
+          title: "Server Warning",
+          description: serverError.toString(),
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+
       toast({
         title: "Encryption Setup Complete",
         description:
@@ -273,9 +294,7 @@ const EncryptionSetup = ({ onComplete }) => {
                 <Button
                   size="md"
                   variant="ghost"
-                  onClick={() =>
-                    setShowConfirmPassword(!showConfirmPassword)
-                  }
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label="Toggle confirm password visibility"
                 >
                   <Icon as={showConfirmPassword ? FaEyeSlash : FaEye} />
