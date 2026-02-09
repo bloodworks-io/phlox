@@ -105,10 +105,8 @@ const PatientDetails = ({
 
   // Refresh templates for new patients
   useEffect(() => {
-    if (isNewPatient) {
-      refreshTemplates();
-    }
-  }, [isNewPatient, refreshTemplates]);
+    refreshTemplates();
+  }, [refreshTemplates]);
   // Handle template errors
   useEffect(() => {
     if (templateError) {
