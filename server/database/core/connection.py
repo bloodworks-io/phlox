@@ -98,17 +98,27 @@ class PatientDatabase:
         self.db_dir = db_dir
         self.encryption_key = None
 
-        # Try Podman secret file first
-        secret_file = "/run/secrets/db_encryption_key"
-        if os.path.exists(secret_file):
-            try:
-                with open(secret_file, "r") as f:
-                    self.encryption_key = f.read().strip()
-                logging.info("Using encryption key from Podman secret")
-            except Exception as e:
-                logging.warning(f"Failed to read secret file: {e}")
+        # Read from stdin
+        import select
+        import sys
 
-        # Fallback to environment variable
+        if select.select([sys.stdin], [], [], 0.0)[0]:
+            self.encryption_key = sys.stdin.read().strip()
+            if self.encryption_key:
+                logging.info("Using encryption key from stdin")
+
+        # Try secrets file
+        if not self.encryption_key:
+            secret_file = "/run/secrets/db_encryption_key"
+            if os.path.exists(secret_file):
+                try:
+                    with open(secret_file, "r") as f:
+                        self.encryption_key = f.read().strip()
+                    logging.info("Using encryption key from Podman secret")
+                except Exception as e:
+                    logging.warning(f"Failed to read secret file: {e}")
+
+        # Fallback to env
         if not self.encryption_key:
             self.encryption_key = os.environ.get("DB_ENCRYPTION_KEY")
             if self.encryption_key:
