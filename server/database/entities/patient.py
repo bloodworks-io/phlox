@@ -23,15 +23,13 @@ def get_unique_primary_conditions():
         list: A list of unique primary condition strings, excluding None values.
     """
     try:
-        db.cursor.execute(
-            """
+        db.cursor.execute("""
             SELECT DISTINCT primary_condition
             FROM patients
             WHERE primary_condition IS NOT NULL
             AND primary_condition != ''
             ORDER BY primary_condition ASC
-            """
-        )
+            """)
         results = db.cursor.fetchall()
         return [row["primary_condition"] for row in results]
     except Exception as e:
@@ -499,4 +497,41 @@ def delete_patient_by_id(patient_id: int) -> bool:
         return db.cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error deleting patient: {e}")
+        raise
+
+
+def update_patient_summary(
+    patient_id: int, encounter_summary: str, primary_condition: str
+) -> None:
+    """
+    Update only the encounter summary and primary condition fields for a patient.
+
+    This function is called by the background summarization task to populate
+    these fields after the patient record has already been saved.
+
+    Args:
+        patient_id (int): The ID of the patient to update.
+        encounter_summary (str): The generated encounter summary.
+        primary_condition (str): The extracted primary condition.
+    """
+    try:
+        db.cursor.execute(
+            """
+            UPDATE patients
+            SET encounter_summary = ?,
+                primary_condition = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                encounter_summary,
+                primary_condition,
+                datetime.now().isoformat(),
+                patient_id,
+            ),
+        )
+        db.commit()
+    except Exception as e:
+        db.db.rollback()
+        logging.error(f"Error updating patient summary: {e}")
         raise

@@ -23,6 +23,7 @@ from server.database.entities.patient import (
     search_patient_by_ur_number,
     update_patient,
     update_patient_reasoning,
+    update_patient_summary,
 )
 from server.database.entities.templates import (
     get_template_by_key,
@@ -38,6 +39,7 @@ from server.utils.nlp_tools.adaptive_refinement import (
 )
 from server.utils.nlp_tools.reasoning import run_clinical_reasoning
 from server.utils.nlp_tools.summarisation import summarise_encounter
+from server.utils.nlp_tools.summarization_manager import summarization_manager
 
 router = APIRouter()
 
@@ -50,20 +52,22 @@ _adaptive_refinement_running = False
 async def save_patient_data(
     request: SavePatientRequest, background_tasks: BackgroundTasks
 ):
-    """Saves patient data and processes any adaptive refinement requests."""
+    """Saves patient data immediately and processes summarization in background.
+
+    The save operation returns quickly without waiting for LLM calls.
+    Encounter summarization and primary condition extraction happen asynchronously.
+    """
     patient = request.patientData
 
     try:
-        # Summarize the encounter
-        encounter_summary, primary_condition = await summarise_encounter(
-            patient=patient
-        )
+        # Generate task token for deduplication
+        task_token = summarization_manager.generate_token()
 
-        # Add summary data to patient
-        patient.encounter_summary = encounter_summary
-        patient.primary_condition = primary_condition
+        # Clear summary fields - will be populated in background
+        patient.encounter_summary = None
+        patient.primary_condition = None
 
-        # Save or update the patient
+        # Save or update the patient immediately (no LLM call)
         if patient.id:
             update_patient(patient)
             logging.info(f"Patient updated with ID: {patient.id}")
@@ -72,7 +76,15 @@ async def save_patient_data(
             patient_id = save_patient(patient)
             logging.info(f"Patient saved with ID: {patient_id}")
 
-        # Process adaptive refinement if provided (non-blocking)
+        # Queue background summarization
+        background_tasks.add_task(
+            process_encounter_summarization,
+            patient_id=patient_id,
+            patient_data=patient,
+            task_token=task_token,
+        )
+
+        # Process adaptive refinement if provided (also non-blocking)
         if request.adaptive_refinement:
             background_tasks.add_task(
                 process_adaptive_refinement,
@@ -80,10 +92,56 @@ async def save_patient_data(
                 refinement_data=request.adaptive_refinement,
             )
 
+        # Small delay for UI feedback - makes the save feel intentional
+        await asyncio.sleep(0.3)
+
         return {"id": patient_id}
     except Exception as e:
         logging.error(f"Error processing patient data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def process_encounter_summarization(
+    patient_id: int,
+    patient_data: Patient,
+    task_token: str,
+) -> None:
+    """Process encounter summarization in background with deduplication.
+
+    This function runs as a background task after the patient is saved.
+    It checks if the task is still the latest one for this patient before
+    proceeding, to avoid redundant LLM calls.
+
+    Args:
+        patient_id: The ID of the patient to summarize.
+        patient_data: The patient data (captured at save time).
+        task_token: The unique token for this task (timestamp).
+    """
+    # Check if this task is still the latest one for this patient
+    if not await summarization_manager.should_process(patient_id, task_token):
+        logging.info(
+            f"Skipping stale summarization task for patient {patient_id}"
+        )
+        return
+
+    try:
+        logging.info(f"Processing summarization for patient {patient_id}")
+
+        # Perform the actual summarization (LLM calls)
+        encounter_summary, primary_condition = await summarise_encounter(
+            patient=patient_data
+        )
+
+        # Update the patient record with the summary
+        update_patient_summary(patient_id, encounter_summary, primary_condition)
+
+        logging.info(f"Completed summarization for patient {patient_id}")
+    except Exception as e:
+        logging.error(
+            f"Error in background summarization for patient {patient_id}: {e}"
+        )
+    finally:
+        await summarization_manager.mark_complete(patient_id)
 
 
 async def process_adaptive_refinement(template_key: str, refinement_data: dict):
