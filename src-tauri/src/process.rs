@@ -14,6 +14,7 @@ pub struct WhisperProcess(pub Mutex<Option<Child>>);
 
 /// Coordinates restarts to prevent conflicts between manual restarts and monitor loop
 pub struct RestartCoordinator {
+    #[allow(dead_code)]
     pub server_restarting: AtomicBool,
     pub llama_restarting: AtomicBool,
     pub whisper_restarting: AtomicBool,
@@ -265,19 +266,9 @@ pub fn monitor_processes(app_handle: tauri::AppHandle, monitor_whisper: bool) {
                         Ok(Some(exit_status)) => {
                             log::error!("Server process exited with status: {:?}", exit_status);
                             *process_guard = None;
-
-                            // Only restart if not already being restarted manually
-                            if !coordinator.server_restarting.load(Ordering::SeqCst) {
-                                match services::start_server(app_handle.clone()) {
-                                    Ok(new_child) => {
-                                        log::info!("Server restarted with PID: {}", new_child.id());
-                                        *process_guard = Some(new_child);
-                                    }
-                                    Err(e) => log::error!("Failed to restart server: {}", e),
-                                }
-                            } else {
-                                log::debug!("Server restart in progress, skipping monitor restart");
-                            }
+                            // Note: With no keychain caching, we cannot auto-restart the server
+                            // User will need to unlock again on next app launch
+                            log::warn!("Server cannot be auto-restarted (no cached passphrase)");
                         }
                         Ok(None) => {
                             // Process is still running

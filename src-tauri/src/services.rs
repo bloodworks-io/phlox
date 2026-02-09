@@ -3,7 +3,6 @@ use std::thread;
 use std::time::Duration;
 use tauri::AppHandle;
 
-use crate::encryption::get_master_key_for_db;
 // Import process management utilities
 use crate::process::{is_process_running_from_pid, write_pid_file};
 
@@ -272,7 +271,10 @@ pub fn start_whisper() -> Result<Child, Box<dyn std::error::Error>> {
     Ok(child)
 }
 
-pub fn start_server(app_handle: AppHandle) -> Result<Child, Box<dyn std::error::Error>> {
+pub fn start_server(
+    _app_handle: AppHandle,
+    passphrase_hex: String,
+) -> Result<Child, Box<dyn std::error::Error>> {
     // Check if already running via PID file
     if let Some(pid) = is_process_running_from_pid("server") {
         return Err(format!("Server already running with PID {}", pid).into());
@@ -294,19 +296,15 @@ pub fn start_server(app_handle: AppHandle) -> Result<Child, Box<dyn std::error::
         .into());
     }
 
-    // Get the master key from keychain and convert to hex for SQLCipher
-    let master_key_hex = get_master_key_for_db(&app_handle)
-        .map_err(|e| format!("Failed to get encryption key: {}", e))?;
-
     log::info!(
-        "Encryption key obtained (length: {} chars)",
-        master_key_hex.len()
+        "Using encryption key (length: {} chars)",
+        passphrase_hex.len()
     );
 
     let mut cmd = Command::new(&server_path);
 
     // Inject the encryption key as environment variable
-    cmd.env("DB_ENCRYPTION_KEY", master_key_hex);
+    cmd.env("DB_ENCRYPTION_KEY", passphrase_hex);
 
     #[cfg(unix)]
     {

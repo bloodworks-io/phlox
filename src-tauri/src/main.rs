@@ -11,13 +11,13 @@ use tauri_plugin_log::{Target, TargetKind};
 use commands::{
     change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
     get_service_status, get_system_specs, has_database, has_encryption_setup, has_keychain_entry,
-    restart_llama, restart_whisper, setup_encryption, unlock_with_passphrase,
+    restart_llama, restart_whisper, setup_encryption, start_server_command, unlock_with_passphrase,
 };
 use process::{
     cleanup_stale_files, kill_all_processes, monitor_processes, LlamaProcess, RestartCoordinator,
     ServerProcess, WhisperProcess,
 };
-use services::{start_llama, start_server, start_whisper, wait_for_server, wait_for_service};
+use services::{start_llama, start_whisper, wait_for_service};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -49,6 +49,7 @@ pub fn run() {
             restart_whisper,
             restart_llama,
             convert_audio_to_wav,
+            start_server_command,
             // Encryption commands
             has_encryption_setup,
             has_database,
@@ -122,23 +123,8 @@ pub fn run() {
                     );
                 }
 
-                // Now start the server (this should always work)
-                match start_server(app_handle.clone()) {
-                    Ok(server_child) => {
-                        let server_pid = server_child.id();
-                        *app_handle.state::<ServerProcess>().0.lock().unwrap() = Some(server_child);
-                        log::info!("Server started with PID: {}", server_pid);
-
-                        // Wait for server to be ready
-                        wait_for_server();
-
-                        // Start monitoring all processes
-                        monitor_processes(app_handle.clone(), whisper_started);
-                    }
-                    Err(e) => {
-                        log::error!("Failed to start server: {}", e);
-                    }
-                }
+                // Start monitoring all processes (server will be started by frontend after encryption)
+                monitor_processes(app_handle.clone(), whisper_started);
             });
 
             Ok(())

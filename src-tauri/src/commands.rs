@@ -346,7 +346,7 @@ pub fn get_system_specs() -> SystemSpecs {
 // Encryption Commands
 // ============================================================================
 
-/// Check if encryption has been set up (wrapped_key.bin exists)
+/// Check if encryption has been set up (database file exists)
 #[tauri::command]
 pub fn has_encryption_setup() -> bool {
     encryption::has_encryption_setup()
@@ -358,80 +358,92 @@ pub fn has_database() -> bool {
     encryption::database_exists()
 }
 
-/// Check if master key is in keychain
+/// Check if passphrase is cached in keychain
+/// Always returns false since we don't use keychain caching (PHI requirement)
 #[tauri::command]
-pub fn has_keychain_entry(app_handle: tauri::AppHandle) -> bool {
-    encryption::get_master_key_from_keychain(&app_handle)
-        .map(|k| k.is_some())
-        .unwrap_or(false)
+pub fn has_keychain_entry() -> bool {
+    encryption::has_keychain_entry()
 }
 
 /// Set up encryption with a new passphrase
+/// Returns hex-encoded passphrase for immediate use with start_server_command
 #[tauri::command]
-pub fn setup_encryption(app_handle: tauri::AppHandle, passphrase: String) -> Result<(), String> {
+pub fn setup_encryption(passphrase: String) -> Result<String, String> {
     log::info!("setup_encryption called");
 
-    encryption::setup_encryption(&app_handle, &passphrase).map_err(|e| match e {
-        EncryptionError::InvalidFormat(msg) => msg,
+    encryption::setup_encryption(&passphrase).map_err(|e| match e {
+        EncryptionError::PassphraseTooShort => {
+            "Passphrase must be at least 12 characters".to_string()
+        }
         _ => format!("Failed to set up encryption: {}", e),
     })
 }
 
-/// Unlock with passphrase and cache in keychain
+/// Unlock with passphrase
+/// Returns hex-encoded passphrase for immediate use with start_server_command
+/// Note: Verification happens when Python tries to open the database
 #[tauri::command]
-pub fn unlock_with_passphrase(
-    app_handle: tauri::AppHandle,
-    passphrase: String,
-) -> Result<(), String> {
+pub fn unlock_with_passphrase(passphrase: String) -> Result<String, String> {
     log::info!("unlock_with_passphrase called");
 
-    encryption::unlock_with_passphrase(&app_handle, &passphrase).map_err(|e| match e {
-        EncryptionError::DecryptionFailed => "Incorrect passphrase".to_string(),
-        EncryptionError::VerificationFailed => "Incorrect passphrase".to_string(),
+    encryption::unlock_with_passphrase(&passphrase).map_err(|e| match e {
+        EncryptionError::PassphraseRequired => "Passphrase required".to_string(),
         _ => format!("Failed to unlock: {}", e),
     })
 }
 
 /// Change passphrase (future enhancement - placeholder)
 #[tauri::command]
-pub fn change_passphrase(
-    _app_handle: tauri::AppHandle,
-    _old_passphrase: String,
-    _new_passphrase: String,
-) -> Result<(), String> {
+pub fn change_passphrase(_old_passphrase: String, _new_passphrase: String) -> Result<(), String> {
     log::info!("change_passphrase called - not yet implemented");
-
-    // TODO: Implement passphrase change
-    // This would:
-    // 1. Unlock with old passphrase
-    // 2. Generate new salt
-    // 3. Re-wrap master key with new passphrase
-    // 4. Update wrapped_key.bin
-
     Err("Passphrase change is not yet implemented".to_string())
 }
 
-/// Delete key from keychain (for testing/logout)
+/// Clear keychain (no-op since we don't use keychain)
 #[tauri::command]
-pub fn clear_keychain(app_handle: tauri::AppHandle) -> Result<(), String> {
-    log::info!("clear_keychain called");
-
-    encryption::delete_master_key_from_keychain(&app_handle)
-        .map_err(|e| format!("Failed to clear keychain: {}", e))
+pub fn clear_keychain() -> Result<(), String> {
+    log::info!("clear_keychain called - no-op (no keychain used)");
+    Ok(())
 }
 
 /// Get encryption setup status for UI
 #[tauri::command]
-pub fn get_encryption_status(app_handle: tauri::AppHandle) -> serde_json::Value {
+pub fn get_encryption_status() -> serde_json::Value {
     let has_setup = encryption::has_encryption_setup();
     let has_db = encryption::database_exists();
-    let has_keychain = encryption::get_master_key_from_keychain(&app_handle)
-        .map(|k| k.is_some())
-        .unwrap_or(false);
+    let has_keychain = encryption::has_keychain_entry();
 
     serde_json::json!({
         "has_setup": has_setup,
         "has_database": has_db,
         "has_keychain": has_keychain
     })
+}
+
+/// Start the Phlox server (called from frontend after encryption setup/unlock)
+#[tauri::command]
+pub fn start_server_command(
+    app_handle: tauri::AppHandle,
+    passphrase_hex: String,
+) -> Result<String, String> {
+    log::info!("start_server_command called from frontend");
+
+    match services::start_server(app_handle.clone(), passphrase_hex) {
+        Ok(server_child) => {
+            let server_pid = server_child.id();
+            *app_handle.state::<ServerProcess>().0.lock().unwrap() = Some(server_child);
+            log::info!("Server started with PID: {}", server_pid);
+
+            // Wait for server to be ready in background
+            std::thread::spawn(move || {
+                services::wait_for_server();
+            });
+
+            Ok(format!("Server started with PID: {}", server_pid))
+        }
+        Err(e) => {
+            log::error!("Failed to start server: {}", e);
+            Err(format!("Failed to start server: {}", e))
+        }
+    }
 }

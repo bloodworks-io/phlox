@@ -26,13 +26,8 @@ tauri-plugin-log = { version = "2.0.0-beta.7", features = [
     "tracing",
 ] } # Or check for a version compatible with Tauri 2.5.1
 
-# Encryption dependencies
-keyring = "3"
-argon2 = "0.5"
-aes-gcm = "0.10"
-sha2 = "0.10"
-rand = "0.8"
-zeroize = "1.5"
+# Encryption dependencies (minimal - just hex encoding)
+hex = "0.4"
 thiserror = "2"
 
 
