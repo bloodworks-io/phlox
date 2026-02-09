@@ -8,7 +8,13 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { SunIcon, MoonIcon } from "@chakra-ui/icons";
-import { useState, useEffect, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  createContext,
+  useContext,
+} from "react";
 import { TemplateProvider } from "./utils/templates/templateContext";
 import Sidebar from "./components/sidebar/Sidebar";
 import LandingPage from "./pages/LandingPage";
@@ -29,11 +35,20 @@ import theme from "./theme"; // Assuming theme is exported from here for ChakraP
 import SplashScreen from "./components/common/SplashScreen"; // Import SplashScreen
 import EncryptionSetup from "./components/setup/EncryptionSetup"; // Import EncryptionSetup
 import EncryptionUnlock from "./components/setup/EncryptionUnlock"; // Import EncryptionUnlock
+import ServerStartupLoader from "./components/setup/ServerStartupLoader"; // Import ServerStartupLoader
 import { settingsService } from "./utils/settings/settingsUtils"; // Import settingsService
 import { isTauri } from "./utils/helpers/apiConfig"; // Import isTauri
 import { encryptionApi } from "./utils/api/encryptionApi"; // Import encryptionApi
 
-function AppContent() {
+// Context to track if app is initializing (server not ready yet)
+// This allows components to suppress error toasts during initialization
+export const AppInitContext = createContext({
+  isInitializing: false,
+});
+
+export const useAppInit = () => useContext(AppInitContext);
+
+function AppContent({ setIsInitializing }) {
   const [showSplashScreen, setShowSplashScreen] = useState(undefined);
   const [isLoadingSplashCheck, setIsLoadingSplashCheck] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -45,6 +60,20 @@ function AppContent() {
   const [showEncryptionUnlock, setShowEncryptionUnlock] = useState(false);
   const [isLoadingEncryptionCheck, setIsLoadingEncryptionCheck] =
     useState(true);
+  const [showServerStartupLoader, setShowServerStartupLoader] = useState(false);
+
+  // App initialization state - true when server is not ready yet
+  // This is used to suppress error toasts during initialization
+  const isInitializing =
+    showEncryptionSetup || showEncryptionUnlock || showServerStartupLoader;
+
+  // Update the parent state whenever isInitializing changes
+  useEffect(() => {
+    if (setIsInitializing) {
+      setIsInitializing(isInitializing);
+    }
+  }, [isInitializing, setIsInitializing]);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const navigate = useNavigate();
@@ -223,8 +252,12 @@ function AppContent() {
   }, [defaultCollapsed]);
 
   // Splash screen logic
-  useEffect(() => {
-    const checkSplashStatus = async () => {
+  const checkSplashStatus = useCallback(async (options = {}) => {
+    const { maxRetries = 5, retryDelay = 500 } = options;
+    let lastError;
+    let success = false;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         await settingsService.fetchUserSettings((userData) => {
           if (
@@ -236,16 +269,45 @@ function AppContent() {
             setShowSplashScreen(true); // Default to showing splash if flag is missing/invalid
           }
         });
+        // Success - exit the retry loop
+        success = true;
+        break;
       } catch (error) {
-        console.error("Error checking splash screen status:", error);
-        setShowSplashScreen(true); // Default to showing splash on error
-      } finally {
-        setIsLoadingSplashCheck(false);
+        console.warn(
+          `Error checking splash screen status (attempt ${attempt + 1}/${maxRetries}):`,
+          error,
+        );
+        lastError = error;
+        // Wait before retrying (except on the last attempt)
+        if (attempt < maxRetries - 1) {
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        }
       }
-    };
+    }
 
-    checkSplashStatus();
+    if (!success) {
+      // All retries failed
+      console.error(
+        "Error checking splash screen status after retries:",
+        lastError,
+      );
+      setShowSplashScreen(true); // Default to showing splash on error
+    }
+
+    setIsLoadingSplashCheck(false);
   }, []);
+
+  // Only check splash status on mount if NOT in Tauri
+  // In Tauri, we wait until after encryption unlock is complete
+  useEffect(() => {
+    if (!isTauri()) {
+      checkSplashStatus();
+    } else {
+      // In Tauri, mark splash check as complete immediately
+      // We'll check it after encryption unlock
+      setIsLoadingSplashCheck(false);
+    }
+  }, [checkSplashStatus]);
 
   const handleSplashComplete = () => {
     setShowSplashScreen(false);
@@ -285,12 +347,35 @@ function AppContent() {
 
   const handleEncryptionSetupComplete = () => {
     setShowEncryptionSetup(false);
-    // After setup, the key is in keychain, so we can proceed
+    // Show server startup loader while server initializes
+    setShowServerStartupLoader(true);
   };
 
   const handleEncryptionUnlockComplete = () => {
     setShowEncryptionUnlock(false);
-    // After unlock, the key is in keychain, so we can proceed
+    // Show server startup loader while server initializes
+    setShowServerStartupLoader(true);
+  };
+
+  const handleServerReady = () => {
+    setShowServerStartupLoader(false);
+    // Server is ready, now check splash screen status
+    checkSplashStatus({ maxRetries: 3, retryDelay: 300 });
+  };
+
+  const handleServerError = (error) => {
+    console.error("Server startup error:", error);
+    setShowServerStartupLoader(false);
+    // Show error toast
+    toast({
+      title: "Server Error",
+      description: error.message || "Failed to start the server",
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+    // Go back to unlock screen
+    setShowEncryptionUnlock(true);
   };
 
   if (isLoadingSplashCheck) {
@@ -307,161 +392,186 @@ function AppContent() {
     return <EncryptionUnlock onComplete={handleEncryptionUnlockComplete} />;
   }
 
+  // Show server startup loader while server initializes
+  if (showServerStartupLoader) {
+    return (
+      <ServerStartupLoader
+        onReady={handleServerReady}
+        onError={handleServerError}
+      />
+    );
+  }
+
   if (showSplashScreen) {
     return <SplashScreen onComplete={handleSplashComplete} />;
   }
   return (
     <Flex position="relative">
-        {/* Floating hamburger button for small screens */}
-        {isSmallScreen && isSidebarCollapsed && (
-          <IconButton
-            icon={<CollapseIcon />}
-            onClick={toggleSidebar}
+      {/* Floating hamburger button for small screens */}
+      {isSmallScreen && isSidebarCollapsed && (
+        <IconButton
+          icon={<CollapseIcon />}
+          onClick={toggleSidebar}
+          position="fixed"
+          top="6"
+          left="6"
+          zIndex="101"
+          aria-label="Toggle sidebar"
+          className="dark-toggle"
+        />
+      )}
+
+      <Sidebar
+        onNewPatient={handleNewPatient}
+        onSelectPatient={handleSelectPatient}
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
+        refreshKey={refreshKey}
+        handleNavigation={handleNavigation}
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        isSmallScreen={isSmallScreen}
+      />
+
+      <Box
+        flex="1"
+        ml={isSmallScreen ? "0" : isSidebarCollapsed ? "80px" : "220px"}
+        minH="100vh"
+        transition="margin-left 0.3s ease"
+        bg={
+          isTauri()
+            ? colorMode === "light"
+              ? "#232634"
+              : "#1e2030"
+            : "transparent"
+        }
+        display="flex"
+        flexDirection="column"
+      >
+        {/* Tauri titlebar drag region for macOS */}
+        {isTauri() && (
+          <Box
+            data-tauri-drag-region
+            height="25px"
             position="fixed"
-            top="6"
-            left="6"
-            zIndex="101"
-            aria-label="Toggle sidebar"
-            className="dark-toggle"
+            top="0"
+            right="0"
+            left={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
+            zIndex="1000"
+            transition="left 0.3s ease"
           />
         )}
 
-        <Sidebar
-          onNewPatient={handleNewPatient}
-          onSelectPatient={handleSelectPatient}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          refreshKey={refreshKey}
-          handleNavigation={handleNavigation}
-          isCollapsed={isSidebarCollapsed}
-          toggleSidebar={toggleSidebar}
-          isSmallScreen={isSmallScreen}
-        />
-
         <Box
-          flex="1"
-          ml={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
-          minH="100vh"
-          transition="margin-left 0.3s ease"
-          bg={
-            isTauri()
-              ? colorMode === "light"
-                ? "#232634"
-                : "#1e2030"
-              : "transparent"
-          }
-          display="flex"
-          flexDirection="column"
+          m={isTauri() ? "5px" : "0"}
+          borderRadius={isTauri() ? "16px" : "0"}
+          p={isTauri() ? "6" : "0"}
+          pt={isSmallScreen && isTauri() ? "50px" : isTauri() ? "6" : "0"}
+          className="main-bg"
+          height={isTauri() ? "calc(100vh - 10px)" : "100vh"}
+          overflowY="auto"
+          position="relative"
         >
-          {/* Tauri titlebar drag region for macOS */}
-          {isTauri() && (
-            <Box
-              data-tauri-drag-region
-              height="25px"
-              position="fixed"
-              top="0"
-              right="0"
-              left={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
-              zIndex="1000"
-              transition="left 0.3s ease"
+          <IconButton
+            position="absolute"
+            top={5}
+            right={5}
+            aria-label="Toggle color mode"
+            icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
+            className="dark-toggle"
+            onClick={toggleColorMode}
+          />
+          <Routes>
+            <Route
+              path="/new-patient"
+              element={
+                <PatientDetails
+                  patient={patient}
+                  setPatient={setPatient}
+                  selectedDate={selectedDate}
+                  refreshSidebar={refreshSidebar}
+                  setIsModified={setIsModified}
+                  finalCorrespondence={finalCorrespondence}
+                  setFinalCorrespondence={setFinalCorrespondence}
+                  templateKey={templateKey}
+                  setTemplateKey={setTemplateKey}
+                  onResetLetter={setResetLetter}
+                />
+              }
             />
-          )}
-
-          <Box
-            m={isTauri() ? "5px" : "0"}
-            borderRadius={isTauri() ? "16px" : "0"}
-            p={isTauri() ? "6" : "0"}
-            pt={isSmallScreen && isTauri() ? "50px" : isTauri() ? "6" : "0"}
-            className="main-bg"
-            height={isTauri() ? "calc(100vh - 10px)" : "100vh"}
-            overflowY="auto"
-            position="relative"
-          >
-            <IconButton
-              position="absolute"
-              top={5}
-              right={5}
-              aria-label="Toggle color mode"
-              icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
-              className="dark-toggle"
-              onClick={toggleColorMode}
+            <Route
+              path="/patient/:id"
+              element={
+                <PatientDetails
+                  patient={patient}
+                  setPatient={setPatient}
+                  selectedDate={selectedDate}
+                  refreshSidebar={refreshSidebar}
+                  setIsModified={setIsModified}
+                  finalCorrespondence={finalCorrespondence}
+                  setFinalCorrespondence={setFinalCorrespondence}
+                  templateKey={templateKey}
+                  setTemplateKey={setTemplateKey}
+                />
+              }
             />
-            <Routes>
-              <Route
-                path="/new-patient"
-                element={
-                  <PatientDetails
-                    patient={patient}
-                    setPatient={setPatient}
-                    selectedDate={selectedDate}
-                    refreshSidebar={refreshSidebar}
-                    setIsModified={setIsModified}
-                    finalCorrespondence={finalCorrespondence}
-                    setFinalCorrespondence={setFinalCorrespondence}
-                    templateKey={templateKey}
-                    setTemplateKey={setTemplateKey}
-                    onResetLetter={setResetLetter}
-                  />
-                }
-              />
-              <Route
-                path="/patient/:id"
-                element={
-                  <PatientDetails
-                    patient={patient}
-                    setPatient={setPatient}
-                    selectedDate={selectedDate}
-                    refreshSidebar={refreshSidebar}
-                    setIsModified={setIsModified}
-                    finalCorrespondence={finalCorrespondence}
-                    setFinalCorrespondence={setFinalCorrespondence}
-                    templateKey={templateKey}
-                    setTemplateKey={setTemplateKey}
-                  />
-                }
-              />
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/rag" element={<Rag />} />
-              <Route
-                path="/clinic-summary"
-                element={
-                  <ClinicSummary
-                    selectedDate={selectedDate}
-                    handleSelectPatient={handleSelectPatient}
-                    refreshSidebar={refreshSidebar}
-                  />
-                }
-              />
-              <Route
-                path="/outstanding-jobs"
-                element={
-                  <OutstandingJobs
-                    handleSelectPatient={(patient) =>
-                      handleSelectPatient(patient, true)
-                    }
-                    refreshSidebar={refreshSidebar}
-                  />
-                }
-              />
-            </Routes>
-          </Box>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/rag" element={<Rag />} />
+            <Route
+              path="/clinic-summary"
+              element={
+                <ClinicSummary
+                  selectedDate={selectedDate}
+                  handleSelectPatient={handleSelectPatient}
+                  refreshSidebar={refreshSidebar}
+                />
+              }
+            />
+            <Route
+              path="/outstanding-jobs"
+              element={
+                <OutstandingJobs
+                  handleSelectPatient={(patient) =>
+                    handleSelectPatient(patient, true)
+                  }
+                  refreshSidebar={refreshSidebar}
+                />
+              }
+            />
+          </Routes>
         </Box>
-        <ConfirmLeaveModal
-          isOpen={isOpen}
-          onClose={cancelNavigation}
-          confirmNavigation={confirmNavigation}
-        />
-      </Flex>
+      </Box>
+      <ConfirmLeaveModal
+        isOpen={isOpen}
+        onClose={cancelNavigation}
+        confirmNavigation={confirmNavigation}
+      />
+    </Flex>
   );
 }
 
-// Wrap the entire app with TemplateProvider
+// Wrap the entire app with TemplateProvider and AppInitContext
 function App() {
   return (
-    <TemplateProvider>
-      <AppContent />
-    </TemplateProvider>
+    <AppInitContext.Provider value={{ isInitializing: false }}>
+      <TemplateProvider>
+        <AppWithInitState />
+      </TemplateProvider>
+    </AppInitContext.Provider>
+  );
+}
+
+// Inner component that provides the actual isInitializing state
+function AppWithInitState() {
+  // Get the initialization state from AppContent
+  // We need to restructure slightly to pass this down
+  const [isInitializingState, setIsInitializingState] = useState(true);
+
+  return (
+    <AppInitContext.Provider value={{ isInitializing: isInitializingState }}>
+      <AppContent setIsInitializing={setIsInitializingState} />
+    </AppInitContext.Provider>
   );
 }
 

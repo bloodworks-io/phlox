@@ -7,6 +7,7 @@ import React, {
 import { useToast } from "@chakra-ui/react";
 import { templateApi } from "../api/templateApi";
 import { templateService } from "./templateService";
+import { useAppInit } from "../../App";
 
 // Create context
 const TemplateContext = createContext(null);
@@ -103,6 +104,7 @@ export const TemplateProvider = ({ children }) => {
     visualLoading: false,
   });
   const toast = useToast();
+  const { isInitializing } = useAppInit();
 
   // Load all templates
   const loadTemplates = useCallback(async () => {
@@ -220,7 +222,13 @@ export const TemplateProvider = ({ children }) => {
   );
 
   // Initialize templates on mount
+  // Skip initialization if app is still initializing (server not ready)
   useEffect(() => {
+    // Don't initialize templates if the app is still initializing
+    if (isInitializing) {
+      return;
+    }
+
     const initializeTemplates = async () => {
       try {
         dispatch({ type: "SET_LOADING" });
@@ -238,17 +246,26 @@ export const TemplateProvider = ({ children }) => {
         await setActiveTemplate(defaultTemplate.template_key);
       } catch (error) {
         dispatch({ type: "SET_ERROR", payload: error.message });
-        toast({
-          title: "Error",
-          description: "Failed to initialize templates",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
+        // Only show toast if we're not initializing
+        if (!isInitializing) {
+          toast({
+            title: "Error",
+            description: "Failed to initialize templates",
+            status: "error",
+            duration: 3000,
+            isClosable: true,
+          });
+        }
       }
     };
     initializeTemplates();
-  }, [loadTemplates, loadDefaultTemplate, setActiveTemplate, toast]);
+  }, [
+    loadTemplates,
+    loadDefaultTemplate,
+    setActiveTemplate,
+    toast,
+    isInitializing,
+  ]);
 
   const refreshTemplates = useCallback(async () => {
     dispatch({ type: "START_LOADING" });
