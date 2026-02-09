@@ -10,9 +10,9 @@ import {
   Divider,
   useColorModeValue,
   Tooltip,
-  useToast,
   useOutsideClick,
 } from "@chakra-ui/react";
+import { useApiToast } from "../../utils/helpers/apiToastContext";
 import { useState, useEffect, useRef } from "react";
 import { FaPlus } from "react-icons/fa";
 
@@ -73,7 +73,7 @@ const Sidebar = ({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [patientToDelete, setPatientToDelete] = useState(null);
   const [incompleteJobsCount, setIncompleteJobsCount] = useState(0);
-  const toast = useToast();
+  const toast = useApiToast();
 
   // Color mode values
   const sidebarBg = colors.dark.sidebar.background;

@@ -4,7 +4,7 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
-import { useToast } from "@chakra-ui/react";
+import { useApiToast } from "../helpers/apiToastContext";
 import { templateApi } from "../api/templateApi";
 import { templateService } from "./templateService";
 import { useAppInit } from "../../App";
@@ -103,7 +103,7 @@ export const TemplateProvider = ({ children }) => {
     loading: false,
     visualLoading: false,
   });
-  const toast = useToast();
+  const toast = useApiToast();
   const { isInitializing } = useAppInit();
 
   // Load all templates

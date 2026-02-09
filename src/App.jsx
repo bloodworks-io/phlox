@@ -16,6 +16,7 @@ import {
   useContext,
 } from "react";
 import { TemplateProvider } from "./utils/templates/templateContext";
+import { ApiToastProvider } from "./utils/helpers/apiToastContext";
 import Sidebar from "./components/sidebar/Sidebar";
 import LandingPage from "./pages/LandingPage";
 import PatientDetails from "./pages/PatientDetails";
@@ -555,9 +556,7 @@ function AppContent({ setIsInitializing }) {
 function App() {
   return (
     <AppInitContext.Provider value={{ isInitializing: false }}>
-      <TemplateProvider>
-        <AppWithInitState />
-      </TemplateProvider>
+      <AppWithInitState />
     </AppInitContext.Provider>
   );
 }
@@ -570,7 +569,11 @@ function AppWithInitState() {
 
   return (
     <AppInitContext.Provider value={{ isInitializing: isInitializingState }}>
-      <AppContent setIsInitializing={setIsInitializingState} />
+      <ApiToastProvider>
+        <TemplateProvider>
+          <AppContent setIsInitializing={setIsInitializingState} />
+        </TemplateProvider>
+      </ApiToastProvider>
     </AppInitContext.Provider>
   );
 }

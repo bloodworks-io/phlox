@@ -132,9 +132,7 @@ if CHROMADB_AVAILABLE:
     app.include_router(rag.router, prefix="/api/rag")
     app.include_router(chat.router, prefix="/api/chat")
 else:
-    logger.warning(
-        "RAG/Chat features disabled - dependencies not available."
-    )
+    logger.warning("RAG/Chat features disabled - dependencies not available.")
 
 app.include_router(config_router, prefix="/api/config")
 app.include_router(templates.router, prefix="/api/templates")

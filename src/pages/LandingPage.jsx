@@ -1,6 +1,7 @@
 // Landing page component displaying various dashboard panels.
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Text, Grid, VStack, useToast } from "@chakra-ui/react";
+import { Box, Text, Grid, VStack } from "@chakra-ui/react";
+import { useApiToast } from "../utils/helpers/apiToastContext";
 import { FaFileAlt } from "react-icons/fa";
 import { landingApi } from "../utils/api/landingApi";
 import { universalFetch } from "../utils/helpers/apiHelpers";
@@ -29,7 +30,7 @@ const LandingPage = () => {
   const [isAnalysisRefreshing, setIsAnalysisRefreshing] = useState(false);
   const [serverInfo, setServerInfo] = useState(null);
   const [isServerInfoRefreshing, setIsServerInfoRefreshing] = useState(false);
-  const toast = useToast();
+  const toast = useApiToast();
 
   const fetchAllData = useCallback(async () => {
     setIsRefreshing(true);
