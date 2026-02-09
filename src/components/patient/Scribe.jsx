@@ -224,16 +224,17 @@ const Scribe = ({
                 </Tab>
               </Tooltip>
             )}
-            {patientId && ( // show reasoning tab only if patient has an ID
-              <Tooltip label="Run clinical reasoning analysis.">
-                <Tab className="tab-style">
-                  <HStack>
-                    <FaAtom />
-                    <Text>Reasoning</Text>
-                  </HStack>
-                </Tab>
-              </Tooltip>
-            )}
+            {isChatEnabled() &&
+              patientId && ( // show reasoning tab only if patient has an ID and chat is enabled
+                <Tooltip label="Run clinical reasoning analysis.">
+                  <Tab className="tab-style">
+                    <HStack>
+                      <FaAtom />
+                      <Text>Reasoning</Text>
+                    </HStack>
+                  </Tab>
+                </Tooltip>
+              )}
           </TabList>
           <TabPanels>
             <TabPanel className="floating-main">
@@ -271,7 +272,7 @@ const Scribe = ({
               </TabPanel>
             )}
 
-            {patientId && (
+            {isChatEnabled() && patientId && (
               <TabPanel className="floating-main">
                 <ReasoningTab patientId={patientId} reasoning={reasoning} />
               </TabPanel>
