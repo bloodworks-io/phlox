@@ -44,31 +44,18 @@ async def process_transcription(
 
         total_fields = len(non_persistent_fields)
 
-        # Process only non-persistent fields concurrently and Summarise only if ambient
-        if is_ambient:
-            # Process all fields in a single LLM call
-            logger.info(f"Processing {total_fields} fields (Ambient Mode)...")
-            raw_results_dict = await process_all_fields_concurrently(
-                transcript_text, non_persistent_fields, patient_context
-            )
-            # Convert to list of TemplateResponse for compatibility with refinement step
-            raw_results = [
-                TemplateResponse(field_key=k, content=v)
-                for k, v in raw_results_dict.items()
-            ]
-            logger.info(f"Successfully summarised {total_fields} fields")
-        else:
-            # Direct Dictation: Skip summarization, pass raw text
-            logger.info(
-                f"Skipping summarization for {total_fields} fields (Direct Dictation)..."
-            )
-            # Wrap raw text in TemplateResponse to match the expected structure for the next step
-            raw_results = [
-                TemplateResponse(
-                    field_key=field.field_key, content=transcript_text
-                )
-                for field in non_persistent_fields
-            ]
+        # Process only non-persistent fields concurrently with mode-specific summarization
+        mode_label = "Ambient" if is_ambient else "Dictate"
+        logger.info(f"Processing {total_fields} fields ({mode_label} Mode)...")
+        raw_results_dict = await process_all_fields_concurrently(
+            transcript_text, non_persistent_fields, patient_context, is_ambient
+        )
+        # Convert to list of TemplateResponse for compatibility with refinement step
+        raw_results = [
+            TemplateResponse(field_key=k, content=v)
+            for k, v in raw_results_dict.items()
+        ]
+        logger.info(f"Successfully summarised {total_fields} fields")
 
         # Refine all results concurrently
         logger.info(f"Refining {total_fields} fields...")
@@ -106,6 +93,7 @@ async def process_all_fields_concurrently(
     transcript_text: str,
     fields: List[TemplateField],
     patient_context: Dict[str, str],
+    is_ambient: bool = True,
 ) -> Dict[str, str]:
     """
     Process all template fields in a single LLM call using structured output.
@@ -117,6 +105,7 @@ async def process_all_fields_concurrently(
         transcript_text: The transcribed text to process.
         fields: List of TemplateField objects to process.
         patient_context: Patient context (name, dob, gender, etc.).
+        is_ambient: Whether the transcript is from an ambient session (True) or direct dictation (False).
 
     Returns:
         Dict mapping field_key to formatted content string with bullet points.
@@ -145,7 +134,13 @@ INSTRUCTIONS: {(field.system_prompt or '').strip()}"""
 
             patient_context_str = _build_patient_context(patient_context)
 
-            system_content = f"""Extract relevant information for each of the following fields from the medical transcript.
+            # Use mode-specific intro for the system prompt
+            if is_ambient:
+                intro = "Extract relevant information for each of the following fields from the medical transcript."
+            else:
+                intro = "Extract and organize information from the clinician's direct dictation for each of the following fields."
+
+            system_content = f"""{intro}
 
 {patient_context_str}
 
