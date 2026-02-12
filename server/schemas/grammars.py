@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -46,6 +46,17 @@ class FieldResponse(BaseModel):
 
     key_points: List[str] = Field(
         description="Individual discussion points extracted from the transcript"
+    )
+
+
+class MultiFieldResponse(BaseModel):
+    """
+    Structured model for processing multiple template fields in a single LLM call.
+    Each field key maps to its extracted key points.
+    """
+
+    field_summaries: Dict[str, List[str]] = Field(
+        description="Dictionary mapping field_key to list of extracted discussion points"
     )
 
 

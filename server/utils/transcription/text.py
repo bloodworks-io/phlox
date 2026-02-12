@@ -7,10 +7,9 @@ import time
 from typing import Dict, List, Union
 
 from server.database.config.manager import config_manager
-from server.schemas.grammars import FieldResponse
+from server.schemas.grammars import MultiFieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
 from server.utils.llm_client.client import get_llm_client
-from server.utils.transcription.deduplication import deduplicate_field_contents
 from server.utils.transcription.refinement import refine_field_content
 
 logger = logging.getLogger(__name__)
@@ -47,16 +46,16 @@ async def process_transcription(
 
         # Process only non-persistent fields concurrently and Summarise only if ambient
         if is_ambient:
-            # Process only non-persistent fields concurrently
+            # Process all fields in a single LLM call
             logger.info(f"Processing {total_fields} fields (Ambient Mode)...")
-            raw_results = await asyncio.gather(
-                *[
-                    process_template_field(
-                        transcript_text, field, patient_context
-                    )
-                    for field in non_persistent_fields
-                ]
+            raw_results_dict = await process_all_fields_concurrently(
+                transcript_text, non_persistent_fields, patient_context
             )
+            # Convert to list of TemplateResponse for compatibility with refinement step
+            raw_results = [
+                TemplateResponse(field_key=k, content=v)
+                for k, v in raw_results_dict.items()
+            ]
             logger.info(f"Successfully summarised {total_fields} fields")
         else:
             # Direct Dictation: Skip summarization, pass raw text
@@ -91,12 +90,6 @@ async def process_transcription(
             )
         }
 
-        # Deduplicate across fields
-        logger.info("Running deduplication across fields...")
-        processed_fields = await deduplicate_field_contents(
-            processed_fields, non_persistent_fields
-        )
-
         process_duration = time.perf_counter() - process_start
 
         return {
@@ -109,10 +102,25 @@ async def process_transcription(
         raise
 
 
-async def process_template_field(
-    transcript_text: str, field: TemplateField, patient_context: Dict[str, str]
-) -> TemplateResponse:
-    """Process a single template field by extracting key points from the transcript text using a structured JSON output."""
+async def process_all_fields_concurrently(
+    transcript_text: str,
+    fields: List[TemplateField],
+    patient_context: Dict[str, str],
+) -> Dict[str, str]:
+    """
+    Process all template fields in a single LLM call using structured output.
+
+    Builds a unified prompt with all field system prompts and patient context,
+    then parses the multi-field response into a dictionary of formatted contents.
+
+    Args:
+        transcript_text: The transcribed text to process.
+        fields: List of TemplateField objects to process.
+        patient_context: Patient context (name, dob, gender, etc.).
+
+    Returns:
+        Dict mapping field_key to formatted content string with bullet points.
+    """
 
     max_retries = 1
 
@@ -123,43 +131,42 @@ async def process_template_field(
                 "general"
             ]
 
-            # Initialize the appropriate client based on config
             client = get_llm_client()
-
-            response_format = FieldResponse.model_json_schema()
-
+            response_format = MultiFieldResponse.model_json_schema()
             model_name = config["PRIMARY_MODEL"]
 
-            # Prepare user content
-            user_content = transcript_text
+            # Build the combined system prompt with all field instructions
+            field_instructions = []
+            for field in fields:
+                field_instruction = f"""FIELD: {field.field_key}
+NAME: {field.field_name}
+INSTRUCTIONS: {(field.system_prompt or '').strip()}"""
+                field_instructions.append(field_instruction)
 
-            json_schema_instruction = (
-                "Output MUST be ONLY valid JSON with top-level key "
-                '"key_points" (array of strings). Example: '
-                + json.dumps({"key_points": ["..."]})
-            )
+            patient_context_str = _build_patient_context(patient_context)
 
-            system_content_parts = [
-                (field.system_prompt or "").strip(),
-                _build_patient_context(patient_context).strip(),
-                json_schema_instruction,
-            ]
-            system_content = "\n\n".join(
-                part for part in system_content_parts if part
-            )
+            system_content = f"""Extract relevant information for each of the following fields from the medical transcript.
+
+{patient_context_str}
+
+For each field, extract only the most relevant discussion points. If no relevant information is found for a field, return an empty list for that field.
+
+FIELDS:
+{chr(10).join(field_instructions)}
+
+Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapping field_key to array of strings)."""
 
             request_body = [
                 {"role": "system", "content": system_content},
-                {"role": "user", "content": user_content},
+                {"role": "user", "content": transcript_text},
             ]
 
-            # Generate random seed for diversity in outputs
             random_seed = random.randint(0, 2**32 - 1)
 
-            # Setting temperature to 0 here makes the outputs semi-deterministic which is a problem if the user wants to reprocess because the initial output is not satisfactory; therefore, we set a low temperature (to ensure that decoding is not greedy) and set a random seed
             logger.info(
-                f"Summarising transcript for field {field.field_key} (attempt {attempt + 1}/{max_retries + 1})..."
+                f"Processing {len(fields)} fields in one call (attempt {attempt + 1}/{max_retries + 1})..."
             )
+
             response = await client.chat(
                 model=model_name,
                 messages=request_body,
@@ -167,38 +174,51 @@ async def process_template_field(
                 options={**options, "seed": random_seed},
             )
 
-            # Extract content from response based on provider type
-            content = response["message"]["content"]
-
-            # Import repair function
+            # Extract and repair JSON
             from server.utils.llm_client import repair_json
 
-            # Attempt to repair JSON before validation
+            content = response["message"]["content"]
             repaired_content = repair_json(content)
 
-            # Validate the repaired content
-            field_response = FieldResponse.model_validate_json(repaired_content)
-
-            # Convert key points into a nicely formatted string
-            formatted_content = "\n".join(
-                f"• {point.strip()}" for point in field_response.key_points
+            # Validate against schema
+            multi_field_response = MultiFieldResponse.model_validate_json(
+                repaired_content
             )
 
-            return TemplateResponse(
-                field_key=field.field_key, content=formatted_content
-            )
+            # Convert to dict of formatted strings (with bullet points)
+            formatted_results = {}
+            for field in fields:
+                key_points = multi_field_response.field_summaries.get(
+                    field.field_key, []
+                )
+                formatted_content = "\n".join(
+                    f"• {_capitalize_first_char(point.strip())}"
+                    for point in key_points
+                )
+                formatted_results[field.field_key] = formatted_content
+
+            logger.info(f"Successfully processed {len(fields)}")
+
+            return formatted_results
 
         except Exception as e:
             if attempt < max_retries:
                 logger.warning(
-                    f"Error processing template field {field.field_key} (attempt {attempt + 1}/{max_retries + 1}): {e}. Retrying..."
+                    f"Error processing all fields concurrently (attempt {attempt + 1}/{max_retries + 1}): {e}. Retrying..."
                 )
                 continue
             else:
                 logger.error(
-                    f"Error processing template field {field.field_key} after {max_retries + 1} attempts: {e}"
+                    f"Error processing all fields concurrently after {max_retries + 1} attempts: {e}"
                 )
                 raise
+
+
+def _capitalize_first_char(text: str) -> str:
+    """Capitalize the first character of a string."""
+    if not text:
+        return text
+    return text[0].upper() + text[1:] if text else text
 
 
 # Helps to clean up double spaces

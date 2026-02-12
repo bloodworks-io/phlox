@@ -194,6 +194,13 @@ def build_system_prompt(
     return system_prompt
 
 
+def _capitalize_first_char(text: str) -> str:
+    """Capitalize the first character of a string."""
+    if not text:
+        return text
+    return text[0].upper() + text[1:] if text else text
+
+
 def format_refined_response(
     response: dict, field: TemplateField, format_details: dict
 ) -> str:
@@ -204,7 +211,7 @@ def format_refined_response(
         narrative_response = NarrativeResponse.model_validate_json(
             response["message"]["content"]
         )
-        return narrative_response.narrative
+        return _capitalize_first_char(narrative_response.narrative)
 
     # Handle non-narrative formats
     refined_response = RefinedResponse.model_validate_json(
@@ -226,7 +233,9 @@ def _format_numbered_list(key_points: List[str]) -> str:
     for i, point in enumerate(key_points):
         # Strip any existing numbering
         cleaned_point = re.sub(r"^\d+\.\s*", "", point.strip())
-        formatted_key_points.append(f"{i+1}. {cleaned_point}")
+        formatted_key_points.append(
+            f"{i+1}. {_capitalize_first_char(cleaned_point)}"
+        )
     return "\n".join(formatted_key_points)
 
 
@@ -240,5 +249,7 @@ def _format_bulleted_list(key_points: List[str], field: TemplateField) -> str:
     for point in key_points:
         # Strip any existing bullets
         cleaned_point = re.sub(r"^[•\-\*]\s*", "", point.strip())
-        formatted_key_points.append(f"{bullet_char} {cleaned_point}")
+        formatted_key_points.append(
+            f"{bullet_char} {_capitalize_first_char(cleaned_point)}"
+        )
     return "\n".join(formatted_key_points)

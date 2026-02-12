@@ -43,10 +43,10 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
         ) == "local" and not config.get("WHISPER_BASE_URL")
 
         if is_local_whisper:
-            logger.debug("Using local whisper.cpp server for transcription")
+            logger.info("Using local whisper.cpp server for transcription")
             return await _transcribe_local_whisper(audio_buffer, config)
         else:
-            logger.debug("Using external API for transcription")
+            logger.info("Using external API for transcription")
             return await _transcribe_external_api(audio_buffer, config)
     except Exception as error:
         logger.error(f"Error in transcribe_audio function: {error}")
