@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   Button,
@@ -36,7 +36,7 @@ const LOADING_MESSAGES = [
   "Downloading more RAM...",
 ];
 
-const POLL_INTERVAL = 500; // ms
+const POLL_INTERVAL = 2000; // ms - increased to reduce CPU load
 const TIMEOUT = 30000; // 30 seconds
 
 const ServerStartupLoader = ({ onReady, onError }) => {
@@ -46,67 +46,88 @@ const ServerStartupLoader = ({ onReady, onError }) => {
   const [messageIndex, setMessageIndex] = useState(0);
   const [isTimedOut, setIsTimedOut] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [shouldPoll, setShouldPoll] = useState(true);
 
-  const pollServerStatus = useCallback(async () => {
-    const startTime = Date.now();
+  // Store callbacks and state in refs to avoid dependency issues
+  const onReadyRef = useRef(onReady);
+  const onErrorRef = useRef(onError);
+  const shouldPollRef = useRef(shouldPoll);
+  const isTimedOutRef = useRef(isTimedOut);
 
-    try {
-      const baseUrl = isTauri() ? await buildApiUrl("") : "";
+  // Keep refs in sync with state
+  useEffect(() => {
+    onReadyRef.current = onReady;
+    onErrorRef.current = onError;
+    shouldPollRef.current = shouldPoll;
+    isTimedOutRef.current = isTimedOut;
+  }, [onReady, onError, shouldPoll, isTimedOut]);
 
-      // Poll the /api/config/status endpoint
-      // Note: The status endpoint is at /api/config/status
-      const response = await fetch(`${baseUrl}/api/config/status`);
+  // Single consolidated useEffect for all intervals
+  // Note: We track shouldPoll/isTimedOut inside the interval callbacks
+  // rather than as dependencies to prevent interval recreation
+  useEffect(() => {
+    if (!shouldPoll) return;
 
-      if (response.ok) {
-        // Server is ready!
-        onReady();
-        return;
+    let elapsedInterval, pollInterval, messageInterval, timeoutId;
+
+    // Update elapsed time
+    elapsedInterval = setInterval(() => {
+      setElapsed((prev) => prev + POLL_INTERVAL);
+    }, POLL_INTERVAL);
+
+    // Poll server status - inline to avoid dependency issues
+    const pollServerStatusAsync = async () => {
+      // Check refs instead of state to avoid stale closures
+      if (shouldPollRef.current && !isTimedOutRef.current) {
+        try {
+          const baseUrl = isTauri() ? await buildApiUrl("") : "";
+          const response = await fetch(`${baseUrl}/api/config/status`, {
+            signal: AbortSignal.timeout(5000),
+          });
+          if (response.ok) {
+            shouldPollRef.current = false;
+            setShouldPoll(false);
+            onReadyRef.current();
+          }
+        } catch (error) {
+          // Server not ready yet, continue polling
+        }
       }
-    } catch (error) {
-      // Server not ready yet, continue polling
-    }
+    };
 
-    // Check timeout
-    if (Date.now() - startTime > TIMEOUT) {
+    // Initial poll
+    pollServerStatusAsync();
+
+    // Set up polling interval
+    pollInterval = setInterval(pollServerStatusAsync, POLL_INTERVAL);
+
+    // Cycle loading messages every 2 seconds
+    messageInterval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    }, 2000);
+
+    // Timeout after 30 seconds
+    timeoutId = setTimeout(() => {
+      shouldPollRef.current = false;
+      setShouldPoll(false);
       setIsTimedOut(true);
-      onError(new Error("Server startup timed out"));
-      return;
-    }
+      onErrorRef.current(new Error("Server startup timed out"));
+    }, TIMEOUT);
 
-    // Continue polling
-    setTimeout(pollServerStatus, POLL_INTERVAL);
-  }, [onReady, onError]);
-
-  useEffect(() => {
-    pollServerStatus();
-  }, [pollServerStatus]);
-
-  // Cycle through loading messages
-  useEffect(() => {
-    if (!isTimedOut) {
-      const interval = setInterval(() => {
-        setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-      }, 2000); // Change message every 2 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [isTimedOut]);
-
-  // Update elapsed time for timeout display
-  useEffect(() => {
-    if (!isTimedOut) {
-      const interval = setInterval(() => {
-        setElapsed((prev) => prev + POLL_INTERVAL);
-      }, POLL_INTERVAL);
-
-      return () => clearInterval(interval);
-    }
-  }, [isTimedOut]);
+    // Cleanup ALL intervals
+    return () => {
+      clearInterval(elapsedInterval);
+      clearInterval(pollInterval);
+      clearInterval(messageInterval);
+      clearTimeout(timeoutId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldPoll]);
 
   const handleRetry = () => {
     setIsTimedOut(false);
     setElapsed(0);
-    pollServerStatus();
+    setShouldPoll(true);
   };
 
   if (isTimedOut) {

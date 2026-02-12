@@ -19,6 +19,7 @@ import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
 import { encryptionApi } from "../../utils/api/encryptionApi";
+import { resetApiConfig } from "../../utils/helpers/apiConfig";
 
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
@@ -51,17 +52,22 @@ const EncryptionUnlock = ({ onComplete }) => {
       const hexPassphrase = await encryptionApi.unlock(passphrase);
 
       // Start the server with the hex passphrase
+      await invoke("start_server_command", { passphraseHex: hexPassphrase });
+      // Reset cached port so we get the new server port
+      resetApiConfig();
+
+      // Start llama and whisper services after server is up
+      // They will use the ports allocated by the Python server
       try {
-        await invoke("start_server_command", { passphraseHex: hexPassphrase });
-      } catch (serverError) {
-        console.error("Server start failed:", serverError);
-        toast({
-          title: "Server Warning",
-          description: serverError.toString(),
-          status: "warning",
-          duration: 5000,
-          isClosable: true,
-        });
+        await invoke("start_llama_service");
+      } catch (llamaError) {
+        console.warn("Llama service did not start (no model downloaded yet):", llamaError);
+      }
+
+      try {
+        await invoke("start_whisper_service");
+      } catch (whisperError) {
+        console.warn("Whisper service did not start (no model downloaded yet):", whisperError);
       }
 
       toast({
@@ -75,10 +81,17 @@ const EncryptionUnlock = ({ onComplete }) => {
     } catch (error) {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
+
+      // Determine if it's a passphrase error or server start error
+      const isPassphraseError = error.toString().includes("Failed to unlock") ||
+        error.toString().includes("incorrect") ||
+        error.toString().includes("Passphrase");
+
       toast({
-        title: "Incorrect Passphrase",
-        description:
-          "The passphrase you entered is incorrect. Please try again.",
+        title: isPassphraseError ? "Incorrect Passphrase" : "Server Failed to Start",
+        description: isPassphraseError
+          ? "The passphrase you entered is incorrect. Please try again."
+          : "The server could not start. This may be due to an incorrect passphrase.",
         status: "error",
         duration: 3000,
         isClosable: true,

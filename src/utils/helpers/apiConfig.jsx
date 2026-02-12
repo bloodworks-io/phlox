@@ -5,6 +5,9 @@ const isTauri = () => {
   return window.__TAURI__ !== undefined;
 };
 
+// Cache the server port to avoid repeated IPC calls
+let cachedServerPort = null;
+
 // Get the base URL for API calls
 export const getApiBaseUrl = async () => {
   if (!isTauri()) {
@@ -12,9 +15,14 @@ export const getApiBaseUrl = async () => {
     return "";
   }
 
-  // In Tauri environment, always get the current server port
+  // In Tauri environment, use cached port if available
+  if (cachedServerPort) {
+    return `http://localhost:${cachedServerPort}`;
+  }
+
   try {
     const serverPort = await invoke("get_server_port");
+    cachedServerPort = serverPort; // Cache the port
     return `http://localhost:${serverPort}`;
   } catch (error) {
     console.error("Failed to get server port from Tauri:", error);
@@ -29,9 +37,9 @@ export const buildApiUrl = async (endpoint) => {
   return `${baseUrl}${endpoint}`;
 };
 
-// Reset function is no longer needed since we don't cache
+// Reset the cached port (call this when server restarts)
 export const resetApiConfig = () => {
-  // No-op for backward compatibility
+  cachedServerPort = null;
 };
 
 export { isTauri };

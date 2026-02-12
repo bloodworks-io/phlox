@@ -24,6 +24,7 @@ import {
   encryptionApi,
   calculatePassphraseStrength,
 } from "../../utils/api/encryptionApi";
+import { resetApiConfig } from "../../utils/helpers/apiConfig";
 
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
@@ -77,6 +78,22 @@ const EncryptionSetup = ({ onComplete }) => {
       // Start the server with the hex passphrase
       try {
         await invoke("start_server_command", { passphraseHex: hexPassphrase });
+        // Reset cached port so we get the new server port
+        resetApiConfig();
+
+        // Start llama and whisper services after server is up
+        // They will use the ports allocated by the Python server
+        try {
+          await invoke("start_llama_service");
+        } catch (llamaError) {
+          console.warn("Llama service did not start (no model downloaded yet):", llamaError);
+        }
+
+        try {
+          await invoke("start_whisper_service");
+        } catch (whisperError) {
+          console.warn("Whisper service did not start (no model downloaded yet):", whisperError);
+        }
       } catch (serverError) {
         console.error("Server start failed:", serverError);
         toast({
