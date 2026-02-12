@@ -288,41 +288,93 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
 }
 
 /// Wait for the server to output its allocated ports via stdout
-pub fn wait_for_allocated_ports(child: &mut Child) -> Option<AllocatedPorts> {
+/// Also monitors stderr for specific error messages like "wrong key"
+pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, String> {
     use std::io::Read;
 
-    let stdout = child.stdout.as_mut()?;
-    let mut reader = std::io::BufReader::new(stdout);
+    let stdout = child.stdout.as_mut().ok_or("Failed to capture stdout")?;
+    let stderr = child.stderr.as_mut().ok_or("Failed to capture stderr")?;
+
+    let mut stdout_reader = std::io::BufReader::new(stdout);
+    let mut stderr_reader = std::io::BufReader::new(stderr);
 
     log::info!("Waiting for PORTS line from server stdout...");
 
     // Try to read for up to 10 seconds
     let start = std::time::Instant::now();
-    let mut buffer = Vec::new();
+    let mut stdout_buffer = Vec::new();
+    let mut stderr_buffer = Vec::new();
     let timeout = Duration::from_secs(10);
 
     loop {
         if start.elapsed() > timeout {
             log::warn!("Timeout waiting for PORTS line");
             log::warn!(
-                "Buffer content so far: {}",
-                String::from_utf8_lossy(&buffer)
+                "Stdout content: {}",
+                String::from_utf8_lossy(&stdout_buffer)
             );
-            return None;
+            log::warn!(
+                "Stderr content: {}",
+                String::from_utf8_lossy(&stderr_buffer)
+            );
+            return Err("Timeout waiting for server to start".to_string());
         }
 
-        // Read a byte
-        let mut byte = [0u8; 1];
-        match reader.read(&mut byte) {
+        // Check stderr for "wrong key" error message
+        let mut stderr_byte = [0u8; 1];
+        match stderr_reader.read(&mut stderr_byte) {
             Ok(0) => {
-                // EOF
-                log::warn!("EOF reached while waiting for PORTS line");
-                log::warn!("Buffer content: {}", String::from_utf8_lossy(&buffer));
-                return None;
+                // EOF on stderr - process may have exited
+                let stderr_content = String::from_utf8_lossy(&stderr_buffer);
+                if stderr_content.contains("Wrong encryption key?")
+                    || stderr_content.contains("wrong key?")
+                    || stderr_content.contains("Cannot decrypt database")
+                {
+                    return Err("Wrong encryption key".to_string());
+                }
+                // If stderr ended but no error detected, continue reading stdout
             }
             Ok(_) => {
-                buffer.push(byte[0]);
-                let content = String::from_utf8_lossy(&buffer);
+                stderr_buffer.push(stderr_byte[0]);
+                let stderr_content = String::from_utf8_lossy(&stderr_buffer);
+
+                // Check for wrong key patterns
+                if stderr_content.contains("Wrong encryption key?")
+                    || stderr_content.contains("wrong key?")
+                    || stderr_content.contains("Cannot decrypt database")
+                {
+                    log::error!("Detected wrong encryption key in stderr");
+                    return Err("Wrong encryption key".to_string());
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                // No data available on stderr, will try stdout
+            }
+            Err(e) => {
+                log::error!("Error reading from server stderr: {}", e);
+                // Continue anyway, might still get data on stdout
+            }
+        }
+
+        // Read stdout for PORTS line
+        let mut stdout_byte = [0u8; 1];
+        match stdout_reader.read(&mut stdout_byte) {
+            Ok(0) => {
+                // EOF on stdout
+                log::warn!("EOF reached while waiting for PORTS line");
+                log::warn!(
+                    "Stdout content: {}",
+                    String::from_utf8_lossy(&stdout_buffer)
+                );
+                log::warn!(
+                    "Stderr content: {}",
+                    String::from_utf8_lossy(&stderr_buffer)
+                );
+                return Err("Server exited before sending PORTS line".to_string());
+            }
+            Ok(_) => {
+                stdout_buffer.push(stdout_byte[0]);
+                let content = String::from_utf8_lossy(&stdout_buffer);
 
                 // Check if we have a complete line with PORTS
                 if let Some(newline_pos) = content.find('\n') {
@@ -330,19 +382,28 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Option<AllocatedPorts> {
                     log::debug!("Read line from stdout: {}", line);
                     if line.trim().starts_with("PORTS:") {
                         let trimmed = line.trim();
-                        let parts = trimmed.strip_prefix("PORTS:")?;
+                        let parts = trimmed.strip_prefix("PORTS:").ok_or("Invalid PORTS line")?;
                         let ports: Vec<&str> = parts.split(',').collect();
                         if ports.len() == 3 {
-                            let server = ports[0].parse::<u16>().ok()?;
-                            let llama = ports[1].parse::<u16>().ok()?;
-                            let whisper = ports[2].parse::<u16>().ok()?;
+                            let server = ports[0]
+                                .trim()
+                                .parse::<u16>()
+                                .map_err(|e| format!("Failed to parse server port: {}", e))?;
+                            let llama = ports[1]
+                                .trim()
+                                .parse::<u16>()
+                                .map_err(|e| format!("Failed to parse llama port: {}", e))?;
+                            let whisper = ports[2]
+                                .trim()
+                                .parse::<u16>()
+                                .map_err(|e| format!("Failed to parse whisper port: {}", e))?;
                             log::info!(
                                 "Parsed allocated ports: server={}, llama={}, whisper={}",
                                 server,
                                 llama,
                                 whisper
                             );
-                            return Some(AllocatedPorts {
+                            return Ok(AllocatedPorts {
                                 server,
                                 llama,
                                 whisper,
@@ -352,7 +413,7 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Option<AllocatedPorts> {
                         }
                     }
                     // Remove this line from buffer and continue
-                    buffer = content[newline_pos + 1..].as_bytes().to_vec();
+                    stdout_buffer = content[newline_pos + 1..].as_bytes().to_vec();
                 }
             }
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -361,7 +422,7 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Option<AllocatedPorts> {
             }
             Err(e) => {
                 log::error!("Error reading from server stdout: {}", e);
-                return None;
+                return Err(format!("Error reading from server stdout: {}", e));
             }
         }
     }
@@ -385,7 +446,7 @@ pub fn start_server(passphrase: &str) -> Result<(ManagedProcess, AllocatedPorts)
         cmd.process_group(0);
     }
 
-    cmd.stderr(std::process::Stdio::inherit());
+    cmd.stderr(std::process::Stdio::piped());
 
     let mut child = cmd
         .spawn()
@@ -400,9 +461,8 @@ pub fn start_server(passphrase: &str) -> Result<(ManagedProcess, AllocatedPorts)
         drop(stdin);
     }
 
-    // Wait for PORTS line from stdout
-    let ports =
-        wait_for_allocated_ports(&mut child).ok_or("Failed to read allocated ports from server")?;
+    // Wait for PORTS line from stdout (also checks stderr for wrong key error)
+    let ports = wait_for_allocated_ports(&mut child)?;
 
     let pid = child.id();
     log::info!("Server started with PID: {}", pid);

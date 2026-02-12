@@ -421,7 +421,7 @@ pub fn get_encryption_status() -> serde_json::Value {
 
 /// Start the Phlox server via process manager (called from frontend after encryption setup/unlock)
 #[tauri::command]
-pub fn start_server_command(
+pub async fn start_server_command(
     _app_handle: tauri::AppHandle,
     passphrase_hex: String,
 ) -> Result<String, String> {
