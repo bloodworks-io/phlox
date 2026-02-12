@@ -245,9 +245,11 @@ def get_llm_client():
     if provider_type == "local":
         # For local provider, use llama-server via OpenAI-compatible API
         # llama-server provides /v1/chat/completions endpoint
+        from server.utils.allocated_ports import get_llama_port
+
         return AsyncLLMClient(
             provider_type="openai",
-            base_url="http://127.0.0.1:8082",  # llama-server port
+            base_url=f"http://127.0.0.1:{get_llama_port()}",  # llama-server port
             api_key="not-needed",
         )
     else:

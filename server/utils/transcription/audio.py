@@ -1,7 +1,5 @@
 import logging
-import os
 import re
-import sys
 import time
 from typing import Dict, Union
 
@@ -11,30 +9,11 @@ from server.database.config.manager import config_manager
 logger = logging.getLogger(__name__)
 
 
-def _get_data_dir():
-    """Get platform-specific data directory for reading port files."""
-    if os.name == "nt":  # Windows
-        return os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
-    elif sys.platform == "darwin":  # macOS
-        return os.path.expanduser("~/Library/Application Support")
-    else:  # Linux and others
-        return os.environ.get(
-            "XDG_DATA_HOME", os.path.expanduser("~/.local/share")
-        )
-
-
 def _get_whisper_port() -> str:
-    """Read the whisper server port from the port file."""
-    data_dir = _get_data_dir()
-    if data_dir:
-        port_file = os.path.join(data_dir, "phlox", "whisper_port.txt")
-        if os.path.exists(port_file):
-            try:
-                with open(port_file, "r") as f:
-                    return f.read().strip()
-            except Exception as e:
-                logger.warning(f"Failed to read whisper port file: {e}")
-    return "8081"  # Default fallback
+    """Get the whisper server port from global state."""
+    from server.utils.allocated_ports import get_whisper_port
+
+    return str(get_whisper_port())
 
 
 async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:

@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
 
 
 # Initialize config_manager and run migrations
-logger.info("Initializing database and running migrations...")
+logger.info("Initializing DB and running migrations...")
 from server.database.config.manager import config_manager
 
 logger.info("Database initialized")
@@ -171,16 +171,24 @@ def find_free_port():
 def start_server_for_desktop():
     """Start server with dynamic port for desktop app"""
     logger.info(f"Desktop environment detected")
-    port = find_free_port()
 
-    # Write port to a file that Tauri can read
-    port_file = DATA_DIR / "server_port.txt"
-    port_file.write_text(str(port))
+    # Find 3 ports - one for each service
+    server_port = find_free_port()
+    llama_port = find_free_port()
+    whisper_port = find_free_port()
+
+    # Store in global state for other modules to access
+    from server.utils.allocated_ports import set_ports
+
+    set_ports(server_port, llama_port, whisper_port)
+
+    # Write all ports to stdout so process manager can read them
+    print(f"PORTS:{server_port},{llama_port},{whisper_port}", flush=True)
 
     config = uvicorn.Config(
         app,
         host="127.0.0.1",  # Only localhost
-        port=port,
+        port=server_port,
         timeout_keep_alive=300,
         timeout_graceful_shutdown=10,
         loop="asyncio",
