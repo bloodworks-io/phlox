@@ -46,6 +46,12 @@ echo "Copying dist/server directory to ../src-tauri/"
 rm -rf "../src-tauri/server_dist"
 cp -r "dist/server" "../src-tauri/server_dist"
 
+# Also copy to target/debug for dev mode (tauri dev)
+echo "Copying to target/debug for development..."
+mkdir -p ../src-tauri/target/debug
+rm -rf ../src-tauri/target/debug/server_dist
+cp -r "dist/server" "../src-tauri/target/debug/server_dist"
+
 # Create a wrapper script that Tauri can execute
 cat > "../src-tauri/binaries/$TARGET" << 'EOF'
 #!/bin/bash
