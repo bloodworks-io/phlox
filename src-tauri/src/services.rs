@@ -303,8 +303,8 @@ pub fn start_server(
 
     let mut cmd = Command::new(&server_path);
 
-    // Inject the encryption key as environment variable
-    cmd.env("DB_ENCRYPTION_KEY", passphrase_hex);
+    // Pipe passphrase to stdin instead of environment variable for better security
+    cmd.stdin(std::process::Stdio::piped());
 
     #[cfg(unix)]
     {
@@ -315,9 +315,18 @@ pub fn start_server(
     cmd.stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit());
 
-    let child = cmd
+    let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to spawn server process: {}", e))?;
+
+    // Write passphrase to stdin and close the pipe
+    if let Some(mut stdin) = child.stdin.take() {
+        use std::io::Write;
+        writeln!(stdin, "{}", passphrase_hex)
+            .map_err(|e| format!("Failed to write passphrase to stdin: {}", e))?;
+        // Drop stdin to signal EOF and prevent further writes
+        drop(stdin);
+    }
 
     let pid = child.id();
     log::info!("Server started with PID: {}", pid);

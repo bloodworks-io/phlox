@@ -1,23 +1,26 @@
 mod commands;
 mod encryption;
+mod pm_client;
 mod process;
 mod services;
 
 use log::LevelFilter;
 use std::thread;
-use tauri::Manager;
+use std::time::Duration;
+use tauri::{Emitter, Manager};
 use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{
     change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
     get_service_status, get_system_specs, has_database, has_encryption_setup, has_keychain_entry,
-    restart_llama, restart_whisper, setup_encryption, start_server_command, unlock_with_passphrase,
+    restart_llama, restart_whisper, setup_encryption, start_llama_service, start_server_command,
+    start_whisper_service, unlock_with_passphrase, CachedServiceStatus,
 };
+use pm_client::ProcessManagerClient;
 use process::{
-    cleanup_stale_files, kill_all_processes, monitor_processes, LlamaProcess, RestartCoordinator,
-    ServerProcess, WhisperProcess,
+    cleanup_stale_files, kill_all_processes, LlamaProcess, RestartCoordinator, ServerProcess,
+    WhisperProcess,
 };
-use services::{start_llama, start_whisper, wait_for_service};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -40,6 +43,7 @@ pub fn run() {
         .manage(LlamaProcess(std::sync::Mutex::new(None)))
         .manage(WhisperProcess(std::sync::Mutex::new(None)))
         .manage(RestartCoordinator::default())
+        .manage(CachedServiceStatus(std::sync::Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             commands::get_server_port,
             commands::get_llm_port,
@@ -48,6 +52,8 @@ pub fn run() {
             get_system_specs,
             restart_whisper,
             restart_llama,
+            start_llama_service,
+            start_whisper_service,
             convert_audio_to_wav,
             start_server_command,
             // Encryption commands
@@ -90,83 +96,170 @@ pub fn run() {
             let app_handle = app.handle().clone();
             log::info!("App setup started");
 
-            // Clean up any existing processes and files
+            // Clean up any existing processes and files from previous runs
             kill_all_processes();
             cleanup_stale_files();
 
-            // Start Llama (optional - may fail if no model downloaded)
-            let llama_started = start_llama().is_ok();
-
-            if llama_started {
-                log::info!("Llama server started successfully");
-            } else {
-                log::warn!("Llama server did not start (no model downloaded yet - this is OK)");
+            // Launch the process manager
+            log::info!("Launching process manager...");
+            if let Err(e) = launch_process_manager() {
+                log::error!("Failed to launch process manager: {}", e);
+                // Continue anyway - we'll show an error to the user
             }
 
-            // Start the rest of the app regardless of Llama status
+            // Wait for process manager socket to be ready
+            let pm_ready = wait_for_process_manager(Duration::from_secs(5));
+
+            if !pm_ready {
+                log::error!("Process manager failed to start. This is a critical error.");
+                // We could emit an event to the frontend here to show an error
+            } else {
+                log::info!("Process manager is ready");
+                // Llama and whisper will be started after the Python server is up
+                // and has allocated the ports (triggered by frontend)
+            }
+
+            // Spawn a thread to monitor PM health
+            let app_handle_for_monitor = app_handle.clone();
             thread::spawn(move || {
-                // If Llama started, wait for it to be ready
-                if llama_started {
-                    if !wait_for_service("Llama", "8082", 30) {
-                        log::warn!("Llama server did not become ready, but continuing...");
-                    }
-                }
-
-                // Start Whisper server (optional - may fail if no model)
-                let whisper_started = start_whisper().is_ok();
-
-                if whisper_started {
-                    log::info!("Whisper server started successfully");
-                } else {
-                    log::warn!(
-                        "Whisper server did not start (no model downloaded yet - this is OK)"
-                    );
-                }
-
-                // Start monitoring all processes (server will be started by frontend after encryption)
-                monitor_processes(app_handle.clone(), whisper_started);
+                monitor_process_manager(app_handle_for_monitor);
             });
 
             Ok(())
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
-                log::info!("Window close requested. Cleaning up all processes.");
+                log::info!("Window close requested. Shutting down process manager.");
 
-                let app_handle = window.app_handle();
-
-                // Kill tracked processes
-                if let Some(server_state) = app_handle.try_state::<ServerProcess>() {
-                    if let Ok(mut process) = server_state.0.lock() {
-                        if let Some(mut child) = process.take() {
-                            let _ = child.kill();
-                        }
-                    }
+                // Tell PM to shutdown - it will clean up all processes
+                if let Ok(client) = ProcessManagerClient::new() {
+                    let _ = client.shutdown();
                 }
 
-                if let Some(llama_state) = app_handle.try_state::<LlamaProcess>() {
-                    if let Ok(mut process) = llama_state.0.lock() {
-                        if let Some(mut child) = process.take() {
-                            let _ = child.kill();
-                        }
-                    }
-                }
-
-                if let Some(whisper_state) = app_handle.try_state::<WhisperProcess>() {
-                    if let Ok(mut process) = whisper_state.0.lock() {
-                        if let Some(mut child) = process.take() {
-                            let _ = child.kill();
-                        }
-                    }
-                }
-
-                // Clean up everything
-                kill_all_processes();
+                // Clean up local files
                 cleanup_stale_files();
             }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Launch the process manager as a child process
+fn launch_process_manager() -> Result<(), Box<dyn std::error::Error>> {
+    use std::process::Command;
+
+    let current_exe = std::env::current_exe()?;
+    let exe_dir = current_exe
+        .parent()
+        .ok_or("Failed to get executable directory")?;
+
+    // Look for phlox-pm in the same directory
+    let pm_path = exe_dir.join("phlox-pm");
+
+    #[cfg(target_os = "windows")]
+    let pm_path = pm_path.with_extension("exe");
+
+    log::info!("Launching process manager from: {:?}", pm_path);
+
+    // Check if PM binary exists
+    if !pm_path.exists() {
+        // For development, try to find it in the target directory
+        // Check both debug and release paths
+        let dev_pm_paths = [
+            exe_dir
+                .parent()
+                .and_then(|p| p.parent())
+                .map(|p| p.join("target").join("debug").join("phlox-pm")),
+            exe_dir
+                .parent()
+                .and_then(|p| p.parent())
+                .map(|p| p.join("target").join("release").join("phlox-pm")),
+        ];
+
+        for dev_path in dev_pm_paths.iter().filter_map(|p| p.as_ref()) {
+            if dev_path.exists() {
+                log::info!("Using dev PM path: {:?}", dev_path);
+                return spawn_pm(dev_path);
+            }
+        }
+
+        return Err(format!("Process manager binary not found at {:?}", pm_path).into());
+    }
+
+    spawn_pm(&pm_path)
+}
+
+#[cfg(unix)]
+fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    use std::os::unix::process::CommandExt;
+    use std::process::Command;
+
+    Command::new(path).process_group(0).spawn()?;
+
+    Ok(())
+}
+
+#[cfg(windows)]
+fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    use std::process::Command;
+
+    Command::new(path).spawn()?;
+
+    Ok(())
+}
+
+/// Wait for the process manager socket to be ready
+fn wait_for_process_manager(timeout: Duration) -> bool {
+    let start = std::time::Instant::now();
+    let socket_path = pm_client::socket_path();
+
+    while start.elapsed() < timeout {
+        // Just check if the socket file exists and we can connect - don't ping yet
+        // This avoids blocking the PM server with health checks during startup
+        if socket_path.exists() {
+            // Try to connect once to verify it's actually accepting connections
+            if std::os::unix::net::UnixStream::connect(&socket_path).is_ok() {
+                return true;
+            }
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+
+    false
+}
+
+/// Monitor the process manager and emit an event if it dies
+fn monitor_process_manager(app_handle: tauri::AppHandle) {
+    let mut consecutive_failures = 0;
+    const MAX_FAILURES: u32 = 3; // Allow some transient failures
+
+    loop {
+        // Check every 30 seconds instead of 10 - less aggressive
+        std::thread::sleep(Duration::from_secs(30));
+
+        if !ProcessManagerClient::is_alive() {
+            consecutive_failures += 1;
+            log::warn!(
+                "Process manager health check failed (attempt {}/{})",
+                consecutive_failures,
+                MAX_FAILURES
+            );
+
+            if consecutive_failures >= MAX_FAILURES {
+                log::error!("Process manager is not responding after multiple checks!");
+                log::error!("Please restart the application to restore functionality.");
+
+                // Emit an event to the frontend
+                let _ = app_handle.emit("process-manager-died", ());
+
+                // We can't recover from this, so stop monitoring
+                break;
+            }
+        } else {
+            // Reset on success
+            consecutive_failures = 0;
+        }
+    }
 }
 
 fn main() {

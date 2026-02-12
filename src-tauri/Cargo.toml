@@ -1,3 +1,7 @@
+[workspace]
+members = ["process-manager"]
+resolver = "2"
+
 [package]
 name = "phlox"
 version = "0.7.1"
@@ -11,6 +15,7 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+phlox-pm = { path = "process-manager" }
 tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 tauri-plugin-fs = "2"

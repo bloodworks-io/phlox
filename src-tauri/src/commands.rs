@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use std::sync::Mutex;
 use sysinfo::System;
-use tauri::Manager;
 
 use crate::encryption::{self, EncryptionError};
-use crate::process::{LlamaProcess, RestartCoordinator, ServerProcess, WhisperProcess};
-use crate::services;
+use crate::pm_client::{ProcessManagerClient, ServiceStatusData};
+
+/// Cached service status from PM
+pub struct CachedServiceStatus(pub Mutex<Option<ServiceStatusData>>);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AppleSiliconInfo {
@@ -58,166 +60,163 @@ fn parse_apple_silicon(cpu_brand: &str) -> Option<AppleSiliconInfo> {
     })
 }
 
-#[tauri::command]
-pub fn get_server_port() -> String {
-    if let Some(data_dir) = dirs::data_dir() {
-        let port_file = data_dir.join("phlox").join("server_port.txt");
-        if let Ok(port) = std::fs::read_to_string(&port_file) {
-            return port.trim().to_string();
+/// Refresh cached status from PM
+fn refresh_cached_status() -> Option<ServiceStatusData> {
+    match ProcessManagerClient::new() {
+        Ok(client) => match client.status() {
+            Ok(status) => Some(status),
+            Err(e) => {
+                log::warn!("Failed to get status from PM: {}", e);
+                None
+            }
+        },
+        Err(_) => None,
+    }
+}
+
+/// Get a cached port value
+fn get_cached_port(service: &str) -> String {
+    if let Some(status) = refresh_cached_status() {
+        let info = match service {
+            "llama" => status.llama,
+            "whisper" => status.whisper,
+            "server" => status.server,
+            _ => None,
+        };
+        if let Some(info) = info {
+            return info.port.to_string();
         }
     }
-    "5000".to_string()
+    // Fallback to defaults
+    match service {
+        "llama" => "8082".to_string(),
+        "whisper" => "8081".to_string(),
+        "server" => "5000".to_string(),
+        _ => "0".to_string(),
+    }
+}
+
+#[tauri::command]
+pub fn get_server_port() -> String {
+    get_cached_port("server")
 }
 
 #[tauri::command]
 pub fn get_llm_port() -> String {
-    if let Some(data_dir) = dirs::data_dir() {
-        let port_file = data_dir.join("phlox").join("llm_port.txt");
-        if let Ok(port) = std::fs::read_to_string(&port_file) {
-            return port.trim().to_string();
-        }
-    }
-    "8082".to_string()
+    get_cached_port("llama")
 }
 
 #[tauri::command]
 pub fn get_whisper_port() -> String {
-    if let Some(data_dir) = dirs::data_dir() {
-        let port_file = data_dir.join("phlox").join("whisper_port.txt");
-        if let Ok(port) = std::fs::read_to_string(&port_file) {
-            return port.trim().to_string();
-        }
-    }
-    "8081".to_string()
+    get_cached_port("whisper")
 }
 
 #[tauri::command]
-pub fn get_service_status(
-    server_state: tauri::State<ServerProcess>,
-    llama_state: tauri::State<LlamaProcess>,
-    whisper_state: tauri::State<WhisperProcess>,
-) -> serde_json::Value {
-    let server_running = server_state.0.lock().map(|g| g.is_some()).unwrap_or(false);
-    let llama_running = llama_state.0.lock().map(|g| g.is_some()).unwrap_or(false);
-    let whisper_running = whisper_state.0.lock().map(|g| g.is_some()).unwrap_or(false);
+pub fn get_service_status(cached_status: tauri::State<CachedServiceStatus>) -> serde_json::Value {
+    // Refresh and cache the status
+    if let Some(status) = refresh_cached_status() {
+        *cached_status.0.lock().unwrap() = Some(status.clone());
 
-    serde_json::json!({
-        "server_running": server_running,
-        "llama_running": llama_running,
-        "whisper_running": whisper_running,
-        "server_port": get_server_port(),
-        "llm_port": get_llm_port(),
-        "whisper_port": get_whisper_port()
-    })
+        serde_json::json!({
+            "server_running": status.server.as_ref().map(|s| s.running).unwrap_or(false),
+            "llama_running": status.llama.as_ref().map(|s| s.running).unwrap_or(false),
+            "whisper_running": status.whisper.as_ref().map(|s| s.running).unwrap_or(false),
+            "server_port": status.server.as_ref().map(|s| s.port).unwrap_or(5000),
+            "llm_port": status.llama.as_ref().map(|s| s.port).unwrap_or(8082),
+            "whisper_port": status.whisper.as_ref().map(|s| s.port).unwrap_or(8081)
+        })
+    } else {
+        // PM not available, return defaults
+        serde_json::json!({
+            "server_running": false,
+            "llama_running": false,
+            "whisper_running": false,
+            "server_port": "5000",
+            "llm_port": "8082",
+            "whisper_port": "8081"
+        })
+    }
 }
 
 #[tauri::command]
-pub fn restart_whisper(app_handle: tauri::AppHandle) -> Result<String, String> {
-    log::info!("Restarting whisper-server...");
+pub fn restart_whisper(_app_handle: tauri::AppHandle) -> Result<String, String> {
+    log::info!("Restarting whisper-server via PM...");
 
-    let coordinator = app_handle.state::<RestartCoordinator>();
+    let client = ProcessManagerClient::new()
+        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
 
-    // Set restarting flag to prevent monitor loop interference
-    coordinator
-        .whisper_restarting
-        .store(true, std::sync::atomic::Ordering::SeqCst);
+    // First stop if running
+    let _ = client.stop("whisper");
 
-    // Kill existing whisper process if running
-    if let Ok(mut process_guard) = app_handle.state::<WhisperProcess>().0.lock() {
-        if let Some(mut child) = process_guard.take() {
-            let pid = child.id();
-            log::info!("Killing existing whisper process PID: {}", pid);
-            let _ = child.kill();
-            let _ = child.wait(); // Wait for actual termination
-        }
-    }
-
-    // Clean up PID file
-    if let Some(data_dir) = dirs::data_dir() {
-        let pid_file = data_dir.join("phlox").join("whisper.pid");
-        if pid_file.exists() {
-            let _ = std::fs::remove_file(&pid_file);
-        }
-    }
-
-    // Start new whisper process
-    match services::start_whisper() {
-        Ok(new_child) => {
-            let pid = new_child.id();
-            *app_handle.state::<WhisperProcess>().0.lock().unwrap() = Some(new_child);
-            log::info!("Whisper restarted with PID: {}", pid);
-
-            // Clear restarting flag
-            coordinator
-                .whisper_restarting
-                .store(false, std::sync::atomic::Ordering::SeqCst);
-
+    // Then start
+    match client.start_whisper(None) {
+        Ok((pid, port)) => {
+            log::info!("Whisper restarted with PID: {}, port: {}", pid, port);
             Ok(format!("Whisper server restarted with PID: {}", pid))
         }
         Err(e) => {
             log::error!("Failed to restart Whisper: {}", e);
-
-            // Clear restarting flag even on error
-            coordinator
-                .whisper_restarting
-                .store(false, std::sync::atomic::Ordering::SeqCst);
-
             Err(format!("Failed to restart Whisper: {}", e))
         }
     }
 }
 
 #[tauri::command]
-pub fn restart_llama(app_handle: tauri::AppHandle) -> Result<String, String> {
-    log::info!("Restarting llama-server...");
+pub fn start_llama_service() -> Result<String, String> {
+    log::info!("Starting llama-server via PM...");
 
-    let coordinator = app_handle.state::<RestartCoordinator>();
+    let client = ProcessManagerClient::new()
+        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
 
-    // Set restarting flag to prevent monitor loop interference
-    coordinator
-        .llama_restarting
-        .store(true, std::sync::atomic::Ordering::SeqCst);
-
-    // Kill existing llama process if running
-    if let Ok(mut process_guard) = app_handle.state::<LlamaProcess>().0.lock() {
-        if let Some(mut child) = process_guard.take() {
-            let pid = child.id();
-            log::info!("Killing existing llama process PID: {}", pid);
-            let _ = child.kill();
-            let _ = child.wait(); // Wait for actual termination
+    match client.start_llama(None) {
+        Ok((pid, port)) => {
+            log::info!("Llama started with PID: {}, port: {}", pid, port);
+            Ok(format!("Llama server started with PID: {}", pid))
+        }
+        Err(e) => {
+            log::error!("Failed to start Llama: {}", e);
+            Err(format!("Failed to start Llama: {}", e))
         }
     }
+}
 
-    // Clean up PID file
-    if let Some(data_dir) = dirs::data_dir() {
-        let pid_file = data_dir.join("phlox").join("llama.pid");
-        if pid_file.exists() {
-            let _ = std::fs::remove_file(&pid_file);
+#[tauri::command]
+pub fn start_whisper_service() -> Result<String, String> {
+    log::info!("Starting whisper-server via PM...");
+
+    let client = ProcessManagerClient::new()
+        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
+
+    match client.start_whisper(None) {
+        Ok((pid, port)) => {
+            log::info!("Whisper started with PID: {}, port: {}", pid, port);
+            Ok(format!("Whisper server started with PID: {}", pid))
+        }
+        Err(e) => {
+            log::error!("Failed to start Whisper: {}", e);
+            Err(format!("Failed to start Whisper: {}", e))
         }
     }
+}
 
-    // Start new llama process
-    match services::start_llama() {
-        Ok(new_child) => {
-            let pid = new_child.id();
-            *app_handle.state::<LlamaProcess>().0.lock().unwrap() = Some(new_child);
-            log::info!("Llama restarted with PID: {}", pid);
+#[tauri::command]
+pub fn restart_llama(_app_handle: tauri::AppHandle) -> Result<String, String> {
+    log::info!("Restarting llama-server via PM...");
 
-            // Clear restarting flag
-            coordinator
-                .llama_restarting
-                .store(false, std::sync::atomic::Ordering::SeqCst);
+    let client = ProcessManagerClient::new()
+        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
 
+    // First stop if running
+    let _ = client.stop("llama");
+
+    // Then start
+    match client.start_llama(None) {
+        Ok((pid, port)) => {
+            log::info!("Llama restarted with PID: {}, port: {}", pid, port);
             Ok(format!("Llama server restarted with PID: {}", pid))
         }
         Err(e) => {
             log::error!("Failed to restart Llama: {}", e);
-
-            // Clear restarting flag even on error
-            coordinator
-                .llama_restarting
-                .store(false, std::sync::atomic::Ordering::SeqCst);
-
             Err(format!("Failed to restart Llama: {}", e))
         }
     }
@@ -420,26 +419,34 @@ pub fn get_encryption_status() -> serde_json::Value {
     })
 }
 
-/// Start the Phlox server (called from frontend after encryption setup/unlock)
+/// Start the Phlox server via process manager (called from frontend after encryption setup/unlock)
 #[tauri::command]
 pub fn start_server_command(
-    app_handle: tauri::AppHandle,
+    _app_handle: tauri::AppHandle,
     passphrase_hex: String,
 ) -> Result<String, String> {
     log::info!("start_server_command called from frontend");
 
-    match services::start_server(app_handle.clone(), passphrase_hex) {
-        Ok(server_child) => {
-            let server_pid = server_child.id();
-            *app_handle.state::<ServerProcess>().0.lock().unwrap() = Some(server_child);
-            log::info!("Server started with PID: {}", server_pid);
+    let client = ProcessManagerClient::new()
+        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
+
+    match client.start_server(passphrase_hex) {
+        Ok((pid, server_port, llama_port, whisper_port)) => {
+            log::info!(
+                "Server started with PID: {}, ports: server={}, llama={}, whisper={}",
+                pid,
+                server_port,
+                llama_port,
+                whisper_port
+            );
 
             // Wait for server to be ready in background
             std::thread::spawn(move || {
-                services::wait_for_server();
+                std::thread::sleep(std::time::Duration::from_secs(2));
+                log::info!("Server should be ready now");
             });
 
-            Ok(format!("Server started with PID: {}", server_pid))
+            Ok(format!("Server started with PID: {}", pid))
         }
         Err(e) => {
             log::error!("Failed to start server: {}", e);
