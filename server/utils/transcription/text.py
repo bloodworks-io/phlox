@@ -10,6 +10,7 @@ from server.database.config.manager import config_manager
 from server.schemas.grammars import FieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
 from server.utils.llm_client.client import get_llm_client
+from server.utils.transcription.deduplication import deduplicate_field_contents
 from server.utils.transcription.refinement import refine_field_content
 
 logger = logging.getLogger(__name__)
@@ -89,6 +90,12 @@ async def process_transcription(
                 non_persistent_fields, refined_results
             )
         }
+
+        # Deduplicate across fields
+        logger.info("Running deduplication across fields...")
+        processed_fields = await deduplicate_field_contents(
+            processed_fields, non_persistent_fields
+        )
 
         process_duration = time.perf_counter() - process_start
 
