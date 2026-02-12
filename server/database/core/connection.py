@@ -95,10 +95,24 @@ class PatientDatabase:
         Args:
             db_dir: Directory path for database files
         """
+
+        if self._initialized:
+            return
+
         self.db_dir = db_dir
         self.encryption_key = None
 
-        # Read from stdin
+        # Set up database name and path first (needed for error handling)
+        self.is_test = os.environ.get("TESTING", "False").lower() == "true"
+        self.db_name = (
+            "test_phlox_database.sqlite"
+            if self.is_test
+            else "phlox_database.sqlite"
+        )
+        self.db_path = os.path.join(self.db_dir, self.db_name)
+
+        # Priority 1: Read from stdin (for desktop app - keeps key out of env vars)
+        # Use select to check if stdin has data without blocking
         import select
         import sys
 
@@ -107,7 +121,7 @@ class PatientDatabase:
             if self.encryption_key:
                 logging.info("Using encryption key from stdin")
 
-        # Try secrets file
+        # Priority 2: Try Podman secret file (for Docker deployments)
         if not self.encryption_key:
             secret_file = "/run/secrets/db_encryption_key"
             if os.path.exists(secret_file):
@@ -118,7 +132,7 @@ class PatientDatabase:
                 except Exception as e:
                     logging.warning(f"Failed to read secret file: {e}")
 
-        # Fallback to env
+        # Priority 3: Fallback to environment variable (for dev/testing)
         if not self.encryption_key:
             self.encryption_key = os.environ.get("DB_ENCRYPTION_KEY")
             if self.encryption_key:
@@ -126,8 +140,7 @@ class PatientDatabase:
 
         if not self.encryption_key:
             # Check if this is a first-run scenario
-            db_path = os.path.join(self.db_dir, self.db_name)
-            if not os.path.exists(db_path):
+            if not os.path.exists(self.db_path):
                 # New database - this is acceptable if key will be provided
                 logging.warning(
                     "No encryption key provided for new database. "
@@ -148,14 +161,6 @@ class PatientDatabase:
                     "Please provide the correct encryption passphrase in the Phlox app. "
                     "If you have forgotten your passphrase, your data cannot be recovered."
                 )
-
-        self.is_test = os.environ.get("TESTING", "False").lower() == "true"
-        self.db_name = (
-            "test_phlox_database.sqlite"
-            if self.is_test
-            else "phlox_database.sqlite"
-        )
-        self.db_path = os.path.join(self.db_dir, self.db_name)
         self.ensure_data_directory()
         self.connect_to_database()
         run_migrations(self)  # Run migrations first to create tables
