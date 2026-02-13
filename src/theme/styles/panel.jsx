@@ -74,4 +74,53 @@ export const panelStyles = (props) => ({
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textSecondary} !important`,
     },
+    ".splash-bg": {
+        position: "relative",
+        overflow: "hidden",
+        background:
+            props.colorMode === "light"
+                ? "linear-gradient(135deg, #ff6b35 0%, #f7931e 25%, #ff8c42 50%, #ffa62b 75%, #ff6b35 100%)"
+                : "linear-gradient(135deg, #cc4125 0%, #cc5500 25%, #e65c00 50%, #cc4125 75%, #cc5500 100%)",
+        "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-50%",
+            left: "-50%",
+            width: "200%",
+            height: "200%",
+            background:
+                props.colorMode === "light"
+                    ? "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,107,53,0.4) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(247,147,30,0.4) 0%, transparent 40%)"
+                    : "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,107,53,0.2) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(247,147,30,0.2) 0%, transparent 40%)",
+            animation: "swirl 20s ease-in-out infinite",
+            borderRadius: "40%",
+            zIndex: -1,
+        },
+        "&::after": {
+            content: '""',
+            position: "absolute",
+            top: "-50%",
+            left: "-50%",
+            width: "200%",
+            height: "200%",
+            background:
+                props.colorMode === "light"
+                    ? "radial-gradient(circle at 60% 40%, rgba(255,166,43,0.3) 0%, transparent 45%), radial-gradient(circle at 40% 60%, rgba(255,107,53,0.3) 0%, transparent 45%)"
+                    : "radial-gradient(circle at 60% 40%, rgba(255,166,43,0.15) 0%, transparent 45%), radial-gradient(circle at 40% 60%, rgba(255,107,53,0.15) 0%, transparent 45%)",
+            animation: "swirl 25s ease-in-out infinite reverse",
+            borderRadius: "40%",
+            zIndex: -1,
+        },
+    },
+    "@keyframes swirl": {
+        "0%": {
+            transform: "rotate(0deg)",
+        },
+        "50%": {
+            transform: "rotate(180deg)",
+        },
+        "100%": {
+            transform: "rotate(360deg)",
+        },
+    },
 });

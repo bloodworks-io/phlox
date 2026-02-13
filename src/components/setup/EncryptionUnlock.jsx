@@ -11,18 +11,20 @@ import {
   Text,
   Input,
   Flex,
+  Image,
   Icon,
   Alert,
   AlertIcon,
 } from "@chakra-ui/react";
-import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
 import { encryptionApi } from "../../utils/api/encryptionApi";
-import { resetApiConfig } from "../../utils/helpers/apiConfig";
+import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
 
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
+const MotionFlex = motion(Flex);
 
 const EncryptionUnlock = ({ onComplete }) => {
   const { colorMode } = useColorMode();
@@ -116,16 +118,30 @@ const EncryptionUnlock = ({ onComplete }) => {
       align="center"
       justify="center"
       minH="100vh"
-      className="panels-bg"
+      className="splash-bg"
       px={4}
       py={8}
+      position="relative"
     >
+      {/* Tauri titlebar drag region - full window width */}
+      {isTauri() && (
+        <Box
+          data-tauri-drag-region
+          height="25px"
+          position="fixed"
+          top="0"
+          left="0"
+          right="0"
+          zIndex="1000"
+        />
+      )}
+
       <MotionBox
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl"
+        borderRadius="2xl !important"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
@@ -146,15 +162,15 @@ const EncryptionUnlock = ({ onComplete }) => {
         />
 
         <VStack spacing={6} align="stretch" position="relative" zIndex="1">
-          <Flex direction="column" align="center" mb={2}>
-            <Box
-              p={3}
-              borderRadius="full"
-              bg={`${currentColors.accent}20`}
-              mb={3}
-            >
-              <Icon as={FaLock} boxSize={7} color={currentColors.accent} />
-            </Box>
+          <MotionFlex
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            direction="column"
+            align="center"
+            mb={2}
+          >
+            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
             <Heading
               as="h1"
               textAlign="center"
@@ -178,7 +194,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             >
               Enter your passphrase to decrypt and access your patient data.
             </Text>
-          </Flex>
+          </MotionFlex>
 
           {attempts > 0 && (
             <Alert status="warning" borderRadius="md" fontSize="sm">
@@ -217,7 +233,6 @@ const EncryptionUnlock = ({ onComplete }) => {
                     borderColor: currentColors.accent,
                     boxShadow: `0 0 0 1px ${currentColors.accent}`,
                   }}
-                  fontFamily="monospace"
                 />
                 <Button
                   size="md"
@@ -236,6 +251,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             isLoading={isSubmitting}
             loadingText="Unlocking..."
             isDisabled={passphrase.length < 1}
+            borderRadius="2xl !important"
             size="lg"
             className="switch-mode"
             sx={{
