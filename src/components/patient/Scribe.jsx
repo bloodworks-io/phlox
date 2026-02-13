@@ -12,23 +12,129 @@ import {
   Tab,
   Tooltip,
   Select,
+  Spinner,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import {
   FaMicrophone,
   FaFileUpload,
-  FaHistory,
-  FaAtom,
   FaComments,
   FaKeyboard,
+  FaSync,
+  FaClock,
+  FaCogs,
 } from "react-icons/fa";
-import { useEffect, useState } from "react";
-import VoiceInputTab from "./ScribeTabs/VoiceInputTab";
+import { useEffect, useState, useRef } from "react";
+import InlineRecordingControls, {
+  useRecording,
+} from "./ScribeTabs/InlineRecordingControls";
 import DocumentUploadTab from "./ScribeTabs/DocumentUploadTab";
-import PreviousVisitTab from "./ScribeTabs/PreviousVisitTab";
-import ReasoningTab from "./ScribeTabs/ReasoningTab";
+import { useTranscription } from "../../utils/hooks/useTranscription";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
+
+const TranscriptionView = ({
+  rawTranscription,
+  transcriptionDuration,
+  processDuration,
+  isTranscribing,
+  onReprocess,
+  isAmbient,
+  name,
+  gender,
+  dob,
+  templateKey,
+}) => {
+  const { reprocessTranscription } = useTranscription(onReprocess, () => {});
+
+  const handleReprocess = async () => {
+    if (!rawTranscription) return;
+    try {
+      await reprocessTranscription(
+        rawTranscription,
+        { name, gender, dob, templateKey },
+        transcriptionDuration,
+        isAmbient,
+      );
+    } catch (error) {
+      console.error("Failed to reprocess transcription:", error);
+    }
+  };
+
+  if (!rawTranscription) return null;
+
+  return (
+    <Box
+      position="relative"
+      mt={2}
+      height="100%"
+      display="flex"
+      flexDirection="column"
+    >
+      <Box
+        p={2}
+        pr={10}
+        borderRadius="md"
+        borderWidth="1px"
+        flex="1"
+        overflowY="auto"
+        className="transcription-view"
+        css={{
+          "&::-webkit-scrollbar": { width: "6px" },
+          "&::-webkit-scrollbar-track": { background: "transparent" },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#CBD5E0",
+            borderRadius: "24px",
+          },
+        }}
+      >
+        <Text whiteSpace="pre-wrap" fontSize="sm">
+          {rawTranscription}
+        </Text>
+      </Box>
+
+      {/* Reprocess button - overlay bottom right */}
+      <Tooltip label="Reprocess transcription" hasArrow placement="top">
+        <IconButton
+          icon={isTranscribing ? <Spinner size="xs" /> : <FaSync size="14px" />}
+          onClick={handleReprocess}
+          isDisabled={isTranscribing}
+          aria-label="Reprocess"
+          size="md"
+          position="absolute"
+          bottom="25px"
+          right="4px"
+          variant="ghost"
+          opacity={0.6}
+          _hover={{ opacity: 1 }}
+        />
+      </Tooltip>
+
+      {transcriptionDuration && (
+        <HStack
+          fontSize="xs"
+          color="gray.500"
+          spacing={3}
+          justify="flex-end"
+          mt={1}
+        >
+          <Tooltip label="Time taken to transcribe the audio">
+            <HStack>
+              <Box as={FaClock} size="10px" />
+              <Text>{transcriptionDuration}s</Text>
+            </HStack>
+          </Tooltip>
+          <Tooltip label="Time taken to process and analyze">
+            <HStack>
+              <Box as={FaCogs} size="10px" />
+              <Text>{processDuration}s</Text>
+            </HStack>
+          </Tooltip>
+        </HStack>
+      )}
+    </Box>
+  );
+};
 
 const Scribe = ({
   isTranscriptionCollapsed,
@@ -57,14 +163,37 @@ const Scribe = ({
   setDocFileName,
 }) => {
   const [tabIndex, setTabIndex] = useState(0);
-  const [mode, setMode] = useState("record");
   const [isAmbient, setIsAmbient] = useState(true);
 
-  useEffect(() => {
-    setTabIndex(0); // Reset to Voice Input tab
-  }, [name, dob]); // Dependencies that indicate a patient change
+  // Recording state and controls
+  const recording = useRecording({
+    name,
+    dob,
+    gender,
+    templateKey: template?.template_key,
+    isAmbient,
+    onTranscriptionComplete: handleTranscriptionComplete,
+    setLoading,
+  });
 
-  // Fetch user settings on mount to get the preferred ambient mode
+  // Transcription API
+  const { transcribeAudio, isTranscribing: apiTranscribing } = useTranscription(
+    (data) => {
+      handleTranscriptionComplete({
+        fields: data.fields,
+        rawTranscription: data.rawTranscription,
+        transcriptionDuration: data.transcriptionDuration,
+        processDuration: data.processDuration,
+      });
+    },
+    setLoading,
+  );
+
+  // File input ref for drag-and-drop
+  const fileInputRef = useRef(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // Fetch user settings on mount
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -80,6 +209,11 @@ const Scribe = ({
     fetchSettings();
   }, []);
 
+  // Reset tab when patient changes
+  useEffect(() => {
+    setTabIndex(0);
+  }, [name, dob]);
+
   const handleScribeModeChange = async (e) => {
     const newValue = e.target.value === "ambient";
     setIsAmbient(newValue);
@@ -90,24 +224,58 @@ const Scribe = ({
     }
   };
 
-  const recordingProps = {
-    mode,
-    onTranscriptionComplete: (data) => {
-      const processedData = {
-        fields: data.fields,
-        rawTranscription: data.rawTranscription,
-        transcriptionDuration: data.transcriptionDuration,
-        processDuration: data.processDuration,
-      };
-      handleTranscriptionComplete(processedData);
-    },
-    name,
-    dob,
-    gender,
-    config,
-    prompts,
-    setLoading,
-    templateKey: template?.template_key,
+  // Send recording for transcription
+  const handleSendRecording = async () => {
+    const audioBlob = await recording.stopRecording();
+    if (!audioBlob) return;
+
+    try {
+      await transcribeAudio(
+        audioBlob,
+        { name, gender, dob, templateKey: template?.template_key },
+        isAmbient,
+      );
+    } catch (error) {
+      console.error("Transcription failed:", error);
+    }
+  };
+
+  // Handle audio file drop
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (!file.type.startsWith("audio/")) {
+      // Not an audio file, ignore
+      return;
+    }
+
+    try {
+      await transcribeAudio(
+        file,
+        { name, gender, dob, templateKey: template?.template_key },
+        isAmbient,
+      );
+    } catch (error) {
+      console.error("Audio file transcription failed:", error);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    // Check if dragging an audio file
+    if (e.dataTransfer?.types?.includes("Files")) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
   };
 
   const documentProps = {
@@ -127,9 +295,23 @@ const Scribe = ({
     resetDocumentState,
   };
 
+  const isLoading = isTranscribing || apiTranscribing;
+
   return (
     <Box p="4" borderRadius="sm" className="panels-bg">
-      <Flex align="center" justify="space-between">
+      {/* Header Row - always visible */}
+      <Flex
+        align="center"
+        justify="space-between"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        borderRadius={isDragOver ? "md" : undefined}
+        border={isDragOver ? "2px dashed" : undefined}
+        borderColor={isDragOver ? "primaryButton" : undefined}
+        bg={isDragOver ? "rgba(255,107,53,0.1)" : undefined}
+        transition="all 0.2s"
+      >
         <Flex align="center">
           <IconButton
             icon={
@@ -152,6 +334,22 @@ const Scribe = ({
           </HStack>
         </Flex>
 
+        {/* Center - Recording controls */}
+        <Flex align="center" flex="1" justify="center">
+          <InlineRecordingControls
+            isRecording={recording.isRecording}
+            isPaused={recording.isPaused}
+            timer={recording.timer}
+            onStart={recording.startRecording}
+            onPause={recording.pauseRecording}
+            onResume={recording.resumeRecording}
+            onSend={handleSendRecording}
+            onReset={recording.resetRecording}
+            isLoading={isLoading}
+          />
+        </Flex>
+
+        {/* Right - Ambient/Dictate selector */}
         <Tooltip
           label={
             isAmbient
@@ -188,72 +386,59 @@ const Scribe = ({
         </Tooltip>
       </Flex>
 
+      {/* Collapsible content - tabs with transcription and document */}
       <Collapse in={!isTranscriptionCollapsed}>
         <Tabs
           variant="enclosed"
-          mt="4"
+          mt="3"
           index={tabIndex}
           onChange={(index) => setTabIndex(index)}
+          size="sm"
         >
           <TabList>
-            <Tooltip label="Record a patient encounter.">
+            {rawTranscription && (
               <Tab className="tab-style">
                 <HStack>
                   <FaMicrophone />
-                  <Text>Voice Input</Text>
+                  <Text>Transcription</Text>
                 </HStack>
               </Tab>
-            </Tooltip>
+            )}
             {isChatEnabled() && (
-              <Tooltip label="Upload a referral document to transcribe.">
-                <Tab className="tab-style">
-                  <HStack>
-                    <FaFileUpload />
-                    <Text>Document Upload</Text>
-                  </HStack>
-                </Tab>
-              </Tooltip>
+              <Tab className="tab-style">
+                <HStack>
+                  <FaFileUpload />
+                  <Text>Document</Text>
+                </HStack>
+              </Tab>
             )}
-            {previousVisitSummary && (
-              <Tooltip label="View a brief summary of the previous visit.">
-                <Tab className="tab-style">
-                  <HStack>
-                    <FaHistory />
-                    <Text>Previous Visit</Text>
-                  </HStack>
-                </Tab>
-              </Tooltip>
-            )}
-            {isChatEnabled() &&
-              patientId && ( // show reasoning tab only if patient has an ID and chat is enabled
-                <Tooltip label="Run clinical reasoning analysis.">
-                  <Tab className="tab-style">
-                    <HStack>
-                      <FaAtom />
-                      <Text>Reasoning</Text>
-                    </HStack>
-                  </Tab>
-                </Tooltip>
-              )}
           </TabList>
           <TabPanels>
-            <TabPanel className="floating-main">
-              <VoiceInputTab
-                mode={mode}
-                setMode={setMode}
-                isAmbient={isAmbient}
-                recordingProps={recordingProps}
-                transcriptionDuration={transcriptionDuration}
-                processDuration={processDuration}
-                rawTranscription={rawTranscription}
-                onTranscriptionComplete={handleTranscriptionComplete}
-                isTranscribing={isTranscribing}
-                setLoading={setLoading}
-              />
-            </TabPanel>
+            {rawTranscription && (
+              <TabPanel
+                className="floating-main"
+                p={2}
+                minH="200px"
+                display="flex"
+                flexDirection="column"
+              >
+                <TranscriptionView
+                  rawTranscription={rawTranscription}
+                  transcriptionDuration={transcriptionDuration}
+                  processDuration={processDuration}
+                  isTranscribing={isLoading}
+                  onReprocess={handleTranscriptionComplete}
+                  isAmbient={isAmbient}
+                  name={name}
+                  gender={gender}
+                  dob={dob}
+                  templateKey={template?.template_key}
+                />
+              </TabPanel>
+            )}
 
             {isChatEnabled() && (
-              <TabPanel className="floating-main">
+              <TabPanel className="floating-main" p={2} minH="200px">
                 <DocumentUploadTab
                   handleDocumentComplete={handleDocumentComplete}
                   name={name}
@@ -265,21 +450,17 @@ const Scribe = ({
                 />
               </TabPanel>
             )}
-
-            {previousVisitSummary && (
-              <TabPanel className="floating-main">
-                <PreviousVisitTab previousVisitSummary={previousVisitSummary} />
-              </TabPanel>
-            )}
-
-            {isChatEnabled() && patientId && (
-              <TabPanel className="floating-main">
-                <ReasoningTab patientId={patientId} reasoning={reasoning} />
-              </TabPanel>
-            )}
           </TabPanels>
         </Tabs>
       </Collapse>
+
+      {/* Hidden file input for audio drag-and-drop */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*"
+        style={{ display: "none" }}
+      />
     </Box>
   );
 };

@@ -17,11 +17,13 @@ import Scribe from "../components/patient/Scribe";
 import Summary from "../components/patient/Summary";
 import Chat from "../components/patient/Chat";
 import Letter from "../components/patient/Letter";
+import ReasoningPanel from "../components/patient/ReasoningPanel";
 import FloatingActionMenu from "../components/common/FloatingActionMenu"; // Import our new component
 import { usePatient } from "../utils/hooks/usePatient";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useChat } from "../utils/hooks/useChat";
 import { useLetter } from "../utils/hooks/useLetter";
+import { useReasoning } from "../utils/hooks/useReasoning";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { useToastMessage } from "../utils/hooks/UseToastMessage";
 
@@ -37,7 +39,6 @@ const PatientDetails = ({
   const isNewPatient = location.pathname === "/new-patient";
   const toast = useToast();
   const summaryRef = useRef(null);
-  const [mode, setMode] = useState("record");
   const [loading, setLoading] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [isSearchedPatient, setIsSearchedPatient] = useState(false);
@@ -83,16 +84,31 @@ const PatientDetails = ({
   } = usePatient(initialPatient, setInitialPatient);
 
   const handleChatToggle = (isOpen) => {
-    if (isOpen && !letter.isCollapsed) {
-      // If chat is opening and letter is open, close letter
-      letter.setIsCollapsed(true);
+    if (isOpen) {
+      // If chat is opening, close other panels
+      if (!letter.isCollapsed) letter.setIsCollapsed(true);
+      if (reasoning.isReasoningOpen) reasoning.closeReasoning();
     }
   };
 
   const handleLetterToggle = (isOpen) => {
-    if (isOpen && chat.chatExpanded) {
-      // If letter is opening and chat is open, close chat
-      chat.setChatExpanded(false);
+    if (isOpen) {
+      // If letter is opening, close other panels
+      if (chat.chatExpanded) chat.setChatExpanded(false);
+      if (reasoning.isReasoningOpen) reasoning.closeReasoning();
+    }
+  };
+
+  const handleReasoningToggle = (isOpen) => {
+    if (isOpen) {
+      // If reasoning is opening, close other panels
+      if (chat.chatExpanded) chat.setChatExpanded(false);
+      if (!letter.isCollapsed) letter.setIsCollapsed(true);
+    }
+    if (isOpen) {
+      reasoning.openReasoning();
+    } else {
+      reasoning.closeReasoning();
     }
   };
 
@@ -101,6 +117,7 @@ const PatientDetails = ({
   const letterHook = useLetter(setIsModified);
   const letter = useCollapse(true);
   const chat = useChat();
+  const reasoning = useReasoning();
   const { refreshTemplates } = useTemplate();
 
   // Refresh templates for new patients
@@ -624,6 +641,7 @@ const PatientDetails = ({
   const handleOpenLetter = () => {
     letter.setIsCollapsed(false);
     chat.setChatExpanded(false);
+    reasoning.closeReasoning();
   };
 
   const handleMenuOpen = () => {
@@ -634,15 +652,25 @@ const PatientDetails = ({
   const handleOpenChat = () => {
     chat.setChatExpanded(true);
     letter.setIsCollapsed(true);
+    reasoning.closeReasoning();
+  };
+
+  const handleOpenReasoning = () => {
+    reasoning.openReasoning();
+    chat.setChatExpanded(false);
+    letter.setIsCollapsed(true);
   };
 
   const handleMenuClose = () => {
-    // Close both panels when menu closes
+    // Close all panels when menu closes
     if (!letter.isCollapsed) {
       letter.setIsCollapsed(true);
     }
     if (chat.chatExpanded) {
       chat.setChatExpanded(false);
+    }
+    if (reasoning.isReasoningOpen) {
+      reasoning.closeReasoning();
     }
   };
 
@@ -670,10 +698,6 @@ const PatientDetails = ({
         <Scribe
           isTranscriptionCollapsed={transcription.isCollapsed}
           toggleTranscriptionCollapse={transcription.toggle}
-          mode={mode}
-          toggleMode={() =>
-            setMode((prev) => (prev === "record" ? "upload" : "record"))
-          }
           handleTranscriptionComplete={handleTranscriptionComplete}
           transcriptionDuration={patient.transcription_duration}
           processDuration={patient.process_duration}
@@ -682,9 +706,6 @@ const PatientDetails = ({
           gender={patient.gender}
           template={currentTemplate}
           setLoading={setLoading}
-          previousVisitSummary={patient.previous_visit_summary}
-          patientId={patient.id}
-          reasoning={patient.reasoning_output || null}
           rawTranscription={patient.raw_transcription}
           isTranscribing={loading}
           handleDocumentComplete={handleDocumentComplete}
@@ -764,10 +785,20 @@ const PatientDetails = ({
         <FloatingActionMenu
           onOpenChat={handleOpenChat}
           onOpenLetter={handleOpenLetter}
+          onOpenReasoning={handleOpenReasoning}
           isChatOpen={chat.chatExpanded}
           isLetterOpen={!letter.isCollapsed}
+          isReasoningOpen={reasoning.isReasoningOpen}
           onMenuOpen={handleMenuOpen}
           onMenuClose={handleMenuClose}
+        />
+
+        {/* Reasoning Panel */}
+        <ReasoningPanel
+          isOpen={reasoning.isReasoningOpen}
+          onClose={reasoning.closeReasoning}
+          patientId={patient?.id}
+          initialReasoning={patient?.reasoning}
         />
       </VStack>
     </Box>

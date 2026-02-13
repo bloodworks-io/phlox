@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Box, IconButton, Tooltip, useOutsideClick } from "@chakra-ui/react";
 import { AddIcon, CloseIcon, ChatIcon } from "@chakra-ui/icons";
-import { FaEnvelope } from "react-icons/fa";
+import { FaEnvelope, FaAtom } from "react-icons/fa";
 import styled from "@emotion/styled";
 import { keyframes } from "@emotion/react";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
@@ -26,8 +26,10 @@ const ActionButtonWrapper = styled(Box)`
 const FloatingActionMenu = ({
   onOpenChat,
   onOpenLetter,
+  onOpenReasoning,
   isChatOpen,
   isLetterOpen,
+  isReasoningOpen,
   onMenuOpen,
   onMenuClose,
 }) => {
@@ -47,8 +49,8 @@ const FloatingActionMenu = ({
   useOutsideClick({
     ref: menuRef,
     handler: () => {
-      // Only close menu if neither panel is open
-      if (isMenuOpen && !isChatOpen && !isLetterOpen) {
+      // Only close menu if no panel is open
+      if (isMenuOpen && !isChatOpen && !isLetterOpen && !isReasoningOpen) {
         updateMenuState(false);
       }
     },
@@ -62,10 +64,10 @@ const FloatingActionMenu = ({
   // Update menu state when panels open/close
   React.useEffect(() => {
     // only force-open if we aren't already open
-    if ((isChatOpen || isLetterOpen) && !isMenuOpen) {
+    if ((isChatOpen || isLetterOpen || isReasoningOpen) && !isMenuOpen) {
       setIsMenuOpen(true);
     }
-  }, [isChatOpen, isLetterOpen, isMenuOpen]);
+  }, [isChatOpen, isLetterOpen, isReasoningOpen, isMenuOpen]);
 
   const mainFabIcon = isMenuOpen ? <CloseIcon /> : <AddIcon />;
 
@@ -89,6 +91,20 @@ const FloatingActionMenu = ({
                     onClick={onOpenChat}
                     aria-label="Open Chat"
                     className="fam-action-button chat-fam-button"
+                    size="md"
+                    isRound
+                  />
+                </Tooltip>
+              </ActionButtonWrapper>
+            )}
+            {isChatEnabled() && onOpenReasoning && (
+              <ActionButtonWrapper>
+                <Tooltip label="Clinical Reasoning" placement="left">
+                  <IconButton
+                    icon={<FaAtom />}
+                    onClick={onOpenReasoning}
+                    aria-label="Open Reasoning"
+                    className="fam-action-button reasoning-fam-button"
                     size="md"
                     isRound
                   />
