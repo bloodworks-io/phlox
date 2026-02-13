@@ -13,8 +13,7 @@ import {
 import { FaServer } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
-import { buildApiUrl } from "../../utils/helpers/apiConfig";
-import { isTauri } from "../../utils/helpers/apiConfig";
+import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 
 const MotionBox = motion(Box);
 
@@ -136,10 +135,24 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         align="center"
         justify="center"
         minH="100vh"
-        className="panels-bg"
+        className="splash-bg"
         px={4}
         py={8}
+        position="relative"
       >
+        {/* Tauri titlebar drag region - full window width */}
+        {isTauri() && (
+          <Box
+            data-tauri-drag-region
+            height="25px"
+            position="fixed"
+            top="0"
+            left="0"
+            right="0"
+            zIndex="1000"
+          />
+        )}
+
         <MotionBox
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -195,16 +208,30 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       align="center"
       justify="center"
       minH="100vh"
-      className="panels-bg"
+      className="splash-bg"
       px={4}
       py={8}
+      position="relative"
     >
+      {/* Tauri titlebar drag region - full window width */}
+      {isTauri() && (
+        <Box
+          data-tauri-drag-region
+          height="25px"
+          position="fixed"
+          top="0"
+          left="0"
+          right="0"
+          zIndex="1000"
+        />
+      )}
+
       <MotionBox
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         p={8}
-        borderRadius="2xl"
+        borderRadius="2xl !important"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}

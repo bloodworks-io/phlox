@@ -192,6 +192,19 @@ const Sidebar = ({
         isSmallScreen && isCollapsed ? "translateX(-100%)" : "translateX(0)"
       }
     >
+      {/* Tauri titlebar drag region - full sidebar width */}
+      {isTauri() && (
+        <Box
+          data-tauri-drag-region
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          height="25px"
+          zIndex="10"
+        />
+      )}
+
       {/* Small screen close button - only show when expanded */}
       {isSmallScreen && !isCollapsed && (
         <IconButton
