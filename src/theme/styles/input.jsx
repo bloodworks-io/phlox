@@ -136,6 +136,77 @@ export const inputStyles = (props) => ({
       opacity: 1,
     },
   },
+  ".cohesive-fields-container": {
+    backgroundColor:
+      props.colorMode === "light"
+        ? `${colors.light.base} !important`
+        : `${colors.dark.crust} !important`,
+    borderRadius: "lg !important",
+    border: "none !important",
+    padding: "12px !important",
+    overflow: "hidden !important",
+  },
+  ".cohesive-field": {
+    borderBottom: "none !important",
+    marginBottom: "16px !important",
+    "&:last-child": {
+      marginBottom: "0 !important",
+    },
+  },
+  ".cohesive-field--empty": {
+    marginBottom: "20px !important",
+  },
+  ".cohesive-field-label": {
+    fontSize: "1rem !important",
+    fontWeight: "500 !important",
+    color:
+      props.colorMode === "light"
+        ? `${colors.light.textTertiary} !important`
+        : `${colors.dark.textTertiary} !important`,
+    padding: "0 0 4px 0 !important",
+    marginBottom: "4px !important",
+  },
+  ".cohesive-persistent-marker": {
+    marginLeft: "6px !important",
+    display: "inline-flex !important",
+    alignItems: "center !important",
+    verticalAlign: "middle !important",
+    color:
+      props.colorMode === "light"
+        ? `${colors.light.overlay0} !important`
+        : `${colors.dark.overlay0} !important`,
+    fontSize: "0.7rem !important",
+  },
+  ".cohesive-textarea": {
+    backgroundColor: "transparent !important",
+    border: "none !important",
+    borderRadius: "0 !important",
+    padding: "0 !important",
+    fontSize: "1rem !important",
+    lineHeight: "1.5 !important",
+    width: "100% !important",
+    resize: "none !important",
+    "&:focus": {
+      outline: "none !important",
+      backgroundColor: "transparent !important",
+    },
+    "&::placeholder": {
+      color:
+        props.colorMode === "light"
+          ? colors.light.overlay0
+          : colors.dark.overlay0,
+    },
+  },
+  ".cohesive-textarea--empty": {
+    minHeight: "24px !important",
+    "&::placeholder": {
+      color:
+        props.colorMode === "light"
+          ? `${colors.light.textSecondary} !important`
+          : `${colors.dark.textSecondary} !important`,
+      opacity: "1 !important",
+    },
+  },
   ".refinement-fab": {
     borderRadius: "full !important",
     color: `${colors.light.invertedText} !important`,
@@ -302,6 +373,7 @@ export const inputStyles = (props) => ({
       boxShadow: "none !important",
       border: "none !important",
     },
-    minHeight: "auto !important",
+    minHeight: "140px !important",
+    maxHeight: "200px !important",
   },
 });
