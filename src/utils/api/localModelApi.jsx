@@ -183,6 +183,17 @@ export const localModelApi = {
       errorMessage: "Failed to fetch Whisper models",
     }),
 
+  fetchDownloadedWhisperModels: async () =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(
+          "/api/config/local/whisper/models/downloaded",
+        );
+        return universalFetch(url);
+      },
+      errorMessage: "Failed to fetch downloaded Whisper models",
+    }),
+
   fetchAvailableWhisperModels: async () =>
     handleApiRequest({
       apiCall: async () => {
