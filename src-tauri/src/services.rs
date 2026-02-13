@@ -284,7 +284,7 @@ pub fn start_server(
     let exe_dir = current_exe
         .parent()
         .expect("failed to get executable directory");
-    let server_path = exe_dir.join("server_dist").join("server");
+    let server_path = exe_dir.join("server");
 
     log::info!("Starting server from: {:?}", server_path);
 

@@ -92,9 +92,10 @@ pub fn find_whisper_server() -> Option<PathBuf> {
 }
 
 /// Find the server (Python) binary path
+/// The 'server' binary is a wrapper that points to ../Resources/server_dist/server
 pub fn find_python_server() -> Option<PathBuf> {
     let exe_dir = env::current_exe().ok()?.parent()?.to_path_buf();
-    let path = exe_dir.join("server_dist").join("server");
+    let path = exe_dir.join("server");
 
     if path.exists() {
         Some(path)
@@ -366,6 +367,8 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
                     "Stdout content: {}",
                     String::from_utf8_lossy(&stdout_buffer)
                 );
+                // Try to read remaining stderr
+                let _ = stderr_reader.read_to_end(&mut stderr_buffer);
                 log::warn!(
                     "Stderr content: {}",
                     String::from_utf8_lossy(&stderr_buffer)
@@ -562,7 +565,7 @@ pub fn kill_all_processes() {
     // Fallback: kill by name pattern
     kill_process_by_name("llama-server", "llama-server");
     kill_process_by_name("whisper-server", "whisper-server");
-    kill_process_by_name("server_dist/server", "server");
+    kill_process_by_name("server", "server");
 
     std::thread::sleep(Duration::from_millis(500));
 
