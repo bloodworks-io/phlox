@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Box,
   Button,
@@ -18,6 +18,8 @@ import { motion } from "framer-motion";
 import { FaArrowRight, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
 import { colors } from "../../theme/colors";
 import { settingsService } from "../../utils/settings/settingsUtils";
+import { isTauri } from "../../utils/helpers/apiConfig";
+import { isChatEnabled } from "../../utils/helpers/featureFlags";
 import {
   SPLASH_STEPS,
   STEP_TITLES,
@@ -52,10 +54,31 @@ const SplashScreen = ({ onComplete }) => {
   const [completedSteps, setCompletedSteps] = useState(new Set());
   const [isLoading, setIsLoading] = useState(false);
 
+  // Determine which steps are visible based on chat enabled status
+  const visibleSteps = useMemo(() => {
+    const steps = [
+      SPLASH_STEPS.PERSONAL,
+      SPLASH_STEPS.LLM,
+      SPLASH_STEPS.TRANSCRIPTION,
+      SPLASH_STEPS.TEMPLATES,
+    ];
+    if (isChatEnabled()) {
+      steps.push(SPLASH_STEPS.QUICK_CHAT);
+    }
+    steps.push(SPLASH_STEPS.LETTERS);
+    return steps;
+  }, []);
+
+  // Total steps includes encryption step in Tauri (which runs before this screen)
+  const totalSteps = visibleSteps.length + (isTauri() ? 1 : 0); // +1 for encryption step in Tauri
+  const actualStepIndex = visibleSteps.indexOf(currentStep); // 0-based index for array navigation
+  const currentStepIndex = actualStepIndex + (isTauri() ? 1 : 0); // Account for encryption being step 1 in Tauri
+
   // Step hooks
   const personal = usePersonalStep();
   const llm = useLLMStep(currentStep);
-  const transcription = useTranscriptionStep(currentStep);
+  // Pass inferenceMode to transcription step to ensure no mixed configurations
+  const transcription = useTranscriptionStep(currentStep, llm.inferenceMode);
   const templates = useTemplatesStep(currentStep);
   const quickChat = useQuickChatStep();
   const letters = useLettersStep(currentStep);
@@ -86,6 +109,10 @@ const SplashScreen = ({ onComplete }) => {
       case SPLASH_STEPS.PERSONAL:
         return "Please enter your name and select your specialty.";
       case SPLASH_STEPS.LLM:
+        // Dynamic message based on inference mode
+        if (llm.inferenceMode === "local") {
+          return "Please select and download a local model before proceeding.";
+        }
         return "Please select a primary model.";
       case SPLASH_STEPS.TRANSCRIPTION:
         return "Please configure the Whisper model if you've entered a URL.";
@@ -115,18 +142,20 @@ const SplashScreen = ({ onComplete }) => {
 
     setCompletedSteps((prev) => new Set([...prev, currentStep]));
 
-    if (currentStep < SPLASH_STEPS.LETTERS) {
-      setCurrentStep(currentStep + 1);
+    const nextIndex = actualStepIndex + 1;
+    if (nextIndex < visibleSteps.length) {
+      setCurrentStep(visibleSteps[nextIndex]);
     } else {
       handleComplete();
     }
-  }, [currentStep, getCurrentValidator, getValidationMessage, toast]);
+  }, [currentStep, actualStepIndex, visibleSteps, getCurrentValidator, getValidationMessage, toast]);
 
   const handlePrevious = useCallback(() => {
-    if (currentStep > SPLASH_STEPS.PERSONAL) {
-      setCurrentStep(currentStep - 1);
+    const prevIndex = actualStepIndex - 1;
+    if (prevIndex >= 0) {
+      setCurrentStep(visibleSteps[prevIndex]);
     }
-  }, [currentStep]);
+  }, [actualStepIndex, visibleSteps]);
 
   const handleComplete = useCallback(async () => {
     setIsLoading(true);
@@ -141,17 +170,21 @@ const SplashScreen = ({ onComplete }) => {
       const llmData = llm.getData();
       const transcriptionData = transcription.getData();
       const templatesData = templates.getData();
-      const quickChatData = quickChat.getData();
       const lettersData = letters.getData();
 
       const userSettingsToSave = {
         ...currentUserSettings,
         ...personalData,
-        ...quickChatData,
         default_letter_template_id: lettersData.selectedLetterTemplate
           ? parseInt(lettersData.selectedLetterTemplate)
           : null,
       };
+
+      // Only include quick chat data if chat is enabled
+      if (isChatEnabled()) {
+        const quickChatData = quickChat.getData();
+        Object.assign(userSettingsToSave, quickChatData);
+      }
       await settingsService.saveUserSettings(userSettingsToSave);
 
       // Save global config
@@ -226,7 +259,11 @@ const SplashScreen = ({ onComplete }) => {
         return <LLMStep currentColors={currentColors} {...llm} />;
       case SPLASH_STEPS.TRANSCRIPTION:
         return (
-          <TranscriptionStep currentColors={currentColors} {...transcription} />
+          <TranscriptionStep
+            currentColors={currentColors}
+            inferenceMode={llm.inferenceMode}
+            {...transcription}
+          />
         );
       case SPLASH_STEPS.TEMPLATES:
         return <TemplatesStep currentColors={currentColors} {...templates} />;
@@ -244,16 +281,30 @@ const SplashScreen = ({ onComplete }) => {
       align="center"
       justify="center"
       minH="100vh"
-      className="panels-bg"
+      className="splash-bg"
       px={4}
       py={8}
+      position="relative"
     >
+      {/* Tauri titlebar drag region - full window width */}
+      {isTauri() && (
+        <Box
+          data-tauri-drag-region
+          height="25px"
+          position="fixed"
+          top="0"
+          left="0"
+          right="0"
+          zIndex="1000"
+        />
+      )}
+
       <MotionBox
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl"
+        borderRadius="2xl !important"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
@@ -317,7 +368,7 @@ const SplashScreen = ({ onComplete }) => {
 
           <MotionBox variants={itemVariants}>
             <Progress
-              value={((currentStep + 1) / 6) * 100}
+              value={((currentStepIndex + 1) / totalSteps) * 100}
               colorScheme="blue"
               borderRadius="full"
               size="sm"
@@ -329,7 +380,7 @@ const SplashScreen = ({ onComplete }) => {
               textAlign="center"
               sx={{ fontFamily: '"Roboto", sans-serif' }}
             >
-              Step {currentStep + 1} of 6
+              Step {currentStepIndex + 1} of {totalSteps}
             </Text>
           </MotionBox>
 
@@ -381,36 +432,38 @@ const SplashScreen = ({ onComplete }) => {
             <Button
               leftIcon={<FaArrowLeft />}
               onClick={handlePrevious}
-              isDisabled={currentStep === SPLASH_STEPS.PERSONAL}
+              isDisabled={currentStepIndex === 0}
               variant="outline"
               size="md"
-              className="secondary-button"
+              borderRadius="2xl !important"
+              className="switch-mode"
             >
               Previous
             </Button>
 
             <Button
               rightIcon={
-                currentStep === SPLASH_STEPS.LETTERS ? undefined : (
+                currentStepIndex === totalSteps - 1 ? undefined : (
                   <FaArrowRight />
                 )
               }
               onClick={handleNext}
               isLoading={isLoading}
               loadingText={
-                currentStep === SPLASH_STEPS.LETTERS
+                currentStepIndex === totalSteps - 1
                   ? "Completing setup..."
                   : "Processing..."
               }
               isDisabled={!canProceedToNext()}
               size="md"
+              borderRadius="2xl !important"
               className="switch-mode"
               sx={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontWeight: "600",
               }}
             >
-              {currentStep === SPLASH_STEPS.LETTERS ? "Complete Setup" : "Next"}
+              {currentStepIndex === totalSteps - 1 ? "Complete Setup" : "Next"}
             </Button>
           </MotionFlex>
         </MotionVStack>

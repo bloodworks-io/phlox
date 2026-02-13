@@ -6,9 +6,11 @@ import {
   FaComments,
   FaEnvelope,
   FaInfoCircle,
+  FaLock,
 } from "react-icons/fa";
 
 export const SPLASH_STEPS = {
+  ENCRYPTION: -1,
   PERSONAL: 0,
   LLM: 1,
   TRANSCRIPTION: 2,
@@ -18,6 +20,7 @@ export const SPLASH_STEPS = {
 };
 
 export const STEP_TITLES = {
+  [SPLASH_STEPS.ENCRYPTION]: "Secure Your Data",
   [SPLASH_STEPS.PERSONAL]: "Personal Information",
   [SPLASH_STEPS.LLM]: "Language Model Setup",
   [SPLASH_STEPS.TRANSCRIPTION]: "Transcription Setup",
@@ -27,6 +30,7 @@ export const STEP_TITLES = {
 };
 
 export const STEP_DESCRIPTIONS = {
+  [SPLASH_STEPS.ENCRYPTION]: "Create a passphrase to encrypt and protect your patient data",
   [SPLASH_STEPS.PERSONAL]: "Tell us about yourself to personalize your experience",
   [SPLASH_STEPS.LLM]: "Configure your AI language model for medical assistance",
   [SPLASH_STEPS.TRANSCRIPTION]: "Set up voice transcription (optional but recommended)",
@@ -37,7 +41,7 @@ export const STEP_DESCRIPTIONS = {
 
 export const TEMPLATE_DESCRIPTIONS = {
   phlox_01:
-    "Designed for haematology consultations with sections for primary condition, other problems, investigations, current history, impression, and plan.",
+    "Designed for physician consultations with sections for primary condition, other problems, investigations, current history, impression, and plan.",
   soap_01:
     "Standard SOAP format with Subjective, Objective, Assessment, and Plan sections - ideal for general consultations.",
   progress_01:
@@ -46,6 +50,8 @@ export const TEMPLATE_DESCRIPTIONS = {
 
 export const getStepIcon = (step) => {
   switch (step) {
+    case SPLASH_STEPS.ENCRYPTION:
+      return FaLock;
     case SPLASH_STEPS.PERSONAL:
       return FaUserMd;
     case SPLASH_STEPS.LLM:

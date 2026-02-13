@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Box,
@@ -14,20 +14,30 @@ import {
   Progress,
   HStack,
   Icon,
-  Alert,
-  AlertIcon,
 } from "@chakra-ui/react";
-import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaExclamationTriangle, FaLock } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
 import {
   encryptionApi,
   calculatePassphraseStrength,
 } from "../../utils/api/encryptionApi";
-import { resetApiConfig } from "../../utils/helpers/apiConfig";
+import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
+import { isChatEnabled } from "../../utils/helpers/featureFlags";
+import {
+  SPLASH_STEPS,
+  STEP_TITLES,
+  STEP_DESCRIPTIONS,
+  getStepIcon,
+  containerVariants,
+  itemVariants,
+} from "../common/splash/constants";
 
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
+const MotionFlex = motion(Flex);
+const MotionHeading = motion(Heading);
+const MotionText = motion(Text);
 
 const EncryptionSetup = ({ onComplete }) => {
   const { colorMode } = useColorMode();
@@ -40,6 +50,18 @@ const EncryptionSetup = ({ onComplete }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [strength, setStrength] = useState(calculatePassphraseStrength(""));
+
+  // Calculate total steps including encryption as step 1
+  const totalSteps = useMemo(() => {
+    // Base steps from SplashScreen: Personal, LLM, Transcription, Templates, Letters = 5
+    // Plus optional QuickChat if enabled
+    // Plus encryption step = 1
+    const baseSteps = 5;
+    const chatSteps = isChatEnabled() ? 1 : 0;
+    return 1 + baseSteps + chatSteps; // encryption + splash steps
+  }, []);
+
+  const currentStepIndex = 0; // Encryption is always step 1 (index 0)
 
   useEffect(() => {
     setStrength(calculatePassphraseStrength(passphrase));
@@ -143,16 +165,30 @@ const EncryptionSetup = ({ onComplete }) => {
       align="center"
       justify="center"
       minH="100vh"
-      className="panels-bg"
+      className="splash-bg"
       px={4}
       py={8}
+      position="relative"
     >
+      {/* Tauri titlebar drag region - full window width */}
+      {isTauri() && (
+        <Box
+          data-tauri-drag-region
+          height="25px"
+          position="fixed"
+          top="0"
+          left="0"
+          right="0"
+          zIndex="1000"
+        />
+      )}
+
       <MotionBox
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl"
+        borderRadius="2xl !important"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
@@ -172,17 +208,20 @@ const EncryptionSetup = ({ onComplete }) => {
           zIndex="0"
         />
 
-        <VStack spacing={6} align="stretch" position="relative" zIndex="1">
-          <Flex direction="column" align="center" mb={2}>
-            <Box
-              p={3}
-              borderRadius="full"
-              bg={`${currentColors.accent}20`}
-              mb={3}
-            >
-              <Icon as={FaLock} boxSize={8} color={currentColors.accent} />
-            </Box>
-            <Heading
+        <MotionVStack
+          spacing={6}
+          align="stretch"
+          position="relative"
+          zIndex="1"
+        >
+          <MotionFlex
+            variants={itemVariants}
+            direction="column"
+            align="center"
+            mb={4}
+          >
+            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
+            <MotionHeading
               as="h1"
               textAlign="center"
               color={currentColors.textPrimary}
@@ -192,29 +231,90 @@ const EncryptionSetup = ({ onComplete }) => {
                 fontWeight: "700",
                 lineHeight: "1.2",
                 marginBottom: "0.5rem",
+                letterSpacing: "-0.02em",
               }}
             >
-              Secure Your Data
-            </Heading>
+              Welcome to Phlox
+            </MotionHeading>
+            <MotionText
+              textAlign="center"
+              fontSize="sm"
+              color={currentColors.textSecondary}
+              maxW="400px"
+              lineHeight="1.6"
+              sx={{ fontFamily: '"Roboto", sans-serif' }}
+            >
+              Let's set up your AI-powered medical assistant
+            </MotionText>
+          </MotionFlex>
+
+          <MotionBox variants={itemVariants}>
+            <Progress
+              value={((currentStepIndex + 1) / totalSteps) * 100}
+              colorScheme="blue"
+              borderRadius="full"
+              size="sm"
+              mb={2}
+            />
+            <Text
+              fontSize="xs"
+              color={currentColors.textSecondary}
+              textAlign="center"
+              sx={{ fontFamily: '"Roboto", sans-serif' }}
+            >
+              Step {currentStepIndex + 1} of {totalSteps}
+            </Text>
+          </MotionBox>
+
+          <MotionBox variants={itemVariants}>
+            <HStack mb={4} align="center" justify="center">
+              <Icon
+                as={getStepIcon(SPLASH_STEPS.ENCRYPTION)}
+                className="pill-box-icons"
+                boxSize={5}
+              />
+              <Heading
+                as="h2"
+                color={currentColors.textPrimary}
+                sx={{
+                  fontFamily: '"Space Grotesk", sans-serif',
+                  fontSize: ["1.25rem", "1.5rem"],
+                  fontWeight: "600",
+                  lineHeight: "1.2",
+                }}
+              >
+                {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
+              </Heading>
+            </HStack>
             <Text
               textAlign="center"
               fontSize="sm"
               color={currentColors.textSecondary}
-              maxW="350px"
-              lineHeight="1.6"
+              mb={4}
+              sx={{ fontFamily: '"Roboto", sans-serif' }}
             >
-              Create a passphrase to encrypt your patient data. This key will be
-              used to secure your database.
+              {STEP_DESCRIPTIONS[SPLASH_STEPS.ENCRYPTION]}
             </Text>
-          </Flex>
+          </MotionBox>
 
-          <Alert status="info" borderRadius="md" fontSize="sm">
-            <AlertIcon />
-            <Text fontSize="xs">
-              <strong>Important:</strong> If you forget your passphrase, your
-              data cannot be recovered. Store it securely.
-            </Text>
-          </Alert>
+          {/* Warning alert with better legibility */}
+          <MotionBox variants={itemVariants}>
+            <Box
+              bg="orange.100"
+              borderLeft="4px solid"
+              borderColor="orange.400"
+              p={3}
+              borderRadius="md"
+            >
+              <HStack align="start">
+                <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
+                <Text color="gray.700" fontSize="sm" lineHeight="1.5">
+                  <strong>Important:</strong> If you forget your passphrase, your
+                  data cannot be recovered. Store it securely.
+                </Text>
+              </HStack>
+            </Box>
+          </MotionBox>
 
           <VStack spacing={4} align="stretch">
             <Box>
@@ -241,7 +341,6 @@ const EncryptionSetup = ({ onComplete }) => {
                     borderColor: currentColors.accent,
                     boxShadow: `0 0 0 1px ${currentColors.accent}`,
                   }}
-                  fontFamily="monospace"
                 />
                 <Button
                   size="md"
@@ -301,7 +400,6 @@ const EncryptionSetup = ({ onComplete }) => {
                     borderColor: currentColors.accent,
                     boxShadow: `0 0 0 1px ${currentColors.accent}`,
                   }}
-                  fontFamily="monospace"
                   onKeyPress={(e) => {
                     if (e.key === "Enter" && isValid()) {
                       handleSubmit();
@@ -327,22 +425,29 @@ const EncryptionSetup = ({ onComplete }) => {
             </Box>
           </VStack>
 
-          <Button
-            onClick={handleSubmit}
-            isLoading={isSubmitting}
-            loadingText="Setting up encryption..."
-            isDisabled={!isValid()}
-            size="lg"
-            className="switch-mode"
-            sx={{
-              fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: "600",
-            }}
+          <MotionFlex
+            variants={itemVariants}
+            justify="flex-end"
+            align="center"
             mt={2}
           >
-            Create Encryption Key
-          </Button>
-        </VStack>
+            <Button
+              onClick={handleSubmit}
+              isLoading={isSubmitting}
+              loadingText="Setting up encryption..."
+              isDisabled={!isValid()}
+              size="md"
+              borderRadius="2xl !important"
+              className="switch-mode"
+              sx={{
+                fontFamily: '"Space Grotesk", sans-serif',
+                fontWeight: "600",
+              }}
+            >
+              Continue
+            </Button>
+          </MotionFlex>
+        </MotionVStack>
       </MotionBox>
     </Flex>
   );
