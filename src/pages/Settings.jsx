@@ -17,6 +17,7 @@ import SettingsActions from "../components/settings/SettingsActions";
 import { SPECIALTIES } from "../utils/constants/index.jsx";
 import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel";
 import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
+import { isChatEnabled } from "../utils/helpers/featureFlags";
 import { templateService } from "../utils/services/templateService";
 import LocalModelManagerModal from "../components/settings/LocalModelManagerModal";
 import { localModelApi } from "../utils/api/localModelApi";
@@ -333,12 +334,14 @@ const Settings = () => {
           setIsCollapsed={() => toggleCollapse("letterTemplates")}
         />
 
-        <ChatSettingsPanel
-          isCollapsed={collapseStates.chatSettings}
-          setIsCollapsed={() => toggleCollapse("chatSettings")}
-          userSettings={userSettings}
-          setUserSettings={setUserSettings}
-        />
+        {isChatEnabled() && (
+          <ChatSettingsPanel
+            isCollapsed={collapseStates.chatSettings}
+            setIsCollapsed={() => toggleCollapse("chatSettings")}
+            userSettings={userSettings}
+            setUserSettings={setUserSettings}
+          />
+        )}
 
         <SettingsActions
           onSave={handleSaveChanges}

@@ -43,6 +43,7 @@ import { useState, useEffect } from "react";
 
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
+import { isChatEnabled } from "../../utils/helpers/featureFlags";
 
 const ModelSettingsPanel = ({
   isCollapsed,
@@ -355,14 +356,16 @@ const ModelSettingsPanel = ({
                       </HStack>
                     </Tab>
                   </Tooltip>
-                  <Tooltip label="Configure knowledge base embedding model">
-                    <Tab className="tab-style">
-                      <HStack>
-                        <FaDatabase />
-                        <Text>RAG</Text>
-                      </HStack>
-                    </Tab>
-                  </Tooltip>
+                  {isChatEnabled() && (
+                    <Tooltip label="Configure knowledge base embedding model">
+                      <Tab className="tab-style">
+                        <HStack>
+                          <FaDatabase />
+                          <Text>RAG</Text>
+                        </HStack>
+                      </Tab>
+                    </Tooltip>
+                  )}
                 </TabList>
                 <TabPanels>
                   {/* Whisper Tab */}
@@ -615,55 +618,57 @@ const ModelSettingsPanel = ({
                   </TabPanel>
 
                   {/* RAG Tab */}
-                  <TabPanel className="floating-main">
-                    <VStack spacing={4} align="stretch">
-                      <Box>
-                        <Text fontSize="md" fontWeight="bold">
-                          Knowledge Base (RAG)
-                        </Text>
-                        <Text fontSize="sm" color="gray.500">
-                          Configure the embedding model used for knowledge base
-                          searches
-                        </Text>
-                      </Box>
-
-                      <Box>
-                        <Tooltip label="Model used for generating embeddings for RAG - changing this will require rebuilding the database">
-                          <Text fontSize="sm" mb="2" fontWeight={"bold"}>
-                            Embedding Model
+                  {isChatEnabled() && (
+                    <TabPanel className="floating-main">
+                      <VStack spacing={4} align="stretch">
+                        <Box>
+                          <Text fontSize="md" fontWeight="bold">
+                            Knowledge Base (RAG)
                           </Text>
-                        </Tooltip>
-                        <Select
-                          size="sm"
-                          value={config?.EMBEDDING_MODEL || ""}
-                          onChange={(e) =>
-                            handleEmbeddingModelChange(e.target.value)
-                          }
-                          placeholder="Select embedding model"
-                          className="input-style"
-                        >
-                          {embeddingModelOptions.map((model) => (
-                            <option key={model} value={model}>
-                              {model}
-                            </option>
-                          ))}
-                        </Select>
-                        <Text fontSize="xs" color="gray.500" mt="1">
-                          Available embedding models depend on the LLM endpoint
-                          configured in the LLM tab
-                        </Text>
-                        <Text
-                          fontSize="xs"
-                          color={warningBg}
-                          mt="2"
-                          fontWeight="medium"
-                        >
-                          ⚠️ Warning: Changing the embedding model will require
-                          rebuilding the RAG database
-                        </Text>
-                      </Box>
-                    </VStack>
-                  </TabPanel>
+                          <Text fontSize="sm" color="gray.500">
+                            Configure the embedding model used for knowledge base
+                            searches
+                          </Text>
+                        </Box>
+
+                        <Box>
+                          <Tooltip label="Model used for generating embeddings for RAG - changing this will require rebuilding the database">
+                            <Text fontSize="sm" mb="2" fontWeight={"bold"}>
+                              Embedding Model
+                            </Text>
+                          </Tooltip>
+                          <Select
+                            size="sm"
+                            value={config?.EMBEDDING_MODEL || ""}
+                            onChange={(e) =>
+                              handleEmbeddingModelChange(e.target.value)
+                            }
+                            placeholder="Select embedding model"
+                            className="input-style"
+                          >
+                            {embeddingModelOptions.map((model) => (
+                              <option key={model} value={model}>
+                                {model}
+                              </option>
+                            ))}
+                          </Select>
+                          <Text fontSize="xs" color="gray.500" mt="1">
+                            Available embedding models depend on the LLM endpoint
+                            configured in the LLM tab
+                          </Text>
+                          <Text
+                            fontSize="xs"
+                            color={warningBg}
+                            mt="2"
+                            fontWeight="medium"
+                          >
+                            ⚠️ Warning: Changing the embedding model will require
+                            rebuilding the RAG database
+                          </Text>
+                        </Box>
+                      </VStack>
+                    </TabPanel>
+                  )}
                 </TabPanels>
               </Tabs>
             )}

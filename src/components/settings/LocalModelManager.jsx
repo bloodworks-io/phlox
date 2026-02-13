@@ -65,6 +65,7 @@ import { useLocalModels } from "../../utils/hooks/useLocalModels";
 import {
   calculateLLMPerformance,
   parseAppleSilicon,
+  getSmartRecommendations,
 } from "../../utils/performanceUtils";
 
 const LocalModelManager = ({ className }) => {
@@ -156,41 +157,14 @@ const LocalModelManager = ({ className }) => {
     return models.some((m) => m.filename === model.filename);
   };
 
-  // Get smart recommendations - based on RAM tiers
-  const getSmartRecommendations = () => {
-    if (!systemSpecs || !availableModels.length) return [];
-
-    const ram = systemSpecs.total_memory_gb;
-
-    // Determine tier based on machine RAM
-    // Tier 1: 8-16GB (base Macs)
-    // Tier 2: 16-32GB (mid-high-end Macs)
-    // Tier 3: 32GB+ (workstations)
-    let tier;
-    if (ram < 16) {
-      tier = 1;
-    } else if (ram < 32) {
-      tier = 2;
-    } else {
-      tier = 3;
-    }
-
-    // Filter models that are in this tier AND fit in RAM
-    const fittingModels = availableModels.filter(
-      (m) => (m.tier || []).includes(tier) && ram >= m.recommended_ram_gb,
-    );
-
-    // Map to recommended types
-    return fittingModels.map((model, index) => ({
-      ...model,
-      recommendedType:
-        index === 0 ? "fastest" : index === 1 ? "recommended" : "best_quality",
-    }));
-  };
+  // Get smart recommendations using shared utility
+  const smartRecommendations = systemSpecs && availableModels.length > 0
+    ? getSmartRecommendations(availableModels, systemSpecs)
+    : [];
 
   // Get other models - ones that don't fit or are deprioritized
   const getOtherModels = () => {
-    const recommendedIds = new Set(getSmartRecommendations().map((m) => m.id));
+    const recommendedIds = new Set(smartRecommendations.map((m) => m.id));
     return availableModels.filter((m) => !recommendedIds.has(m.id));
   };
 
@@ -319,7 +293,6 @@ const LocalModelManager = ({ className }) => {
     );
   };
 
-  const smartRecommendations = getSmartRecommendations();
   const otherModels = getOtherModels();
 
   if (!localStatus) {
