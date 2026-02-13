@@ -27,19 +27,22 @@ cd "$WHISPER_DIR/build"
 # Configure with CMake - build all examples (including server)
 # Enable Core ML support for macOS with Neural Engine acceleration
 # WHISPER_COREML_ALLOW_FALLBACK allows Metal-only operation if .mlmodelc files are missing
-echo "Configuring whisper.cpp build with Core ML support (no ffmpeg)..."
-cmake .. -DCMAKE_BUILD_TYPE=Release -DWHISPER_COREML=ON -DWHISPER_COREML_ALLOW_FALLBACK=ON -DWHISPER_FFMPEG=OFF
+echo "Configuring whisper.cpp build with Core ML support (no ffmpeg, static libs)..."
+cmake .. -DCMAKE_BUILD_TYPE=Release -DWHISPER_COREML=ON -DWHISPER_COREML_ALLOW_FALLBACK=ON -DWHISPER_FFMPEG=OFF -DBUILD_SHARED_LIBS=OFF
 
 # Build the server binary
 echo "Building whisper-server binary..."
 cmake --build . --target server -j$(sysctl -n hw.ncpu)
 
-# Copy the binary to src-tauri root
-# The server binary is built at build/bin/server
+echo "Fixing rpath in whisper-server..."
 if [ -f "bin/server" ]; then
     cp bin/server "$SCRIPT_DIR/whisper-server"
     chmod +x "$SCRIPT_DIR/whisper-server"
+    install_name_tool -delete_rpath "$WHISPER_DIR/build/src" "$SCRIPT_DIR/whisper-server" 2>/dev/null || true
+    install_name_tool -delete_rpath "$WHISPER_DIR/build/ggml" "$SCRIPT_DIR/whisper-server" 2>/dev/null || true
     echo "Whisper server binary built successfully at: $SCRIPT_DIR/whisper-server"
+    echo "Checking for remaining rpath entries:"
+    otool -L "$SCRIPT_DIR/whisper-server" | grep "@rpath" || echo "✓ No problematic rpath entries"
 else
     echo "Error: whisper-server binary not found after build"
     echo "Looking in: $(pwd)"

@@ -32,7 +32,12 @@
     "copyright": "",
     "shortDescription": "",
     "longDescription": "",
-    "externalBin": ["binaries/server"],
+    "externalBin": [
+      "binaries/server",
+      "binaries/phlox-pm",
+      "binaries/llama-server",
+      "binaries/whisper-server"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -12,6 +12,9 @@ a = Analysis(
     hiddenimports=[
         "tokenizers",
         "tqdm",
+        "numpy",
+        "sqlcipher3",
+        "httptools",
     ],
     hookspath=[],
     hooksconfig={},
@@ -40,7 +43,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

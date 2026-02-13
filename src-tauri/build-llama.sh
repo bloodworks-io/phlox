@@ -28,24 +28,27 @@ cd "$LLAMA_DIR/build"
 # Configure with CMake - build llama-server
 # Enable Metal support for macOS with GPU acceleration
 # LLAMA_ACCELERATE: Enable Accelerate framework for CPU inference
-echo "Configuring llama.cpp build with Metal support..."
+echo "Configuring llama.cpp build with Metal support (static libs)..."
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
   -DLLAMA_METAL=ON \
   -DLLAMA_ACCELERATE=ON \
-  -DLLAMA_ALL_WARNINGS=OFF
+  -DLLAMA_ALL_WARNINGS=OFF \
+  -DBUILD_SHARED_LIBS=OFF
 
 # Build the llama-server binary
 echo "Building llama-server binary..."
 cmake --build . --target llama-server -j$(sysctl -n hw.ncpu)
 
-# Copy the binary to src-tauri root
-# The server binary is built at build/bin/llama-server
+echo "Fixing rpath in llama-server..."
 if [ -f "bin/llama-server" ]; then
     cp bin/llama-server "$SCRIPT_DIR/llama-server"
     chmod +x "$SCRIPT_DIR/llama-server"
+    install_name_tool -delete_rpath "$LLAMA_DIR/build/src" "$SCRIPT_DIR/llama-server" 2>/dev/null || true
+    install_name_tool -delete_rpath "$LLAMA_DIR/build/ggml" "$SCRIPT_DIR/llama-server" 2>/dev/null || true
     echo "llama-server binary built successfully at: $SCRIPT_DIR/llama-server"
-    echo "Binary size: $(du -h "$SCRIPT_DIR/llama-server" | cut -f1)"
+    echo "Checking for remaining rpath entries:"
+    otool -L "$SCRIPT_DIR/llama-server" | grep "@rpath" || echo "✓ No problematic rpath entries"
 else
     echo "Error: llama-server binary not found after build"
     echo "Looking in: $(pwd)"
