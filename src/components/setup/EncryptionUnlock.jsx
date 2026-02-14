@@ -53,8 +53,8 @@ const EncryptionUnlock = ({ onComplete }) => {
       // Unlock and get hex passphrase
       const hexPassphrase = await encryptionApi.unlock(passphrase);
 
-      // Start the server with the hex passphrase
-      await invoke("start_server_command", { passphraseHex: hexPassphrase });
+      // Send passphrase to the waiting server
+      await invoke("send_passphrase_command", { passphraseHex: hexPassphrase });
       // Reset cached port so we get the new server port
       resetApiConfig();
 
@@ -87,7 +87,8 @@ const EncryptionUnlock = ({ onComplete }) => {
       // Determine if it's a passphrase error or server start error
       const isPassphraseError = error.toString().includes("Failed to unlock") ||
         error.toString().includes("incorrect") ||
-        error.toString().includes("Passphrase");
+        error.toString().includes("Passphrase") ||
+        error.toString().includes("wrong key");
 
       toast({
         title: isPassphraseError ? "Incorrect Passphrase" : "Server Failed to Start",

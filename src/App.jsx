@@ -15,6 +15,7 @@ import {
   createContext,
   useContext,
 } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { TemplateProvider } from "./utils/templates/templateContext";
 import { ApiToastProvider } from "./utils/helpers/apiToastContext";
 import Sidebar from "./components/sidebar/Sidebar";
@@ -332,6 +333,13 @@ function AppContent({ setIsInitializing }) {
           setShowEncryptionSetup(true);
         } else if (status.has_setup && !status.has_keychain) {
           // Has encrypted data but not unlocked
+          // Start the server in warm mode (it will wait for passphrase)
+          try {
+            await invoke("start_server_command");
+            console.log("Server started in warm mode, waiting for passphrase");
+          } catch (e) {
+            console.warn("Failed to warm start server:", e);
+          }
           setShowEncryptionUnlock(true);
         }
         // If has_keychain is true, proceed to app normally
