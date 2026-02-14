@@ -1,14 +1,33 @@
 #!/bin/bash
 # Build script for whisper.cpp server
 # This script compiles the whisper.cpp HTTP server example as a standalone binary
+#
+# Use --debug to copy binaries to target/debug/ for development (tauri dev)
 
 set -e
+
+# Parse arguments
+DEBUG_MODE=false
+for arg in "$@"; do
+    case $arg in
+        --debug)
+            DEBUG_MODE=true
+            shift
+            ;;
+    esac
+done
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WHISPER_DIR="$SCRIPT_DIR/whisper.cpp"
 
 echo "Building whisper.cpp server from: $WHISPER_DIR"
+
+if [ "$DEBUG_MODE" = true ]; then
+    echo "Mode: DEBUG (for tauri dev)"
+else
+    echo "Mode: RELEASE (for production)"
+fi
 
 # Check if whisper.cpp directory exists
 if [ ! -d "$WHISPER_DIR" ]; then
@@ -49,4 +68,27 @@ else
     echo "Contents of bin/:"
     ls -la bin/ || echo "bin/ directory not found"
     exit 1
+fi
+
+# Sign binary if on macOS with signing identity (release builds only)
+if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
+    # Support both APPLE_SIGNING_IDENTITY (Tauri convention) and SIGNING_IDENTITY
+    SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-${SIGNING_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)".*/\1/')}}"
+
+    if [ -n "$SIGNING_IDENTITY" ]; then
+        echo "Signing whisper-server with: $SIGNING_IDENTITY"
+        codesign --force --options runtime --timestamp \
+            --sign "$SIGNING_IDENTITY" \
+            "$SCRIPT_DIR/whisper-server"
+        echo "✅ whisper-server signed"
+    fi
+fi
+
+# In debug mode, also copy to target/debug for dev mode (tauri dev)
+if [ "$DEBUG_MODE" = true ]; then
+    echo "Copying to target/debug for development..."
+    mkdir -p "$SCRIPT_DIR/target/debug"
+    cp "$SCRIPT_DIR/whisper-server" "$SCRIPT_DIR/target/debug/whisper-server"
+    chmod +x "$SCRIPT_DIR/target/debug/whisper-server"
+    echo "✅ Copied to target/debug/whisper-server"
 fi

@@ -1,20 +1,28 @@
 #!/bin/bash
 # Combined build script for Phlox Tauri application
 # This script builds all required components:
-# 1. Python server (PyInstaller)
+# 1. Python server (Nuitka)
 # 2. phlox-pm (Process Manager - Rust)
 # 3. whisper.cpp server (for local transcription) [SKIP with --skip-whisper]
 # 4. llama.cpp server (for local LLM) [SKIP with --skip-llama]
 # 5. Copies all binaries to src-tauri/binaries/ for Tauri bundling
+#
+# Use --debug for development mode (tauri dev)
+# Use --skip-cpp to skip C++ builds
 
 set -e
 
 # Parse arguments
 SKIP_WHISPER=false
 SKIP_LLAMA=false
+DEBUG_MODE=false
 
 for arg in "$@"; do
     case $arg in
+        --debug)
+            DEBUG_MODE=true
+            shift
+            ;;
         --skip-whisper)
             SKIP_WHISPER=true
             shift
@@ -40,6 +48,12 @@ echo "=========================================="
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+if [ "$DEBUG_MODE" = true ]; then
+    echo "Mode: DEBUG (for tauri dev)"
+else
+    echo "Mode: RELEASE (for production)"
+fi
 
 # Detect platform (using Rust target triple naming for Tauri compatibility)
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -70,14 +84,26 @@ echo "Step 1: Building phlox-pm (Process Manager)..."
 echo "=========================================="
 
 cd src-tauri
-cargo build --release -p phlox-pm
+if [ "$DEBUG_MODE" = true ]; then
+    cargo build -p phlox-pm
+else
+    cargo build --release -p phlox-pm
+fi
 cd ..
 
 # Verify the binary was built
-if [[ "$PLATFORM" == "windows-"* ]]; then
-    PM_BIN="src-tauri/target/release/phlox-pm.exe"
+if [ "$DEBUG_MODE" = true ]; then
+    if [[ "$PLATFORM" == "windows-"* ]]; then
+        PM_BIN="src-tauri/target/debug/phlox-pm.exe"
+    else
+        PM_BIN="src-tauri/target/debug/phlox-pm"
+    fi
 else
-    PM_BIN="src-tauri/target/release/phlox-pm"
+    if [[ "$PLATFORM" == "windows-"* ]]; then
+        PM_BIN="src-tauri/target/release/phlox-pm.exe"
+    else
+        PM_BIN="src-tauri/target/release/phlox-pm"
+    fi
 fi
 
 if [ ! -f "$PM_BIN" ]; then
@@ -95,39 +121,17 @@ echo "=========================================="
 echo "Step 2: Building Python Server..."
 echo "=========================================="
 
-cd server
-uv run pyinstaller ../pyinstaller.spec --clean --noconfirm
-cd ..
+if [ "$DEBUG_MODE" = true ]; then
+    bash src-tauri/build-server.sh --debug
+else
+    bash src-tauri/build-server.sh
+fi
 
 # Check if the server build was successful
-if [ ! -d "server/dist/server" ]; then
-    echo "❌ Error: server/dist/server directory not found!"
+if [ ! -d "src-tauri/server_dist" ]; then
+    echo "❌ Error: src-tauri/server_dist directory not found!"
     exit 1
 fi
-
-# Copy server to Tauri directory
-echo "Copying server binary to Tauri..."
-rm -rf "src-tauri/server_dist"
-cp -r "server/dist/server" "src-tauri/server_dist"
-
-# Create Tauri binaries directory
-mkdir -p "src-tauri/binaries"
-
-# Create server wrapper script
-if [[ "$PLATFORM" == "windows-"* ]]; then
-    SERVER_TARGET="server-x86_64-pc-windows-msvc.exe"
-else
-    SERVER_TARGET="server-${PLATFORM}"
-fi
-
-cat > "src-tauri/binaries/$SERVER_TARGET" << 'EOF'
-#!/bin/bash
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$DIR/../Resources/server_dist/server" "$@" < /dev/stdin
-EOF
-
-chmod +x "src-tauri/binaries/$SERVER_TARGET"
-chmod +x "src-tauri/server_dist/server"
 
 echo "✅ Python server built successfully"
 
@@ -149,7 +153,11 @@ if [ "$SKIP_WHISPER" = true ]; then
         echo "⚠️  Warning: whisper-server binary not found at $WHISPER_BIN"
     fi
 else
-    bash src-tauri/build-whisper.sh
+    if [ "$DEBUG_MODE" = true ]; then
+        bash src-tauri/build-whisper.sh --debug
+    else
+        bash src-tauri/build-whisper.sh
+    fi
 
     # Check if whisper-server was built
     if [[ "$PLATFORM" == "windows-"* ]]; then
@@ -184,7 +192,11 @@ if [ "$SKIP_LLAMA" = true ]; then
         echo "⚠️  Warning: llama-server binary not found at $LLAMA_BIN"
     fi
 else
-    bash src-tauri/build-llama.sh
+    if [ "$DEBUG_MODE" = true ]; then
+        bash src-tauri/build-llama.sh --debug
+    else
+        bash src-tauri/build-llama.sh
+    fi
 
     # Check if llama-server was built
     if [[ "$PLATFORM" == "windows-"* ]]; then
@@ -238,6 +250,58 @@ else
     echo "⚠️  Warning: whisper-server not found, skipping"
 fi
 
+# In debug mode, also copy C++ servers directly to target/debug/ (not needed for phlox-pm/server - they're already there)
+if [ "$DEBUG_MODE" = true ]; then
+    echo ""
+    echo "Copying C++ servers to target/debug for dev mode..."
+    mkdir -p "src-tauri/target/debug"
+
+    if [ -f "$LLAMA_BIN" ]; then
+        cp "$LLAMA_BIN" "src-tauri/target/debug/llama-server"
+        chmod +x "src-tauri/target/debug/llama-server"
+        echo "✅ Copied llama-server to target/debug"
+    fi
+
+    if [ -f "$WHISPER_BIN" ]; then
+        cp "$WHISPER_BIN" "src-tauri/target/debug/whisper-server"
+        chmod +x "src-tauri/target/debug/whisper-server"
+        echo "✅ Copied whisper-server to target/debug"
+    fi
+fi
+
+# ========================================
+# Step 6: Sign all binaries (macOS only, release builds)
+# ========================================
+if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
+    echo ""
+    echo "=========================================="
+    echo "Step 6: Signing binaries..."
+    echo "=========================================="
+
+    # Auto-detect signing identity (supports Tauri convention)
+    SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-${SIGNING_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)".*/\1/')}}"
+
+    if [ -n "$SIGNING_IDENTITY" ]; then
+        echo "Using signing identity: $SIGNING_IDENTITY"
+
+        # Sign external binaries
+        for binary in src-tauri/binaries/phlox-pm-${PLATFORM} \
+                     src-tauri/binaries/llama-server-${PLATFORM} \
+                     src-tauri/binaries/whisper-server-${PLATFORM}; do
+            if [ -f "$binary" ]; then
+                echo "Signing: $binary"
+                codesign --force --options runtime --timestamp \
+                    --sign "$SIGNING_IDENTITY" "$binary"
+            fi
+        done
+
+        echo "✅ All external binaries signed"
+    else
+        echo "⚠️  No signing identity found - skipping code signing"
+        echo "   Install Developer ID certificate or set SIGNING_IDENTITY"
+    fi
+fi
+
 echo "✅ All binaries copied to src-tauri/binaries/"
 
 # ========================================
@@ -264,9 +328,13 @@ fi
 echo ""
 echo "All binaries copied to src-tauri/binaries/ with platform-specific names."
 echo ""
-echo "You can now build the Tauri application with:"
-echo "  cd src-tauri"
-echo "  npm run tauri build"
+echo "Next steps:"
+echo "  1. Build the Tauri application:"
+echo "     npm run tauri-build"
+echo ""
+echo "  2. Notarize the app for distribution (macOS):"
+echo "     cd src-tauri"
+echo "     ./notarize.sh notarize target/release/bundle/macos/Phlox.app"
 echo ""
 echo "To skip C++ builds next time:"
 echo "  ./build-all.sh --skip-cpp"

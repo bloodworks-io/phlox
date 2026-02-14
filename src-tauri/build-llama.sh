@@ -1,14 +1,33 @@
 #!/bin/bash
 # Build script for llama.cpp server
 # This script compiles the llama.cpp HTTP server as a standalone binary
+#
+# Use --debug to copy binaries to target/debug/ for development (tauri dev)
 
 set -e
+
+# Parse arguments
+DEBUG_MODE=false
+for arg in "$@"; do
+    case $arg in
+        --debug)
+            DEBUG_MODE=true
+            shift
+            ;;
+    esac
+done
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LLAMA_DIR="$SCRIPT_DIR/llama.cpp"
 
 echo "Building llama.cpp server from: $LLAMA_DIR"
+
+if [ "$DEBUG_MODE" = true ]; then
+    echo "Mode: DEBUG (for tauri dev)"
+else
+    echo "Mode: RELEASE (for production)"
+fi
 
 # Check if llama.cpp directory exists
 if [ ! -d "$LLAMA_DIR" ]; then
@@ -55,4 +74,27 @@ else
     echo "Contents of bin/:"
     ls -la bin/ || echo "bin/ directory not found"
     exit 1
+fi
+
+# Sign binary if on macOS with signing identity (release builds only)
+if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
+    # Support both APPLE_SIGNING_IDENTITY (Tauri convention) and SIGNING_IDENTITY
+    SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-${SIGNING_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)".*/\1/')}}"
+
+    if [ -n "$SIGNING_IDENTITY" ]; then
+        echo "Signing llama-server with: $SIGNING_IDENTITY"
+        codesign --force --options runtime --timestamp \
+            --sign "$SIGNING_IDENTITY" \
+            "$SCRIPT_DIR/llama-server"
+        echo "✅ llama-server signed"
+    fi
+fi
+
+# In debug mode, also copy to target/debug for dev mode (tauri dev)
+if [ "$DEBUG_MODE" = true ]; then
+    echo "Copying to target/debug for development..."
+    mkdir -p "$SCRIPT_DIR/target/debug"
+    cp "$SCRIPT_DIR/llama-server" "$SCRIPT_DIR/target/debug/llama-server"
+    chmod +x "$SCRIPT_DIR/target/debug/llama-server"
+    echo "✅ Copied to target/debug/llama-server"
 fi
