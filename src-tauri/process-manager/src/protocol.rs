@@ -2,22 +2,30 @@ use serde::{Deserialize, Serialize};
 
 /// Request types from Tauri app to Process Manager
 #[derive(Debug, Deserialize)]
-#[serde(tag = "type", content = "payload")]
-pub enum Request {
-    #[serde(rename = "start_llama")]
-    StartLlama { model_path: Option<String> },
-    #[serde(rename = "start_whisper")]
-    StartWhisper { model_path: Option<String> },
-    #[serde(rename = "start_server")]
-    StartServer { passphrase: String },
-    #[serde(rename = "stop")]
-    Stop { service: String },
-    #[serde(rename = "status")]
-    Status,
-    #[serde(rename = "shutdown")]
-    Shutdown,
-    #[serde(rename = "ping")]
-    Ping,
+pub struct Request {
+    #[serde(rename = "type")]
+    pub request_type: String,
+    #[serde(rename = "payload", default)]
+    pub payload: Option<serde_json::Value>,
+}
+
+impl Request {
+    pub fn from_json(json: &str) -> Result<Self, String> {
+        serde_json::from_str(json).map_err(|e| format!("Invalid request: {}", e))
+    }
+
+    pub fn request_type(&self) -> &str {
+        &self.request_type
+    }
+
+    pub fn get_payload<T: for<'de> Deserialize<'de>>(&self) -> Result<T, String> {
+        match &self.payload {
+            Some(value) => {
+                serde_json::from_value(value.clone()).map_err(|e| format!("Invalid payload: {}", e))
+            }
+            None => Err("No payload".to_string()),
+        }
+    }
 }
 
 /// Response types from Process Manager to Tauri app
@@ -40,6 +48,7 @@ pub enum OkData {
         llama_port: u16,
         whisper_port: u16,
     },
+    WaitingForPassphrase,
     Stopped,
     Status(StatusData),
     Pong,
@@ -62,12 +71,6 @@ pub struct ServiceStatus {
     pub port: u16,
 }
 
-impl Request {
-    pub fn from_json(json: &str) -> Result<Self, String> {
-        serde_json::from_str(json).map_err(|e| format!("Invalid request: {}", e))
-    }
-}
-
 impl Response {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap_or_else(|_| {
@@ -86,6 +89,10 @@ impl Response {
             llama_port,
             whisper_port,
         })
+    }
+
+    pub fn ok_waiting_for_passphrase() -> Self {
+        Response::Ok(OkData::WaitingForPassphrase)
     }
 
     pub fn ok_stopped() -> Self {

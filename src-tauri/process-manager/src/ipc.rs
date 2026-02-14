@@ -1,6 +1,6 @@
 use crate::process::{
-    create_status_data, kill_all_processes, start_llama, start_server, start_whisper,
-    AllocatedPorts, ManagedProcess,
+    create_status_data, kill_all_processes, send_passphrase_and_wait_for_ports, start_llama,
+    start_server, start_whisper, AllocatedPorts, ManagedProcess,
 };
 use crate::protocol::{Request, Response};
 use log::{error, info, warn};
@@ -43,8 +43,8 @@ fn handle_client(
         }
     };
 
-    let response = match request {
-        Request::StartLlama { model_path: _ } => {
+    let response = match request.request_type() {
+        "start_llama" => {
             if state.llama.is_some() {
                 Response::error("Llama server is already running")
             } else {
@@ -76,7 +76,7 @@ fn handle_client(
                 }
             }
         }
-        Request::StartWhisper { model_path: _ } => {
+        "start_whisper" => {
             if state.whisper.is_some() {
                 Response::error("Whisper server is already running")
             } else {
@@ -106,24 +106,23 @@ fn handle_client(
                 }
             }
         }
-        Request::StartServer { passphrase } => {
+        "start_server" => {
             if state.server.is_some() {
                 Response::error("Server is already running")
             } else {
-                match start_server(&passphrase) {
-                    Ok((mut proc, ports)) => {
-                        // Store allocated ports for later use by llama/whisper
-                        state.allocated_ports = Some(ports.clone());
-
+                match start_server() {
+                    Ok(mut proc) => {
+                        // Check if process exited immediately
                         match proc.child.try_wait() {
                             Ok(Some(status)) => {
                                 error!("Server process exited immediately: {:?}", status);
                                 Response::error("Server failed to start")
                             }
                             Ok(None) => {
-                                let pid = proc.child.id();
+                                let _pid = proc.child.id();
                                 state.server = Some(proc);
-                                Response::ok_started(pid, ports.server, ports.llama, ports.whisper)
+                                // Server is waiting for passphrase
+                                Response::ok_waiting_for_passphrase()
                             }
                             Err(e) => {
                                 error!("Failed to check server process: {}", e);
@@ -135,7 +134,46 @@ fn handle_client(
                 }
             }
         }
-        Request::Stop { service } => {
+        "send_passphrase" => {
+            let passphrase: String = match request.get_payload() {
+                Ok(p) => p,
+                Err(e) => {
+                    error!("Failed to parse passphrase payload: {}", e);
+                    return Ok(());
+                }
+            };
+            if let Some(ref mut proc) = state.server {
+                match send_passphrase_and_wait_for_ports(proc, &passphrase) {
+                    Ok(ports) => {
+                        // Store allocated ports for later use by llama/whisper
+                        state.allocated_ports = Some(ports.clone());
+                        Response::ok_started(
+                            proc.child.id(),
+                            ports.server,
+                            ports.llama,
+                            ports.whisper,
+                        )
+                    }
+                    Err(e) => {
+                        error!("Failed to send passphrase: {}", e);
+                        // Remove the failed server process
+                        state.server = None;
+                        crate::process::remove_pid_file("server");
+                        Response::error(e)
+                    }
+                }
+            } else {
+                Response::error("Server is not running. Call start_server first.")
+            }
+        }
+        "stop" => {
+            let service: String = match request.get_payload() {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("Failed to parse stop payload: {}", e);
+                    return Ok(());
+                }
+            };
             let result = match service.as_str() {
                 "llama" => {
                     if let Some(mut proc) = state.llama.take() {
@@ -171,7 +209,7 @@ fn handle_client(
             };
             result.unwrap_or_else(|| Response::error("Failed to stop service"))
         }
-        Request::Status => {
+        "status" => {
             // Update process states
             update_process_states(state);
             let status = create_status_data(
@@ -181,11 +219,13 @@ fn handle_client(
             );
             Response::ok_status(status)
         }
-        Request::Shutdown => {
+        "shutdown" => {
             info!("Shutdown requested");
+            state.should_shutdown = true;
             Response::ok_shutdown()
         }
-        Request::Ping => Response::ok_pong(),
+        "ping" => Response::ok_pong(),
+        _ => Response::error(format!("Unknown request type: {}", request.request_type())),
     };
 
     stream.write_all(response.to_json().as_bytes())?;

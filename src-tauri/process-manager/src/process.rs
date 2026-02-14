@@ -179,8 +179,9 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
     // Use provided port or fallback to default
     let actual_port = port.unwrap_or(LLAMA_PORT);
 
+    log::info!("Starting llama-server from: {:?}", server_path);
     log::info!(
-        "Starting llama-server with model: {:?} on port {}",
+        "llama-server model: {:?}, port: {}",
         model_path,
         actual_port
     );
@@ -244,8 +245,9 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
     // Use provided port or fallback to default
     let actual_port = port.unwrap_or(WHISPER_PORT);
 
+    log::info!("Starting whisper-server from: {:?}", server_path);
     log::info!(
-        "Starting whisper-server with model: {:?} on port {}",
+        "whisper-server model: {:?}, port: {}",
         model_path,
         actual_port
     );
@@ -288,9 +290,16 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
     })
 }
 
-/// Wait for the server to output its allocated ports via stdout
+/// Signal from server during startup
+#[derive(Debug)]
+pub enum ServerSignal {
+    WaitingForPassphrase,
+    Ports(AllocatedPorts),
+}
+
+/// Wait for the server to output a signal via stdout
 /// Also monitors stderr for specific error messages like "wrong key"
-pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, String> {
+pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String> {
     use std::io::Read;
 
     let stdout = child.stdout.as_mut().ok_or("Failed to capture stdout")?;
@@ -299,7 +308,7 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
     let mut stdout_reader = std::io::BufReader::new(stdout);
     let mut stderr_reader = std::io::BufReader::new(stderr);
 
-    log::info!("Waiting for PORTS line from server stdout...");
+    log::info!("Waiting for signal from server stdout...");
 
     // Try to read for up to 10 seconds
     let start = std::time::Instant::now();
@@ -309,7 +318,7 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
 
     loop {
         if start.elapsed() > timeout {
-            log::warn!("Timeout waiting for PORTS line");
+            log::warn!("Timeout waiting for server signal");
             log::warn!(
                 "Stdout content: {}",
                 String::from_utf8_lossy(&stdout_buffer)
@@ -357,12 +366,12 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
             }
         }
 
-        // Read stdout for PORTS line
+        // Read stdout for signals
         let mut stdout_byte = [0u8; 1];
         match stdout_reader.read(&mut stdout_byte) {
             Ok(0) => {
                 // EOF on stdout
-                log::warn!("EOF reached while waiting for PORTS line");
+                log::warn!("EOF reached while waiting for server signal");
                 log::warn!(
                     "Stdout content: {}",
                     String::from_utf8_lossy(&stdout_buffer)
@@ -373,16 +382,24 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
                     "Stderr content: {}",
                     String::from_utf8_lossy(&stderr_buffer)
                 );
-                return Err("Server exited before sending PORTS line".to_string());
+                return Err("Server exited before sending signal".to_string());
             }
             Ok(_) => {
                 stdout_buffer.push(stdout_byte[0]);
                 let content = String::from_utf8_lossy(&stdout_buffer);
 
-                // Check if we have a complete line with PORTS
+                // Check if we have a complete line
                 if let Some(newline_pos) = content.find('\n') {
                     let line = &content[..newline_pos];
                     log::debug!("Read line from stdout: {}", line);
+
+                    // Check for WAITING_FOR_PASSPHRASE signal
+                    if line.trim() == "WAITING_FOR_PASSPHRASE" {
+                        log::info!("Server is waiting for passphrase");
+                        return Ok(ServerSignal::WaitingForPassphrase);
+                    }
+
+                    // Check for PORTS line
                     if line.trim().starts_with("PORTS:") {
                         let trimmed = line.trim();
                         let parts = trimmed.strip_prefix("PORTS:").ok_or("Invalid PORTS line")?;
@@ -406,15 +423,25 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
                                 llama,
                                 whisper
                             );
-                            return Ok(AllocatedPorts {
+                            return Ok(ServerSignal::Ports(AllocatedPorts {
                                 server,
                                 llama,
                                 whisper,
-                            });
+                            }));
                         } else {
                             log::warn!("PORTS line has wrong number of parts: {:?}", ports);
                         }
                     }
+
+                    // Check for ERROR line
+                    if line.trim().starts_with("ERROR:") {
+                        let error_msg = line
+                            .trim()
+                            .strip_prefix("ERROR:")
+                            .unwrap_or("Unknown error");
+                        return Err(error_msg.to_string());
+                    }
+
                     // Remove this line from buffer and continue
                     stdout_buffer = content[newline_pos + 1..].as_bytes().to_vec();
                 }
@@ -431,16 +458,28 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
     }
 }
 
-/// Start the Python server
-pub fn start_server(passphrase: &str) -> Result<(ManagedProcess, AllocatedPorts), String> {
+/// Wait for the server to output its allocated ports via stdout
+/// (wrapper around wait_for_server_signal that expects Ports)
+pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, String> {
+    match wait_for_server_signal(child)? {
+        ServerSignal::Ports(ports) => Ok(ports),
+        ServerSignal::WaitingForPassphrase => {
+            Err("Unexpected WAITING_FOR_PASSPHRASE signal".to_string())
+        }
+    }
+}
+
+/// Start the Python server (waits for passphrase via stdin)
+/// Returns the process waiting for passphrase after confirming WAITING_FOR_PASSPHRASE signal
+pub fn start_server() -> Result<ManagedProcess, String> {
     let server_path = find_python_server().ok_or("Server binary not found")?;
 
-    log::info!("Starting Python server");
+    log::info!("Starting Python server from: {:?}", server_path);
 
     let mut cmd = Command::new(&server_path);
-    // Pipe passphrase to stdin instead of environment variable for better security
+    // Keep stdin open for passphrase
     cmd.stdin(std::process::Stdio::piped());
-    // Capture stdout to read the allocated ports
+    // Capture stdout to read signals
     cmd.stdout(std::process::Stdio::piped());
 
     #[cfg(unix)]
@@ -455,30 +494,53 @@ pub fn start_server(passphrase: &str) -> Result<(ManagedProcess, AllocatedPorts)
         .spawn()
         .map_err(|e| format!("Failed to spawn server: {}", e))?;
 
-    // Write passphrase to stdin and close the pipe
-    if let Some(mut stdin) = child.stdin.take() {
+    let pid = child.id();
+    log::info!(
+        "Server started with PID: {}, verifying it's ready for passphrase",
+        pid
+    );
+    write_pid_file("server", pid);
+
+    // Wait for WAITING_FOR_PASSPHRASE signal to confirm server is ready
+    match wait_for_server_signal(&mut child)? {
+        ServerSignal::WaitingForPassphrase => {
+            log::info!("Server confirmed ready for passphrase");
+            Ok(ManagedProcess {
+                child,
+                port: 0, // Port not known until after passphrase
+                service_type: ServiceType::Server,
+            })
+        }
+        ServerSignal::Ports(_) => {
+            Err("Unexpected PORTS signal - server initialized without passphrase".to_string())
+        }
+    }
+}
+
+/// Send passphrase to a waiting server and wait for ports
+pub fn send_passphrase_and_wait_for_ports(
+    process: &mut ManagedProcess,
+    passphrase: &str,
+) -> Result<AllocatedPorts, String> {
+    // Write passphrase to stdin
+    if let Some(ref mut stdin) = process.child.stdin {
         use std::io::Write;
         writeln!(stdin, "{}", passphrase)
             .map_err(|e| format!("Failed to write passphrase to stdin: {}", e))?;
-        // Drop stdin to signal EOF and prevent further writes
-        drop(stdin);
+        // Flush to ensure it's sent
+        stdin
+            .flush()
+            .map_err(|e| format!("Failed to flush stdin: {}", e))?;
+    } else {
+        return Err("Server stdin not available".to_string());
     }
 
     // Wait for PORTS line from stdout (also checks stderr for wrong key error)
-    let ports = wait_for_allocated_ports(&mut child)?;
+    let ports = wait_for_allocated_ports(&mut process.child)?;
+    process.port = ports.server;
 
-    let pid = child.id();
-    log::info!("Server started with PID: {}", pid);
-    write_pid_file("server", pid);
-
-    Ok((
-        ManagedProcess {
-            child,
-            port: ports.server,
-            service_type: ServiceType::Server,
-        },
-        ports,
-    ))
+    log::info!("Server fully initialized with ports: {:?}", ports);
+    Ok(ports)
 }
 
 /// Kill a process by PID

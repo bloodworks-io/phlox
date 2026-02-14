@@ -419,21 +419,41 @@ pub fn get_encryption_status() -> serde_json::Value {
     })
 }
 
-/// Start the Phlox server via process manager (called from frontend after encryption setup/unlock)
+/// Start the Phlox server via process manager (warm start - no passphrase yet)
 #[tauri::command]
-pub async fn start_server_command(
-    _app_handle: tauri::AppHandle,
-    passphrase_hex: String,
-) -> Result<String, String> {
-    log::info!("start_server_command called from frontend");
+pub async fn start_server_command(_app_handle: tauri::AppHandle) -> Result<String, String> {
+    log::info!("start_server_command called - warming up server");
 
     let client = ProcessManagerClient::new()
         .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
 
-    match client.start_server(passphrase_hex) {
+    match client.start_server() {
+        Ok(()) => {
+            log::info!("Server started and waiting for passphrase");
+            Ok("Server waiting for passphrase".to_string())
+        }
+        Err(e) => {
+            log::error!("Failed to start server: {}", e);
+            Err(format!("Failed to start server: {}", e))
+        }
+    }
+}
+
+/// Send passphrase to the waiting server
+#[tauri::command]
+pub async fn send_passphrase_command(
+    _app_handle: tauri::AppHandle,
+    passphrase_hex: String,
+) -> Result<String, String> {
+    log::info!("send_passphrase_command called");
+
+    let client = ProcessManagerClient::new()
+        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
+
+    match client.send_passphrase(passphrase_hex) {
         Ok((pid, server_port, llama_port, whisper_port)) => {
             log::info!(
-                "Server started with PID: {}, ports: server={}, llama={}, whisper={}",
+                "Server unlocked with PID: {}, ports: server={}, llama={}, whisper={}",
                 pid,
                 server_port,
                 llama_port,
@@ -446,11 +466,11 @@ pub async fn start_server_command(
                 log::info!("Server should be ready now");
             });
 
-            Ok(format!("Server started with PID: {}", pid))
+            Ok(format!("Server unlocked with PID: {}", pid))
         }
         Err(e) => {
-            log::error!("Failed to start server: {}", e);
-            Err(format!("Failed to start server: {}", e))
+            log::error!("Failed to send passphrase: {}", e);
+            Err(format!("Failed to unlock server: {}", e))
         }
     }
 }

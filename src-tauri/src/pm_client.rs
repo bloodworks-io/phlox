@@ -13,23 +13,66 @@ pub fn socket_path() -> PathBuf {
 }
 
 /// Request types sent to process manager
-#[derive(Debug, Serialize)]
-#[serde(tag = "type", content = "payload")]
+#[derive(Debug)]
 pub enum ClientRequest {
-    #[serde(rename = "start_llama")]
     StartLlama { model_path: Option<String> },
-    #[serde(rename = "start_whisper")]
     StartWhisper { model_path: Option<String> },
-    #[serde(rename = "start_server")]
-    StartServer { passphrase: String },
-    #[serde(rename = "stop")]
+    StartServer,
+    SendPassphrase { passphrase: String },
     Stop { service: String },
-    #[serde(rename = "status")]
     Status,
-    #[serde(rename = "shutdown")]
     Shutdown,
-    #[serde(rename = "ping")]
     Ping,
+}
+
+/// Wrapper for serializing requests with explicit payload field
+#[derive(Debug, Serialize)]
+struct RequestWrapper {
+    #[serde(rename = "type")]
+    request_type: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    payload: Option<serde_json::Value>,
+}
+
+impl ClientRequest {
+    /// Serialize the request to JSON with explicit payload field
+    fn to_json(&self) -> Result<String, serde_json::Error> {
+        let wrapper = match self {
+            ClientRequest::StartLlama { model_path } => RequestWrapper {
+                request_type: "start_llama",
+                payload: Some(serde_json::json!({ "model_path": model_path })),
+            },
+            ClientRequest::StartWhisper { model_path } => RequestWrapper {
+                request_type: "start_whisper",
+                payload: Some(serde_json::json!({ "model_path": model_path })),
+            },
+            ClientRequest::StartServer => RequestWrapper {
+                request_type: "start_server",
+                payload: None,
+            },
+            ClientRequest::SendPassphrase { passphrase } => RequestWrapper {
+                request_type: "send_passphrase",
+                payload: Some(serde_json::json!(passphrase)),
+            },
+            ClientRequest::Stop { service } => RequestWrapper {
+                request_type: "stop",
+                payload: Some(serde_json::json!({ "service": service })),
+            },
+            ClientRequest::Status => RequestWrapper {
+                request_type: "status",
+                payload: None,
+            },
+            ClientRequest::Shutdown => RequestWrapper {
+                request_type: "shutdown",
+                payload: None,
+            },
+            ClientRequest::Ping => RequestWrapper {
+                request_type: "ping",
+                payload: None,
+            },
+        };
+        serde_json::to_string(&wrapper)
+    }
 }
 
 /// Response types from process manager
@@ -54,6 +97,7 @@ pub enum OkData {
         #[serde(default)]
         whisper_port: u16,
     },
+    WaitingForPassphrase,
     Stopped,
     Status(ServiceStatusData),
     Pong,
@@ -138,7 +182,8 @@ impl ProcessManagerClient {
 
     /// Send a request and get a response
     fn send_request(&self, request: &ClientRequest) -> Result<ClientResponse, ClientError> {
-        let json = serde_json::to_string(request)
+        let json = request
+            .to_json()
             .map_err(|e| ClientError::RequestFailed(e.to_string()))?;
 
         // Create a new connection for each request
@@ -194,9 +239,20 @@ impl ProcessManagerClient {
         }
     }
 
-    /// Start the Python server
-    pub fn start_server(&self, passphrase: String) -> Result<(u32, u16, u16, u16), ClientError> {
-        match self.send_request(&ClientRequest::StartServer { passphrase })? {
+    /// Start the Python server (returns when server is waiting for passphrase)
+    pub fn start_server(&self) -> Result<(), ClientError> {
+        match self.send_request(&ClientRequest::StartServer)? {
+            ClientResponse::Ok(OkData::WaitingForPassphrase) => Ok(()),
+            ClientResponse::Error { message } => Err(ClientError::RequestFailed(message)),
+            _ => Err(ClientError::InvalidResponse(
+                "Unexpected response".to_string(),
+            )),
+        }
+    }
+
+    /// Send passphrase to the waiting server
+    pub fn send_passphrase(&self, passphrase: String) -> Result<(u32, u16, u16, u16), ClientError> {
+        match self.send_request(&ClientRequest::SendPassphrase { passphrase })? {
             ClientResponse::Ok(OkData::Started {
                 pid,
                 port,
@@ -273,7 +329,7 @@ impl ProcessManagerClient {
 
                 // Send ping request
                 let request = ClientRequest::Ping;
-                let json = match serde_json::to_string(&request) {
+                let json = match request.to_json() {
                     Ok(j) => j,
                     Err(_) => return false,
                 };
