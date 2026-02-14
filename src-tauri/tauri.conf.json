@@ -55,6 +55,7 @@
       "frameworks": [],
       "entitlements": "entitlements.plist",
       "signingIdentity": null,
+      "hardenedRuntime": true,
       "providerShortName": null,
       "exceptionDomain": ""
     },
