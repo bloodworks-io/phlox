@@ -6,6 +6,7 @@ if __name__ == "__main__":
 import logging
 import os
 import socket
+import sys
 from contextlib import asynccontextmanager, closing
 from pathlib import Path
 
@@ -36,8 +37,9 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
-logger.info("Initializing application...")
+logger.info("Initialising application...")
 scheduler = AsyncIOScheduler()
+
 
 if IS_TESTING:
     try:
@@ -51,6 +53,11 @@ else:
 # Start the scheduler when the app starts
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from server.database.entities.analysis import (
+        generate_daily_analysis,
+        run_nightly_reasoning,
+    )
+
     # Startup
     scheduler.start()
     # Schedule jobs
@@ -63,100 +70,110 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
 
 
-# Initialize config_manager and run migrations
-logger.info("Initializing DB and running migrations...")
-from server.database.config.manager import config_manager
+def initialize_and_get_app():
+    """Initialize database and return the FastAPI app.
 
-logger.info("Database initialized")
+    This is called after passphrase is available (desktop) or immediately (docker).
+    """
+    # Initialize config_manager and run migrations
+    logger.info("Initializing DB and running migrations...")
+    from server.database.config.manager import config_manager
 
-app = FastAPI(
-    title=APP_NAME,
-    lifespan=lifespan,  # Add the lifespan context manager
-)
+    logger.info("Database initialized")
 
-
-# CORS configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Then load API submodules
-from server.api import (
-    dashboard,
-    letter,
-    patient,
-    templates,
-    transcribe,
-)
-from server.api.config import router as config_router
-
-# Then load analysis submodules
-from server.database.entities.analysis import (
-    generate_daily_analysis,
-    run_nightly_reasoning,
-)
-from server.utils.rag.chroma import CHROMADB_AVAILABLE
-
-# Only create test endpoint in testing environment
-if IS_TESTING and test_database is not None:
-
-    @app.get("/test-db")
-    async def test_db():
-        try:
-            result = test_database()
-            logger.info(f"Database test succeeded: {result}")
-            return {"success": "Database test succeeded", "result": result}
-        except Exception as e:
-            logger.error(f"Database test failed: {str(e)}")
-            raise HTTPException(
-                status_code=500, detail=f"Database test failed: {str(e)}"
-            )
-
-
-# Include routers
-app.include_router(patient.router, prefix="/api/patient")
-app.include_router(transcribe.router, prefix="/api/transcribe")
-app.include_router(dashboard.router, prefix="/api/dashboard")
-
-# Conditionally include RAG routers if dependencies are available
-if CHROMADB_AVAILABLE:
-    from server.api import (
-        chat,
-        rag,
+    app = FastAPI(
+        title=APP_NAME,
+        lifespan=lifespan,  # Add the lifespan context manager
     )
 
-    app.include_router(rag.router, prefix="/api/rag")
-    app.include_router(chat.router, prefix="/api/chat")
+    # CORS configuration
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Then load API submodules
+    from server.api import (
+        dashboard,
+        letter,
+        patient,
+        templates,
+        transcribe,
+    )
+    from server.api.config import router as config_router
+
+    from server.utils.rag.chroma import CHROMADB_AVAILABLE
+
+    # Only create test endpoint in testing environment
+    if IS_TESTING and test_database is not None:
+
+        @app.get("/test-db")
+        async def test_db():
+            try:
+                result = test_database()
+                logger.info(f"Database test succeeded: {result}")
+                return {"success": "Database test succeeded", "result": result}
+            except Exception as e:
+                logger.error(f"Database test failed: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail=f"Database test failed: {str(e)}"
+                )
+
+    # Include routers
+    app.include_router(patient.router, prefix="/api/patient")
+    app.include_router(transcribe.router, prefix="/api/transcribe")
+    app.include_router(dashboard.router, prefix="/api/dashboard")
+
+    # Conditionally include RAG routers if dependencies are available
+    if CHROMADB_AVAILABLE:
+        from server.api import (
+            chat,
+            rag,
+        )
+
+        app.include_router(rag.router, prefix="/api/rag")
+        app.include_router(chat.router, prefix="/api/chat")
+    else:
+        logger.warning(
+            "RAG/Chat features disabled - dependencies not available."
+        )
+
+    app.include_router(config_router, prefix="/api/config")
+    app.include_router(templates.router, prefix="/api/templates")
+    app.include_router(letter.router, prefix="/api/letter")
+
+    # React app routes
+    @app.get("/new-patient")
+    @app.get("/settings")
+    @app.get("/rag")
+    @app.get("/clinic-summary")
+    @app.get("/outstanding-tasks")
+    async def serve_react_app():
+        return FileResponse(BUILD_DIR / "index.html")
+
+    # Serve static files
+    app.mount("/", StaticFiles(directory=BUILD_DIR, html=True), name="static")
+
+    # Catch-all route for any other paths
+    @app.get("/{full_path:path}")
+    async def catch_all(full_path: str):
+        return FileResponse(BUILD_DIR / "index.html")
+
+    return app
+
+
+# For Docker mode, initialize app at module load (backward compatibility)
+if IS_DOCKER:
+    from server.database.core.connection import initialize_database
+
+    initialize_database()  # Uses env/secret
+    app = initialize_and_get_app()
 else:
-    logger.warning("RAG/Chat features disabled - dependencies not available.")
-
-app.include_router(config_router, prefix="/api/config")
-app.include_router(templates.router, prefix="/api/templates")
-app.include_router(letter.router, prefix="/api/letter")
-
-
-# React app routes
-@app.get("/new-patient")
-@app.get("/settings")
-@app.get("/rag")
-@app.get("/clinic-summary")
-@app.get("/outstanding-tasks")
-async def serve_react_app():
-    return FileResponse(BUILD_DIR / "index.html")
-
-
-# Serve static files
-app.mount("/", StaticFiles(directory=BUILD_DIR, html=True), name="static")
-
-
-# Catch-all route for any other paths
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str):
-    return FileResponse(BUILD_DIR / "index.html")
+    # Desktop mode: app will be initialized after passphrase is received
+    app = None
 
 
 def find_free_port():
@@ -169,8 +186,35 @@ def find_free_port():
 
 
 def start_server_for_desktop():
-    """Start server with dynamic port for desktop app"""
-    logger.info(f"Desktop environment detected")
+    """Start server with dynamic port for desktop app.
+
+    Waits for passphrase from stdin before initializing database.
+    """
+    global app
+    logger.info("Desktop environment detected")
+
+    # Signal that we're waiting for passphrase
+    print("WAITING_FOR_PASSPHRASE", flush=True)
+
+    # Block waiting for passphrase from stdin
+    passphrase = sys.stdin.readline().strip()
+
+    if not passphrase:
+        logger.error("No passphrase received from stdin")
+        sys.exit(1)
+
+    # Initialize database with passphrase
+    from server.database.core.connection import initialize_database
+
+    try:
+        initialize_database(passphrase=passphrase)
+    except ValueError as e:
+        logger.error(f"Failed to initialize database: {e}")
+        print(f"ERROR:{e}", flush=True)
+        sys.exit(1)
+
+    # Now initialize the app
+    app = initialize_and_get_app()
 
     # Find 3 ports - one for each service
     server_port = find_free_port()
