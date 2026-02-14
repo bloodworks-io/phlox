@@ -25,11 +25,11 @@
     "start-server": "nodemon --ignore '/usr/src/app/venv/*' server/server.js",
     "dev": "parallel --tag --line-buffer ::: \"npm run start-react\" \"uvicorn server.server:app --reload --host 0.0.0.0 --port 6000\"",
     "build": "vite build",
-    "build-server": "./build-server.sh",
+    "build-server": "bash src-tauri/build-server.sh",
     "test": "vitest",
     "tauri": "tauri",
-    "tauri-dev": "tauri dev",
-    "tauri-build": "npm run build-server && tauri build"
+    "tauri-dev": "bash build-all.sh --debug --skip-cpp && tauri dev",
+    "tauri-build": "bash build-all.sh && tauri build"
   },
   "eslintConfig": {
     "extends": [
