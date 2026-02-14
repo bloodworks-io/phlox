@@ -8,7 +8,7 @@ import feedparser
 from fastapi import HTTPException
 from ollama import AsyncClient
 
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 from server.schemas.dashboard import RssFeed, RssItem
 from server.utils.nlp_tools.rss import (
     fetch_rss_feed,
@@ -125,7 +125,7 @@ async def fetch_and_insert_initial_items(
             for result in processed_items:
                 item = result["item"]
                 digest = result["digest"]
-                db.cursor.execute(
+                get_db().cursor.execute(
                     """
                     INSERT INTO rss_items (feed_id, title, link, description, published, digest, added_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -140,12 +140,12 @@ async def fetch_and_insert_initial_items(
                         datetime.now(timezone.utc).isoformat(),
                     ),
                 )
-            db.db.commit()
+            get_db().commit()
             logger.info(
                 f"Added {len(new_items)} initial items for feed {feed_url}"
             )
         finally:
-            db.db.close()
+            get_db().close()
     except Exception as e:
         logger.error(f"Error adding initial items for feed {feed_url}: {e}")
 
@@ -164,8 +164,8 @@ async def add_feed(feed: RssFeed) -> int:
         HTTPException: If the feed URL already exists or there's a server error.
     """
     try:
-        with db.db:
-            db.cursor.execute(
+        with get_db().db:
+            get_db().cursor.execute(
                 "INSERT INTO rss_feeds (url, title, last_refreshed) VALUES (?, ?, ?)",
                 (
                     str(feed.url),
@@ -173,10 +173,10 @@ async def add_feed(feed: RssFeed) -> int:
                     datetime.now(timezone.utc).isoformat(),
                 ),
             )
-            feed_id = db.cursor.lastrowid
+            feed_id = get_db().cursor.lastrowid
 
         return feed_id
-    except db.db.IntegrityError:
+    except get_db().db.IntegrityError:
         raise HTTPException(status_code=400, detail="Feed URL already exists")
     except Exception as e:
         logger.error(f"Error adding feed: {e}")
@@ -194,15 +194,15 @@ async def refresh_single_feed(feed_id: int, feed_url: str) -> None:
     try:
         new_items = await fetch_rss_feed(feed_url)
 
-        db.cursor.execute(
+        get_db().cursor.execute(
             "SELECT link FROM rss_items WHERE feed_id = ?", (feed_id,)
         )
-        existing_links = set(row[0] for row in db.cursor.fetchall())
+        existing_links = set(row[0] for row in get_db().cursor.fetchall())
 
         for item in new_items:
             if str(item.link) not in existing_links:
                 digest = await generate_item_digest(item)
-                db.cursor.execute(
+                get_db().cursor.execute(
                     """
                     INSERT INTO rss_items (feed_id, title, link, description, published, digest, added_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -218,17 +218,17 @@ async def refresh_single_feed(feed_id: int, feed_url: str) -> None:
                     ),
                 )
 
-        db.cursor.execute(
+        get_db().cursor.execute(
             "UPDATE rss_feeds SET last_refreshed = ? WHERE id = ?",
             (datetime.now(timezone.utc).isoformat(), feed_id),
         )
-        db.commit()
+        get_db().commit()
         logger.info(
             f"Feed {feed_url} refreshed successfully. {len(new_items)} new items processed."
         )
     except Exception as e:
         logger.error(f"Error refreshing feed {feed_url}: {e}")
-        db.db.rollback()
+        get_db().rollback()
 
 
 def get_feeds() -> List[RssFeed]:
@@ -238,10 +238,10 @@ def get_feeds() -> List[RssFeed]:
     Returns:
         List[RssFeed]: A list of all RSS feeds.
     """
-    db.cursor.execute("SELECT id, url, title FROM rss_feeds")
+    get_db().cursor.execute("SELECT id, url, title FROM rss_feeds")
     return [
         RssFeed(id=row[0], url=row[1], title=row[2])
-        for row in db.cursor.fetchall()
+        for row in get_db().cursor.fetchall()
     ]
 
 
@@ -255,11 +255,13 @@ def remove_feed(feed_id: int) -> None:
     Raises:
         Exception: If the feed is not found.
     """
-    db.cursor.execute("DELETE FROM rss_items WHERE feed_id = ?", (feed_id,))
-    db.cursor.execute("DELETE FROM rss_feeds WHERE id = ?", (feed_id,))
-    if db.cursor.rowcount == 0:
+    get_db().cursor.execute(
+        "DELETE FROM rss_items WHERE feed_id = ?", (feed_id,)
+    )
+    get_db().cursor.execute("DELETE FROM rss_feeds WHERE id = ?", (feed_id,))
+    if get_db().cursor.rowcount == 0:
         raise Exception("Feed not found")
-    db.commit()
+    get_db().commit()
 
 
 async def refresh_feeds(feed_id: Optional[int] = None) -> str | int:
@@ -277,13 +279,13 @@ async def refresh_feeds(feed_id: Optional[int] = None) -> str | int:
 
     try:
         if feed_id:
-            db.cursor.execute(
+            get_db().cursor.execute(
                 "SELECT id, url FROM rss_feeds WHERE id = ?", (feed_id,)
             )
         else:
-            db.cursor.execute("SELECT id, url FROM rss_feeds")
+            get_db().cursor.execute("SELECT id, url FROM rss_feeds")
 
-        feeds = db.cursor.fetchall()
+        feeds = get_db().cursor.fetchall()
         refresh_tasks = [
             refresh_single_feed(feed[0], feed[1]) for feed in feeds
         ]
@@ -320,7 +322,7 @@ def fetch_rss_items_from_db(
     query += " ORDER BY ri.added_at DESC LIMIT ?"
     params.append(limit)
 
-    db.cursor.execute(query, params)
+    get_db().cursor.execute(query, params)
     return [
         RssItem(
             title=row[0],
@@ -331,13 +333,13 @@ def fetch_rss_items_from_db(
             added_at=row[5],
             digest=row[6],
         )
-        for row in db.cursor.fetchall()
+        for row in get_db().cursor.fetchall()
     ]
 
 
 async def store_combined_digest(digest: str, articles: List[dict]) -> None:
     """Store a new combined digest in the database."""
-    db.cursor.execute(
+    get_db().cursor.execute(
         """
         INSERT INTO combined_digests (digest, articles_json, created_at)
         VALUES (?, ?, ?)
@@ -348,20 +350,18 @@ async def store_combined_digest(digest: str, articles: List[dict]) -> None:
             datetime.now(timezone.utc).isoformat(),
         ),
     )
-    db.commit()
+    get_db().commit()
 
 
 def get_latest_digest() -> Optional[dict]:
     """Retrieve the most recent combined digest."""
-    db.cursor.execute(
-        """
+    get_db().cursor.execute("""
         SELECT digest, articles_json, created_at
         FROM combined_digests
         ORDER BY created_at DESC
         LIMIT 1
-        """
-    )
-    row = db.cursor.fetchone()
+        """)
+    row = get_db().cursor.fetchone()
     if row:
         return {
             "combined_digest": row[0],
@@ -388,8 +388,7 @@ async def generate_and_store_digest(force: bool = False) -> dict:
         return latest
 
     # Fetch recent articles - with explicit column names
-    db.cursor.execute(
-        """
+    get_db().cursor.execute("""
         SELECT
             rss_items.title as item_title,
             rss_items.description,
@@ -399,8 +398,7 @@ async def generate_and_store_digest(force: bool = False) -> dict:
         JOIN rss_feeds ON rss_items.feed_id = rss_feeds.id
         ORDER BY rss_items.published DESC
         LIMIT 3
-        """
-    )
+        """)
     articles = [
         {
             "title": row[0],
@@ -408,7 +406,7 @@ async def generate_and_store_digest(force: bool = False) -> dict:
             "link": row[2],
             "feed_title": row[3],
         }
-        for row in db.cursor.fetchall()
+        for row in get_db().cursor.fetchall()
     ]
 
     if not articles:
@@ -439,7 +437,7 @@ async def get_recent_digests(limit: Optional[int] = 3) -> dict:
     Returns:
         dict: A dictionary containing the combined digest and article metadata
     """
-    db.cursor.execute(
+    get_db().cursor.execute(
         """
         SELECT rss_items.title, rss_items.description, rss_feeds.title AS feed_title,
                rss_items.link, rss_items.published, rss_items.added_at
@@ -460,7 +458,7 @@ async def get_recent_digests(limit: Optional[int] = 3) -> dict:
             "published": row[4],
             "added_at": row[5],
         }
-        for row in db.cursor.fetchall()
+        for row in get_db().cursor.fetchall()
     ]
 
     combined_digest = await generate_combined_digest(articles)

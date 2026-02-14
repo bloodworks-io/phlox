@@ -5,7 +5,7 @@ import random
 from datetime import datetime, timedelta
 
 from server.database.config.manager import config_manager
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 from server.database.entities.patient import get_patients_by_date
 from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
 from server.utils.llm_client.client import get_llm_client
@@ -84,13 +84,11 @@ async def generate_daily_analysis(force=False):
     """
     try:
         # Get the latest analysis
-        db.cursor.execute(
-            """
+        get_db().cursor.execute("""
             SELECT created_at FROM daily_analysis
             ORDER BY created_at DESC LIMIT 1
-        """
-        )
-        last_analysis = db.cursor.fetchone()
+        """)
+        last_analysis = get_db().cursor.fetchone()
 
         # Check if we need to run a new analysis (skip if force=True)
         now = datetime.now()
@@ -105,15 +103,13 @@ async def generate_daily_analysis(force=False):
                 return False
 
         # Get patients with outstanding jobs
-        db.cursor.execute(
-            """
+        get_db().cursor.execute("""
             SELECT name, encounter_date, encounter_summary, jobs_list
             FROM patients
             WHERE all_jobs_completed = 0
             ORDER BY encounter_date DESC
-        """
-        )
-        patients = db.cursor.fetchall()
+        """)
+        patients = get_db().cursor.fetchall()
 
         if not patients:
             logger.info("No patients with outstanding tasks found")
@@ -148,14 +144,14 @@ async def generate_daily_analysis(force=False):
         analysis = await _generate_analysis_with_llm(patient_data)
 
         # Store the analysis
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             INSERT INTO daily_analysis (analysis_text, created_at)
             VALUES (?, ?)
         """,
             (analysis, now.isoformat()),
         )
-        db.commit()
+        get_db().commit()
 
         logger.info("Successfully generated and stored new analysis")
         return True
@@ -168,15 +164,13 @@ async def generate_daily_analysis(force=False):
 def get_latest_analysis():
     """Retrieve the most recent analysis."""
     try:
-        db.cursor.execute(
-            """
+        get_db().cursor.execute("""
             SELECT analysis_text, created_at
             FROM daily_analysis
             ORDER BY created_at DESC
             LIMIT 1
-        """
-        )
-        result = db.cursor.fetchone()
+        """)
+        result = get_db().cursor.fetchone()
         if result:
             return {
                 "analysis": result["analysis_text"],
@@ -346,7 +340,7 @@ async def run_nightly_reasoning():
             patient_id = result["patient_id"]
             if result["success"]:
                 try:
-                    db.cursor.execute(
+                    get_db().cursor.execute(
                         "UPDATE patients SET reasoning_output = ? WHERE id = ?",
                         (json.dumps(result["reasoning"].dict()), patient_id),
                     )
@@ -360,7 +354,7 @@ async def run_nightly_reasoning():
                 failed_updates += 1
 
         try:
-            db.commit()
+            get_db().commit()
         except Exception as e:
             logging.error(f"Error committing database updates: {str(e)}")
             raise

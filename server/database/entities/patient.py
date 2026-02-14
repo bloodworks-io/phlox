@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 from server.database.entities.jobs import (
     are_all_jobs_completed,
     generate_jobs_list_from_plan,
@@ -23,14 +23,14 @@ def get_unique_primary_conditions():
         list: A list of unique primary condition strings, excluding None values.
     """
     try:
-        db.cursor.execute("""
+        get_db().cursor.execute("""
             SELECT DISTINCT primary_condition
             FROM patients
             WHERE primary_condition IS NOT NULL
             AND primary_condition != ''
             ORDER BY primary_condition ASC
             """)
-        results = db.cursor.fetchall()
+        results = get_db().cursor.fetchall()
         return [row["primary_condition"] for row in results]
     except Exception as e:
         logging.error(f"Error getting unique primary conditions: {e}")
@@ -62,7 +62,7 @@ def save_patient(patient: Patient) -> int:
             if isinstance(jobs_list, (list, dict))
             else jobs_list if isinstance(jobs_list, str) else "[]"
         )
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             INSERT INTO patients (
                 name, dob, ur_number, gender, encounter_date,
@@ -94,10 +94,10 @@ def save_patient(patient: Patient) -> int:
                 now,
             ),
         )
-        db.commit()
-        return db.cursor.lastrowid
+        get_db().commit()
+        return get_db().cursor.lastrowid
     except Exception as e:
-        db.db.rollback()
+        get_db().rollback()
         logging.error(f"Error saving patient: {e}")
         raise
 
@@ -111,11 +111,11 @@ def update_patient(patient: Patient) -> None:
     """
 
     # First get existing patient data
-    db.cursor.execute(
+    get_db().cursor.execute(
         "SELECT template_data, jobs_list FROM patients WHERE id = ?",
         (patient.id,),
     )
-    row = db.cursor.fetchone()
+    row = get_db().cursor.fetchone()
 
     # Extract plans for comparison
     current_template_data = {}
@@ -202,7 +202,7 @@ def update_patient(patient: Patient) -> None:
     )
 
     # Update the database
-    db.cursor.execute(
+    get_db().cursor.execute(
         """
         UPDATE patients
         SET name = ?,
@@ -243,7 +243,7 @@ def update_patient(patient: Patient) -> None:
             patient.id,
         ),
     )
-    db.commit()
+    get_db().commit()
 
 
 def update_patient_reasoning(patient_id: int, reasoning_output: dict) -> None:
@@ -256,13 +256,13 @@ def update_patient_reasoning(patient_id: int, reasoning_output: dict) -> None:
     """
     try:
         reasoning_output_json = json.dumps(reasoning_output)
-        db.cursor.execute(
+        get_db().cursor.execute(
             "UPDATE patients SET reasoning_output = ? WHERE id = ?",
             (reasoning_output_json, patient_id),
         )
-        db.commit()
+        get_db().commit()
     except Exception as e:
-        db.db.rollback()
+        get_db().rollback()
         logging.error(f"Error updating patient reasoning: {e}")
         raise
 
@@ -299,9 +299,9 @@ def get_patients_by_date(
 
         query += " ORDER BY name"
 
-        db.cursor.execute(query, params)
+        get_db().cursor.execute(query, params)
         patients = []
-        for row in db.cursor.fetchall():
+        for row in get_db().cursor.fetchall():
             patient = dict(row)
 
             # Process template data if included
@@ -350,8 +350,10 @@ def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
         Optional[Dict[str, Any]]: Patient data if found.
     """
     try:
-        db.cursor.execute("SELECT * FROM patients WHERE id = ?", (patient_id,))
-        row = db.cursor.fetchone()
+        get_db().cursor.execute(
+            "SELECT * FROM patients WHERE id = ?", (patient_id,)
+        )
+        row = get_db().cursor.fetchone()
         if row:
             patient = dict(row)
             if patient["template_data"]:
@@ -382,7 +384,7 @@ def get_patient_history(ur_number: str) -> List[Dict[str, Any]]:
         List[Dict[str, Any]]: List of historical encounters.
     """
     try:
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             SELECT id, encounter_date, template_key, template_data
             FROM patients
@@ -393,7 +395,7 @@ def get_patient_history(ur_number: str) -> List[Dict[str, Any]]:
         )
 
         encounters = []
-        for row in db.cursor.fetchall():
+        for row in get_db().cursor.fetchall():
             template = get_template_by_key(row["template_key"])
             if not template:
                 continue
@@ -434,7 +436,7 @@ def search_patient_by_ur_number(ur_number: str) -> List[Dict[str, Any]]:
         List[Dict[str, Any]]: Matching patient records in history format.
     """
     try:
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             SELECT id, name, gender, dob, ur_number, encounter_date, template_key, template_data
             FROM patients
@@ -446,7 +448,7 @@ def search_patient_by_ur_number(ur_number: str) -> List[Dict[str, Any]]:
         )
 
         encounters = []
-        row = db.cursor.fetchone()
+        row = get_db().cursor.fetchone()
         if row:
             template = get_template_by_key(row["template_key"])
             if template:
@@ -492,9 +494,11 @@ def delete_patient_by_id(patient_id: int) -> bool:
         bool: True if deleted successfully.
     """
     try:
-        db.cursor.execute("DELETE FROM patients WHERE id = ?", (patient_id,))
-        db.commit()
-        return db.cursor.rowcount > 0
+        get_db().cursor.execute(
+            "DELETE FROM patients WHERE id = ?", (patient_id,)
+        )
+        get_db().commit()
+        return get_db().cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error deleting patient: {e}")
         raise
@@ -515,7 +519,7 @@ def update_patient_summary(
         primary_condition (str): The extracted primary condition.
     """
     try:
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             UPDATE patients
             SET encounter_summary = ?,
@@ -530,8 +534,8 @@ def update_patient_summary(
                 patient_id,
             ),
         )
-        db.commit()
+        get_db().commit()
     except Exception as e:
-        db.db.rollback()
+        get_db().rollback()
         logging.error(f"Error updating patient summary: {e}")
         raise

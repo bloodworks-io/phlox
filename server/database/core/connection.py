@@ -4,6 +4,10 @@ This module provides the core database connection functionality using
 SQLCipher for encrypted SQLite storage. The PatientDatabase class
 implements a singleton pattern to ensure only one database connection
 exists throughout the application lifecycle.
+
+For desktop mode, use initialize_database(passphrase) to defer
+initialization until the user provides their password.
+For Docker mode, initialize_database() will use env/secret.
 """
 
 import logging
@@ -19,25 +23,67 @@ from server.database.core.initialization import (
 from server.database.core.migrations import run_migrations
 from server.database.testing import clear_test_database, run_database_test
 
+# Module-level state for lazy initialization
+_db_instance = None
+_db_lock = threading.Lock()
+
+
+def is_db_initialized() -> bool:
+    """Check if the database has been initialized."""
+    return _db_instance is not None
+
+
+def get_db() -> "PatientDatabase":
+    """Get the database singleton. Raises error if not initialized."""
+    if _db_instance is None:
+        raise RuntimeError(
+            "Database not initialized. Call initialize_database() first."
+        )
+    return _db_instance
+
+
+def initialize_database(
+    passphrase: str = None, db_dir=DATA_DIR
+) -> "PatientDatabase":
+    """Initialize the database singleton with optional passphrase.
+
+    Args:
+        passphrase: Encryption key for desktop mode. If None, uses env/secret.
+        db_dir: Directory path for database files
+
+    Returns:
+        The database singleton instance
+    """
+    global _db_instance
+
+    with _db_lock:
+        if _db_instance is not None:
+            return _db_instance
+
+        _db_instance = PatientDatabase(passphrase=passphrase, db_dir=db_dir)
+        return _db_instance
+
 
 class PatientDatabase:
-    """Singleton database connection manager for Phlox.
+    """Database connection manager for Phlox.
 
     This class manages an encrypted SQLite database connection using
-    SQLCipher, handles migrations on initialization, and provides
-    a singleton instance for use throughout the application.
+    SQLCipher and handles migrations on initialization.
+
+    Use initialize_database() to create instances.
     """
 
-    _instance = None
-    _lock = threading.Lock()
-
-    def __new__(cls, db_dir=None):
-        """Implement singleton pattern with thread safety."""
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super(PatientDatabase, cls).__new__(cls)
-                cls._instance._initialized = False
-            return cls._instance
+    def ensure_data_directory(self):
+        """Ensure the data directory exists."""
+        if not os.path.exists(self.db_dir):
+            logging.info(
+                "Data directory does not exist. Creating data directory at %s",
+                self.db_dir,
+            )
+            os.makedirs(self.db_dir, exist_ok=True)
+        else:
+            logging.info("Data directory exists.")
+        logging.info(f"Database path: {self.db_path}")
 
     def connect_to_database(self):
         """Establish encrypted database connection."""
@@ -68,18 +114,6 @@ class PatientDatabase:
             logging.error(f"Failed to connect to database: {str(e)}")
             raise
 
-    def ensure_data_directory(self):
-        """Ensure the data directory exists."""
-        if not os.path.exists(self.db_dir):
-            logging.info(
-                "Data directory does not exist. Creating data directory at %s",
-                self.db_dir,
-            )
-            os.makedirs(self.db_dir, exist_ok=True)
-        else:
-            logging.info("Data directory exists.")
-        logging.info(f"Database path: {self.db_path}")
-
     def ensure_default_templates(self):
         """Ensure all default templates exist."""
         try:
@@ -89,18 +123,16 @@ class PatientDatabase:
             logging.error(f"Error initializing templates: {e}")
             raise
 
-    def __init__(self, db_dir=DATA_DIR):
+    def __init__(self, passphrase: str = None, db_dir=DATA_DIR):
         """Initialize the database connection.
 
         Args:
+            passphrase: Encryption key. If None, uses env/secret.
             db_dir: Directory path for database files
         """
 
-        if self._initialized:
-            return
-
         self.db_dir = db_dir
-        self.encryption_key = None
+        self.encryption_key = passphrase
 
         # Set up database name and path first (needed for error handling)
         self.is_test = os.environ.get("TESTING", "False").lower() == "true"
@@ -111,18 +143,9 @@ class PatientDatabase:
         )
         self.db_path = os.path.join(self.db_dir, self.db_name)
 
-        # Priority 1: Read from stdin (for desktop app - keeps key out of env vars)
-        # Use select to check if stdin has data without blocking
-        import select
-        import sys
-
-        if select.select([sys.stdin], [], [], 0.0)[0]:
-            self.encryption_key = sys.stdin.read().strip()
-            if self.encryption_key:
-                logging.info("Using encryption key from stdin")
-
-        # Priority 2: Try Podman secret file (for Docker deployments)
+        # If passphrase not provided, try env/secret sources
         if not self.encryption_key:
+            # Try Podman secret file (for Docker deployments)
             secret_file = "/run/secrets/db_encryption_key"
             if os.path.exists(secret_file):
                 try:
@@ -132,8 +155,8 @@ class PatientDatabase:
                 except Exception as e:
                     logging.warning(f"Failed to read secret file: {e}")
 
-        # Priority 3: Fallback to environment variable (for dev/testing)
         if not self.encryption_key:
+            # Fallback to environment variable (for dev/testing)
             self.encryption_key = os.environ.get("DB_ENCRYPTION_KEY")
             if self.encryption_key:
                 logging.info("Using encryption key from environment variable")
@@ -169,8 +192,6 @@ class PatientDatabase:
             self.cursor, self.db
         )  # Set phlox as default template
 
-        self._initialized = True  # Mark as initialized
-
     def test_database(self):
         """Test database functionality with sample data.
 
@@ -201,7 +222,3 @@ class PatientDatabase:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.close()
-
-
-# Global singleton instance
-db = PatientDatabase()

@@ -1,7 +1,7 @@
 import json
 from threading import Lock
 
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 
 
 class ConfigManager:
@@ -14,7 +14,7 @@ class ConfigManager:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(ConfigManager, cls).__new__(cls)
-                cls._instance.db = db
+                cls._instance.db = get_db()
                 if cls._instance._is_database_empty():
                     cls._instance._initialize_database()
                 cls._instance._load_configs()
@@ -152,8 +152,7 @@ class ConfigManager:
 
     def get_user_settings(self):
         """Retrieves user settings from the database."""
-        self.db.cursor.execute(
-            """
+        self.db.cursor.execute("""
             SELECT name, specialty,
                 quick_chat_1_title, quick_chat_1_prompt,
                 quick_chat_2_title, quick_chat_2_prompt,
@@ -163,8 +162,7 @@ class ConfigManager:
                 has_completed_splash_screen,
                 scribe_is_ambient
             FROM user_settings LIMIT 1
-            """
-        )
+            """)
         result = self.db.cursor.fetchone()
 
         if result:

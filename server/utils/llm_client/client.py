@@ -16,7 +16,7 @@ from unidecode import unidecode
 
 from server.constants import DATA_DIR, IS_DOCKER
 from server.database.config.manager import config_manager
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 
 from .base import LLMProviderType
 from .manager import LocalModelManager

@@ -2,7 +2,7 @@ import json
 import logging
 import traceback
 
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 
 
 def generate_jobs_list_from_plan(plan):
@@ -51,17 +51,15 @@ def get_patients_with_outstanding_jobs():
         List[Dict]: List of patient records with outstanding jobs.
     """
     try:
-        db.cursor.execute(
-            """
+        get_db().cursor.execute("""
             SELECT id, name, ur_number, dob, encounter_date,
                    encounter_summary, jobs_list, reasoning_output
             FROM patients
             WHERE all_jobs_completed = 0
-            """
-        )
+            """)
 
         patients = []
-        for row in db.cursor.fetchall():
+        for row in get_db().cursor.fetchall():
             patient = dict(row)
 
             # Parse jobs list if it exists
@@ -108,11 +106,11 @@ def update_patient_jobs_list(patient_id: int, jobs_list: list):
             job.get("completed", False) for job in serializable_jobs
         )
 
-        db.cursor.execute(
+        get_db().cursor.execute(
             "UPDATE patients SET jobs_list = ?, all_jobs_completed = ? WHERE id = ?",
             (serialized_jobs_list, all_jobs_completed, patient_id),
         )
-        db.commit()
+        get_db().commit()
         logging.info(f"Updated jobs list for patient {patient_id}")
 
     except Exception as e:
@@ -124,10 +122,10 @@ def count_incomplete_jobs():
     """Counts the number of incomplete jobs across all patients."""
     logging.info("Counting incomplete jobs across all patients")
     try:
-        db.cursor.execute(
+        get_db().cursor.execute(
             "SELECT jobs_list FROM patients WHERE all_jobs_completed = 0"
         )
-        rows = db.cursor.fetchall()
+        rows = get_db().cursor.fetchall()
 
         incomplete_jobs_count = 0
 

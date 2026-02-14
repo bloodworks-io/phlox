@@ -9,7 +9,7 @@ from typing import Dict, List
 sys.path.append("/usr/src/app")
 
 from server.database.config.defaults.templates import DefaultTemplates
-from server.database.core.connection import db as patient_db
+from server.database.core.connection import get_db as patient_db
 from server.database.entities.templates import save_template
 from server.schemas.templates import ClinicalTemplate, TemplateField
 
@@ -34,9 +34,9 @@ def generate_jobs_list_from_plan(plan: str) -> List[Dict]:
 def clear_database():
     """Clear existing database tables."""
     print("Clearing existing database...")
-    patient_db.cursor.execute("DELETE FROM patients")
-    patient_db.cursor.execute("DELETE FROM clinical_templates")
-    patient_db.db.commit()
+    patient_db().cursor.execute("DELETE FROM patients")
+    patient_db().cursor.execute("DELETE FROM clinical_templates")
+    patient_db().commit()
     print("Database cleared.")
 
 
@@ -106,7 +106,7 @@ def initialize_fake_patients():
         fake_patients.append(patient)
 
     for patient in fake_patients:
-        patient_db.cursor.execute(
+        patient_db().cursor.execute(
             """
             INSERT INTO patients (
                 name, dob, ur_number, gender, encounter_date,
@@ -136,7 +136,7 @@ def initialize_fake_patients():
             ),
         )
 
-    patient_db.db.commit()
+    patient_db().commit()
     print(f"Initialized {len(fake_patients)} fake patients.")
 
 
@@ -151,7 +151,7 @@ def main():
         print(f"Error during initialization: {e}")
         raise
     finally:
-        patient_db.close()
+        patient_db().close()
 
 
 if __name__ == "__main__":

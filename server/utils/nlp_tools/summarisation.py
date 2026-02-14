@@ -6,7 +6,7 @@ from typing import List, Optional
 
 import Levenshtein
 from server.database.config.manager import config_manager
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 from server.database.entities.patient import get_unique_primary_conditions
 from server.schemas.grammars import (
     ClinicalReasoning,

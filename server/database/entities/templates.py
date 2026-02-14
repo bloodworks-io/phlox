@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 from server.schemas.templates import (
     ClinicalTemplate,
     FormatStyle,
@@ -23,7 +23,7 @@ def get_template_by_key(
     """
     try:
         if exact_match:
-            db.cursor.execute(
+            get_db().cursor.execute(
                 """
                 SELECT template_key, template_name, fields
                 FROM clinical_templates
@@ -34,7 +34,7 @@ def get_template_by_key(
         else:
             # Get latest version of template
             base_key = template_key.split("_")[0]
-            db.cursor.execute(
+            get_db().cursor.execute(
                 """
                 SELECT template_key, template_name, fields
                 FROM clinical_templates
@@ -44,7 +44,7 @@ def get_template_by_key(
                 (f"{base_key}_%",),
             )
 
-        row = db.cursor.fetchone()
+        row = get_db().cursor.fetchone()
         if row:
             return {
                 "template_key": row["template_key"],
@@ -63,16 +63,14 @@ def get_all_templates() -> List[Dict[str, Any]]:
     Retrieve all available templates.
     """
     try:
-        db.cursor.execute(
-            """
+        get_db().cursor.execute("""
             SELECT template_key, template_name, fields
             FROM clinical_templates
             WHERE deleted = FALSE
             ORDER BY template_name
-            """
-        )
+            """)
         templates = []
-        for row in db.cursor.fetchall():
+        for row in get_db().cursor.fetchall():
             templates.append(
                 {
                     "template_key": row["template_key"],
@@ -106,7 +104,7 @@ def save_template(template: ClinicalTemplate) -> str:
             )
 
         now = datetime.now().isoformat()
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             INSERT INTO clinical_templates
             (template_key, template_name, fields, created_at, updated_at)
@@ -120,7 +118,7 @@ def save_template(template: ClinicalTemplate) -> str:
                 now,
             ),
         )
-        db.commit()
+        get_db().commit()
         return template.template_key
     except Exception as e:
         logging.error(f"Error saving template: {e}")
@@ -136,7 +134,7 @@ def update_template(template: ClinicalTemplate) -> str:
         base_key = template.template_key.split("_")[0]
 
         # Get the current version of the template
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             SELECT template_key, template_name, fields
             FROM clinical_templates
@@ -145,7 +143,7 @@ def update_template(template: ClinicalTemplate) -> str:
             """,
             (f"{base_key}_%",),
         )
-        current = db.cursor.fetchone()
+        current = get_db().cursor.fetchone()
 
         if current:
             # Compare current and new content
@@ -179,17 +177,17 @@ def update_template(template: ClinicalTemplate) -> str:
 
         # If we get here, there are changes, so create new version
         # Check if this template is currently the default
-        db.cursor.execute(
+        get_db().cursor.execute(
             "SELECT default_template_key FROM user_settings LIMIT 1"
         )
-        settings = db.cursor.fetchone()
+        settings = get_db().cursor.fetchone()
         is_default = (
             settings
             and settings["default_template_key"] == template.template_key
         )
 
         # Get the latest version number
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             SELECT template_key FROM clinical_templates
             WHERE template_key LIKE ?
@@ -197,7 +195,7 @@ def update_template(template: ClinicalTemplate) -> str:
             """,
             (f"{base_key}_%",),
         )
-        result = db.cursor.fetchone()
+        result = get_db().cursor.fetchone()
 
         current_version = 0
         if result:
@@ -211,7 +209,7 @@ def update_template(template: ClinicalTemplate) -> str:
         new_template_key = f"{base_key}_{new_version}"
 
         # Mark current version as deleted
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             UPDATE clinical_templates
             SET deleted = TRUE
@@ -222,7 +220,7 @@ def update_template(template: ClinicalTemplate) -> str:
 
         # Insert new version
         now = datetime.now().isoformat()
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             INSERT INTO clinical_templates
             (template_key, template_name, fields, created_at, updated_at)
@@ -239,7 +237,7 @@ def update_template(template: ClinicalTemplate) -> str:
 
         # If this was the default template, update the default to the new version
         if is_default:
-            db.cursor.execute(
+            get_db().cursor.execute(
                 """
                 UPDATE user_settings
                 SET default_template_key = ?
@@ -251,7 +249,7 @@ def update_template(template: ClinicalTemplate) -> str:
                 f"Updated default template to new version: {new_template_key}"
             )
 
-        db.commit()
+        get_db().commit()
         return new_template_key
 
     except Exception as e:
@@ -271,7 +269,7 @@ def soft_delete_template(template_key: str) -> bool:
     """
     try:
         now = datetime.now().isoformat()
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             UPDATE clinical_templates
             SET deleted = TRUE,
@@ -280,8 +278,8 @@ def soft_delete_template(template_key: str) -> bool:
             """,
             (now, template_key),
         )
-        db.commit()
-        return db.cursor.rowcount > 0
+        get_db().commit()
+        return get_db().cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error soft deleting template: {e}")
         raise
@@ -299,7 +297,7 @@ def restore_template(template_key: str) -> bool:
     """
     try:
         now = datetime.now().isoformat()
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             UPDATE clinical_templates
             SET deleted = FALSE,
@@ -308,8 +306,8 @@ def restore_template(template_key: str) -> bool:
             """,
             (now, template_key),
         )
-        db.commit()
-        return db.cursor.rowcount > 0
+        get_db().commit()
+        return get_db().cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error restoring template: {e}")
         raise
@@ -326,11 +324,11 @@ def template_exists(template_key: str) -> bool:
         bool: True if the template exists.
     """
     try:
-        db.cursor.execute(
+        get_db().cursor.execute(
             "SELECT COUNT(*) FROM clinical_templates WHERE template_key = ?",
             (template_key,),
         )
-        count = db.cursor.fetchone()[0]
+        count = get_db().cursor.fetchone()[0]
         return count > 0
     except Exception as e:
         logging.error(f"Error checking template existence: {e}")
@@ -451,11 +449,11 @@ def set_default_template(template_key: str) -> None:
     """
     try:
         # Verify template exists
-        db.cursor.execute(
+        get_db().cursor.execute(
             "SELECT template_key, deleted FROM clinical_templates WHERE template_key = ?",
             (template_key,),
         )
-        template = db.cursor.fetchone()
+        template = get_db().cursor.fetchone()
         logging.info(f"Found template: {dict(template) if template else None}")
 
         if not template:
@@ -466,27 +464,27 @@ def set_default_template(template_key: str) -> None:
             )
 
         # Get the first user settings record or create if none exists
-        db.cursor.execute("SELECT id FROM user_settings LIMIT 1")
-        row = db.cursor.fetchone()
+        get_db().cursor.execute("SELECT id FROM user_settings LIMIT 1")
+        row = get_db().cursor.fetchone()
 
         if row:
             # Update existing settings
             logging.info(
                 f"Updating default template to {template_key} in database"
             )
-            db.cursor.execute(
+            get_db().cursor.execute(
                 "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
                 (template_key, row["id"]),
             )
         else:
             # Create new settings record
 
-            db.cursor.execute(
+            get_db().cursor.execute(
                 "INSERT INTO user_settings (default_template_key) VALUES (?)",
                 (template_key,),
             )
 
-        db.commit()
+        get_db().commit()
         logging.info(
             f"Successfully set default template to {template_key} in database"
         )
@@ -503,10 +501,10 @@ def get_default_template() -> Optional[Dict[str, Any]]:
         Optional[Dict[str, Any]]: The default template if set, None otherwise
     """
     try:
-        db.cursor.execute(
+        get_db().cursor.execute(
             "SELECT default_template_key FROM user_settings LIMIT 1"
         )
-        row = db.cursor.fetchone()
+        row = get_db().cursor.fetchone()
         logging.info(
             f"Retrieved user settings row: {dict(row) if row else None}"
         )
@@ -589,7 +587,7 @@ def update_field_adaptive_instructions(
         current_timestamp = datetime.now().isoformat()
 
         # Update the clinical_templates table
-        db.cursor.execute(
+        get_db().cursor.execute(
             """
             UPDATE clinical_templates
             SET fields = ?, updated_at = ?
@@ -597,7 +595,7 @@ def update_field_adaptive_instructions(
             """,
             (updated_fields_json, current_timestamp, template_key),
         )
-        db.commit()
+        get_db().commit()
 
         logging.info(
             f"Successfully updated fields and timestamp for template '{template_key}' in database."

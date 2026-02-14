@@ -8,7 +8,7 @@ import sqlite3
 
 import pytest
 
-from server.database.core.connection import db
+from server.database.core.connection import PatientDatabase
 
 
 @pytest.fixture(scope="module")

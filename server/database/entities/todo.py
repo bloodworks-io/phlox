@@ -6,7 +6,7 @@ from typing import Dict, List
 from icalendar import Calendar, Todo
 
 from server.constants import DATA_DIR
-from server.database.core.connection import db
+from server.database.core.connection import get_db
 
 ICS_FILE_PATH = DATA_DIR / "todos.ics"
 
@@ -32,37 +32,37 @@ def update_ics_file():
 
 
 def add_todo_item(task: str) -> Dict:
-    db.cursor.execute(
+    get_db().cursor.execute(
         "INSERT INTO todos (task, completed) VALUES (?, ?)", (task, False)
     )
-    todo_id = db.cursor.lastrowid
-    db.commit()
+    todo_id = get_db().cursor.lastrowid
+    get_db().commit()
     update_ics_file()
     return {"id": todo_id, "task": task, "completed": False}
 
 
 def get_todo_items() -> List[Dict]:
-    db.cursor.execute("SELECT id, task, completed FROM todos")
+    get_db().cursor.execute("SELECT id, task, completed FROM todos")
     todos = [
         {"id": row[0], "task": row[1], "completed": bool(row[2])}
-        for row in db.cursor.fetchall()
+        for row in get_db().cursor.fetchall()
     ]
     return todos
 
 
 def update_todo_item(todo_id: int, task: str, completed: bool) -> Dict:
-    db.cursor.execute(
+    get_db().cursor.execute(
         "UPDATE todos SET task = ?, completed = ? WHERE id = ?",
         (task, completed, todo_id),
     )
-    db.commit()
+    get_db().commit()
     update_ics_file()
     return {"id": todo_id, "task": task, "completed": completed}
 
 
 def delete_todo_item(todo_id: int):
-    db.cursor.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
-    db.commit()
+    get_db().cursor.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
+    get_db().commit()
     update_ics_file()
 
 
