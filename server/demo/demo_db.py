@@ -9,7 +9,10 @@ from typing import Dict, List
 sys.path.append("/usr/src/app")
 
 from server.database.config.defaults.templates import DefaultTemplates
-from server.database.core.connection import get_db as patient_db
+from server.database.core.connection import (
+    get_db as patient_db,
+    initialize_database,
+)
 from server.database.entities.templates import save_template
 from server.schemas.templates import ClinicalTemplate, TemplateField
 
@@ -33,6 +36,7 @@ def generate_jobs_list_from_plan(plan: str) -> List[Dict]:
 
 def clear_database():
     """Clear existing database tables."""
+    initialize_database()
     print("Clearing existing database...")
     patient_db().cursor.execute("DELETE FROM patients")
     patient_db().cursor.execute("DELETE FROM clinical_templates")
