@@ -71,6 +71,10 @@ class ConfigManager:
 
     def update_config(self, new_config):
         """Updates the configuration settings in the database."""
+        # If PRIMARY_MODEL is being updated, sync REASONING_MODEL to match
+        if "PRIMARY_MODEL" in new_config:
+            new_config["REASONING_MODEL"] = new_config["PRIMARY_MODEL"]
+
         for key, value in new_config.items():
             self.db.cursor.execute(
                 "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)",
