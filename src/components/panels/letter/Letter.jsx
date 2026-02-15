@@ -5,19 +5,11 @@ import {
   useState,
   useEffect,
 } from "react";
-import { useClipboard, Box } from "@chakra-ui/react";
-import styled from "@emotion/styled";
-import { keyframes } from "@emotion/react";
+import { useClipboard } from "@chakra-ui/react";
 
-import LetterPanel from "./letter/LetterPanel";
-import { useLetterTemplates } from "../../utils/hooks/useLetterTemplates";
-import { emergeFromButton } from "../../theme/animations";
-
-const AnimatedBox = styled(Box)`
-  animation: ${emergeFromButton} 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)
-    forwards;
-  transform-origin: bottom right;
-`;
+import LetterPanel from "./LetterPanel";
+import { useLetterTemplates } from "../../../utils/hooks/useLetterTemplates";
+import FloatingPanel from "../../common/FloatingPanel";
 
 const Letter = forwardRef(
   (
@@ -88,10 +80,9 @@ const Letter = forwardRef(
     // Auto-resize when letter opens or content changes
     useEffect(() => {
       if (isOpen) {
-        // Use isOpen prop
         setTimeout(() => {
           autoResizeTextarea();
-        }, 100); // Small delay for elements to render
+        }, 100);
       }
     }, [isOpen, finalCorrespondence]);
 
@@ -156,7 +147,6 @@ const Letter = forwardRef(
     };
 
     const handleClose = () => {
-      // Call the onClose prop passed from parent
       if (onClose) {
         onClose();
       }
@@ -167,18 +157,14 @@ const Letter = forwardRef(
       autoResizeTextarea,
     }));
 
-    if (!isOpen) {
-      // If not open, render nothing
-      return null;
-    }
-
     return (
-      <AnimatedBox
-        position="fixed" // Or 'absolute' if relative to a specific parent in PatientDetails DOM
-        bottom="20px" // Adjust based on FAM size and spacing
-        right="75px" // Adjust based on FAM position
-        zIndex="1000" // Below FAM menu, but above other content
-        // className="hover-letter-box" // Keep if used for other global styles
+      <FloatingPanel
+        isOpen={isOpen}
+        position="left-of-fab"
+        showArrow={true}
+        width={`${dimensions.width}px`}
+        height={`${dimensions.height}px`}
+        zIndex="1000"
       >
         <LetterPanel
           patient={patient}
@@ -208,7 +194,7 @@ const Letter = forwardRef(
           saveState={saveState}
           handleCopy={handleCopy}
         />
-      </AnimatedBox>
+      </FloatingPanel>
     );
   },
 );

@@ -1,12 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Text } from "@chakra-ui/react";
-import styled from "@emotion/styled";
 import ChatHeader from "./ChatHeader";
 import ChatMessages from "./ChatMessages";
 import ChatInput from "./ChatInput";
 import ChatSuggestions from "./ChatSuggestions";
 import QuickChatButtons from "./QuickChatButtons";
-import { emergeFromButton, AnimatedChatPanel } from "../../../theme/animations";
 import { buildApiUrl } from "../../../utils/helpers/apiConfig";
 import { universalFetch } from "../../../utils/helpers/apiHelpers";
 
@@ -74,19 +72,13 @@ const ChatPanel = ({
     filteredMessages.length > 0 && userSettings;
 
   return (
-    <AnimatedChatPanel
-      position="fixed"
+    <Box
       className="floating-panel"
-      bottom="20px"
-      right="75px"
       width={`${dimensions.width}px`}
       height={`${dimensions.height - 24}px`}
-      borderRadius="xl"
-      boxShadow="md"
       overflow="hidden"
       display="flex"
       flexDirection="column"
-      zIndex="1000"
     >
       <ChatHeader onClose={onClose} />
 
@@ -137,7 +129,7 @@ const ChatPanel = ({
         onMouseDown={handleMouseDown}
         zIndex={1}
       />
-    </AnimatedChatPanel>
+    </Box>
   );
 };
 

@@ -1,148 +1,126 @@
-import React, { useState, useRef } from "react";
-import { Box, IconButton, Tooltip, useOutsideClick } from "@chakra-ui/react";
-import { AddIcon, CloseIcon, ChatIcon } from "@chakra-ui/icons";
-import { FaEnvelope, FaAtom } from "react-icons/fa";
-import styled from "@emotion/styled";
-import { keyframes } from "@emotion/react";
+import React from "react";
+import { IconButton, Tooltip, useColorMode } from "@chakra-ui/react";
+import { ChatIcon } from "@chakra-ui/icons";
+import { FaEnvelope, FaAtom, FaFileUpload, FaClock } from "react-icons/fa";
+import PillBox from "./PillBox";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
-
-// Updated animation to move vertically upward
-const revealAnimation = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-`;
-
-const ActionButtonWrapper = styled(Box)`
-  animation: ${revealAnimation} 0.3s ease-out forwards;
-  margin-bottom: 10px;
-`;
 
 const FloatingActionMenu = ({
   onOpenChat,
   onOpenLetter,
   onOpenReasoning,
+  onOpenDocument,
+  onOpenPreviousVisit,
   isChatOpen,
   isLetterOpen,
   isReasoningOpen,
-  onMenuOpen,
-  onMenuClose,
+  isDocumentOpen,
+  isPreviousVisitOpen,
 }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef();
+  const { colorMode } = useColorMode();
 
-  // Inform parent component when menu state changes
-  const updateMenuState = (newState) => {
-    setIsMenuOpen(newState);
-    if (newState) {
-      if (onMenuOpen) onMenuOpen();
-    } else {
-      if (onMenuClose) onMenuClose();
-    }
-  };
+  const surfaceBg = colorMode === "light" ? "#ccd0da" : "#363a4f";
 
-  useOutsideClick({
-    ref: menuRef,
-    handler: () => {
-      // Only close menu if no panel is open
-      if (isMenuOpen && !isChatOpen && !isLetterOpen && !isReasoningOpen) {
-        updateMenuState(false);
-      }
-    },
-  });
-
-  const toggleMenu = (e) => {
-    e.stopPropagation();
-    updateMenuState(!isMenuOpen);
-  };
-
-  // Update menu state when panels open/close
-  React.useEffect(() => {
-    // only force-open if we aren't already open
-    if ((isChatOpen || isLetterOpen || isReasoningOpen) && !isMenuOpen) {
-      setIsMenuOpen(true);
-    }
-  }, [isChatOpen, isLetterOpen, isReasoningOpen, isMenuOpen]);
-
-  const mainFabIcon = isMenuOpen ? <CloseIcon /> : <AddIcon />;
+  const getButtonBg = (isOpen) => (isOpen ? surfaceBg : "transparent");
 
   return (
-    <Box
-      position="fixed"
-      bottom="20px"
-      right="20px"
-      zIndex="1050"
-      ref={menuRef}
+    <PillBox
+      className="floating-action-menu"
+      right="50px"
+      top="50%"
+      transform="translateY(-50%)"
+      zIndex="1040"
+      flexDirection="column"
+      gap={2}
+      px={2}
+      py={2}
     >
-      {/* Action buttons positioned above the main button */}
-      {isMenuOpen && (
-        <Box position="absolute" bottom="50px" right="5px">
-          <Box display="flex" flexDirection="column" alignItems="flex-end">
-            {isChatEnabled() && (
-              <ActionButtonWrapper>
-                <Tooltip label="Open Chat with Phlox" placement="left">
-                  <IconButton
-                    icon={<ChatIcon />}
-                    onClick={onOpenChat}
-                    aria-label="Open Chat"
-                    className="fam-action-button chat-fam-button"
-                    size="md"
-                    isRound
-                  />
-                </Tooltip>
-              </ActionButtonWrapper>
-            )}
-            {isChatEnabled() && onOpenReasoning && (
-              <ActionButtonWrapper>
-                <Tooltip label="Clinical Reasoning" placement="left">
-                  <IconButton
-                    icon={<FaAtom />}
-                    onClick={onOpenReasoning}
-                    aria-label="Open Reasoning"
-                    className="fam-action-button reasoning-fam-button"
-                    size="md"
-                    isRound
-                  />
-                </Tooltip>
-              </ActionButtonWrapper>
-            )}
-            <ActionButtonWrapper>
-              <Tooltip label="Open Patient Letter" placement="left">
-                <IconButton
-                  icon={<FaEnvelope />}
-                  onClick={onOpenLetter}
-                  aria-label="Open Letter"
-                  className="fam-action-button letter-fam-button"
-                  size="md"
-                  isRound
-                />
-              </Tooltip>
-            </ActionButtonWrapper>
-          </Box>
-        </Box>
+      {/* Document Upload button */}
+      {isChatEnabled() && (
+        <Tooltip label="Upload Document" placement="left">
+          <IconButton
+            icon={<FaFileUpload />}
+            onClick={onOpenDocument}
+            aria-label="Open Document Upload"
+            size="sm"
+            isRound
+            variant="ghost"
+            m={0}
+            bg={getButtonBg(isDocumentOpen)}
+            _hover={{ bg: surfaceBg }}
+            className="pill-box-icons"
+          />
+        </Tooltip>
       )}
 
-      {/* Main button always stays at the bottom right */}
-      <Tooltip
-        label={isMenuOpen ? "Close Menu" : "Open Actions Menu"}
-        placement="left"
-      >
+      {/* Previous Visit button */}
+      <Tooltip label="Previous Visit" placement="left">
         <IconButton
-          icon={mainFabIcon}
-          onClick={toggleMenu}
-          aria-label="Toggle Actions Menu"
-          size="lg"
+          icon={<FaClock />}
+          onClick={onOpenPreviousVisit}
+          aria-label="Open Previous Visit"
+          size="sm"
           isRound
-          className="fam-main-button"
-          boxShadow="xl"
+          variant="ghost"
+          m={0}
+          bg={getButtonBg(isPreviousVisitOpen)}
+          _hover={{ bg: surfaceBg }}
+          className="pill-box-icons"
         />
       </Tooltip>
-    </Box>
+
+      {/* Chat button */}
+      {isChatEnabled() && (
+        <Tooltip label="Chat with Phlox" placement="left">
+          <IconButton
+            icon={<ChatIcon />}
+            onClick={onOpenChat}
+            aria-label="Open Chat"
+            size="sm"
+            isRound
+            m={0}
+            variant="ghost"
+            bg={getButtonBg(isChatOpen)}
+            _hover={{ bg: surfaceBg }}
+            className="pill-box-icons"
+          />
+        </Tooltip>
+      )}
+
+      {/* Clinical Reasoning button */}
+      {isChatEnabled() && onOpenReasoning && (
+        <Tooltip label="Clinical Reasoning" placement="left">
+          <IconButton
+            icon={<FaAtom />}
+            onClick={onOpenReasoning}
+            aria-label="Open Reasoning"
+            size="sm"
+            isRound
+            m={0}
+            variant="ghost"
+            bg={getButtonBg(isReasoningOpen)}
+            _hover={{ bg: surfaceBg }}
+            className="pill-box-icons"
+          />
+        </Tooltip>
+      )}
+
+      {/* Letter button */}
+      <Tooltip label="Patient Letter" placement="left">
+        <IconButton
+          icon={<FaEnvelope />}
+          onClick={onOpenLetter}
+          aria-label="Open Letter"
+          size="sm"
+          isRound
+          m={0}
+          variant="ghost"
+          bg={getButtonBg(isLetterOpen)}
+          _hover={{ bg: surfaceBg }}
+          className="pill-box-icons"
+        />
+      </Tooltip>
+    </PillBox>
   );
 };
 

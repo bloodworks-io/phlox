@@ -1,5 +1,7 @@
 // Styles for the chat interface.
+import { MinusIcon } from "@chakra-ui/icons";
 import { colors } from "../colors";
+import { WiDayThunderstorm } from "react-icons/wi";
 
 export const floatingStyles = (props) => ({
   ".chat-icon": {
@@ -17,6 +19,7 @@ export const floatingStyles = (props) => ({
       props.colorMode === "light"
         ? `${colors.light.secondary} !important`
         : `${colors.dark.secondary} !important`,
+    borderRadius: "xl",
     border:
       props.colorMode === "light"
         ? `1px solid ${colors.light.surface} !important`
@@ -181,5 +184,30 @@ export const floatingStyles = (props) => ({
           ? `${colors.light.overlay0} !important`
           : `${colors.dark.overlay0} !important`,
     },
+  },
+  ".pill-box-scribe": {
+    background:
+      props.colorMode === "light"
+        ? `${colors.light.sidebar.background} !important`
+        : `${colors.dark.sidebar.background} !important`,
+    color: colors.light.sidebar.text,
+    border:
+      props.colorMode === "light"
+        ? `none`
+        : `1px solid ${colors.dark.surface} !important`,
+    boxShadow: "lg",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ".floating-action-menu": {
+    backgroundColor:
+      props.colorMode === "light"
+        ? colors.light.secondary
+        : colors.dark.secondary,
+    color: colors.light.sidebar.text,
+    border:
+      props.colorMode === "light"
+        ? `1px solid ${colors.light.surface} !important`
+        : `1px solid ${colors.dark.surface} !important`,
   },
 });
