@@ -40,6 +40,12 @@ jobs:
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
+      - name: Set up Python venv with uv
+        run: |
+          cd server
+          ~/.local/bin/uv sync
+          ~/.local/bin/uv pip install nuitka
+
       - name: Install dependencies
         run: |
           npm ci

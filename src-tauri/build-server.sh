@@ -65,7 +65,16 @@ echo "Compiling with Nuitka (this may take a while on first run)..."
 
 cd "$PROJECT_DIR"
 
-"$SERVER_DIR/.venv/bin/python" -m nuitka \
+# Use .venv python if available (local dev), otherwise fall back to uv run (CI)
+if [ -f "$SERVER_DIR/.venv/bin/python" ]; then
+    PYTHON="$SERVER_DIR/.venv/bin/python"
+    NUITKA_CMD="$PYTHON -m nuitka"
+else
+    echo "No .venv found, using uv run for Nuitka..."
+    NUITKA_CMD="uv run --directory $SERVER_DIR python -m nuitka"
+fi
+
+$NUITKA_CMD \
     --mode=standalone \
     --output-dir=server/dist \
     --output-filename=server \
