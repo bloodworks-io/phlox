@@ -4,6 +4,8 @@ import re
 import httpx
 from fastapi import APIRouter
 
+from server.constants import CHANGELOG_PATH
+
 router = APIRouter()
 
 
@@ -11,8 +13,7 @@ router = APIRouter()
 async def get_changelog():
     """Retrieve the full changelog content."""
     try:
-        path = "/usr/src/app/CHANGELOG.md"
-        with open(path, "r") as f:
+        with open(CHANGELOG_PATH, "r") as f:
             content = f.read()
         return {"content": content}
     except Exception as e:
@@ -24,8 +25,7 @@ async def get_changelog():
 async def get_version():
     """Retrieve the current version of the application."""
     try:
-        path = "/usr/src/app/CHANGELOG.md"
-        with open(path, "r") as f:
+        with open(CHANGELOG_PATH, "r") as f:
             changelog = f.read()
 
         match = re.search(r"## \[(.*?)\].*?\n", changelog)
