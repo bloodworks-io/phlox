@@ -95,6 +95,9 @@ mkdir -p "$SCRIPT_DIR/binaries"
 rm -rf "$SCRIPT_DIR/server_dist"
 cp -r "$SERVER_DIR/dist/server.dist" "$SCRIPT_DIR/server_dist"
 
+# Copy CHANGELOG.md to server_dist for version detection
+cp "$PROJECT_DIR/CHANGELOG.md" "$SCRIPT_DIR/server_dist/"
+
 # Create a wrapper script for prod
 cat > "$SCRIPT_DIR/binaries/$TARGET" << 'EOF'
 #!/bin/bash
@@ -111,6 +114,8 @@ if [ "$DEBUG_MODE" = true ]; then
     mkdir -p "$SCRIPT_DIR/target/debug"
     rm -rf "$SCRIPT_DIR/target/debug/server_dist"
     cp -r "$SERVER_DIR/dist/server.dist" "$SCRIPT_DIR/target/debug/server_dist"
+    # Copy CHANGELOG.md for version detection
+    cp "$PROJECT_DIR/CHANGELOG.md" "$SCRIPT_DIR/target/debug/server_dist/"
 
     # Create wrapper script for dev mode
     cat > "$SCRIPT_DIR/target/debug/server" << 'EOF'
