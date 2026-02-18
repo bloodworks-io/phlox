@@ -75,6 +75,7 @@ else
 fi
 
 $NUITKA_CMD \
+    --assume-yes-for-downloads \
     --mode=standalone \
     --output-dir=server/dist \
     --output-filename=server \
