@@ -102,7 +102,13 @@ cp "$PROJECT_DIR/CHANGELOG.md" "$SCRIPT_DIR/server_dist/"
 cat > "$SCRIPT_DIR/binaries/$TARGET" << 'EOF'
 #!/bin/bash
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$DIR/server_dist/server" "$@"
+# On macOS app bundles, resources live in Contents/Resources/ while this
+# binary lives in Contents/MacOS/ — check both locations.
+if [ -f "$DIR/../Resources/server_dist/server" ]; then
+    exec "$DIR/../Resources/server_dist/server" "$@"
+else
+    exec "$DIR/server_dist/server" "$@"
+fi
 EOF
 
 chmod +x "$SCRIPT_DIR/binaries/$TARGET"
@@ -141,10 +147,17 @@ if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
             --sign "$SIGNING_IDENTITY" \
             "$SCRIPT_DIR/server_dist/server"
 
-        # Sign all .so files
-        find "$SCRIPT_DIR/server_dist" -name "*.so" -exec \
+        # Sign all .so and .dylib files
+        find "$SCRIPT_DIR/server_dist" \( -name "*.so" -o -name "*.dylib" \) -exec \
             codesign --force --options runtime --timestamp \
             --sign "$SIGNING_IDENTITY" {} \;
+
+        # Sign the Python dylib (no extension, shipped by Nuitka)
+        if [ -f "$SCRIPT_DIR/server_dist/Python" ]; then
+            codesign --force --options runtime --timestamp \
+                --sign "$SIGNING_IDENTITY" \
+                "$SCRIPT_DIR/server_dist/Python"
+        fi
 
         echo "✅ Binaries signed"
     fi
