@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.9.0](https://github.com/bloodworks-io/phlox/compare/v0.8.0...v0.9.0) (2026-02-18)
+
+
+### Features
+
+* backup db prior to migration ([eda6757](https://github.com/bloodworks-io/phlox/commit/eda6757122ec92b28355a39f3cae65bfbc36c940))
+* cohesive text area appearance ([9a1bda8](https://github.com/bloodworks-io/phlox/commit/9a1bda8ff82364799fd66865f8c365ca9e6e4fdf))
+* deduplication module ([5cfb2e8](https://github.com/bloodworks-io/phlox/commit/5cfb2e8b54013a8677cfcf0bd191faf3343c488c))
+* improved reasoning display ([0e9ab49](https://github.com/bloodworks-io/phlox/commit/0e9ab49797fda9c8f6a9b2bf3cda5ce6bfc851a4))
+* non-blocking summarisation requests ([8b20317](https://github.com/bloodworks-io/phlox/commit/8b20317b7d6567694add7510882055c3eea7c6a5))
+* overhauled action buttons and recording widget ([028a52b](https://github.com/bloodworks-io/phlox/commit/028a52bd6d0267fbadc2c65111c496acb6844cb8))
+* process-manager to co-ordinate services ([41227f6](https://github.com/bloodworks-io/phlox/commit/41227f605daf0ebeab9fc29665b597d1c4e008a9))
+* Server startup loader ([68cd80e](https://github.com/bloodworks-io/phlox/commit/68cd80e4651ec2f12a3f4acb91747e8aab1555bc))
+* tauri desktop build, local inference, and major refactor ([dd67917](https://github.com/bloodworks-io/phlox/commit/dd679178156af07c9390ade5682f4e903e473c1d))
+
+
+### Bug Fixes
+
+* changelog path ([dfb40fa](https://github.com/bloodworks-io/phlox/commit/dfb40fa4ed2f98b39497b9ab38fd7fa4443779a1))
+* drag area in Tauri ([2ec7be7](https://github.com/bloodworks-io/phlox/commit/2ec7be778074cc393dba9ff20b46e6dc49e80354))
+* fixed model recommendations ([4883f2c](https://github.com/bloodworks-io/phlox/commit/4883f2c857bca85f5e74b9d958cf576edbadb8e3))
+* improved wrong key detection; async server launch ([41adeee](https://github.com/bloodworks-io/phlox/commit/41adeeea9d7c7939073b18724be821328fe5025a))
+* imrpovements to Dictate mode ([f815ceb](https://github.com/bloodworks-io/phlox/commit/f815cebeabb47d739afc9a48d8110dbc03646aae))
+* initialize demo db correctly ([796aa02](https://github.com/bloodworks-io/phlox/commit/796aa022212cd81037d5b575070fafb40ab4f671))
+* patient templates not refreshing for historical encounters ([1a4127c](https://github.com/bloodworks-io/phlox/commit/1a4127c271d6832735f723723c548ab1aa73e4af))
+* process manager fixes ([d00cbb6](https://github.com/bloodworks-io/phlox/commit/d00cbb65970657b15f477dd6f8450f1fd46a1f09))
+* reasoning improvements ([d03b021](https://github.com/bloodworks-io/phlox/commit/d03b0210eb76ac462fe72bcf48d283311ea64824))
+* remove chat items from Tauri build ([642f117](https://github.com/bloodworks-io/phlox/commit/642f117e6383e5fd7286b632c7890e0e1abf1141))
+* rss url validation ([d956ed8](https://github.com/bloodworks-io/phlox/commit/d956ed8a9de4f786628d24adee75ce4db6ad0987))
+* set up uv venv and install nuitka before build in CI ([be0486c](https://github.com/bloodworks-io/phlox/commit/be0486c34dbca6a38dfb5b7ae56cdb59559333bb))
+* sync reasoning and primary model ([5de99df](https://github.com/bloodworks-io/phlox/commit/5de99df3d2b4bc7571ff1cbc0d80da15a4a676fe))
+* update reasoning schema ([9722b07](https://github.com/bloodworks-io/phlox/commit/9722b0766e7661a2346abb26eb2528758746fe1f))
+* warm up server first ([ad8cf0d](https://github.com/bloodworks-io/phlox/commit/ad8cf0d2a2f8c1980ad4affcb90782b71803f231))
+
 ## [0.8.0](https://github.com/bloodworks-io/phlox/compare/v0.7.1...v0.8.0) (2026-02-18)
 
 
