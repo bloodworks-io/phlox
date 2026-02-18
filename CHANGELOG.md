@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.0](https://github.com/bloodworks-io/phlox/compare/v0.7.1...v0.8.0) (2025-09-19)
+
+
+### Features
+
+* podman secrets ([b34c9a2](https://github.com/bloodworks-io/phlox/commit/b34c9a2a2bfd305fcbbaa10a9927e7bd5e107e29))
+* podman secrets ([2ae4d09](https://github.com/bloodworks-io/phlox/commit/2ae4d0948fba234b2531c825733895db5c4d4fec))
+
+
+### Bug Fixes
+
+* incorrect parameter name for clean_think_tags ([ce64951](https://github.com/bloodworks-io/phlox/commit/ce64951e1ca507a6b422097e0fb8a66edacef04e))
+* Prevents frontend TypeError by ensuring function_response is always an array or null ([e5aa93d](https://github.com/bloodworks-io/phlox/commit/e5aa93d28c58c7d8fdc0f4fee397556e9d852af5))
+* remove unused stop tokens ([aab0f2c](https://github.com/bloodworks-io/phlox/commit/aab0f2c98bd2bf7a581c1bb1469bc82077704e05))
+
 ## [0.7.1](https://github.com/bloodworks-io/phlox/compare/v0.7.0...v0.7.1) (2025-05-31)
 
 
