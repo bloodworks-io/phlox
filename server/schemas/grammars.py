@@ -101,12 +101,21 @@ class PreviousVisitSummary(BaseModel):
 
 
 # Reasoning
+class ReasoningItem(BaseModel):
+    """A clinical reasoning suggestion with justification."""
+
+    suggestion: str = Field(description="The main suggestion or finding")
+    rationale: List[str] = Field(
+        description="1-2 brief bullet points justifying this suggestion"
+    )
+
+
 class ClinicalReasoning(BaseModel):
     thinking: str
     summary: str
-    differentials: List[str]
-    investigations: List[str]
-    clinical_considerations: List[str]
+    differentials: List[ReasoningItem]
+    investigations: List[ReasoningItem]
+    clinical_considerations: List[ReasoningItem]
 
 
 # Letter
