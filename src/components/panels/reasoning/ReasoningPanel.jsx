@@ -87,6 +87,23 @@ const ReasoningPanel = forwardRef(
       }
     };
 
+    // Get border accent color for structured items
+    const getAccentColor = (section) => {
+      switch (section) {
+        case "differentials":
+          return colors.light.primaryButton;
+        case "investigations":
+          return colors.light.successButton;
+        case "considerations":
+          return colors.light.secondaryButton;
+        default:
+          return colors.light.neutralButton;
+      }
+    };
+
+    // Check if item is in legacy format (string) or new format (object)
+    const isLegacyFormat = (item) => typeof item === "string";
+
     // Resize functionality
     const handleMouseDown = (e) => {
       e.preventDefault();
@@ -171,8 +188,9 @@ const ReasoningPanel = forwardRef(
                         activeSection === section ? "reason-button-active" : ""
                       }`}
                       onClick={() => setActiveSection(section)}
-                      height="26px"
-                      fontSize="xs"
+                      borderRightRadius="lg !important"
+                      height="30px !important"
+                      fontSize="sm"
                       px={2}
                     >
                       {section.charAt(0).toUpperCase() + section.slice(1)}
@@ -224,24 +242,59 @@ const ReasoningPanel = forwardRef(
                       {(activeSection === "differentials" ||
                         activeSection === "investigations" ||
                         activeSection === "considerations") && (
-                        <Wrap spacing={2}>
+                        <VStack align="stretch" spacing={2}>
                           {reasoning[getReasoningKey(activeSection)] &&
                             reasoning[getReasoningKey(activeSection)].map(
                               (item, i) => (
-                                <WrapItem key={i}>
-                                  <Box
-                                    px={2}
-                                    py={1}
-                                    borderRadius="sm"
-                                    fontSize="xs"
-                                    {...getTagColorScheme(activeSection)}
-                                  >
-                                    {item}
-                                  </Box>
-                                </WrapItem>
+                                <Box
+                                  key={i}
+                                  p={2}
+                                  borderRadius="sm"
+                                  bg={
+                                    colorMode === "light"
+                                      ? "white"
+                                      : colors.dark.surface
+                                  }
+                                  borderLeft="3px solid"
+                                  borderColor={getAccentColor(activeSection)}
+                                  shadow="sm"
+                                >
+                                  {isLegacyFormat(item) ? (
+                                    <Text fontSize="sm">{item}</Text>
+                                  ) : (
+                                    <>
+                                      <Text fontWeight="medium" fontSize="sm">
+                                        {item.suggestion}
+                                      </Text>
+                                      {item.rationale &&
+                                        item.rationale.length > 0 && (
+                                          <VStack
+                                            align="stretch"
+                                            spacing={0}
+                                            mt={1}
+                                          >
+                                            {item.rationale.map((point, j) => (
+                                              <Text
+                                                key={j}
+                                                fontSize="xs"
+                                                color={
+                                                  colorMode === "light"
+                                                    ? "gray.600"
+                                                    : "gray.400"
+                                                }
+                                                pl={2}
+                                              >
+                                                • {point}
+                                              </Text>
+                                            ))}
+                                          </VStack>
+                                        )}
+                                    </>
+                                  )}
+                                </Box>
                               ),
                             )}
-                        </Wrap>
+                        </VStack>
                       )}
                     </motion.div>
                   </AnimatePresence>

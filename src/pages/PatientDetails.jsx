@@ -784,7 +784,7 @@ const PatientDetails = ({
           isOpen={reasoning.isReasoningOpen}
           onClose={reasoning.closeReasoning}
           patientId={patient?.id}
-          initialReasoning={patient?.reasoning}
+          initialReasoning={patient?.reasoning_output}
         />
       </VStack>
 

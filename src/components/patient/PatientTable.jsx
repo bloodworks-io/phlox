@@ -285,7 +285,9 @@ const PatientTable = ({
                                 fontSize="sm"
                                 {...getTagColorScheme(patient.activeSection)}
                               >
-                                {item}
+                                {typeof item === "string"
+                                  ? item
+                                  : item.suggestion}
                               </Box>
                             </WrapItem>
                           ))}

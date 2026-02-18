@@ -259,7 +259,7 @@ export const inputStyles = (props) => ({
         ? `${colors.light.textTertiary} !important`
         : `${colors.dark.invertedText} !important`,
     fontSize: "sm !important",
-    borderLeftRadius: "lg !important",
+    borderRadius: "lg !important",
     borderRightRadius: "none !important",
     height: "30px !important",
     fontWeight: "medium !important",
