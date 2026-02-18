@@ -1,6 +1,7 @@
 import json
 import logging
 
+from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.manager import config_manager
 from server.schemas.grammars import ClinicalReasoning
 from server.utils.helpers import calculate_age
@@ -21,7 +22,7 @@ async def run_clinical_reasoning(
 
     age = calculate_age(dob, encounter_date)
     reasoning_options = prompts["options"].get("reasoning", {})
-    reasoning_prompt = prompts["prompts"]["reasoning"]["system"]
+    reasoning_prompt = DEFAULT_PROMPTS["prompts"]["reasoning"]["system"]
 
     # Format the clinical note
     formatted_note = ""
@@ -51,22 +52,16 @@ async def run_clinical_reasoning(
 
 {json_schema_instruction}
 
-Please analyze this case:
+Analyze this case:
 
-    Demographics: {age} year old {'male' if gender == 'M' else 'female'}
+Demographics: {age} year old {'male' if gender == 'M' else 'female'}
 
-    Clinical Note:
-    ```
-    {formatted_note}
-    ```
+Clinical Note:
+```
+{formatted_note}
+```
 
-    Consider:
-    1. A brief, one-sentence summary of the clinical encounter.
-    2. Differential diagnoses
-    3. Recommended investigations
-    4. Key clinical considerations
-
-    The key is to provide additional clinical considerations to the doctor, so feel free to take a critical eye to the clinician's perspective if appropriate."""
+Focus on what the clinician might have missed. Be critical if appropriate."""
 
     response = await client.chat(
         model=config["REASONING_MODEL"],

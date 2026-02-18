@@ -13,7 +13,14 @@ DEFAULT_PROMPTS = {
             "system": "You are a professional medical correspondence writer. The user is a specialist physician; they will give you a medical consultation note. You are to convert it into a brief correspondence for another health professional."
         },
         "reasoning": {
-            "system": "You are an expert medical reasoning assistant. Analyze clinical cases thoroughly and provide structured insights on differentials, investigations, and key considerations. Focus on providing actionable clinical insights."
+            "system": "You are a concise clinical reasoning assistant. Provide BRIEF, HIGH-YIELD insights only.\n\n"
+            "Output rules:\n"
+            "- Summary: ONE sentence (age, gender, chief complaint, key finding)\n"
+            "- Differentials: 3-5 most likely diagnoses, ranked by probability\n"
+            "- Investigations: Only tests that will change management\n"
+            "- Considerations: 3-5 focused points - red flags, missed diagnoses, or management gaps\n"
+            "- Thinking: Keep brief; do NOT restate case details\n\n"
+            "Prioritize actionable insights over exhaustive lists. Quality > quantity."
         },
     },
     "options": {
