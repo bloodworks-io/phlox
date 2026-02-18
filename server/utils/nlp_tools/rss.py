@@ -1,7 +1,10 @@
+import ipaddress
 import json
 import logging
+import socket
 from datetime import datetime
 from typing import Any, Dict, List, Union
+from urllib.parse import urlparse
 
 import feedparser
 import httpx
@@ -15,11 +18,75 @@ from server.utils.llm_client.client import get_llm_client
 logger = logging.getLogger(__name__)
 
 
+def validate_public_http_url(url: str) -> str:
+    """
+    Validates that a URL is a public HTTP/HTTPS URL and does not resolve to
+    private/internal IP addresses to prevent SSRF attacks.
+
+    Args:
+        url: The URL to validate.
+
+    Returns:
+        The normalized URL string if validation passes.
+
+    Raises:
+        HTTPException: If the URL is invalid or resolves to a private IP.
+    """
+    parsed = urlparse(url)
+
+    # Ensure scheme is http or https
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid URL scheme: {parsed.scheme}. Only http and https are allowed."
+        )
+
+    # Extract hostname
+    hostname = parsed.hostname
+    if not hostname:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid URL: no hostname found."
+        )
+
+    try:
+        # Resolve hostname to IP addresses
+        addr_infos = socket.getaddrinfo(hostname, None)
+        resolved_ips = {addr_info[4][0] for addr_info in addr_infos}
+    except socket.gaierror as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to resolve hostname: {hostname}"
+        ) from e
+
+    # Check if any resolved IP is private, loopback, link-local, multicast, or reserved
+    for ip_str in resolved_ips:
+        try:
+            ip = ipaddress.ip_address(ip_str)
+            if (ip.is_private or ip.is_loopback or ip.is_link_local or
+                ip.is_multicast or ip.is_reserved):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"URL resolves to disallowed IP address: {ip_str}"
+                )
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid IP address resolved: {ip_str}"
+            )
+
+    # Return the normalized URL
+    return parsed.geturl()
+
+
 async def get_feed_title(feed_url: str) -> str:
     """Fetches the title of an RSS feed."""
+    # Validate URL to prevent SSRF attacks
+    validated_url = validate_public_http_url(feed_url)
+
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(feed_url)
+            response = await client.get(validated_url)
             response.raise_for_status()
         except httpx.HTTPError as e:
             raise HTTPException(
@@ -164,9 +231,12 @@ async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
 
 async def fetch_rss_feed(feed_url: str) -> List[RssItem]:
     """Fetches and processes an RSS feed."""
+    # Validate URL to prevent SSRF attacks
+    validated_url = validate_public_http_url(feed_url)
+
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(feed_url)
+            response = await client.get(validated_url)
             response.raise_for_status()
         except httpx.HTTPError as e:
             raise HTTPException(
