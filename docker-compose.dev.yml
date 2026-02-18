@@ -1,18 +1,16 @@
 version: "3"
 services:
-    app:
-        # Use either build or image, but not both. Uncomment the needed line.
-        image: localhost/phlox-dev:latest
-        #build: .
-        container_name: phlox-dev
-        network_mode: host
-        environment:
-            - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY}
-            - NODE_ENV=development
-            - REACT_APP_BACKEND_URL= # Backend URL
-            - TZ=Australia/Melbourne
-        volumes:
-            - ./server:/usr/src/app/server
-            - ./src:/usr/src/app/src
-            - ./logs:/usr/src/app/logs
-            - ./data:/usr/src/app/data # Only for persistent data
+  app:
+    image: localhost/phlox-dev:latest
+    container_name: phlox-dev
+    network_mode: host
+    environment:
+      DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
+      NODE_ENV: development
+      VITE_BACKEND_URL: ""
+      TZ: Australia/Melbourne
+      SERVER_HOST: 0.0.0.0 # Bind to all interfaces
+    volumes:
+      - .:/usr/src/app
+      - ./data:/usr/src/app/data # Only for persistent data
+      - ./logs:/usr/src/app/logs # Optional: Persist logs

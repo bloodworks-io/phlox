@@ -5,8 +5,11 @@ We are using a temporary directory for testing and cleaning up afterward.
 
 import os
 import sqlite3
+
 import pytest
-from server.database.connection import PatientDatabase
+
+from server.database.core.connection import PatientDatabase
+
 
 @pytest.fixture(scope="module")
 def test_db(tmp_path_factory):
@@ -24,10 +27,12 @@ def test_db(tmp_path_factory):
     os.environ.pop("TESTING")
     os.environ.pop("DB_ENCRYPTION_KEY")
 
+
 def test_database_initialization(test_db):
     assert test_db.is_test is True
     assert "test_phlox_database.sqlite" in test_db.db_path
     assert os.path.exists(test_db.db_path)
+
 
 def test_create_tables(test_db):
     tables = [
@@ -46,6 +51,7 @@ def test_create_tables(test_db):
         row = test_db.cursor.fetchone()
         assert row is not None, f"Table {table} not found"
 
+
 def test_insert_and_retrieve_patient(test_db):
     test_db.cursor.execute(
         """
@@ -63,6 +69,7 @@ def test_insert_and_retrieve_patient(test_db):
     assert patient["name"] == "John Doe"
     assert patient["ur_number"] == "UR12345"
 
+
 def test_insert_and_retrieve_rss_feed(test_db):
     test_db.cursor.execute(
         """
@@ -79,10 +86,15 @@ def test_insert_and_retrieve_rss_feed(test_db):
     assert feed is not None
     assert feed["title"] == "Test Feed"
 
+
 def test_clear_test_database(test_db):
     # Insert dummy data into a couple of tables
-    test_db.cursor.execute("INSERT INTO patients (name) VALUES (?)", ("Test Patient",))
-    test_db.cursor.execute("INSERT INTO rss_feeds (url) VALUES (?)", ("http://test.com",))
+    test_db.cursor.execute(
+        "INSERT INTO patients (name) VALUES (?)", ("Test Patient",)
+    )
+    test_db.cursor.execute(
+        "INSERT INTO rss_feeds (url) VALUES (?)", ("http://test.com",)
+    )
     test_db.db.commit()
     # Now clear the database
     test_db.clear_test_database()
@@ -99,6 +111,7 @@ def test_clear_test_database(test_db):
         test_db.cursor.execute(f"SELECT COUNT(*) FROM {table}")
         count = test_db.cursor.fetchone()[0]
         assert count == 0
+
 
 def test_commit_and_rollback(test_db):
     # Test commit
@@ -121,8 +134,10 @@ def test_commit_and_rollback(test_db):
     )
     assert test_db.cursor.fetchone() is None
 
+
 def test_database_connection(test_db):
     # Update check for sqlcipher3 connection
     from sqlcipher3 import dbapi2
+
     assert isinstance(test_db.db, dbapi2.Connection)
     assert test_db.db.isolation_level is not None

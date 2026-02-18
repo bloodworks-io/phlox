@@ -1,32 +1,37 @@
-from fastapi import APIRouter, HTTPException, Body
-from fastapi.responses import JSONResponse
-from typing import List
 import logging
-from server.database.letter import (
-    get_letter_templates,
+from typing import List
+
+from fastapi import APIRouter, Body, HTTPException
+from fastapi.responses import JSONResponse
+
+from server.database.entities.letter import (
+    delete_letter_template,
+    fetch_patient_letter,
     get_letter_template_by_id,
+    get_letter_templates,
+    reset_default_templates,
     save_letter_template,
     update_letter_template,
-    delete_letter_template,
-    reset_default_templates,
     update_patient_letter,
-    fetch_patient_letter,
 )
-from server.schemas.letter import LetterTemplate, LetterRequest, LetterSave
-from server.utils.letter import generate_letter_content
+from server.schemas.letter import LetterRequest, LetterSave, LetterTemplate
+from server.utils.nlp_tools.letter import generate_letter_content
 
 router = APIRouter()
+
 
 @router.post("/generate")
 async def generate_letter(request: LetterRequest):
     """Generates a letter."""
+
     try:
         letter_content = await generate_letter_content(
             request.patientName,
             request.gender,
+            request.dob,
             request.template_data,
             request.additional_instruction,
-            request.context
+            request.context,
         )
         return JSONResponse(content={"letter": letter_content})
     except HTTPException as he:
@@ -60,6 +65,7 @@ async def fetch_letter(patientId: int):
         logging.error(f"Error fetching letter: {e}")
         raise HTTPException(status_code=500, detail=e)
 
+
 @router.get("/templates")
 async def get_templates() -> List[LetterTemplate]:
     """Get all letter templates."""
@@ -67,18 +73,22 @@ async def get_templates() -> List[LetterTemplate]:
         templates = get_letter_templates()
 
         # Get default template ID from user settings
-        from server.database.config import config_manager
+        from server.database.config.manager import config_manager
+
         user_settings = config_manager.get_user_settings()
-        default_template_id = user_settings.get('default_letter_template_id')
+        default_template_id = user_settings.get("default_letter_template_id")
 
         # Add default indicator to the templates response
-        return JSONResponse(content={
-            "templates": templates,
-            "default_template_id": default_template_id
-        })
+        return JSONResponse(
+            content={
+                "templates": templates,
+                "default_template_id": default_template_id,
+            }
+        )
     except Exception as e:
         logging.error(f"Error fetching letter templates: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/templates/{template_id}")
 async def get_template(template_id: int) -> LetterTemplate:
@@ -94,18 +104,22 @@ async def get_template(template_id: int) -> LetterTemplate:
         logging.error(f"Error fetching letter template: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/templates")
 async def create_template(template: LetterTemplate = Body(...)) -> dict:
     """Create a letter template."""
     try:
         template_id = save_letter_template(template)
-        return JSONResponse(content={
-            "id": template_id,
-            "message": "Template created successfully"
-        })
+        return JSONResponse(
+            content={
+                "id": template_id,
+                "message": "Template created successfully",
+            }
+        )
     except Exception as e:
         logging.error(f"Error creating letter template: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/templates/reset")
 async def reset_templates() -> dict:
@@ -120,20 +134,22 @@ async def reset_templates() -> dict:
 
 @router.put("/templates/{template_id}")
 async def update_template(
-    template_id: int,
-    template: LetterTemplate = Body(...)
+    template_id: int, template: LetterTemplate = Body(...)
 ) -> dict:
     """Update a letter template."""
     try:
         success = update_letter_template(template_id, template)
         if not success:
             raise HTTPException(status_code=404, detail="Template not found")
-        return JSONResponse(content={"message": "Template updated successfully"})
+        return JSONResponse(
+            content={"message": "Template updated successfully"}
+        )
     except HTTPException:
         raise
     except Exception as e:
         logging.error(f"Error updating letter template: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.delete("/templates/{template_id}")
 async def delete_template(template_id: int) -> dict:
@@ -142,7 +158,9 @@ async def delete_template(template_id: int) -> dict:
         success = delete_letter_template(template_id)
         if not success:
             raise HTTPException(status_code=404, detail="Template not found")
-        return JSONResponse(content={"message": "Template deleted successfully"})
+        return JSONResponse(
+            content={"message": "Template deleted successfully"}
+        )
     except HTTPException:
         raise
     except Exception as e:

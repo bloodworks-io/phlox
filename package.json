@@ -1,56 +1,64 @@
 {
-    "name": "Phlox",
-    "version": "0.8.0",
-    "private": true,
-    "proxy": "http://localhost:5000",
-    "dependencies": {
-        "@chakra-ui/icons": "^2.1.1",
-        "@chakra-ui/react": "^2.8.2",
-        "@emotion/react": "^11.11.4",
-        "@emotion/styled": "^11.11.5",
-        "framer-motion": "^11.2.10",
-        "js-tiktoken": "^1.0.12",
-        "react": "^18.3.1",
-        "react-dom": "^18.3.1",
-        "react-icons": "^5.2.1",
-        "react-markdown": "^8.0.0",
-        "react-router-dom": "^6.23.1",
-        "react-scripts": "5.0.1",
-        "react-textarea-autosize": "^8.5.3"
-    },
-    "scripts": {
-        "start": "pm2 start server/server.js --name phlox-server",
-        "start-react": "react-scripts start",
-        "start-server": "nodemon --ignore '/usr/src/app/venv/*' server/server.js",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject"
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
-    },
-    "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
-    "main": "index.js",
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "devDependencies": {
-        "eslint-config-react-app": "^7.0.1",
-        "nodemon": "^2.0.7"
-    }
+  "name": "Phlox",
+  "version": "0.7.1",
+  "private": true,
+  "dependencies": {
+    "@chakra-ui/icons": "^2.1.1",
+    "@chakra-ui/react": "^2.8.2",
+    "@chakra-ui/utils": "^2.2.3",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@tauri-apps/api": "^2.5.0",
+    "@tauri-apps/plugin-http": "^2.4.4",
+    "framer-motion": "^11.2.10",
+    "js-tiktoken": "^1.0.12",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.2.1",
+    "react-markdown": "^8.0.0",
+    "react-router-dom": "^6.23.1",
+    "react-textarea-autosize": "^8.5.3"
+  },
+  "scripts": {
+    "start": "pm2 start server/server.js --name phlox-server",
+    "start-react": "vite",
+    "start-server": "nodemon --ignore '/usr/src/app/venv/*' server/server.js",
+    "dev": "parallel --tag --line-buffer ::: \"npm run start-react\" \"uvicorn server.server:app --reload --host 0.0.0.0 --port 6000\"",
+    "build": "vite build",
+    "build-server": "bash src-tauri/build-server.sh",
+    "test": "vitest",
+    "tauri": "tauri",
+    "tauri-dev": "bash build-all.sh --debug --skip-cpp && tauri dev",
+    "tauri-build": "bash build-all.sh && tauri build"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint-config-react-app": "^7.0.1",
+    "nodemon": "^2.0.7",
+    "vite": "^7.3.0"
+  }
 }

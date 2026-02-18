@@ -16,6 +16,8 @@ server/logs/
 node_modules/
 server/node_modules/
 server/venv
+*.egg-info/
+*.egg
 
 # Environment and IDE settings
 .env
@@ -39,8 +41,11 @@ __pycache__/
 build/
 dist/
 .tmp/
+main.*/
 
 # Coverage
+CLAUDE.md
+.claude
 coverage/
 .coverage
 coverage.xml
@@ -48,3 +53,6 @@ coverage.lcov
 .coveralls.yml
 __pycache__/
 *.pyc
+package-lock.old
+package-lock.old
+QWEN.md

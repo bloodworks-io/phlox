@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict
 from datetime import datetime
 
+
 class LetterTemplate(BaseModel):
     """
     Represents a letter template.
@@ -12,6 +13,7 @@ class LetterTemplate(BaseModel):
         instructions (str): Instructions for letter generation
         created_at (Optional[datetime]): Creation timestamp
     """
+
     id: Optional[int] = None
     name: str
     instructions: str
@@ -19,6 +21,7 @@ class LetterTemplate(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class LetterRequest(BaseModel):
     """
@@ -30,11 +33,14 @@ class LetterRequest(BaseModel):
         template_data (dict): Template data
         additional_instruction (Optional[str]): Additional instructions for letter generation
     """
+
     patientName: str
     gender: str
+    dob: str
     template_data: dict
     additional_instruction: str | None = None
     context: Optional[List[Dict[str, str]]] = None
+
 
 class LetterSave(BaseModel):
     """
@@ -44,5 +50,6 @@ class LetterSave(BaseModel):
         patientId (int): Unique identifier of the patient
         letter (str): Content of the letter to be saved
     """
+
     patientId: int
     letter: str

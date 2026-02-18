@@ -1,0 +1,58 @@
+[project]
+name = "phlox-server"
+version = "0.7.1"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.10.11",
+    "APScheduler>=3.10.4",
+    "attr>=0.3.2",
+    "fastapi>=0.115.8",
+    "feedparser>=6.0.11",
+    "fuzzywuzzy>=0.18.0",
+    "httptools>=0.7.1",
+    "httpx>=0.28.1",
+    "icalendar>=5.0.13",
+    "json-repair>=0.55.0",
+    "numpy>=2.4.0",
+    "ollama>=0.4.7",
+    "openai>=1.76.2",
+    "Pillow>=11.1.0",
+    "platformdirs>=4.3.8",
+    "pydantic>=2.10.6",
+    "python-dotenv>=1.0.1",
+    "python-Levenshtein>=0.25.1",
+    "python-multipart>=0.0.18",
+    "sqlcipher3-wheels>=0.5.4",
+    "tiktoken>=0.7.0",
+    "Unidecode>=1.4.0",
+    "uvicorn>=0.34.0",
+]
+
+[project.optional-dependencies]
+rag = [
+    "chromadb>=0.6.3",
+    "PyMuPDF>=1.24.9",
+    "pytesseract>=0.3.13",
+]
+docker = [
+    "phlox-server[rag]",
+]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "nuitka>=2.0.0",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+]
+
+[tool.setuptools]
+py-modules = []
+
+[tool.hatch.build.targets.wheel]
+packages = []
