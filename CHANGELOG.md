@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/bloodworks-io/phlox/compare/v0.9.0...v0.9.1) (2026-02-18)
+
+
+### Bug Fixes
+
+* assume yes for nuitka downloads in CI ([e8a84ec](https://github.com/bloodworks-io/phlox/commit/e8a84ecef8370aaed71b047c8058af5cdcfb42e2))
+
 ## [0.9.0](https://github.com/bloodworks-io/phlox/compare/v0.8.0...v0.9.0) (2026-02-18)
 
 
