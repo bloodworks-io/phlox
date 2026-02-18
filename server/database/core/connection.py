@@ -13,9 +13,11 @@ For Docker mode, initialize_database() will use env/secret.
 import logging
 import os
 import threading
+from pathlib import Path
 
 import sqlcipher3 as sqlite3
 from server.constants import DATA_DIR
+from server.database.core.backup import create_backup
 from server.database.core.initialization import (
     initialize_templates,
     set_initial_default_template,
@@ -185,6 +187,8 @@ class PatientDatabase:
                     "If you have forgotten your passphrase, your data cannot be recovered."
                 )
         self.ensure_data_directory()
+        # Create backup before any database operations/migrations
+        create_backup(self.db_path, Path(self.db_dir))
         self.connect_to_database()
         run_migrations(self)  # Run migrations first to create tables
         self.ensure_default_templates()  # Then ensure default templates
