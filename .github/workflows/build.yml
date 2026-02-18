@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -11,9 +11,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: 'macos-latest'
-            arch: 'aarch64'
-            os: 'darwin'
+          - platform: "macos-latest"
+            arch: "aarch64"
+            os: "darwin"
 
     runs-on: ${{ matrix.platform }}
 
@@ -29,13 +29,13 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install Python and uv
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh

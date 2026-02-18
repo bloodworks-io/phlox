@@ -16,6 +16,8 @@ server/logs/
 node_modules/
 server/node_modules/
 server/venv
+*.egg-info/
+*.egg
 
 # Environment and IDE settings
 .env
