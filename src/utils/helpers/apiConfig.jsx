@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 // Detect if we're running in Tauri environment
 const isTauri = () => {
-  return window.__TAURI__ !== undefined;
+  return window.__TAURI_INTERNALS__ !== undefined;
 };
 
 // Cache the server port to avoid repeated IPC calls
