@@ -70,6 +70,7 @@ const PatientDetails = ({
   const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
   const [isPreviousVisitPanelOpen, setIsPreviousVisitPanelOpen] =
     useState(false);
+  const [hasViewedPreviousVisit, setHasViewedPreviousVisit] = useState(false);
 
   const { showWarningToast } = useToastMessage();
 
@@ -689,6 +690,7 @@ const PatientDetails = ({
       setIsTranscriptionPanelOpen(false);
       setIsDocumentPanelOpen(false);
       setIsPreviousVisitPanelOpen(true);
+      setHasViewedPreviousVisit(true);
       letter.setIsCollapsed(true);
       chat.setChatExpanded(false);
       reasoning.closeReasoning();
@@ -706,6 +708,9 @@ const PatientDetails = ({
     ];
     return allItems.some((item) => item.critical === true);
   }, [patient?.reasoning_output]);
+
+  // Show red dot for previous visit if summary exists and hasn't been viewed
+  const showPreviousVisitDot = Boolean(patient?.previous_visit_summary) && !hasViewedPreviousVisit;
 
   if (!patient) {
     return (
@@ -833,6 +838,7 @@ const PatientDetails = ({
         isPreviousVisitOpen={isPreviousVisitPanelOpen}
         hasCriticalReasoning={hasCriticalReasoning}
         hasPreviousVisitSummary={Boolean(patient?.previous_visit_summary)}
+        showPreviousVisitDot={showPreviousVisitDot}
         isEncounterSaved={Boolean(patient?.id)}
       />
 

@@ -18,6 +18,7 @@ const FloatingActionMenu = ({
   isPreviousVisitOpen,
   hasCriticalReasoning,
   hasPreviousVisitSummary = false,
+  showPreviousVisitDot = false,
   isEncounterSaved = false,
 }) => {
   const { colorMode } = useColorMode();
@@ -57,30 +58,45 @@ const FloatingActionMenu = ({
       )}
 
       {/* Previous Visit button */}
-      <Tooltip
-        label={
-          hasPreviousVisitSummary
-            ? "Previous Visit"
-            : "No previous visit available"
-        }
-        placement="left"
-      >
-        <IconButton
-          icon={<FaClock />}
-          onClick={onOpenPreviousVisit}
-          aria-label="Open Previous Visit"
-          size="sm"
-          isRound
-          variant="ghost"
-          m={0}
-          bg={getButtonBg(isPreviousVisitOpen)}
-          _hover={{ bg: surfaceBg }}
-          className="pill-box-icons"
-          isDisabled={!hasPreviousVisitSummary}
-          opacity={!hasPreviousVisitSummary ? 0.4 : 1}
-          cursor={!hasPreviousVisitSummary ? "not-allowed" : "pointer"}
-        />
-      </Tooltip>
+      <Box position="relative" display="inline-block">
+        <Tooltip
+          label={
+            hasPreviousVisitSummary
+              ? "Previous Visit"
+              : "No previous visit available"
+          }
+          placement="left"
+        >
+          <IconButton
+            icon={<FaClock />}
+            onClick={onOpenPreviousVisit}
+            aria-label="Open Previous Visit"
+            size="sm"
+            isRound
+            variant="ghost"
+            m={0}
+            bg={getButtonBg(isPreviousVisitOpen)}
+            _hover={{ bg: surfaceBg }}
+            className="pill-box-icons"
+            isDisabled={!hasPreviousVisitSummary}
+            opacity={!hasPreviousVisitSummary ? 0.4 : 1}
+            cursor={!hasPreviousVisitSummary ? "not-allowed" : "pointer"}
+          />
+        </Tooltip>
+        {showPreviousVisitDot && hasPreviousVisitSummary && (
+          <Box
+            position="absolute"
+            top="0"
+            right="0"
+            w="8px"
+            h="8px"
+            borderRadius="full"
+            bg="red.500"
+            zIndex={2}
+            pointerEvents="none"
+          />
+        )}
+      </Box>
 
       {/* Chat button */}
       {isChatEnabled() && (
