@@ -31,7 +31,7 @@ const FloatingPanel = ({
   height,
   maxWidth,
   maxHeight,
-  zIndex = "1040",
+  zIndex = "1060",
 }) => {
   const { colorMode } = useColorMode();
 
@@ -80,6 +80,7 @@ const FloatingPanel = ({
         maxWidth={maxWidth}
         maxHeight={maxHeight}
         className="floating-panel"
+        overflow="hidden"
       >
         {children}
       </AnimatedBox>

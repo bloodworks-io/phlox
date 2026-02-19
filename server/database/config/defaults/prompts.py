@@ -19,7 +19,8 @@ DEFAULT_PROMPTS = {
             "- Differentials: 3-5 most likely diagnoses, ranked by probability\n"
             "- Investigations: Only tests that will change management\n"
             "- Considerations: 3-5 focused points - red flags, missed diagnoses, or management gaps\n"
-            "- Thinking: Keep brief; do NOT restate case details\n\n"
+            "- Thinking: Keep brief; do NOT restate case details\n"
+            "- Critical flag: Use 'critical: true' ONLY for potentially fatal or urgent misses (e.g., missed anticoagulation when INR is critical, missed life-threatening diagnosis). Do NOT flag routine suggestions.\n\n"
             "Prioritize actionable insights over exhaustive lists. Quality > quantity."
         },
     },

@@ -7,13 +7,17 @@ import {
   Spinner,
   VStack,
   HStack,
-  Wrap,
-  WrapItem,
   useToast,
   useColorMode,
+  Badge,
+  Tabs,
+  TabList,
+  TabPanels,
+  TabPanel,
+  Tab,
+  Tooltip,
 } from "@chakra-ui/react";
 import { FaAtom, FaSync } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { colors } from "../../../theme/colors";
 import { patientApi } from "../../../utils/api/patientApi";
@@ -23,7 +27,7 @@ const ReasoningPanel = forwardRef(
   ({ isOpen, onClose, patientId, initialReasoning }, ref) => {
     const [loading, setLoading] = useState(false);
     const [reasoning, setReasoning] = useState(initialReasoning);
-    const [activeSection, setActiveSection] = useState("summary");
+    const [tabIndex, setTabIndex] = useState(0);
     const [dimensions, setDimensions] = useState({
       width: 500,
       height: 420,
@@ -49,42 +53,12 @@ const ReasoningPanel = forwardRef(
       }
     };
 
-    // Map active section key from the navigation pill to the actual key in reasoning object
+    // Map tab index to the actual key in reasoning object
     const getReasoningKey = (section) => {
       if (section === "considerations") {
         return "clinical_considerations";
       }
       return section;
-    };
-
-    const getTagColorScheme = (section) => {
-      switch (section) {
-        case "differentials":
-          return {
-            bg: colors.light.primaryButton,
-            color: colors.light.invertedText,
-          };
-        case "investigations":
-          return {
-            bg: colors.light.successButton,
-            color: colors.light.invertedText,
-          };
-        case "considerations":
-          return {
-            bg: colors.light.secondaryButton,
-            color: colors.light.invertedText,
-          };
-        case "thinking":
-          return {
-            bg: colors.light.neutralButton,
-            color: colors.light.invertedText,
-          };
-        default:
-          return {
-            bg: colors.light.surface,
-            color: colors.light.textPrimary,
-          };
-      }
     };
 
     // Get border accent color for structured items
@@ -131,13 +105,75 @@ const ReasoningPanel = forwardRef(
       window.removeEventListener("mouseup", handleMouseUp);
     };
 
-    const sections = [
-      "summary",
-      "differentials",
-      "investigations",
-      "considerations",
-      "thinking",
-    ];
+    // Render items for structured sections (differentials, investigations, considerations)
+    const renderItems = (section) => {
+      const key = getReasoningKey(section);
+      const items = reasoning?.[key];
+
+      if (!items || items.length === 0) {
+        return (
+          <Text fontSize="sm" color="gray.500">
+            No items available
+          </Text>
+        );
+      }
+
+      return (
+        <VStack align="stretch" spacing={2}>
+          {items.map((item, i) => {
+            const isCritical = !isLegacyFormat(item) && item.critical === true;
+            return (
+              <Box
+                key={i}
+                p={2}
+                borderRadius="sm"
+                bg={colorMode === "light" ? "white" : colors.dark.surface}
+                borderLeft="3px solid"
+                borderColor={isCritical ? "red.500" : getAccentColor(section)}
+                shadow="sm"
+              >
+                {isLegacyFormat(item) ? (
+                  <Text fontSize="sm">{item}</Text>
+                ) : (
+                  <>
+                    <HStack spacing={2} align="start">
+                      <Text fontWeight="medium" fontSize="sm" flex="1">
+                        {item.suggestion}
+                      </Text>
+                      {isCritical && (
+                        <Badge
+                          colorScheme="red"
+                          fontSize="xs"
+                          textTransform="uppercase"
+                        >
+                          Critical
+                        </Badge>
+                      )}
+                    </HStack>
+                    {item.rationale && item.rationale.length > 0 && (
+                      <VStack align="stretch" spacing={0} mt={1}>
+                        {item.rationale.map((point, j) => (
+                          <Text
+                            key={j}
+                            fontSize="xs"
+                            color={
+                              colorMode === "light" ? "gray.600" : "gray.400"
+                            }
+                            pl={2}
+                          >
+                            • {point}
+                          </Text>
+                        ))}
+                      </VStack>
+                    )}
+                  </>
+                )}
+              </Box>
+            );
+          })}
+        </VStack>
+      );
+    };
 
     return (
       <FloatingPanel
@@ -146,7 +182,7 @@ const ReasoningPanel = forwardRef(
         showArrow={true}
         width={`${dimensions.width}px`}
         height={`${dimensions.height}px`}
-        zIndex="1000"
+        zIndex="1060"
       >
         <Box
           borderRadius="lg"
@@ -167,139 +203,69 @@ const ReasoningPanel = forwardRef(
               <FaAtom size="1em" style={{ marginRight: "8px" }} />
               <Text fontWeight="bold">Clinical Reasoning</Text>
             </Flex>
+            {reasoning && (
+              <Tooltip label="Regenerate reasoning">
+                <Button
+                  leftIcon={<FaSync size="10px" />}
+                  onClick={handleGenerateReasoning}
+                  isLoading={loading}
+                  size="xs"
+                  className="orange-button"
+                >
+                  Regenerate
+                </Button>
+              </Tooltip>
+            )}
           </Flex>
 
           {/* Content */}
           <Box flex="1" overflow="hidden" display="flex" flexDirection="column">
             {reasoning ? (
-              <>
-                {/* Navigation Pills */}
-                <HStack
-                  spacing={1}
-                  px={3}
-                  pb={2}
-                  flexWrap="wrap"
-                  flexShrink={0}
-                >
-                  {sections.map((section) => (
-                    <Button
-                      key={section}
-                      className={`reason-button ${
-                        activeSection === section ? "reason-button-active" : ""
-                      }`}
-                      onClick={() => setActiveSection(section)}
-                      borderRightRadius="lg !important"
-                      height="30px !important"
-                      fontSize="sm"
-                      px={2}
-                    >
-                      {section.charAt(0).toUpperCase() + section.slice(1)}
-                    </Button>
-                  ))}
-                  <Button
-                    leftIcon={<FaSync size="10px" />}
-                    onClick={handleGenerateReasoning}
-                    isLoading={loading}
-                    size="xs"
-                    className="orange-button"
-                    ml={2}
-                  >
-                    Regenerate
-                  </Button>
-                </HStack>
+              <Tabs
+                variant="enclosed"
+                index={tabIndex}
+                onChange={(index) => setTabIndex(index)}
+                display="flex"
+                flexDirection="column"
+                height="100%"
+              >
+                <TabList>
+                  <Tab className="tab-style">Summary</Tab>
+                  <Tab className="tab-style">Differentials</Tab>
+                  <Tab className="tab-style">Investigations</Tab>
+                  <Tab className="tab-style">Considerations</Tab>
+                  <Tab className="tab-style">Thinking</Tab>
+                </TabList>
 
-                {/* Content Area */}
-                <Box
-                  overflowY="auto"
-                  className="scroll-container"
-                  p={3}
-                  mx={3}
-                  mb={3}
-                  bg={
-                    colorMode === "light"
-                      ? colors.light.crust
-                      : colors.dark.base
-                  }
-                  borderRadius="lg"
-                  flex="1"
-                >
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={activeSection}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      {activeSection === "summary" && (
-                        <Text fontSize="sm">{reasoning.summary}</Text>
-                      )}
-                      {activeSection === "thinking" && (
-                        <Text fontSize="sm" whiteSpace="pre-wrap">
-                          {reasoning.thinking}
-                        </Text>
-                      )}
-                      {(activeSection === "differentials" ||
-                        activeSection === "investigations" ||
-                        activeSection === "considerations") && (
-                        <VStack align="stretch" spacing={2}>
-                          {reasoning[getReasoningKey(activeSection)] &&
-                            reasoning[getReasoningKey(activeSection)].map(
-                              (item, i) => (
-                                <Box
-                                  key={i}
-                                  p={2}
-                                  borderRadius="sm"
-                                  bg={
-                                    colorMode === "light"
-                                      ? "white"
-                                      : colors.dark.surface
-                                  }
-                                  borderLeft="3px solid"
-                                  borderColor={getAccentColor(activeSection)}
-                                  shadow="sm"
-                                >
-                                  {isLegacyFormat(item) ? (
-                                    <Text fontSize="sm">{item}</Text>
-                                  ) : (
-                                    <>
-                                      <Text fontWeight="medium" fontSize="sm">
-                                        {item.suggestion}
-                                      </Text>
-                                      {item.rationale &&
-                                        item.rationale.length > 0 && (
-                                          <VStack
-                                            align="stretch"
-                                            spacing={0}
-                                            mt={1}
-                                          >
-                                            {item.rationale.map((point, j) => (
-                                              <Text
-                                                key={j}
-                                                fontSize="xs"
-                                                color={
-                                                  colorMode === "light"
-                                                    ? "gray.600"
-                                                    : "gray.400"
-                                                }
-                                                pl={2}
-                                              >
-                                                • {point}
-                                              </Text>
-                                            ))}
-                                          </VStack>
-                                        )}
-                                    </>
-                                  )}
-                                </Box>
-                              ),
-                            )}
-                        </VStack>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-                </Box>
-              </>
+                <TabPanels flex="1" overflow="hidden">
+                  {/* Summary Tab */}
+                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                    <Text fontSize="sm">{reasoning.summary}</Text>
+                  </TabPanel>
+
+                  {/* Differentials Tab */}
+                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                    {renderItems("differentials")}
+                  </TabPanel>
+
+                  {/* Investigations Tab */}
+                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                    {renderItems("investigations")}
+                  </TabPanel>
+
+                  {/* Considerations Tab */}
+                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                    {renderItems("considerations")}
+                  </TabPanel>
+
+                  {/* Thinking Tab */}
+                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                    <Text fontSize="sm" whiteSpace="pre-wrap">
+                      {reasoning.thinking}
+                    </Text>
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
             ) : (
               <VStack spacing={3} p={4} flex="1" justify="center">
                 <Text textAlign="center" fontSize="sm" color="gray.500">
@@ -337,15 +303,18 @@ const ReasoningPanel = forwardRef(
           {loading && reasoning && (
             <Flex
               position="absolute"
-              top={0}
+              top="64px"
               left={0}
               right={0}
               bottom={0}
-              bg="rgba(0,0,0,0.1)"
               justify="center"
               align="center"
-              backdropFilter="blur(2px)"
-              borderRadius="lg"
+              zIndex={2}
+              bg={
+                colorMode === "light"
+                  ? "rgba(255,255,255,0.7)"
+                  : "rgba(0,0,0,0.5)"
+              }
             >
               <Spinner size="lg" />
             </Flex>

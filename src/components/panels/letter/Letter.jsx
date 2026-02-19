@@ -164,7 +164,7 @@ const Letter = forwardRef(
         showArrow={true}
         width={`${dimensions.width}px`}
         height={`${dimensions.height}px`}
-        zIndex="1000"
+        zIndex="1060"
       >
         <LetterPanel
           patient={patient}

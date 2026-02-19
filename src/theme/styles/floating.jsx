@@ -34,12 +34,16 @@ export const floatingStyles = (props) => ({
   ".floating-main": {
     backgroundColor:
       props.colorMode === "light" ? colors.light.base : colors.dark.crust,
+    borderRight:
+      props.colorMode === "light"
+        ? `1px solid ${colors.light.surface} !important`
+        : `1px solid ${colors.dark.surface} !important`,
     color:
       props.colorMode === "light"
         ? `${colors.light.textSecondary} !important`
         : `${colors.dark.textSecondary} !important`,
     fontWeight: "normal",
-    borderRadius: "lg !important",
+    borderRadius: "none !important",
     fontSize: "0.7rem !important",
   },
   ".chat-suggestions": {

@@ -6,7 +6,7 @@ import {
   Spinner,
   Center,
 } from "@chakra-ui/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   useTemplate,
@@ -70,6 +70,7 @@ const PatientDetails = ({
   const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
   const [isPreviousVisitPanelOpen, setIsPreviousVisitPanelOpen] =
     useState(false);
+  const [hasViewedPreviousVisit, setHasViewedPreviousVisit] = useState(false);
 
   const { showWarningToast } = useToastMessage();
 
@@ -689,11 +690,27 @@ const PatientDetails = ({
       setIsTranscriptionPanelOpen(false);
       setIsDocumentPanelOpen(false);
       setIsPreviousVisitPanelOpen(true);
+      setHasViewedPreviousVisit(true);
       letter.setIsCollapsed(true);
       chat.setChatExpanded(false);
       reasoning.closeReasoning();
     }
   };
+
+  // Check if reasoning has critical items
+  const hasCriticalReasoning = useMemo(() => {
+    if (!patient?.reasoning_output) return false;
+    const r = patient.reasoning_output;
+    const allItems = [
+      ...(r.differentials || []),
+      ...(r.investigations || []),
+      ...(r.clinical_considerations || []),
+    ];
+    return allItems.some((item) => item.critical === true);
+  }, [patient?.reasoning_output]);
+
+  // Show red dot for previous visit if summary exists and hasn't been viewed
+  const showPreviousVisitDot = Boolean(patient?.previous_visit_summary) && !hasViewedPreviousVisit;
 
   if (!patient) {
     return (
@@ -733,6 +750,7 @@ const PatientDetails = ({
           isSearchedPatient={isSearchedPatient}
           onCopy={handleCopy}
           recentlyCopied={recentlyCopied}
+          isEncounterSaved={Boolean(patient?.id)}
         />
 
         <Letter
@@ -818,6 +836,10 @@ const PatientDetails = ({
         isReasoningOpen={reasoning.isReasoningOpen}
         isDocumentOpen={isDocumentPanelOpen}
         isPreviousVisitOpen={isPreviousVisitPanelOpen}
+        hasCriticalReasoning={hasCriticalReasoning}
+        hasPreviousVisitSummary={Boolean(patient?.previous_visit_summary)}
+        showPreviousVisitDot={showPreviousVisitDot}
+        isEncounterSaved={Boolean(patient?.id)}
       />
 
       {/* Transcription Panel */}
