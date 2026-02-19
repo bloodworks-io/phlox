@@ -108,6 +108,10 @@ class ReasoningItem(BaseModel):
     rationale: List[str] = Field(
         description="1-2 brief bullet points justifying this suggestion"
     )
+    critical: bool = Field(
+        default=False,
+        description="Set to true ONLY for potentially fatal or serious misses that require immediate attention",
+    )
 
 
 class ClinicalReasoning(BaseModel):

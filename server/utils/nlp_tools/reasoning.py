@@ -34,16 +34,37 @@ async def run_clinical_reasoning(
 
     json_schema_instruction = (
         "Output MUST be ONLY valid JSON with top-level keys "
-        '"thinking" (string), "summary" (string), "differentials" (array of strings), '
-        '"investigations" (array of strings), "clinical_considerations" (array of strings). '
+        '"thinking" (string), "summary" (string), '
+        '"differentials" (array of objects with "suggestion", "rationale", and "critical" keys), '
+        '"investigations" (array of objects with "suggestion", "rationale", and "critical" keys), '
+        '"clinical_considerations" (array of objects with "suggestion", "rationale", and "critical" keys). '
+        "The 'critical' field is a boolean - set to true ONLY for potentially fatal or urgent misses. "
         "Example: "
         + json.dumps(
             {
                 "thinking": "...",
                 "summary": "...",
-                "differentials": ["..."],
-                "investigations": ["..."],
-                "clinical_considerations": ["..."],
+                "differentials": [
+                    {
+                        "suggestion": "Diagnosis name",
+                        "rationale": ["reason 1", "reason 2"],
+                        "critical": False,
+                    }
+                ],
+                "investigations": [
+                    {
+                        "suggestion": "Test name",
+                        "rationale": ["reason 1"],
+                        "critical": False,
+                    }
+                ],
+                "clinical_considerations": [
+                    {
+                        "suggestion": "Critical consideration",
+                        "rationale": ["reason 1"],
+                        "critical": True,
+                    }
+                ],
             }
         )
     )
@@ -74,11 +95,9 @@ Focus on what the clinician might have missed. Be critical if appropriate."""
     repaired_content = repair_json(raw_content)
     content_dict = json.loads(repaired_content)
 
-    # Check if the client captured a reasoning key
+    # Replace thinking with reasoning if present (reasoning is usually higher quality)
     reasoning = response["message"].get("reasoning")
-
-    # 3. Inject it into the data if present (and if not already there)
-    if reasoning and "thinking" not in content_dict:
+    if reasoning:
         content_dict["thinking"] = reasoning
 
     # 4. Validate using the modified dictionary
