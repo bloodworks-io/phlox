@@ -51,11 +51,11 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DWHISPER_COREML=ON -DWHISPER_COREML_ALLOW_F
 
 # Build the server binary
 echo "Building whisper-server binary..."
-cmake --build . --target server -j$(sysctl -n hw.ncpu)
+cmake --build . --target whisper-server -j$(sysctl -n hw.ncpu)
 
 echo "Fixing rpath in whisper-server..."
-if [ -f "bin/server" ]; then
-    cp bin/server "$SCRIPT_DIR/whisper-server"
+if [ -f "bin/whisper-server" ]; then
+    cp bin/whisper-server "$SCRIPT_DIR/whisper-server"
     chmod +x "$SCRIPT_DIR/whisper-server"
     install_name_tool -delete_rpath "$WHISPER_DIR/build/src" "$SCRIPT_DIR/whisper-server" 2>/dev/null || true
     install_name_tool -delete_rpath "$WHISPER_DIR/build/ggml" "$SCRIPT_DIR/whisper-server" 2>/dev/null || true
@@ -64,9 +64,10 @@ if [ -f "bin/server" ]; then
     otool -L "$SCRIPT_DIR/whisper-server" | grep "@rpath" || echo "✓ No problematic rpath entries"
 else
     echo "Error: whisper-server binary not found after build"
-    echo "Looking in: $(pwd)"
+    echo "Looking in: $(pwd)/bin"
     echo "Contents of bin/:"
-    ls -la bin/ || echo "bin/ directory not found"
+    ls -la bin/ 2>/dev/null || echo "bin/ directory not found"
+    echo "Note: target was renamed from 'server' to 'whisper-server' in whisper.cpp v1.8+"
     exit 1
 fi
 

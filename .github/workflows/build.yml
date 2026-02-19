@@ -22,10 +22,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout whisper.cpp
-        run: git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git src-tauri/whisper.cpp
+        run: git clone --depth 1 --branch v1.8.3 https://github.com/ggerganov/whisper.cpp.git src-tauri/whisper.cpp
 
       - name: Checkout llama.cpp
-        run: git clone --depth 1 https://github.com/ggerganov/llama.cpp.git src-tauri/llama.cpp
+        run: git clone --depth 1 --branch b8095 https://github.com/ggerganov/llama.cpp.git src-tauri/llama.cpp
 
       - name: Import signing certificate
         env:
