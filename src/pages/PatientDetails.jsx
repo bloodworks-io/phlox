@@ -6,7 +6,7 @@ import {
   Spinner,
   Center,
 } from "@chakra-ui/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   useTemplate,
@@ -695,6 +695,18 @@ const PatientDetails = ({
     }
   };
 
+  // Check if reasoning has critical items
+  const hasCriticalReasoning = useMemo(() => {
+    if (!patient?.reasoning_output) return false;
+    const r = patient.reasoning_output;
+    const allItems = [
+      ...(r.differentials || []),
+      ...(r.investigations || []),
+      ...(r.clinical_considerations || []),
+    ];
+    return allItems.some((item) => item.critical === true);
+  }, [patient?.reasoning_output]);
+
   if (!patient) {
     return (
       <Center h="100vh">
@@ -733,6 +745,7 @@ const PatientDetails = ({
           isSearchedPatient={isSearchedPatient}
           onCopy={handleCopy}
           recentlyCopied={recentlyCopied}
+          isEncounterSaved={Boolean(patient?.id)}
         />
 
         <Letter
@@ -818,6 +831,9 @@ const PatientDetails = ({
         isReasoningOpen={reasoning.isReasoningOpen}
         isDocumentOpen={isDocumentPanelOpen}
         isPreviousVisitOpen={isPreviousVisitPanelOpen}
+        hasCriticalReasoning={hasCriticalReasoning}
+        hasPreviousVisitSummary={Boolean(patient?.previous_visit_summary)}
+        isEncounterSaved={Boolean(patient?.id)}
       />
 
       {/* Transcription Panel */}

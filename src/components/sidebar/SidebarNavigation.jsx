@@ -6,12 +6,15 @@ import {
   Icon,
   Text,
   Badge,
+  Collapse,
 } from "@chakra-ui/react";
 import { FaClinicMedical, FaTasks } from "react-icons/fa";
 import { GiBrain } from "react-icons/gi";
 import { SettingsIcon } from "@chakra-ui/icons";
 import { colors } from "../../theme/colors";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
+import { SectionHeader } from "./SidebarHelpers";
+import { useState } from "react";
 
 const NavButton = ({
   icon,
@@ -86,89 +89,104 @@ const SidebarNavigation = ({
   handleNavigation,
   incompleteJobsCount,
 }) => {
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+
   return (
     <Box w="100%">
-      <VStack
-        spacing={isCollapsed ? 0 : 1}
-        align="stretch"
-        w="100%"
-        py={isCollapsed ? 1 : 2}
-      >
-        {/* Day Summary button */}
-        <Tooltip
-          label="Day Summary"
-          placement={isCollapsed ? "right" : "top"}
-          isDisabled={!isCollapsed}
-        >
-          <Box>
-            <NavButton
-              icon={FaClinicMedical}
-              color={colors.dark.primaryButton}
-              label="Day Summary"
-              onClick={() => handleNavigation("/clinic-summary")}
-              isCollapsed={isCollapsed}
-            />
-          </Box>
-        </Tooltip>
+      {/* Navigation Header - Collapsible when expanded */}
+      {!isCollapsed && (
+        <SectionHeader
+          title="NAVIGATION"
+          count={null}
+          isCollapsed={isNavCollapsed}
+          onToggle={() => setIsNavCollapsed(!isNavCollapsed)}
+        />
+      )}
 
-        {/* All Jobs button */}
-        <Tooltip
-          label={
-            isCollapsed && incompleteJobsCount > 0
-              ? `All Jobs (${incompleteJobsCount})`
-              : "All Jobs"
-          }
-          placement={isCollapsed ? "right" : "top"}
-          isDisabled={!isCollapsed}
+      {/* Navigation Items */}
+      <Collapse in={isCollapsed || !isNavCollapsed} animateOpacity>
+        <VStack
+          spacing={isCollapsed ? 0 : 1}
+          align="stretch"
+          w="100%"
+          py={isCollapsed ? 1 : 2}
         >
-          <Box>
-            <NavButton
-              icon={FaTasks}
-              color={colors.dark.neutralButton}
-              label="All Jobs"
-              onClick={() => handleNavigation("/outstanding-jobs")}
-              isCollapsed={isCollapsed}
-              badge={incompleteJobsCount > 0 ? incompleteJobsCount : null}
-            />
-          </Box>
-        </Tooltip>
-
-        {/* Documents button */}
-        {isChatEnabled() && (
+          {/* Day Summary button */}
           <Tooltip
-            label="Documents"
+            label="Day Summary"
             placement={isCollapsed ? "right" : "top"}
             isDisabled={!isCollapsed}
           >
             <Box>
               <NavButton
-                icon={GiBrain}
-                color={colors.dark.chatIcon}
-                label="Documents"
-                onClick={() => handleNavigation("/rag")}
+                icon={FaClinicMedical}
+                color={colors.dark.primaryButton}
+                label="Day Summary"
+                onClick={() => handleNavigation("/clinic-summary")}
                 isCollapsed={isCollapsed}
               />
             </Box>
           </Tooltip>
-        )}
 
-        {/* Settings button */}
-        <Tooltip
-          label="Settings"
-          placement={isCollapsed ? "right" : "top"}
-          isDisabled={!isCollapsed}
-        >
-          <Box>
-            <NavButton
-              icon={SettingsIcon}
-              color={colors.dark.extraButton}
-              label="Settings"
-              onClick={() => handleNavigation("/settings")}
-              isCollapsed={isCollapsed}
-            />
-          </Box>
-        </Tooltip>
-      </VStack>
+          {/* All Jobs button */}
+          <Tooltip
+            label={
+              isCollapsed && incompleteJobsCount > 0
+                ? `All Jobs (${incompleteJobsCount})`
+                : "All Jobs"
+            }
+            placement={isCollapsed ? "right" : "top"}
+            isDisabled={!isCollapsed}
+          >
+            <Box>
+              <NavButton
+                icon={FaTasks}
+                color={colors.dark.neutralButton}
+                label="All Jobs"
+                onClick={() => handleNavigation("/outstanding-jobs")}
+                isCollapsed={isCollapsed}
+                badge={incompleteJobsCount > 0 ? incompleteJobsCount : null}
+              />
+            </Box>
+          </Tooltip>
+
+          {/* Documents button */}
+          {isChatEnabled() && (
+            <Tooltip
+              label="Documents"
+              placement={isCollapsed ? "right" : "top"}
+              isDisabled={!isCollapsed}
+            >
+              <Box>
+                <NavButton
+                  icon={GiBrain}
+                  color={colors.dark.chatIcon}
+                  label="Documents"
+                  onClick={() => handleNavigation("/rag")}
+                  isCollapsed={isCollapsed}
+                />
+              </Box>
+            </Tooltip>
+          )}
+
+          {/* Settings button */}
+          <Tooltip
+            label="Settings"
+            placement={isCollapsed ? "right" : "top"}
+            isDisabled={!isCollapsed}
+          >
+            <Box>
+              <NavButton
+                icon={SettingsIcon}
+                color={colors.dark.extraButton}
+                label="Settings"
+                onClick={() => handleNavigation("/settings")}
+                isCollapsed={isCollapsed}
+              />
+            </Box>
+          </Tooltip>
+        </VStack>
+      </Collapse>
     </Box>
   );
 };

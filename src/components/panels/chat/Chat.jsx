@@ -51,7 +51,7 @@ const Chat = ({
       showArrow={true}
       width={`${dimensions.width}px`}
       height={`${dimensions.height - 24}px`}
-      zIndex="1000"
+      zIndex="1060"
     >
       <ChatPanel
         dimensions={dimensions}

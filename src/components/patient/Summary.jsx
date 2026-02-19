@@ -46,6 +46,7 @@ const Summary = forwardRef(
       isNewPatient,
       selectTemplate,
       isSearchedPatient,
+      isEncounterSaved = false,
     },
     ref,
   ) => {
@@ -229,14 +230,25 @@ const Summary = forwardRef(
             </Box>
             <Flex mt="4" justifyContent="space-between">
               <Flex>
-                <GreyButton
-                  onClick={() => handleGenerateLetterClick(null)}
-                  leftIcon={<EditIcon />}
-                  mr="2"
-                  isDisabled={saveLoading}
+                <Tooltip
+                  label={
+                    isEncounterSaved
+                      ? ""
+                      : "Save the encounter first to generate a letter"
+                  }
+                  placement="top"
                 >
-                  Generate Letter
-                </GreyButton>
+                  <Box>
+                    <GreyButton
+                      onClick={() => handleGenerateLetterClick(null)}
+                      leftIcon={<EditIcon />}
+                      mr="2"
+                      isDisabled={saveLoading || !isEncounterSaved}
+                    >
+                      Generate Letter
+                    </GreyButton>
+                  </Box>
+                </Tooltip>
               </Flex>
               <Flex>
                 <GreyButton

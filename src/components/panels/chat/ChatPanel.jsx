@@ -73,7 +73,6 @@ const ChatPanel = ({
 
   return (
     <Box
-      className="floating-panel"
       width={`${dimensions.width}px`}
       height={`${dimensions.height - 24}px`}
       overflow="hidden"

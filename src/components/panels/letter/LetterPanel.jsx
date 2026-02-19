@@ -5,7 +5,6 @@ import {
   Text,
   Select,
   Tooltip,
-  useColorMode,
 } from "@chakra-ui/react";
 import { FaEnvelope, FaMicrophone, FaMagic } from "react-icons/fa";
 
@@ -47,17 +46,13 @@ const LetterPanel = ({
 }) => {
   const [letterMode, setLetterMode] = useState("draft");
   const isDictateMode = letterMode === "dictate";
-  const { colorMode } = useColorMode();
 
   return (
     <Box
       width={`${dimensions.width}px`}
       height={`${dimensions.height}px`}
-      borderRadius="xl"
       overflow="hidden"
       position="relative"
-      className="floating-panel"
-      bg={colorMode === "light" ? "white" : "gray.800"}
     >
       <Box
         borderRadius="xl"
