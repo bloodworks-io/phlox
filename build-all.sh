@@ -76,6 +76,32 @@ else
 fi
 
 # ========================================
+# Preflight: Verify signing credentials (macOS release only)
+# ========================================
+if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
+    echo ""
+    echo "=========================================="
+    echo "Preflight: Checking signing credentials..."
+    echo "=========================================="
+
+    SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-${SIGNING_IDENTITY:-}}"
+
+    if [ -z "$SIGNING_IDENTITY" ]; then
+        echo "❌ No signing identity set. Export APPLE_SIGNING_IDENTITY or SIGNING_IDENTITY before building."
+        exit 1
+    fi
+
+    if ! security find-identity -v -p codesigning | grep -q "$SIGNING_IDENTITY"; then
+        echo "❌ Signing identity '$SIGNING_IDENTITY' not found in keychain."
+        echo "   Available identities:"
+        security find-identity -v -p codesigning
+        exit 1
+    fi
+
+    echo "✅ Signing identity verified: $SIGNING_IDENTITY"
+fi
+
+# ========================================
 # Step 1: Build phlox-pm (Process Manager)
 # ========================================
 echo ""

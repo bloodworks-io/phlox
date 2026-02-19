@@ -74,8 +74,17 @@ else
     NUITKA_CMD="uv run --directory $SERVER_DIR python -m nuitka"
 fi
 
+# Detect number of CPU cores for parallel C compilation
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    JOBS=$(sysctl -n hw.logicalcpu)
+else
+    JOBS=$(nproc)
+fi
+echo "Using $JOBS parallel jobs for C compilation..."
+
 $NUITKA_CMD \
     --assume-yes-for-downloads \
+    --jobs=$JOBS \
     --mode=standalone \
     --output-dir=server/dist \
     --output-filename=server \

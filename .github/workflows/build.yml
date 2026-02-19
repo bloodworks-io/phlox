@@ -66,6 +66,46 @@ jobs:
           npm ci
           cd ..
 
+      - name: Import signing certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "❌ APPLE_CERTIFICATE secret is not set"
+            exit 1
+          fi
+          if [ -z "$APPLE_CERTIFICATE_PASSWORD" ]; then
+            echo "❌ APPLE_CERTIFICATE_PASSWORD secret is not set"
+            exit 1
+          fi
+          if [ -z "$APPLE_SIGNING_IDENTITY" ]; then
+            echo "❌ APPLE_SIGNING_IDENTITY secret is not set"
+            exit 1
+          fi
+
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 3600 build.keychain
+
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm -f certificate.p12
+
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Verify the identity is actually present before we waste time compiling
+          if ! security find-identity -v -p codesigning build.keychain | grep -q "$APPLE_SIGNING_IDENTITY"; then
+            echo "❌ Signing identity '$APPLE_SIGNING_IDENTITY' not found in keychain after import"
+            security find-identity -v -p codesigning build.keychain
+            exit 1
+          fi
+
+          echo "✅ Certificate imported and signing identity verified"
+
       - name: Build all components
         env:
           # Pass to build scripts for signing binaries
