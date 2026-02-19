@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.2](https://github.com/bloodworks-io/phlox/compare/v0.9.1...v0.9.2) (2026-02-19)
+
+
+### Bug Fixes
+
+* previous visit panel ([03683de](https://github.com/bloodworks-io/phlox/commit/03683de1b1c0e46b8e89427c3e6e53158b8325d7))
+* reasoning layout and schema ([81d7a44](https://github.com/bloodworks-io/phlox/commit/81d7a44f9e792613ab3c76d11af4635bce9e4bfc))
+* tauri internal window reference ([c40b56a](https://github.com/bloodworks-io/phlox/commit/c40b56ae6a6ca81798ce6ce6eedf4b003f93c0e2))
+* various UI fixes ([46fd7a4](https://github.com/bloodworks-io/phlox/commit/46fd7a466a8be1cbc0617f1d0aa7a14e54e94c46))
+
 ## [0.9.1](https://github.com/bloodworks-io/phlox/compare/v0.9.0...v0.9.1) (2026-02-18)
 
 
