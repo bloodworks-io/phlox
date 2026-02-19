@@ -21,6 +21,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Checkout whisper.cpp
+        run: git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git src-tauri/whisper.cpp
+
+      - name: Checkout llama.cpp
+        run: git clone --depth 1 https://github.com/ggerganov/llama.cpp.git src-tauri/llama.cpp
+
       - name: Import signing certificate
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
