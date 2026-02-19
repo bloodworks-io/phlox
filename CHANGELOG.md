@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/bloodworks-io/phlox/compare/v0.9.2...v0.9.3) (2026-02-19)
+
+
+### Bug Fixes
+
+* critical reasoning alert not appearing ([15610f0](https://github.com/bloodworks-io/phlox/commit/15610f067c248d5627f393ea668b51915c05b814))
+
 ## [0.9.2](https://github.com/bloodworks-io/phlox/compare/v0.9.1...v0.9.2) (2026-02-19)
 
 
