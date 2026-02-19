@@ -2801,7 +2801,7 @@ dependencies = [
 
 [[package]]
 name = "phlox"
-version = "0.8.0"
+version = "0.9.1"
 dependencies = [
  "cocoa",
  "dirs 4.0.0",

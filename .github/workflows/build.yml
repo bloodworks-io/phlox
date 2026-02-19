@@ -40,6 +40,19 @@ jobs:
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
+      - name: Install ccache
+        run: brew install ccache
+
+      - name: Cache Nuitka and ccache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Nuitka
+            ~/.cache/ccache
+          key: nuitka-ccache-${{ runner.os }}-${{ hashFiles('server/**/*.py') }}
+          restore-keys: |
+            nuitka-ccache-${{ runner.os }}-
+
       - name: Set up Python venv with uv
         run: |
           cd server
