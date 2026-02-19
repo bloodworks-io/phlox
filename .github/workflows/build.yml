@@ -46,8 +46,16 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security set-keychain-settings -lut 3600 build.keychain
 
+          echo "🔍 APPLE_CERTIFICATE length: ${#APPLE_CERTIFICATE}"
+          echo "🔍 APPLE_CERTIFICATE_PASSWORD length: ${#APPLE_CERTIFICATE_PASSWORD}"
+
           echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          echo "🔍 Decoded certificate.p12 size: $(wc -c < certificate.p12) bytes"
+          echo "🔍 File type: $(file certificate.p12)"
+
+          echo "🔍 Attempting security import..."
           security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          echo "🔍 security import succeeded"
           rm -f certificate.p12
 
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
