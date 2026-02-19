@@ -49,7 +49,7 @@ jobs:
           path: |
             ~/Library/Caches/Nuitka
             ~/.cache/ccache
-          key: nuitka-ccache-${{ runner.os }}-${{ hashFiles('server/**/*.py') }}
+          key: nuitka-ccache-${{ runner.os }}-${{ hashFiles('server/**/*.py', 'server/uv.lock') }}
           restore-keys: |
             nuitka-ccache-${{ runner.os }}-
 
