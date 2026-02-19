@@ -24,7 +24,7 @@ import { patientApi } from "../../../utils/api/patientApi";
 import FloatingPanel from "../../common/FloatingPanel";
 
 const ReasoningPanel = forwardRef(
-  ({ isOpen, onClose, patientId, initialReasoning }, ref) => {
+  ({ isOpen, onClose, patientId, initialReasoning, onReasoningGenerated }, ref) => {
     const [loading, setLoading] = useState(false);
     const [reasoning, setReasoning] = useState(initialReasoning);
     const [tabIndex, setTabIndex] = useState(0);
@@ -46,6 +46,9 @@ const ReasoningPanel = forwardRef(
       try {
         const res = await patientApi.generateReasoning(patientId, toast);
         setReasoning(res);
+        if (onReasoningGenerated) {
+          onReasoningGenerated(res);
+        }
       } catch (error) {
         console.error("Error generating reasoning:", error);
       } finally {

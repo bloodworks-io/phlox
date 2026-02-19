@@ -697,6 +697,14 @@ const PatientDetails = ({
     }
   };
 
+  // Handle when reasoning is generated - update patient state for red dot indicator
+  const handleReasoningGenerated = (newReasoning) => {
+    setPatient((prev) => ({
+      ...prev,
+      reasoning_output: newReasoning,
+    }));
+  };
+
   // Check if reasoning has critical items
   const hasCriticalReasoning = useMemo(() => {
     if (!patient?.reasoning_output) return false;
@@ -803,6 +811,7 @@ const PatientDetails = ({
           onClose={reasoning.closeReasoning}
           patientId={patient?.id}
           initialReasoning={patient?.reasoning_output}
+          onReasoningGenerated={handleReasoningGenerated}
         />
       </VStack>
 
