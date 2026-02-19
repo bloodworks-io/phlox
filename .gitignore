@@ -43,6 +43,10 @@ dist/
 .tmp/
 main.*/
 
+# Cloned external repos (cloned by CI)
+src-tauri/whisper.cpp/
+src-tauri/llama.cpp/
+
 # Coverage
 CLAUDE.md
 .claude
