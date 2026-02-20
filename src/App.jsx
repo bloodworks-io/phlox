@@ -63,11 +63,14 @@ function AppContent({ setIsInitializing }) {
   const [isLoadingEncryptionCheck, setIsLoadingEncryptionCheck] =
     useState(true);
   const [showServerStartupLoader, setShowServerStartupLoader] = useState(false);
+  const [isInGracePeriod, setIsInGracePeriod] = useState(true);
 
   // App initialization state - true when server is not ready yet
   // This is used to suppress error toasts during initialization
+  // isInGracePeriod provides a buffer after server is ready to suppress
+  // toasts from initial API calls that may fail before app stabilizes
   const isInitializing =
-    showEncryptionSetup || showEncryptionUnlock || showServerStartupLoader;
+    showEncryptionSetup || showEncryptionUnlock || showServerStartupLoader || isInGracePeriod;
 
   // Update the parent state whenever isInitializing changes
   useEffect(() => {
@@ -370,6 +373,11 @@ function AppContent({ setIsInitializing }) {
     setShowServerStartupLoader(false);
     // Server is ready, now check splash screen status
     checkSplashStatus({ maxRetries: 3, retryDelay: 300 });
+    // Keep suppressing toasts for a short grace period after server is ready
+    // This allows initial API calls to fail gracefully without showing error toasts
+    setTimeout(() => {
+      setIsInGracePeriod(false);
+    }, 2000); // 2 second grace period
   };
 
   const handleServerError = (error) => {

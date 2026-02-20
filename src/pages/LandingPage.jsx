@@ -11,6 +11,8 @@ import NewsDigestPanel from "../components/landing/NewsDigestPanel";
 import TaskManagerPanel from "../components/landing/TaskManagerPanel";
 import RssFeedPanel from "../components/landing/RssFeedPanel";
 import ServerInfoPanel from "../components/landing/ServerInfoPanel";
+import DisclaimerModal from "../components/modals/DisclaimerModal";
+import { useAppInit } from "../App";
 
 const LandingPage = () => {
   const [feeds, setFeeds] = useState([]);
@@ -31,6 +33,27 @@ const LandingPage = () => {
   const [serverInfo, setServerInfo] = useState(null);
   const [isServerInfoRefreshing, setIsServerInfoRefreshing] = useState(false);
   const toast = useApiToast();
+  const { isInitializing } = useAppInit();
+
+  // Disclaimer modal state - show once per session
+  // Only show when app is fully initialized (past encryption/splash screens)
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  useEffect(() => {
+    // Don't show disclaimer while app is initializing
+    if (isInitializing) return;
+
+    // Check if disclaimer was already shown this session
+    if (sessionStorage.getItem("disclaimerShown")) return;
+
+    // Show disclaimer after app is ready
+    setShowDisclaimer(true);
+  }, [isInitializing]);
+
+  const handleDisclaimerClose = () => {
+    sessionStorage.setItem("disclaimerShown", "true");
+    setShowDisclaimer(false);
+  };
 
   const fetchAllData = useCallback(async () => {
     setIsRefreshing(true);
@@ -282,6 +305,7 @@ const LandingPage = () => {
   }, [feeds, fetchRssItems]);
   return (
     <Box p="5" maxW="1400px" mx="auto">
+      <DisclaimerModal isOpen={showDisclaimer} onClose={handleDisclaimerClose} />
       <Text as="h1" textAlign="center" mb="6">
         Phlox Dashboard
       </Text>
