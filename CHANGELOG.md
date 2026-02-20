@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.4](https://github.com/bloodworks-io/phlox/compare/v0.9.3...v0.9.4) (2026-02-20)
+
+
+### Bug Fixes
+
+* modal disclaimer page ([1378232](https://github.com/bloodworks-io/phlox/commit/1378232a2a80f3b6cd751d4a1c4022cb7ba2ef36))
+* splash screen ([9adc530](https://github.com/bloodworks-io/phlox/commit/9adc5309c52a99ff3b68a75c3d4cb22580bc81a7))
+* tauri build issue ([39803ab](https://github.com/bloodworks-io/phlox/commit/39803ab5144b84de8539f4540edd13c69859f4ed))
+
 ## [0.9.3](https://github.com/bloodworks-io/phlox/compare/v0.9.2...v0.9.3) (2026-02-19)
 
 
