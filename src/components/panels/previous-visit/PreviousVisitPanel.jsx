@@ -8,6 +8,7 @@ const PreviousVisitPanel = ({ isOpen, onClose, previousVisitSummary }) => {
       isOpen={isOpen}
       position="left-of-fab"
       showArrow={true}
+      triggerId="fab-previous-visit"
       width="90%"
       maxWidth="600px"
     >

@@ -24,7 +24,10 @@ import { patientApi } from "../../../utils/api/patientApi";
 import FloatingPanel from "../../common/FloatingPanel";
 
 const ReasoningPanel = forwardRef(
-  ({ isOpen, onClose, patientId, initialReasoning, onReasoningGenerated }, ref) => {
+  (
+    { isOpen, onClose, patientId, initialReasoning, onReasoningGenerated },
+    ref,
+  ) => {
     const [loading, setLoading] = useState(false);
     const [reasoning, setReasoning] = useState(initialReasoning);
     const [tabIndex, setTabIndex] = useState(0);
@@ -183,6 +186,7 @@ const ReasoningPanel = forwardRef(
         isOpen={isOpen}
         position="left-of-fab"
         showArrow={true}
+        triggerId="fab-reasoning"
         width={`${dimensions.width}px`}
         height={`${dimensions.height}px`}
         zIndex="1060"
@@ -242,27 +246,47 @@ const ReasoningPanel = forwardRef(
 
                 <TabPanels flex="1" overflow="hidden">
                   {/* Summary Tab */}
-                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                  <TabPanel
+                    className="floating-main"
+                    height="100%"
+                    overflowY="auto"
+                  >
                     <Text fontSize="sm">{reasoning.summary}</Text>
                   </TabPanel>
 
                   {/* Differentials Tab */}
-                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                  <TabPanel
+                    className="floating-main"
+                    height="100%"
+                    overflowY="auto"
+                  >
                     {renderItems("differentials")}
                   </TabPanel>
 
                   {/* Investigations Tab */}
-                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                  <TabPanel
+                    className="floating-main"
+                    height="100%"
+                    overflowY="auto"
+                  >
                     {renderItems("investigations")}
                   </TabPanel>
 
                   {/* Considerations Tab */}
-                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                  <TabPanel
+                    className="floating-main"
+                    height="100%"
+                    overflowY="auto"
+                  >
                     {renderItems("considerations")}
                   </TabPanel>
 
                   {/* Thinking Tab */}
-                  <TabPanel className="floating-main" height="100%" overflowY="auto">
+                  <TabPanel
+                    className="floating-main"
+                    height="100%"
+                    overflowY="auto"
+                  >
                     <Text fontSize="sm" whiteSpace="pre-wrap">
                       {reasoning.thinking}
                     </Text>

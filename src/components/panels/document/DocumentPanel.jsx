@@ -191,6 +191,7 @@ const DocumentPanel = ({
       className="floating-panel"
       position="left-of-fab"
       showArrow={true}
+      triggerId="fab-document"
       width="90%"
       maxWidth="600px"
     >
