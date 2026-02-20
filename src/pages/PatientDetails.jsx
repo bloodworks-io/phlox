@@ -103,6 +103,7 @@ const PatientDetails = ({
     template: currentTemplate,
     handleTranscriptionComplete: (data) => handleTranscriptionComplete(data),
     setLoading,
+    onSendStart: () => setIsTranscriptionPanelOpen(false),
   });
 
   const handleChatToggle = (isOpen) => {
