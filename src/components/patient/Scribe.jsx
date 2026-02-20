@@ -11,6 +11,7 @@ export const useScribe = ({
   template,
   handleTranscriptionComplete,
   setLoading,
+  onSendStart,
 }) => {
   const [isAmbient, setIsAmbient] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
@@ -112,6 +113,10 @@ export const useScribe = ({
   }, []);
 
   const stopAndSendRecording = useCallback(async () => {
+    // Collapse any open panels when sending
+    if (onSendStart) {
+      onSendStart();
+    }
     return new Promise((resolve) => {
       if (isRecording && mediaRecorderRef.current) {
         mediaRecorderRef.current.onstop = async () => {
@@ -144,7 +149,7 @@ export const useScribe = ({
         resolve(null);
       }
     });
-  }, [isRecording, transcribeAudio, name, gender, dob, template, isAmbient]);
+  }, [isRecording, transcribeAudio, name, gender, dob, template, isAmbient, onSendStart]);
 
   const resetRecording = useCallback(() => {
     if (isRecording) {
