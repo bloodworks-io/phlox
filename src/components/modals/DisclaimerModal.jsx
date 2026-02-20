@@ -46,24 +46,25 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
             <Text>Important Notice</Text>
           </HStack>
         </ModalHeader>
+        {/* Warning alert */}
+        <Box
+          bg="orange.100"
+          borderLeft="4px solid"
+          borderColor="orange.400"
+          width="90%"
+          marginLeft="5%"
+          p={3}
+          borderRadius="md"
+          mb={4}
+        >
+          <HStack align="start">
+            <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
+            <Text color="gray.700" fontSize="sm" fontWeight="600">
+              Experimental Software - Use at Your Own Risk
+            </Text>
+          </HStack>
+        </Box>
         <ModalBody maxH="40vh" overflowY="auto" className="custom-scrollbar">
-          {/* Warning alert */}
-          <Box
-            bg="orange.100"
-            borderLeft="4px solid"
-            borderColor="orange.400"
-            p={3}
-            borderRadius="md"
-            mb={4}
-          >
-            <HStack align="start">
-              <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
-              <Text color="gray.700" fontSize="sm" fontWeight="600">
-                Experimental Software - Use at Your Own Risk
-              </Text>
-            </HStack>
-          </Box>
-
           {/* Disclaimer content */}
           <VStack align="stretch" spacing={4}>
             <Box>
