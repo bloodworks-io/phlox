@@ -70,7 +70,10 @@ function AppContent({ setIsInitializing }) {
   // isInGracePeriod provides a buffer after server is ready to suppress
   // toasts from initial API calls that may fail before app stabilizes
   const isInitializing =
-    showEncryptionSetup || showEncryptionUnlock || showServerStartupLoader || isInGracePeriod;
+    showEncryptionSetup ||
+    showEncryptionUnlock ||
+    showServerStartupLoader ||
+    isInGracePeriod;
 
   // Update the parent state whenever isInitializing changes
   useEffect(() => {
@@ -313,6 +316,13 @@ function AppContent({ setIsInitializing }) {
       setIsLoadingSplashCheck(false);
     }
   }, [checkSplashStatus]);
+
+  // In non-Tauri environments, disable grace period immediately since server is already running
+  useEffect(() => {
+    if (!isTauri()) {
+      setIsInGracePeriod(false);
+    }
+  }, []);
 
   const handleSplashComplete = () => {
     setShowSplashScreen(false);
