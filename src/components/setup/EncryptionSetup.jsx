@@ -97,9 +97,10 @@ const EncryptionSetup = ({ onComplete }) => {
       // Setup encryption and get hex passphrase
       const hexPassphrase = await encryptionApi.setup(passphrase);
 
-      // Start the server with the hex passphrase
+      // Start the server (in warm mode) and then send the passphrase
       try {
-        await invoke("start_server_command", { passphraseHex: hexPassphrase });
+        await invoke("start_server_command");
+        await invoke("send_passphrase_command", { passphraseHex: hexPassphrase });
         // Reset cached port so we get the new server port
         resetApiConfig();
 
