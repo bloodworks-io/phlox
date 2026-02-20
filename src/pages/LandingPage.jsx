@@ -213,6 +213,9 @@ const LandingPage = () => {
       setIsAnalysisRefreshing(true);
       await landingApi.refreshAnalysis();
 
+      // Track if polling is still active
+      let isPollingActive = true;
+
       // Start polling for the new analysis
       const pollInterval = setInterval(async () => {
         try {
@@ -222,11 +225,13 @@ const LandingPage = () => {
             setAnalysis(response);
             setIsAnalysisRefreshing(false);
             clearInterval(pollInterval);
+            isPollingActive = false;
           }
         } catch (error) {
           console.error("Error polling analysis:", error);
           setIsAnalysisRefreshing(false);
           clearInterval(pollInterval);
+          isPollingActive = false;
           toast({
             title: "Error getting new analysis",
             status: "error",
@@ -238,9 +243,10 @@ const LandingPage = () => {
 
       // Set a timeout to stop polling after 30 seconds
       setTimeout(() => {
-        if (pollInterval) {
+        if (isPollingActive) {
           clearInterval(pollInterval);
           setIsAnalysisRefreshing(false);
+          isPollingActive = false;
           toast({
             title: "Analysis refresh timed out",
             description: "Please try again later",
