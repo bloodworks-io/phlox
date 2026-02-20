@@ -53,7 +53,8 @@ cmake .. \
   -DLLAMA_METAL=ON \
   -DLLAMA_ACCELERATE=ON \
   -DLLAMA_ALL_WARNINGS=OFF \
-  -DBUILD_SHARED_LIBS=OFF
+  -DBUILD_SHARED_LIBS=OFF \
+  -DLLAMA_CURL=OFF
 
 # Build the llama-server binary
 echo "Building llama-server binary..."
