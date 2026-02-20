@@ -320,6 +320,7 @@ function AppContent({ setIsInitializing }) {
   // In non-Tauri environments, disable grace period immediately since server is already running
   useEffect(() => {
     if (!isTauri()) {
+      console.log("Non-Tauri environment detected");
       setIsInGracePeriod(false);
     }
   }, []);
