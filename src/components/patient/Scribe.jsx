@@ -85,6 +85,10 @@ export const useScribe = ({
       return;
     }
 
+    // Clear previous recording chunks when starting a new recording
+    // (previous recording was already sent, so this is a fresh start)
+    completeRecordingRef.current = [];
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
