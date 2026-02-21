@@ -17,7 +17,7 @@ export const modalStyles = (props) => ({
         : `${colors.dark.textSecondary} !important`,
     fontSize: "0.9rem !important",
     padding: "0px !important",
-    borderRadius: "md !important",
+    borderRadius: "xl !important",
   },
   ".collapse-toggle": {
     border: "none !important",

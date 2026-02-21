@@ -44,6 +44,32 @@ const lavaBlob3 = keyframes`
   50% { transform: translate(3px, 6px) scale(1.1); }
 `;
 
+// Swirling orb animations for loading state
+const swirlOrbit = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const swirlOrbitReverse = keyframes`
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+`;
+
+const corePulse = keyframes`
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+`;
+
+const orbPulse = keyframes`
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+`;
+
+const fadeIn = keyframes`
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+`;
+
 // Lava lamp blob layers for idle button
 const LavaBlobs = () => (
   <Box
@@ -124,6 +150,103 @@ const InternalGlow = () => (
     />
   </Box>
 );
+
+// Swirling loading orb component
+const LoadingOrb = ({ size = 46 }) => {
+  const orbSize = 10;
+  const orbitRadius = size * 0.32;
+
+  return (
+    <Box
+      position="relative"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      w={`${size}px`}
+      h={`${size}px`}
+      borderRadius="full"
+      overflow="hidden"
+      animation={`${fadeIn} 0.3s ease-out forwards`}
+    >
+      {/* Central glowing core */}
+      <Box
+        position="absolute"
+        borderRadius="full"
+        w={`${size * 0.35}px`}
+        h={`${size * 0.35}px`}
+        bg="radial-gradient(circle, #FF8A50 0%, #FF6B35 50%, transparent 70%)"
+        animation={`${corePulse} 1.5s ease-in-out infinite`}
+        boxShadow="0 0 15px rgba(255, 107, 53, 0.6)"
+      />
+
+      {/* Orbit ring 1 - outer */}
+      <Box
+        position="absolute"
+        w={`${orbitRadius * 2}px`}
+        h={`${orbitRadius * 2}px`}
+        borderRadius="full"
+        animation={`${swirlOrbit} 2s linear infinite`}
+      >
+        <Box
+          position="absolute"
+          top="0"
+          left="50%"
+          transform="translateX(-50%)"
+          w={`${orbSize}px`}
+          h={`${orbSize}px`}
+          borderRadius="full"
+          bg="linear-gradient(135deg, #FF6B35, #FF8A50)"
+          boxShadow="0 0 8px rgba(255, 107, 53, 0.8)"
+          animation={`${orbPulse} 1s ease-in-out infinite`}
+        />
+      </Box>
+
+      {/* Orbit ring 2 - middle */}
+      <Box
+        position="absolute"
+        w={`${orbitRadius * 1.5}px`}
+        h={`${orbitRadius * 1.5}px`}
+        borderRadius="full"
+        animation={`${swirlOrbitReverse} 1.5s linear infinite`}
+      >
+        <Box
+          position="absolute"
+          bottom="0"
+          left="50%"
+          transform="translateX(-50%)"
+          w={`${orbSize * 0.8}px`}
+          h={`${orbSize * 0.8}px`}
+          borderRadius="full"
+          bg="linear-gradient(135deg, #FFB74D, #FF8A50)"
+          boxShadow="0 0 6px rgba(255, 183, 77, 0.8)"
+          animation={`${orbPulse} 1.2s ease-in-out infinite 0.3s`}
+        />
+      </Box>
+
+      {/* Orbit ring 3 - inner */}
+      <Box
+        position="absolute"
+        w={`${orbitRadius * 1}px`}
+        h={`${orbitRadius * 1}px`}
+        borderRadius="full"
+        animation={`${swirlOrbit} 1s linear infinite`}
+      >
+        <Box
+          position="absolute"
+          top="50%"
+          right="0"
+          transform="translateY(-50%)"
+          w={`${orbSize * 0.6}px`}
+          h={`${orbSize * 0.6}px`}
+          borderRadius="full"
+          bg="linear-gradient(135deg, #FFCC80, #FFB74D)"
+          boxShadow="0 0 5px rgba(255, 204, 128, 0.8)"
+          animation={`${orbPulse} 0.8s ease-in-out infinite 0.5s`}
+        />
+      </Box>
+    </Box>
+  );
+};
 
 // Timer display positioned above button
 const RadialTimer = ({ timer, isPaused }) => {
@@ -454,8 +577,16 @@ const ScribePillBox = ({
 }) => {
   if (isLoading) {
     return (
-      <PillBox bottom="20px" left="50%" transform="translateX(-50%)" px={6}>
-        <Text>Loading...</Text>
+      <PillBox
+        bottom="20px"
+        left="50%"
+        transform="translateX(-50%)"
+        className="pill-box-scribe"
+        px={2}
+        py={2}
+        gap={0}
+      >
+        <LoadingOrb size={46} />
       </PillBox>
     );
   }

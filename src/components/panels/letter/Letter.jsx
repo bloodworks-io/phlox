@@ -162,6 +162,7 @@ const Letter = forwardRef(
         isOpen={isOpen}
         position="left-of-fab"
         showArrow={true}
+        triggerId="fab-letter"
         width={`${dimensions.width}px`}
         height={`${dimensions.height}px`}
         zIndex="1060"

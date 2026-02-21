@@ -46,24 +46,25 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
             <Text>Important Notice</Text>
           </HStack>
         </ModalHeader>
-        <ModalBody maxH="70vh" overflowY="auto" className="custom-scrollbar">
-          {/* Warning alert */}
-          <Box
-            bg="orange.100"
-            borderLeft="4px solid"
-            borderColor="orange.400"
-            p={3}
-            borderRadius="md"
-            mb={4}
-          >
-            <HStack align="start">
-              <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
-              <Text color="gray.700" fontSize="sm" fontWeight="600">
-                Experimental Software - Use at Your Own Risk
-              </Text>
-            </HStack>
-          </Box>
-
+        {/* Warning alert */}
+        <Box
+          bg="orange.100"
+          borderLeft="4px solid"
+          borderColor="orange.400"
+          width="90%"
+          marginLeft="5%"
+          p={3}
+          borderRadius="md"
+          mb={4}
+        >
+          <HStack align="start">
+            <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
+            <Text color="gray.700" fontSize="sm" fontWeight="600">
+              Experimental Software - Use at Your Own Risk
+            </Text>
+          </HStack>
+        </Box>
+        <ModalBody maxH="40vh" overflowY="auto" className="custom-scrollbar">
           {/* Disclaimer content */}
           <VStack align="stretch" spacing={4}>
             <Box>
@@ -76,9 +77,14 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                 Phlox is an experimental project intended for educational and
                 personal experimentation ONLY.
               </Text>
-              <Text color={currentColors.textPrimary} fontSize="sm" fontWeight="600">
-                AS PROVIDED, IT IS NOT A CERTIFIED MEDICAL DEVICE AND MUST NOT BE
-                USED IN ACTUAL CLINICAL SETTINGS OR FOR CLINICAL DECISION-MAKING.
+              <Text
+                color={currentColors.textPrimary}
+                fontSize="sm"
+                fontWeight="600"
+              >
+                AS PROVIDED, IT IS NOT A CERTIFIED MEDICAL DEVICE AND MUST NOT
+                BE USED IN ACTUAL CLINICAL SETTINGS OR FOR CLINICAL
+                DECISION-MAKING.
               </Text>
             </Box>
 
@@ -97,29 +103,29 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                   progress and may contain bugs and inconsistencies.
                 </Text>
                 <Text color={currentColors.textPrimary} fontSize="sm">
-                  <strong>AI Hallucinations:</strong> LLM outputs, especially from
-                  smaller models, can be unreliable, inaccurate, and may present
-                  plausible but incorrect information. Always verify AI-generated
-                  content against trusted sources and use your professional clinical
-                  judgment.
+                  <strong>AI Hallucinations:</strong> LLM outputs, especially
+                  from smaller models, can be unreliable, inaccurate, and may
+                  present plausible but incorrect information. Always verify
+                  AI-generated content against trusted sources and use your
+                  professional clinical judgment.
                 </Text>
                 <Text color={currentColors.textPrimary} fontSize="sm">
                   <strong>No User Authentication:</strong> Naively exposing this
-                  application to the open internet is highly discouraged. Phlox has
-                  no user access controls and minimal input sanitisation.
+                  application to the open internet is highly discouraged. Phlox
+                  has no user access controls and minimal input sanitisation.
                 </Text>
                 <Text color={currentColors.textPrimary} fontSize="sm">
                   <strong>Not HIPAA/GDPR Compliant:</strong> Phlox lacks the
-                  necessary security and compliance measures for handling protected
-                  health information in regulated environments.
+                  necessary security and compliance measures for handling
+                  protected health information in regulated environments.
                 </Text>
               </VStack>
             </Box>
 
             <Text color={currentColors.textPrimary} fontSize="sm">
-              USE AT YOUR OWN RISK and only for non-clinical, educational purposes
-              unless you have implemented robust security measures and undertaken
-              thorough validation.
+              USE AT YOUR OWN RISK and only for non-clinical, educational
+              purposes unless you have implemented robust security measures and
+              undertaken thorough validation.
             </Text>
 
             <Text color={currentColors.textSecondary} fontSize="xs">
@@ -139,8 +145,8 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                 fontSize="sm"
                 sx={{ fontFamily: '"Roboto", sans-serif' }}
               >
-                I have read and understand the above warnings. I agree to proceed at
-                my own risk.
+                I have read and understand the above warnings. I agree to
+                proceed at my own risk.
               </Text>
             </Checkbox>
             <HStack justify="flex-end">

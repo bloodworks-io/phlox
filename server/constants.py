@@ -59,42 +59,41 @@ def get_changelog_path() -> Path:
     """Get the path to CHANGELOG.md based on environment."""
     if IS_DOCKER:
         return Path("/usr/src/app/CHANGELOG.md")
-    else:
-        # For desktop, look for CHANGELOG.md in several locations:
-        # When bundled with Nuitka/Tauri, it's in server_dist/ alongside the server binary
-        # When running from source, it's in the project root
 
-        # Get the directory where this file is located
-        # In bundled app: server_dist/server/constants.py -> server_dist/server/
-        # In source: phlox/server/constants.py -> phlox/server/
-        this_dir = Path(__file__).parent
+    # Check executable directory (works for Nuitka standalone)
+    dist_dir = Path(sys.executable).resolve().parent
+    changelog_path = dist_dir / "CHANGELOG.md"
+    if changelog_path.exists():
+        return changelog_path
 
-        # Check if CHANGELOG.md is in parent directory (bundled in server_dist/)
-        bundled = this_dir.parent / "CHANGELOG.md"
-        if bundled.exists():
-            return bundled
+    # Also check sys.argv[0] just in case
+    if sys.argv:
+        argv_dir = Path(sys.argv[0]).resolve().parent
+        changelog_path = argv_dir / "CHANGELOG.md"
+        if changelog_path.exists():
+            return changelog_path
 
-        # Check project root (running from source: server/../CHANGELOG.md)
-        source_root = this_dir.parent / "CHANGELOG.md"
-        if source_root.exists():
-            return source_root
+    # Get the directory where this file is located
+    this_dir = Path(__file__).parent
 
-        # Fallback: current working directory
-        cwd_changelog = Path.cwd() / "CHANGELOG.md"
-        if cwd_changelog.exists():
-            return cwd_changelog
+    # Check if CHANGELOG.md is in parent directory (bundled in server_dist/ or project root)
+    changelog_path = this_dir.parent / "CHANGELOG.md"
+    if changelog_path.exists():
+        return changelog_path
 
-        # Last resort: check src-tauri/server_dist (dev mode after build)
-        dev_bundled = (
-            this_dir.parent.parent
-            / "src-tauri"
-            / "server_dist"
-            / "CHANGELOG.md"
-        )
-        if dev_bundled.exists():
-            return dev_bundled
+    # Fallback: current working directory
+    cwd_changelog = Path.cwd() / "CHANGELOG.md"
+    if cwd_changelog.exists():
+        return cwd_changelog
 
-        return source_root  # Return default even if doesn't exist
+    # Last resort: check src-tauri/server_dist (dev mode after build)
+    dev_bundled = (
+        this_dir.parent.parent / "src-tauri" / "server_dist" / "CHANGELOG.md"
+    )
+    if dev_bundled.exists():
+        return dev_bundled
+
+    return changelog_path  # Return default even if doesn't exist
 
 
 CHANGELOG_PATH = get_changelog_path()

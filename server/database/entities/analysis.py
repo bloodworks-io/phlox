@@ -54,15 +54,12 @@ async def _generate_analysis_with_llm(patient_data):
     Patient Data:
     {json.dumps(patient_data, indent=2)}"""
 
-    initial_assistant_content = """Hi there Doctor, here's todays digest:"""
-
     # Create response format schema
     base_schema = PatientAnalysis.model_json_schema()
 
     request_body = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_content},
-        {"role": "assistant", "content": initial_assistant_content},
     ]
 
     # Generate analysis with structured output

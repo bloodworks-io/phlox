@@ -43,6 +43,7 @@ const FloatingActionMenu = ({
       {isChatEnabled() && (
         <Tooltip label="Upload Document" placement="left">
           <IconButton
+            id="fab-document"
             icon={<FaFileUpload />}
             onClick={onOpenDocument}
             aria-label="Open Document Upload"
@@ -68,6 +69,7 @@ const FloatingActionMenu = ({
           placement="left"
         >
           <IconButton
+            id="fab-previous-visit"
             icon={<FaClock />}
             onClick={onOpenPreviousVisit}
             aria-label="Open Previous Visit"
@@ -102,6 +104,7 @@ const FloatingActionMenu = ({
       {isChatEnabled() && (
         <Tooltip label="Chat with Phlox" placement="left">
           <IconButton
+            id="fab-chat"
             icon={<ChatIcon />}
             onClick={onOpenChat}
             aria-label="Open Chat"
@@ -128,6 +131,7 @@ const FloatingActionMenu = ({
             placement="left"
           >
             <IconButton
+              id="fab-reasoning"
               icon={<FaAtom />}
               onClick={onOpenReasoning}
               aria-label="Open Reasoning"
@@ -169,6 +173,7 @@ const FloatingActionMenu = ({
         placement="left"
       >
         <IconButton
+          id="fab-letter"
           icon={<FaEnvelope />}
           onClick={onOpenLetter}
           aria-label="Open Letter"

@@ -30,11 +30,13 @@ const Chat = ({
     setDimensions((prev) => ({
       width: Math.max(
         400,
-        prev.width - (e.clientX - resizerRef.current.getBoundingClientRect().left)
+        prev.width -
+          (e.clientX - resizerRef.current.getBoundingClientRect().left),
       ),
       height: Math.max(
         300,
-        prev.height - (e.clientY - resizerRef.current.getBoundingClientRect().top)
+        prev.height -
+          (e.clientY - resizerRef.current.getBoundingClientRect().top),
       ),
     }));
   };
@@ -49,6 +51,7 @@ const Chat = ({
       isOpen={isOpen}
       position="left-of-fab"
       showArrow={true}
+      triggerId="fab-chat"
       width={`${dimensions.width}px`}
       height={`${dimensions.height - 24}px`}
       zIndex="1060"
