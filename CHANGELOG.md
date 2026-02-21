@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.5](https://github.com/bloodworks-io/phlox/compare/v0.9.4...v0.9.5) (2026-02-21)
+
+
+### Bug Fixes
+
+* changelog.md path for backend ([60b0662](https://github.com/bloodworks-io/phlox/commit/60b06627d83c8798628b077f69ccef3bf78aab03))
+* disclaimer not showing on web deployments ([2bb0eb7](https://github.com/bloodworks-io/phlox/commit/2bb0eb70530f0671e9cf0f033efdb94d1ae39141))
+* generate reasoning prefill error ([d5150e2](https://github.com/bloodworks-io/phlox/commit/d5150e22c29af156f793e98b7fd8a70d23959125))
+* llama dylibs ([5dec60e](https://github.com/bloodworks-io/phlox/commit/5dec60e0f4d09009d628e09e1910c04d7ab652aa))
+* macos microphone entitlements ([0639859](https://github.com/bloodworks-io/phlox/commit/0639859c82d8fcb5afc65a88cc7658c2a1143e2b))
+* reset audio blob when re-recording ([b1f61fb](https://github.com/bloodworks-io/phlox/commit/b1f61fb368b5b44cc88eafbcc3cb2bbc1359b274))
+* timeout issue with landing page toast ([012e1d8](https://github.com/bloodworks-io/phlox/commit/012e1d8ec1dce902f5d518c4ae9d308ed27cafaf))
+* transcript panel not closing on new transciption ([c813763](https://github.com/bloodworks-io/phlox/commit/c813763ac6c4cc004361b7dbaf7c59c98a8afdff))
+
 ## [0.9.4](https://github.com/bloodworks-io/phlox/compare/v0.9.3...v0.9.4) (2026-02-20)
 
 
