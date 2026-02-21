@@ -1,8 +1,6 @@
 > [!WARNING]
 > Phlox is an experimental project intended for educational and personal **experimentation** ONLY.
-> **AS PROVIDED, IT IS NOT A CERTIFIED MEDICAL DEVICE AND MUST NOT BE USED IN ACTUAL CLINICAL SETTINGS or FOR CLINICAL DECISION-MAKING.**
 >
-> AI outputs can be unreliable and inaccurate. Always verify information and use professional clinical judgment.
 > For full details on limitations and risks, please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
 
 <p align="center">
@@ -25,7 +23,8 @@ Phlox is an open-source patient management system integrating AI-powered medical
 
 ## Key Features ✨
 
-- **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local, using only free, open-source tools.
+- **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local. Free and open source forever; the security of your data is in your hands.
+- **🖥️ Desktop App:** Native Apple Silicon application with bundled LLM and transcription servers - no external dependencies required.
 - **🎤 AI Medical Transcription & Summarization:** Convert patient encounters to structured clinical notes using customizable templates.
 - **📝 Flexible Template System:**  Structure clinical notes to your preferences, with versioning and automated template generation from example notes.
 - **✅ Task Manager:**  Parse clinical plans into actionable task lists with AI-generated summaries.
@@ -33,7 +32,6 @@ Phlox is an open-source patient management system integrating AI-powered medical
 - **🤖 AI-chat/RAG:** Chat with an LLM about cases, backed by a local document knowledge base (ChromaDB).
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.
 - **📰 Dashboard with RSS Reader:** Stay updated with LLM-summarized articles from medical RSS feeds.
-- **🆓 Free & Libre Software:** Completely free (as in freedom) - study, modify, and share as you wish.
 
 <p align="center">
   <img src="/docs/images/transcription.png" width="500" alt="Phlox Logo">
@@ -41,14 +39,23 @@ Phlox is an open-source patient management system integrating AI-powered medical
 
 ## Stack 🛠️
 
-- **Frontend:** React/Chakra UI
+- **Frontend:** React/Chakra UI (Vite)
 - **Backend:** FastAPI
-- **Database:** SQLite
-- **LLM Backend:** Ollama or any OpenAI-compatible endpoint
-- **Transcription:** Any Whisper compatible endpoint
+- **Database:** SQLite with sqlcipher3 encryption
+- **Desktop Wrapper:** Tauri (Rust)
+- **LLM Backend:** Ollama, OpenAI-compatible endpoints, or bundled llama.cpp server
+- **Transcription:** Whisper-compatible endpoints or bundled whisper server
 - **RAG:** ChromaDB
 
 ## Quick Start 🚀
+
+### Desktop App (Apple Silicon)
+
+Pre-built Apple Silicon binaries are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases).
+
+**Note:** The desktop app provides transcription and correspondence features only. For the full feature set (Chat, RAG, RSS), use the Docker/Podman deployment below.
+
+### Docker/Podman (Full Features)
 
 1. **Prerequisites:** Podman/Docker, Ollama/OpenAI-compatible endpoint, Whisper endpoint.
 2. **Hardware Requirements:** For reasonable performance, a GPU (CUDA, ROCm) or Apple M-Series chip is strongly recommended. Without these, especially with larger models, the system will run extremely slowly.
@@ -60,30 +67,45 @@ Phlox is an open-source patient management system integrating AI-powered medical
 
 **For detailed setup, feature explanations, and important warnings, please see the [Documentation](./docs/README.md).**
 
+## Deployment Options
+
+### Docker/Podman (Full Features)
+The complete Phlox experience with all features:
+- Medical transcription and clinical notes
+- Correspondence generation
+- AI Chat interface
+- RAG/document knowledge base
+- Dashboard with RSS reader
+
+### Desktop App (Streamlined)
+Native desktop application for Apple Silicon:
+- Medical transcription and clinical notes
+- Correspondence generation
+- Bundled llama.cpp and whisper servers - no external dependencies
+- All data stored locally. Nothing leaves your machine.
+
+*Additional platforms and full feature parity coming in future releases.*
+
 ## Roadmap 🗺️
 
 Here's what's coming next for Phlox:
 
 - [x] Use structured JSON outputs for managing LLM responses
 - [x] Add support for OpenAI-compatible endpoints
+- [x] Tauri desktop app with local inference (llama.cpp + whisper bundled)
 - [ ] MCP server support for custom tools and agentic workflows
-- [ ] Create Electron app packaging for desktop use
-- [ ] Develop Progressive Web App (PWA) version
-- [ ] Introduce advanced template version control
+- [ ] Advanced template version control
 - [ ] Meeting and multi-disciplinary meeting scribing
 
 ## Usage Warning ⚠️
 
-Phlox is an experimental project intended for educational and personal use. **It is not a certified medical device and should NOT be used for clinical decision-making without thorough validation, regulatory approvals, and under the direct supervision of qualified medical professionals.**
+Phlox is an experimental project intended for educational and personal use. **It is not a certified medical device and should NOT be used for clinical decision-making.**
 
-**Key limitations:**
+Phlox is **not** suitable for production deployment in the form provided in this repo. If you intend to use it in a clinical setting, you are responsible for ensuring compliance with local applicable regulations (HIPAA, GDPR, TGA, etc.)
 
-*   **Experimental Code:**  The codebase is a work in progress and may contain bugs and inconsistencies.
-*   **AI Hallucinations:** LLM outputs, especially from smaller models, can be unreliable, inaccurate, and may present plausible but incorrect information. **Always verify AI-generated content against trusted sources and use your professional clinical judgment.**
-*   **No User Authentication:**  Naively exposing this application to the open internet is highly discouraged. Phlox has no user access controls and, for now, next to no input sanitisation.
-*   **Not HIPAA/GDPR Compliant:**  Phlox, in the form provided in this repo, lacks the necessary security and compliance measures for handling protected health information in regulated environments.
+AI outputs can be unreliable. Always verify AI-generated content and use professional clinical judgment. The application displays a disclaimer on startup with full details.
 
-**Use at your own risk and only for non-clinical, educational purposes unless you have implemented robust security measures and undertaken thorough validation.**
+**Security note:** The Docker deployment binds to `0.0.0.0` by default and has no authentication. You MUST place it behind a reverse proxy with an authentication layer like [Authelia](https://github.com/authelia/authelia). The desktop app requires a passphrase to unlock the encrypted database.
 
 ## License 📄
 
