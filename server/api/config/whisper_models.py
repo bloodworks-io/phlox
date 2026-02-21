@@ -125,7 +125,7 @@ async def download_whisper_model_stream(model_id: str):
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
         except Exception as e:
             logger.error(f"Download error: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': 'An error occurred during download'})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
