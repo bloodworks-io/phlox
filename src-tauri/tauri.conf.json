@@ -1,15 +1,14 @@
 {
+  "build": {
+    "beforeDevCommand": "npm run start-react",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "../build"
+  },
   "productName": "Phlox",
   "version": "0.9.4",
   "identifier": "com.phlox.app",
-  "build": {
-    "beforeBuildCommand": "npm run build",
-    "beforeDevCommand": "npm run start-react",
-    "frontendDist": "../build",
-    "devUrl": "http://localhost:3000"
-  },
   "app": {
-    "macOSPrivateApi": false,
     "windows": [
       {
         "title": "Phlox",
@@ -23,21 +22,12 @@
     "security": {
       "csp": null
     },
+    "macOSPrivateApi": true,
     "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
     "targets": "all",
-    "category": "DeveloperTool",
-    "copyright": "",
-    "shortDescription": "",
-    "longDescription": "",
-    "externalBin": [
-      "binaries/server",
-      "binaries/phlox-pm",
-      "binaries/llama-server",
-      "binaries/whisper-server"
-    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -45,9 +35,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "server_dist"
-    ],
+    "resources": ["server_dist"],
     "linux": {
       "deb": {
         "depends": []
@@ -56,16 +44,26 @@
     "macOS": {
       "frameworks": [],
       "entitlements": "entitlements.plist",
+      "exceptionDomain": "",
       "signingIdentity": null,
-      "hardenedRuntime": true,
       "providerShortName": null,
-      "exceptionDomain": ""
+      "hardenedRuntime": true
     },
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": ""
-    }
+    },
+    "category": "DeveloperTool",
+    "shortDescription": "",
+    "longDescription": "",
+    "copyright": "",
+    "externalBin": [
+      "binaries/server",
+      "binaries/phlox-pm",
+      "binaries/llama-server",
+      "binaries/whisper-server"
+    ]
   },
   "plugins": {
     "shell": {
