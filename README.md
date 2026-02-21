@@ -1,7 +1,5 @@
 > [!WARNING]
-> Phlox is an experimental project intended for educational and personal **experimentation** ONLY.
->
-> For full details on limitations and risks, please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
+> Phlox is an experimental project. For full details on limitations and risks, please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
 
 <p align="center">
   <img src="/docs/images/readme_logo.png" width="300" alt="Phlox Logo">
@@ -34,7 +32,7 @@ Phlox is an open-source patient management system integrating AI-powered medical
 - **📰 Dashboard with RSS Reader:** Stay updated with LLM-summarized articles from medical RSS feeds.
 
 <p align="center">
-  <img src="/docs/images/transcription.png" width="500" alt="Phlox Logo">
+  <img src="/docs/images/readme_screenshot.png" width="500" alt="Phlox Screenshot">
 </p>
 
 ## Stack 🛠️
@@ -53,7 +51,7 @@ Phlox is an open-source patient management system integrating AI-powered medical
 
 Pre-built Apple Silicon binaries are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases).
 
-**Note:** The desktop app provides transcription and correspondence features only. For the full feature set (Chat, RAG, RSS), use the Docker/Podman deployment below.
+**Note:** The desktop app provides transcription and correspondence features only. For the full feature set (Chat, RAG, PDF Upload), use the Docker/Podman deployment below.
 
 ### Docker/Podman (Full Features)
 
