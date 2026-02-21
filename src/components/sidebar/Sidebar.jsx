@@ -298,7 +298,7 @@ const Sidebar = ({
         justifyContent="space-between"
         overflow="hidden"
       >
-        {/* Top section with date selector and new patient button */}
+        {/* Top section with date selector and new note button */}
         <Box>
           {/* Date selector - only visible when expanded */}
           {!isCollapsed && (
@@ -317,16 +317,13 @@ const Sidebar = ({
             </Box>
           )}
 
-          {/* New Patient button - adjusted size for collapsed view */}
-          <Tooltip
-            label="New Patient"
-            placement={isCollapsed ? "right" : "top"}
-          >
+          {/* New Note button - adjusted size for collapsed view */}
+          <Tooltip label="New Note" placement={isCollapsed ? "right" : "top"}>
             <Box w="100%" mb={isCollapsed ? 4 : 0} mt={isCollapsed ? 4 : 0}>
               <AvatarButton
                 icon={<FaPlus fontSize={isCollapsed ? "0.9rem" : "1.2rem"} />}
                 backgroundColor={colors.dark.tertiaryButton}
-                label="New Patient"
+                label="New Note"
                 onClick={onNewPatient}
                 isCollapsed={isCollapsed}
               />
