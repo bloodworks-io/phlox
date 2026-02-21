@@ -37,13 +37,13 @@ Phlox is an open-source patient management system integrating AI-powered medical
 
 ## Stack 🛠️
 
-- **Frontend:** React/Chakra UI (Vite)
-- **Backend:** FastAPI
-- **Database:** SQLite with sqlcipher3 encryption
-- **Desktop Wrapper:** Tauri (Rust)
-- **LLM Backend:** Ollama, OpenAI-compatible endpoints, or bundled llama.cpp server
-- **Transcription:** Whisper-compatible endpoints or bundled whisper.cpp server
-- **RAG:** ChromaDB
+- **Frontend:** Chakra UI (React/[Vite](https://github.com/vitejs/vite))
+- **Backend:** FastAPI (Python/[uv](https://github.com/astral-sh/uv))
+- **Database:** [SQLCipher](https://github.com/sqlcipher/sqlcipher)
+- **Desktop Wrapper:** [Tauri](https://github.com/tauri-apps/tauri) (Rust)
+- **LLM Backend:** Ollama, OpenAI-compatible endpoints, or bundled [llama.cpp ](https://github.com/ggml-org/llama.cpp) server
+- **Transcription:** Whisper-compatible endpoints or bundled [whisper.cpp](https://github.com/ggml-org/whisper.cpp) server
+- **RAG:** [ChromaDB](https://github.com/chroma-core/chroma)
 
 ## Quick Start 🚀
 
