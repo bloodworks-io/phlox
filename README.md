@@ -42,7 +42,7 @@ Phlox is an open-source patient management system integrating AI-powered medical
 - **Database:** SQLite with sqlcipher3 encryption
 - **Desktop Wrapper:** Tauri (Rust)
 - **LLM Backend:** Ollama, OpenAI-compatible endpoints, or bundled llama.cpp server
-- **Transcription:** Whisper-compatible endpoints or bundled whisper server
+- **Transcription:** Whisper-compatible endpoints or bundled whisper.cpp server
 - **RAG:** ChromaDB
 
 ## Quick Start 🚀
