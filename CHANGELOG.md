@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.6](https://github.com/bloodworks-io/phlox/compare/v0.9.5...v0.9.6) (2026-02-22)
+
+
+### Bug Fixes
+
+* tauri; llama.cpp libs ([def0f74](https://github.com/bloodworks-io/phlox/commit/def0f74595d52fb2f4972befd30f401fa8d1a2a4))
+* tauri; llama.cpp libs ([8e65a43](https://github.com/bloodworks-io/phlox/commit/8e65a4312f5483de806c7ccf4cc3b888f1426854))
+
 ## [0.9.5](https://github.com/bloodworks-io/phlox/compare/v0.9.4...v0.9.5) (2026-02-21)
 
 
