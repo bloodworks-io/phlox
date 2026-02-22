@@ -27,7 +27,7 @@ Phlox is an open-source patient management system integrating AI-powered medical
 - **📝 Flexible Template System:**  Structure clinical notes to your preferences, with versioning and automated template generation from example notes.
 - **✅ Task Manager:**  Parse clinical plans into actionable task lists with AI-generated summaries.
 - **✉️  Correspondence Generation:**  One-click generation of patient letters based on clinical notes.
-- **🤖 AI-chat/RAG:** Chat with an LLM about cases, backed by a local document knowledge base (ChromaDB).
+- **🤖 AI-chat/RAG:** Reference tool to query medical guidelines, literature, and documentation backed by a local knowledge base (ChromaDB).
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.
 - **📰 Dashboard with RSS Reader:** Stay updated with LLM-summarized articles from medical RSS feeds.
 
