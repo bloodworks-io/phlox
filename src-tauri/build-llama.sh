@@ -54,7 +54,8 @@ cmake .. \
   -DLLAMA_ACCELERATE=ON \
   -DLLAMA_ALL_WARNINGS=OFF \
   -DBUILD_SHARED_LIBS=OFF \
-  -DLLAMA_CURL=OFF
+  -DLLAMA_CURL=OFF \
+  -DLLAMA_OPENSSL=OFF
 
 # Build the llama-server binary
 echo "Building llama-server binary..."
@@ -69,6 +70,14 @@ if [ -f "bin/llama-server" ]; then
     echo "llama-server binary built successfully at: $SCRIPT_DIR/llama-server"
     echo "Checking for remaining rpath entries:"
     otool -L "$SCRIPT_DIR/llama-server" | grep "@rpath" || echo "✓ No problematic rpath entries"
+
+    # Check for Homebrew dependencies (should not have any)
+    if otool -L "$SCRIPT_DIR/llama-server" | grep -q "/opt/homebrew\|/usr/local/opt"; then
+        echo "❌ ERROR: Binary contains Homebrew dependencies!"
+        otool -L "$SCRIPT_DIR/llama-server" | grep "/opt/homebrew\|/usr/local/opt"
+        exit 1
+    fi
+    echo "✓ No Homebrew dependencies found"
 else
     echo "Error: llama-server binary not found after build"
     echo "Looking in: $(pwd)"
