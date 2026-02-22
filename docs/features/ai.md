@@ -13,34 +13,34 @@ Chat with uploaded medical documents and guidelines:
 <img src="../images/documents.png" width="500px" alt="Document Chat"/>
 </p>
 
-## Case Chat
-Discuss patient cases with the LLM:
+## Reference Chat
+Query medical literature and guidelines alongside your notes:
 
 1. Click chat icon in patient view
-2. Ask questions about the current case
+2. Ask reference questions to clarify terminology or guidelines
 3. LLM references the clinical note content in responses
 4. The LLM will also make a tool call to the RAG database if required
 
 <p align="center">
-<img src="../images/chat.png" width="500px" alt="Case Chat"/>
+<img src="../images/chat.png" width="500px" alt="Reference Chat"/>
 </p>
 
-## Clinical Reasoning Assistant
-Generate structured clinical analysis for patient encounters:
+## Educational Case Review (Clinical Reasoning)
+Generate a simulated peer-review and literature correlation for the current encounter. This feature acts as a dynamic textbook or "curbside consult" to broaden your consideration set:
 
 1. After creating a clinical note, click "Generate Reasoning"
-2. The LLM will analyze the case and provide:
-   - Brief case summary
-   - Differential diagnoses
-   - Recommended investigations
-   - Key clinical considerations
-3. Review the AI's thinking process and suggestions
-4. Use as prompts for further investigation or discussion
+2. The LLM acts as an educational sounding board, analyzing the text to provide:
+   - **Case Summary:** A brief synthesis of the documented encounter.
+   - **Literature Correlations (Differentials):** A list of conditions commonly associated with the documented symptoms in medical literature.
+   - **Standard Workup References (Investigations):** Typical investigations associated with the correlated conditions.
+   - **Documentation QA (Considerations):** Highlights potential gaps in the documentation or "red flags" that might need explicit addressing in the note.
+3. Review the AI's educational suggestions.
+4. Use this as a prompt to ensure your documentation is comprehensive and you haven't anchored prematurely.
 
-Note: Like all LLM outputs, reasoning suggestions should be verified against clinical judgment and guidelines. At the moment, reasoning does not make tool calls to the RAG database.
+**Note:** This feature is strictly an educational and documentation-quality tool. It is NOT a diagnostic tool and does not provide clinical decision support.
 
 <p align="center">
-<img src="../images/reasoning.png" width="500px" alt="Reasoning Assistant"/>
+<img src="../images/reasoning.png" width="500px" alt="Educational Case Review"/>
 </p>
 
 ## Adaptive Refinement
@@ -48,8 +48,3 @@ Note: Like all LLM outputs, reasoning suggestions should be verified against cli
 Phlox learns your documentation preferences over time to improve note quality:
 
 1. Edit generated content in any template field
-2. When you save the note, Phlox compares your edits with the original AI output
-3. The system generates specific refinement instructions based on your changes
-4. Future notes automatically incorporate these preferences
-
-Note: While adaptive refinement improves stylistic alignment with user preferences over time, it does not reduce the risk of factual errors. **Never assume learned preferences correlate with improved factual accuracy.**

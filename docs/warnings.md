@@ -8,8 +8,8 @@
 
 2.  **AI Hallucinations and Inaccuracies:** Phlox relies on Large Language Models (LLMs) for various functions. **LLMs are known to hallucinate,** meaning they can generate outputs that are plausible but factually incorrect or nonsensical.  **This is especially true for smaller, locally-run models.**
 
-    - **Critical Verification:** **ALL AI-generated outputs from Phlox (clinical notes, summaries, correspondence, decision support suggestions, etc.) MUST be independently verified by qualified medical professionals using trusted, primary sources.**  Do not rely solely on AI-generated information for clinical decision-making.
-    - **Risk of Misinformation:** AI-generated content may contain inaccurate medical information, incorrect diagnoses, or inappropriate treatment recommendations.  **Using unverified AI output in clinical practice could lead to patient harm.**
+    - **Critical Verification:** **ALL AI-generated outputs from Phlox (clinical notes, summaries, correspondence, reference searches, etc.) MUST be independently verified by qualified medical professionals using trusted, primary sources.**  Do not rely solely on AI-generated information for clinical documentation.
+    - **Risk of Misinformation:** AI-generated content may contain inaccurate medical information or misinterpret clinical context.  **Using unverified AI output in clinical practice could lead to patient harm.**
 
 3.  **Not a Certified Medical Device:** Phlox is **not a certified medical device** and has not been evaluated or approved by any regulatory bodies (e.g., FDA, TGA, MHRA, etc.).  It most likely does not meet the regulatory requirements for medical devices in any jurisdiction.
 
@@ -22,7 +22,7 @@
 5.  **No User Authentication/Authorization:** Phlox currently lacks user authentication and access controls. **Exposing Phlox to the public internet is highly discouraged and poses a significant security risk.**  Anyone with network access to your Phlox instance can potentially access all patient data.
 
 6.  **Intended Use - Educational and Personal:** Phlox is primarily intended for:
-    - **Educational purposes:**  To explore the potential of AI in clinical workflows and learn about LLMs and related technologies.
+    - **Educational purposes:**  To explore the potential of AI in administrative workflows and learn about LLMs and related technologies.
     - **Personal use:** For experimentation, research, and non-clinical exploration of AI-assisted note-taking and information management.
     - **Development and Research:** As a platform for further development, research, and contribution to open-source medical AI tools.
 

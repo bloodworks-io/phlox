@@ -51,9 +51,9 @@ Phlox is an open-source patient management system integrating AI-powered medical
 
 Pre-built Apple Silicon binaries are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases).
 
-**Note:** The desktop app provides transcription and correspondence features only. For the full feature set (Chat, RAG, PDF Upload), use the Docker/Podman deployment below.
+**Note:** The desktop app provides transcription and correspondence features only. For extended reference tools (Chat, RAG, PDF Upload), use the Docker/Podman deployment below.
 
-### Docker/Podman (Full Features)
+### Docker/Podman (Extended Reference Tools)
 
 1. **Prerequisites:** Podman/Docker, Ollama/OpenAI-compatible endpoint, Whisper endpoint.
 2. **Hardware Requirements:** For reasonable performance, a GPU (CUDA, ROCm) or Apple M-Series chip is strongly recommended. Without these, especially with larger models, the system will run extremely slowly.
@@ -67,7 +67,7 @@ Pre-built Apple Silicon binaries are available from [GitHub Releases](https://gi
 
 ## Deployment Options
 
-### Docker/Podman (Full Features)
+### Docker/Podman (Extended Reference Tools)
 The complete Phlox experience with all features:
 - Medical transcription and clinical notes
 - Correspondence generation
