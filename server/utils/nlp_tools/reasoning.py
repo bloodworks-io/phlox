@@ -82,7 +82,7 @@ Clinical Note:
 {formatted_note}
 ```
 
-Focus on what the clinician might have missed. Be critical if appropriate."""
+Act as an educational peer-reviewer. Highlight potential documentation gaps and provide standard literature correlations to broaden the consideration set."""
 
     response = await client.chat(
         model=config["REASONING_MODEL"],
