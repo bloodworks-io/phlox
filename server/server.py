@@ -104,7 +104,6 @@ def initialize_and_get_app():
         transcribe,
     )
     from server.api.config import router as config_router
-
     from server.utils.rag.chroma import CHROMADB_AVAILABLE
 
     # Only create test endpoint in testing environment
@@ -251,7 +250,7 @@ if __name__ == "__main__":
         # Docker mode
         config = uvicorn.Config(
             app,
-            host=os.getenv("SERVER_HOST", "127.0.0.1"),
+            host=os.getenv("SERVER_HOST", "0.0.0.0"),
             port=int(os.getenv("PORT", 5000)),
             timeout_keep_alive=300,
             timeout_graceful_shutdown=10,
