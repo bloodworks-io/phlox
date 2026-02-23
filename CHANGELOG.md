@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.7](https://github.com/bloodworks-io/phlox/compare/v0.9.6...v0.9.7) (2026-02-23)
+
+
+### Bug Fixes
+
+* docker deployments were binding to container loopback ([53a796b](https://github.com/bloodworks-io/phlox/commit/53a796b92f41630e9c3fc92575441d4f3d29061f))
+
 ## [0.9.6](https://github.com/bloodworks-io/phlox/compare/v0.9.5...v0.9.6) (2026-02-22)
 
 
