@@ -15,8 +15,7 @@ import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from server.constants import (
@@ -25,6 +24,16 @@ from server.constants import (
     DATA_DIR,
     IS_DOCKER,
     IS_TESTING,
+    PROXY_AUTH_ENABLED,
+    PROXY_AUTH_USER_HEADER,
+    RATE_LIMIT_ENABLED,
+)
+from server.middleware import (
+    LocalTokenMiddleware,
+    ProxyAuthMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    TrustedProxyMiddleware,
 )
 
 logging.basicConfig(
@@ -51,85 +60,6 @@ def get_request_token() -> str | None:
     return _REQUEST_TOKEN
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Add security headers to all responses."""
-
-    async def dispatch(self, request, call_next):
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        return response
-
-
-class TrustedProxyMiddleware(BaseHTTPMiddleware):
-    """Extract real client IP from X-Forwarded-For header."""
-
-    async def dispatch(self, request, call_next):
-        forwarded_for = request.headers.get("x-forwarded-for")
-        if forwarded_for:
-            request.state.client_ip = forwarded_for.split(",")[0].strip()
-        else:
-            request.state.client_ip = (
-                request.client.host if request.client else "unknown"
-            )
-        return await call_next(request)
-
-
-class LocalTokenMiddleware(BaseHTTPMiddleware):
-    """Verify local request token on all API requests.
-
-    This middleware protects the API from unauthorized access by other
-    applications running on the same machine. Only requests with a valid
-    Authorization: Bearer <token> header are allowed.
-    """
-
-    # Paths that don't require token authentication
-    PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
-
-    async def dispatch(self, request, call_next):
-        path = request.url.path
-
-        # Skip token check for public paths and static files
-        if path in self.PUBLIC_PATHS:
-            return await call_next(request)
-
-        # Skip static assets
-        if path.startswith("/assets/") or path.endswith((".js", ".css", ".png", ".ico", ".svg", ".woff", ".woff2")):
-            return await call_next(request)
-
-        # Skip React routes (these serve index.html)
-        if path in ("/new-patient", "/settings", "/rag", "/clinic-summary", "/outstanding-tasks"):
-            return await call_next(request)
-
-        # In Docker mode, skip token validation
-        if IS_DOCKER:
-            return await call_next(request)
-
-        # Get expected token
-        expected_token = get_request_token()
-        if not expected_token:
-            # Server not fully initialized yet, allow through
-            return await call_next(request)
-
-        # Verify Authorization header
-        auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Missing or invalid Authorization header"}
-            )
-
-        provided_token = auth_header[7:]  # Remove "Bearer " prefix
-        if not secrets.compare_digest(provided_token, expected_token):
-            return JSONResponse(
-                status_code=403,
-                content={"detail": "Invalid request token"}
-            )
-
-        return await call_next(request)
-
-
 if IS_TESTING:
     try:
         from server.tests.test_database import test_db as test_database
@@ -146,12 +76,19 @@ async def lifespan(app: FastAPI):
         generate_daily_analysis,
         run_nightly_reasoning,
     )
+    from server.middleware import RateLimitMiddleware
 
     # Startup
     scheduler.start()
     # Schedule jobs
     scheduler.add_job(generate_daily_analysis, "cron", hour=3)
     scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
+    # Clean up zombie IPs from rate limiter every 5 minutes
+    scheduler.add_job(
+        RateLimitMiddleware.cleanup_all_zombie_ips,
+        "interval",
+        minutes=5,
+    )
 
     yield
 
@@ -176,20 +113,41 @@ def initialize_and_get_app():
     )
 
     # CORS configuration - restrict via environment variable
+    # Note: Browsers reject allow_credentials=True with allow_origins=["*"]
     allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
     allowed_origins = [origin.strip() for origin in allowed_origins]
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    if "*" in allowed_origins:
+        # Wildcard mode - no credentials allowed by browsers
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        # Specific origins - credentials allowed
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     # Add security middleware
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(TrustedProxyMiddleware)
+
+    # Add rate limiting middleware (enabled by default in Docker mode)
+    if RATE_LIMIT_ENABLED:
+        app.add_middleware(RateLimitMiddleware)
+        logger.info("Rate limiting enabled")
+
+    # Add proxy auth middleware (for Docker deployments behind auth proxy)
+    if PROXY_AUTH_ENABLED:
+        app.add_middleware(ProxyAuthMiddleware)
+        logger.info(f"Proxy auth enabled, header: {PROXY_AUTH_USER_HEADER}")
 
     # Add token verification middleware (only for desktop mode)
     if not IS_DOCKER:
@@ -250,6 +208,7 @@ def initialize_and_get_app():
     @app.get("/rag")
     @app.get("/clinic-summary")
     @app.get("/outstanding-tasks")
+    @app.get("/patient/{patient_id}")
     async def serve_react_app():
         return FileResponse(BUILD_DIR / "index.html")
 
@@ -329,7 +288,10 @@ def start_server_for_desktop():
     _REQUEST_TOKEN = secrets.token_hex(32)  # 64 character hex string (256 bits)
 
     # Write ports and token to stdout so process manager can read them
-    print(f"PORTS:{server_port},{llama_port},{whisper_port}|TOKEN:{_REQUEST_TOKEN}", flush=True)
+    print(
+        f"PORTS:{server_port},{llama_port},{whisper_port}|TOKEN:{_REQUEST_TOKEN}",
+        flush=True,
+    )
 
     config = uvicorn.Config(
         app,
