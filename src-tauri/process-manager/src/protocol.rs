@@ -61,6 +61,7 @@ pub struct StatusData {
     pub llama: Option<ServiceStatus>,
     pub whisper: Option<ServiceStatus>,
     pub server: Option<ServiceStatus>,
+    pub request_token: Option<String>,
 }
 
 /// Status of a single service

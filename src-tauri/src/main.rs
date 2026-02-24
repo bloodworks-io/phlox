@@ -12,7 +12,7 @@ use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{
     change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
-    get_service_status, get_system_specs, has_database, has_encryption_setup, has_keychain_entry,
+    get_request_token, get_service_status, get_system_specs, has_database, has_encryption_setup, has_keychain_entry,
     restart_llama, restart_whisper, send_passphrase_command, setup_encryption, start_llama_service,
     start_server_command, start_whisper_service, unlock_with_passphrase, CachedServiceStatus,
 };
@@ -48,6 +48,7 @@ pub fn run() {
             commands::get_server_port,
             commands::get_llm_port,
             commands::get_whisper_port,
+            commands::get_request_token,
             get_service_status,
             get_system_specs,
             restart_whisper,

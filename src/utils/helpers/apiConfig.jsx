@@ -7,6 +7,8 @@ const isTauri = () => {
 
 // Cache the server port to avoid repeated IPC calls
 let cachedServerPort = null;
+// Cache the request token for API authentication
+let cachedRequestToken = null;
 
 // Get the base URL for API calls
 export const getApiBaseUrl = async () => {
@@ -31,15 +33,40 @@ export const getApiBaseUrl = async () => {
   }
 };
 
+// Get the request token for API authentication
+export const getRequestToken = async () => {
+  if (!isTauri()) {
+    // Docker mode - no token needed
+    return null;
+  }
+
+  // Return cached token if available
+  if (cachedRequestToken) {
+    return cachedRequestToken;
+  }
+
+  try {
+    const token = await invoke("get_request_token");
+    if (token) {
+      cachedRequestToken = token;
+    }
+    return token || null;
+  } catch (error) {
+    console.error("Failed to get request token from Tauri:", error);
+    return null;
+  }
+};
+
 // Helper function to construct full API URL
 export const buildApiUrl = async (endpoint) => {
   const baseUrl = await getApiBaseUrl();
   return `${baseUrl}${endpoint}`;
 };
 
-// Reset the cached port (call this when server restarts)
+// Reset the cached config (call this when server restarts)
 export const resetApiConfig = () => {
   cachedServerPort = null;
+  cachedRequestToken = null;
 };
 
 export { isTauri };

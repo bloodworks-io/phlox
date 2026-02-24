@@ -22,6 +22,7 @@ pub struct AllocatedPorts {
     pub server: u16,
     pub llama: u16,
     pub whisper: u16,
+    pub request_token: String,
 }
 
 /// Get the phlox data directory
@@ -411,38 +412,61 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                         return Ok(ServerSignal::WaitingForPassphrase);
                     }
 
-                    // Check for PORTS line
+                    // Check for PORTS line with token
                     if line.trim().starts_with("PORTS:") {
                         let trimmed = line.trim();
-                        let parts = trimmed.strip_prefix("PORTS:").ok_or("Invalid PORTS line")?;
-                        let ports: Vec<&str> = parts.split(',').collect();
-                        if ports.len() == 3 {
-                            let server = ports[0]
-                                .trim()
-                                .parse::<u16>()
-                                .map_err(|e| format!("Failed to parse server port: {}", e))?;
-                            let llama = ports[1]
-                                .trim()
-                                .parse::<u16>()
-                                .map_err(|e| format!("Failed to parse llama port: {}", e))?;
-                            let whisper = ports[2]
-                                .trim()
-                                .parse::<u16>()
-                                .map_err(|e| format!("Failed to parse whisper port: {}", e))?;
-                            log::info!(
-                                "Parsed allocated ports: server={}, llama={}, whisper={}",
-                                server,
-                                llama,
-                                whisper
-                            );
-                            return Ok(ServerSignal::Ports(AllocatedPorts {
-                                server,
-                                llama,
-                                whisper,
-                            }));
-                        } else {
-                            log::warn!("PORTS line has wrong number of parts: {:?}", ports);
+                        let ports_part = trimmed.strip_prefix("PORTS:").ok_or("Invalid PORTS line")?;
+
+                        // Split by | to separate ports from token
+                        let parts: Vec<&str> = ports_part.split('|').collect();
+                        if parts.len() < 2 {
+                            return Err("PORTS line missing token".to_string());
                         }
+
+                        // Parse ports
+                        let ports: Vec<&str> = parts[0].split(',').collect();
+                        if ports.len() != 3 {
+                            return Err(format!("PORTS line has wrong number of ports: {:?}", ports));
+                        }
+
+                        let server = ports[0]
+                            .trim()
+                            .parse::<u16>()
+                            .map_err(|e| format!("Failed to parse server port: {}", e))?;
+                        let llama = ports[1]
+                            .trim()
+                            .parse::<u16>()
+                            .map_err(|e| format!("Failed to parse llama port: {}", e))?;
+                        let whisper = ports[2]
+                            .trim()
+                            .parse::<u16>()
+                            .map_err(|e| format!("Failed to parse whisper port: {}", e))?;
+
+                        // Parse token
+                        let token_part = parts[1];
+                        let token = token_part
+                            .strip_prefix("TOKEN:")
+                            .ok_or("Missing TOKEN prefix")?
+                            .trim()
+                            .to_string();
+
+                        if token.is_empty() {
+                            return Err("Empty token received".to_string());
+                        }
+
+                        log::info!(
+                            "Parsed allocated ports: server={}, llama={}, whisper={}, token={}...",
+                            server,
+                            llama,
+                            whisper,
+                            &token[..8.min(token.len())]
+                        );
+                        return Ok(ServerSignal::Ports(AllocatedPorts {
+                            server,
+                            llama,
+                            whisper,
+                            request_token: token,
+                        }));
                     }
 
                     // Check for ERROR line
@@ -732,6 +756,7 @@ pub fn create_status_data(
     llama: Option<&ManagedProcess>,
     whisper: Option<&ManagedProcess>,
     server: Option<&ManagedProcess>,
+    request_token: Option<&String>,
 ) -> StatusData {
     StatusData {
         llama: llama.map(|p| ServiceStatus {
@@ -749,5 +774,6 @@ pub fn create_status_data(
             pid: p.child.id(),
             port: p.port,
         }),
+        request_token: request_token.cloned(),
     }
 }

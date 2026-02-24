@@ -145,7 +145,8 @@ fn handle_client(
             if let Some(ref mut proc) = state.server {
                 match send_passphrase_and_wait_for_ports(proc, &passphrase) {
                     Ok(ports) => {
-                        // Store allocated ports for later use by llama/whisper
+                        // Store allocated ports and token
+                        state.request_token = Some(ports.request_token.clone());
                         state.allocated_ports = Some(ports.clone());
                         Response::ok_started(
                             proc.child.id(),
@@ -218,6 +219,7 @@ fn handle_client(
                 state.llama.as_ref(),
                 state.whisper.as_ref(),
                 state.server.as_ref(),
+                state.request_token.as_ref(),
             );
             Response::ok_status(status)
         }
@@ -269,6 +271,7 @@ pub struct ProcessManagerState {
     pub whisper: Option<ManagedProcess>,
     pub server: Option<ManagedProcess>,
     pub allocated_ports: Option<AllocatedPorts>,
+    pub request_token: Option<String>,
     pub should_shutdown: bool,
 }
 
@@ -279,6 +282,7 @@ impl Default for ProcessManagerState {
             whisper: None,
             server: None,
             allocated_ports: None,
+            request_token: None,
             should_shutdown: false,
         }
     }

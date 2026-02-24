@@ -111,6 +111,18 @@ pub fn get_whisper_port() -> String {
     get_cached_port("whisper")
 }
 
+/// Get the request token for API authentication
+#[tauri::command]
+pub fn get_request_token() -> String {
+    if let Some(status) = refresh_cached_status() {
+        if let Some(token) = status.request_token {
+            return token;
+        }
+    }
+    // Return empty string if not available
+    String::new()
+}
+
 #[tauri::command]
 pub fn get_service_status(cached_status: tauri::State<CachedServiceStatus>) -> serde_json::Value {
     // Refresh and cache the status

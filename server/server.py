@@ -5,6 +5,7 @@ if __name__ == "__main__":
 
 import logging
 import os
+import secrets
 import socket
 import sys
 from contextlib import asynccontextmanager, closing
@@ -14,7 +15,7 @@ import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -41,6 +42,14 @@ logger = logging.getLogger(__name__)
 logger.info("Initialising application...")
 scheduler = AsyncIOScheduler()
 
+# Local request token for API authentication (desktop mode only)
+_REQUEST_TOKEN: str | None = None
+
+
+def get_request_token() -> str | None:
+    """Get the current request token for API authentication."""
+    return _REQUEST_TOKEN
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses."""
@@ -64,6 +73,60 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
             request.state.client_ip = (
                 request.client.host if request.client else "unknown"
             )
+        return await call_next(request)
+
+
+class LocalTokenMiddleware(BaseHTTPMiddleware):
+    """Verify local request token on all API requests.
+
+    This middleware protects the API from unauthorized access by other
+    applications running on the same machine. Only requests with a valid
+    Authorization: Bearer <token> header are allowed.
+    """
+
+    # Paths that don't require token authentication
+    PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
+
+    async def dispatch(self, request, call_next):
+        path = request.url.path
+
+        # Skip token check for public paths and static files
+        if path in self.PUBLIC_PATHS:
+            return await call_next(request)
+
+        # Skip static assets
+        if path.startswith("/assets/") or path.endswith((".js", ".css", ".png", ".ico", ".svg", ".woff", ".woff2")):
+            return await call_next(request)
+
+        # Skip React routes (these serve index.html)
+        if path in ("/new-patient", "/settings", "/rag", "/clinic-summary", "/outstanding-tasks"):
+            return await call_next(request)
+
+        # In Docker mode, skip token validation
+        if IS_DOCKER:
+            return await call_next(request)
+
+        # Get expected token
+        expected_token = get_request_token()
+        if not expected_token:
+            # Server not fully initialized yet, allow through
+            return await call_next(request)
+
+        # Verify Authorization header
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Missing or invalid Authorization header"}
+            )
+
+        provided_token = auth_header[7:]  # Remove "Bearer " prefix
+        if not secrets.compare_digest(provided_token, expected_token):
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Invalid request token"}
+            )
+
         return await call_next(request)
 
 
@@ -127,6 +190,10 @@ def initialize_and_get_app():
     # Add security middleware
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(TrustedProxyMiddleware)
+
+    # Add token verification middleware (only for desktop mode)
+    if not IS_DOCKER:
+        app.add_middleware(LocalTokenMiddleware)
 
     # Then load API submodules
     from server.api import (
@@ -222,7 +289,7 @@ def start_server_for_desktop():
 
     Waits for passphrase from stdin before initializing database.
     """
-    global app
+    global app, _REQUEST_TOKEN
     logger.info("Desktop environment detected")
 
     # Signal that we're waiting for passphrase
@@ -258,8 +325,11 @@ def start_server_for_desktop():
 
     set_ports(server_port, llama_port, whisper_port)
 
-    # Write all ports to stdout so process manager can read them
-    print(f"PORTS:{server_port},{llama_port},{whisper_port}", flush=True)
+    # Generate cryptographically secure request token
+    _REQUEST_TOKEN = secrets.token_hex(32)  # 64 character hex string (256 bits)
+
+    # Write ports and token to stdout so process manager can read them
+    print(f"PORTS:{server_port},{llama_port},{whisper_port}|TOKEN:{_REQUEST_TOKEN}", flush=True)
 
     config = uvicorn.Config(
         app,
