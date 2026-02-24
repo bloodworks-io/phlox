@@ -10,9 +10,9 @@ services:
       - ALLOWED_ORIGINS=* # Comma-separated list of allowed CORS origins (e.g., https://phlox.example.com)
       - TZ= # Replace with your timezone
       - LLM_EXTRA_BODY= # Optional: JSON string for extra_body params (e.g., '{"chat_template_kwargs": {"thinking": true}}'); does not apply to streaming requests
-      # Proxy auth (for reverse proxy deployments like Traefik, Caddy, Authelia)
-      # - PROXY_AUTH_ENABLED=true
-      # - PROXY_AUTH_USER_HEADER=X-Forwarded-User # Header containing authenticated username
+      # Proxy auth (for reverse proxy deployments like Traefik, Caddy, Nginx)
+      # - PROXY_AUTH_ENABLED=true # Disabled by default
+      # - PROXY_AUTH_USER_HEADER= # Header containing authenticated username
       # - PROXY_AUTH_ALLOWED_USERS= # Comma-separated list of allowed users (empty = any authenticated user)
       # Rate limiting
       # - RATE_LIMIT_ENABLED=true # Enabled by default
