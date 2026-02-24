@@ -135,23 +135,27 @@ def initialize_and_get_app():
             allow_headers=["*"],
         )
 
-    # Add security middleware
-    app.add_middleware(SecurityHeadersMiddleware)
-    app.add_middleware(TrustedProxyMiddleware)
+    # Add security middleware (order matters: last added runs first)
+    # So we add in reverse order: Token -> Proxy -> RateLimit -> TrustedProxy -> Security
+    # This ensures TrustedProxy sets client_ip before RateLimit needs it
 
-    # Add rate limiting middleware (enabled by default in Docker mode)
-    if RATE_LIMIT_ENABLED:
-        app.add_middleware(RateLimitMiddleware)
-        logger.info("Rate limiting enabled")
+    # Add token verification middleware (only for desktop mode)
+    if not IS_DOCKER:
+        app.add_middleware(LocalTokenMiddleware)
 
     # Add proxy auth middleware (for Docker deployments behind auth proxy)
     if PROXY_AUTH_ENABLED:
         app.add_middleware(ProxyAuthMiddleware)
         logger.info(f"Proxy auth enabled, header: {PROXY_AUTH_USER_HEADER}")
 
-    # Add token verification middleware (only for desktop mode)
-    if not IS_DOCKER:
-        app.add_middleware(LocalTokenMiddleware)
+    # Add rate limiting middleware (enabled by default in Docker mode)
+    if RATE_LIMIT_ENABLED:
+        app.add_middleware(RateLimitMiddleware)
+        logger.info("Rate limiting enabled")
+
+    # TrustedProxy must be added after RateLimit so it runs BEFORE RateLimit
+    app.add_middleware(TrustedProxyMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
 
     # Then load API submodules
     from server.api import (
@@ -218,6 +222,8 @@ def initialize_and_get_app():
     # Catch-all route for any other paths
     @app.get("/{full_path:path}")
     async def catch_all(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
         return FileResponse(BUILD_DIR / "index.html")
 
     return app

@@ -7,8 +7,67 @@ import time
 
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 logger = logging.getLogger(__name__)
+
+# Centralized path skip rules - add new React routes here
+PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
+REACT_ROUTES = {
+    "/new-patient",
+    "/settings",
+    "/rag",
+    "/clinic-summary",
+    "/outstanding-tasks",
+}
+STATIC_EXTENSIONS = (
+    ".js",
+    ".css",
+    ".png",
+    ".ico",
+    ".svg",
+    ".woff",
+    ".woff2",
+    ".webp",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".ttf",
+    ".eot",
+    ".otf",
+    ".map",
+)
+
+
+def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
+    """Check if path should skip auth/rate-limiting middleware.
+
+    Args:
+        path: The request path to check
+        check_api: If True, also skip non-API paths (for rate limiting)
+
+    Returns:
+        True if the path should skip middleware checks
+    """
+    # Public paths (health checks, etc.)
+    if path in PUBLIC_PATHS:
+        return True
+
+    # Static assets (check /assets/ prefix and common extensions)
+    if path.startswith("/assets/"):
+        return True
+    if any(path.endswith(ext) for ext in STATIC_EXTENSIONS):
+        return True
+
+    # React routes (SPA pages)
+    if path in REACT_ROUTES or path.startswith("/patient"):
+        return True
+
+    # For rate limiting: skip non-API paths entirely
+    if check_api and not path.startswith("/api/"):
+        return True
+
+    return False
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -44,33 +103,14 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
     Authorization: Bearer <token> header are allowed.
     """
 
-    # Paths that don't require token authentication
-    PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
-
     async def dispatch(self, request, call_next):
         from server.constants import IS_DOCKER
         from server.server import get_request_token
 
         path = request.url.path
 
-        # Skip token check for public paths and static files
-        if path in self.PUBLIC_PATHS:
-            return await call_next(request)
-
-        # Skip static assets
-        if path.startswith("/assets/") or path.endswith(
-            (".js", ".css", ".png", ".ico", ".svg", ".woff", ".woff2")
-        ):
-            return await call_next(request)
-
-        # Skip React routes (these serve index.html)
-        if path in (
-            "/new-patient",
-            "/settings",
-            "/rag",
-            "/clinic-summary",
-            "/outstanding-tasks",
-        ) or path.startswith("/patient"):
+        # Skip middleware checks for public/static/React routes
+        if should_skip_middleware(path):
             return await call_next(request)
 
         # In Docker mode, skip token validation
@@ -107,8 +147,6 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
     user identity via headers after performing authentication.
     """
 
-    PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
-
     async def dispatch(self, request, call_next):
         from server.constants import (
             PROXY_AUTH_ALLOWED_USERS,
@@ -122,24 +160,8 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
-        # Skip public paths and static files
-        if (
-            path in self.PUBLIC_PATHS
-            or path.startswith("/assets/")
-            or path.endswith(
-                (".js", ".css", ".png", ".ico", ".svg", ".woff", ".woff2")
-            )
-        ):
-            return await call_next(request)
-
-        # Skip React routes
-        if path.startswith("/patient") or path in (
-            "/new-patient",
-            "/settings",
-            "/rag",
-            "/clinic-summary",
-            "/outstanding-tasks",
-        ):
+        # Skip middleware checks for public/static/React routes
+        if should_skip_middleware(path):
             return await call_next(request)
 
         # Get user from header
@@ -192,9 +214,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     _request_history: dict[str, dict[str, list[float]]] = {}
     _lock = asyncio.Lock()
 
-    # Paths to skip rate limiting
-    SKIP_PATHS = {"/", "/health", "/version", "/favicon.ico"}
-
     def _get_limit_for_path(self, path: str) -> tuple[int, int]:
         """Get rate limit for a given path."""
         # Check for patient list vs detail
@@ -239,7 +258,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 del self._request_history[client_ip]
 
     @classmethod
-    def cleanup_all_zombie_ips(cls):
+    async def cleanup_all_zombie_ips(cls):
         """Background task to clean up IPs that never returned.
 
         Called periodically by the scheduler to prevent memory accumulation
@@ -248,20 +267,21 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         now = time.time()
         ips_to_delete = []
 
-        for client_ip, endpoints in cls._request_history.items():
-            # Check if all endpoints for this IP are stale
-            all_stale = True
-            for endpoint, timestamps in endpoints.items():
-                # Keep if any timestamp is within window
-                if any(now - ts < cls.WINDOW_SECONDS for ts in timestamps):
-                    all_stale = False
-                    break
+        async with cls._lock:
+            for client_ip, endpoints in list(cls._request_history.items()):
+                # Check if all endpoints for this IP are stale
+                all_stale = True
+                for endpoint, timestamps in endpoints.items():
+                    # Keep if any timestamp is within window
+                    if any(now - ts < cls.WINDOW_SECONDS for ts in timestamps):
+                        all_stale = False
+                        break
 
-            if all_stale:
-                ips_to_delete.append(client_ip)
+                if all_stale:
+                    ips_to_delete.append(client_ip)
 
-        for ip in ips_to_delete:
-            del cls._request_history[ip]
+            for ip in ips_to_delete:
+                del cls._request_history[ip]
 
         if ips_to_delete:
             logger.debug(
@@ -277,27 +297,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
-        # Skip public paths and static files
-        if path in self.SKIP_PATHS:
-            return await call_next(request)
-
-        if path.startswith("/assets/") or path.endswith(
-            (".js", ".css", ".png", ".ico", ".svg", ".woff", ".woff2")
-        ):
-            return await call_next(request)
-
-        # Skip React routes
-        if path in (
-            "/new-patient",
-            "/settings",
-            "/rag",
-            "/clinic-summary",
-            "/outstanding-tasks",
-        ) or path.startswith("/patient"):
-            return await call_next(request)
-
-        # Only rate limit API paths
-        if not path.startswith("/api/"):
+        # Skip middleware checks for public/static/React routes, and non-API paths
+        if should_skip_middleware(path, check_api=True):
             return await call_next(request)
 
         # Get client IP (set by TrustedProxyMiddleware)
@@ -316,8 +317,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if endpoint not in self._request_history[client_ip]:
                 self._request_history[client_ip][endpoint] = []
 
-            # Clean up old requests
+            # Clean up old requests (may delete empty dicts, so re-init after)
             await self._cleanup_old_requests(client_ip, endpoint, now)
+
+            # Re-initialize if cleanup deleted entries
+            if client_ip not in self._request_history:
+                self._request_history[client_ip] = {}
+            if endpoint not in self._request_history[client_ip]:
+                self._request_history[client_ip][endpoint] = []
 
             # Count requests in window
             requests_in_window = len(self._request_history[client_ip][endpoint])
