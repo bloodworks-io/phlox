@@ -15,6 +15,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from server.constants import (
@@ -39,6 +40,31 @@ logging.getLogger("apscheduler").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 logger.info("Initialising application...")
 scheduler = AsyncIOScheduler()
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+
+class TrustedProxyMiddleware(BaseHTTPMiddleware):
+    """Extract real client IP from X-Forwarded-For header."""
+
+    async def dispatch(self, request, call_next):
+        forwarded_for = request.headers.get("x-forwarded-for")
+        if forwarded_for:
+            request.state.client_ip = forwarded_for.split(",")[0].strip()
+        else:
+            request.state.client_ip = (
+                request.client.host if request.client else "unknown"
+            )
+        return await call_next(request)
 
 
 if IS_TESTING:
@@ -86,14 +112,21 @@ def initialize_and_get_app():
         lifespan=lifespan,  # Add the lifespan context manager
     )
 
-    # CORS configuration
+    # CORS configuration - restrict via environment variable
+    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+    allowed_origins = [origin.strip() for origin in allowed_origins]
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Add security middleware
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(TrustedProxyMiddleware)
 
     # Then load API submodules
     from server.api import (

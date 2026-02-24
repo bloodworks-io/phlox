@@ -95,6 +95,9 @@ class PatientDatabase:
             self.db.row_factory = sqlite3.Row
             self.cursor = self.db.cursor()
 
+            # Set busy timeout to prevent "database is locked" errors (30 seconds)
+            self.cursor.execute("PRAGMA busy_timeout = 30000")
+
             if db_exists:
                 logging.info("Database exists, attempting to decrypt...")
                 try:

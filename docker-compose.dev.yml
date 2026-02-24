@@ -7,7 +7,6 @@ services:
     environment:
       DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
       NODE_ENV: development
-      VITE_BACKEND_URL: ""
       TZ: Australia/Melbourne
       SERVER_HOST: 0.0.0.0 # Bind to all interfaces
     volumes:

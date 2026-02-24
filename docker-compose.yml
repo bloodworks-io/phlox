@@ -6,8 +6,8 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DB_ENCRYPTION_KEY= ${DB_ENCRYPTION_KEY}
-      - VITE_BACKEND_URL= # Replace with your desired URL
+      - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY}
+      - ALLOWED_ORIGINS=* # Comma-separated list of allowed CORS origins (e.g., https://phlox.example.com)
       - TZ= # Replace with your timezone
       - LLM_EXTRA_BODY= # Optional: JSON string for extra_body params (e.g., '{"chat_template_kwargs": {"thinking": true}}'); does not apply to streaming requests
     volumes:
