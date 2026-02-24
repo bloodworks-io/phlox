@@ -82,16 +82,38 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class TrustedProxyMiddleware(BaseHTTPMiddleware):
-    """Extract real client IP from X-Forwarded-For header."""
+    """Extract real client IP from X-Forwarded-For header if from trusted proxy.
+
+    Only trusts X-Forwarded-For when the direct connection is from a private IP
+    (e.g., a reverse proxy on the same Docker network). This prevents clients
+    from spoofing the header directly.
+    """
+
+    def _is_private_ip(self, ip_str: str) -> bool:
+        """Check if an IP belongs to a private network (Docker/Localhost)."""
+        import ipaddress
+
+        try:
+            return ipaddress.ip_address(ip_str).is_private
+        except ValueError:
+            return False
 
     async def dispatch(self, request, call_next):
+        client_host = request.client.host if request.client else "unknown"
         forwarded_for = request.headers.get("x-forwarded-for")
-        if forwarded_for:
+
+        # Only trust X-Forwarded-For if the direct connection is from a private IP
+        if (
+            forwarded_for
+            and client_host != "unknown"
+            and self._is_private_ip(client_host)
+        ):
+            # Take the first IP in the chain (original client)
             request.state.client_ip = forwarded_for.split(",")[0].strip()
         else:
-            request.state.client_ip = (
-                request.client.host if request.client else "unknown"
-            )
+            # Fall back to the actual connecting IP
+            request.state.client_ip = client_host
+
         return await call_next(request)
 
 
@@ -145,7 +167,20 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
 
     For use with Authelia, Traefik, Caddy, etc. that pass authenticated
     user identity via headers after performing authentication.
+
+    Only trusts the auth header when the direct connection is from a private IP
+    (e.g., a reverse proxy on the same Docker network). This prevents clients
+    from spoofing the header directly.
     """
+
+    def _is_private_ip(self, ip_str: str) -> bool:
+        """Check if an IP belongs to a private network (Docker/Localhost)."""
+        import ipaddress
+
+        try:
+            return ipaddress.ip_address(ip_str).is_private
+        except ValueError:
+            return False
 
     async def dispatch(self, request, call_next):
         from server.constants import (
@@ -163,6 +198,18 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
         # Skip middleware checks for public/static/React routes
         if should_skip_middleware(path):
             return await call_next(request)
+
+        # Only trust auth header if coming from a trusted proxy (private IP)
+        client_host = request.client.host if request.client else "unknown"
+        if client_host == "unknown" or not self._is_private_ip(client_host):
+            # Direct connection from public IP - reject or fall through
+            # Since proxy auth is enabled, we require the header
+            logger.warning(
+                f"Proxy auth header received from non-private IP: {client_host}"
+            )
+            return JSONResponse(
+                status_code=401, content={"detail": "Authentication required"}
+            )
 
         # Get user from header
         user = request.headers.get(PROXY_AUTH_USER_HEADER)
