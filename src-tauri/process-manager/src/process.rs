@@ -1,8 +1,12 @@
 use crate::protocol::{ServiceStatus, StatusData};
 use std::env;
-use std::fs;
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 /// Fixed ports for LLM and Whisper services (used as fallbacks)
@@ -163,6 +167,10 @@ pub struct ManagedProcess {
     pub child: Child,
     pub port: u16,
     pub service_type: ServiceType,
+    /// Handles for background threads draining stdout/stderr (for server process)
+    pub drain_handles: Option<(JoinHandle<()>, JoinHandle<()>)>,
+    /// Flag to signal drain threads to stop
+    pub drain_shutdown: Option<Arc<AtomicBool>>,
 }
 
 pub enum ServiceType {
@@ -234,6 +242,8 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
         child,
         port: actual_port,
         service_type: ServiceType::Llama,
+        drain_handles: None,
+        drain_shutdown: None,
     })
 }
 
@@ -287,6 +297,8 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
         child,
         port: actual_port,
         service_type: ServiceType::Whisper,
+        drain_handles: None,
+        drain_shutdown: None,
     })
 }
 
@@ -469,6 +481,50 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
     }
 }
 
+/// Spawn background threads to continuously drain stdout and stderr from the server process.
+/// This prevents the pipe buffer (~64KB) from filling up and blocking the child process.
+pub fn spawn_drain_threads(
+    child: &mut Child,
+) -> (JoinHandle<()>, JoinHandle<()>, Arc<AtomicBool>) {
+    let shutdown = Arc::new(AtomicBool::new(false));
+
+    // Take stdout and stderr from the child process
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+
+    let shutdown_stdout = Arc::clone(&shutdown);
+    let stdout_handle = thread::spawn(move || {
+        if let Some(stdout) = stdout {
+            let reader = BufReader::new(stdout);
+            for line in reader.lines().map_while(Result::ok) {
+                if shutdown_stdout.load(Ordering::Relaxed) {
+                    break;
+                }
+                // Log to process manager's log (which goes to file/terminal)
+                log::debug!("[server stdout] {}", line);
+            }
+        }
+        log::debug!("Stdout drain thread exiting");
+    });
+
+    let shutdown_stderr = Arc::clone(&shutdown);
+    let stderr_handle = thread::spawn(move || {
+        if let Some(stderr) = stderr {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines().map_while(Result::ok) {
+                if shutdown_stderr.load(Ordering::Relaxed) {
+                    break;
+                }
+                // Log stderr at warn level since it's typically errors/warnings
+                log::warn!("[server stderr] {}", line);
+            }
+        }
+        log::debug!("Stderr drain thread exiting");
+    });
+
+    (stdout_handle, stderr_handle, shutdown)
+}
+
 /// Start the Python server (waits for passphrase via stdin)
 /// Returns the process waiting for passphrase after confirming WAITING_FOR_PASSPHRASE signal
 pub fn start_server() -> Result<ManagedProcess, String> {
@@ -478,9 +534,9 @@ pub fn start_server() -> Result<ManagedProcess, String> {
 
     let mut cmd = Command::new(&server_path);
     // Keep stdin open for passphrase
-    cmd.stdin(std::process::Stdio::piped());
+    cmd.stdin(Stdio::piped());
     // Capture stdout to read signals
-    cmd.stdout(std::process::Stdio::piped());
+    cmd.stdout(Stdio::piped());
 
     #[cfg(unix)]
     {
@@ -488,7 +544,7 @@ pub fn start_server() -> Result<ManagedProcess, String> {
         cmd.process_group(0);
     }
 
-    cmd.stderr(std::process::Stdio::piped());
+    cmd.stderr(Stdio::piped());
 
     let mut child = cmd
         .spawn()
@@ -509,6 +565,8 @@ pub fn start_server() -> Result<ManagedProcess, String> {
                 child,
                 port: 0, // Port not known until after passphrase
                 service_type: ServiceType::Server,
+                drain_handles: None,
+                drain_shutdown: None,
             })
         }
         ServerSignal::Ports(_) => {
@@ -524,7 +582,6 @@ pub fn send_passphrase_and_wait_for_ports(
 ) -> Result<AllocatedPorts, String> {
     // Write passphrase to stdin
     if let Some(ref mut stdin) = process.child.stdin {
-        use std::io::Write;
         writeln!(stdin, "{}", passphrase)
             .map_err(|e| format!("Failed to write passphrase to stdin: {}", e))?;
         // Flush to ensure it's sent
@@ -539,8 +596,44 @@ pub fn send_passphrase_and_wait_for_ports(
     let ports = wait_for_allocated_ports(&mut process.child)?;
     process.port = ports.server;
 
+    // Spawn background threads to drain stdout/stderr to prevent pipe buffer deadlock
+    let (stdout_handle, stderr_handle, shutdown) = spawn_drain_threads(&mut process.child);
+    process.drain_handles = Some((stdout_handle, stderr_handle));
+    process.drain_shutdown = Some(shutdown);
+
     log::info!("Server fully initialized with ports: {:?}", ports);
     Ok(ports)
+}
+
+/// Stop the drain threads for a ManagedProcess (if running)
+pub fn stop_drain_threads(process: &mut ManagedProcess) {
+    // Signal threads to stop
+    if let Some(shutdown) = process.drain_shutdown.take() {
+        shutdown.store(true, Ordering::Relaxed);
+        log::debug!("Signaled drain threads to stop");
+    }
+
+    // Wait for threads to finish (with timeout)
+    if let Some((stdout_handle, stderr_handle)) = process.drain_handles.take() {
+        // Give threads a moment to exit gracefully
+        let timeout = Duration::from_millis(500);
+
+        // Use spawn to implement timeout for join
+        let stdout_joined = thread::spawn(move || stdout_handle.join())
+            .thread()
+            .id();
+        let stderr_joined = thread::spawn(move || stderr_handle.join())
+            .thread()
+            .id();
+
+        // Brief sleep to allow threads to exit
+        thread::sleep(timeout);
+        log::debug!(
+            "Drain threads signaled to stop (stdout: {:?}, stderr: {:?})",
+            stdout_joined,
+            stderr_joined
+        );
+    }
 }
 
 /// Kill a process by PID

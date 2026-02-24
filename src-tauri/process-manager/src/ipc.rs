@@ -1,6 +1,6 @@
 use crate::process::{
     create_status_data, kill_all_processes, send_passphrase_and_wait_for_ports, start_llama,
-    start_server, start_whisper, AllocatedPorts, ManagedProcess,
+    start_server, start_whisper, stop_drain_threads, AllocatedPorts, ManagedProcess,
 };
 use crate::protocol::{Request, Response};
 use log::{error, info, warn};
@@ -197,6 +197,8 @@ fn handle_client(
                 }
                 "server" => {
                     if let Some(mut proc) = state.server.take() {
+                        // Stop drain threads first
+                        stop_drain_threads(&mut proc);
                         let _ = proc.child.kill();
                         let _ = proc.child.wait();
                         crate::process::remove_pid_file("server");
@@ -255,6 +257,7 @@ fn update_process_states(state: &mut ProcessManagerState) {
     if let Some(ref mut proc) = state.server {
         if let Ok(Some(_)) = proc.child.try_wait() {
             warn!("Server process died, removing from state");
+            stop_drain_threads(proc);
             state.server = None;
             crate::process::remove_pid_file("server");
         }
