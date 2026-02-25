@@ -11,15 +11,15 @@ IS_TESTING = os.getenv("TESTING", "false").lower() == "true"
 IS_DOCKER = (
     os.path.exists("/.dockerenv") or os.getenv("DOCKER_CONTAINER") == "true"
 )
-RATE_LIMIT_ENABLED = os.getenv(
-    "RATE_LIMIT_ENABLED", "true" if IS_DOCKER else "false"
-).lower() == "true"
+RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "false").lower() == "true"
 
 # Proxy auth configuration (for reverse proxy deployments)
 PROXY_AUTH_ENABLED = os.getenv("PROXY_AUTH_ENABLED", "false").lower() == "true"
 PROXY_AUTH_USER_HEADER = os.getenv("PROXY_AUTH_USER_HEADER", "X-Forwarded-User")
 PROXY_AUTH_ALLOWED_USERS = [
-    u.strip() for u in os.getenv("PROXY_AUTH_ALLOWED_USERS", "").split(",") if u.strip()
+    u.strip()
+    for u in os.getenv("PROXY_AUTH_ALLOWED_USERS", "").split(",")
+    if u.strip()
 ]
 
 APP_NAME = "Phlox"
