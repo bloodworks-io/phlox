@@ -15,7 +15,7 @@ services:
       # - PROXY_AUTH_USER_HEADER= # Header containing authenticated username
       # - PROXY_AUTH_ALLOWED_USERS= # Comma-separated list of allowed users (empty = any authenticated user)
       # Rate limiting
-      # - RATE_LIMIT_ENABLED=true # Enabled by default
+      # - RATE_LIMIT_ENABLED=true # Disabled by default
     volumes:
       - ./data:/usr/src/app/data # Only for persistent data
       - ./logs:/usr/src/app/logs # Optional: Persist logs
