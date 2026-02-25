@@ -1,7 +1,9 @@
 import json
 from threading import Lock
 
-from server.database.core.connection import get_db
+import sqlcipher3 as sqlite3
+
+from server.database.core.connection import get_db, is_db_initialized
 
 
 class ConfigManager:
@@ -20,8 +22,25 @@ class ConfigManager:
                 cls._instance._load_configs()
             return cls._instance
 
+    def refresh_db(self):
+        """Refresh database reference if connection is closed.
+
+        This handles uvicorn reload scenarios where the database singleton
+        is recreated but ConfigManager still holds the old reference.
+        """
+        if not is_db_initialized():
+            return
+
+        try:
+            # Test if connection is still alive
+            self.db.cursor.execute("SELECT 1")
+        except (sqlite3.ProgrammingError, sqlite3.OperationalError):
+            # Connection is closed or broken, get fresh reference
+            self.db = get_db()
+
     def _is_database_empty(self):
         """Checks if the config, prompts, and options tables are empty."""
+        self.refresh_db()
         self.db.cursor.execute("SELECT COUNT(*) FROM config")
         config_count = self.db.cursor.fetchone()[0]
         self.db.cursor.execute("SELECT COUNT(*) FROM prompts")
@@ -32,6 +51,7 @@ class ConfigManager:
 
     def _load_configs(self):
         """Loads configurations, prompts, and options from the database."""
+        self.refresh_db()
         self.config = {}
         self.prompts = {}
 
@@ -71,6 +91,7 @@ class ConfigManager:
 
     def update_config(self, new_config):
         """Updates the configuration settings in the database."""
+        self.refresh_db()
         # If PRIMARY_MODEL is being updated, sync REASONING_MODEL to match
         if "PRIMARY_MODEL" in new_config:
             new_config["REASONING_MODEL"] = new_config["PRIMARY_MODEL"]
@@ -85,6 +106,7 @@ class ConfigManager:
 
     def update_prompts(self, new_prompts):
         """Updates the prompts in the database."""
+        self.refresh_db()
         for key, prompt in new_prompts.items():
             self.db.cursor.execute(
                 """
@@ -110,6 +132,7 @@ class ConfigManager:
 
     def update_options(self, category, new_options):
         """Updates options for a specific category in the database."""
+        self.refresh_db()
         if category not in self.options:
             self.options[category] = {}
 
@@ -140,6 +163,7 @@ class ConfigManager:
 
     def reset_to_defaults(self):
         """Resets prompts and options to their default values."""
+        self.refresh_db()
         # Clear existing data for prompts and options
         self.db.cursor.execute("DELETE FROM prompts")
         self.db.cursor.execute("DELETE FROM options")
@@ -149,6 +173,7 @@ class ConfigManager:
 
     def _initialize_database(self):
         """Initialize database if empty (now just a check)"""
+        self.refresh_db()
         self.db.cursor.execute("SELECT COUNT(*) FROM config")
         config_count = self.db.cursor.fetchone()[0]
         if config_count == 0:
@@ -156,6 +181,7 @@ class ConfigManager:
 
     def get_user_settings(self):
         """Retrieves user settings from the database."""
+        self.refresh_db()
         self.db.cursor.execute("""
             SELECT name, specialty,
                 quick_chat_1_title, quick_chat_1_prompt,
@@ -197,6 +223,7 @@ class ConfigManager:
         }
 
     def update_user_settings(self, settings: dict):
+        self.refresh_db()
         self.db.cursor.execute("DELETE FROM user_settings")
         self.db.cursor.execute(
             """
