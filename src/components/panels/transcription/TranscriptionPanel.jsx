@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Box,
   Flex,
@@ -8,7 +9,7 @@ import {
   Spinner,
   useColorMode,
 } from "@chakra-ui/react";
-import { FaSync, FaClock, FaCogs } from "react-icons/fa";
+import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 import FloatingPanel from "../../common/FloatingPanel";
 
@@ -18,7 +19,7 @@ const TranscriptionPanel = ({
   rawTranscription,
   transcriptionDuration,
   processDuration,
-  isTranscribing,
+  isTranscribing: parentIsTranscribing,
   onReprocess,
   isAmbient,
   name,
@@ -27,7 +28,8 @@ const TranscriptionPanel = ({
   templateKey,
 }) => {
   const { colorMode } = useColorMode();
-  const { reprocessTranscription } = useTranscription(onReprocess, () => {});
+  const [showSuccess, setShowSuccess] = useState(false);
+  const { reprocessTranscription, isTranscribing } = useTranscription(onReprocess, () => {});
 
   const handleReprocess = async () => {
     if (!rawTranscription) return;
@@ -38,6 +40,8 @@ const TranscriptionPanel = ({
         transcriptionDuration,
         isAmbient,
       );
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 1500);
     } catch (error) {
       console.error("Failed to reprocess transcription:", error);
     }
@@ -56,6 +60,7 @@ const TranscriptionPanel = ({
         maxHeight="280px"
         backdropFilter="blur(12px)"
         borderRadius="xl"
+        position="relative"
         css={{
           "&::-webkit-scrollbar": { width: "4px" },
           "&::-webkit-scrollbar-track": { background: "transparent" },
@@ -65,11 +70,38 @@ const TranscriptionPanel = ({
           },
         }}
       >
-        {isTranscribing ? (
-          <Flex justify="center" align="center" py={6}>
-            <Spinner size="sm" />
+        {/* Success overlay */}
+        {showSuccess && (
+          <Flex
+            position="absolute"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            bg="rgba(72, 187, 120, 0.2)"
+            borderRadius="xl"
+            justify="center"
+            align="center"
+            zIndex={10}
+            animation="fadeOut 1.5s ease-out forwards"
+            sx={{
+              "@keyframes fadeOut": {
+                "0%": { opacity: 1 },
+                "70%": { opacity: 1 },
+                "100%": { opacity: 0 },
+              },
+            }}
+          >
+            <Box
+              as={FaCheck}
+              size="32px"
+              color="#48BB78"
+              opacity={0.8}
+            />
           </Flex>
-        ) : rawTranscription ? (
+        )}
+
+        {rawTranscription ? (
           <>
             {/* Transcription text - scrollable */}
             <Box
