@@ -122,4 +122,13 @@ export const patientApi = {
       toast,
     });
   },
+
+  fetchPatientHistoryByTemplate: async (urNumber, templateKey) => {
+    const url = await buildApiUrl(
+      `/api/patient/history?ur_number=${urNumber}&template_key=${templateKey}`,
+    );
+    const response = await universalFetch(url);
+    if (!response.ok) throw new Error("Failed to fetch patient history");
+    return response.json();
+  },
 };

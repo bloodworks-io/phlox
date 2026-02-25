@@ -373,26 +373,40 @@ def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
         raise
 
 
-def get_patient_history(ur_number: str) -> List[Dict[str, Any]]:
+def get_patient_history(ur_number: str, template_key: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Get a patient's historical encounters with persistent fields.
 
     Args:
         ur_number (str): The patient's UR number.
+        template_key (str, optional): Filter by template type (e.g., "soap", "phlox").
+            Uses prefix matching to handle template versions like "soap_01", "soap_02".
 
     Returns:
         List[Dict[str, Any]]: List of historical encounters.
     """
     try:
-        get_db().cursor.execute(
-            """
-            SELECT id, encounter_date, template_key, template_data
-            FROM patients
-            WHERE ur_number = ?
-            ORDER BY encounter_date DESC
-            """,
-            (ur_number,),
-        )
+        if template_key:
+            # Filter by template key prefix (handles versions like "soap_01", "soap_02")
+            get_db().cursor.execute(
+                """
+                SELECT id, encounter_date, template_key, template_data
+                FROM patients
+                WHERE ur_number = ? AND template_key LIKE ?
+                ORDER BY encounter_date DESC
+                """,
+                (ur_number, f"{template_key}%"),
+            )
+        else:
+            get_db().cursor.execute(
+                """
+                SELECT id, encounter_date, template_key, template_data
+                FROM patients
+                WHERE ur_number = ?
+                ORDER BY encounter_date DESC
+                """,
+                (ur_number,),
+            )
 
         encounters = []
         for row in get_db().cursor.fetchall():

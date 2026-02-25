@@ -27,6 +27,7 @@ import {
 import { FaSave, FaFileAlt, FaThumbtack } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
+import { patientApi } from "../../utils/api/patientApi";
 import ConfirmLeaveModal from "../modals/ConfirmLeaveModal";
 
 const Summary = forwardRef(
@@ -76,23 +77,51 @@ const Summary = forwardRef(
         return;
       }
 
-      if (
-        patient.template_data &&
-        Object.keys(patient.template_data).length > 0
-      ) {
-        setPendingTemplateKey(newTemplateKey);
-        setIsTemplateChangeModalOpen(true);
-      } else {
-        // Update patient state immediately
-        setPatient((prev) => ({
-          ...prev,
-          template_key: newTemplateKey,
-        }));
-        await selectTemplate(newTemplateKey);
-      }
+      setPendingTemplateKey(newTemplateKey);
+      setIsTemplateChangeModalOpen(true);
     };
 
-    const confirmTemplateChange = () => {
+    const confirmTemplateChange = async () => {
+      console.log("confirmTemplateChange called", {
+        ur_number: patient?.ur_number,
+        pendingTemplateKey,
+      });
+
+      // If patient has a UR number, fetch persistent fields for the new template type
+      if (patient?.ur_number) {
+        try {
+          // Extract base template key (e.g., "soap" from "soap_01")
+          const baseTemplateKey = pendingTemplateKey.split("_")[0];
+          console.log("Fetching history for template:", baseTemplateKey);
+
+          const history = await patientApi.fetchPatientHistoryByTemplate(
+            patient.ur_number,
+            baseTemplateKey,
+          );
+
+          console.log("History result:", history);
+
+          if (history && history.length > 0) {
+            // Merge persistent fields from most recent note of this type
+            const mostRecent = history[0];
+            setPatient((prev) => ({
+              ...prev,
+              template_key: pendingTemplateKey,
+              template_data: {
+                ...mostRecent.template_data,
+              },
+            }));
+            setIsTemplateChangeModalOpen(false);
+            await selectTemplate(pendingTemplateKey);
+            return;
+          }
+        } catch (error) {
+          console.error("Error fetching history for template:", error);
+        }
+      }
+
+      // Fallback: just change template without pre-filling
+      console.log("Falling back to simple template change");
       selectTemplate(pendingTemplateKey);
       setIsTemplateChangeModalOpen(false);
     };

@@ -331,6 +331,19 @@ async def search_patient(ur_number: str) -> List[Patient]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/history")
+async def get_history_by_ur_number(
+    ur_number: str, template_key: Optional[str] = None
+) -> List[Patient]:
+    """Get patient's historical encounters by UR number, optionally filtered by template type."""
+    try:
+        history = get_patient_history(ur_number, template_key)
+        return JSONResponse(content=history)
+    except Exception as e:
+        logging.error(f"Error fetching patient history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/summary/{id}")
 async def get_patient_summary(id: int):
     """Get patient summary."""
