@@ -75,8 +75,9 @@ async def generate_letter_content(
         )
 
         # Add any context from the frontend
+        # Filter out system messages to ensure they only appear at the beginning
         if context:
-            context_messages = context.copy()
+            context_messages = [m for m in context if m.get("role") != "system"]
             request_body.extend(context_messages)
 
         # Set up response format for structured output with thinking support

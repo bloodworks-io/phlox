@@ -27,6 +27,7 @@ from server.utils.chat.tools.transcript_search import (
 )
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client.base import LLMProviderType
+from server.utils.llm_client.utils import ensure_system_messages_first
 from server.utils.llm_client.client import get_llm_client
 from server.utils.rag.chroma import CHROMADB_AVAILABLE, ChromaManager
 
@@ -88,7 +89,14 @@ class ChatEngine:
         # Clean </think> tags from conversation history
         cleaned_conversation_history = clean_think_tags(conversation_history)
 
-        message_list = self.CHAT_SYSTEM_MESSAGE + cleaned_conversation_history
+        # Filter out any system messages from conversation history to ensure
+        # only the backend's system messages are used (prevents duplicates and
+        # ensures system messages are only at the beginning)
+        filtered_history = [
+            m for m in cleaned_conversation_history if m.get("role") != "system"
+        ]
+
+        message_list = self.CHAT_SYSTEM_MESSAGE + filtered_history
 
         # First call to determine if we need literature or direct response
         self.logger.info("Initial LLM call to determine tool usage...")

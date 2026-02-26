@@ -39,3 +39,34 @@ def repair_json(json_str: str) -> str:
 def is_arm_mac() -> bool:
     """Check if we're running on an ARM Mac."""
     return platform.system() == "Darwin" and platform.machine() == "arm64"
+
+
+def ensure_system_messages_first(messages: list) -> list:
+    """
+    Ensure all system messages are at the beginning of the messages list.
+
+    This filters out any system messages that appear after the first non-system message,
+    which violates OpenAI API requirements that system messages must come first.
+
+    Args:
+        messages: List of message dictionaries with 'role' and 'content' keys
+
+    Returns:
+        List with system messages at the beginning, followed by other messages.
+        Any system messages that appeared later in the original list are removed.
+    """
+    system_msgs = []
+    other_msgs = []
+    seen_non_system = False
+
+    for msg in messages:
+        if msg.get("role") == "system":
+            if not seen_non_system:
+                # Keep system messages that appear at the beginning
+                system_msgs.append(msg)
+            # Else: skip system messages that appear after other messages
+        else:
+            seen_non_system = True
+            other_msgs.append(msg)
+
+    return system_msgs + other_msgs

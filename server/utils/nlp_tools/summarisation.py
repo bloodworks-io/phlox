@@ -180,8 +180,8 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
             "role": "system",
             "content": summary_json_instruction,
         },
-        {"role": "user", "content": combined_text},
         {"role": "system", "content": initial_summary_content},
+        {"role": "user", "content": combined_text},
     ]
 
     async def fetch_summary():
