@@ -174,13 +174,14 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
         + json.dumps({"summary_text": "..."})
     )
 
+    summary_system_content = (
+        prompts["prompts"]["summary"]["system"] + "\n\n"
+        + summary_json_instruction + "\n\n"
+        + initial_summary_content
+    )
+
     summary_request_body = [
-        {"role": "system", "content": prompts["prompts"]["summary"]["system"]},
-        {
-            "role": "system",
-            "content": summary_json_instruction,
-        },
-        {"role": "system", "content": initial_summary_content},
+        {"role": "system", "content": summary_system_content},
         {"role": "user", "content": combined_text},
     ]
 
@@ -229,10 +230,9 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
         )
 
         condition_request_body_constrained = [
-            {"role": "system", "content": condition_system},
             {
                 "role": "system",
-                "content": condition_json_instruction,
+                "content": condition_system + "\n\n" + condition_json_instruction,
             },
             {"role": "user", "content": condition_user},
         ]
@@ -324,10 +324,9 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                         )
 
                         disambig_request_body = [
-                            {"role": "system", "content": disambig_system},
                             {
                                 "role": "system",
-                                "content": disambig_json_instruction,
+                                "content": disambig_system + "\n\n" + disambig_json_instruction,
                             },
                             {"role": "user", "content": disambig_user},
                         ]

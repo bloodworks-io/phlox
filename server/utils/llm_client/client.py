@@ -169,6 +169,9 @@ class AsyncLLMClient:
     ) -> Union[Dict[str, Any], AsyncGenerator]:
         """Send a chat completion request."""
 
+        from .utils import ensure_system_messages_first
+        messages = ensure_system_messages_first(messages)
+
         if self.provider_type == LLMProviderType.LOCAL:
             if stream:
                 return self._client.stream_chat(messages, **(options or {}))

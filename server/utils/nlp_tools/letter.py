@@ -31,27 +31,23 @@ async def generate_letter_content(
     )
 
     try:
-        # Always start with system messages
-        request_body = [
-            {
-                "role": "system",
-                "content": prompts["prompts"]["letter"]["system"]
-                + "\n\n"
-                + json_schema_instruction,
-            },
-        ]
+        # Build a single system message (merge system prompt + doctor context)
+        system_content = prompts["prompts"]["letter"]["system"] + "\n\n" + json_schema_instruction
 
         # Add doctor context if available
         user_settings = config_manager.get_user_settings()
         doctor_name = user_settings.get("name", "")
         specialty = user_settings.get("specialty", "")
         if doctor_name or specialty:
+            system_content += "\n\n"
             doctor_context = "Write the letter in the voice of "
             doctor_context += f"{doctor_name}, " if doctor_name else ""
-            doctor_context += (
-                f"a {specialty} specialist." if specialty else "a specialist."
-            )
-            request_body.append({"role": "system", "content": doctor_context})
+            doctor_context += f"a {specialty} specialist." if specialty else "a specialist."
+            system_content += doctor_context
+
+        request_body = [
+            {"role": "system", "content": system_content},
+        ]
 
         # Format clinic note
         clinic_note = "\n\n".join(

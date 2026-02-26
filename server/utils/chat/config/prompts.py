@@ -17,8 +17,8 @@ def build_system_messages() -> list:
     Build the system messages for chat interactions.
 
     Returns:
-        list: A list of system message dictionaries containing the base
-              system prompt and optional doctor context.
+        list: A list containing a single system message with combined content.
+
     """
     prompts = config_manager.get_prompts_and_options()
 
@@ -27,15 +27,12 @@ def build_system_messages() -> list:
     doctor_name = user_settings.get("name", "")
     specialty = user_settings.get("specialty", "")
 
-    messages = [
-        {
-            "role": "system",
-            "content": prompts["prompts"]["chat"]["system"],
-        }
-    ]
+    # Start with the main system prompt
+    content = prompts["prompts"]["chat"]["system"]
 
-    # Add doctor context as additional system message if available
+    # Append doctor context if available
     if doctor_name or specialty:
+        content += "\n\n"
         doctor_context = "You are assisting."
         if doctor_name and specialty:
             doctor_context += f" {doctor_name}, a {specialty} specialist."
@@ -43,7 +40,6 @@ def build_system_messages() -> list:
             doctor_context += f" {doctor_name}."
         else:
             doctor_context += f" a {specialty} specialist."
+        content += doctor_context
 
-        messages.append({"role": "system", "content": doctor_context})
-
-    return messages
+    return [{"role": "system", "content": content}]
