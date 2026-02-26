@@ -45,7 +45,7 @@ async def openai_compatible_chat(
         # Handle format (for JSON responses)
         if format:
             params["response_format"] = (
-                {"type": "json_schema", "json_schema": format},
+                {"type": "json_schema", "json_schema": format}
             )
 
         # Add stream parameter if needed
