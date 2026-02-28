@@ -31,34 +31,4 @@ export const modalStyles = (props) => ({
         ? `${colors.light.crust} !important`
         : `${colors.dark.base} !important`,
   },
-
-  ".template-editor-modal": {
-    backgroundColor:
-      props.colorMode === "light"
-        ? `${colors.light.base} !important`
-        : `${colors.dark.crust} !important`,
-    borderRadius: "sm !important",
-    maxHeight: "70vh", // Adjust this value as needed
-    maxWidth: "800px", // Adjust this value as needed
-    overflowY: "auto",
-    margin: "auto", // Center the modal
-  },
-
-  ".template-editor-header": {
-    padding: "1rem",
-  },
-
-  ".template-editor-body": {
-    backgroundColor:
-      props.colorMode === "light" ? colors.light.base : colors.dark.crust,
-    padding: "1.5rem",
-  },
-
-  ".template-editor-footer": {
-    backgroundColor:
-      props.colorMode === "light"
-        ? `${colors.light.base} !important`
-        : `${colors.dark.crust} !important`,
-    padding: "1rem",
-  },
 });
