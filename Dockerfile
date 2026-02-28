@@ -34,19 +34,31 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
+# Create phlox user
+RUN useradd -m -u 1000 phlox
+
 # Copy the build output and Python server files
 COPY --from=build /usr/src/app/build ./build
 COPY --from=build /usr/src/app/CHANGELOG.md ./CHANGELOG.md
 COPY server/pyproject.toml server/uv.lock ./server/
-RUN mkdir -p /usr/src/app/data
-RUN mkdir -p /usr/src/app/static
-RUN mkdir -p /usr/src/app/temp
+
+# Create directories and set ownership
+RUN mkdir -p /usr/src/app/data \
+    /usr/src/app/static \
+    /usr/src/app/temp && \
+    chown -R phlox:phlox /usr/src/app
 
 # Install Python dependencies
 RUN uv pip install --system --no-cache ./server[docker]
 
 # Copy remaining server code
 COPY server/ ./server
+
+# Change permissions
+RUN chown -R phlox:phlox /usr/src/app
+
+# Switch to phlox user
+USER phlox
 
 # Expose necessary ports
 EXPOSE 5000
