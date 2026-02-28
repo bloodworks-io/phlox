@@ -19,7 +19,7 @@ import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel"
 import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
 import { isChatEnabled } from "../utils/helpers/featureFlags";
 import { templateService } from "../utils/services/templateService";
-import LocalModelManagerModal from "../components/settings/LocalModelManagerModal";
+import LocalModelManagerModal from "../components/modals/LocalModelManagerModal";
 import { localModelApi } from "../utils/api/localModelApi";
 
 const Settings = () => {
