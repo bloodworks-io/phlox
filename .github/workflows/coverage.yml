@@ -14,7 +14,7 @@ jobs:
 
         steps:
             - name: Checkout Repository
-              uses: actions/checkout@v3
+              uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
             - name: Build Test Docker Image
               run: |
@@ -27,7 +27,7 @@ jobs:
                   docker cp test-container:/usr/src/app/coverage.lcov ./coverage.lcov
 
             - name: Coveralls
-              uses: coverallsapp/github-action@v2
+              uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   file: coverage.lcov
@@ -43,7 +43,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Coveralls Finished
-              uses: coverallsapp/github-action@v2
+              uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   parallel-finished: true
