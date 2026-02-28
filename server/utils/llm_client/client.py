@@ -238,8 +238,12 @@ class AsyncLLMClient:
             }
 
 
-def get_llm_client():
-    """Create and return an LLM client with configuration from config manager."""
+def get_llm_client(timeout: int = 80):
+    """Create and return an LLM client with configuration from config manager.
+
+    Args:
+        timeout: Request timeout in seconds (default: 80)
+    """
     config = config_manager.get_config()
     provider_type = config.get("LLM_PROVIDER", "ollama").lower()
     base_url = config.get("LLM_BASE_URL")
@@ -254,11 +258,15 @@ def get_llm_client():
             provider_type="openai",
             base_url=f"http://127.0.0.1:{get_llama_port()}",  # llama-server port
             api_key="not-needed",
+            timeout=timeout,
         )
     else:
         # Use default Ollama URL if not configured
         if not base_url:
             base_url = "http://127.0.0.1:11434"
         return AsyncLLMClient(
-            provider_type=provider_type, base_url=base_url, api_key=api_key
+            provider_type=provider_type,
+            base_url=base_url,
+            api_key=api_key,
+            timeout=timeout,
         )
