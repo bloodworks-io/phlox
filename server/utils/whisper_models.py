@@ -379,10 +379,18 @@ class WhisperModelManager:
                                         coreml_last_update = current_time
                                         coreml_last_downloaded = downloaded
 
-                    # Extract the zip file
+                    # Extract zip file
                     logger.info(f"Extracting Core ML model to {coreml_dir}")
                     with zipfile.ZipFile(zip_file, "r") as zip_ref:
-                        zip_ref.extractall(self.models_dir)
+                        for member in zip_ref.infolist():
+                            # Ensure paths don't escape models_dir
+                            if ".." in member.filename or member.filename.startswith("/"):
+                                logger.warning(
+                                    f"Skipping unsafe ZIP entry: {member.filename}"
+                                )
+                                continue
+                            # Extract safely
+                            zip_ref.extract(member, self.models_dir)
 
                     # Remove the zip file after extraction
                     zip_file.unlink()
