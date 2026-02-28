@@ -69,6 +69,7 @@ class TemplateSectionSchema(BaseModel):
     bullet_type: Optional[str] = None
     section_starter: str
     example_text: str
+    system_prompt: str
     persistent: bool = False
     required: bool = False
 

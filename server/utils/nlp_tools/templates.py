@@ -29,7 +29,7 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         config = config_manager.get_config()
         options = config_manager.get_prompts_and_options()["options"]["general"]
 
-        client = get_llm_client()
+        client = get_llm_client(timeout=300)
         model_name = config["PRIMARY_MODEL"].lower()
 
         system_prompt = """
@@ -39,6 +39,7 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         2. Identify the exact bullet/numbering pattern used (-, 1., •, *, etc), if any
         3. Create an appropriate section starter that matches the format (include heading and initial format marker if any)
         4. Extract the section text from the example note verbatim to serve as a style example
+        5. Create a specific, actionable system prompt that instructs how to generate similar content for this section
 
         Each section should clearly indicate:
         - field_name (e.g., "History of Present Illness")
@@ -46,6 +47,11 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         - bullet_type (e.g., "-", "•", "*") if format uses bullets
         - section_starter (e.g., "HPI:\n-")
         - example_text (the actual text from the note for this section)
+        - system_prompt (specific instructions for generating similar content, based on the example's style, tone, and content requirements)
+
+        The system_prompt should be specific and actionable. For example:
+        - Instead of "Provide information for Behavior using narrative format", use "Document observable behaviors in a concise, objective narrative style. Focus on specific actions, duration, and frequency. Include contextual triggers and observable impacts on functioning."
+        - Instead of "Provide information for Intervention using narrative format", use "Document interventions implemented during the session. Describe the specific technique or approach, the rationale for its use, and any client response or observed effects."
         """
 
         json_schema_instruction = (
@@ -61,6 +67,7 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
                             "bullet_type": "-",
                             "section_starter": "HPI:\n-",
                             "example_text": "...",
+                            "system_prompt": "Document the patient's primary complaint and symptom timeline in concise bullet points. Include onset, duration, severity, aggravating/alleviating factors, and associated symptoms.",
                             "persistent": False,
                             "required": False,
                         }
@@ -132,7 +139,7 @@ Do not include any tab characters, extra whitespace, markdown, code fences, or f
                     field_type="text",
                     required=section.required,
                     persistent=section.persistent,
-                    system_prompt=f"Provide information for {section.field_name} using {section.format_style.value} format.",
+                    system_prompt=section.system_prompt,
                     style_example=section.example_text,  # Use example text
                     format_schema=format_schema,
                     refinement_rules=["default"],  # Deprecated
