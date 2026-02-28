@@ -199,7 +199,11 @@ async def get_analysis():
     """Fetch the latest daily analysis."""
     analysis = get_latest_analysis()
     if not analysis:
-        raise HTTPException(status_code=404, detail="No analysis available")
+        return {
+            "analysis": None,
+            "generated_at": None,
+            "is_processing": refresh_manager.is_task_running("analysis"),
+        }
 
     return {
         **analysis,
