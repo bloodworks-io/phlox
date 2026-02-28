@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from "react";
-import ReactMarkdown from "react-markdown";
 import {
   Box,
   Text,
-  Flex,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   Badge,
   Tooltip,
   Link,
@@ -24,6 +16,7 @@ import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
 import { colors } from "../../theme/colors";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
+import ChangelogModal from "../modals/ChangelogModal";
 
 const VersionInfo = ({ isCollapsed }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -198,40 +191,6 @@ const VersionInfo = ({ isCollapsed }) => {
         changelog={changelog}
       />
     </Box>
-  );
-};
-
-// Separate component for the changelog modal
-const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
-  const cleanChangelog = changelog.replace(/^# Changelog\s*\n/, "");
-  const releases = cleanChangelog
-    .split(/(?=## \[)/)
-    .filter((release) => release.trim() !== "");
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
-      <ModalOverlay />
-      <ModalContent className="modal-style">
-        <ModalHeader>Phlox - Changelog</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody
-          maxH="70vh"
-          overflowY="auto"
-          className="custom-scrollbar"
-          px={10}
-        >
-          {releases.length > 0 ? (
-            releases.map((release, index) => (
-              <Box key={index} mb={10}>
-                <ReactMarkdown>{release}</ReactMarkdown>
-              </Box>
-            ))
-          ) : (
-            <Text>Loading changelog...</Text>
-          )}
-        </ModalBody>
-      </ModalContent>
-    </Modal>
   );
 };
 
