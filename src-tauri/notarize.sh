@@ -54,7 +54,7 @@ sign_server_dist() {
     echo "Signing all binaries in server_dist..."
 
     # Sign the main server binary
-    sign_binary "$server_dist/server"
+    sign_binary "$server_dist/phlox-server"
 
     # Sign all .so files and other executables
     find "$server_dist" -name "*.so" -exec codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" {} \;

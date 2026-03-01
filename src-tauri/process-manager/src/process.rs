@@ -62,45 +62,45 @@ pub fn remove_pid_file(service: &str) {
     }
 }
 
-/// Find the llama-server binary path
+/// Find the phlox-llama-server binary path
 pub fn find_llama_server() -> Option<PathBuf> {
     let exe_dir = env::current_exe().ok()?.parent()?.to_path_buf();
 
     #[cfg(target_os = "windows")]
-    let path = exe_dir.join("llama-server.exe");
+    let path = exe_dir.join("phlox-llama-server.exe");
     #[cfg(not(target_os = "windows"))]
-    let path = exe_dir.join("llama-server");
+    let path = exe_dir.join("phlox-llama-server");
 
     if path.exists() {
         Some(path)
     } else {
-        log::warn!("llama-server not found at {:?}", path);
+        log::warn!("phlox-llama-server not found at {:?}", path);
         None
     }
 }
 
-/// Find the whisper-server binary path
+/// Find the phlox-whisper-server binary path
 pub fn find_whisper_server() -> Option<PathBuf> {
     let exe_dir = env::current_exe().ok()?.parent()?.to_path_buf();
 
     #[cfg(target_os = "windows")]
-    let path = exe_dir.join("whisper-server.exe");
+    let path = exe_dir.join("phlox-whisper-server.exe");
     #[cfg(not(target_os = "windows"))]
-    let path = exe_dir.join("whisper-server");
+    let path = exe_dir.join("phlox-whisper-server");
 
     if path.exists() {
         Some(path)
     } else {
-        log::warn!("whisper-server not found at {:?}", path);
+        log::warn!("phlox-whisper-server not found at {:?}", path);
         None
     }
 }
 
 /// Find the server (Python) binary path
-/// The 'server' binary is a wrapper that points to ../Resources/server_dist/server
+/// The 'phlox-server' binary is a wrapper that points to ../Resources/server_dist/server
 pub fn find_python_server() -> Option<PathBuf> {
     let exe_dir = env::current_exe().ok()?.parent()?.to_path_buf();
-    let path = exe_dir.join("server");
+    let path = exe_dir.join("phlox-server");
 
     if path.exists() {
         Some(path)
@@ -182,15 +182,15 @@ pub enum ServiceType {
 
 /// Start the llama server
 pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
-    let server_path = find_llama_server().ok_or("llama-server binary not found")?;
+    let server_path = find_llama_server().ok_or("phlox-llama-server binary not found")?;
     let model_path = find_llama_model().ok_or("No LLM model found")?;
 
     // Use provided port or fallback to default
     let actual_port = port.unwrap_or(LLAMA_PORT);
 
-    log::info!("Starting llama-server from: {:?}", server_path);
+    log::info!("Starting phlox-llama-server from: {:?}", server_path);
     log::info!(
-        "llama-server model: {:?}, port: {}",
+        "phlox-llama-server model: {:?}, port: {}",
         model_path,
         actual_port
     );
@@ -227,10 +227,10 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
 
     let child = cmd
         .spawn()
-        .map_err(|e| format!("Failed to spawn llama-server: {}", e))?;
+        .map_err(|e| format!("Failed to spawn phlox-llama-server: {}", e))?;
 
     let pid = child.id();
-    log::info!("llama-server started with PID: {}", pid);
+    log::info!("phlox-llama-server started with PID: {}", pid);
     write_pid_file("llama", pid);
 
     // Write port file for Python server to read
@@ -250,15 +250,15 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
 
 /// Start the whisper server
 pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
-    let server_path = find_whisper_server().ok_or("whisper-server binary not found")?;
+    let server_path = find_whisper_server().ok_or("phlox-whisper-server binary not found")?;
     let model_path = find_whisper_model().ok_or("No Whisper model found")?;
 
     // Use provided port or fallback to default
     let actual_port = port.unwrap_or(WHISPER_PORT);
 
-    log::info!("Starting whisper-server from: {:?}", server_path);
+    log::info!("Starting phlox-whisper-server from: {:?}", server_path);
     log::info!(
-        "whisper-server model: {:?}, port: {}",
+        "phlox-whisper-server model: {:?}, port: {}",
         model_path,
         actual_port
     );
@@ -282,10 +282,10 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
 
     let child = cmd
         .spawn()
-        .map_err(|e| format!("Failed to spawn whisper-server: {}", e))?;
+        .map_err(|e| format!("Failed to spawn phlox-whisper-server: {}", e))?;
 
     let pid = child.id();
-    log::info!("whisper-server started with PID: {}", pid);
+    log::info!("phlox-whisper-server started with PID: {}", pid);
     write_pid_file("whisper", pid);
 
     // Write port file for Python server to read
@@ -742,9 +742,9 @@ pub fn kill_all_processes() {
     }
 
     // Fallback: kill by name pattern
-    kill_process_by_name("llama-server", "llama-server");
-    kill_process_by_name("whisper-server", "whisper-server");
-    kill_process_by_name("server", "server");
+    kill_process_by_name("phlox-llama-server", "phlox-llama-server");
+    kill_process_by_name("phlox-whisper-server", "phlox-whisper-server");
+    kill_process_by_name("phlox-server", "phlox-server");
 
     std::thread::sleep(Duration::from_millis(500));
 

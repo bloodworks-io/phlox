@@ -63,18 +63,18 @@ cmake --build . --target llama-server -j$(sysctl -n hw.ncpu)
 
 echo "Fixing rpath in llama-server..."
 if [ -f "bin/llama-server" ]; then
-    cp bin/llama-server "$SCRIPT_DIR/llama-server"
-    chmod +x "$SCRIPT_DIR/llama-server"
-    install_name_tool -delete_rpath "$LLAMA_DIR/build/src" "$SCRIPT_DIR/llama-server" 2>/dev/null || true
-    install_name_tool -delete_rpath "$LLAMA_DIR/build/ggml" "$SCRIPT_DIR/llama-server" 2>/dev/null || true
-    echo "llama-server binary built successfully at: $SCRIPT_DIR/llama-server"
+    cp bin/llama-server "$SCRIPT_DIR/phlox-llama-server"
+    chmod +x "$SCRIPT_DIR/phlox-llama-server"
+    install_name_tool -delete_rpath "$LLAMA_DIR/build/src" "$SCRIPT_DIR/phlox-llama-server" 2>/dev/null || true
+    install_name_tool -delete_rpath "$LLAMA_DIR/build/ggml" "$SCRIPT_DIR/phlox-llama-server" 2>/dev/null || true
+    echo "phlox-llama-server binary built successfully at: $SCRIPT_DIR/phlox-llama-server"
     echo "Checking for remaining rpath entries:"
-    otool -L "$SCRIPT_DIR/llama-server" | grep "@rpath" || echo "✓ No problematic rpath entries"
+    otool -L "$SCRIPT_DIR/phlox-llama-server" | grep "@rpath" || echo "✓ No problematic rpath entries"
 
     # Check for Homebrew dependencies (should not have any)
-    if otool -L "$SCRIPT_DIR/llama-server" | grep -q "/opt/homebrew\|/usr/local/opt"; then
+    if otool -L "$SCRIPT_DIR/phlox-llama-server" | grep -q "/opt/homebrew\|/usr/local/opt"; then
         echo "❌ ERROR: Binary contains Homebrew dependencies!"
-        otool -L "$SCRIPT_DIR/llama-server" | grep "/opt/homebrew\|/usr/local/opt"
+        otool -L "$SCRIPT_DIR/phlox-llama-server" | grep "/opt/homebrew\|/usr/local/opt"
         exit 1
     fi
     echo "✓ No Homebrew dependencies found"
@@ -92,11 +92,11 @@ if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
     SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-${SIGNING_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)".*/\1/')}}"
 
     if [ -n "$SIGNING_IDENTITY" ]; then
-        echo "Signing llama-server with: $SIGNING_IDENTITY"
+        echo "Signing phlox-llama-server with: $SIGNING_IDENTITY"
         codesign --force --options runtime --timestamp \
             --sign "$SIGNING_IDENTITY" \
-            "$SCRIPT_DIR/llama-server"
-        echo "✅ llama-server signed"
+            "$SCRIPT_DIR/phlox-llama-server"
+        echo "✅ phlox-llama-server signed"
     fi
 fi
 
@@ -104,7 +104,7 @@ fi
 if [ "$DEBUG_MODE" = true ]; then
     echo "Copying to target/debug for development..."
     mkdir -p "$SCRIPT_DIR/target/debug"
-    cp "$SCRIPT_DIR/llama-server" "$SCRIPT_DIR/target/debug/llama-server"
-    chmod +x "$SCRIPT_DIR/target/debug/llama-server"
-    echo "✅ Copied to target/debug/llama-server"
+    cp "$SCRIPT_DIR/phlox-llama-server" "$SCRIPT_DIR/target/debug/phlox-llama-server"
+    chmod +x "$SCRIPT_DIR/target/debug/phlox-llama-server"
+    echo "✅ Copied to target/debug/phlox-llama-server"
 fi
