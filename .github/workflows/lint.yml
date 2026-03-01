@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd server
-          ~/.local/bin/uv pip install --system ruff ty-cli bandit[toml] pydantic types-requests
+          ~/.local/bin/uv pip install --system ruff ty bandit[toml] pydantic types-requests
 
       - name: Run Ruff
         run: |
