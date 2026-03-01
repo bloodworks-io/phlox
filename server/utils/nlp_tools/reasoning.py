@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-async def run_clinical_reasoning(
-    template_data: dict, dob: str, encounter_date: str, gender: str
-):
+async def run_clinical_reasoning(template_data: dict, dob: str, encounter_date: str, gender: str):
     config = config_manager.get_config()
     prompts = config_manager.get_prompts_and_options()
     client = get_llm_client()
@@ -75,7 +73,7 @@ async def run_clinical_reasoning(
 
 Analyze this case:
 
-Demographics: {age} year old {'male' if gender == 'M' else 'female'}
+Demographics: {age} year old {"male" if gender == "M" else "female"}
 
 Clinical Note:
 ```

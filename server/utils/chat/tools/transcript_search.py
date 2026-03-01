@@ -5,7 +5,8 @@ This tool searches through the patient transcript for relevant information.
 """
 
 import logging
-from typing import Any, AsyncGenerator, Dict
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from server.utils.chat.streaming.response import (
     status_message,
@@ -18,14 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 async def execute(
-    tool_call: Dict[str, Any],
+    tool_call: dict[str, Any],
     llm_client,
-    config: Dict[str, Any],
+    config: dict[str, Any],
     message_list: list,
     conversation_history: list,
     raw_transcription: str,
-    context_question_options: Dict[str, Any],
-) -> AsyncGenerator[Dict[str, Any], None]:
+    context_question_options: dict[str, Any],
+) -> AsyncGenerator[dict[str, Any], None]:
     """
     Execute the transcript search tool.
 
@@ -88,9 +89,7 @@ async def execute(
             options=context_question_options,
         )
 
-        transcript_info = transcript_response.get("message", {}).get(
-            "content", ""
-        )
+        transcript_info = transcript_response.get("message", {}).get("content", "")
 
         # Clean think tags
         cleaned_transcript_info = ""
@@ -103,9 +102,7 @@ async def execute(
         ):
             cleaned_transcript_info = str(cleaned_result[0].get("content", ""))
 
-        logger.info(
-            f"Transcript query result: {cleaned_transcript_info[:200]}..."
-        )
+        logger.info(f"Transcript query result: {cleaned_transcript_info[:200]}...")
 
         # Add transcript info to original conversation as a tool response
         message_list.append(
@@ -119,9 +116,7 @@ async def execute(
         cleaned_message_list = clean_think_tags(message_list)
 
         logger.info(f"Transcript query messagelist: {cleaned_message_list}")
-        yield status_message(
-            "Generating response with transcript information..."
-        )
+        yield status_message("Generating response with transcript information...")
 
         logger.info("Starting response stream to frontend")
 

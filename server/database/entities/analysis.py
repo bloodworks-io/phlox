@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import random
 from datetime import datetime, timedelta
 
 from server.database.config.manager import config_manager
@@ -90,13 +89,9 @@ async def generate_daily_analysis(force=False):
         # Check if we need to run a new analysis (skip if force=True)
         now = datetime.now()
         if not force and last_analysis:
-            last_analysis_time = datetime.fromisoformat(
-                last_analysis["created_at"]
-            )
+            last_analysis_time = datetime.fromisoformat(last_analysis["created_at"])
             if (now - last_analysis_time) < timedelta(hours=24):
-                logger.info(
-                    "Skipping analysis - less than 24 hours since last analysis"
-                )
+                logger.info("Skipping analysis - less than 24 hours since last analysis")
                 return False
 
         # Get patients with outstanding jobs
@@ -116,14 +111,10 @@ async def generate_daily_analysis(force=False):
         patient_data = []
         for patient in patients:
             outstanding_jobs = [
-                job["job"]
-                for job in json.loads(patient["jobs_list"])
-                if not job["completed"]
+                job["job"] for job in json.loads(patient["jobs_list"]) if not job["completed"]
             ]
 
-            if (
-                outstanding_jobs
-            ):  # Only include patients with actual outstanding jobs
+            if outstanding_jobs:  # Only include patients with actual outstanding jobs
                 patient_data.append(
                     {
                         "name": patient["name"],
@@ -189,9 +180,7 @@ async def generate_previous_visit_summary(patient_data):
     options = config_manager.get_prompts_and_options()["options"]["secondary"]
 
     # Calculate time since last visit
-    last_visit_date = datetime.strptime(
-        patient_data["encounter_date"], "%Y-%m-%d"
-    )
+    last_visit_date = datetime.strptime(patient_data["encounter_date"], "%Y-%m-%d")
     today = datetime.now()
     days_ago = (today - last_visit_date).days
 
@@ -199,14 +188,10 @@ async def generate_previous_visit_summary(patient_data):
     note_text = ""
     if "template_data" in patient_data:
         for key, value in patient_data["template_data"].items():
-            if (
-                key != "plan" and value
-            ):  # Skip plan field as we'll use jobs_list
+            if key != "plan" and value:  # Skip plan field as we'll use jobs_list
                 # Remove markdown headers and clean up the text
                 cleaned_value = value.replace("#", "").strip()
-                note_text += (
-                    f"{key.replace('_', ' ').title()}:\n{cleaned_value}\n\n"
-                )
+                note_text += f"{key.replace('_', ' ').title()}:\n{cleaned_value}\n\n"
 
     # Parse jobs list into readable format
     formatted_jobs = "No jobs listed"
@@ -217,9 +202,7 @@ async def generate_previous_visit_summary(patient_data):
         else:
             logger.warning(f"jobs_list is not a list: {jobs_list}")
     except (json.JSONDecodeError, TypeError) as e:
-        logger.error(
-            f"Error parsing jobs_list: {e}. jobs_list: {patient_data.get('jobs_list')}"
-        )
+        logger.error(f"Error parsing jobs_list: {e}. jobs_list: {patient_data.get('jobs_list')}")
 
     # Fetch user settings
     user_settings = config_manager.get_user_settings()
@@ -238,8 +221,8 @@ async def generate_previous_visit_summary(patient_data):
     user_prompt = f"""Briefly summarize in 2-3 sentences what happened in this patient's visit {days_ago} days ago. For example, tests that were ordered and what the key findings were. Focus on the key clinical findings and outstanding tasks from the last review with the patient.
 
     Patient Data:
-    Patient Name (Last, First): {patient_data['name']}
-    Encounter Summary: {patient_data['encounter_summary']}
+    Patient Name (Last, First): {patient_data["name"]}
+    Encounter Summary: {patient_data["encounter_summary"]}
 
     Clinical Note:
     {note_text}
@@ -263,9 +246,7 @@ async def generate_previous_visit_summary(patient_data):
             options=options,
         )
 
-        previous_visit_summary = PreviousVisitSummary.model_validate_json(
-            response_json
-        )
+        previous_visit_summary = PreviousVisitSummary.model_validate_json(response_json)
         return previous_visit_summary.summary
     except Exception as e:
         logger.error(f"Error generating previous visit summary: {e}")
@@ -280,18 +261,15 @@ async def run_nightly_reasoning():
         today = datetime.now().strftime("%Y-%m-%d")
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-        patients = get_patients_by_date(
-            yesterday, include_data=True
-        ) + get_patients_by_date(today, include_data=True)
-        logging.info(
-            f"Found {len(patients)} patients to process for dates {yesterday} and {today}"
+        patients = get_patients_by_date(yesterday, include_data=True) + get_patients_by_date(
+            today, include_data=True
         )
+        logging.info(f"Found {len(patients)} patients to process for dates {yesterday} and {today}")
 
         patients_to_process = [
             patient
             for patient in patients
-            if not patient.get("reasoning_output")
-            and patient.get("template_data")
+            if not patient.get("reasoning_output") and patient.get("template_data")
         ]
 
         if not patients_to_process:
@@ -317,9 +295,7 @@ async def run_nightly_reasoning():
                         "reasoning": reasoning_output,
                     }
                 except Exception as e:
-                    logging.error(
-                        f"Error processing reasoning for patient {patient_id}: {str(e)}"
-                    )
+                    logging.error(f"Error processing reasoning for patient {patient_id}: {str(e)}")
                     return {
                         "patient_id": patient_id,
                         "success": False,
@@ -344,9 +320,7 @@ async def run_nightly_reasoning():
                     successful_updates += 1
                 except Exception as e:
                     failed_updates += 1
-                    logging.error(
-                        f"Database update failed for patient {patient_id}: {str(e)}"
-                    )
+                    logging.error(f"Database update failed for patient {patient_id}: {str(e)}")
             else:
                 failed_updates += 1
 

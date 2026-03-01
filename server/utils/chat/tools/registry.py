@@ -5,10 +5,10 @@ This module provides the tool definitions used by the ChatEngine
 to determine which actions to take based on user input.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
-def get_tools_definition(collection_names: List[str]) -> List[Dict[str, Any]]:
+def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
     """
     Get the tools definition based on available collections.
 

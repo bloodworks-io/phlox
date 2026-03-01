@@ -23,14 +23,10 @@ async def get_server_status():
             async with httpx.AsyncClient() as client:
                 try:
                     if provider_type == "ollama":
-                        response = await client.get(
-                            f"{base_url}/api/tags", timeout=2.0
-                        )
+                        response = await client.get(f"{base_url}/api/tags", timeout=2.0)
                         status["llm"] = response.status_code == 200
                     elif provider_type == "openai":
-                        response = await client.get(
-                            f"{base_url}/v1/models", timeout=2.0
-                        )
+                        response = await client.get(f"{base_url}/v1/models", timeout=2.0)
                         # If we get 401/403, the service exists but requires auth
                         status["llm"] = response.status_code in [200, 401, 403]
                 except:

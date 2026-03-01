@@ -18,9 +18,7 @@ class LocalLLMClient:
 
         manager = LocalModelManager(self.ollama_url)
         if not await manager.is_model_available(model_name):
-            raise FileNotFoundError(
-                f"Model {model_name} not found. Pull it first."
-            )
+            raise FileNotFoundError(f"Model {model_name} not found. Pull it first.")
         self.current_model = model_name
 
     async def chat(self, messages, **kwargs):

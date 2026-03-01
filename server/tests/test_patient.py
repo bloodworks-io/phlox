@@ -3,8 +3,6 @@ Tests for patient endpoints.
 Assumes your patient-related endpoints are included from server/api/patient.py.
 """
 
-import json
-
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -58,9 +56,7 @@ def mock_summarize(monkeypatch):
     async def fake_summarize(*args, **kwargs):
         return "Test summary", "Test condition"
 
-    monkeypatch.setattr(
-        "server.utils.llm.summarisation.summarise_encounter", fake_summarize
-    )
+    monkeypatch.setattr("server.utils.llm.summarisation.summarise_encounter", fake_summarize)
     return fake_summarize
 
 
@@ -71,9 +67,7 @@ async def test_save_patient(monkeypatch):
     async def mock_summarize_encounter(*args, **kwargs):
         return "Test summary", "Test condition"
 
-    monkeypatch.setattr(
-        "server.api.patient.summarize_encounter", mock_summarize_encounter
-    )
+    monkeypatch.setattr("server.api.patient.summarize_encounter", mock_summarize_encounter)
 
     payload = {
         "patientData": {
@@ -104,14 +98,11 @@ async def test_save_patient(monkeypatch):
 
 def test_delete_patient(monkeypatch):
     # Patch delete_patient_by_id to simulate a successful deletion
-    from server.database.entities.patient import delete_patient_by_id
 
     def fake_delete_patient_by_id(pid: int):
         return True
 
-    monkeypatch.setattr(
-        "server.api.patient.delete_patient_by_id", fake_delete_patient_by_id
-    )
+    monkeypatch.setattr("server.api.patient.delete_patient_by_id", fake_delete_patient_by_id)
     response = client.delete("/api/patient/id/123")
     assert response.status_code == 200
     data = response.json()

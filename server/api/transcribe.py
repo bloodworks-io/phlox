@@ -1,6 +1,5 @@
 import logging
 import time
-from typing import Optional
 
 from fastapi import (
     APIRouter,
@@ -10,7 +9,7 @@ from fastapi import (
     UploadFile,
 )
 
-from server.schemas.patient import DocumentProcessResponse, TranscribeResponse
+from server.schemas.patient import TranscribeResponse
 from server.utils.nlp_tools.document_processing import (
     process_document_with_template,
 )
@@ -23,10 +22,10 @@ router = APIRouter()
 @router.post("/audio", response_model=TranscribeResponse)
 async def transcribe(
     file: UploadFile = File(...),
-    name: Optional[str] = Form(None),
-    gender: Optional[str] = Form(None),
-    dob: Optional[str] = Form(None),
-    templateKey: Optional[str] = Form(None),
+    name: str | None = Form(None),
+    gender: str | None = Form(None),
+    dob: str | None = Form(None),
+    templateKey: str | None = Form(None),
     isAmbient: bool = Form(True),
 ):
     """Transcribes audio and processes the transcription."""
@@ -105,11 +104,11 @@ async def dictate(file: UploadFile = File(...)):
 @router.post("/reprocess", response_model=TranscribeResponse)
 async def reprocess_transcription(
     transcript_text: str = Form(...),
-    name: Optional[str] = Form(None),
-    gender: Optional[str] = Form(None),
-    dob: Optional[str] = Form(None),
-    original_transcription_duration: Optional[float] = Form(0),
-    templateKey: Optional[str] = Form(None),
+    name: str | None = Form(None),
+    gender: str | None = Form(None),
+    dob: str | None = Form(None),
+    original_transcription_duration: float | None = Form(0),
+    templateKey: str | None = Form(None),
     isAmbient: bool = Form(True),
 ):
     """Reprocesses an existing transcription."""
@@ -155,15 +154,13 @@ async def reprocess_transcription(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post(
-    "/process-document", response_model=TranscribeResponse
-)  # Changed response model
+@router.post("/process-document", response_model=TranscribeResponse)  # Changed response model
 async def process_document(
     file: UploadFile = File(...),
-    name: Optional[str] = Form(None),
-    gender: Optional[str] = Form(None),
-    dob: Optional[str] = Form(None),
-    templateKey: Optional[str] = Form(None),
+    name: str | None = Form(None),
+    gender: str | None = Form(None),
+    dob: str | None = Form(None),
+    templateKey: str | None = Form(None),
 ):
     """Processes a document to extract information and fill template fields."""
     try:

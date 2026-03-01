@@ -3,9 +3,9 @@ Tests for configuration endpoints.
 Uses TestClient and checks JSON response structure.
 """
 
-import pytest
-from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
 from server.api.config import router
 
 app = FastAPI()
@@ -65,6 +65,7 @@ def test_update_config():
     data = response.json()
     message = data.get("message", "")
     assert "message" in data and ("success" in message.lower())
+
 
 def test_update_options():
     new_options = {"TEST_OPTION": "test_option_value"}

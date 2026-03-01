@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
@@ -58,16 +57,14 @@ async def fetch_letter(patientId: int):
     """Fetches a letter by patient ID."""
     try:
         letter = await fetch_patient_letter(patientId)
-        return JSONResponse(
-            content={"letter": letter or "No letter attached to encounter"}
-        )
+        return JSONResponse(content={"letter": letter or "No letter attached to encounter"})
     except Exception as e:
         logging.error(f"Error fetching letter: {e}")
         raise HTTPException(status_code=500, detail=e)
 
 
 @router.get("/templates")
-async def get_templates() -> List[LetterTemplate]:
+async def get_templates() -> list[LetterTemplate]:
     """Get all letter templates."""
     try:
         templates = get_letter_templates()
@@ -133,17 +130,13 @@ async def reset_templates() -> dict:
 
 
 @router.put("/templates/{template_id}")
-async def update_template(
-    template_id: int, template: LetterTemplate = Body(...)
-) -> dict:
+async def update_template(template_id: int, template: LetterTemplate = Body(...)) -> dict:
     """Update a letter template."""
     try:
         success = update_letter_template(template_id, template)
         if not success:
             raise HTTPException(status_code=404, detail="Template not found")
-        return JSONResponse(
-            content={"message": "Template updated successfully"}
-        )
+        return JSONResponse(content={"message": "Template updated successfully"})
     except HTTPException:
         raise
     except Exception as e:
@@ -158,9 +151,7 @@ async def delete_template(template_id: int) -> dict:
         success = delete_letter_template(template_id)
         if not success:
             raise HTTPException(status_code=404, detail="Template not found")
-        return JSONResponse(
-            content={"message": "Template deleted successfully"}
-        )
+        return JSONResponse(content={"message": "Template deleted successfully"})
     except HTTPException:
         raise
     except Exception as e:

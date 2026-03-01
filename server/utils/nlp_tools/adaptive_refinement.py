@@ -1,7 +1,5 @@
 import json
 import logging
-from posixpath import basename
-from typing import List, Optional
 
 import Levenshtein
 from server.database.config.manager import config_manager
@@ -18,10 +16,10 @@ MAX_INSTRUCTIONS = 8
 async def generate_adaptive_refinement_suggestions(
     initial_content: str,
     modified_content: str,
-    existing_instructions: Optional[List[str]] = None,
-    model_name: Optional[str] = None,
+    existing_instructions: list[str] | None = None,
+    model_name: str | None = None,
     change_threshold: float = 0.4,
-) -> List[str]:
+) -> list[str]:
     """
     Generates adaptive refinement suggestions by comparing initial and modified content,
     and manages a running list of unique instructions using LLM tools.
@@ -42,21 +40,15 @@ async def generate_adaptive_refinement_suggestions(
     )
 
     if not modified_content.strip():
-        logger.warning(
-            "Modified content is empty. Returning existing instructions."
-        )
+        logger.warning("Modified content is empty. Returning existing instructions.")
         return existing_instructions or []
 
     if initial_content == modified_content:
-        logger.info(
-            "Initial and modified content are identical. Returning existing instructions."
-        )
+        logger.info("Initial and modified content are identical. Returning existing instructions.")
         return existing_instructions or []
 
     # Check if content has changed enough to warrant adaptive refinement
-    change_ratio = calculate_content_change_ratio(
-        initial_content, modified_content
-    )
+    change_ratio = calculate_content_change_ratio(initial_content, modified_content)
     if change_ratio < change_threshold:
         logger.info(
             f"Content change ratio {change_ratio:.2f} is below threshold {change_threshold}. Skipping adaptive refinement."
@@ -74,9 +66,7 @@ async def generate_adaptive_refinement_suggestions(
     model_name = model_name or config.get("PRIMARY_MODEL")
 
     # Initialize with existing instructions
-    current_instructions = (
-        list(existing_instructions) if existing_instructions else []
-    )
+    current_instructions = list(existing_instructions) if existing_instructions else []
 
     # Auto-consolidate if approaching the limit
     if len(current_instructions) >= MAX_INSTRUCTIONS:
@@ -123,9 +113,7 @@ async def generate_adaptive_refinement_suggestions(
     Make only ONE change that captures the most important improvement."""
 
     # Prepare instruction list display
-    instructions_display = _format_instructions_for_display(
-        current_instructions
-    )
+    instructions_display = _format_instructions_for_display(current_instructions)
 
     user_prompt = f"""Compare these two versions of text and make ONE targeted update to the refinement instruction list:
 
@@ -258,7 +246,7 @@ def _get_instruction_management_tools():
     ]
 
 
-def _format_instructions_for_display(instructions: List[str]) -> str:
+def _format_instructions_for_display(instructions: list[str]) -> str:
     """Format instruction list for display to the LLM."""
     if not instructions:
         return "No current instructions."
@@ -272,11 +260,11 @@ def _format_instructions_for_display(instructions: List[str]) -> str:
 
 async def _process_single_tool_call(
     response,
-    current_instructions: List[str],
+    current_instructions: list[str],
     client,
     model_name: str,
     options: dict,
-) -> List[str]:
+) -> list[str]:
     """Process a single tool call to update the instruction list."""
 
     # Get tool calls from response
@@ -285,10 +273,7 @@ async def _process_single_tool_call(
     # Import the enum for proper comparison
     from server.utils.llm_client import LLMProviderType
 
-    if (
-        config.get("LLM_PROVIDER", "ollama").lower()
-        == LLMProviderType.OPENAI_COMPATIBLE.value
-    ):
+    if config.get("LLM_PROVIDER", "ollama").lower() == LLMProviderType.OPENAI_COMPATIBLE.value:
         tool_calls = response["message"].get("tool_calls")
     else:
         tool_calls = response.get("tool_calls")
@@ -299,9 +284,7 @@ async def _process_single_tool_call(
 
     # Only process the first tool call
     if len(tool_calls) > 1:
-        logger.warning(
-            f"LLM made {len(tool_calls)} tool calls, but only processing the first one"
-        )
+        logger.warning(f"LLM made {len(tool_calls)} tool calls, but only processing the first one")
 
     tool_call = tool_calls[0]
     logger.info(f"Processing single tool call: {tool_call['function']['name']}")
@@ -321,9 +304,7 @@ async def _process_single_tool_call(
         logger.error("Failed to parse function arguments JSON")
         return current_instructions
 
-    logger.info(
-        f"Processing tool call: {function_name} with args: {function_arguments}"
-    )
+    logger.info(f"Processing tool call: {function_name} with args: {function_arguments}")
 
     if function_name == "replace_instruction":
         index = function_arguments.get("index_to_replace")
@@ -356,9 +337,7 @@ async def _process_single_tool_call(
             logger.info(f"Adding new instruction: '{new_instruction}'")
             updated_instructions.append(new_instruction)
         else:
-            logger.warning(
-                f"Cannot add instruction - already at maximum ({MAX_INSTRUCTIONS})"
-            )
+            logger.warning(f"Cannot add instruction - already at maximum ({MAX_INSTRUCTIONS})")
 
     elif function_name == "keep_unchanged":
         logger.info("LLM chose to keep instructions unchanged")
@@ -377,16 +356,12 @@ async def _process_single_tool_call(
     # Enforce maximum limit
     if len(unique_instructions) > MAX_INSTRUCTIONS:
         unique_instructions = unique_instructions[:MAX_INSTRUCTIONS]
-        logger.info(
-            f"Truncated instructions to maximum limit of {MAX_INSTRUCTIONS}"
-        )
+        logger.info(f"Truncated instructions to maximum limit of {MAX_INSTRUCTIONS}")
 
     return unique_instructions
 
 
-def calculate_content_change_ratio(
-    initial_content: str, modified_content: str
-) -> float:
+def calculate_content_change_ratio(initial_content: str, modified_content: str) -> float:
     """
     Calculate the ratio of content that has changed using Levenshtein distance.
 
@@ -415,10 +390,10 @@ def calculate_content_change_ratio(
 
 
 async def consolidate_adaptive_instructions(
-    instructions: List[str],
+    instructions: list[str],
     field_key: str,
     field_name: str,
-    model_name: Optional[str] = None,
+    model_name: str | None = None,
 ) -> dict:
     """
     Consolidate a list of adaptive refinement instructions into a clean,
@@ -496,9 +471,7 @@ async def consolidate_adaptive_instructions(
         )
     )
 
-    instructions_display = "\n".join(
-        [f"{i}: {inst}" for i, inst in enumerate(instructions)]
-    )
+    instructions_display = "\n".join([f"{i}: {inst}" for i, inst in enumerate(instructions)])
 
     user_prompt = f"""Consolidate the following adaptive refinement instructions for the '{field_name}' field:
 

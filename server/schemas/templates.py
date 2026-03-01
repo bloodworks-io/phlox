@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field, validator
-from typing import List, Optional, Union, Literal, Dict, Any
 from enum import Enum
+from typing import Any, Literal, Union
+
+from pydantic import BaseModel, validator
 
 VALID_FIELD_TYPES = Literal["text", "number", "date", "boolean", "list", "structured"]
+
 
 class FormatStyle(str, Enum):
     BULLETS = "bullets"
@@ -11,6 +13,7 @@ class FormatStyle(str, Enum):
     HEADING_WITH_BULLETS = "heading_with_bullets"
     LAB_VALUES = "lab_values"
 
+
 class TemplateField(BaseModel):
     field_key: str
     field_name: str
@@ -18,42 +21,47 @@ class TemplateField(BaseModel):
     required: bool = False
     persistent: bool = False
     system_prompt: str
-    initial_prompt: Optional[str] = None
-    format_schema: Optional[dict] = None
+    initial_prompt: str | None = None
+    format_schema: dict | None = None
     style_example: str
-    refinement_rules: Optional[List[str]] = None
-    adaptive_refinement_instructions: Optional[List[str]] = None
+    refinement_rules: list[str] | None = None
+    adaptive_refinement_instructions: list[str] | None = None
 
-    @validator('field_type')
+    @validator("field_type")
     def validate_field_type(cls, v):
         valid_types = ["text", "number", "date", "boolean", "list", "structured"]
         if v not in valid_types:
             raise ValueError(f"field_type must be one of {valid_types}")
         return v
 
+
 class AdaptiveRefinementRequest(BaseModel):
     initial_content: str
     modified_content: str
 
+
 class ClinicalTemplate(BaseModel):
     template_key: str
     template_name: str
-    fields: List[TemplateField]
+    fields: list[TemplateField]
     deleted: bool = False
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
     class Config:
         extra = "allow"
 
+
 class TemplateResponse(BaseModel):
     field_key: str
-    content: Union[str, int, bool, List[str], Dict[str, Any]]
+    content: Union[str, int, bool, list[str], dict[str, Any]]
+
 
 class ProcessedTemplate(BaseModel):
     template_key: str
-    fields: Dict[str, Union[str, int, bool, List[str], Dict[str, Any]]]
+    fields: dict[str, Union[str, int, bool, list[str], dict[str, Any]]]
     process_duration: float
+
 
 class TemplateFieldSchema(BaseModel):
     field_key: str
@@ -61,19 +69,21 @@ class TemplateFieldSchema(BaseModel):
     field_type: str = "text"
     required: bool = False
     description: str
-    example_value: Optional[str] = None
+    example_value: str | None = None
+
 
 class TemplateSectionSchema(BaseModel):
     field_name: str
     format_style: FormatStyle
-    bullet_type: Optional[str] = None
+    bullet_type: str | None = None
     section_starter: str
     example_text: str
     system_prompt: str
     persistent: bool = False
     required: bool = False
 
+
 class ExtractedTemplate(BaseModel):
-    sections: List[TemplateSectionSchema]
+    sections: list[TemplateSectionSchema]
     suggested_name: str
     note_type: str

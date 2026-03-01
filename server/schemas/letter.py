@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from typing import Optional, List, Dict
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class LetterTemplate(BaseModel):
@@ -14,10 +14,10 @@ class LetterTemplate(BaseModel):
         created_at (Optional[datetime]): Creation timestamp
     """
 
-    id: Optional[int] = None
+    id: int | None = None
     name: str
     instructions: str
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -39,7 +39,7 @@ class LetterRequest(BaseModel):
     dob: str
     template_data: dict
     additional_instruction: str | None = None
-    context: Optional[List[Dict[str, str]]] = None
+    context: list[dict[str, str]] | None = None
 
 
 class LetterSave(BaseModel):

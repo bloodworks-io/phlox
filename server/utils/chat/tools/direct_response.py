@@ -5,7 +5,8 @@ This tool handles non-medical queries like greetings, chat, and clarifications.
 """
 
 import logging
-from typing import Any, AsyncGenerator, Dict
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from server.utils.chat.streaming.response import (
     status_message,
@@ -16,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 async def execute(
-    tool_call: Dict[str, Any],
+    tool_call: dict[str, Any],
     llm_client,
-    config: Dict[str, Any],
+    config: dict[str, Any],
     message_list: list,
-    context_question_options: Dict[str, Any],
-) -> AsyncGenerator[Dict[str, Any], None]:
+    context_question_options: dict[str, Any],
+) -> AsyncGenerator[dict[str, Any], None]:
     """
     Execute the direct response tool.
 

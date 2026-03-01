@@ -62,22 +62,18 @@ async def openai_compatible_chat(
             # For streaming, return an async generator
             async def response_generator():
                 reasoning_started = False
-                async for chunk in await client.chat.completions.create(
-                    **params
-                ):
+                async for chunk in await client.chat.completions.create(**params):
                     # Format the response to match Ollama's format
                     if hasattr(chunk, "choices") and chunk.choices:
                         delta = chunk.choices[0].delta
                         content = (
-                            delta.content
-                            if hasattr(delta, "content") and delta.content
-                            else ""
+                            delta.content if hasattr(delta, "content") and delta.content else ""
                         )
 
                         # Check for reasoning in the delta (only used for Chat streaming)
-                        reasoning = getattr(
-                            delta, "reasoning", None
-                        ) or getattr(delta, "reasoning_content", None)
+                        reasoning = getattr(delta, "reasoning", None) or getattr(
+                            delta, "reasoning_content", None
+                        )
 
                         # Normalize reasoning to </think> tags for consistency
                         if reasoning:
@@ -149,9 +145,9 @@ async def openai_compatible_chat(
             }
 
             # Add reasoning to result if present
-            reasoning = getattr(
-                response.choices[0].message, "reasoning", None
-            ) or getattr(response.choices[0].message, "reasoning_content", None)
+            reasoning = getattr(response.choices[0].message, "reasoning", None) or getattr(
+                response.choices[0].message, "reasoning_content", None
+            )
 
             if reasoning:
                 result["message"]["reasoning"] = reasoning

@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import traceback
-from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body
 from fastapi.exceptions import HTTPException
@@ -49,9 +48,7 @@ _adaptive_refinement_running = False
 
 
 @router.post("/save")
-async def save_patient_data(
-    request: SavePatientRequest, background_tasks: BackgroundTasks
-):
+async def save_patient_data(request: SavePatientRequest, background_tasks: BackgroundTasks):
     """Saves patient data immediately and processes summarization in background.
 
     The save operation returns quickly without waiting for LLM calls.
@@ -119,27 +116,21 @@ async def process_encounter_summarization(
     """
     # Check if this task is still the latest one for this patient
     if not await summarization_manager.should_process(patient_id, task_token):
-        logging.info(
-            f"Skipping stale summarization task for patient {patient_id}"
-        )
+        logging.info(f"Skipping stale summarization task for patient {patient_id}")
         return
 
     try:
         logging.info(f"Processing summarization for patient {patient_id}")
 
         # Perform the actual summarization (LLM calls)
-        encounter_summary, primary_condition = await summarise_encounter(
-            patient=patient_data
-        )
+        encounter_summary, primary_condition = await summarise_encounter(patient=patient_data)
 
         # Update the patient record with the summary
         update_patient_summary(patient_id, encounter_summary, primary_condition)
 
         logging.info(f"Completed summarization for patient {patient_id}")
     except Exception as e:
-        logging.error(
-            f"Error in background summarization for patient {patient_id}: {e}"
-        )
+        logging.error(f"Error in background summarization for patient {patient_id}: {e}")
     finally:
         await summarization_manager.mark_complete(patient_id)
 
@@ -150,9 +141,7 @@ async def process_adaptive_refinement(template_key: str, refinement_data: dict):
 
     async with _adaptive_refinement_lock:
         if _adaptive_refinement_running:
-            logging.info(
-                "Adaptive refinement already in progress, skipping this request"
-            )
+            logging.info("Adaptive refinement already in progress, skipping this request")
             return
 
         _adaptive_refinement_running = True
@@ -165,18 +154,14 @@ async def process_adaptive_refinement(template_key: str, refinement_data: dict):
         # Get the template to validate it exists
         template_data = get_template_by_key(template_key, exact_match=False)
         if not template_data:
-            logging.warning(
-                f"Template '{template_key}' not found for adaptive refinement"
-            )
+            logging.warning(f"Template '{template_key}' not found for adaptive refinement")
             return
 
         for field_key, refinement_request in refinement_data.items():
             try:
                 # Find the specific field in the template
                 target_field_data = None
-                if "fields" in template_data and isinstance(
-                    template_data["fields"], list
-                ):
+                if "fields" in template_data and isinstance(template_data["fields"], list):
                     for field_dict in template_data["fields"]:
                         if field_dict.get("field_key") == field_key:
                             target_field_data = field_dict
@@ -188,20 +173,16 @@ async def process_adaptive_refinement(template_key: str, refinement_data: dict):
                     )
                     continue
 
-                existing_instructions = target_field_data.get(
-                    "adaptive_refinement_instructions"
-                )
+                existing_instructions = target_field_data.get("adaptive_refinement_instructions")
                 logging.info(
                     f"Processing refinement for field '{field_key}' with existing adaptive refinement instructions."
                 )
 
                 # Generate updated instructions
-                updated_instructions = (
-                    await generate_adaptive_refinement_suggestions(
-                        initial_content=refinement_request.initial_content,
-                        modified_content=refinement_request.modified_content,
-                        existing_instructions=existing_instructions,
-                    )
+                updated_instructions = await generate_adaptive_refinement_suggestions(
+                    initial_content=refinement_request.initial_content,
+                    modified_content=refinement_request.modified_content,
+                    existing_instructions=existing_instructions,
                 )
 
                 # Save the updated instructions
@@ -216,14 +197,10 @@ async def process_adaptive_refinement(template_key: str, refinement_data: dict):
                         f"Successfully updated adaptive instructions for field '{field_key}'"
                     )
                 else:
-                    logging.error(
-                        f"Failed to save adaptive instructions for field '{field_key}'"
-                    )
+                    logging.error(f"Failed to save adaptive instructions for field '{field_key}'")
 
             except Exception as e:
-                logging.error(
-                    f"Error processing adaptive refinement for field '{field_key}': {e}"
-                )
+                logging.error(f"Error processing adaptive refinement for field '{field_key}': {e}")
                 # Continue processing other fields even if one fails
                 continue
     finally:
@@ -234,9 +211,9 @@ async def process_adaptive_refinement(template_key: str, refinement_data: dict):
 @router.get("/list")
 async def get_patients(
     date: str,
-    template_key: Optional[str] = None,
-    detailed: Optional[str] = None,
-) -> List[Patient]:
+    template_key: str | None = None,
+    detailed: str | None = None,
+) -> list[Patient]:
     """Get patients for a specific date."""
     try:
         include_data = detailed and detailed.lower() == "true"
@@ -254,13 +231,9 @@ async def get_patients(
                             if isinstance(patient.get("jobs_list"), list)
                             else patient.get("jobs_list", "[]")
                         ),
-                        "encounter_summary": patient.get(
-                            "encounter_summary", ""
-                        ),
+                        "encounter_summary": patient.get("encounter_summary", ""),
                         "dob": patient["dob"],
-                        "reasoning": patient.get(
-                            "reasoning_output"
-                        ),  # Add this line
+                        "reasoning": patient.get("reasoning_output"),  # Add this line
                     }
                     for patient in patients
                 ]
@@ -305,7 +278,7 @@ async def get_patient(id: int, include_history: bool = False) -> Patient:
 
 
 @router.get("/id/{id}/history")
-async def get_patient_history_endpoint(id: int) -> List[Patient]:
+async def get_patient_history_endpoint(id: int) -> list[Patient]:
     """Get patient's historical encounters with persistent fields."""
     try:
         patient = get_patient_by_id(id)
@@ -320,7 +293,7 @@ async def get_patient_history_endpoint(id: int) -> List[Patient]:
 
 
 @router.get("/search")
-async def search_patient(ur_number: str) -> List[Patient]:
+async def search_patient(ur_number: str) -> list[Patient]:
     """Search for patients by UR number."""
     try:
         patients = search_patient_by_ur_number(ur_number)
@@ -333,8 +306,8 @@ async def search_patient(ur_number: str) -> List[Patient]:
 
 @router.get("/history")
 async def get_history_by_ur_number(
-    ur_number: str, template_key: Optional[str] = None
-) -> List[Patient]:
+    ur_number: str, template_key: str | None = None
+) -> list[Patient]:
     """Get patient's historical encounters by UR number, optionally filtered by template type."""
     try:
         history = get_patient_history(ur_number, template_key)
@@ -389,14 +362,12 @@ async def update_jobs_list(update: JobsListUpdate):
 @router.post("/update-jobs")
 async def update_jobs(
     patient_id: int,
-    jobs_list: List[dict] = Body(..., description="Updated jobs list"),
+    jobs_list: list[dict] = Body(..., description="Updated jobs list"),
 ):
     """Update a patient's jobs list."""
     try:
         update_patient_jobs_list(patient_id, jobs_list)
-        return JSONResponse(
-            content={"message": "Jobs list updated successfully"}
-        )
+        return JSONResponse(content={"message": "Jobs list updated successfully"})
     except Exception as e:
         logging.error(f"Error updating jobs list: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -405,7 +376,7 @@ async def update_jobs(
 @router.post("/update-jobs/{patient_id}")
 async def update_patient_jobs(
     patient_id: int,
-    jobs_list: List[dict] = Body(...),
+    jobs_list: list[dict] = Body(...),
 ):
     """Update a patient's jobs list."""
     try:
@@ -431,9 +402,7 @@ async def get_patients_with_jobs():
                     "encounter_summary": patient.get("encounter_summary", ""),
                     "dob": patient["dob"],
                     "encounter_date": patient["encounter_date"],
-                    "reasoning": patient.get(
-                        "reasoning_output"
-                    ),  # Add this line
+                    "reasoning": patient.get("reasoning_output"),  # Add this line
                 }
                 for patient in patients
             ]
@@ -448,9 +417,7 @@ async def get_incomplete_jobs_count():
     """Get the count of incomplete jobs."""
     try:
         incomplete_jobs_count = count_incomplete_jobs()
-        return JSONResponse(
-            content={"incomplete_jobs_count": incomplete_jobs_count}
-        )
+        return JSONResponse(content={"incomplete_jobs_count": incomplete_jobs_count})
     except Exception as e:
         logging.error(f"Error counting incomplete jobs: {e}")
         print("TRACEBACK:", traceback.format_exc())

@@ -9,7 +9,6 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from server._version import __version__
 
@@ -23,7 +22,7 @@ def _get_app_version() -> str:
     return __version__
 
 
-def create_backup(db_path: str, db_dir: Path) -> Optional[str]:
+def create_backup(db_path: str, db_dir: Path) -> str | None:
     """
     Create a backup of the database file before migrations.
 

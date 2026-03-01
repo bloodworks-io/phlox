@@ -9,7 +9,6 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import httpx
 
@@ -26,7 +25,7 @@ class DownloadProgress:
     downloaded_bytes: int
     total_bytes: int
     speed_bytes_per_sec: float
-    eta_seconds: Optional[float]
+    eta_seconds: float | None
     current_file: str  # "model" or "coreml"
 
 
@@ -133,7 +132,7 @@ class LlamaModelManager:
         self.models_dir = DATA_DIR / "llm_models"
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
-    def get_available_models(self) -> List[Dict]:
+    def get_available_models(self) -> list[dict]:
         """Get list of pre-configured models."""
         return [
             {
@@ -149,14 +148,12 @@ class LlamaModelManager:
                 "simple_name": info.get("simple_name", model_id),
                 "tier": info.get("tier", []),
                 "parameters_billions": info.get("parameters_billions"),
-                "active_parameters_billions": info.get(
-                    "active_parameters_billions"
-                ),
+                "active_parameters_billions": info.get("active_parameters_billions"),
             }
             for model_id, info in PRECONFIGURED_MODELS.items()
         ]
 
-    def get_downloaded_models(self) -> List[Dict]:
+    def get_downloaded_models(self) -> list[dict]:
         """Get list of downloaded models (should be max 1)."""
         models = []
 
@@ -176,9 +173,7 @@ class LlamaModelManager:
             for model_id, info in PRECONFIGURED_MODELS.items():
                 if info["filename"].lower() == filename.lower():
                     model_info = info
-                    matched_filename = info[
-                        "filename"
-                    ]  # Use the canonical filename
+                    matched_filename = info["filename"]  # Use the canonical filename
                     break
 
             if model_info:
@@ -218,7 +213,7 @@ class LlamaModelManager:
 
         return sorted(models, key=lambda m: m["size_mb"])
 
-    def get_model_path(self, filename: str) -> Optional[Path]:
+    def get_model_path(self, filename: str) -> Path | None:
         """Get the file path for a model."""
         model_file = self.models_dir / filename
         if model_file.exists():
@@ -238,9 +233,7 @@ class LlamaModelManager:
             except Exception as e:
                 logger.warning(f"Failed to delete {model_file.name}: {e}")
 
-    async def download_model(
-        self, model_id: str, progress_callback=None
-    ) -> str:
+    async def download_model(self, model_id: str, progress_callback=None) -> str:
         """Download a model. Deletes existing model first.
 
         Args:
@@ -266,9 +259,7 @@ class LlamaModelManager:
                 repo_id = parts[0]
                 filename = parts[1]
             else:
-                raise ValueError(
-                    f"Invalid custom model format. Use 'repo_id/filename.gguf'"
-                )
+                raise ValueError("Invalid custom model format. Use 'repo_id/filename.gguf'")
         else:
             raise ValueError(f"Unknown model: {model_id}")
 
@@ -288,49 +279,47 @@ class LlamaModelManager:
         last_downloaded = 0
 
         try:
-            async with httpx.AsyncClient(
-                timeout=timeout,
-                follow_redirects=True,
-                headers={"User-Agent": "phlox"},
-            ) as client:
-                async with client.stream("GET", url) as response:
-                    response.raise_for_status()
-                    total_size = int(response.headers.get("content-length", 0))
+            async with (
+                httpx.AsyncClient(
+                    timeout=timeout,
+                    follow_redirects=True,
+                    headers={"User-Agent": "phlox"},
+                ) as client,
+                client.stream("GET", url) as response,
+            ):
+                response.raise_for_status()
+                total_size = int(response.headers.get("content-length", 0))
 
-                    with open(model_file, "wb") as f:
-                        downloaded = 0
-                        async for chunk in response.aiter_bytes(8192):
-                            f.write(chunk)
-                            downloaded += len(chunk)
+                with open(model_file, "wb") as f:
+                    downloaded = 0
+                    async for chunk in response.aiter_bytes(8192):
+                        f.write(chunk)
+                        downloaded += len(chunk)
 
-                            # Calculate speed and ETA (update every ~0.5 seconds)
-                            current_time = time.time()
-                            if (
-                                progress_callback
-                                and total_size
-                                and (current_time - last_update_time) > 0.5
-                            ):
-                                speed = (downloaded - last_downloaded) / (
-                                    current_time - last_update_time
-                                )
-                                eta = (
-                                    (total_size - downloaded) / speed
-                                    if speed > 0
-                                    else None
-                                )
+                        # Calculate speed and ETA (update every ~0.5 seconds)
+                        current_time = time.time()
+                        if (
+                            progress_callback
+                            and total_size
+                            and (current_time - last_update_time) > 0.5
+                        ):
+                            speed = (downloaded - last_downloaded) / (
+                                current_time - last_update_time
+                            )
+                            eta = (total_size - downloaded) / speed if speed > 0 else None
 
-                                progress = DownloadProgress(
-                                    percentage=(downloaded / total_size) * 100,
-                                    downloaded_bytes=downloaded,
-                                    total_bytes=total_size,
-                                    speed_bytes_per_sec=speed,
-                                    eta_seconds=eta,
-                                    current_file="model",
-                                )
-                                await progress_callback(progress)
+                            progress = DownloadProgress(
+                                percentage=(downloaded / total_size) * 100,
+                                downloaded_bytes=downloaded,
+                                total_bytes=total_size,
+                                speed_bytes_per_sec=speed,
+                                eta_seconds=eta,
+                                current_file="model",
+                            )
+                            await progress_callback(progress)
 
-                                last_update_time = current_time
-                                last_downloaded = downloaded
+                            last_update_time = current_time
+                            last_downloaded = downloaded
 
             # Send final 100% progress
             if progress_callback and total_size:
@@ -383,9 +372,7 @@ class LlamaModelManager:
         try:
             selection_file.parent.mkdir(parents=True, exist_ok=True)
             selection_file.write_text(filename)
-            logger.info(
-                f"Wrote model selection to {selection_file}: {filename}"
-            )
+            logger.info(f"Wrote model selection to {selection_file}: {filename}")
         except Exception as e:
             logger.warning(f"Failed to write model selection file: {e}")
 
@@ -395,7 +382,7 @@ class LlamaModelManager:
         if selection_file.exists():
             try:
                 selection_file.unlink()
-                logger.info(f"Deleted model selection file")
+                logger.info("Deleted model selection file")
             except Exception as e:
                 logger.warning(f"Failed to delete model selection file: {e}")
 
@@ -403,7 +390,7 @@ class LlamaModelManager:
         """Get the filename for the default model (qwen3-4b)."""
         return PRECONFIGURED_MODELS["qwen3-4b"]["filename"]
 
-    def get_selected_model_id(self) -> Optional[str]:
+    def get_selected_model_id(self) -> str | None:
         """Get the model_id of the currently selected model.
 
         Reads the llm_model.txt file and maps the filename back to model_id

@@ -1,8 +1,6 @@
 """Local model manager for GGUF model file listing."""
 
 import logging
-from pathlib import Path
-from typing import Dict, List
 
 from server.constants import DATA_DIR
 
@@ -17,7 +15,7 @@ class LocalModelManager:
         self.models_dir = DATA_DIR / "llm_models"
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
-    async def list_models(self) -> List[Dict]:
+    async def list_models(self) -> list[dict]:
         """List available GGUF models in the models directory."""
         models = []
 

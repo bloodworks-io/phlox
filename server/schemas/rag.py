@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class CommitRequest(BaseModel):
     """
     Represents a request to commit a new document to a collection.
@@ -10,10 +11,12 @@ class CommitRequest(BaseModel):
         document_source (str): The source or origin of the document.
         filename (str): The name of the file to be committed.
     """
+
     disease_name: str
     focus_area: str
     document_source: str
     filename: str
+
 
 class ModifyCollectionRequest(BaseModel):
     """
@@ -23,8 +26,10 @@ class ModifyCollectionRequest(BaseModel):
         old_name (str): The current name of the collection to be modified.
         new_name (str): The new name to assign to the collection.
     """
+
     old_name: str
     new_name: str
+
 
 class DeleteFileRequest(BaseModel):
     """
@@ -34,5 +39,6 @@ class DeleteFileRequest(BaseModel):
         collection_name (str): The name of the collection containing the file.
         file_name (str): The name of the file to be deleted.
     """
+
     collection_name: str
     file_name: str

@@ -6,14 +6,15 @@ with standardized formats.
 """
 
 import logging
-from typing import Any, AsyncGenerator, Dict
+from collections.abc import AsyncGenerator
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 async def stream_llm_response(
     llm_client, model: str, messages: list, options: dict
-) -> AsyncGenerator[Dict[str, Any], None]:
+) -> AsyncGenerator[dict[str, Any], None]:
     """
     Stream an LLM chat response.
 
@@ -39,7 +40,7 @@ async def stream_llm_response(
             }
 
 
-def status_message(content: str) -> Dict[str, Any]:
+def status_message(content: str) -> dict[str, Any]:
     """
     Create a status message.
 
@@ -52,7 +53,7 @@ def status_message(content: str) -> Dict[str, Any]:
     return {"type": "status", "content": content}
 
 
-def chunk_message(content: str) -> Dict[str, Any]:
+def chunk_message(content: str) -> dict[str, Any]:
     """
     Create a chunk message.
 
@@ -65,7 +66,7 @@ def chunk_message(content: str) -> Dict[str, Any]:
     return {"type": "chunk", "content": content}
 
 
-def end_message(function_response=None) -> Dict[str, Any]:
+def end_message(function_response=None) -> dict[str, Any]:
     """
     Create an end message.
 
@@ -82,7 +83,7 @@ def end_message(function_response=None) -> Dict[str, Any]:
     }
 
 
-def start_message() -> Dict[str, Any]:
+def start_message() -> dict[str, Any]:
     """
     Create a start message.
 
@@ -92,7 +93,7 @@ def start_message() -> Dict[str, Any]:
     return {"type": "start", "content": ""}
 
 
-def tool_response_message(tool_call_id: str, content: str) -> Dict[str, Any]:
+def tool_response_message(tool_call_id: str, content: str) -> dict[str, Any]:
     """
     Create a tool response message for the message list.
 

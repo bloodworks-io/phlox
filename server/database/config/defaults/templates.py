@@ -1,11 +1,11 @@
-from typing import Any, Dict, List
+from typing import Any
 
 
 class DefaultTemplates:
     """Default clinical note templates with mandatory numbered plan."""
 
     @staticmethod
-    def get_plan_field() -> Dict[str, Any]:
+    def get_plan_field() -> dict[str, Any]:
         """Get the standard numbered plan field configuration."""
         return {
             "field_key": "plan",
@@ -21,7 +21,7 @@ class DefaultTemplates:
         }
 
     @classmethod
-    def get_default_templates(cls) -> List[Dict[str, Any]]:
+    def get_default_templates(cls) -> list[dict[str, Any]]:
         """Get all default templates."""
         return [
             {

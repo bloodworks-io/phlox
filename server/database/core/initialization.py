@@ -41,9 +41,7 @@ def initialize_templates(cursor, db):
             template = ClinicalTemplate(
                 template_key=template_data["template_key"],
                 template_name=template_data["template_name"],
-                fields=[
-                    TemplateField(**field) for field in template_data["fields"]
-                ],
+                fields=[TemplateField(**field) for field in template_data["fields"]],
             )
             now = datetime.now().isoformat()
             cursor.execute(
@@ -97,9 +95,7 @@ def set_initial_default_template(cursor, db):
             )
         else:
             # Get current default template
-            cursor.execute(
-                "SELECT id, default_template_key FROM user_settings LIMIT 1"
-            )
+            cursor.execute("SELECT id, default_template_key FROM user_settings LIMIT 1")
             row = cursor.fetchone()
             current_default = row["default_template_key"]
 
@@ -128,9 +124,7 @@ def set_initial_default_template(cursor, db):
                     "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
                     (default_template_key, row["id"]),
                 )
-                logging.info(
-                    f"Updated default template to: {default_template_key}"
-                )
+                logging.info(f"Updated default template to: {default_template_key}")
 
         db.commit()
     except Exception as e:

@@ -27,7 +27,6 @@ from server.utils.chat.tools.transcript_search import (
 )
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client.base import LLMProviderType
-from server.utils.llm_client.utils import ensure_system_messages_first
 from server.utils.llm_client.client import get_llm_client
 from server.utils.rag.chroma import CHROMADB_AVAILABLE, ChromaManager
 
@@ -63,23 +62,17 @@ class ChatEngine:
             self.chroma_manager = ChromaManager()
         else:
             self.chroma_manager = None
-            self.logger.warning(
-                "RAG dependencies not available. Literature search disabled."
-            )
+            self.logger.warning("RAG dependencies not available. Literature search disabled.")
 
         self.last_successful_collection = "misc"
 
-    async def get_streaming_response(
-        self, conversation_history: list, raw_transcription=None
-    ):
+    async def get_streaming_response(self, conversation_history: list, raw_transcription=None):
         """
         Generate a streaming response based on the conversation history and relevant literature.
         """
         prompts = config_manager.get_prompts_and_options()
         collection_names = (
-            self.chroma_manager.list_collections()
-            if self.chroma_manager is not None
-            else []
+            self.chroma_manager.list_collections() if self.chroma_manager is not None else []
         )
 
         context_question_options = prompts["options"]["general"]
@@ -92,9 +85,7 @@ class ChatEngine:
         # Filter out any system messages from conversation history to ensure
         # only the backend's system messages are used (prevents duplicates and
         # ensures system messages are only at the beginning)
-        filtered_history = [
-            m for m in cleaned_conversation_history if m.get("role") != "system"
-        ]
+        filtered_history = [m for m in cleaned_conversation_history if m.get("role") != "system"]
 
         message_list = self.CHAT_SYSTEM_MESSAGE + filtered_history
 
@@ -102,9 +93,7 @@ class ChatEngine:
         self.logger.info("Initial LLM call to determine tool usage...")
 
         # Get tool definitions (empty list if no collections available)
-        tools = (
-            get_tools_definition(collection_names) if collection_names else []
-        )
+        tools = get_tools_definition(collection_names) if collection_names else []
 
         try:
             response = await self.llm_client.chat(
@@ -159,9 +148,7 @@ class ChatEngine:
 
         except Exception as e:
             self.logger.error(f"Error processing tool call: {str(e)}")
-            yield status_message(
-                "Error processing request. Generating direct response..."
-            )
+            yield status_message("Error processing request. Generating direct response...")
 
             # Fallback to direct response in case of error
             async for chunk in stream_llm_response(
@@ -249,17 +236,13 @@ class ChatEngine:
                 ):
                     yield result
 
-    async def stream_chat(
-        self, conversation_history: list, raw_transcription=None
-    ):
+    async def stream_chat(self, conversation_history: list, raw_transcription=None):
         """Stream chat response from the LLM"""
         try:
             self.logger.info("Starting LLM stream...")
             yield start_message()
 
-            async for chunk in self.get_streaming_response(
-                conversation_history, raw_transcription
-            ):
+            async for chunk in self.get_streaming_response(conversation_history, raw_transcription):
                 yield chunk
 
         except Exception as e:
@@ -270,8 +253,6 @@ class ChatEngine:
 # Usage
 if __name__ == "__main__":
     chat_engine = ChatEngine()
-    conversation_history = [
-        {"role": "user", "content": "What are the symptoms of diabetes?"}
-    ]
+    conversation_history = [{"role": "user", "content": "What are the symptoms of diabetes?"}]
     response = chat_engine.chat(conversation_history)
     print(response)

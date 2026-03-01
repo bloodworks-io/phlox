@@ -148,11 +148,7 @@ Do not include any tab characters, extra whitespace, markdown, code fences, or f
 
         # Update plan field's style example
         plan_section = next(
-            (
-                s
-                for s in extracted.sections
-                if generate_field_key(s.field_name) == "plan"
-            ),
+            (s for s in extracted.sections if generate_field_key(s.field_name) == "plan"),
             None,
         )
 
@@ -164,14 +160,9 @@ Do not include any tab characters, extra whitespace, markdown, code fences, or f
             # Check if the example is already in a numbered format
             if not re.match(r"^\s*\d+\.", plan_example.lstrip()):
                 # Convert to numbered format if it's not already
-                lines = [
-                    line.strip()
-                    for line in plan_example.split("\n")
-                    if line.strip()
-                ]
+                lines = [line.strip() for line in plan_example.split("\n") if line.strip()]
                 plan_example = "\n".join(
-                    f"{i+1}. {line.lstrip('- •*').strip()}"
-                    for i, line in enumerate(lines)
+                    f"{i + 1}. {line.lstrip('- •*').strip()}" for i, line in enumerate(lines)
                 )
 
             plan_field["style_example"] = plan_example
@@ -180,9 +171,7 @@ Do not include any tab characters, extra whitespace, markdown, code fences, or f
         template_fields.append(TemplateField(**plan_field))
 
         # Generate a unique template key based on the suggested name
-        new_template_key = generate_unique_template_key(
-            extracted.suggested_name
-        )
+        new_template_key = generate_unique_template_key(extracted.suggested_name)
 
         template = ClinicalTemplate(
             template_key=new_template_key,

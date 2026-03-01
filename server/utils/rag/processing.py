@@ -1,16 +1,9 @@
-import asyncio
 import json
 import os
-
-import chromadb
-import fitz  # PyMuPDF
-from chromadb.config import Settings
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import ClinicalSuggestionList
 from server.utils.llm_client.client import get_llm_client
-
-from .semantic_chunker import ClusterSemanticChunker
 
 # Initialize ConfigManager
 config = config_manager.get_config()
@@ -44,9 +37,7 @@ async def generate_specialty_suggestions():
         json_schema_instruction = (
             "Output MUST be ONLY valid JSON with top-level key "
             '"suggestions" (array of objects with "question" string). Example: '
-            + json.dumps(
-                {"suggestions": [{"question": "..."}, {"question": "..."}]}
-            )
+            + json.dumps({"suggestions": [{"question": "..."}, {"question": "..."}]})
         )
 
         suggestion_prompt = f"""As an expert in {specialty}, generate 3 brief, focused clinical questions that are 4-5 words long.

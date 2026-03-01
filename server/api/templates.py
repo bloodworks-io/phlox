@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional
 
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
@@ -14,7 +13,7 @@ from server.database.entities.templates import (
     template_exists,
     update_template,
 )
-from server.schemas.templates import AdaptiveRefinementRequest, ClinicalTemplate
+from server.schemas.templates import ClinicalTemplate
 from server.utils.nlp_tools.templates import generate_template_from_note
 
 router = APIRouter()
@@ -25,9 +24,7 @@ async def set_default_template_endpoint(template_key: str):
     """Set the default template."""
     try:
         set_default_template(template_key)
-        return JSONResponse(
-            content={"message": f"Set {template_key} as default template"}
-        )
+        return JSONResponse(content={"message": f"Set {template_key} as default template"})
     except Exception as e:
         logging.error(f"Error setting default template: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -39,9 +36,7 @@ async def get_default_template_endpoint():
     try:
         template = get_default_template()
         if template is None:
-            raise HTTPException(
-                status_code=404, detail="No default template set"
-            )
+            raise HTTPException(status_code=404, detail="No default template set")
         return JSONResponse(content={"template_key": template["template_key"]})
     except HTTPException as he:
         raise he
@@ -68,15 +63,11 @@ async def delete_template(template_key: str):
     """Delete a template if it's not a default template."""
     try:
         if template_key.startswith(("phlox_", "soap_", "progress_")):
-            raise HTTPException(
-                status_code=403, detail="Cannot delete default templates"
-            )
+            raise HTTPException(status_code=403, detail="Cannot delete default templates")
 
         success = soft_delete_template(template_key)
         if success:
-            return JSONResponse(
-                content={"message": f"Template {template_key} deleted"}
-            )
+            return JSONResponse(content={"message": f"Template {template_key} deleted"})
         raise HTTPException(status_code=404, detail="Template not found")
     except HTTPException as he:
         raise he
@@ -108,12 +99,8 @@ async def reset_adaptive_instructions(template_key: str, field_key: str):
         )
 
 
-@router.post(
-    "/{template_key}/fields/{field_key}/adaptive-instructions/consolidate"
-)
-async def consolidate_adaptive_instructions_endpoint(
-    template_key: str, field_key: str
-):
+@router.post("/{template_key}/fields/{field_key}/adaptive-instructions/consolidate")
+async def consolidate_adaptive_instructions_endpoint(template_key: str, field_key: str):
     """
     Consolidate the adaptive refinement instructions for a given field in a template.
     This resolves contradictions, merges redundancy, and simplifies complex instructions.
@@ -145,9 +132,7 @@ async def consolidate_adaptive_instructions_endpoint(
         )
 
     # Get current instructions
-    previous_instructions = target_field.get(
-        "adaptive_refinement_instructions", []
-    )
+    previous_instructions = target_field.get("adaptive_refinement_instructions", [])
 
     if not previous_instructions:
         return JSONResponse(
@@ -184,9 +169,7 @@ async def consolidate_adaptive_instructions_endpoint(
         content={
             "message": f"Adaptive instructions for field '{field_key}' in template '{template_key}' have been consolidated.",
             "previous_instructions": previous_instructions,
-            "consolidated_instructions": consolidation_result[
-                "consolidated_instructions"
-            ],
+            "consolidated_instructions": consolidation_result["consolidated_instructions"],
             "changes_made": consolidation_result["changes_made"],
             "reason": consolidation_result["reason"],
         }
@@ -198,9 +181,7 @@ async def get_templates():
     """Get all available templates."""
     try:
         templates = get_all_templates()
-        templates_list = (
-            list(templates) if isinstance(templates, dict) else templates
-        )
+        templates_list = list(templates) if isinstance(templates, dict) else templates
         return JSONResponse(content=templates_list)
     except Exception as e:
         logging.error(f"Error fetching templates: {e}")
@@ -209,13 +190,11 @@ async def get_templates():
 
 @router.post("")
 async def save_templates(
-    templates: List[dict] = Body(..., description="List of templates to save")
+    templates: list[dict] = Body(..., description="List of templates to save"),
 ):
     """Save or update multiple templates."""
     try:
-        template_objects = [
-            ClinicalTemplate(**template) for template in templates
-        ]
+        template_objects = [ClinicalTemplate(**template) for template in templates]
         results = []
         updated_keys = {}
 
@@ -223,13 +202,9 @@ async def save_templates(
             if template_exists(template.template_key):
                 new_key = update_template(template)
                 if new_key == template.template_key:
-                    results.append(
-                        f"No changes detected for template: {template.template_name}"
-                    )
+                    results.append(f"No changes detected for template: {template.template_name}")
                 else:
-                    results.append(
-                        f"Updated template: {template.template_name}"
-                    )
+                    results.append(f"Updated template: {template.template_name}")
                 updated_keys[template.template_key] = new_key
             else:
                 save_template(template)

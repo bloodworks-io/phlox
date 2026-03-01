@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from server.database.core.connection import get_db
 from server.database.entities.jobs import (
@@ -60,7 +60,9 @@ def save_patient(patient: Patient) -> int:
         jobs_list_json = (
             json.dumps(jobs_list)
             if isinstance(jobs_list, (list, dict))
-            else jobs_list if isinstance(jobs_list, str) else "[]"
+            else jobs_list
+            if isinstance(jobs_list, str)
+            else "[]"
         )
         get_db().cursor.execute(
             """
@@ -198,7 +200,9 @@ def update_patient(patient: Patient) -> None:
     jobs_list_json = (
         json.dumps(jobs_list)
         if isinstance(jobs_list, (list, dict))
-        else jobs_list if isinstance(jobs_list, str) else "[]"
+        else jobs_list
+        if isinstance(jobs_list, str)
+        else "[]"
     )
 
     # Update the database
@@ -268,8 +272,8 @@ def update_patient_reasoning(patient_id: int, reasoning_output: dict) -> None:
 
 
 def get_patients_by_date(
-    date: str, template_key: Optional[str] = None, include_data: bool = False
-) -> List[Dict[str, Any]]:
+    date: str, template_key: str | None = None, include_data: bool = False
+) -> list[dict[str, Any]]:
     """
     Retrieve patients with encounters on a specific date.
 
@@ -326,9 +330,7 @@ def get_patients_by_date(
                 # Process reasoning output if present
                 if patient.get("reasoning_output"):
                     try:
-                        patient["reasoning_output"] = json.loads(
-                            patient["reasoning_output"]
-                        )
+                        patient["reasoning_output"] = json.loads(patient["reasoning_output"])
                     except json.JSONDecodeError:
                         patient["reasoning_output"] = None
 
@@ -339,7 +341,7 @@ def get_patients_by_date(
         raise
 
 
-def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
+def get_patient_by_id(patient_id: int) -> dict[str, Any] | None:
     """
     Retrieve a patient by ID.
 
@@ -350,9 +352,7 @@ def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
         Optional[Dict[str, Any]]: Patient data if found.
     """
     try:
-        get_db().cursor.execute(
-            "SELECT * FROM patients WHERE id = ?", (patient_id,)
-        )
+        get_db().cursor.execute("SELECT * FROM patients WHERE id = ?", (patient_id,))
         row = get_db().cursor.fetchone()
         if row:
             patient = dict(row)
@@ -361,9 +361,7 @@ def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
 
             if patient.get("reasoning_output"):
                 try:
-                    patient["reasoning_output"] = json.loads(
-                        patient["reasoning_output"]
-                    )
+                    patient["reasoning_output"] = json.loads(patient["reasoning_output"])
                 except json.JSONDecodeError:
                     patient["reasoning_output"] = None
             return patient
@@ -373,7 +371,7 @@ def get_patient_by_id(patient_id: int) -> Optional[Dict[str, Any]]:
         raise
 
 
-def get_patient_history(ur_number: str, template_key: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_patient_history(ur_number: str, template_key: str | None = None) -> list[dict[str, Any]]:
     """
     Get a patient's historical encounters with persistent fields.
 
@@ -415,13 +413,10 @@ def get_patient_history(ur_number: str, template_key: Optional[str] = None) -> L
                 continue
 
             persistent_fields = get_persistent_fields(row["template_key"])
-            template_data = (
-                json.loads(row["template_data"]) if row["template_data"] else {}
-            )
+            template_data = json.loads(row["template_data"]) if row["template_data"] else {}
 
             persistent_data = {
-                field.field_key: template_data.get(field.field_key)
-                for field in persistent_fields
+                field.field_key: template_data.get(field.field_key) for field in persistent_fields
             }
 
             encounters.append(
@@ -439,7 +434,7 @@ def get_patient_history(ur_number: str, template_key: Optional[str] = None) -> L
         raise
 
 
-def search_patient_by_ur_number(ur_number: str) -> List[Dict[str, Any]]:
+def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
     """
     Search for patients by UR number, returning data in the same format as get_patient_history.
 
@@ -467,11 +462,7 @@ def search_patient_by_ur_number(ur_number: str) -> List[Dict[str, Any]]:
             template = get_template_by_key(row["template_key"])
             if template:
                 persistent_fields = get_persistent_fields(row["template_key"])
-                template_data = (
-                    json.loads(row["template_data"])
-                    if row["template_data"]
-                    else {}
-                )
+                template_data = json.loads(row["template_data"]) if row["template_data"] else {}
 
                 persistent_data = {
                     field.field_key: template_data.get(field.field_key)
@@ -508,9 +499,7 @@ def delete_patient_by_id(patient_id: int) -> bool:
         bool: True if deleted successfully.
     """
     try:
-        get_db().cursor.execute(
-            "DELETE FROM patients WHERE id = ?", (patient_id,)
-        )
+        get_db().cursor.execute("DELETE FROM patients WHERE id = ?", (patient_id,))
         get_db().commit()
         return get_db().cursor.rowcount > 0
     except Exception as e:
@@ -518,9 +507,7 @@ def delete_patient_by_id(patient_id: int) -> bool:
         raise
 
 
-def update_patient_summary(
-    patient_id: int, encounter_summary: str, primary_condition: str
-) -> None:
+def update_patient_summary(patient_id: int, encounter_summary: str, primary_condition: str) -> None:
     """
     Update only the encounter summary and primary condition fields for a patient.
 

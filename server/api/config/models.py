@@ -27,9 +27,7 @@ async def update_options(category: str, data: dict = Body(...)):
 
 @router.get("/llm/models")
 async def get_llm_models(
-    provider: str = Query(
-        ..., description="LLM provider type (ollama, openai, or local)"
-    ),
+    provider: str = Query(..., description="LLM provider type (ollama, openai, or local)"),
     baseUrl: str = Query(None, description="The base URL for the LLM API"),
     apiKey: str = Query(None, description="API key (required for OpenAI)"),
 ):
@@ -53,9 +51,7 @@ async def get_llm_models(
 
         elif provider.lower() == "ollama":
             if not baseUrl:
-                raise HTTPException(
-                    status_code=400, detail="baseUrl is required for Ollama"
-                )
+                raise HTTPException(status_code=400, detail="baseUrl is required for Ollama")
 
             async with httpx.AsyncClient() as client:
                 url = f"{baseUrl}/api/tags"
@@ -71,9 +67,7 @@ async def get_llm_models(
 
         elif provider.lower() == "openai":
             if not baseUrl:
-                raise HTTPException(
-                    status_code=400, detail="baseUrl is required for OpenAI"
-                )
+                raise HTTPException(status_code=400, detail="baseUrl is required for OpenAI")
 
             # For OpenAI-compatible endpoints
             headers = {"Authorization": f"Bearer {apiKey}"} if apiKey else {}
@@ -89,9 +83,7 @@ async def get_llm_models(
 
                         # Extract model names from response
                         if isinstance(data, dict) and "data" in data:
-                            model_list = [
-                                model.get("id") for model in data["data"]
-                            ]
+                            model_list = [model.get("id") for model in data["data"]]
 
                         return {"models": model_list}
                     elif response.status_code in [401, 403]:
@@ -118,9 +110,7 @@ async def get_llm_models(
 
 @router.get("/whisper/models")
 async def get_whisper_models(
-    whisperEndpoint: str = Query(
-        ..., description="The endpoint for Whisper API"
-    )
+    whisperEndpoint: str = Query(..., description="The endpoint for Whisper API"),
 ):
     """Fetch available Whisper models from the configured endpoint. Only works if the instance has a /v1/models endpoint (eg Speaches); otherwise returns an empty list"""
     try:
@@ -152,9 +142,7 @@ async def get_whisper_models(
                     if models:
                         return {"models": models, "listAvailable": True}
             except Exception as e:
-                logging.warning(
-                    f"Could not fetch Whisper models from endpoint: {e}"
-                )
+                logging.warning(f"Could not fetch Whisper models from endpoint: {e}")
 
         # If we couldn't get models from the API or none were found,
         # indicate that no model list is available

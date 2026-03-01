@@ -38,15 +38,11 @@ def is_db_initialized() -> bool:
 def get_db() -> "PatientDatabase":
     """Get the database singleton. Raises error if not initialized."""
     if _db_instance is None:
-        raise RuntimeError(
-            "Database not initialized. Call initialize_database() first."
-        )
+        raise RuntimeError("Database not initialized. Call initialize_database() first.")
     return _db_instance
 
 
-def initialize_database(
-    passphrase: str = None, db_dir=DATA_DIR
-) -> "PatientDatabase":
+def initialize_database(passphrase: str = None, db_dir=DATA_DIR) -> "PatientDatabase":
     """Initialize the database singleton with optional passphrase.
 
     Args:
@@ -105,9 +101,7 @@ class PatientDatabase:
                     logging.info("Database decrypted successfully")
                     self.cursor.execute("SELECT count(*) FROM sqlite_master")
                 except sqlite3.DatabaseError:
-                    logging.error(
-                        "Failed to decrypt existing database. Wrong encryption key?"
-                    )
+                    logging.error("Failed to decrypt existing database. Wrong encryption key?")
                     raise ValueError("Cannot decrypt database - wrong key?")
             else:
                 # New database - set up encryption
@@ -141,11 +135,7 @@ class PatientDatabase:
 
         # Set up database name and path first (needed for error handling)
         self.is_test = os.environ.get("TESTING", "False").lower() == "true"
-        self.db_name = (
-            "test_phlox_database.sqlite"
-            if self.is_test
-            else "phlox_database.sqlite"
-        )
+        self.db_name = "test_phlox_database.sqlite" if self.is_test else "phlox_database.sqlite"
         self.db_path = os.path.join(self.db_dir, self.db_name)
 
         # If passphrase not provided, try env/secret sources
@@ -154,7 +144,7 @@ class PatientDatabase:
             secret_file = "/run/secrets/db_encryption_key"
             if os.path.exists(secret_file):
                 try:
-                    with open(secret_file, "r") as f:
+                    with open(secret_file) as f:
                         self.encryption_key = f.read().strip()
                     logging.info("Using encryption key from Podman secret")
                 except Exception as e:
@@ -195,9 +185,7 @@ class PatientDatabase:
         self.connect_to_database()
         run_migrations(self)  # Run migrations first to create tables
         self.ensure_default_templates()  # Then ensure default templates
-        set_initial_default_template(
-            self.cursor, self.db
-        )  # Set phlox as default template
+        set_initial_default_template(self.cursor, self.db)  # Set phlox as default template
 
     def test_database(self):
         """Test database functionality with sample data.

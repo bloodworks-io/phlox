@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+
 
 class Message(BaseModel):
     """
@@ -9,8 +9,10 @@ class Message(BaseModel):
         role (str): The role of the message sender (e.g., 'user', 'assistant').
         content (str): The content of the message.
     """
+
     role: str
     content: str
+
 
 class ChatRequest(BaseModel):
     """
@@ -20,8 +22,10 @@ class ChatRequest(BaseModel):
         messages (List[dict]): A list of message dictionaries, each containing 'role' and 'content'.
         raw_transcription (Optional[str]): Raw transcription data, if available.
     """
-    messages: List[dict]
-    raw_transcription: Optional[str] = None
+
+    messages: list[dict]
+    raw_transcription: str | None = None
+
 
 class ChatResponse(BaseModel):
     """
@@ -31,5 +35,6 @@ class ChatResponse(BaseModel):
         message (str): The response message content.
         context (dict, optional): Additional context information, if any.
     """
+
     message: str
     context: dict = None

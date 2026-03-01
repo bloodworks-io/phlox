@@ -2,7 +2,6 @@ import json
 from threading import Lock
 
 import sqlcipher3 as sqlite3
-
 from server.database.core.connection import get_db, is_db_initialized
 
 
@@ -15,7 +14,7 @@ class ConfigManager:
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
-                cls._instance = super(ConfigManager, cls).__new__(cls)
+                cls._instance = super().__new__(cls)
                 cls._instance.db = get_db()
                 if cls._instance._is_database_empty():
                     cls._instance._initialize_database()
@@ -138,12 +137,7 @@ class ConfigManager:
 
         # Update only if the key is present and convert types
         for key, value in new_options.items():
-            if (
-                key in self.options[category]
-                or key == "num_ctx"
-                or key == "temperature"
-            ):
-
+            if key in self.options[category] or key == "num_ctx" or key == "temperature":
                 # Convert types before saving
                 if key == "temperature":
                     value = float(value)
@@ -203,9 +197,7 @@ class ConfigManager:
                     settings["has_completed_splash_screen"]
                 )
             if "scribe_is_ambient" in settings:
-                settings["scribe_is_ambient"] = bool(
-                    settings["scribe_is_ambient"]
-                )
+                settings["scribe_is_ambient"] = bool(settings["scribe_is_ambient"])
             return settings
         return {
             "name": "",
@@ -243,18 +235,10 @@ class ConfigManager:
                 settings.get("specialty", ""),
                 settings.get("quick_chat_1_title", "Critique my plan"),
                 settings.get("quick_chat_1_prompt", "Critique my plan"),
-                settings.get(
-                    "quick_chat_2_title", "Any additional investigations"
-                ),
-                settings.get(
-                    "quick_chat_2_prompt", "Any additional investigations"
-                ),
-                settings.get(
-                    "quick_chat_3_title", "Any differentials to consider"
-                ),
-                settings.get(
-                    "quick_chat_3_prompt", "Any differentials to consider"
-                ),
+                settings.get("quick_chat_2_title", "Any additional investigations"),
+                settings.get("quick_chat_2_prompt", "Any additional investigations"),
+                settings.get("quick_chat_3_title", "Any differentials to consider"),
+                settings.get("quick_chat_3_prompt", "Any differentials to consider"),
                 settings.get("default_template_key"),
                 settings.get("default_letter_template_id"),
                 bool(settings.get("has_completed_splash_screen", False)),

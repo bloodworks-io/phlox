@@ -7,14 +7,15 @@ to determine which actions to take based on user input.
 
 import json
 import logging
-from typing import Any, AsyncGenerator, Dict, List
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from server.utils.helpers import clean_think_tags
 
 logger = logging.getLogger(__name__)
 
 
-def get_tools_definition(collection_names: List[str]) -> List[Dict[str, Any]]:
+def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
     """
     Get the tools definition based on available collections.
 
@@ -81,13 +82,13 @@ def get_tools_definition(collection_names: List[str]) -> List[Dict[str, Any]]:
 
 
 async def execute_tool_call(
-    tool_call: Dict[str, Any],
+    tool_call: dict[str, Any],
     chat_engine: Any,
-    message_list: List[Dict[str, str]],
-    conversation_history: List[Dict[str, str]],
+    message_list: list[dict[str, str]],
+    conversation_history: list[dict[str, str]],
     raw_transcription: str,
-    context_question_options: Dict[str, Any],
-) -> AsyncGenerator[Dict[str, Any], None]:
+    context_question_options: dict[str, Any],
+) -> AsyncGenerator[dict[str, Any], None]:
     """
     Execute a tool call and yield streaming responses.
 
@@ -109,9 +110,7 @@ async def execute_tool_call(
         # Parse function arguments from JSON string if needed
         try:
             if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(
-                    tool_call["function"]["arguments"]
-                )
+                function_arguments = json.loads(tool_call["function"]["arguments"])
             else:
                 function_arguments = tool_call["function"]["arguments"]
         except json.JSONDecodeError:
@@ -198,9 +197,7 @@ async def execute_tool_call(
                 options=context_question_options,
             )
 
-            transcript_info = transcript_response.get("message", {}).get(
-                "content", ""
-            )
+            transcript_info = transcript_response.get("message", {}).get("content", "")
 
             # Clean think tags
             cleaned_transcript_info = ""
@@ -211,13 +208,9 @@ async def execute_tool_call(
                 and isinstance(cleaned_result[0], dict)
                 and "content" in cleaned_result[0]
             ):
-                cleaned_transcript_info = str(
-                    cleaned_result[0].get("content", "")
-                )
+                cleaned_transcript_info = str(cleaned_result[0].get("content", ""))
 
-            logger.info(
-                f"Transcript query result: {cleaned_transcript_info[:200]}..."
-            )
+            logger.info(f"Transcript query result: {cleaned_transcript_info[:200]}...")
 
             # Add transcript info to original conversation as a tool response
             message_list.append(
@@ -283,9 +276,7 @@ async def execute_tool_call(
             )
             function_response = None
         else:
-            logger.info(
-                f"Retrieved relevant literature for disease: {disease_name}"
-            )
+            logger.info(f"Retrieved relevant literature for disease: {disease_name}")
             if isinstance(function_response_list, list):
                 function_response_string = "\n".join(function_response_list)
             else:
@@ -295,9 +286,7 @@ async def execute_tool_call(
             message_list.append(
                 {
                     "role": "tool",
-                    "tool_call_id": (
-                        tool_call.get("id", "") if tool_call else ""
-                    ),
+                    "tool_call_id": (tool_call.get("id", "") if tool_call else ""),
                     "content": f"The below text excerpts are taken from relevant sections of the guidelines; these may help you answer the user's question. The user has not sent you these documents, they have come from your own database.\n\n{function_response_string}",
                 }
             )

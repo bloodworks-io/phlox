@@ -9,7 +9,6 @@ import secrets
 import socket
 import sys
 from contextlib import asynccontextmanager, closing
-from pathlib import Path
 
 import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -21,7 +20,6 @@ from fastapi.staticfiles import StaticFiles
 from server.constants import (
     APP_NAME,
     BUILD_DIR,
-    DATA_DIR,
     IS_DOCKER,
     IS_TESTING,
     PROXY_AUTH_ENABLED,
@@ -53,7 +51,6 @@ scheduler = AsyncIOScheduler()
 
 # Local request token for API authentication (desktop mode only)
 from server.utils.local_request_token import get_request_token, set_request_token
-
 
 if IS_TESTING:
     try:
@@ -98,7 +95,6 @@ def initialize_and_get_app():
     """
     # Initialize config_manager and run migrations
     logger.info("Initializing DB and running migrations...")
-    from server.database.config.manager import config_manager
 
     logger.info("Database initialized")
 
@@ -174,9 +170,7 @@ def initialize_and_get_app():
                 return {"success": "Database test succeeded", "result": result}
             except Exception as e:
                 logger.error(f"Database test failed: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail=f"Database test failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"Database test failed: {str(e)}")
 
     # Include routers
     app.include_router(patient.router, prefix="/api/patient")
@@ -193,9 +187,7 @@ def initialize_and_get_app():
         app.include_router(rag.router, prefix="/api/rag")
         app.include_router(chat.router, prefix="/api/chat")
     else:
-        logger.warning(
-            "RAG/Chat features disabled - dependencies not available."
-        )
+        logger.warning("RAG/Chat features disabled - dependencies not available.")
 
     app.include_router(config_router, prefix="/api/config")
     app.include_router(templates.router, prefix="/api/templates")

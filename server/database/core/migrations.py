@@ -48,9 +48,7 @@ def run_migrations(patient_db):
             for version in range(current_version + 1, SCHEMA_VERSION + 1):
                 migration_func = globals().get(f"migrate_to_v{version}")
                 if not migration_func:
-                    raise RuntimeError(
-                        f"Missing migration function: migrate_to_v{version}"
-                    )
+                    raise RuntimeError(f"Missing migration function: migrate_to_v{version}")
 
                 logging.info(f"Running migration to version {version}")
                 print(f"Running migration to version {version}")
@@ -114,15 +112,9 @@ def migrate_to_v1(cursor, db):
     )
 
     # Create indexes
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_date ON patients (encounter_date)"
-    )
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_ur_number ON patients (ur_number)"
-    )
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_template_key ON patients (template_key)"
-    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_encounter_date ON patients (encounter_date)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ur_number ON patients (ur_number)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_template_key ON patients (template_key)")
 
     # Dashboard tables
     cursor.execute(
@@ -389,9 +381,7 @@ def migrate_to_v3(cursor, db):
             "SECONDARY_MODEL": existing_config.get("SECONDARY_MODEL", ""),
             "EMBEDDING_MODEL": existing_config.get("EMBEDDING_MODEL", ""),
             "REASONING_MODEL": existing_config.get("REASONING_MODEL", ""),
-            "REASONING_ENABLED": existing_config.get(
-                "REASONING_ENABLED", False
-            ),
+            "REASONING_ENABLED": existing_config.get("REASONING_ENABLED", False),
             # New configuration keys
             "LLM_PROVIDER": llm_provider,
             "LLM_API_KEY": llm_api_key,
@@ -423,9 +413,7 @@ def migrate_to_v3(cursor, db):
             }
 
         # Get all existing templates
-        cursor.execute(
-            "SELECT template_key, template_name, fields FROM clinical_templates"
-        )
+        cursor.execute("SELECT template_key, template_name, fields FROM clinical_templates")
         templates = cursor.fetchall()
 
         for template in templates:
@@ -445,22 +433,17 @@ def migrate_to_v3(cursor, db):
                 if "style_example" not in updated_field:
                     if (
                         is_default_template
-                        and field["field_key"]
-                        in default_fields_by_template[template_base]
+                        and field["field_key"] in default_fields_by_template[template_base]
                     ):
                         # Use style_example from default template
-                        default_field = default_fields_by_template[
-                            template_base
-                        ][field["field_key"]]
-                        updated_field["style_example"] = default_field.get(
-                            "style_example", ""
-                        )
+                        default_field = default_fields_by_template[template_base][
+                            field["field_key"]
+                        ]
+                        updated_field["style_example"] = default_field.get("style_example", "")
 
                         # Also update format_schema if it's changed in defaults
                         if "format_schema" in default_field:
-                            updated_field["format_schema"] = default_field[
-                                "format_schema"
-                            ]
+                            updated_field["format_schema"] = default_field["format_schema"]
                     else:
                         # Custom template, use placeholder
                         updated_field["style_example"] = ""
@@ -500,9 +483,7 @@ def migrate_to_v4(cursor, db):
         logging.info("Successfully added has_completed_splash_screen column")
 
         # Add Dictation template
-        dictation_name, dictation_instructions = (
-            DefaultLetters.get_dictation_template()
-        )
+        dictation_name, dictation_instructions = DefaultLetters.get_dictation_template()
         cursor.execute(
             """
             INSERT INTO letter_templates (name, instructions)
@@ -549,9 +530,7 @@ def migrate_to_v4(cursor, db):
                     (json.dumps(fields), template_key),
                 )
         db.commit()
-        logging.info(
-            "Successfully replaced &nbsp; with empty string in templates"
-        )
+        logging.info("Successfully replaced &nbsp; with empty string in templates")
 
     except Exception as e:
         logging.error(f"Error during v4 migration: {e}")

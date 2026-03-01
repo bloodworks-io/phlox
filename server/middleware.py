@@ -7,7 +7,6 @@ import time
 
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
 
 logger = logging.getLogger(__name__)
 
@@ -115,11 +114,7 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
         forwarded_for = request.headers.get("x-forwarded-for")
 
         # Only trust X-Forwarded-For if the direct connection is from a private IP
-        if (
-            forwarded_for
-            and client_host != "unknown"
-            and self._is_private_ip(client_host)
-        ):
+        if forwarded_for and client_host != "unknown" and self._is_private_ip(client_host):
             # Take the first IP in the chain (original client)
             request.state.client_ip = forwarded_for.split(",")[0].strip()
         else:
@@ -156,9 +151,7 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
         # Get expected token
         expected_token = get_request_token()
         if not expected_token:
-            logger.warning(
-                f"Auth bypassed - no request token set (path: {path})"
-            )
+            logger.warning(f"Auth bypassed - no request token set (path: {path})")
             # Server not fully initialized yet, allow through
             return await call_next(request)
 
@@ -173,12 +166,8 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
 
         provided_token = auth_header[7:]  # remove "Bearer " prefix
         if not secrets.compare_digest(provided_token, expected_token):
-            logger.warning(
-                f"Invalid token for {path} (got {provided_token[:8]}...)"
-            )
-            return JSONResponse(
-                status_code=403, content={"detail": "Invalid request token"}
-            )
+            logger.warning(f"Invalid token for {path} (got {provided_token[:8]}...)")
+            return JSONResponse(status_code=403, content={"detail": "Invalid request token"})
 
         return await call_next(request)
 
@@ -225,26 +214,18 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
         if client_host == "unknown" or not self._is_private_ip(client_host):
             # Direct connection from public IP - reject or fall through
             # Since proxy auth is enabled, we require the header
-            logger.warning(
-                f"Proxy auth header received from non-private IP: {client_host}"
-            )
-            return JSONResponse(
-                status_code=401, content={"detail": "Authentication required"}
-            )
+            logger.warning(f"Proxy auth header received from non-private IP: {client_host}")
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
         # Get user from header
         user = request.headers.get(PROXY_AUTH_USER_HEADER)
 
         if not user:
-            return JSONResponse(
-                status_code=401, content={"detail": "Authentication required"}
-            )
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
         if PROXY_AUTH_ALLOWED_USERS and user not in PROXY_AUTH_ALLOWED_USERS:
             logger.warning(f"Access denied for user: {user}")
-            return JSONResponse(
-                status_code=403, content={"detail": "Access denied"}
-            )
+            return JSONResponse(status_code=403, content={"detail": "Access denied"})
 
         # Store user for downstream use
         request.state.user = user
@@ -307,9 +288,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 return prefix
         return "/api/default"
 
-    async def _cleanup_old_requests(
-        self, client_ip: str, endpoint: str, now: float
-    ):
+    async def _cleanup_old_requests(self, client_ip: str, endpoint: str, now: float):
         """Remove requests older than the window and prune empty keys."""
         if client_ip in self._request_history:
             if endpoint in self._request_history[client_ip]:
@@ -352,9 +331,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 del cls._request_history[ip]
 
         if ips_to_delete:
-            logger.debug(
-                f"Cleaned up {len(ips_to_delete)} stale IPs from rate limiter"
-            )
+            logger.debug(f"Cleaned up {len(ips_to_delete)} stale IPs from rate limiter")
 
     async def dispatch(self, request, call_next):
         from server.constants import RATE_LIMIT_ENABLED
@@ -413,8 +390,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             # Check if rate limit exceeded
             if requests_in_window >= effective_limit:
                 retry_after = int(
-                    self.WINDOW_SECONDS
-                    - (now - self._request_history[client_ip][endpoint][0])
+                    self.WINDOW_SECONDS - (now - self._request_history[client_ip][endpoint][0])
                 )
                 logger.warning(f"Rate limit exceeded for {client_ip} on {path}")
                 return JSONResponse(
@@ -441,8 +417,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-RateLimit-Limit"] = str(rate_limit)
         response.headers["X-RateLimit-Remaining"] = str(remaining)
-        response.headers["X-RateLimit-Reset"] = str(
-            int(now + self.WINDOW_SECONDS)
-        )
+        response.headers["X-RateLimit-Reset"] = str(int(now + self.WINDOW_SECONDS))
 
         return response

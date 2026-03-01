@@ -46,9 +46,7 @@ async def get_downloaded_whisper_models():
 
 @router.post("/local/whisper/models/download")
 async def download_whisper_model(
-    model_id: str = Body(
-        ..., embed=True, description="Whisper model ID to download"
-    )
+    model_id: str = Body(..., embed=True, description="Whisper model ID to download"),
 ):
     """Download a Whisper model."""
     if IS_DOCKER:
@@ -64,9 +62,7 @@ async def download_whisper_model(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error downloading model {model_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to download model: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to download model: {str(e)}")
 
 
 @router.get("/local/whisper/models/download/stream")
@@ -100,9 +96,7 @@ async def download_whisper_model_stream(model_id: str):
 
         # Start download in background task
         download_task = asyncio.create_task(
-            whisper_model_manager.download_model(
-                model_id, progress_callback=progress_callback
-            )
+            whisper_model_manager.download_model(model_id, progress_callback=progress_callback)
         )
 
         # Send start event
@@ -113,7 +107,7 @@ async def download_whisper_model_stream(model_id: str):
                 try:
                     progress = await asyncio.wait_for(queue.get(), timeout=0.5)
                     yield f"data: {json.dumps(progress)}\n\n"
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Send keepalive to prevent connection timeout
                     yield ": keepalive\n\n"
 

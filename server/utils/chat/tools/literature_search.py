@@ -7,7 +7,8 @@ This tool searches the medical literature database for relevant information.
 import json
 import logging
 import re
-from typing import Any, AsyncGenerator, Dict
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from server.utils.chat.streaming.response import (
     end_message,
@@ -21,16 +22,10 @@ logger = logging.getLogger(__name__)
 
 def _sanitize_disease_name(disease_name: str) -> str:
     """Sanitize the disease name for use as a collection name."""
-    return (
-        re.sub(r"[.\(\n/].*", "", disease_name.lower().replace(" ", "_"))
-        .rstrip("_")
-        .strip()
-    )
+    return re.sub(r"[.\(\n/].*", "", disease_name.lower().replace(" ", "_")).rstrip("_").strip()
 
 
-def _get_relevant_literature(
-    chroma_manager, disease_name: str, question: str
-) -> str | list:
+def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -> str | list:
     """
     Retrieve relevant literature for a given disease and question.
 
@@ -42,9 +37,7 @@ def _get_relevant_literature(
     Returns:
         str | list: Relevant literature excerpts or a message if no literature is found.
     """
-    logger.info(
-        f"Searching literature for disease: '{disease_name}' with query: '{question}'"
-    )
+    logger.info(f"Searching literature for disease: '{disease_name}' with query: '{question}'")
     collection_names = chroma_manager.list_collections()
     sanitized_disease_name = _sanitize_disease_name(disease_name)
 
@@ -52,9 +45,7 @@ def _get_relevant_literature(
     logger.info(f"Available collections: {collection_names}")
 
     if sanitized_disease_name not in collection_names:
-        logger.info(
-            f"No collection found for disease: {sanitized_disease_name}"
-        )
+        logger.info(f"No collection found for disease: {sanitized_disease_name}")
         return "No relevant literature available"
 
     logger.info(f"Found matching collection for '{sanitized_disease_name}'")
@@ -71,9 +62,7 @@ def _get_relevant_literature(
             include=["documents", "metadatas", "distances"],
         )
 
-        logger.info(
-            f"Query completed, received {len(context['documents'][0])} results"
-        )
+        logger.info(f"Query completed, received {len(context['documents'][0])} results")
         logger.info(f"Result distances: {context['distances'][0]}")
     except Exception as e:
         logger.error(f"Error querying collection: {e}")
@@ -81,14 +70,12 @@ def _get_relevant_literature(
 
     output_strings = []
     distance_threshold = 0.2
-    logger.info(
-        f"Filtering results with distance threshold: {distance_threshold}"
-    )
+    logger.info(f"Filtering results with distance threshold: {distance_threshold}")
 
     for i, doc_list in enumerate(context["documents"]):
         for j, doc in enumerate(doc_list):
             distance = context["distances"][i][j]
-            logger.info(f"Document {j+1}: distance={distance}")
+            logger.info(f"Document {j + 1}: distance={distance}")
             if distance < distance_threshold:
                 source = context["metadatas"][i][j]["source"]
                 formatted_source = source.replace("_", " ").title()
@@ -100,28 +87,24 @@ def _get_relevant_literature(
                     f'According to {formatted_source}:\n\n"...{cleaned_doc}..."\n'
                 )
             else:
-                logger.info(
-                    f"Skipping document with distance {distance} (below threshold)"
-                )
+                logger.info(f"Skipping document with distance {distance} (below threshold)")
 
     if not output_strings:
         logger.info("No relevant literature matching query found.")
         return "No relevant literature matching your query was found"
 
-    logger.info(
-        f"Retrieved {len(output_strings)} relevant literature excerpts."
-    )
+    logger.info(f"Retrieved {len(output_strings)} relevant literature excerpts.")
     return output_strings
 
 
 async def execute(
-    tool_call: Dict[str, Any],
+    tool_call: dict[str, Any],
     llm_client,
-    config: Dict[str, Any],
+    config: dict[str, Any],
     chroma_manager,
     message_list: list,
-    context_question_options: Dict[str, Any],
-) -> AsyncGenerator[Dict[str, Any], None]:
+    context_question_options: dict[str, Any],
+) -> AsyncGenerator[dict[str, Any], None]:
     """
     Execute the literature search tool.
 
@@ -144,21 +127,15 @@ async def execute(
     if "arguments" in tool_call["function"]:
         try:
             if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(
-                    tool_call["function"]["arguments"]
-                )
+                function_arguments = json.loads(tool_call["function"]["arguments"])
             else:
                 function_arguments = tool_call["function"]["arguments"]
         except json.JSONDecodeError:
             logger.error("Failed to parse function arguments JSON")
             function_arguments = {}
 
-    disease_name = (
-        function_arguments.get("disease_name", "") if function_arguments else ""
-    )
-    question = (
-        function_arguments.get("question", "") if function_arguments else ""
-    )
+    disease_name = function_arguments.get("disease_name", "") if function_arguments else ""
+    question = function_arguments.get("question", "") if function_arguments else ""
 
     function_response_list = _get_relevant_literature(
         chroma_manager=chroma_manager,
@@ -177,9 +154,7 @@ async def execute(
             )
         )
     else:
-        logger.info(
-            f"Retrieved relevant literature for disease: {disease_name}"
-        )
+        logger.info(f"Retrieved relevant literature for disease: {disease_name}")
         if isinstance(function_response_list, list):
             function_response_string = "\n".join(function_response_list)
         else:

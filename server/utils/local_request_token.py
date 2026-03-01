@@ -1,5 +1,4 @@
-"""Request token storage for API authentication.
-"""
+"""Request token storage for API authentication."""
 
 _REQUEST_TOKEN: str | None = None
 

@@ -1,6 +1,5 @@
 import json
 import logging
-import random
 
 from fastapi import HTTPException
 from server.database.config.manager import config_manager
@@ -106,9 +105,7 @@ async def generate_letter_content(
 
     except Exception as e:
         logging.error(f"Error generating letter content: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Error generating letter content: {e}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error generating letter content: {e}")
 
 
 def _format_name(patient_name):
