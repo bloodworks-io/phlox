@@ -46,6 +46,10 @@ export const TEMPLATE_DESCRIPTIONS = {
     "Standard SOAP format with Subjective, Objective, Assessment, and Plan sections - ideal for general consultations.",
   progress_01:
     "Perfect for follow-up visits with sections for interval history, current status, and plan.",
+  procedure_01:
+    "Designed for procedural documentation with sections for indication, pre-procedure assessment, procedure details, complications, and post-procedure plan.",
+  consult_01:
+    "Format for specialist consultations including reason for consult, relevant history, findings, impression, and recommendations.",
 };
 
 export const getStepIcon = (step) => {

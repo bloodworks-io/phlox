@@ -30,34 +30,53 @@ def template_exists(cursor, template_key: str) -> bool:
 
 
 def initialize_templates(cursor, db):
-    """Create default templates if they don't exist.
+    """Create default templates if they don't exist, or update if they do.
+
+    Default templates are synced on every startup to ensure users get the latest
+    template improvements. Templates that have been modified by users (marked as
+    deleted and superseded by a new version) are updated but stay deleted.
 
     Args:
         cursor: Database cursor
         db: Database connection
     """
     for template_data in DefaultTemplates.get_default_templates():
-        if not template_exists(cursor, template_data["template_key"]):
-            template = ClinicalTemplate(
-                template_key=template_data["template_key"],
-                template_name=template_data["template_name"],
-                fields=[TemplateField(**field) for field in template_data["fields"]],
-            )
-            now = datetime.now().isoformat()
+        template_key = template_data["template_key"]
+        template_name = template_data["template_name"]
+        fields = [TemplateField(**field) for field in template_data["fields"]]
+        fields_json = json.dumps([field.dict() for field in fields])
+
+        cursor.execute(
+            "SELECT deleted, created_at FROM clinical_templates WHERE template_key = ?",
+            (template_key,),
+        )
+        row = cursor.fetchone()
+
+        now = datetime.now().isoformat()
+
+        if row is None:
+            # Template doesn't exist - create it
             cursor.execute(
                 """
                 INSERT INTO clinical_templates (template_key, template_name, fields, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?)
-            """,
-                (
-                    template.template_key,
-                    template.template_name,
-                    json.dumps([field.dict() for field in template.fields]),
-                    now,
-                    now,
-                ),
+                """,
+                (template_key, template_name, fields_json, now, now),
             )
-            logging.info(f"Created default template: {template.template_name}")
+            logging.info(f"Created default template: {template_name}")
+        else:
+            # Template exists - update it, preserving the deleted flag and created_at
+            deleted = row["deleted"] if row["deleted"] is not None else False
+            cursor.execute(
+                """
+                UPDATE clinical_templates
+                SET template_name = ?, fields = ?, updated_at = ?
+                WHERE template_key = ?
+                """,
+                (template_name, fields_json, now, template_key),
+            )
+            status = "updated" if not deleted else "updated (stays deleted)"
+            logging.info(f"Default template {status}: {template_name}")
 
 
 def set_initial_default_template(cursor, db):
