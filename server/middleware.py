@@ -132,6 +132,7 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
 class LocalTokenMiddleware(BaseHTTPMiddleware):
     """Verify local request token on all API requests.
 
+
     This middleware protects the API from unauthorized access by other
     applications running on the same machine. Only requests with a valid
     Authorization: Bearer <token> header are allowed.
@@ -139,7 +140,7 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request, call_next):
         from server.constants import IS_DOCKER
-        from server.server import get_request_token
+        from server.utils.local_request_token import get_request_token
 
         path = request.url.path
 
@@ -149,24 +150,32 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
 
         # In Docker mode, skip token validation
         if IS_DOCKER:
+            logger.debug(f"Auth skipped - Docker mode (path: {path})")
             return await call_next(request)
 
         # Get expected token
         expected_token = get_request_token()
         if not expected_token:
+            logger.warning(
+                f"Auth bypassed - no request token set (path: {path})"
+            )
             # Server not fully initialized yet, allow through
             return await call_next(request)
 
         # Verify Authorization header
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
+            logger.debug(f"Missing Bearer header for {path}")
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Missing or invalid Authorization header"},
             )
 
-        provided_token = auth_header[7:]  # Remove "Bearer " prefix
+        provided_token = auth_header[7:]  # remove "Bearer " prefix
         if not secrets.compare_digest(provided_token, expected_token):
+            logger.warning(
+                f"Invalid token for {path} (got {provided_token[:8]}...)"
+            )
             return JSONResponse(
                 status_code=403, content={"detail": "Invalid request token"}
             )

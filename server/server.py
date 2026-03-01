@@ -52,12 +52,7 @@ logger.info("Initialising application...")
 scheduler = AsyncIOScheduler()
 
 # Local request token for API authentication (desktop mode only)
-_REQUEST_TOKEN: str | None = None
-
-
-def get_request_token() -> str | None:
-    """Get the current request token for API authentication."""
-    return _REQUEST_TOKEN
+from server.utils.local_request_token import get_request_token, set_request_token
 
 
 if IS_TESTING:
@@ -254,8 +249,13 @@ def start_server_for_desktop():
 
     Waits for passphrase from stdin before initializing database.
     """
-    global app, _REQUEST_TOKEN
+    global app
     logger.info("Desktop environment detected")
+
+    # Generate cryptographically secure request token
+    token = secrets.token_hex(32)  # 64 character hex string (256 bits)
+    set_request_token(token)
+    logger.info(token)
 
     # Signal that we're waiting for passphrase
     print("WAITING_FOR_PASSPHRASE", flush=True)
@@ -290,12 +290,9 @@ def start_server_for_desktop():
 
     set_ports(server_port, llama_port, whisper_port)
 
-    # Generate cryptographically secure request token
-    _REQUEST_TOKEN = secrets.token_hex(32)  # 64 character hex string (256 bits)
-
     # Write ports and token to stdout so process manager can read them
     print(
-        f"PORTS:{server_port},{llama_port},{whisper_port}|TOKEN:{_REQUEST_TOKEN}",
+        f"PORTS:{server_port},{llama_port},{whisper_port}|TOKEN:{get_request_token()}",
         flush=True,
     )
 
