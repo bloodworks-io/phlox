@@ -1,43 +1,9 @@
 import logging
-import re
 
 import httpx
 from fastapi import APIRouter
 
-from server.constants import CHANGELOG_PATH
-
 router = APIRouter()
-
-
-@router.get("/changelog")
-async def get_changelog():
-    """Retrieve the full changelog content."""
-    try:
-        with open(CHANGELOG_PATH, "r") as f:
-            content = f.read()
-        return {"content": content}
-    except Exception as e:
-        logging.error(f"Error retrieving changelog: {str(e)}")
-        return {"content": "Error retrieving changelog."}
-
-
-@router.get("/version")
-async def get_version():
-    """Retrieve the current version of the application."""
-    try:
-        with open(CHANGELOG_PATH, "r") as f:
-            changelog = f.read()
-
-        match = re.search(r"## \[(.*?)\].*?\n", changelog)
-        if match:
-            version = match.group(1)
-            return {"version": version}
-        else:
-            logging.warning("Version number not found in CHANGELOG.md")
-            return {"version": "unknown"}
-    except Exception as e:
-        logging.error(f"Error getting version from CHANGELOG.md: {str(e)}")
-        return {"version": "unknown"}
 
 
 @router.get("/status")

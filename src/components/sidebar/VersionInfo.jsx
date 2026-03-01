@@ -17,44 +17,24 @@ import { colors } from "../../theme/colors";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import ChangelogModal from "../modals/ChangelogModal";
+import { APP_VERSION } from "../../utils/constants/version";
+import changelogContent from "../../../CHANGELOG.md?raw";
 
 const VersionInfo = ({ isCollapsed }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [version, setVersion] = useState("");
-  const [changelog, setChangelog] = useState("");
   const [serverStatus, setServerStatus] = useState({
     whisper: false,
-    llm: false, // Updated from 'ollama' to 'llm'
+    llm: false,
   });
+
+  const version = APP_VERSION;
+  const changelog = changelogContent;
 
   // Use consistent dark theme text color
   const textColor = colors.dark.textPrimary;
   const iconColor = colors.dark.textSecondary;
 
   useEffect(() => {
-    // Fetch version from backend
-    const fetchVersion = async () => {
-      try {
-        const url = await buildApiUrl("/api/config/version");
-        const res = await universalFetch(url);
-        const data = await res.json();
-        setVersion(data.version);
-      } catch (err) {
-        console.error("Error fetching version:", err);
-      }
-    };
-
-    // Fetch changelog
-    const fetchChangelog = async () => {
-      try {
-        const url = await buildApiUrl("/api/config/changelog");
-        const res = await universalFetch(url);
-        const data = await res.json();
-        setChangelog(data.content);
-      } catch (err) {
-        console.error("Error fetching changelog:", err);
-      }
-    };
     // Check server status
     const checkStatus = async () => {
       try {
@@ -69,8 +49,6 @@ const VersionInfo = ({ isCollapsed }) => {
       }
     };
 
-    fetchVersion();
-    fetchChangelog();
     checkStatus();
     // Set up interval to check status periodically
     const intervalId = setInterval(checkStatus, 60000); // Check every minute

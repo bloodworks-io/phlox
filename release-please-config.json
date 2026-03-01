@@ -16,6 +16,11 @@
           "type": "json",
           "path": "src-tauri/tauri.conf.json",
           "jsonpath": "$.version"
+        },
+        {
+          "type": "generic",
+          "path": "server/_version.py",
+          "line": "^__version__ = "
         }
       ]
     }
