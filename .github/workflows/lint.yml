@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd server
-          ~/.local/bin/uv pip install --system ruff mypy bandit[toml] pydantic types-requests
+          ~/.local/bin/uv pip install --system ruff ty-cli bandit[toml] pydantic types-requests
 
       - name: Run Ruff
         run: |
@@ -36,10 +36,10 @@ jobs:
           cd server
           ruff format --check .
 
-      - name: Run MyPy
+      - name: Run ty
         run: |
           cd server
-          mypy . --ignore-missing-imports
+          ty check .
 
       - name: Run Bandit
         run: |
@@ -50,9 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Verify actions are pinned
-        uses: suzuki-shunsuke/pinact-action@1081f5ad49ac904b7d977784f338145150a32112  # v1.4.0
+        uses: suzuki-shunsuke/pinact-action@1081f5ad49ac904b7d977784f338145150a32112 # v1.4.0
         with:
           skip_push: "true"
