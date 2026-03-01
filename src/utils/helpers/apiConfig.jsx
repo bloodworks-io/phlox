@@ -24,8 +24,13 @@ export const getApiBaseUrl = async () => {
 
   try {
     const serverPort = await invoke("get_server_port");
-    cachedServerPort = serverPort; // Cache the port
-    return `http://localhost:${serverPort}`;
+    // Don't cache port 0 or empty string - server not ready yet
+    if (serverPort && serverPort !== "0") {
+      cachedServerPort = serverPort;
+    }
+    // If port is 0/empty, return fallback without caching
+    const port = serverPort && serverPort !== "0" ? serverPort : "5000";
+    return `http://localhost:${port}`;
   } catch (error) {
     console.error("Failed to get server port from Tauri:", error);
     // Fallback to default port

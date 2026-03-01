@@ -12,9 +12,10 @@ use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{
     change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
-    get_request_token, get_service_status, get_system_specs, has_database, has_encryption_setup, has_keychain_entry,
-    restart_llama, restart_whisper, send_passphrase_command, setup_encryption, start_llama_service,
-    start_server_command, start_whisper_service, unlock_with_passphrase, CachedServiceStatus,
+    get_request_token, get_service_status, get_system_specs, has_database, has_encryption_setup,
+    has_keychain_entry, restart_llama, restart_whisper, send_passphrase_command, setup_encryption,
+    start_llama_service, start_server_command, start_whisper_service, unlock_with_passphrase,
+    CachedServiceStatus,
 };
 use pm_client::ProcessManagerClient;
 use process::{
@@ -72,8 +73,10 @@ pub fn run() {
             // Set transparent titlebar with custom dark background color on macOS
             #[cfg(target_os = "macos")]
             {
-                use cocoa::appkit::{NSColor, NSWindow};
+                use cocoa::appkit::{NSColor, NSWindow, NSWindowButton};
                 use cocoa::base::{id, nil};
+                use cocoa::foundation::{NSPoint, NSRect};
+                use objc::{msg_send, sel, sel_impl};
 
                 if let Some(window) = app.get_webview_window("main") {
                     let ns_window = window.ns_window().unwrap() as id;
@@ -91,6 +94,21 @@ pub fn run() {
                         ns_window.setTitleVisibility_(
                             cocoa::appkit::NSWindowTitleVisibility::NSWindowTitleHidden,
                         );
+
+                        // Move traffic light buttons (close, minimize, maximize) down and right
+                        let close_button =
+                            ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
+                        if close_button != nil {
+                            let superview: id = msg_send![close_button, superview];
+                            if superview != nil {
+                                let frame: NSRect = msg_send![superview, frame];
+                                let new_frame = NSRect::new(
+                                    NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
+                                    frame.size,
+                                );
+                                let _: () = msg_send![superview, setFrame: new_frame];
+                            }
+                        }
                     }
                 }
             }
