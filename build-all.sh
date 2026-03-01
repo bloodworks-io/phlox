@@ -187,9 +187,9 @@ else
 
     # Check if whisper-server was built
     if [[ "$PLATFORM" == "windows-"* ]]; then
-        WHISPER_BIN="src-tauri/whisper-server.exe"
+        WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
     else
-        WHISPER_BIN="src-tauri/whisper-server"
+        WHISPER_BIN="src-tauri/phlox-whisper-server"
     fi
 
     if [ ! -f "$WHISPER_BIN" ]; then
@@ -226,9 +226,9 @@ else
 
     # Check if llama-server was built
     if [[ "$PLATFORM" == "windows-"* ]]; then
-        LLAMA_BIN="src-tauri/llama-server.exe"
+        LLAMA_BIN="src-tauri/phlox-llama-server.exe"
     else
-        LLAMA_BIN="src-tauri/llama-server"
+        LLAMA_BIN="src-tauri/phlox-llama-server"
     fi
 
     if [ ! -f "$LLAMA_BIN" ]; then
