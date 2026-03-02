@@ -23,6 +23,30 @@ use process::{
     WhisperProcess,
 };
 
+/// Position the traffic light buttons (close, minimize, maximize) with custom offset
+#[cfg(target_os = "macos")]
+fn position_traffic_light_buttons(ns_window: cocoa::base::id) {
+    use cocoa::appkit::{NSWindow, NSWindowButton};
+    use cocoa::base::{id, nil};
+    use cocoa::foundation::{NSPoint, NSRect};
+    use objc::{msg_send, sel, sel_impl};
+
+    unsafe {
+        let close_button = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
+        if close_button != nil {
+            let superview: id = msg_send![close_button, superview];
+            if superview != nil {
+                let frame: NSRect = msg_send![superview, frame];
+                let new_frame = NSRect::new(
+                    NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
+                    frame.size,
+                );
+                let _: () = msg_send![superview, setFrame: new_frame];
+            }
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let log_plugin = tauri_plugin_log::Builder::default()
@@ -73,10 +97,8 @@ pub fn run() {
             // Set transparent titlebar with custom dark background color on macOS
             #[cfg(target_os = "macos")]
             {
-                use cocoa::appkit::{NSColor, NSWindow, NSWindowButton};
+                use cocoa::appkit::{NSColor, NSWindow};
                 use cocoa::base::{id, nil};
-                use cocoa::foundation::{NSPoint, NSRect};
-                use objc::{msg_send, sel, sel_impl};
 
                 if let Some(window) = app.get_webview_window("main") {
                     let ns_window = window.ns_window().unwrap() as id;
@@ -95,20 +117,8 @@ pub fn run() {
                             cocoa::appkit::NSWindowTitleVisibility::NSWindowTitleHidden,
                         );
 
-                        // Move traffic light buttons (close, minimize, maximize) down and right
-                        let close_button =
-                            ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
-                        if close_button != nil {
-                            let superview: id = msg_send![close_button, superview];
-                            if superview != nil {
-                                let frame: NSRect = msg_send![superview, frame];
-                                let new_frame = NSRect::new(
-                                    NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
-                                    frame.size,
-                                );
-                                let _: () = msg_send![superview, setFrame: new_frame];
-                            }
-                        }
+                        // Position traffic light buttons
+                        position_traffic_light_buttons(ns_window);
                     }
                 }
             }
@@ -148,6 +158,14 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            // Re-apply traffic light button positioning on resize
+            #[cfg(target_os = "macos")]
+            if let tauri::WindowEvent::Resized { .. } = event {
+                if let Ok(ns_window) = window.ns_window() {
+                    position_traffic_light_buttons(ns_window as cocoa::base::id);
+                }
+            }
+
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 log::info!("Window close requested. Shutting down process manager.");
 
