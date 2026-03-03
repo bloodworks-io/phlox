@@ -10,7 +10,7 @@
     "@emotion/styled": "^11.11.5",
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-http": "^2.4.4",
-    "framer-motion": "^11.2.10",
+    "framer-motion": "^12.34.5",
     "js-tiktoken": "^1.0.12",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
