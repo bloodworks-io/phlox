@@ -1,11 +1,28 @@
-import { buildApiUrl, isTauri } from "./apiConfig";
+import { buildApiUrl, isTauri, getRequestToken } from "./apiConfig";
 
 export const universalFetch = async (url, options = {}) => {
+  // Get the request token if in Tauri mode
+  const token = await getRequestToken();
+
+  // Merge authorization header with existing headers
+  const headers = {
+    ...options.headers,
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const mergedOptions = {
+    ...options,
+    headers,
+  };
+
   if (isTauri()) {
     const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
-    return tauriFetch(url, options);
+    return tauriFetch(url, mergedOptions);
   } else {
-    return fetch(url, options);
+    return fetch(url, mergedOptions);
   }
 };
 

@@ -1,10 +1,10 @@
 # Taken from https://research.trychroma.com/evaluating-chunking
 #
-from typing import List
+
 import numpy as np
+
+from .chunking_utils import BaseChunker, get_openai_embedding_function, openai_token_count
 from .recursive_token_chunker import RecursiveTokenChunker
-from .chunking_utils import get_openai_embedding_function, openai_token_count
-from .chunking_utils import BaseChunker
 
 
 class ClusterSemanticChunker(BaseChunker):
@@ -59,9 +59,7 @@ class ClusterSemanticChunker(BaseChunker):
     def _optimal_segmentation(self, matrix, max_cluster_size, window_size=3):
         mean_value = np.mean(matrix[np.triu_indices(matrix.shape[0], k=1)])
         matrix = matrix - mean_value  # Normalize the matrix
-        np.fill_diagonal(
-            matrix, 0
-        )  # Set diagonal to 1 to avoid trivial solutions
+        np.fill_diagonal(matrix, 0)  # Set diagonal to 1 to avoid trivial solutions
 
         n = matrix.shape[0]
         dp = np.zeros(n)
@@ -90,16 +88,12 @@ class ClusterSemanticChunker(BaseChunker):
         clusters.reverse()
         return clusters
 
-    def split_text(self, text: str) -> List[str]:
+    def split_text(self, text: str) -> list[str]:
         sentences = self.splitter.split_text(text)
         print(self.embedding_function)
-        similarity_matrix = self._get_similarity_matrix(
-            self.embedding_function, sentences
-        )
+        similarity_matrix = self._get_similarity_matrix(self.embedding_function, sentences)
 
-        clusters = self._optimal_segmentation(
-            similarity_matrix, max_cluster_size=self.max_cluster
-        )
+        clusters = self._optimal_segmentation(similarity_matrix, max_cluster_size=self.max_cluster)
 
         docs = [" ".join(sentences[start : end + 1]) for start, end in clusters]
 

@@ -48,9 +48,7 @@ async def get_files():
         collections = chroma_manager.list_collections()
         return {"files": collections}
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching collections: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error fetching collections: {str(e)}")
 
 
 @router.get("/collection_files/{collection_name}")
@@ -72,18 +70,12 @@ async def modify_collection(request: ModifyCollectionRequest):
     """API endpoint to modify the name of a collection."""
     _check_rag_available()
     try:
-        success = chroma_manager.modify_collection_name(
-            request.old_name, request.new_name
-        )
+        success = chroma_manager.modify_collection_name(request.old_name, request.new_name)
         if not success:
-            raise HTTPException(
-                status_code=500, detail="Failed to rename collection"
-            )
+            raise HTTPException(status_code=500, detail="Failed to rename collection")
         return {"message": "Collection renamed successfully"}
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error renaming collection: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error renaming collection: {str(e)}")
 
 
 @router.delete("/delete-collection/{name}")
@@ -93,14 +85,10 @@ async def delete_collection_endpoint(name: str):
     try:
         success = chroma_manager.delete_collection(name)
         if not success:
-            raise HTTPException(
-                status_code=500, detail="Failed to delete collection"
-            )
+            raise HTTPException(status_code=500, detail="Failed to delete collection")
         return {"message": "Collection deleted successfully"}
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error deleting collection: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error deleting collection: {str(e)}")
 
 
 @router.delete("/delete-file")
@@ -112,9 +100,7 @@ async def delete_file_endpoint(request: DeleteFileRequest):
             request.collection_name, request.file_name
         )
         if not success:
-            raise HTTPException(
-                status_code=500, detail="Failed to delete file from collection"
-            )
+            raise HTTPException(status_code=500, detail="Failed to delete file from collection")
         return {"message": "File deleted from collection successfully"}
     except Exception as e:
         raise HTTPException(
@@ -127,18 +113,14 @@ async def delete_file_endpoint(request: DeleteFileRequest):
 async def extract_pdf_info(file: UploadFile = File(...)):
     """API endpoint to extract information from a PDF."""
     _check_rag_available()
-    logger.info(
-        f"Request received for /extract-pdf-info: filename='{file.filename}'"
-    )
+    logger.info(f"Request received for /extract-pdf-info: filename='{file.filename}'")
     temp_dir = TEMP_DIR
     os.makedirs(temp_dir, exist_ok=True)  # Ensure temp dir exists
     file_location = os.path.join(temp_dir, file.filename)
 
     if not file.filename:
         logger.error("Received /extract-pdf-info request with no filename.")
-        raise HTTPException(
-            status_code=400, detail="No filename provided in upload."
-        )
+        raise HTTPException(status_code=400, detail="No filename provided in upload.")
 
     try:
         # Save the uploaded file temporarily
@@ -162,12 +144,8 @@ async def extract_pdf_info(file: UploadFile = File(...)):
                 detail=f"Could not extract text from PDF '{file.filename}'. Check if it's searchable.",
             )
 
-        logger.debug(
-            f"Text extracted. Length: {len(extracted_text)}. Storing temporarily."
-        )
-        chroma_manager.set_extracted_text(
-            extracted_text
-        )  # Store for potential commit later
+        logger.debug(f"Text extracted. Length: {len(extracted_text)}. Storing temporarily.")
+        chroma_manager.set_extracted_text(extracted_text)  # Store for potential commit later
 
         # --- Await the async LLM calls ---
         logger.info("Attempting to determine disease name...")
@@ -179,9 +157,7 @@ async def extract_pdf_info(file: UploadFile = File(...)):
         logger.debug(f"Focus area determined: '{focus_area}'")
 
         logger.debug("Attempting to determine document source...")
-        document_source = await chroma_manager.get_document_source(
-            extracted_text
-        )
+        document_source = await chroma_manager.get_document_source(extracted_text)
         logger.debug(f"Document source determined: '{document_source}'")
         # --- End of awaited calls ---
 
@@ -205,12 +181,8 @@ async def extract_pdf_info(file: UploadFile = File(...)):
         # Re-raise HTTPExceptions specifically
         raise http_exc
     except Exception as e:
-        logger.error(
-            f"Error processing PDF '{file.filename}': {e}", exc_info=True
-        )
-        raise HTTPException(
-            status_code=500, detail=f"Error processing PDF: {str(e)}"
-        )
+        logger.error(f"Error processing PDF '{file.filename}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
     finally:
         # Ensure the temporary file is always removed
         if os.path.exists(file_location):
@@ -252,9 +224,7 @@ async def get_rag_suggestions():
         suggestions = await generate_specialty_suggestions()
         return {"suggestions": suggestions}
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error generating suggestions: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error generating suggestions: {str(e)}")
 
 
 @router.post("/clear-database")
@@ -264,11 +234,7 @@ async def clear_database():
     try:
         success = chroma_manager.reset_database()
         if not success:
-            raise HTTPException(
-                status_code=500, detail="Failed to reset RAG database"
-            )
+            raise HTTPException(status_code=500, detail="Failed to reset RAG database")
         return {"message": "RAG database cleared successfully"}
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error clearing RAG database: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error clearing RAG database: {str(e)}")

@@ -47,22 +47,22 @@ async def ollama_ps(base_url: str, timeout: int = 80) -> dict:
         Dictionary with models information
     """
     try:
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=timeout)
-        ) as session:
-            async with session.get(f"{base_url}/api/ps") as response:
-                if response.status == 200:
-                    result = await response.json()
-                    return result
-                else:
-                    error_text = await response.text()
-                    logger.error(
-                        f"Ollama ps request failed with status {response.status}: {error_text}"
-                    )
-                    return {
-                        "models": [],
-                        "error": f"Request failed with status {response.status}",
-                    }
+        async with (
+            aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session,
+            session.get(f"{base_url}/api/ps") as response,
+        ):
+            if response.status == 200:
+                result = await response.json()
+                return result
+            else:
+                error_text = await response.text()
+                logger.error(
+                    f"Ollama ps request failed with status {response.status}: {error_text}"
+                )
+                return {
+                    "models": [],
+                    "error": f"Request failed with status {response.status}",
+                }
     except Exception as e:
         logger.error(f"Unexpected error getting Ollama process info: {e}")
         return {"models": [], "error": f"Unexpected error: {str(e)}"}

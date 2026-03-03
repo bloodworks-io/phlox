@@ -8,8 +8,9 @@ import {
   ModalFooter,
   ModalCloseButton,
   Button,
+  HStack,
 } from "@chakra-ui/react";
-import LocalModelManager from "./LocalModelManager";
+import LocalModelManager from "../settings/LocalModelManager";
 
 const LocalModelManagerModal = ({ isOpen, onClose }) => {
   return (
@@ -22,9 +23,9 @@ const LocalModelManagerModal = ({ isOpen, onClose }) => {
           <LocalModelManager className="modal-body-embed" />
         </ModalBody>
         <ModalFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Close
-          </Button>
+          <HStack justify="flex-end" width="100%">
+            <Button onClick={onClose}>Close</Button>
+          </HStack>
         </ModalFooter>
       </ModalContent>
     </Modal>

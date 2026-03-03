@@ -4,7 +4,6 @@ We are using a temporary directory for testing and cleaning up afterward.
 """
 
 import os
-import sqlite3
 
 import pytest
 
@@ -61,9 +60,7 @@ def test_insert_and_retrieve_patient(test_db):
         ("John Doe", "1990-01-01", "UR12345", "M", "2023-06-15"),
     )
     test_db.db.commit()
-    test_db.cursor.execute(
-        "SELECT * FROM patients WHERE name = ?", ("John Doe",)
-    )
+    test_db.cursor.execute("SELECT * FROM patients WHERE name = ?", ("John Doe",))
     patient = test_db.cursor.fetchone()
     assert patient is not None
     assert patient["name"] == "John Doe"
@@ -79,9 +76,7 @@ def test_insert_and_retrieve_rss_feed(test_db):
         ("http://example.com/feed", "Test Feed", "2023-06-15 12:00:00"),
     )
     test_db.db.commit()
-    test_db.cursor.execute(
-        "SELECT * FROM rss_feeds WHERE url = ?", ("http://example.com/feed",)
-    )
+    test_db.cursor.execute("SELECT * FROM rss_feeds WHERE url = ?", ("http://example.com/feed",))
     feed = test_db.cursor.fetchone()
     assert feed is not None
     assert feed["title"] == "Test Feed"
@@ -89,12 +84,8 @@ def test_insert_and_retrieve_rss_feed(test_db):
 
 def test_clear_test_database(test_db):
     # Insert dummy data into a couple of tables
-    test_db.cursor.execute(
-        "INSERT INTO patients (name) VALUES (?)", ("Test Patient",)
-    )
-    test_db.cursor.execute(
-        "INSERT INTO rss_feeds (url) VALUES (?)", ("http://test.com",)
-    )
+    test_db.cursor.execute("INSERT INTO patients (name) VALUES (?)", ("Test Patient",))
+    test_db.cursor.execute("INSERT INTO rss_feeds (url) VALUES (?)", ("http://test.com",))
     test_db.db.commit()
     # Now clear the database
     test_db.clear_test_database()
@@ -115,23 +106,15 @@ def test_clear_test_database(test_db):
 
 def test_commit_and_rollback(test_db):
     # Test commit
-    test_db.cursor.execute(
-        "INSERT INTO patients (name) VALUES (?)", ("Commit Test",)
-    )
+    test_db.cursor.execute("INSERT INTO patients (name) VALUES (?)", ("Commit Test",))
     test_db.commit()
-    test_db.cursor.execute(
-        "SELECT * FROM patients WHERE name = ?", ("Commit Test",)
-    )
+    test_db.cursor.execute("SELECT * FROM patients WHERE name = ?", ("Commit Test",))
     assert test_db.cursor.fetchone() is not None
 
     # Test rollback by intentionally inserting and not committing
-    test_db.cursor.execute(
-        "INSERT INTO patients (name) VALUES (?)", ("Rollback Test",)
-    )
+    test_db.cursor.execute("INSERT INTO patients (name) VALUES (?)", ("Rollback Test",))
     test_db.db.rollback()
-    test_db.cursor.execute(
-        "SELECT * FROM patients WHERE name = ?", ("Rollback Test",)
-    )
+    test_db.cursor.execute("SELECT * FROM patients WHERE name = ?", ("Rollback Test",))
     assert test_db.cursor.fetchone() is None
 
 

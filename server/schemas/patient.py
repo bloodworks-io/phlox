@@ -1,5 +1,6 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
 
 
 class Patient(BaseModel):
@@ -7,20 +8,20 @@ class Patient(BaseModel):
     Represents a patient's medical record with template support.
     """
 
-    id: Optional[int] = None
+    id: int | None = None
     name: str
     dob: str
     ur_number: str
     gender: str
     encounter_date: str
     template_key: str
-    template_data: Optional[Dict[str, Any]] = None
-    raw_transcription: Optional[str] = None
-    transcription_duration: Optional[float] = None
-    process_duration: Optional[float] = None
-    primary_condition: Optional[str] = None
-    final_letter: Optional[str] = None
-    encounter_summary: Optional[str] = None
+    template_data: dict[str, Any] | None = None
+    raw_transcription: str | None = None
+    transcription_duration: float | None = None
+    process_duration: float | None = None
+    primary_condition: str | None = None
+    final_letter: str | None = None
+    encounter_summary: str | None = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -44,7 +45,7 @@ class SavePatientRequest(BaseModel):
     """
 
     patientData: Patient
-    adaptive_refinement: Optional[Dict[str, AdaptiveRefinementData]] = None
+    adaptive_refinement: dict[str, AdaptiveRefinementData] | None = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -61,7 +62,7 @@ class TranscribeResponse(BaseModel):
         processDuration (float): Time taken for processing
     """
 
-    fields: Dict[str, Any]
+    fields: dict[str, Any]
     rawTranscription: str
     transcriptionDuration: float
     processDuration: float
@@ -95,7 +96,7 @@ class JobsListUpdate(BaseModel):
     """
 
     patientId: int
-    jobsList: List[Job]
+    jobsList: list[Job]
 
 
 class DocumentProcessResponse(BaseModel):
@@ -119,8 +120,12 @@ class Condition(BaseModel):
     """
     Represents a medical condition with constrained choices.
     """
+
     condition_name: str = Field(..., description="The primary medical condition")
-    is_new_condition: bool = Field(False, description="Whether this is a new condition not in the existing list")
+    is_new_condition: bool = Field(
+        False, description="Whether this is a new condition not in the existing list"
+    )
+
 
 class Summary(BaseModel):
     """

@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-from pathlib import Path
 
 from fastapi import APIRouter, Body
 from fastapi.exceptions import HTTPException
@@ -29,9 +28,7 @@ async def get_downloaded_whisper_models():
         return {"models": models}
     except Exception as e:
         logging.error(f"Error getting downloaded Whisper models: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to get downloaded Whisper models"
-        )
+        raise HTTPException(status_code=500, detail="Failed to get downloaded Whisper models")
 
 
 @router.get("/local/models/available")
@@ -48,9 +45,7 @@ async def get_available_llm_models():
         return {"models": models}
     except Exception as e:
         logging.error(f"Error getting available models: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to get available models"
-        )
+        raise HTTPException(status_code=500, detail="Failed to get available models")
 
 
 @router.get("/local/models")
@@ -67,9 +62,7 @@ async def get_downloaded_llm_models():
         return {"models": models}
     except Exception as e:
         logging.error(f"Error getting downloaded models: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to get downloaded models"
-        )
+        raise HTTPException(status_code=500, detail="Failed to get downloaded models")
 
 
 @router.post("/local/models/download")
@@ -112,9 +105,7 @@ async def download_llm_model(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logging.error(f"Error downloading model {model_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to download model: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to download model: {str(e)}")
 
 
 @router.get("/local/models/download/stream")
@@ -153,9 +144,7 @@ async def download_llm_model_stream(model_id: str):
 
         # Start download in background task
         download_task = asyncio.create_task(
-            llama_model_manager.download_model(
-                model_id, progress_callback=progress_callback
-            )
+            llama_model_manager.download_model(model_id, progress_callback=progress_callback)
         )
 
         # Send start event
@@ -166,7 +155,7 @@ async def download_llm_model_stream(model_id: str):
                 try:
                     progress = await asyncio.wait_for(queue.get(), timeout=0.5)
                     yield f"data: {json.dumps(progress)}\n\n"
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Send keepalive to prevent connection timeout
                     yield ": keepalive\n\n"
 
@@ -256,9 +245,7 @@ async def search_huggingface_models(
         return {"models": results}
 
     except ImportError:
-        raise HTTPException(
-            status_code=500, detail="huggingface_hub not installed"
-        )
+        raise HTTPException(status_code=500, detail="huggingface_hub not installed")
     except Exception as e:
         logging.error(f"Error searching models: {e}")
         raise HTTPException(status_code=500, detail="Failed to search models")
@@ -306,9 +293,7 @@ async def get_repo_gguf_files(repo_id: str):
         }
 
     except ImportError:
-        raise HTTPException(
-            status_code=500, detail="huggingface_hub not installed"
-        )
+        raise HTTPException(status_code=500, detail="huggingface_hub not installed")
     except Exception as e:
         logging.error(f"Error getting repo files for {repo_id}: {e}")
         raise HTTPException(

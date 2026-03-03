@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from server.database.core.connection import get_db
 from server.schemas.letter import LetterTemplate
@@ -30,7 +30,7 @@ def update_patient_letter(patient_id: int, letter: str) -> None:
         raise
 
 
-async def fetch_patient_letter(patient_id: int) -> Optional[str]:
+async def fetch_patient_letter(patient_id: int) -> str | None:
     """
     Fetch a patient's final letter.
 
@@ -41,9 +41,7 @@ async def fetch_patient_letter(patient_id: int) -> Optional[str]:
         Optional[str]: The letter content if found.
     """
     try:
-        get_db().cursor.execute(
-            "SELECT final_letter FROM patients WHERE id = ?", (patient_id,)
-        )
+        get_db().cursor.execute("SELECT final_letter FROM patients WHERE id = ?", (patient_id,))
         row = get_db().cursor.fetchone()
         return row["final_letter"] if row else None
     except Exception as e:
@@ -51,7 +49,7 @@ async def fetch_patient_letter(patient_id: int) -> Optional[str]:
         raise
 
 
-def get_letter_templates() -> List[Dict[str, Any]]:
+def get_letter_templates() -> list[dict[str, Any]]:
     """
     Retrieve all letter templates.
 
@@ -70,7 +68,7 @@ def get_letter_templates() -> List[Dict[str, Any]]:
         raise
 
 
-def get_letter_template_by_id(template_id: int) -> Optional[Dict[str, Any]]:
+def get_letter_template_by_id(template_id: int) -> dict[str, Any] | None:
     """
     Retrieve a specific letter template by ID.
 
@@ -160,9 +158,7 @@ def delete_letter_template(template_id: int) -> bool:
         bool: True if deleted successfully.
     """
     try:
-        get_db().cursor.execute(
-            "DELETE FROM letter_templates WHERE id = ?", (template_id,)
-        )
+        get_db().cursor.execute("DELETE FROM letter_templates WHERE id = ?", (template_id,))
         get_db().commit()
         return get_db().cursor.rowcount > 0
     except Exception as e:

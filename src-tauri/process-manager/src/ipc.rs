@@ -1,6 +1,6 @@
 use crate::process::{
     create_status_data, kill_all_processes, send_passphrase_and_wait_for_ports, start_llama,
-    start_server, start_whisper, AllocatedPorts, ManagedProcess,
+    start_server, start_whisper, stop_drain_threads, AllocatedPorts, ManagedProcess,
 };
 use crate::protocol::{Request, Response};
 use log::{error, info, warn};
@@ -145,7 +145,8 @@ fn handle_client(
             if let Some(ref mut proc) = state.server {
                 match send_passphrase_and_wait_for_ports(proc, &passphrase) {
                     Ok(ports) => {
-                        // Store allocated ports for later use by llama/whisper
+                        // Store allocated ports and token
+                        state.request_token = Some(ports.request_token.clone());
                         state.allocated_ports = Some(ports.clone());
                         Response::ok_started(
                             proc.child.id(),
@@ -197,6 +198,8 @@ fn handle_client(
                 }
                 "server" => {
                     if let Some(mut proc) = state.server.take() {
+                        // Stop drain threads first
+                        stop_drain_threads(&mut proc);
                         let _ = proc.child.kill();
                         let _ = proc.child.wait();
                         crate::process::remove_pid_file("server");
@@ -216,6 +219,7 @@ fn handle_client(
                 state.llama.as_ref(),
                 state.whisper.as_ref(),
                 state.server.as_ref(),
+                state.request_token.as_ref(),
             );
             Response::ok_status(status)
         }
@@ -255,6 +259,7 @@ fn update_process_states(state: &mut ProcessManagerState) {
     if let Some(ref mut proc) = state.server {
         if let Ok(Some(_)) = proc.child.try_wait() {
             warn!("Server process died, removing from state");
+            stop_drain_threads(proc);
             state.server = None;
             crate::process::remove_pid_file("server");
         }
@@ -266,6 +271,7 @@ pub struct ProcessManagerState {
     pub whisper: Option<ManagedProcess>,
     pub server: Option<ManagedProcess>,
     pub allocated_ports: Option<AllocatedPorts>,
+    pub request_token: Option<String>,
     pub should_shutdown: bool,
 }
 
@@ -276,6 +282,7 @@ impl Default for ProcessManagerState {
             whisper: None,
             server: None,
             allocated_ports: None,
+            request_token: None,
             should_shutdown: false,
         }
     }

@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from pydantic import BaseModel, Field
 
 
@@ -9,7 +7,7 @@ class ClinicalSuggestion(BaseModel):
 
 
 class ClinicalSuggestionList(BaseModel):
-    suggestions: List[ClinicalSuggestion]
+    suggestions: list[ClinicalSuggestion]
 
 
 # RAG Collection Management
@@ -44,7 +42,7 @@ class FieldResponse(BaseModel):
     is in its own entry in the list.
     """
 
-    key_points: List[str] = Field(
+    key_points: list[str] = Field(
         description="Individual discussion points extracted from the transcript"
     )
 
@@ -55,7 +53,7 @@ class MultiFieldResponse(BaseModel):
     Each field key maps to its extracted key points.
     """
 
-    field_summaries: Dict[str, List[str]] = Field(
+    field_summaries: dict[str, list[str]] = Field(
         description="Dictionary mapping field_key to list of extracted discussion points"
     )
 
@@ -66,7 +64,7 @@ class RefinedResponse(BaseModel):
     is in its own entry in the list.
     """
 
-    key_points: List[str]
+    key_points: list[str]
 
 
 class NarrativeResponse(BaseModel):
@@ -105,9 +103,7 @@ class ReasoningItem(BaseModel):
     """A clinical reasoning suggestion with justification."""
 
     suggestion: str = Field(description="The main suggestion or finding")
-    rationale: List[str] = Field(
-        description="1-2 brief bullet points justifying this suggestion"
-    )
+    rationale: list[str] = Field(description="1-2 brief bullet points justifying this suggestion")
     critical: bool = Field(
         default=False,
         description="Set to true ONLY for potentially fatal or serious misses that require immediate attention",
@@ -117,9 +113,9 @@ class ReasoningItem(BaseModel):
 class ClinicalReasoning(BaseModel):
     thinking: str
     summary: str
-    differentials: List[ReasoningItem]
-    investigations: List[ReasoningItem]
-    clinical_considerations: List[ReasoningItem]
+    differentials: list[ReasoningItem]
+    investigations: list[ReasoningItem]
+    clinical_considerations: list[ReasoningItem]
 
 
 # Letter
@@ -128,9 +124,7 @@ class LetterDraft(BaseModel):
     Structured model for letter generation results.
     """
 
-    content: str = Field(
-        description="The complete formatted letter content ready for display"
-    )
+    content: str = Field(description="The complete formatted letter content ready for display")
 
 
 # RSS News Digests
@@ -159,12 +153,10 @@ class ConsolidatedInstructions(BaseModel):
     Structured model for adaptive instruction consolidation results.
     """
 
-    consolidated_instructions: List[str] = Field(
+    consolidated_instructions: list[str] = Field(
         description="3-8 clean, non-contradictory instructions after consolidation"
     )
-    changes_made: List[str] = Field(
+    changes_made: list[str] = Field(
         description="Description of changes made (e.g., 'Merged instructions 3 and 5', 'Removed contradiction')"
     )
-    reason: str = Field(
-        description="Brief explanation of the consolidation approach and rationale"
-    )
+    reason: str = Field(description="Brief explanation of the consolidation approach and rationale")

@@ -3,7 +3,6 @@ import json
 import logging
 import socket
 from datetime import datetime
-from typing import Any, Dict, List, Union
 from urllib.parse import urlparse
 
 import feedparser
@@ -38,16 +37,13 @@ def validate_public_http_url(url: str) -> str:
     if parsed.scheme not in ("http", "https"):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid URL scheme: {parsed.scheme}. Only http and https are allowed."
+            detail=f"Invalid URL scheme: {parsed.scheme}. Only http and https are allowed.",
         )
 
     # Extract hostname
     hostname = parsed.hostname
     if not hostname:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid URL: no hostname found."
-        )
+        raise HTTPException(status_code=400, detail="Invalid URL: no hostname found.")
 
     try:
         # Resolve hostname to IP addresses
@@ -55,25 +51,25 @@ def validate_public_http_url(url: str) -> str:
         resolved_ips = {addr_info[4][0] for addr_info in addr_infos}
     except socket.gaierror as e:
         raise HTTPException(
-            status_code=400,
-            detail=f"Failed to resolve hostname: {hostname}"
+            status_code=400, detail=f"Failed to resolve hostname: {hostname}"
         ) from e
 
     # Check if any resolved IP is private, loopback, link-local, multicast, or reserved
     for ip_str in resolved_ips:
         try:
             ip = ipaddress.ip_address(ip_str)
-            if (ip.is_private or ip.is_loopback or ip.is_link_local or
-                ip.is_multicast or ip.is_reserved):
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_multicast
+                or ip.is_reserved
+            ):
                 raise HTTPException(
-                    status_code=400,
-                    detail=f"URL resolves to disallowed IP address: {ip_str}"
+                    status_code=400, detail=f"URL resolves to disallowed IP address: {ip_str}"
                 )
         except ValueError:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid IP address resolved: {ip_str}"
-            )
+            raise HTTPException(status_code=400, detail=f"Invalid IP address resolved: {ip_str}")
 
     # Return the normalized URL
     return parsed.geturl()
@@ -89,9 +85,7 @@ async def get_feed_title(feed_url: str) -> str:
             response = await client.get(validated_url)
             response.raise_for_status()
         except httpx.HTTPError as e:
-            raise HTTPException(
-                status_code=400, detail=f"Error fetching RSS feed: {str(e)}"
-            )
+            raise HTTPException(status_code=400, detail=f"Error fetching RSS feed: {str(e)}")
 
     feed = feedparser.parse(response.text)
     return feed.feed.get("title", "Unknown Feed")
@@ -111,9 +105,7 @@ async def generate_item_digest(item: RssItem) -> str:
         config = config_manager.get_config()
         client = get_llm_client()
         model = config["SECONDARY_MODEL"]
-        options = config_manager.get_prompts_and_options()["options"][
-            "secondary"
-        ]
+        options = config_manager.get_prompts_and_options()["options"]["secondary"]
 
         json_schema_instruction = (
             "Output MUST be ONLY valid JSON with top-level key "
@@ -161,7 +153,7 @@ async def generate_item_digest(item: RssItem) -> str:
         return "Unable to generate digest."
 
 
-async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
+async def generate_combined_digest(articles: list[dict[str, str]]) -> str:
     """
     Generates a combined digest for multiple articles using LLM.
 
@@ -229,7 +221,7 @@ async def generate_combined_digest(articles: List[Dict[str, str]]) -> str:
         return "Unable to generate digest of recent medical news."
 
 
-async def fetch_rss_feed(feed_url: str) -> List[RssItem]:
+async def fetch_rss_feed(feed_url: str) -> list[RssItem]:
     """Fetches and processes an RSS feed."""
     # Validate URL to prevent SSRF attacks
     validated_url = validate_public_http_url(feed_url)
@@ -239,16 +231,12 @@ async def fetch_rss_feed(feed_url: str) -> List[RssItem]:
             response = await client.get(validated_url)
             response.raise_for_status()
         except httpx.HTTPError as e:
-            raise HTTPException(
-                status_code=400, detail=f"Error fetching RSS feed: {str(e)}"
-            )
+            raise HTTPException(status_code=400, detail=f"Error fetching RSS feed: {str(e)}")
 
     feed = feedparser.parse(response.text)
 
     if not feed.entries:
-        raise HTTPException(
-            status_code=400, detail="No entries found in the RSS feed"
-        )
+        raise HTTPException(status_code=400, detail="No entries found in the RSS feed")
 
     def get_entry_date(entry):
         # Try to get the published date, fall back to updated date, or use epoch if neither exists

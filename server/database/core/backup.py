@@ -6,13 +6,11 @@ with rotation to prevent disk space issues.
 
 import logging
 import os
-import re
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
-from server.constants import CHANGELOG_PATH
+from server._version import __version__
 
 # Configuration
 MAX_BACKUPS = 3  # Keep last 3 backups
@@ -20,19 +18,11 @@ BACKUP_SUBDIR = "backups"  # Subdirectory name within data directory
 
 
 def _get_app_version() -> str:
-    """Get the current app version from CHANGELOG.md."""
-    try:
-        with open(CHANGELOG_PATH, "r") as f:
-            changelog = f.read()
-        match = re.search(r"## \[(.*?)\].*?\n", changelog)
-        if match:
-            return match.group(1)
-    except Exception as e:
-        logging.warning(f"Could not read version from CHANGELOG: {e}")
-    return "unknown"
+    """Get the current app version."""
+    return __version__
 
 
-def create_backup(db_path: str, db_dir: Path) -> Optional[str]:
+def create_backup(db_path: str, db_dir: Path) -> str | None:
     """
     Create a backup of the database file before migrations.
 

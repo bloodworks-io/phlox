@@ -2,17 +2,10 @@ import asyncio
 import json
 import logging
 import re
-from typing import List, Optional
 
 import Levenshtein
 from server.database.config.manager import config_manager
-from server.database.core.connection import get_db
 from server.database.entities.patient import get_unique_primary_conditions
-from server.schemas.grammars import (
-    ClinicalReasoning,
-    NarrativeResponse,
-    RefinedResponse,
-)
 from server.schemas.patient import Condition, Patient, Summary
 from server.utils.helpers import calculate_age, clean_think_tags
 from server.utils.llm_client import get_llm_client, repair_json
@@ -23,8 +16,8 @@ logger.setLevel(logging.INFO)
 
 
 def _find_best_condition_match(
-    condition_name: str, existing_conditions: List[str], threshold: float = 0.8
-) -> Optional[str]:
+    condition_name: str, existing_conditions: list[str], threshold: float = 0.8
+) -> str | None:
     """
     Find the best fuzzy match for a condition name from existing conditions.
 
@@ -82,7 +75,7 @@ def _find_best_condition_match(
 
 
 def _create_condition_prompt_with_constraints(
-    existing_conditions: List[str], combined_text: str
+    existing_conditions: list[str], combined_text: str
 ) -> tuple[str, str]:
     """
     Create system and user prompts with condition constraints.
@@ -104,16 +97,10 @@ def _create_condition_prompt_with_constraints(
         )
     else:
         # Create constrained prompts with existing conditions
-        display_conditions = existing_conditions[
-            :20
-        ]  # Limit to avoid overwhelming prompt
-        conditions_list = "\n".join(
-            [f"- {condition}" for condition in display_conditions]
-        )
+        display_conditions = existing_conditions[:20]  # Limit to avoid overwhelming prompt
+        conditions_list = "\n".join([f"- {condition}" for condition in display_conditions])
         more_text = (
-            f"\n(and {len(existing_conditions) - 20} more)"
-            if len(existing_conditions) > 20
-            else ""
+            f"\n(and {len(existing_conditions) - 20} more)" if len(existing_conditions) > 20 else ""
         )
 
         condition_system = (
@@ -137,7 +124,7 @@ def _create_condition_prompt_with_constraints(
     return condition_system, condition_user
 
 
-async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
+async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
     """
     Summarise a patient encounter and extract the primary condition asynchronously.
 
@@ -166,22 +153,24 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
     combined_text = "\n\n".join(template_values)
 
     age = calculate_age(patient.dob, patient.encounter_date)
-    initial_summary_content = f"""This patient is {age} years old, and {'male' if patient.gender == 'M' else 'female'}. """
+    initial_summary_content = f"""This patient is {age} years old, and {"male" if patient.gender == "M" else "female"}. """
 
     summary_json_instruction = (
         "Output MUST be ONLY valid JSON with top-level key "
-        '"summary_text" (string). Example: '
-        + json.dumps({"summary_text": "..."})
+        '"summary_text" (string). Example: ' + json.dumps({"summary_text": "..."})
+    )
+
+    summary_system_content = (
+        prompts["prompts"]["summary"]["system"]
+        + "\n\n"
+        + summary_json_instruction
+        + "\n\n"
+        + initial_summary_content
     )
 
     summary_request_body = [
-        {"role": "system", "content": prompts["prompts"]["summary"]["system"]},
-        {
-            "role": "system",
-            "content": summary_json_instruction,
-        },
+        {"role": "system", "content": summary_system_content},
         {"role": "user", "content": combined_text},
-        {"role": "system", "content": initial_summary_content},
     ]
 
     async def fetch_summary():
@@ -211,15 +200,11 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
     async def fetch_condition():
         # Get existing conditions from database
         existing_conditions = get_unique_primary_conditions()
-        logging.info(
-            f"Found {len(existing_conditions)} existing conditions in database"
-        )
+        logging.info(f"Found {len(existing_conditions)} existing conditions in database")
 
         # PASS 1: Initial condition extraction
-        condition_system, condition_user = (
-            _create_condition_prompt_with_constraints(
-                existing_conditions, combined_text
-            )
+        condition_system, condition_user = _create_condition_prompt_with_constraints(
+            existing_conditions, combined_text
         )
 
         condition_json_instruction = (
@@ -229,10 +214,9 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
         )
 
         condition_request_body_constrained = [
-            {"role": "system", "content": condition_system},
             {
                 "role": "system",
-                "content": condition_json_instruction,
+                "content": condition_system + "\n\n" + condition_json_instruction,
             },
             {"role": "user", "content": condition_user},
         ]
@@ -252,9 +236,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
 
         try:
             if isinstance(response_json, str):
-                condition_response = Condition.model_validate_json(
-                    response_json
-                )
+                condition_response = Condition.model_validate_json(response_json)
             else:
                 condition_response = Condition.model_validate(response_json)
 
@@ -277,9 +259,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
 
                 if fuzzy_match:
                     cleaned_condition = fuzzy_match
-                    logger.info(
-                        f"Pass 1: Using fuzzy matched condition: {fuzzy_match}"
-                    )
+                    logger.info(f"Pass 1: Using fuzzy matched condition: {fuzzy_match}")
                 else:
                     # PASS 2: No good match found, try disambiguation with top candidates
                     logger.info(
@@ -289,9 +269,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                     # Get top 10 most similar conditions for disambiguation
                     candidates = []
                     for existing in existing_conditions:
-                        similarity = Levenshtein.ratio(
-                            cleaned_condition.lower(), existing.lower()
-                        )
+                        similarity = Levenshtein.ratio(cleaned_condition.lower(), existing.lower())
                         candidates.append((existing, similarity))
 
                     # Sort by similarity and take top 10
@@ -299,9 +277,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                     top_candidates = [cand[0] for cand in candidates[:10]]
 
                     if top_candidates:
-                        candidates_list = "\n".join(
-                            [f"- {cand}" for cand in top_candidates]
-                        )
+                        candidates_list = "\n".join([f"- {cand}" for cand in top_candidates])
 
                         disambig_json_instruction = (
                             "Output MUST be ONLY valid JSON with top-level key "
@@ -324,34 +300,27 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                         )
 
                         disambig_request_body = [
-                            {"role": "system", "content": disambig_system},
                             {
                                 "role": "system",
-                                "content": disambig_json_instruction,
+                                "content": disambig_system + "\n\n" + disambig_json_instruction,
                             },
                             {"role": "user", "content": disambig_user},
                         ]
 
-                        disambig_response_json = (
-                            await client.chat_with_structured_output(
-                                model=config["SECONDARY_MODEL"],
-                                messages=disambig_request_body,
-                                schema=Condition.model_json_schema(),
-                                options=prompts["options"]["secondary"],
-                            )
+                        disambig_response_json = await client.chat_with_structured_output(
+                            model=config["SECONDARY_MODEL"],
+                            messages=disambig_request_body,
+                            schema=Condition.model_json_schema(),
+                            options=prompts["options"]["secondary"],
                         )
 
                         if isinstance(disambig_response_json, str):
-                            disambig_response_json = repair_json(
-                                disambig_response_json
-                            )
+                            disambig_response_json = repair_json(disambig_response_json)
                             disambig_response = Condition.model_validate_json(
                                 disambig_response_json
                             )
                         else:
-                            disambig_response = Condition.model_validate(
-                                disambig_response_json
-                            )
+                            disambig_response = Condition.model_validate(disambig_response_json)
 
                         disambig_condition = disambig_response.condition_name
 
@@ -360,9 +329,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
                             and disambig_condition in top_candidates
                         ):
                             cleaned_condition = disambig_condition
-                            logger.info(
-                                f"Pass 2: Disambiguation selected: {disambig_condition}"
-                            )
+                            logger.info(f"Pass 2: Disambiguation selected: {disambig_condition}")
                         else:
                             logger.info(
                                 f"Pass 2: Keeping original condition as new: {cleaned_condition}"
@@ -385,13 +352,9 @@ async def summarise_encounter(patient: Patient) -> tuple[str, Optional[str]]:
             return cleaned_condition
 
         except Exception as e:
-            logging.error(
-                f"Error extracting condition: {e}, response content: {response_json}"
-            )
+            logging.error(f"Error extracting condition: {e}, response content: {response_json}")
             return None
 
-    summary, condition = await asyncio.gather(
-        fetch_summary(), fetch_condition()
-    )
+    summary, condition = await asyncio.gather(fetch_summary(), fetch_condition())
 
     return summary, condition

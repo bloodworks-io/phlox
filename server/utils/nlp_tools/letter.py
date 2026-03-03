@@ -1,6 +1,5 @@
 import json
 import logging
-import random
 
 from fastapi import HTTPException
 from server.database.config.manager import config_manager
@@ -31,27 +30,23 @@ async def generate_letter_content(
     )
 
     try:
-        # Always start with system messages
-        request_body = [
-            {
-                "role": "system",
-                "content": prompts["prompts"]["letter"]["system"]
-                + "\n\n"
-                + json_schema_instruction,
-            },
-        ]
+        # Build a single system message (merge system prompt + doctor context)
+        system_content = prompts["prompts"]["letter"]["system"] + "\n\n" + json_schema_instruction
 
         # Add doctor context if available
         user_settings = config_manager.get_user_settings()
         doctor_name = user_settings.get("name", "")
         specialty = user_settings.get("specialty", "")
         if doctor_name or specialty:
+            system_content += "\n\n"
             doctor_context = "Write the letter in the voice of "
             doctor_context += f"{doctor_name}, " if doctor_name else ""
-            doctor_context += (
-                f"a {specialty} specialist." if specialty else "a specialist."
-            )
-            request_body.append({"role": "system", "content": doctor_context})
+            doctor_context += f"a {specialty} specialist." if specialty else "a specialist."
+            system_content += doctor_context
+
+        request_body = [
+            {"role": "system", "content": system_content},
+        ]
 
         # Format clinic note
         clinic_note = "\n\n".join(
@@ -75,8 +70,9 @@ async def generate_letter_content(
         )
 
         # Add any context from the frontend
+        # Filter out system messages to ensure they only appear at the beginning
         if context:
-            context_messages = context.copy()
+            context_messages = [m for m in context if m.get("role") != "system"]
             request_body.extend(context_messages)
 
         # Set up response format for structured output with thinking support
@@ -109,9 +105,7 @@ async def generate_letter_content(
 
     except Exception as e:
         logging.error(f"Error generating letter content: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Error generating letter content: {e}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error generating letter content: {e}")
 
 
 def _format_name(patient_name):

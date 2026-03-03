@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import re
@@ -42,9 +41,7 @@ class ChromaManager:
         Initializes the ChromaManager with configuration settings and clients.
         """
         if not CHROMADB_AVAILABLE:
-            raise RuntimeError(
-                "RAG features require chromadb and PyMuPDF. "
-            )
+            raise RuntimeError("RAG features require chromadb and PyMuPDF. ")
 
         self.config = config_manager.get_config()
         self.prompts = config_manager.get_prompts_and_options()
@@ -94,9 +91,7 @@ class ChromaManager:
         )
         return response_json
 
-    def commit_to_vectordb(
-        self, disease_name, focus_area, document_source, filename
-    ):
+    def commit_to_vectordb(self, disease_name, focus_area, document_source, filename):
         """
         Commits extracted text to the vector database.
         """
@@ -195,15 +190,11 @@ class ChromaManager:
             collection = self.chroma_client.get_collection(
                 name=formatted_name, embedding_function=self.embedding_model
             )
-            context = collection.get(
-                where={"disease_name": formatted_name}, include=["metadatas"]
-            )
+            context = collection.get(where={"disease_name": formatted_name}, include=["metadatas"])
             unique_ids = {re.sub(r"_\d*", "", id_) for id_ in context["ids"]}
             return list(unique_ids)
         except Exception as e:
-            print(
-                f"Error retrieving files for collection '{collection_name}':", e
-            )
+            print(f"Error retrieving files for collection '{collection_name}':", e)
             return []
 
     def delete_file_from_collection(self, collection_name, file_name):
@@ -222,14 +213,8 @@ class ChromaManager:
             collection = self.chroma_client.get_collection(
                 name=formatted_name, embedding_function=self.embedding_model
             )
-            result = collection.get(
-                where={"disease_name": formatted_name}, include=["metadatas"]
-            )
-            ids_to_delete = [
-                id
-                for id in result["ids"]
-                if re.sub(r"_\d*$", "", id) == file_name
-            ]
+            result = collection.get(where={"disease_name": formatted_name}, include=["metadatas"])
+            ids_to_delete = [id for id in result["ids"] if re.sub(r"_\d*$", "", id) == file_name]
             if ids_to_delete:
                 collection.delete(ids=ids_to_delete)
                 print(
@@ -241,9 +226,7 @@ class ChromaManager:
                 )
             return True
         except Exception as e:
-            print(
-                f"Error deleting file from collection '{collection_name}': {e}"
-            )
+            print(f"Error deleting file from collection '{collection_name}': {e}")
             return False
 
     def modify_collection_name(self, old_name, new_name):
@@ -264,9 +247,7 @@ class ChromaManager:
                 name=old_name_formatted, embedding_function=self.embedding_model
             )
             collection.modify(name=new_name_formatted)
-            print(
-                f"Collection '{old_name_formatted}' renamed to '{new_name_formatted}'"
-            )
+            print(f"Collection '{old_name_formatted}' renamed to '{new_name_formatted}'")
             return True
         except Exception as e:
             print(f"Error renaming collection '{old_name}':", e)
@@ -365,9 +346,7 @@ class ChromaManager:
         """
         from server.schemas.grammars import DiseaseNameResponse
 
-        collection_names = [
-            c.name for c in self.chroma_client.list_collections()
-        ]
+        collection_names = [c.name for c in self.chroma_client.list_collections()]
         collection_names_string = ", ".join(collection_names)
 
         words = text.split()
@@ -381,8 +360,7 @@ class ChromaManager:
         # JSON schema instruction for flaky endpoints
         json_schema_instruction = (
             "Output MUST be ONLY valid JSON with top-level key "
-            '"disease_name" (string). Example: '
-            + json.dumps({"disease_name": "..."})
+            '"disease_name" (string). Example: ' + json.dumps({"disease_name": "..."})
         )
 
         # Initial disease question messages
@@ -433,8 +411,7 @@ class ChromaManager:
         # JSON schema instruction for flaky endpoints
         json_schema_instruction = (
             "Output MUST be ONLY valid JSON with top-level key "
-            '"focus_area" (string). Example: '
-            + json.dumps({"focus_area": "..."})
+            '"focus_area" (string). Example: ' + json.dumps({"focus_area": "..."})
         )
 
         # Focus area determination
@@ -515,8 +492,6 @@ class ChromaManager:
             source_messages, DocumentSourceResponse.model_json_schema()
         )
 
-        source_data = DocumentSourceResponse.model_validate_json(
-            source_response
-        )
+        source_data = DocumentSourceResponse.model_validate_json(source_response)
 
         return source_data.source

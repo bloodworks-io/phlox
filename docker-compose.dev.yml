@@ -1,16 +1,17 @@
 version: "3"
 services:
-  app:
-    image: localhost/phlox-dev:latest
-    container_name: phlox-dev
-    network_mode: host
-    environment:
-      DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
-      NODE_ENV: development
-      VITE_BACKEND_URL: ""
-      TZ: Australia/Melbourne
-      SERVER_HOST: 0.0.0.0 # Bind to all interfaces
-    volumes:
-      - .:/usr/src/app
-      - ./data:/usr/src/app/data # Only for persistent data
-      - ./logs:/usr/src/app/logs # Optional: Persist logs
+    app:
+        image: localhost/phlox-dev:latest
+        container_name: phlox-dev
+        network_mode: host
+        environment:
+            DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
+            NODE_ENV: development
+            TZ: Australia/Melbourne
+            SERVER_HOST: 0.0.0.0 # Bind to all interfaces
+            RATE_LIMIT_ENABLED: false
+        volumes:
+            - .:/usr/src/app
+            - /usr/src/app/node_modules
+            - ./data:/usr/src/app/data # Optional: Persist test data
+            - ./logs:/usr/src/app/logs # Optional: Persist logs

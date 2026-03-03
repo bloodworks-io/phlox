@@ -1,13 +1,9 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
 
-import feedparser
 from fastapi import HTTPException
-from ollama import AsyncClient
-
 from server.database.core.connection import get_db
 from server.schemas.dashboard import RssFeed, RssItem
 from server.utils.nlp_tools.rss import (
@@ -23,8 +19,8 @@ class RefreshManager:
     """Manages the refresh state of different tasks."""
 
     def __init__(self):
-        self.lock: Dict[str, asyncio.Lock] = {}
-        self.is_refreshing: Dict[str, bool] = {}
+        self.lock: dict[str, asyncio.Lock] = {}
+        self.is_refreshing: dict[str, bool] = {}
 
     def _ensure_task_initialized(self, task_name: str) -> None:
         """Ensures a task has its lock and state initialized."""
@@ -90,13 +86,11 @@ def _to_iso8601(date_string: str) -> str:
     try:
         dt = datetime.fromisoformat(date_string.replace("Z", "+00:00"))
     except ValueError:
-        dt = datetime.now(timezone.utc)
-    return dt.astimezone(timezone.utc).isoformat()
+        dt = datetime.now(UTC)
+    return dt.astimezone(UTC).isoformat()
 
 
-async def fetch_and_insert_initial_items(
-    feed_id: int, feed_url: str, limit: int = 10
-) -> None:
+async def fetch_and_insert_initial_items(feed_id: int, feed_url: str, limit: int = 10) -> None:
     """
     Fetches and inserts initial items for a new RSS feed.
 
@@ -110,16 +104,14 @@ async def fetch_and_insert_initial_items(
         new_items = await fetch_rss_feed(feed_url)
         new_items = new_items[:limit]
 
-        async def process_item(item: RssItem) -> Dict[str, str]:
+        async def process_item(item: RssItem) -> dict[str, str]:
             digest = await generate_item_digest(item)
             return {
                 "item": item,
                 "digest": digest,
             }
 
-        processed_items = await asyncio.gather(
-            *(process_item(item) for item in new_items)
-        )
+        processed_items = await asyncio.gather(*(process_item(item) for item in new_items))
 
         try:
             for result in processed_items:
@@ -137,13 +129,11 @@ async def fetch_and_insert_initial_items(
                         item.description,
                         _to_iso8601(item.published),
                         digest,
-                        datetime.now(timezone.utc).isoformat(),
+                        datetime.now(UTC).isoformat(),
                     ),
                 )
             get_db().commit()
-            logger.info(
-                f"Added {len(new_items)} initial items for feed {feed_url}"
-            )
+            logger.info(f"Added {len(new_items)} initial items for feed {feed_url}")
         finally:
             get_db().close()
     except Exception as e:
@@ -170,7 +160,7 @@ async def add_feed(feed: RssFeed) -> int:
                 (
                     str(feed.url),
                     feed.title,
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                 ),
             )
             feed_id = get_db().cursor.lastrowid
@@ -194,9 +184,7 @@ async def refresh_single_feed(feed_id: int, feed_url: str) -> None:
     try:
         new_items = await fetch_rss_feed(feed_url)
 
-        get_db().cursor.execute(
-            "SELECT link FROM rss_items WHERE feed_id = ?", (feed_id,)
-        )
+        get_db().cursor.execute("SELECT link FROM rss_items WHERE feed_id = ?", (feed_id,))
         existing_links = set(row[0] for row in get_db().cursor.fetchall())
 
         for item in new_items:
@@ -214,13 +202,13 @@ async def refresh_single_feed(feed_id: int, feed_url: str) -> None:
                         item.description,
                         _to_iso8601(item.published),
                         digest,
-                        datetime.now(timezone.utc).isoformat(),
+                        datetime.now(UTC).isoformat(),
                     ),
                 )
 
         get_db().cursor.execute(
             "UPDATE rss_feeds SET last_refreshed = ? WHERE id = ?",
-            (datetime.now(timezone.utc).isoformat(), feed_id),
+            (datetime.now(UTC).isoformat(), feed_id),
         )
         get_db().commit()
         logger.info(
@@ -231,7 +219,7 @@ async def refresh_single_feed(feed_id: int, feed_url: str) -> None:
         get_db().rollback()
 
 
-def get_feeds() -> List[RssFeed]:
+def get_feeds() -> list[RssFeed]:
     """
     Retrieves all RSS feeds from the database.
 
@@ -239,10 +227,7 @@ def get_feeds() -> List[RssFeed]:
         List[RssFeed]: A list of all RSS feeds.
     """
     get_db().cursor.execute("SELECT id, url, title FROM rss_feeds")
-    return [
-        RssFeed(id=row[0], url=row[1], title=row[2])
-        for row in get_db().cursor.fetchall()
-    ]
+    return [RssFeed(id=row[0], url=row[1], title=row[2]) for row in get_db().cursor.fetchall()]
 
 
 def remove_feed(feed_id: int) -> None:
@@ -255,16 +240,14 @@ def remove_feed(feed_id: int) -> None:
     Raises:
         Exception: If the feed is not found.
     """
-    get_db().cursor.execute(
-        "DELETE FROM rss_items WHERE feed_id = ?", (feed_id,)
-    )
+    get_db().cursor.execute("DELETE FROM rss_items WHERE feed_id = ?", (feed_id,))
     get_db().cursor.execute("DELETE FROM rss_feeds WHERE id = ?", (feed_id,))
     if get_db().cursor.rowcount == 0:
         raise Exception("Feed not found")
     get_db().commit()
 
 
-async def refresh_feeds(feed_id: Optional[int] = None) -> str | int:
+async def refresh_feeds(feed_id: int | None = None) -> str | int:
     """
     Refreshes all RSS feeds or a specific feed.
 
@@ -279,25 +262,19 @@ async def refresh_feeds(feed_id: Optional[int] = None) -> str | int:
 
     try:
         if feed_id:
-            get_db().cursor.execute(
-                "SELECT id, url FROM rss_feeds WHERE id = ?", (feed_id,)
-            )
+            get_db().cursor.execute("SELECT id, url FROM rss_feeds WHERE id = ?", (feed_id,))
         else:
             get_db().cursor.execute("SELECT id, url FROM rss_feeds")
 
         feeds = get_db().cursor.fetchall()
-        refresh_tasks = [
-            refresh_single_feed(feed[0], feed[1]) for feed in feeds
-        ]
+        refresh_tasks = [refresh_single_feed(feed[0], feed[1]) for feed in feeds]
         await asyncio.gather(*refresh_tasks)
         return len(feeds)
     finally:
         await refresh_manager.end_refresh()
 
 
-def fetch_rss_items_from_db(
-    feed_ids: Optional[List[int]] = None, limit: int = 10
-) -> List[RssItem]:
+def fetch_rss_items_from_db(feed_ids: list[int] | None = None, limit: int = 10) -> list[RssItem]:
     """
     Fetches RSS items from the database.
 
@@ -337,7 +314,7 @@ def fetch_rss_items_from_db(
     ]
 
 
-async def store_combined_digest(digest: str, articles: List[dict]) -> None:
+async def store_combined_digest(digest: str, articles: list[dict]) -> None:
     """Store a new combined digest in the database."""
     get_db().cursor.execute(
         """
@@ -347,13 +324,13 @@ async def store_combined_digest(digest: str, articles: List[dict]) -> None:
         (
             digest,
             json.dumps(articles),
-            datetime.now(timezone.utc).isoformat(),
+            datetime.now(UTC).isoformat(),
         ),
     )
     get_db().commit()
 
 
-def get_latest_digest() -> Optional[dict]:
+def get_latest_digest() -> dict | None:
     """Retrieve the most recent combined digest."""
     get_db().cursor.execute("""
         SELECT digest, articles_json, created_at
@@ -379,10 +356,7 @@ async def generate_and_store_digest(force: bool = False) -> dict:
     if (
         not force
         and latest
-        and (
-            datetime.now(timezone.utc)
-            - datetime.fromisoformat(latest["created_at"])
-        ).total_seconds()
+        and (datetime.now(UTC) - datetime.fromisoformat(latest["created_at"])).total_seconds()
         < 86400
     ):  # 24 hours
         return latest
@@ -423,11 +397,11 @@ async def generate_and_store_digest(force: bool = False) -> dict:
     return {
         "combined_digest": digest,
         "articles": articles,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
     }
 
 
-async def get_recent_digests(limit: Optional[int] = 3) -> dict:
+async def get_recent_digests(limit: int | None = 3) -> dict:
     """
     Retrieves and summarizes the most recent RSS items.
 

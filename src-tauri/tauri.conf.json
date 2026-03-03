@@ -61,10 +61,10 @@
     "longDescription": "",
     "copyright": "",
     "externalBin": [
-      "binaries/server",
+      "binaries/phlox-server",
       "binaries/phlox-pm",
-      "binaries/llama-server",
-      "binaries/whisper-server"
+      "binaries/phlox-llama-server",
+      "binaries/phlox-whisper-server"
     ]
   },
   "plugins": {

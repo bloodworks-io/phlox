@@ -1,7 +1,7 @@
 import logging
 import re
 import time
-from typing import Dict, Union
+from typing import Union
 
 import aiohttp
 from server.database.config.manager import config_manager
@@ -16,7 +16,7 @@ def _get_whisper_port() -> str:
     return str(get_whisper_port())
 
 
-async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
+async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
     """
     Transcribe an audio buffer using a Whisper endpoint.
 
@@ -38,9 +38,9 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
 
         # Determine if using local whisper
         # Local mode is: LLM_PROVIDER is "local" AND WHISPER_BASE_URL is empty
-        is_local_whisper = config.get(
-            "LLM_PROVIDER"
-        ) == "local" and not config.get("WHISPER_BASE_URL")
+        is_local_whisper = config.get("LLM_PROVIDER") == "local" and not config.get(
+            "WHISPER_BASE_URL"
+        )
 
         if is_local_whisper:
             logger.info("Using local whisper.cpp server for transcription")
@@ -55,7 +55,7 @@ async def transcribe_audio(audio_buffer: bytes) -> Dict[str, Union[str, float]]:
 
 async def _transcribe_local_whisper(
     audio_buffer: bytes, config: dict
-) -> Dict[str, Union[str, float]]:
+) -> dict[str, Union[str, float]]:
     """Transcribe using local whisper.cpp server."""
     whisper_port = _get_whisper_port()
     whisper_url = f"http://127.0.0.1:{whisper_port}/inference"
@@ -85,9 +85,7 @@ async def _transcribe_local_whisper(
 
                 if response.status != 200:
                     error_text = await response.text()
-                    raise ValueError(
-                        f"Whisper local server error: {error_text}"
-                    )
+                    raise ValueError(f"Whisper local server error: {error_text}")
 
                 try:
                     data = await response.json()
@@ -109,9 +107,7 @@ async def _transcribe_local_whisper(
 
                 return {
                     "text": transcript_text,
-                    "transcriptionDuration": float(
-                        f"{transcription_duration:.2f}"
-                    ),
+                    "transcriptionDuration": float(f"{transcription_duration:.2f}"),
                 }
         except aiohttp.ClientError as e:
             raise ValueError(f"Cannot connect to local whisper server: {e}")
@@ -119,7 +115,7 @@ async def _transcribe_local_whisper(
 
 async def _transcribe_external_api(
     audio_buffer: bytes, config: dict
-) -> Dict[str, Union[str, float]]:
+) -> dict[str, Union[str, float]]:
     """Transcribe using external Whisper API (existing logic)."""
     filename, content_type = _detect_audio_format(audio_buffer)
     async with aiohttp.ClientSession() as session:
@@ -163,9 +159,7 @@ async def _transcribe_external_api(
 
             if "segments" in data:
                 # Extract text from each segment and join with newlines
-                transcript_text = "\n".join(
-                    segment["text"].strip() for segment in data["segments"]
-                )
+                transcript_text = "\n".join(segment["text"].strip() for segment in data["segments"])
             else:
                 transcript_text = data["text"]
 

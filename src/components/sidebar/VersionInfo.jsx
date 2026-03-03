@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from "react";
-import ReactMarkdown from "react-markdown";
 import {
   Box,
   Text,
-  Flex,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   Badge,
   Tooltip,
   Link,
@@ -24,44 +16,25 @@ import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
 import { colors } from "../../theme/colors";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
+import ChangelogModal from "../modals/ChangelogModal";
+import { APP_VERSION } from "../../utils/constants/version";
+import changelogContent from "../../../CHANGELOG.md?raw";
 
 const VersionInfo = ({ isCollapsed }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [version, setVersion] = useState("");
-  const [changelog, setChangelog] = useState("");
   const [serverStatus, setServerStatus] = useState({
     whisper: false,
-    llm: false, // Updated from 'ollama' to 'llm'
+    llm: false,
   });
+
+  const version = APP_VERSION;
+  const changelog = changelogContent;
 
   // Use consistent dark theme text color
   const textColor = colors.dark.textPrimary;
   const iconColor = colors.dark.textSecondary;
 
   useEffect(() => {
-    // Fetch version from backend
-    const fetchVersion = async () => {
-      try {
-        const url = await buildApiUrl("/api/config/version");
-        const res = await universalFetch(url);
-        const data = await res.json();
-        setVersion(data.version);
-      } catch (err) {
-        console.error("Error fetching version:", err);
-      }
-    };
-
-    // Fetch changelog
-    const fetchChangelog = async () => {
-      try {
-        const url = await buildApiUrl("/api/config/changelog");
-        const res = await universalFetch(url);
-        const data = await res.json();
-        setChangelog(data.content);
-      } catch (err) {
-        console.error("Error fetching changelog:", err);
-      }
-    };
     // Check server status
     const checkStatus = async () => {
       try {
@@ -76,8 +49,6 @@ const VersionInfo = ({ isCollapsed }) => {
       }
     };
 
-    fetchVersion();
-    fetchChangelog();
     checkStatus();
     // Set up interval to check status periodically
     const intervalId = setInterval(checkStatus, 60000); // Check every minute
@@ -198,40 +169,6 @@ const VersionInfo = ({ isCollapsed }) => {
         changelog={changelog}
       />
     </Box>
-  );
-};
-
-// Separate component for the changelog modal
-const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
-  const cleanChangelog = changelog.replace(/^# Changelog\s*\n/, "");
-  const releases = cleanChangelog
-    .split(/(?=## \[)/)
-    .filter((release) => release.trim() !== "");
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
-      <ModalOverlay />
-      <ModalContent className="modal-style">
-        <ModalHeader>Phlox - Changelog</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody
-          maxH="70vh"
-          overflowY="auto"
-          className="custom-scrollbar"
-          px={10}
-        >
-          {releases.length > 0 ? (
-            releases.map((release, index) => (
-              <Box key={index} mb={10}>
-                <ReactMarkdown>{release}</ReactMarkdown>
-              </Box>
-            ))
-          ) : (
-            <Text>Loading changelog...</Text>
-          )}
-        </ModalBody>
-      </ModalContent>
-    </Modal>
   );
 };
 

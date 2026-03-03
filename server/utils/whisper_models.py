@@ -13,7 +13,6 @@ import time
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import httpx
 
@@ -28,7 +27,7 @@ class DownloadProgress:
     downloaded_bytes: int
     total_bytes: int
     speed_bytes_per_sec: float
-    eta_seconds: Optional[float]
+    eta_seconds: float | None
     current_file: str  # "model" or "coreml"
 
 
@@ -122,9 +121,7 @@ def get_data_dir() -> Path:
     elif sys.platform == "darwin":  # macOS
         data_dir = os.path.expanduser("~/Library/Application Support")
     else:  # Linux and others
-        data_dir = os.environ.get(
-            "XDG_DATA_HOME", os.path.expanduser("~/.local/share")
-        )
+        data_dir = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
     return Path(data_dir)
 
 
@@ -136,7 +133,7 @@ class WhisperModelManager:
         self.models_dir = get_data_dir() / "phlox" / "whisper_models"
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
-    def get_available_models(self) -> List[Dict]:
+    def get_available_models(self) -> list[dict]:
         """Get list of all available whisper.cpp models."""
         return [
             {
@@ -150,7 +147,7 @@ class WhisperModelManager:
             for model_id, info in WHISPER_MODELS.items()
         ]
 
-    def get_downloaded_models(self) -> List[Dict]:
+    def get_downloaded_models(self) -> list[dict]:
         """Get list of downloaded models."""
         models = []
         for model_file in self.models_dir.glob("ggml-*.bin"):
@@ -187,7 +184,7 @@ class WhisperModelManager:
                 )
         return sorted(models, key=lambda m: m["size_mb"])
 
-    def get_model_path(self, model_id: str) -> Optional[Path]:
+    def get_model_path(self, model_id: str) -> Path | None:
         """Get the file path for a model."""
         model_file = self.models_dir / f"ggml-{model_id}.bin"
         if model_file.exists():
@@ -198,7 +195,7 @@ class WhisperModelManager:
         """Check if a model is downloaded."""
         return self.get_model_path(model_id) is not None
 
-    def _get_coreml_model_path(self, model_id: str) -> Optional[Path]:
+    def _get_coreml_model_path(self, model_id: str) -> Path | None:
         """Get the directory path for a Core ML model."""
         coreml_dir = self.models_dir / f"ggml-{model_id}-encoder.mlmodelc"
         if coreml_dir.exists():
@@ -214,9 +211,7 @@ class WhisperModelManager:
         for model_file in self.models_dir.glob("ggml-*.bin"):
             try:
                 model_file.unlink()
-                logger.info(
-                    f"Deleted existing Whisper model: {model_file.name}"
-                )
+                logger.info(f"Deleted existing Whisper model: {model_file.name}")
             except Exception as e:
                 logger.warning(f"Failed to delete {model_file.name}: {e}")
 
@@ -225,15 +220,11 @@ class WhisperModelManager:
         for coreml_dir in self.models_dir.glob("ggml-*-encoder.mlmodelc"):
             try:
                 shutil.rmtree(coreml_dir)
-                logger.info(
-                    f"Deleted existing Core ML model: {coreml_dir.name}"
-                )
+                logger.info(f"Deleted existing Core ML model: {coreml_dir.name}")
             except Exception as e:
                 logger.warning(f"Failed to delete {coreml_dir.name}: {e}")
 
-    async def download_model(
-        self, model_id: str, progress_callback=None
-    ) -> str:
+    async def download_model(self, model_id: str, progress_callback=None) -> str:
         """Download a whisper model from HuggingFace.
 
         Note: This will replace any existing Whisper model - only one model
@@ -269,61 +260,55 @@ class WhisperModelManager:
 
         try:
             # Download the main .bin model file
-            async with httpx.AsyncClient(
-                timeout=timeout,
-                follow_redirects=True,
-                headers={"User-Agent": "phlox"},
-            ) as client:
-                async with client.stream("GET", url) as response:
-                    response.raise_for_status()
-                    total_size = int(response.headers.get("content-length", 0))
+            async with (
+                httpx.AsyncClient(
+                    timeout=timeout,
+                    follow_redirects=True,
+                    headers={"User-Agent": "phlox"},
+                ) as client,
+                client.stream("GET", url) as response,
+            ):
+                response.raise_for_status()
+                total_size = int(response.headers.get("content-length", 0))
 
-                    with open(model_file, "wb") as f:
-                        downloaded = 0
-                        async for chunk in response.aiter_bytes(8192):
-                            f.write(chunk)
-                            downloaded += len(chunk)
+                with open(model_file, "wb") as f:
+                    downloaded = 0
+                    async for chunk in response.aiter_bytes(8192):
+                        f.write(chunk)
+                        downloaded += len(chunk)
 
-                            # Calculate speed and ETA (update every ~0.5 seconds)
-                            current_time = time.time()
-                            if (
-                                progress_callback
-                                and total_size
-                                and (current_time - last_update_time) > 0.5
-                            ):
-                                speed = (downloaded - last_downloaded) / (
-                                    current_time - last_update_time
-                                )
-                                eta = (
-                                    (total_size - downloaded) / speed
-                                    if speed > 0
-                                    else None
-                                )
+                        # Calculate speed and ETA (update every ~0.5 seconds)
+                        current_time = time.time()
+                        if (
+                            progress_callback
+                            and total_size
+                            and (current_time - last_update_time) > 0.5
+                        ):
+                            speed = (downloaded - last_downloaded) / (
+                                current_time - last_update_time
+                            )
+                            eta = (total_size - downloaded) / speed if speed > 0 else None
 
-                                progress = DownloadProgress(
-                                    percentage=(downloaded / total_size) * 100,
-                                    downloaded_bytes=downloaded,
-                                    total_bytes=total_size,
-                                    speed_bytes_per_sec=speed,
-                                    eta_seconds=eta,
-                                    current_file="model",
-                                )
-                                await progress_callback(progress)
+                            progress = DownloadProgress(
+                                percentage=(downloaded / total_size) * 100,
+                                downloaded_bytes=downloaded,
+                                total_bytes=total_size,
+                                speed_bytes_per_sec=speed,
+                                eta_seconds=eta,
+                                current_file="model",
+                            )
+                            await progress_callback(progress)
 
-                                last_update_time = current_time
-                                last_downloaded = downloaded
+                            last_update_time = current_time
+                            last_downloaded = downloaded
 
             logger.info(f"Successfully downloaded {model_id} to {model_file}")
 
             # Download Core ML model if available
             coreml_url = model_info.get("coreml_url")
             if coreml_url:
-                logger.info(
-                    f"Downloading Core ML model for {model_id} from {coreml_url}"
-                )
-                zip_file = (
-                    self.models_dir / f"ggml-{model_id}-encoder.mlmodelc.zip"
-                )
+                logger.info(f"Downloading Core ML model for {model_id} from {coreml_url}")
+                zip_file = self.models_dir / f"ggml-{model_id}-encoder.mlmodelc.zip"
 
                 try:
                     # Reset tracking for CoreML download
@@ -331,58 +316,58 @@ class WhisperModelManager:
                     coreml_last_update = coreml_start_time
                     coreml_last_downloaded = 0
 
-                    async with httpx.AsyncClient(
-                        timeout=timeout,
-                        follow_redirects=True,
-                        headers={"User-Agent": "phlox"},
-                    ) as client:
-                        async with client.stream("GET", coreml_url) as response:
-                            response.raise_for_status()
-                            total_size = int(
-                                response.headers.get("content-length", 0)
-                            )
+                    async with (
+                        httpx.AsyncClient(
+                            timeout=timeout,
+                            follow_redirects=True,
+                            headers={"User-Agent": "phlox"},
+                        ) as client,
+                        client.stream("GET", coreml_url) as response,
+                    ):
+                        response.raise_for_status()
+                        total_size = int(response.headers.get("content-length", 0))
 
-                            with open(zip_file, "wb") as f:
-                                downloaded = 0
-                                async for chunk in response.aiter_bytes(8192):
-                                    f.write(chunk)
-                                    downloaded += len(chunk)
+                        with open(zip_file, "wb") as f:
+                            downloaded = 0
+                            async for chunk in response.aiter_bytes(8192):
+                                f.write(chunk)
+                                downloaded += len(chunk)
 
-                                    # Calculate speed and ETA for CoreML
-                                    current_time = time.time()
-                                    if (
-                                        progress_callback
-                                        and total_size
-                                        and (current_time - coreml_last_update)
-                                        > 0.5
-                                    ):
-                                        speed = (
-                                            downloaded - coreml_last_downloaded
-                                        ) / (current_time - coreml_last_update)
-                                        eta = (
-                                            (total_size - downloaded) / speed
-                                            if speed > 0
-                                            else None
-                                        )
+                                # Calculate speed and ETA for CoreML
+                                current_time = time.time()
+                                if (
+                                    progress_callback
+                                    and total_size
+                                    and (current_time - coreml_last_update) > 0.5
+                                ):
+                                    speed = (downloaded - coreml_last_downloaded) / (
+                                        current_time - coreml_last_update
+                                    )
+                                    eta = (total_size - downloaded) / speed if speed > 0 else None
 
-                                        progress = DownloadProgress(
-                                            percentage=(downloaded / total_size)
-                                            * 100,
-                                            downloaded_bytes=downloaded,
-                                            total_bytes=total_size,
-                                            speed_bytes_per_sec=speed,
-                                            eta_seconds=eta,
-                                            current_file="coreml",
-                                        )
-                                        await progress_callback(progress)
+                                    progress = DownloadProgress(
+                                        percentage=(downloaded / total_size) * 100,
+                                        downloaded_bytes=downloaded,
+                                        total_bytes=total_size,
+                                        speed_bytes_per_sec=speed,
+                                        eta_seconds=eta,
+                                        current_file="coreml",
+                                    )
+                                    await progress_callback(progress)
 
-                                        coreml_last_update = current_time
-                                        coreml_last_downloaded = downloaded
+                                    coreml_last_update = current_time
+                                    coreml_last_downloaded = downloaded
 
-                    # Extract the zip file
+                    # Extract zip file
                     logger.info(f"Extracting Core ML model to {coreml_dir}")
                     with zipfile.ZipFile(zip_file, "r") as zip_ref:
-                        zip_ref.extractall(self.models_dir)
+                        for member in zip_ref.infolist():
+                            # Ensure paths don't escape models_dir
+                            if ".." in member.filename or member.filename.startswith("/"):
+                                logger.warning(f"Skipping unsafe ZIP entry: {member.filename}")
+                                continue
+                            # Extract safely
+                            zip_ref.extract(member, self.models_dir)
 
                     # Remove the zip file after extraction
                     zip_file.unlink()
@@ -399,12 +384,8 @@ class WhisperModelManager:
                             pass
                     # If Core ML download fails, log a warning but don't fail the entire download
                     # The model will still work with Metal GPU acceleration
-                    logger.warning(
-                        f"Failed to download Core ML model for {model_id}: {e}"
-                    )
-                    logger.info(
-                        f"Model {model_id} will use Metal GPU acceleration instead"
-                    )
+                    logger.warning(f"Failed to download Core ML model for {model_id}: {e}")
+                    logger.info(f"Model {model_id} will use Metal GPU acceleration instead")
 
         except Exception:
             # If something fails mid-download, don't leave a corrupt partial file behind.
@@ -458,9 +439,7 @@ class WhisperModelManager:
         try:
             selection_file.parent.mkdir(parents=True, exist_ok=True)
             selection_file.write_text(model_id)
-            logger.info(
-                f"Wrote model selection to {selection_file}: {model_id}"
-            )
+            logger.info(f"Wrote model selection to {selection_file}: {model_id}")
         except Exception as e:
             logger.warning(f"Failed to write model selection file: {e}")
 
@@ -470,7 +449,7 @@ class WhisperModelManager:
         if selection_file.exists():
             try:
                 selection_file.unlink()
-                logger.info(f"Deleted model selection file")
+                logger.info("Deleted model selection file")
             except Exception as e:
                 logger.warning(f"Failed to delete model selection file: {e}")
 

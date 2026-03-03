@@ -171,12 +171,12 @@ echo "=========================================="
 
 if [ "$SKIP_WHISPER" = true ]; then
     echo "⏭️  Skipping whisper.cpp build (--skip-whisper)"
-    WHISPER_BIN="src-tauri/whisper-server"
+    WHISPER_BIN="src-tauri/phlox-whisper-server"
     if [[ "$PLATFORM" == "windows-"* ]]; then
-        WHISPER_BIN="src-tauri/whisper-server.exe"
+        WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
     fi
     if [ ! -f "$WHISPER_BIN" ]; then
-        echo "⚠️  Warning: whisper-server binary not found at $WHISPER_BIN"
+        echo "⚠️  Warning: phlox-whisper-server binary not found at $WHISPER_BIN"
     fi
 else
     if [ "$DEBUG_MODE" = true ]; then
@@ -187,9 +187,9 @@ else
 
     # Check if whisper-server was built
     if [[ "$PLATFORM" == "windows-"* ]]; then
-        WHISPER_BIN="src-tauri/whisper-server.exe"
+        WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
     else
-        WHISPER_BIN="src-tauri/whisper-server"
+        WHISPER_BIN="src-tauri/phlox-whisper-server"
     fi
 
     if [ ! -f "$WHISPER_BIN" ]; then
@@ -210,12 +210,12 @@ echo "=========================================="
 
 if [ "$SKIP_LLAMA" = true ]; then
     echo "⏭️  Skipping llama.cpp build (--skip-llama)"
-    LLAMA_BIN="src-tauri/llama-server"
+    LLAMA_BIN="src-tauri/phlox-llama-server"
     if [[ "$PLATFORM" == "windows-"* ]]; then
-        LLAMA_BIN="src-tauri/llama-server.exe"
+        LLAMA_BIN="src-tauri/phlox-llama-server.exe"
     fi
     if [ ! -f "$LLAMA_BIN" ]; then
-        echo "⚠️  Warning: llama-server binary not found at $LLAMA_BIN"
+        echo "⚠️  Warning: phlox-llama-server binary not found at $LLAMA_BIN"
     fi
 else
     if [ "$DEBUG_MODE" = true ]; then
@@ -226,9 +226,9 @@ else
 
     # Check if llama-server was built
     if [[ "$PLATFORM" == "windows-"* ]]; then
-        LLAMA_BIN="src-tauri/llama-server.exe"
+        LLAMA_BIN="src-tauri/phlox-llama-server.exe"
     else
-        LLAMA_BIN="src-tauri/llama-server"
+        LLAMA_BIN="src-tauri/phlox-llama-server"
     fi
 
     if [ ! -f "$LLAMA_BIN" ]; then
@@ -260,20 +260,20 @@ fi
 
 # Copy llama-server
 if [ -f "$LLAMA_BIN" ]; then
-    cp "$LLAMA_BIN" "src-tauri/binaries/llama-server-${PLATFORM}"
-    chmod +x "src-tauri/binaries/llama-server-${PLATFORM}"
-    echo "✅ Copied llama-server"
+    cp "$LLAMA_BIN" "src-tauri/binaries/phlox-llama-server-${PLATFORM}"
+    chmod +x "src-tauri/binaries/phlox-llama-server-${PLATFORM}"
+    echo "✅ Copied phlox-llama-server"
 else
-    echo "⚠️  Warning: llama-server not found, skipping"
+    echo "⚠️  Warning: phlox-llama-server not found, skipping"
 fi
 
 # Copy whisper-server
 if [ -f "$WHISPER_BIN" ]; then
-    cp "$WHISPER_BIN" "src-tauri/binaries/whisper-server-${PLATFORM}"
-    chmod +x "src-tauri/binaries/whisper-server-${PLATFORM}"
-    echo "✅ Copied whisper-server"
+    cp "$WHISPER_BIN" "src-tauri/binaries/phlox-whisper-server-${PLATFORM}"
+    chmod +x "src-tauri/binaries/phlox-whisper-server-${PLATFORM}"
+    echo "✅ Copied phlox-whisper-server"
 else
-    echo "⚠️  Warning: whisper-server not found, skipping"
+    echo "⚠️  Warning: phlox-whisper-server not found, skipping"
 fi
 
 # In debug mode, also copy C++ servers directly to target/debug/ (not needed for phlox-pm/server - they're already there)
@@ -283,15 +283,15 @@ if [ "$DEBUG_MODE" = true ]; then
     mkdir -p "src-tauri/target/debug"
 
     if [ -f "$LLAMA_BIN" ]; then
-        cp "$LLAMA_BIN" "src-tauri/target/debug/llama-server"
-        chmod +x "src-tauri/target/debug/llama-server"
-        echo "✅ Copied llama-server to target/debug"
+        cp "$LLAMA_BIN" "src-tauri/target/debug/phlox-llama-server"
+        chmod +x "src-tauri/target/debug/phlox-llama-server"
+        echo "✅ Copied phlox-llama-server to target/debug"
     fi
 
     if [ -f "$WHISPER_BIN" ]; then
-        cp "$WHISPER_BIN" "src-tauri/target/debug/whisper-server"
-        chmod +x "src-tauri/target/debug/whisper-server"
-        echo "✅ Copied whisper-server to target/debug"
+        cp "$WHISPER_BIN" "src-tauri/target/debug/phlox-whisper-server"
+        chmod +x "src-tauri/target/debug/phlox-whisper-server"
+        echo "✅ Copied phlox-whisper-server to target/debug"
     fi
 fi
 
@@ -312,8 +312,8 @@ if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
 
         # Sign external binaries
         for binary in src-tauri/binaries/phlox-pm-${PLATFORM} \
-                     src-tauri/binaries/llama-server-${PLATFORM} \
-                     src-tauri/binaries/whisper-server-${PLATFORM}; do
+                     src-tauri/binaries/phlox-llama-server-${PLATFORM} \
+                     src-tauri/binaries/phlox-whisper-server-${PLATFORM}; do
             if [ -f "$binary" ]; then
                 echo "Signing: $binary"
                 codesign --force --options runtime --timestamp \

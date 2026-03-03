@@ -34,13 +34,19 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
+# Create phlox user
+RUN useradd -m -u 1000 phlox
+
 # Copy the build output and Python server files
 COPY --from=build /usr/src/app/build ./build
 COPY --from=build /usr/src/app/CHANGELOG.md ./CHANGELOG.md
 COPY server/pyproject.toml server/uv.lock ./server/
-RUN mkdir -p /usr/src/app/data
-RUN mkdir -p /usr/src/app/static
-RUN mkdir -p /usr/src/app/temp
+
+# Create directories and set ownership
+RUN mkdir -p /usr/src/app/data \
+    /usr/src/app/static \
+    /usr/src/app/temp && \
+    chown -R phlox:phlox /usr/src/app
 
 # Install Python dependencies
 RUN uv pip install --system --no-cache ./server[docker]
@@ -48,12 +54,18 @@ RUN uv pip install --system --no-cache ./server[docker]
 # Copy remaining server code
 COPY server/ ./server
 
+# Create a startup script and make it executable
+RUN echo '#!/bin/bash\npython -m server.demo.demo_db\nuvicorn server.server:app --host 0.0.0.0 --port 5000' > /usr/src/app/start.sh && \
+    chmod +x /usr/src/app/start.sh
+
+# Change permissions
+RUN chown -R phlox:phlox /usr/src/app
+
+# Switch to phlox user
+USER phlox
+
 # Expose necessary ports
 EXPOSE 5000
-
-# Create a startup script
-RUN echo '#!/bin/bash\npython -m server.demo.demo_db\nuvicorn server.server:app --host 0.0.0.0 --port 5000' > /usr/src/app/start.sh
-RUN chmod +x /usr/src/app/start.sh
 
 # Define the command to run the startup script
 CMD ["/usr/src/app/start.sh"]

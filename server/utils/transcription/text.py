@@ -1,10 +1,9 @@
 import asyncio
-import json
 import logging
 import random
 import re
 import time
-from typing import Dict, List, Union
+from typing import Union
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import MultiFieldResponse
@@ -17,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 async def process_transcription(
     transcript_text: str,
-    template_fields: List[TemplateField],
-    patient_context: Dict[str, str],
+    template_fields: list[TemplateField],
+    patient_context: dict[str, str],
     is_ambient: bool = True,
-) -> Dict[str, Union[str, float]]:
+) -> dict[str, Union[str, float]]:
     """
     Process the transcribed text to generate summaries for non-persistent template fields.
 
@@ -38,9 +37,7 @@ async def process_transcription(
 
     try:
         # Filter for non-persistent fields only
-        non_persistent_fields = [
-            field for field in template_fields if not field.persistent
-        ]
+        non_persistent_fields = [field for field in template_fields if not field.persistent]
 
         total_fields = len(non_persistent_fields)
 
@@ -52,8 +49,7 @@ async def process_transcription(
         )
         # Convert to list of TemplateResponse for compatibility with refinement step
         raw_results = [
-            TemplateResponse(field_key=k, content=v)
-            for k, v in raw_results_dict.items()
+            TemplateResponse(field_key=k, content=v) for k, v in raw_results_dict.items()
         ]
         logger.info(f"Successfully summarised {total_fields} fields")
 
@@ -61,9 +57,7 @@ async def process_transcription(
         logger.info(f"Refining {total_fields} fields...")
         refined_results = await asyncio.gather(
             *[
-                refine_field_content(
-                    result.content, field, is_ambient=is_ambient
-                )
+                refine_field_content(result.content, field, is_ambient=is_ambient)
                 for result, field in zip(raw_results, non_persistent_fields)
             ]
         )
@@ -72,9 +66,7 @@ async def process_transcription(
         # Combine results into a dictionary
         processed_fields = {
             field.field_key: refined_content
-            for field, refined_content in zip(
-                non_persistent_fields, refined_results
-            )
+            for field, refined_content in zip(non_persistent_fields, refined_results)
         }
 
         process_duration = time.perf_counter() - process_start
@@ -91,10 +83,10 @@ async def process_transcription(
 
 async def process_all_fields_concurrently(
     transcript_text: str,
-    fields: List[TemplateField],
-    patient_context: Dict[str, str],
+    fields: list[TemplateField],
+    patient_context: dict[str, str],
     is_ambient: bool = True,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Process all template fields in a single LLM call using structured output.
 
@@ -116,9 +108,7 @@ async def process_all_fields_concurrently(
     for attempt in range(max_retries + 1):
         try:
             config = config_manager.get_config()
-            options = config_manager.get_prompts_and_options()["options"][
-                "general"
-            ]
+            options = config_manager.get_prompts_and_options()["options"]["general"]
 
             client = get_llm_client()
             response_format = MultiFieldResponse.model_json_schema()
@@ -129,7 +119,7 @@ async def process_all_fields_concurrently(
             for field in fields:
                 field_instruction = f"""FIELD: {field.field_key}
 NAME: {field.field_name}
-INSTRUCTIONS: {(field.system_prompt or '').strip()}"""
+INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
                 field_instructions.append(field_instruction)
 
             patient_context_str = _build_patient_context(patient_context)
@@ -176,19 +166,14 @@ Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapp
             repaired_content = repair_json(content)
 
             # Validate against schema
-            multi_field_response = MultiFieldResponse.model_validate_json(
-                repaired_content
-            )
+            multi_field_response = MultiFieldResponse.model_validate_json(repaired_content)
 
             # Convert to dict of formatted strings (with bullet points)
             formatted_results = {}
             for field in fields:
-                key_points = multi_field_response.field_summaries.get(
-                    field.field_key, []
-                )
+                key_points = multi_field_response.field_summaries.get(field.field_key, [])
                 formatted_content = "\n".join(
-                    f"• {_capitalize_first_char(point.strip())}"
-                    for point in key_points
+                    f"• {_capitalize_first_char(point.strip())}" for point in key_points
                 )
                 formatted_results[field.field_key] = formatted_content
 
@@ -228,7 +213,7 @@ def clean_list_spacing(text: str) -> str:
     return text.strip()
 
 
-def _build_patient_context(context: Dict[str, str]) -> str:
+def _build_patient_context(context: dict[str, str]) -> str:
     """
     Build patient context string from dictionary.
 

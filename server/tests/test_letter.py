@@ -2,10 +2,11 @@
 Tests for letter endpoints.
 We patch generation and saving functions.
 """
-import json
+
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
 from server.api.letter import router as letter_router
 
 app = FastAPI()
@@ -17,13 +18,14 @@ def test_generate_letter(monkeypatch):
     # Patch generate_letter_content to return a dummy letter
     def fake_generate_letter_content(*args, **kwargs):
         return "This is a generated letter."
+
     monkeypatch.setattr("server.api.letter.generate_letter_content", fake_generate_letter_content)
     payload = {
         "patientName": "Smith, John",
         "gender": "M",
         "template_data": {"key": "value"},
         "additional_instruction": "Please include urgent follow-up.",
-        "context": []
+        "context": [],
     }
     response = client.post("/api/letter/generate", json=payload)
     assert response.status_code == 200
@@ -37,11 +39,9 @@ async def test_generate_letter(monkeypatch):
     # Make fake_generate_letter_content async
     async def fake_generate_letter_content(*args, **kwargs):
         return "This is a generated letter."
+
     monkeypatch.setattr("server.api.letter.generate_letter_content", fake_generate_letter_content)
-    payload = {
-        "patientId": 123,
-        "letter": "This is a saved letter."
-    }
+    payload = {"patientId": 123, "letter": "This is a saved letter."}
     response = client.post("/api/letter/save", json=payload)
     assert response.status_code == 200
     data = response.json()
@@ -52,6 +52,7 @@ async def test_generate_letter(monkeypatch):
 def test_fetch_letter(monkeypatch):
     async def fake_fetch_patient_letter(patientId):
         return "Fetched letter content."
+
     monkeypatch.setattr("server.api.letter.fetch_patient_letter", fake_fetch_patient_letter)
     response = client.get("/api/letter/fetch-letter?patientId=123")
     assert response.status_code == 200
@@ -64,6 +65,7 @@ def test_get_templates(monkeypatch):
     # Patch get_letter_templates to return a dummy list
     def fake_get_letter_templates():
         return [{"id": 1, "name": "Test Template", "instructions": "Do this"}]
+
     monkeypatch.setattr("server.api.letter.get_letter_templates", fake_get_letter_templates)
     response = client.get("/api/letter/templates")
     assert response.status_code == 200
@@ -77,6 +79,7 @@ def test_create_template(monkeypatch):
     # Patch save_letter_template
     def fake_save_letter_template(template):
         return 42
+
     monkeypatch.setattr("server.api.letter.save_letter_template", fake_save_letter_template)
     payload = {"id": None, "name": "New Template", "instructions": "Test instructions"}
     response = client.post("/api/letter/templates", json=payload)

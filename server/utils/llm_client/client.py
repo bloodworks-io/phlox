@@ -10,20 +10,18 @@ This module provides AsyncLLMClient, a unified interface for:
 import json
 import logging
 import os
-from typing import Any, AsyncGenerator, Dict, List, Optional, Union
+from collections.abc import AsyncGenerator
+from typing import Any, Union
 
 from unidecode import unidecode
 
-from server.constants import DATA_DIR, IS_DOCKER
 from server.database.config.manager import config_manager
-from server.database.core.connection import get_db
 
 from .base import LLMProviderType
-from .manager import LocalModelManager
 from .providers.local import LocalLLMClient
 from .providers.ollama import ollama_chat, ollama_ps
 from .providers.openai import openai_compatible_chat
-from .utils import is_arm_mac, repair_json
+from .utils import repair_json
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +32,8 @@ class AsyncLLMClient:
     def __init__(
         self,
         provider_type: Union[str, LLMProviderType],
-        base_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+        base_url: str | None = None,
+        api_key: str | None = None,
         timeout: int = 80,
         **local_kwargs,
     ):
@@ -85,15 +83,11 @@ class AsyncLLMClient:
 
                 self._client = AsyncOllamaClient(host=self.base_url)
             except ImportError:
-                raise ImportError(
-                    "Ollama client not installed. Install with 'pip install ollama'"
-                )
+                raise ImportError("Ollama client not installed. Install with 'pip install ollama'")
         else:
             # For OpenAI-compatible
             if not base_url:
-                raise ValueError(
-                    "base_url is required for OpenAI-compatible provider"
-                )
+                raise ValueError("base_url is required for OpenAI-compatible provider")
             try:
                 from openai import AsyncOpenAI
 
@@ -104,27 +98,21 @@ class AsyncLLMClient:
                     max_retries=0,
                 )
             except ImportError:
-                raise ImportError(
-                    "OpenAI client not installed. Install with 'pip install openai'"
-                )
+                raise ImportError("OpenAI client not installed. Install with 'pip install openai'")
 
-    async def load_local_model(
-        self, model_path_or_repo: str, filename: Optional[str] = None
-    ) -> None:
+    async def load_local_model(self, model_path_or_repo: str, filename: str | None = None) -> None:
         """Load a local model (only works with LOCAL provider)."""
         if self.provider_type != LLMProviderType.LOCAL:
-            raise RuntimeError(
-                "load_local_model only works with LOCAL provider"
-            )
+            raise RuntimeError("load_local_model only works with LOCAL provider")
 
         await self._client.load_model(model_path_or_repo, filename)
 
     async def chat_with_structured_output(
         self,
         model: str,
-        messages: List[Dict[str, str]],
-        schema: Dict,
-        options: Optional[Dict] = None,
+        messages: list[dict[str, str]],
+        schema: dict,
+        options: dict | None = None,
     ) -> str:
         """
         Send a chat completion request with structured output.
@@ -151,9 +139,7 @@ class AsyncLLMClient:
 
             # Convert to simple ASCII; handle emdashes
             response_str = unidecode(
-                response["message"]["content"]
-                .replace("—", "-")
-                .replace("–", "-")
+                response["message"]["content"].replace("—", "-").replace("–", "-")
             )
 
         return repair_json(response_str)
@@ -161,13 +147,17 @@ class AsyncLLMClient:
     async def chat(
         self,
         model: str,
-        messages: List[Dict[str, str]],
-        format: Optional[Dict] = None,
-        options: Optional[Dict] = None,
-        tools: Optional[List[Dict]] = None,
+        messages: list[dict[str, str]],
+        format: dict | None = None,
+        options: dict | None = None,
+        tools: list[dict] | None = None,
         stream: bool = False,
-    ) -> Union[Dict[str, Any], AsyncGenerator]:
+    ) -> Union[dict[str, Any], AsyncGenerator]:
         """Send a chat completion request."""
+
+        from .utils import ensure_system_messages_first
+
+        messages = ensure_system_messages_first(messages)
 
         if self.provider_type == LLMProviderType.LOCAL:
             if stream:
@@ -175,9 +165,7 @@ class AsyncLLMClient:
             else:
                 return await self._client.chat(messages, **(options or {}))
         elif self.provider_type == LLMProviderType.OLLAMA:
-            return await ollama_chat(
-                self._client, model, messages, format, options, tools, stream
-            )
+            return await ollama_chat(self._client, model, messages, format, options, tools, stream)
         else:
             return await openai_compatible_chat(
                 self._client,
@@ -190,7 +178,7 @@ class AsyncLLMClient:
                 self.extra_body,
             )
 
-    async def ps(self) -> Dict[str, Any]:
+    async def ps(self) -> dict[str, Any]:
         """
         List models that are currently loaded into memory.
 
@@ -203,10 +191,7 @@ class AsyncLLMClient:
 
         if self.provider_type == LLMProviderType.LOCAL:
             models = []
-            if (
-                hasattr(self._client, "_current_model")
-                and self._client._current_model
-            ):
+            if hasattr(self._client, "_current_model") and self._client._current_model:
                 models.append(
                     {
                         "name": self._client._current_model,
@@ -235,8 +220,12 @@ class AsyncLLMClient:
             }
 
 
-def get_llm_client():
-    """Create and return an LLM client with configuration from config manager."""
+def get_llm_client(timeout: int = 80):
+    """Create and return an LLM client with configuration from config manager.
+
+    Args:
+        timeout: Request timeout in seconds (default: 80)
+    """
     config = config_manager.get_config()
     provider_type = config.get("LLM_PROVIDER", "ollama").lower()
     base_url = config.get("LLM_BASE_URL")
@@ -251,11 +240,15 @@ def get_llm_client():
             provider_type="openai",
             base_url=f"http://127.0.0.1:{get_llama_port()}",  # llama-server port
             api_key="not-needed",
+            timeout=timeout,
         )
     else:
         # Use default Ollama URL if not configured
         if not base_url:
             base_url = "http://127.0.0.1:11434"
         return AsyncLLMClient(
-            provider_type=provider_type, base_url=base_url, api_key=api_key
+            provider_type=provider_type,
+            base_url=base_url,
+            api_key=api_key,
+            timeout=timeout,
         )

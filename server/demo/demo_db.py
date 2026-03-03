@@ -3,7 +3,6 @@ import json
 import os
 import random
 import sys
-from typing import Dict, List
 
 # Add the parent directory of 'server' to the Python path
 sys.path.append("/usr/src/app")
@@ -11,6 +10,8 @@ sys.path.append("/usr/src/app")
 from server.database.config.defaults.templates import DefaultTemplates
 from server.database.core.connection import (
     get_db as patient_db,
+)
+from server.database.core.connection import (
     initialize_database,
 )
 from server.database.entities.templates import save_template
@@ -20,16 +21,11 @@ from server.schemas.templates import ClinicalTemplate, TemplateField
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-def generate_jobs_list_from_plan(plan: str) -> List[Dict]:
+def generate_jobs_list_from_plan(plan: str) -> list[dict]:
     """Generate a jobs list from a numbered plan."""
-    jobs = [
-        item.strip()
-        for item in plan.split("\n")
-        if item.strip() and item.strip()[0].isdigit()
-    ]
+    jobs = [item.strip() for item in plan.split("\n") if item.strip() and item.strip()[0].isdigit()]
     jobs_list = [
-        {"id": index + 1, "job": job, "completed": False}
-        for index, job in enumerate(jobs)
+        {"id": index + 1, "job": job, "completed": False} for index, job in enumerate(jobs)
     ]
     return jobs_list
 
@@ -51,9 +47,7 @@ def initialize_templates():
         template = ClinicalTemplate(
             template_key=template_data["template_key"],
             template_name=template_data["template_name"],
-            fields=[
-                TemplateField(**field) for field in template_data["fields"]
-            ],
+            fields=[TemplateField(**field) for field in template_data["fields"]],
         )
         save_template(template)
     print("Templates initialized.")
@@ -66,7 +60,7 @@ def initialize_fake_patients():
 
     json_file_path = os.path.join(current_dir, "example_patients.json")
 
-    with open(json_file_path, "r") as f:
+    with open(json_file_path) as f:
         data = json.load(f)
 
     fake_patients = []

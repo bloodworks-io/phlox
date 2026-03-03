@@ -2,8 +2,7 @@ import json
 import logging
 import random
 import re
-from datetime import datetime
-from typing import Dict, List, Union
+from typing import Union
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import (
@@ -20,8 +19,8 @@ logger.setLevel(logging.INFO)
 
 
 async def refine_field_content(
-    content: Union[str, Dict], field: TemplateField, is_ambient: bool = True
-) -> Union[str, Dict]:
+    content: Union[str, dict], field: TemplateField, is_ambient: bool = True
+) -> Union[str, dict]:
     """
     Refine the content of a single field using style examples and format schema.
     Handles special case for thinking models via the client abstraction.
@@ -43,9 +42,7 @@ async def refine_field_content(
             format_details = determine_format_details(field, prompts)
 
             # Build system prompt with style example if available
-            system_prompt = build_system_prompt(
-                field, format_details, prompts, is_ambient
-            )
+            system_prompt = build_system_prompt(field, format_details, prompts, is_ambient)
 
             base_messages = [
                 {"role": "system", "content": system_prompt},
@@ -76,9 +73,7 @@ async def refine_field_content(
 
             # Reuse existing formatter by wrapping the JSON string
             pseudo_response = {"message": {"content": response_json}}
-            return format_refined_response(
-                pseudo_response, field, format_details
-            )
+            return format_refined_response(pseudo_response, field, format_details)
 
         except Exception as e:
             if attempt < max_retries:
@@ -154,7 +149,7 @@ def build_system_prompt(
         - Do not add information not present in the input
         - If the style example uses abbreviations like "SNT" or "HSM", use similar appropriate medical abbreviations
         - Return ONLY valid JSON with this top-level shape:
-          { '{"narrative": "..."}' if format_details["format_type"] == "narrative" else '{"key_points": ["..."]}' }
+          {'{"narrative": "..."}' if format_details["format_type"] == "narrative" else '{"key_points": ["..."]}'}
 
 
         FORMAT THE FOLLOWING MEDICAL INFORMATION:"""
@@ -170,9 +165,7 @@ def build_system_prompt(
                     break
 
         # Minimal JSON shape hint for flaky endpoints (top-level keys only)
-        system_prompt += (
-            "\n\nReturn ONLY valid JSON with this top-level shape:\n"
-        )
+        system_prompt += "\n\nReturn ONLY valid JSON with this top-level shape:\n"
         system_prompt += (
             '{"narrative": "..."}'
             if format_details["format_type"] == "narrative"
@@ -201,22 +194,16 @@ def _capitalize_first_char(text: str) -> str:
     return text[0].upper() + text[1:] if text else text
 
 
-def format_refined_response(
-    response: dict, field: TemplateField, format_details: dict
-) -> str:
+def format_refined_response(response: dict, field: TemplateField, format_details: dict) -> str:
     """Format the model response according to field requirements."""
     format_type = format_details["format_type"]
 
     if format_type == "narrative":
-        narrative_response = NarrativeResponse.model_validate_json(
-            response["message"]["content"]
-        )
+        narrative_response = NarrativeResponse.model_validate_json(response["message"]["content"])
         return _capitalize_first_char(narrative_response.narrative)
 
     # Handle non-narrative formats
-    refined_response = RefinedResponse.model_validate_json(
-        response["message"]["content"]
-    )
+    refined_response = RefinedResponse.model_validate_json(response["message"]["content"])
 
     if format_type == "numbered":
         return _format_numbered_list(refined_response.key_points)
@@ -227,19 +214,17 @@ def format_refined_response(
         return "\n".join(refined_response.key_points)
 
 
-def _format_numbered_list(key_points: List[str]) -> str:
+def _format_numbered_list(key_points: list[str]) -> str:
     """Format key points as a numbered list."""
     formatted_key_points = []
     for i, point in enumerate(key_points):
         # Strip any existing numbering
         cleaned_point = re.sub(r"^\d+\.\s*", "", point.strip())
-        formatted_key_points.append(
-            f"{i+1}. {_capitalize_first_char(cleaned_point)}"
-        )
+        formatted_key_points.append(f"{i + 1}. {_capitalize_first_char(cleaned_point)}")
     return "\n".join(formatted_key_points)
 
 
-def _format_bulleted_list(key_points: List[str], field: TemplateField) -> str:
+def _format_bulleted_list(key_points: list[str], field: TemplateField) -> str:
     """Format key points as a bulleted list."""
     bullet_char = "•"  # Default bullet character
     if field.format_schema and "bullet_char" in field.format_schema:
@@ -249,7 +234,5 @@ def _format_bulleted_list(key_points: List[str], field: TemplateField) -> str:
     for point in key_points:
         # Strip any existing bullets
         cleaned_point = re.sub(r"^[•\-\*]\s*", "", point.strip())
-        formatted_key_points.append(
-            f"{bullet_char} {_capitalize_first_char(cleaned_point)}"
-        )
+        formatted_key_points.append(f"{bullet_char} {_capitalize_first_char(cleaned_point)}")
     return "\n".join(formatted_key_points)

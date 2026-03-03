@@ -1,43 +1,9 @@
 import logging
-import re
 
 import httpx
 from fastapi import APIRouter
 
-from server.constants import CHANGELOG_PATH
-
 router = APIRouter()
-
-
-@router.get("/changelog")
-async def get_changelog():
-    """Retrieve the full changelog content."""
-    try:
-        with open(CHANGELOG_PATH, "r") as f:
-            content = f.read()
-        return {"content": content}
-    except Exception as e:
-        logging.error(f"Error retrieving changelog: {str(e)}")
-        return {"content": "Error retrieving changelog."}
-
-
-@router.get("/version")
-async def get_version():
-    """Retrieve the current version of the application."""
-    try:
-        with open(CHANGELOG_PATH, "r") as f:
-            changelog = f.read()
-
-        match = re.search(r"## \[(.*?)\].*?\n", changelog)
-        if match:
-            version = match.group(1)
-            return {"version": version}
-        else:
-            logging.warning("Version number not found in CHANGELOG.md")
-            return {"version": "unknown"}
-    except Exception as e:
-        logging.error(f"Error getting version from CHANGELOG.md: {str(e)}")
-        return {"version": "unknown"}
 
 
 @router.get("/status")
@@ -57,14 +23,10 @@ async def get_server_status():
             async with httpx.AsyncClient() as client:
                 try:
                     if provider_type == "ollama":
-                        response = await client.get(
-                            f"{base_url}/api/tags", timeout=2.0
-                        )
+                        response = await client.get(f"{base_url}/api/tags", timeout=2.0)
                         status["llm"] = response.status_code == 200
                     elif provider_type == "openai":
-                        response = await client.get(
-                            f"{base_url}/v1/models", timeout=2.0
-                        )
+                        response = await client.get(f"{base_url}/v1/models", timeout=2.0)
                         # If we get 401/403, the service exists but requires auth
                         status["llm"] = response.status_code in [200, 401, 403]
                 except:

@@ -2,7 +2,6 @@ import os
 import re
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List
 
 import tiktoken
 from chromadb.utils import embedding_functions
@@ -11,7 +10,7 @@ from fuzzywuzzy import fuzz, process
 
 class BaseChunker(ABC):
     @abstractmethod
-    def split_text(self, text: str) -> List[str]:
+    def split_text(self, text: str) -> list[str]:
         pass
 
 
@@ -66,9 +65,7 @@ def rigorous_document_search(document: str, target: str):
     sentences = re.split(r"[.!?]\s*|\n", document)
 
     # Find the sentence that matches the query best
-    best_match = process.extractOne(
-        target, sentences, scorer=fuzz.token_sort_ratio
-    )
+    best_match = process.extractOne(target, sentences, scorer=fuzz.token_sort_ratio)
 
     if best_match[1] < 98:
         return None

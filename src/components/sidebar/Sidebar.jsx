@@ -178,11 +178,17 @@ const Sidebar = ({
       pos={shouldFloat ? "fixed" : "fixed"}
       top="0"
       left="0"
-      h="100vh"
+      h="calc(100vh - 18px)"
+      my={2}
       p={isCollapsed ? "2" : "4"}
-      pt={isCollapsed ? (isTauri() ? "0" : "2") : isTauri() ? "8" : "4"}
-      bg={sidebarBg}
-      boxShadow={shouldFloat ? "lg" : "md"}
+      pt={isCollapsed ? (isTauri() ? "2" : "2") : isTauri() ? "8" : "4"}
+      bg="linear-gradient(to bottom, rgba(45, 47, 65, 0.95), rgba(30, 32, 48, 0.95))"
+      backdropFilter="blur(20px) saturate(180%)"
+      borderRadius="2xl"
+      boxShadow="0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)"
+      border="1px solid"
+      borderColor="rgba(0, 0, 0, 0.2)"
+      mx={2}
       display="flex"
       flexDirection="column"
       w={isCollapsed ? "80px" : "220px"}
@@ -350,7 +356,7 @@ const Sidebar = ({
         {/* Navigation Section - Natural flow at bottom */}
         <Box
           width="100%"
-          bg={sidebarBg}
+          bg="transparent"
           pt="2"
           borderTop={`1px solid ${dividerColor}`}
         >

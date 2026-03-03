@@ -7,16 +7,7 @@ import {
   Button,
   VStack,
   HStack,
-  Input,
-  Textarea,
   useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
 } from "@chakra-ui/react";
 import {
   ChevronRightIcon,
@@ -28,6 +19,7 @@ import {
 import { FaEnvelopeOpenText } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { settingsService } from "../../utils/settings/settingsUtils";
+import LetterTemplateEditModal from "../modals/LetterTemplateEditModal";
 
 const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
   const [letterTemplates, setLetterTemplates] = useState([]);
@@ -55,19 +47,20 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
     }
   };
 
-  const handleSave = async (template) => {
+  const handleSave = async (template, closeModal) => {
     try {
       await settingsService.saveLetterTemplate(template);
       // Show success toast
       toast({
         title: "Success",
-        description: `Letter template ${editTemplate ? "updated" : "created"} successfully`,
+        description: `Letter template ${template?.id ? "updated" : "created"} successfully`,
         status: "success",
         duration: 3000,
         isClosable: true,
       });
 
       fetchTemplates();
+      if (closeModal) closeModal();
       setIsEditing(false);
       setEditTemplate(null);
     } catch (error) {
@@ -191,58 +184,16 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
       </Collapse>
 
       {/* Edit/New Template Modal */}
-      <Modal isOpen={isEditing} onClose={() => setIsEditing(false)}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {editTemplate ? "Edit Template" : "New Template"}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4}>
-              <Input
-                placeholder="Template Name"
-                value={editTemplate?.name || ""}
-                onChange={(e) =>
-                  setEditTemplate((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }))
-                }
-                isDisabled={editTemplate?.name === "Dictation"}
-              />
-              <Textarea
-                placeholder="Instructions for letter generation..."
-                value={editTemplate?.instructions || ""}
-                onChange={(e) =>
-                  setEditTemplate((prev) => ({
-                    ...prev,
-                    instructions: e.target.value,
-                  }))
-                }
-              />
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              mr={3}
-              onClick={() => {
-                setIsEditing(false);
-                setEditTemplate(null);
-              }}
-              className="red-button"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => handleSave(editTemplate)}
-              className="green-button"
-            >
-              Save
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <LetterTemplateEditModal
+        isOpen={isEditing}
+        onClose={() => {
+          setIsEditing(false);
+          setEditTemplate(null);
+        }}
+        onSave={(template) => handleSave(template)}
+        template={editTemplate}
+        setTemplate={setEditTemplate}
+      />
     </Box>
   );
 };

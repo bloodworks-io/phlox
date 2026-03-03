@@ -7,16 +7,8 @@ import {
   Button,
   VStack,
   HStack,
-  Textarea,
   useColorMode,
   useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
 } from "@chakra-ui/react";
 import {
   ChevronRightIcon,
@@ -26,7 +18,9 @@ import {
 } from "@chakra-ui/icons";
 import { FaFileAlt } from "react-icons/fa";
 import { useState } from "react";
-import TemplateEditor from "./TemplateEditor";
+import TemplateEditor from "../modals/TemplateEditor";
+import NewTemplateFromExampleModal from "../modals/NewTemplateFromExampleModal";
+import DeleteConfirmationModal from "../modals/DeleteConfirmationModal";
 import { templateApi } from "../../utils/api/templateApi";
 import { useTemplate } from "../../utils/templates/templateContext";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
@@ -42,6 +36,7 @@ const TemplateSettingsPanel = ({
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNewTemplate, setIsNewTemplate] = useState(false);
   // eslint-disable-next-line no-unused-vars
   const [isSaving, setIsSaving] = useState(false);
   const toast = useToast();
@@ -60,6 +55,7 @@ const TemplateSettingsPanel = ({
     if (template) {
       setSelectedTemplate(template);
       setSelectedTemplateKey(templateKey);
+      setIsNewTemplate(false);
       setIsModalOpen(true);
     }
   };
@@ -159,6 +155,7 @@ const TemplateSettingsPanel = ({
       setSelectedTemplate(newTemplate);
       setSelectedTemplateKey(newTemplate.template_key);
       setIsNewTemplateModalOpen(false);
+      setIsNewTemplate(true); // Mark as new template to allow field editing
       setIsModalOpen(true);
     } catch (error) {
       console.error("Error generating template from example:", error);
@@ -271,74 +268,30 @@ const TemplateSettingsPanel = ({
         template={selectedTemplate}
         templateKey={selectedTemplateKey}
         onSave={handleSaveTemplate}
+        isNewTemplate={isNewTemplate}
       />
 
       {/* New Template from Example Modal */}
-      <Modal
+      <NewTemplateFromExampleModal
         isOpen={isNewTemplateModalOpen}
         onClose={() => setIsNewTemplateModalOpen(false)}
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>New Template</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Textarea
-              placeholder="Paste your example note here..."
-              value={exampleNote}
-              onChange={(e) => setExampleNote(e.target.value)}
-              size="lg"
-              minH="200px"
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              className="red-button"
-              mr={3}
-              onClick={() => setIsNewTemplateModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="green-button"
-              onClick={handleNewTemplateFromExample}
-              isLoading={isGeneratingTemplate}
-            >
-              Create
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-      {/* Add Delete Confirmation Modal */}
-      <Modal
+        onCreate={handleNewTemplateFromExample}
+        exampleNote={exampleNote}
+        setExampleNote={setExampleNote}
+        isLoading={isGeneratingTemplate}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Delete Template</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            Are you sure you want to delete the template "
-            {templateToDelete?.name}"? This action cannot be undone.
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              className="red-button"
-              mr={3}
-              onClick={() => setIsDeleteModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="green-button"
-              onClick={() => handleDeleteTemplate(templateToDelete?.key)}
-            >
-              Delete
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setTemplateToDelete(null);
+        }}
+        onConfirm={() => handleDeleteTemplate(templateToDelete?.key)}
+        itemName={templateToDelete?.name}
+        title="Delete Template"
+      />
     </Box>
   );
 };

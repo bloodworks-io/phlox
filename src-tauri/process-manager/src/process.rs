@@ -1,8 +1,12 @@
 use crate::protocol::{ServiceStatus, StatusData};
 use std::env;
-use std::fs;
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 /// Fixed ports for LLM and Whisper services (used as fallbacks)
@@ -18,6 +22,7 @@ pub struct AllocatedPorts {
     pub server: u16,
     pub llama: u16,
     pub whisper: u16,
+    pub request_token: String,
 }
 
 /// Get the phlox data directory
@@ -57,45 +62,45 @@ pub fn remove_pid_file(service: &str) {
     }
 }
 
-/// Find the llama-server binary path
+/// Find the phlox-llama-server binary path
 pub fn find_llama_server() -> Option<PathBuf> {
     let exe_dir = env::current_exe().ok()?.parent()?.to_path_buf();
 
     #[cfg(target_os = "windows")]
-    let path = exe_dir.join("llama-server.exe");
+    let path = exe_dir.join("phlox-llama-server.exe");
     #[cfg(not(target_os = "windows"))]
-    let path = exe_dir.join("llama-server");
+    let path = exe_dir.join("phlox-llama-server");
 
     if path.exists() {
         Some(path)
     } else {
-        log::warn!("llama-server not found at {:?}", path);
+        log::warn!("phlox-llama-server not found at {:?}", path);
         None
     }
 }
 
-/// Find the whisper-server binary path
+/// Find the phlox-whisper-server binary path
 pub fn find_whisper_server() -> Option<PathBuf> {
     let exe_dir = env::current_exe().ok()?.parent()?.to_path_buf();
 
     #[cfg(target_os = "windows")]
-    let path = exe_dir.join("whisper-server.exe");
+    let path = exe_dir.join("phlox-whisper-server.exe");
     #[cfg(not(target_os = "windows"))]
-    let path = exe_dir.join("whisper-server");
+    let path = exe_dir.join("phlox-whisper-server");
 
     if path.exists() {
         Some(path)
     } else {
-        log::warn!("whisper-server not found at {:?}", path);
+        log::warn!("phlox-whisper-server not found at {:?}", path);
         None
     }
 }
 
 /// Find the server (Python) binary path
-/// The 'server' binary is a wrapper that points to ../Resources/server_dist/server
+/// The 'phlox-server' binary is a wrapper that points to ../Resources/server_dist/server
 pub fn find_python_server() -> Option<PathBuf> {
     let exe_dir = env::current_exe().ok()?.parent()?.to_path_buf();
-    let path = exe_dir.join("server");
+    let path = exe_dir.join("phlox-server");
 
     if path.exists() {
         Some(path)
@@ -163,6 +168,10 @@ pub struct ManagedProcess {
     pub child: Child,
     pub port: u16,
     pub service_type: ServiceType,
+    /// Handles for background threads draining stdout/stderr (for server process)
+    pub drain_handles: Option<(JoinHandle<()>, JoinHandle<()>)>,
+    /// Flag to signal drain threads to stop
+    pub drain_shutdown: Option<Arc<AtomicBool>>,
 }
 
 pub enum ServiceType {
@@ -173,15 +182,15 @@ pub enum ServiceType {
 
 /// Start the llama server
 pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
-    let server_path = find_llama_server().ok_or("llama-server binary not found")?;
+    let server_path = find_llama_server().ok_or("phlox-llama-server binary not found")?;
     let model_path = find_llama_model().ok_or("No LLM model found")?;
 
     // Use provided port or fallback to default
     let actual_port = port.unwrap_or(LLAMA_PORT);
 
-    log::info!("Starting llama-server from: {:?}", server_path);
+    log::info!("Starting phlox-llama-server from: {:?}", server_path);
     log::info!(
-        "llama-server model: {:?}, port: {}",
+        "phlox-llama-server model: {:?}, port: {}",
         model_path,
         actual_port
     );
@@ -218,10 +227,10 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
 
     let child = cmd
         .spawn()
-        .map_err(|e| format!("Failed to spawn llama-server: {}", e))?;
+        .map_err(|e| format!("Failed to spawn phlox-llama-server: {}", e))?;
 
     let pid = child.id();
-    log::info!("llama-server started with PID: {}", pid);
+    log::info!("phlox-llama-server started with PID: {}", pid);
     write_pid_file("llama", pid);
 
     // Write port file for Python server to read
@@ -234,20 +243,22 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
         child,
         port: actual_port,
         service_type: ServiceType::Llama,
+        drain_handles: None,
+        drain_shutdown: None,
     })
 }
 
 /// Start the whisper server
 pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
-    let server_path = find_whisper_server().ok_or("whisper-server binary not found")?;
+    let server_path = find_whisper_server().ok_or("phlox-whisper-server binary not found")?;
     let model_path = find_whisper_model().ok_or("No Whisper model found")?;
 
     // Use provided port or fallback to default
     let actual_port = port.unwrap_or(WHISPER_PORT);
 
-    log::info!("Starting whisper-server from: {:?}", server_path);
+    log::info!("Starting phlox-whisper-server from: {:?}", server_path);
     log::info!(
-        "whisper-server model: {:?}, port: {}",
+        "phlox-whisper-server model: {:?}, port: {}",
         model_path,
         actual_port
     );
@@ -271,10 +282,10 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
 
     let child = cmd
         .spawn()
-        .map_err(|e| format!("Failed to spawn whisper-server: {}", e))?;
+        .map_err(|e| format!("Failed to spawn phlox-whisper-server: {}", e))?;
 
     let pid = child.id();
-    log::info!("whisper-server started with PID: {}", pid);
+    log::info!("phlox-whisper-server started with PID: {}", pid);
     write_pid_file("whisper", pid);
 
     // Write port file for Python server to read
@@ -287,6 +298,8 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
         child,
         port: actual_port,
         service_type: ServiceType::Whisper,
+        drain_handles: None,
+        drain_shutdown: None,
     })
 }
 
@@ -399,38 +412,61 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                         return Ok(ServerSignal::WaitingForPassphrase);
                     }
 
-                    // Check for PORTS line
+                    // Check for PORTS line with token
                     if line.trim().starts_with("PORTS:") {
                         let trimmed = line.trim();
-                        let parts = trimmed.strip_prefix("PORTS:").ok_or("Invalid PORTS line")?;
-                        let ports: Vec<&str> = parts.split(',').collect();
-                        if ports.len() == 3 {
-                            let server = ports[0]
-                                .trim()
-                                .parse::<u16>()
-                                .map_err(|e| format!("Failed to parse server port: {}", e))?;
-                            let llama = ports[1]
-                                .trim()
-                                .parse::<u16>()
-                                .map_err(|e| format!("Failed to parse llama port: {}", e))?;
-                            let whisper = ports[2]
-                                .trim()
-                                .parse::<u16>()
-                                .map_err(|e| format!("Failed to parse whisper port: {}", e))?;
-                            log::info!(
-                                "Parsed allocated ports: server={}, llama={}, whisper={}",
-                                server,
-                                llama,
-                                whisper
-                            );
-                            return Ok(ServerSignal::Ports(AllocatedPorts {
-                                server,
-                                llama,
-                                whisper,
-                            }));
-                        } else {
-                            log::warn!("PORTS line has wrong number of parts: {:?}", ports);
+                        let ports_part = trimmed.strip_prefix("PORTS:").ok_or("Invalid PORTS line")?;
+
+                        // Split by | to separate ports from token
+                        let parts: Vec<&str> = ports_part.split('|').collect();
+                        if parts.len() < 2 {
+                            return Err("PORTS line missing token".to_string());
                         }
+
+                        // Parse ports
+                        let ports: Vec<&str> = parts[0].split(',').collect();
+                        if ports.len() != 3 {
+                            return Err(format!("PORTS line has wrong number of ports: {:?}", ports));
+                        }
+
+                        let server = ports[0]
+                            .trim()
+                            .parse::<u16>()
+                            .map_err(|e| format!("Failed to parse server port: {}", e))?;
+                        let llama = ports[1]
+                            .trim()
+                            .parse::<u16>()
+                            .map_err(|e| format!("Failed to parse llama port: {}", e))?;
+                        let whisper = ports[2]
+                            .trim()
+                            .parse::<u16>()
+                            .map_err(|e| format!("Failed to parse whisper port: {}", e))?;
+
+                        // Parse token
+                        let token_part = parts[1];
+                        let token = token_part
+                            .strip_prefix("TOKEN:")
+                            .ok_or("Missing TOKEN prefix")?
+                            .trim()
+                            .to_string();
+
+                        if token.is_empty() {
+                            return Err("Empty token received".to_string());
+                        }
+
+                        log::info!(
+                            "Parsed allocated ports: server={}, llama={}, whisper={}, token={}...",
+                            server,
+                            llama,
+                            whisper,
+                            &token[..8.min(token.len())]
+                        );
+                        return Ok(ServerSignal::Ports(AllocatedPorts {
+                            server,
+                            llama,
+                            whisper,
+                            request_token: token,
+                        }));
                     }
 
                     // Check for ERROR line
@@ -469,6 +505,50 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
     }
 }
 
+/// Spawn background threads to continuously drain stdout and stderr from the server process.
+/// This prevents the pipe buffer (~64KB) from filling up and blocking the child process.
+pub fn spawn_drain_threads(
+    child: &mut Child,
+) -> (JoinHandle<()>, JoinHandle<()>, Arc<AtomicBool>) {
+    let shutdown = Arc::new(AtomicBool::new(false));
+
+    // Take stdout and stderr from the child process
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+
+    let shutdown_stdout = Arc::clone(&shutdown);
+    let stdout_handle = thread::spawn(move || {
+        if let Some(stdout) = stdout {
+            let reader = BufReader::new(stdout);
+            for line in reader.lines().map_while(Result::ok) {
+                if shutdown_stdout.load(Ordering::Relaxed) {
+                    break;
+                }
+                // Log to process manager's log (which goes to file/terminal)
+                log::debug!("[server stdout] {}", line);
+            }
+        }
+        log::debug!("Stdout drain thread exiting");
+    });
+
+    let shutdown_stderr = Arc::clone(&shutdown);
+    let stderr_handle = thread::spawn(move || {
+        if let Some(stderr) = stderr {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines().map_while(Result::ok) {
+                if shutdown_stderr.load(Ordering::Relaxed) {
+                    break;
+                }
+                // Log stderr at warn level since it's typically errors/warnings
+                log::warn!("[server stderr] {}", line);
+            }
+        }
+        log::debug!("Stderr drain thread exiting");
+    });
+
+    (stdout_handle, stderr_handle, shutdown)
+}
+
 /// Start the Python server (waits for passphrase via stdin)
 /// Returns the process waiting for passphrase after confirming WAITING_FOR_PASSPHRASE signal
 pub fn start_server() -> Result<ManagedProcess, String> {
@@ -478,9 +558,9 @@ pub fn start_server() -> Result<ManagedProcess, String> {
 
     let mut cmd = Command::new(&server_path);
     // Keep stdin open for passphrase
-    cmd.stdin(std::process::Stdio::piped());
+    cmd.stdin(Stdio::piped());
     // Capture stdout to read signals
-    cmd.stdout(std::process::Stdio::piped());
+    cmd.stdout(Stdio::piped());
 
     #[cfg(unix)]
     {
@@ -488,7 +568,7 @@ pub fn start_server() -> Result<ManagedProcess, String> {
         cmd.process_group(0);
     }
 
-    cmd.stderr(std::process::Stdio::piped());
+    cmd.stderr(Stdio::piped());
 
     let mut child = cmd
         .spawn()
@@ -509,6 +589,8 @@ pub fn start_server() -> Result<ManagedProcess, String> {
                 child,
                 port: 0, // Port not known until after passphrase
                 service_type: ServiceType::Server,
+                drain_handles: None,
+                drain_shutdown: None,
             })
         }
         ServerSignal::Ports(_) => {
@@ -524,7 +606,6 @@ pub fn send_passphrase_and_wait_for_ports(
 ) -> Result<AllocatedPorts, String> {
     // Write passphrase to stdin
     if let Some(ref mut stdin) = process.child.stdin {
-        use std::io::Write;
         writeln!(stdin, "{}", passphrase)
             .map_err(|e| format!("Failed to write passphrase to stdin: {}", e))?;
         // Flush to ensure it's sent
@@ -539,8 +620,44 @@ pub fn send_passphrase_and_wait_for_ports(
     let ports = wait_for_allocated_ports(&mut process.child)?;
     process.port = ports.server;
 
+    // Spawn background threads to drain stdout/stderr to prevent pipe buffer deadlock
+    let (stdout_handle, stderr_handle, shutdown) = spawn_drain_threads(&mut process.child);
+    process.drain_handles = Some((stdout_handle, stderr_handle));
+    process.drain_shutdown = Some(shutdown);
+
     log::info!("Server fully initialized with ports: {:?}", ports);
     Ok(ports)
+}
+
+/// Stop the drain threads for a ManagedProcess (if running)
+pub fn stop_drain_threads(process: &mut ManagedProcess) {
+    // Signal threads to stop
+    if let Some(shutdown) = process.drain_shutdown.take() {
+        shutdown.store(true, Ordering::Relaxed);
+        log::debug!("Signaled drain threads to stop");
+    }
+
+    // Wait for threads to finish (with timeout)
+    if let Some((stdout_handle, stderr_handle)) = process.drain_handles.take() {
+        // Give threads a moment to exit gracefully
+        let timeout = Duration::from_millis(500);
+
+        // Use spawn to implement timeout for join
+        let stdout_joined = thread::spawn(move || stdout_handle.join())
+            .thread()
+            .id();
+        let stderr_joined = thread::spawn(move || stderr_handle.join())
+            .thread()
+            .id();
+
+        // Brief sleep to allow threads to exit
+        thread::sleep(timeout);
+        log::debug!(
+            "Drain threads signaled to stop (stdout: {:?}, stderr: {:?})",
+            stdout_joined,
+            stderr_joined
+        );
+    }
 }
 
 /// Kill a process by PID
@@ -625,9 +742,9 @@ pub fn kill_all_processes() {
     }
 
     // Fallback: kill by name pattern
-    kill_process_by_name("llama-server", "llama-server");
-    kill_process_by_name("whisper-server", "whisper-server");
-    kill_process_by_name("server", "server");
+    kill_process_by_name("phlox-llama-server", "phlox-llama-server");
+    kill_process_by_name("phlox-whisper-server", "phlox-whisper-server");
+    kill_process_by_name("phlox-server", "phlox-server");
 
     std::thread::sleep(Duration::from_millis(500));
 
@@ -639,6 +756,7 @@ pub fn create_status_data(
     llama: Option<&ManagedProcess>,
     whisper: Option<&ManagedProcess>,
     server: Option<&ManagedProcess>,
+    request_token: Option<&String>,
 ) -> StatusData {
     StatusData {
         llama: llama.map(|p| ServiceStatus {
@@ -656,5 +774,6 @@ pub fn create_status_data(
             pid: p.child.id(),
             port: p.port,
         }),
+        request_token: request_token.cloned(),
     }
 }

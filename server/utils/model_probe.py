@@ -1,15 +1,15 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 async def probe_and_store_model_behavior(
     provider: str,
-    base_url: Optional[str],
-    api_key: Optional[str],
+    base_url: str | None,
+    api_key: str | None,
     model: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Dummy function for probing model behavior.
     Does nothing and returns a default response to prevent breaking changes.

@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import time
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +15,9 @@ class SummarizationManager:
 
     def __init__(self) -> None:
         # Map of patient_id -> asyncio.Lock
-        self._locks: Dict[int, asyncio.Lock] = {}
+        self._locks: dict[int, asyncio.Lock] = {}
         # Map of patient_id -> latest task token (timestamp as string)
-        self._latest_tokens: Dict[int, str] = {}
+        self._latest_tokens: dict[int, str] = {}
 
     def _ensure_patient_initialized(self, patient_id: int) -> None:
         """Ensures a patient has their lock and token initialized."""
@@ -52,9 +51,7 @@ class SummarizationManager:
             if self._latest_tokens[patient_id] == "":
                 # First task - register and proceed
                 self._latest_tokens[patient_id] = task_token
-                logger.info(
-                    f"Registered first summarization task for patient {patient_id}"
-                )
+                logger.info(f"Registered first summarization task for patient {patient_id}")
                 return True
 
             # Compare tokens as floats (timestamps) - newer is greater
@@ -86,9 +83,7 @@ class SummarizationManager:
         self._ensure_patient_initialized(patient_id)
         async with self._locks[patient_id]:
             self._latest_tokens[patient_id] = ""
-            logger.debug(
-                f"Cleared summarization task token for patient {patient_id}"
-            )
+            logger.debug(f"Cleared summarization task token for patient {patient_id}")
 
 
 # Global instance

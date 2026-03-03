@@ -13,13 +13,10 @@ def generate_jobs_list_from_plan(plan):
             return "[]"
 
         jobs = [
-            item.strip()
-            for item in plan.split("\n")
-            if item.strip() and item.strip()[0].isdigit()
+            item.strip() for item in plan.split("\n") if item.strip() and item.strip()[0].isdigit()
         ]
         jobs_list = [
-            {"id": index + 1, "job": job, "completed": False}
-            for index, job in enumerate(jobs)
+            {"id": index + 1, "job": job, "completed": False} for index, job in enumerate(jobs)
         ]
         return json.dumps(jobs_list)
     except Exception as e:
@@ -72,9 +69,7 @@ def get_patients_with_outstanding_jobs():
             # Process reasoning output
             if patient.get("reasoning_output"):
                 try:
-                    patient["reasoning_output"] = json.loads(
-                        patient["reasoning_output"]
-                    )
+                    patient["reasoning_output"] = json.loads(patient["reasoning_output"])
                 except json.JSONDecodeError:
                     patient["reasoning_output"] = None
             patients.append(patient)
@@ -96,15 +91,12 @@ def update_patient_jobs_list(patient_id: int, jobs_list: list):
             elif hasattr(job, "__dict__"):
                 serializable_jobs.append(job.__dict__)
             else:
-
                 serializable_jobs.append(job)
 
         serialized_jobs_list = json.dumps(serializable_jobs)
 
         # Check if all jobs are completed
-        all_jobs_completed = all(
-            job.get("completed", False) for job in serializable_jobs
-        )
+        all_jobs_completed = all(job.get("completed", False) for job in serializable_jobs)
 
         get_db().cursor.execute(
             "UPDATE patients SET jobs_list = ?, all_jobs_completed = ? WHERE id = ?",
@@ -122,9 +114,7 @@ def count_incomplete_jobs():
     """Counts the number of incomplete jobs across all patients."""
     logging.info("Counting incomplete jobs across all patients")
     try:
-        get_db().cursor.execute(
-            "SELECT jobs_list FROM patients WHERE all_jobs_completed = 0"
-        )
+        get_db().cursor.execute("SELECT jobs_list FROM patients WHERE all_jobs_completed = 0")
         rows = get_db().cursor.fetchall()
 
         incomplete_jobs_count = 0
@@ -138,15 +128,11 @@ def count_incomplete_jobs():
 
                 # Count incomplete jobs
                 incomplete_jobs_count += sum(
-                    1
-                    for job in jobs
-                    if isinstance(job, dict) and not job.get("completed", False)
+                    1 for job in jobs if isinstance(job, dict) and not job.get("completed", False)
                 )
 
             except json.JSONDecodeError:
-                logging.warning(
-                    f"Could not parse jobs list: {row['jobs_list']}"
-                )
+                logging.warning(f"Could not parse jobs list: {row['jobs_list']}")
                 continue
 
         logging.info(f"Total incomplete jobs: {incomplete_jobs_count}")

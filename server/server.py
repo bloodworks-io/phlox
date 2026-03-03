@@ -5,10 +5,10 @@ if __name__ == "__main__":
 
 import logging
 import os
+import secrets
 import socket
 import sys
 from contextlib import asynccontextmanager, closing
-from pathlib import Path
 
 import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -20,9 +20,18 @@ from fastapi.staticfiles import StaticFiles
 from server.constants import (
     APP_NAME,
     BUILD_DIR,
-    DATA_DIR,
     IS_DOCKER,
     IS_TESTING,
+    PROXY_AUTH_ENABLED,
+    PROXY_AUTH_USER_HEADER,
+    RATE_LIMIT_ENABLED,
+)
+from server.middleware import (
+    LocalTokenMiddleware,
+    ProxyAuthMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    TrustedProxyMiddleware,
 )
 
 logging.basicConfig(
@@ -40,6 +49,8 @@ logger = logging.getLogger(__name__)
 logger.info("Initialising application...")
 scheduler = AsyncIOScheduler()
 
+# Local request token for API authentication (desktop mode only)
+from server.utils.local_request_token import get_request_token, set_request_token
 
 if IS_TESTING:
     try:
@@ -57,12 +68,19 @@ async def lifespan(app: FastAPI):
         generate_daily_analysis,
         run_nightly_reasoning,
     )
+    from server.middleware import RateLimitMiddleware
 
     # Startup
     scheduler.start()
     # Schedule jobs
     scheduler.add_job(generate_daily_analysis, "cron", hour=3)
     scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
+    # Clean up zombie IPs from rate limiter every 5 minutes
+    scheduler.add_job(
+        RateLimitMiddleware.cleanup_all_zombie_ips,
+        "interval",
+        minutes=5,
+    )
 
     yield
 
@@ -77,7 +95,6 @@ def initialize_and_get_app():
     """
     # Initialize config_manager and run migrations
     logger.info("Initializing DB and running migrations...")
-    from server.database.config.manager import config_manager
 
     logger.info("Database initialized")
 
@@ -86,14 +103,50 @@ def initialize_and_get_app():
         lifespan=lifespan,  # Add the lifespan context manager
     )
 
-    # CORS configuration
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # CORS configuration - restrict via environment variable
+    # Note: Browsers reject allow_credentials=True with allow_origins=["*"]
+    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+    allowed_origins = [origin.strip() for origin in allowed_origins]
+
+    if "*" in allowed_origins:
+        # Wildcard mode - no credentials allowed by browsers
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        # Specific origins - credentials allowed
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+    # Add security middleware (order matters: last added runs first)
+    # So we add in reverse order: Token -> Proxy -> RateLimit -> TrustedProxy -> Security
+    # This ensures TrustedProxy sets client_ip before RateLimit needs it
+
+    # Add token verification middleware (only for desktop mode)
+    if not IS_DOCKER:
+        app.add_middleware(LocalTokenMiddleware)
+
+    # Add proxy auth middleware (for Docker deployments behind auth proxy)
+    if PROXY_AUTH_ENABLED:
+        app.add_middleware(ProxyAuthMiddleware)
+        logger.info(f"Proxy auth enabled, header: {PROXY_AUTH_USER_HEADER}")
+
+    # Add rate limiting middleware (enabled by default in Docker mode)
+    if RATE_LIMIT_ENABLED:
+        app.add_middleware(RateLimitMiddleware)
+        logger.info("Rate limiting enabled")
+
+    # TrustedProxy must be added after RateLimit so it runs BEFORE RateLimit
+    app.add_middleware(TrustedProxyMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
 
     # Then load API submodules
     from server.api import (
@@ -117,9 +170,7 @@ def initialize_and_get_app():
                 return {"success": "Database test succeeded", "result": result}
             except Exception as e:
                 logger.error(f"Database test failed: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail=f"Database test failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"Database test failed: {str(e)}")
 
     # Include routers
     app.include_router(patient.router, prefix="/api/patient")
@@ -136,9 +187,7 @@ def initialize_and_get_app():
         app.include_router(rag.router, prefix="/api/rag")
         app.include_router(chat.router, prefix="/api/chat")
     else:
-        logger.warning(
-            "RAG/Chat features disabled - dependencies not available."
-        )
+        logger.warning("RAG/Chat features disabled - dependencies not available.")
 
     app.include_router(config_router, prefix="/api/config")
     app.include_router(templates.router, prefix="/api/templates")
@@ -150,6 +199,7 @@ def initialize_and_get_app():
     @app.get("/rag")
     @app.get("/clinic-summary")
     @app.get("/outstanding-tasks")
+    @app.get("/patient/{patient_id}")
     async def serve_react_app():
         return FileResponse(BUILD_DIR / "index.html")
 
@@ -159,6 +209,8 @@ def initialize_and_get_app():
     # Catch-all route for any other paths
     @app.get("/{full_path:path}")
     async def catch_all(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
         return FileResponse(BUILD_DIR / "index.html")
 
     return app
@@ -191,6 +243,11 @@ def start_server_for_desktop():
     """
     global app
     logger.info("Desktop environment detected")
+
+    # Generate cryptographically secure request token
+    token = secrets.token_hex(32)  # 64 character hex string (256 bits)
+    set_request_token(token)
+    logger.info(token)
 
     # Signal that we're waiting for passphrase
     print("WAITING_FOR_PASSPHRASE", flush=True)
@@ -225,8 +282,11 @@ def start_server_for_desktop():
 
     set_ports(server_port, llama_port, whisper_port)
 
-    # Write all ports to stdout so process manager can read them
-    print(f"PORTS:{server_port},{llama_port},{whisper_port}", flush=True)
+    # Write ports and token to stdout so process manager can read them
+    print(
+        f"PORTS:{server_port},{llama_port},{whisper_port}|TOKEN:{get_request_token()}",
+        flush=True,
+    )
 
     config = uvicorn.Config(
         app,

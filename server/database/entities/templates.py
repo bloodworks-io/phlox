@@ -1,19 +1,16 @@
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from server.database.core.connection import get_db
 from server.schemas.templates import (
     ClinicalTemplate,
-    FormatStyle,
     TemplateField,
 )
 
 
-def get_template_by_key(
-    template_key: str, exact_match: bool = True
-) -> Optional[Dict[str, Any]]:
+def get_template_by_key(template_key: str, exact_match: bool = True) -> dict[str, Any] | None:
     """
     Retrieve a template by its key.
 
@@ -58,7 +55,7 @@ def get_template_by_key(
         raise
 
 
-def get_all_templates() -> List[Dict[str, Any]]:
+def get_all_templates() -> list[dict[str, Any]]:
     """
     Retrieve all available templates.
     """
@@ -99,9 +96,7 @@ def save_template(template: ClinicalTemplate) -> str:
     """
     try:
         if template_exists(template.template_key):
-            raise ValueError(
-                f"Template with key {template.template_key} already exists"
-            )
+            raise ValueError(f"Template with key {template.template_key} already exists")
 
         now = datetime.now().isoformat()
         get_db().cursor.execute(
@@ -151,9 +146,7 @@ def update_template(template: ClinicalTemplate) -> str:
             new_fields = [field.dict() for field in template.fields]
 
             # Copy over previous adaptive refinement instructions
-            current_fields_map = {
-                f["field_key"]: f for f in current_fields if "field_key" in f
-            }
+            current_fields_map = {f["field_key"]: f for f in current_fields if "field_key" in f}
             for field in new_fields:
                 prev = current_fields_map.get(field.get("field_key"))
                 if prev:
@@ -167,24 +160,14 @@ def update_template(template: ClinicalTemplate) -> str:
                                 "adaptive_refinement_instructions"
                             ]
             # Only update if there are actual changes
-            if (
-                current["template_name"] == template.template_name
-                and current_fields == new_fields
-            ):
-                return current[
-                    "template_key"
-                ]  # Return existing key if no changes
+            if current["template_name"] == template.template_name and current_fields == new_fields:
+                return current["template_key"]  # Return existing key if no changes
 
         # If we get here, there are changes, so create new version
         # Check if this template is currently the default
-        get_db().cursor.execute(
-            "SELECT default_template_key FROM user_settings LIMIT 1"
-        )
+        get_db().cursor.execute("SELECT default_template_key FROM user_settings LIMIT 1")
         settings = get_db().cursor.fetchone()
-        is_default = (
-            settings
-            and settings["default_template_key"] == template.template_key
-        )
+        is_default = settings and settings["default_template_key"] == template.template_key
 
         # Get the latest version number
         get_db().cursor.execute(
@@ -245,9 +228,7 @@ def update_template(template: ClinicalTemplate) -> str:
                 """,
                 (new_template_key, template.template_key),
             )
-            logging.info(
-                f"Updated default template to new version: {new_template_key}"
-            )
+            logging.info(f"Updated default template to new version: {new_template_key}")
 
         get_db().commit()
         return new_template_key
@@ -335,7 +316,7 @@ def template_exists(template_key: str) -> bool:
         raise
 
 
-def get_template_fields(template_key: str) -> List[TemplateField]:
+def get_template_fields(template_key: str) -> list[TemplateField]:
     """
     Get all fields for a specific template.
 
@@ -359,7 +340,7 @@ def get_template_fields(template_key: str) -> List[TemplateField]:
         raise
 
 
-def get_persistent_fields(template_key: str) -> List[TemplateField]:
+def get_persistent_fields(template_key: str) -> list[TemplateField]:
     """
     Get only the persistent fields for a template.
 
@@ -377,9 +358,7 @@ def get_persistent_fields(template_key: str) -> List[TemplateField]:
         raise
 
 
-def get_template_field(
-    template_key: str, field_key: str
-) -> Optional[TemplateField]:
+def get_template_field(template_key: str, field_key: str) -> TemplateField | None:
     """
     Get a specific field from a template.
 
@@ -401,9 +380,7 @@ def get_template_field(
         raise
 
 
-def validate_template_data(
-    template_key: str, template_data: Dict[str, Any]
-) -> bool:
+def validate_template_data(template_key: str, template_data: dict[str, Any]) -> bool:
     """
     Validate template data against template fields.
     Ensures plan is properly formatted.
@@ -423,16 +400,10 @@ def validate_template_data(
                     raise ValueError("Plan is required")
 
                 # Check if plan items are numbered
-                lines = [
-                    line.strip()
-                    for line in plan_text.split("\n")
-                    if line.strip()
-                ]
+                lines = [line.strip() for line in plan_text.split("\n") if line.strip()]
                 for line in lines:
                     if not line[0].isdigit() or "." not in line:
-                        raise ValueError(
-                            "Plan items must be numbered (e.g., '1. Action item')"
-                        )
+                        raise ValueError("Plan items must be numbered (e.g., '1. Action item')")
 
         return True
     except Exception as e:
@@ -459,9 +430,7 @@ def set_default_template(template_key: str) -> None:
         if not template:
             raise ValueError(f"Template with key {template_key} does not exist")
         if template["deleted"]:
-            raise ValueError(
-                f"Template with key {template_key} is marked as deleted"
-            )
+            raise ValueError(f"Template with key {template_key} is marked as deleted")
 
         # Get the first user settings record or create if none exists
         get_db().cursor.execute("SELECT id FROM user_settings LIMIT 1")
@@ -469,9 +438,7 @@ def set_default_template(template_key: str) -> None:
 
         if row:
             # Update existing settings
-            logging.info(
-                f"Updating default template to {template_key} in database"
-            )
+            logging.info(f"Updating default template to {template_key} in database")
             get_db().cursor.execute(
                 "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
                 (template_key, row["id"]),
@@ -485,15 +452,13 @@ def set_default_template(template_key: str) -> None:
             )
 
         get_db().commit()
-        logging.info(
-            f"Successfully set default template to {template_key} in database"
-        )
+        logging.info(f"Successfully set default template to {template_key} in database")
     except Exception as e:
         logging.error(f"Error setting default template: {e}")
         raise
 
 
-def get_default_template() -> Optional[Dict[str, Any]]:
+def get_default_template() -> dict[str, Any] | None:
     """
     Get the default template.
 
@@ -501,13 +466,9 @@ def get_default_template() -> Optional[Dict[str, Any]]:
         Optional[Dict[str, Any]]: The default template if set, None otherwise
     """
     try:
-        get_db().cursor.execute(
-            "SELECT default_template_key FROM user_settings LIMIT 1"
-        )
+        get_db().cursor.execute("SELECT default_template_key FROM user_settings LIMIT 1")
         row = get_db().cursor.fetchone()
-        logging.info(
-            f"Retrieved user settings row: {dict(row) if row else None}"
-        )
+        logging.info(f"Retrieved user settings row: {dict(row) if row else None}")
 
         if row and row["default_template_key"]:
             template_key = row["default_template_key"]
@@ -523,7 +484,7 @@ def get_default_template() -> Optional[Dict[str, Any]]:
 
 
 def update_field_adaptive_instructions(
-    template_key: str, field_key: str, new_instructions: List[str]
+    template_key: str, field_key: str, new_instructions: list[str]
 ) -> bool:
     """
     Update the adaptive_refinement_instructions for a specific field within a template.
@@ -543,9 +504,7 @@ def update_field_adaptive_instructions(
         # Fetch the current template data using exact match
         template_data = get_template_by_key(template_key, exact_match=True)
         if not template_data:
-            logging.error(
-                f"Template '{template_key}' not found for updating field instructions."
-            )
+            logging.error(f"Template '{template_key}' not found for updating field instructions.")
             # As per instruction: "raise a ValueError or log an error and return False"
             # Choosing to log and return False for consistency with some other functions
             # that don't directly interact with API layer HTTPExceptions.
@@ -554,32 +513,23 @@ def update_field_adaptive_instructions(
         # fields are already parsed by get_template_by_key
         fields_list = template_data.get("fields")
         if not isinstance(fields_list, list):
-            logging.error(
-                f"Fields data for template '{template_key}' is not a list or is missing."
-            )
+            logging.error(f"Fields data for template '{template_key}' is not a list or is missing.")
             return False
 
         field_found = False
         updated_fields_list = []
 
         for field_dict in fields_list:
-            if (
-                isinstance(field_dict, dict)
-                and field_dict.get("field_key") == field_key
-            ):
+            if isinstance(field_dict, dict) and field_dict.get("field_key") == field_key:
                 field_found = True
-                field_dict["adaptive_refinement_instructions"] = (
-                    new_instructions
-                )
+                field_dict["adaptive_refinement_instructions"] = new_instructions
                 logging.info(
                     f"Updated instructions for field '{field_key}' in template '{template_key}'."
                 )
             updated_fields_list.append(field_dict)
 
         if not field_found:
-            logging.error(
-                f"Field '{field_key}' not found in template '{template_key}'."
-            )
+            logging.error(f"Field '{field_key}' not found in template '{template_key}'.")
             return False
 
         # Serialize the modified list of field dictionaries back into a JSON string

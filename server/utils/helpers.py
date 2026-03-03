@@ -6,6 +6,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 def calculate_age(dob: str, encounter_date: str = None) -> int:
     """
     Calculate the age of a patient at the time of encounter or current date.
@@ -27,9 +28,7 @@ def calculate_age(dob: str, encounter_date: str = None) -> int:
     try:
         birth_date = datetime.strptime(dob, "%Y-%m-%d")
         encounter_date_obj = (
-            datetime.strptime(encounter_date, "%Y-%m-%d")
-            if encounter_date
-            else datetime.today()
+            datetime.strptime(encounter_date, "%Y-%m-%d") if encounter_date else datetime.today()
         )
     except ValueError:
         raise ValueError("Invalid date format. Use 'YYYY-MM-DD'.")
@@ -42,6 +41,7 @@ def calculate_age(dob: str, encounter_date: str = None) -> int:
         age -= 1
 
     return age
+
 
 def clean_think_tags(message_list):
     """
@@ -63,9 +63,7 @@ def clean_think_tags(message_list):
     for message in message_list:
         if "content" in message and isinstance(message["content"], str):
             # Remove <think>...</think> patterns from content
-            cleaned_content = re.sub(
-                r"<think>.*?</think>", "", message["content"], flags=re.DOTALL
-            )
+            cleaned_content = re.sub(r"<think>.*?</think>", "", message["content"], flags=re.DOTALL)
             # Create a new message with cleaned content
             cleaned_message = message.copy()
             cleaned_message["content"] = cleaned_content.strip()

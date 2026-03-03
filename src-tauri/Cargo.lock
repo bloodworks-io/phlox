@@ -2801,13 +2801,14 @@ dependencies = [
 
 [[package]]
 name = "phlox"
-version = "0.9.4"
+version = "0.9.7"
 dependencies = [
  "cocoa",
  "dirs 4.0.0",
  "hex",
  "libc",
  "log",
+ "objc",
  "phlox-pm",
  "serde",
  "serde_json",

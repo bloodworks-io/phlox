@@ -203,9 +203,9 @@ pub fn kill_all_processes() {
     }
 
     // Fallback: kill by name pattern for any orphaned processes
-    kill_process_by_name("llama-server", "llama-server");
-    kill_process_by_name("whisper-server", "whisper-server");
-    kill_process_by_name("server_dist/server", "server");
+    kill_process_by_name("phlox-llama-server", "phlox-llama-server");
+    kill_process_by_name("phlox-whisper-server", "phlox-whisper-server");
+    kill_process_by_name("phlox-server", "phlox-server");
 
     // Final wait to ensure all processes are gone
     thread::sleep(Duration::from_millis(500));

@@ -40,17 +40,11 @@ async def mark_splash_complete():
             # Apply same defaults as in get_user_settings's 'else' block or from original structure
             if key == "name" or key == "specialty":
                 current_settings[key] = ""
-            elif key == "quick_chat_1_title":
+            elif key == "quick_chat_1_title" or key == "quick_chat_1_prompt":
                 current_settings[key] = "Critique my plan"
-            elif key == "quick_chat_1_prompt":
-                current_settings[key] = "Critique my plan"
-            elif key == "quick_chat_2_title":
+            elif key == "quick_chat_2_title" or key == "quick_chat_2_prompt":
                 current_settings[key] = "Any additional investigations"
-            elif key == "quick_chat_2_prompt":
-                current_settings[key] = "Any additional investigations"
-            elif key == "quick_chat_3_title":
-                current_settings[key] = "Any differentials to consider"
-            elif key == "quick_chat_3_prompt":
+            elif key == "quick_chat_3_title" or key == "quick_chat_3_prompt":
                 current_settings[key] = "Any differentials to consider"
             elif key == "default_letter_template_id":
                 current_settings[key] = None

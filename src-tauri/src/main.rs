@@ -12,15 +12,40 @@ use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{
     change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
-    get_service_status, get_system_specs, has_database, has_encryption_setup, has_keychain_entry,
-    restart_llama, restart_whisper, send_passphrase_command, setup_encryption, start_llama_service,
-    start_server_command, start_whisper_service, unlock_with_passphrase, CachedServiceStatus,
+    get_request_token, get_service_status, get_system_specs, has_database, has_encryption_setup,
+    has_keychain_entry, restart_llama, restart_whisper, send_passphrase_command, setup_encryption,
+    start_llama_service, start_server_command, start_whisper_service, unlock_with_passphrase,
+    CachedServiceStatus,
 };
 use pm_client::ProcessManagerClient;
 use process::{
     cleanup_stale_files, kill_all_processes, LlamaProcess, RestartCoordinator, ServerProcess,
     WhisperProcess,
 };
+
+/// Position the traffic light buttons (close, minimize, maximize) with custom offset
+#[cfg(target_os = "macos")]
+fn position_traffic_light_buttons(ns_window: cocoa::base::id) {
+    use cocoa::appkit::{NSWindow, NSWindowButton};
+    use cocoa::base::{id, nil};
+    use cocoa::foundation::{NSPoint, NSRect};
+    use objc::{msg_send, sel, sel_impl};
+
+    unsafe {
+        let close_button = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
+        if close_button != nil {
+            let superview: id = msg_send![close_button, superview];
+            if superview != nil {
+                let frame: NSRect = msg_send![superview, frame];
+                let new_frame = NSRect::new(
+                    NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
+                    frame.size,
+                );
+                let _: () = msg_send![superview, setFrame: new_frame];
+            }
+        }
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -48,6 +73,7 @@ pub fn run() {
             commands::get_server_port,
             commands::get_llm_port,
             commands::get_whisper_port,
+            commands::get_request_token,
             get_service_status,
             get_system_specs,
             restart_whisper,
@@ -90,6 +116,9 @@ pub fn run() {
                         ns_window.setTitleVisibility_(
                             cocoa::appkit::NSWindowTitleVisibility::NSWindowTitleHidden,
                         );
+
+                        // Position traffic light buttons
+                        position_traffic_light_buttons(ns_window);
                     }
                 }
             }
@@ -129,6 +158,14 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            // Re-apply traffic light button positioning on resize
+            #[cfg(target_os = "macos")]
+            if let tauri::WindowEvent::Resized { .. } = event {
+                if let Ok(ns_window) = window.ns_window() {
+                    position_traffic_light_buttons(ns_window as cocoa::base::id);
+                }
+            }
+
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 log::info!("Window close requested. Shutting down process manager.");
 

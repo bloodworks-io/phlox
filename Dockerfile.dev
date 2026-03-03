@@ -42,7 +42,7 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
 COPY --from=node-stage /usr/src/app/node_modules ./node_modules
 COPY --from=node-stage /usr/src/app .
 
-# Make the application directories
+# Create directories (dev runs as root for simplicity)
 RUN mkdir -p /usr/src/app/data \
     /usr/src/app/static \
     /usr/src/app/temp \
@@ -61,10 +61,8 @@ RUN printf '%s\n' \
 '# Set default value if SERVER_HOST is not set, then export it for subshells' \
 'export SERVER_HOST=${SERVER_HOST:-0.0.0.0}' \
 'parallel --tag --line-buffer ::: "npm run start-react" "uvicorn server.server:app --reload --host $SERVER_HOST --port 5000"' \
-> /usr/local/bin/start-phlox-dev.sh
-
-# Make the script executable
-RUN chmod +x /usr/local/bin/start-phlox-dev.sh
+> /usr/local/bin/start-phlox-dev.sh && \
+chmod +x /usr/local/bin/start-phlox-dev.sh
 
 # Expose necessary ports
 EXPOSE 3000

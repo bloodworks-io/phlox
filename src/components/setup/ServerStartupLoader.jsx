@@ -14,6 +14,7 @@ import { FaServer } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
+import { universalFetch } from "../../utils/helpers/apiHelpers";
 
 const MotionBox = motion(Box);
 
@@ -36,7 +37,7 @@ const LOADING_MESSAGES = [
 ];
 
 const POLL_INTERVAL = 2000; // ms - increased to reduce CPU load
-const TIMEOUT = 30000; // 30 seconds
+const TIMEOUT = 60000; // 60 seconds - increased for slower systems
 
 const ServerStartupLoader = ({ onReady, onError }) => {
   const { colorMode } = useColorMode();
@@ -80,7 +81,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       if (shouldPollRef.current && !isTimedOutRef.current) {
         try {
           const baseUrl = isTauri() ? await buildApiUrl("") : "";
-          const response = await fetch(`${baseUrl}/api/config/status`, {
+          const response = await universalFetch(`${baseUrl}/api/config/status`, {
             signal: AbortSignal.timeout(5000),
           });
           if (response.ok) {

@@ -1,5 +1,4 @@
 from pydantic import BaseModel, HttpUrl
-from typing import Optional, List
 
 
 class Task(BaseModel):
@@ -27,13 +26,13 @@ class RssFeed(BaseModel):
         title (Optional[str]): The title of the RSS feed. Defaults to None.
     """
 
-    id: Optional[int] = None
+    id: int | None = None
     url: HttpUrl
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class RssFeedList(BaseModel):
-    feeds: List[RssFeed]
+    feeds: list[RssFeed]
 
 
 class RssItem(BaseModel):
@@ -51,12 +50,12 @@ class RssItem(BaseModel):
     link: HttpUrl
     description: str
     published: str
-    feed_title: Optional[str] = None
-    added_at: Optional[str] = None
+    feed_title: str | None = None
+    added_at: str | None = None
 
 
 class RssFeedRefreshRequest(BaseModel):
-    feed_id: Optional[int] = None
+    feed_id: int | None = None
 
 
 class TodoItem(BaseModel):
@@ -69,6 +68,6 @@ class TodoItem(BaseModel):
         completed (bool): Indicates whether the task is completed.
     """
 
-    id: Optional[int] = None
+    id: int | None = None
     task: str
     completed: bool = False

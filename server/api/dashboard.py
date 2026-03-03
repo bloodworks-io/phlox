@@ -5,7 +5,6 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import HttpUrl, ValidationError
 
-from server.database.config.manager import config_manager
 from server.database.entities.analysis import (
     generate_daily_analysis,
     get_latest_analysis,
@@ -75,9 +74,7 @@ async def add_rss_feed(feed: RssFeed, background_tasks: BackgroundTasks):
         feed_id = await add_feed(feed)
 
         # Schedule the fetching and insertion as a background task
-        background_tasks.add_task(
-            fetch_and_insert_initial_items, feed_id, str(feed.url)
-        )
+        background_tasks.add_task(fetch_and_insert_initial_items, feed_id, str(feed.url))
 
         return {"message": "Feed added successfully"}
     except ValidationError as ve:
@@ -167,9 +164,7 @@ async def delete_todo(todo_id: int):
     """Delete a todo item."""
     try:
         delete_todo_item(todo_id)
-        return JSONResponse(
-            content={"message": "Todo item deleted successfully"}
-        )
+        return JSONResponse(content={"message": "Todo item deleted successfully"})
     except Exception as e:
         logging.error(f"Error deleting todo item: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -184,9 +179,7 @@ async def refresh_rss_feeds(request: RssFeedRefreshRequest):
             return {"message": result}
 
         if request.feed_id:
-            return {
-                "message": f"Feed with id {request.feed_id} refreshed successfully"
-            }
+            return {"message": f"Feed with id {request.feed_id} refreshed successfully"}
         else:
             return {"message": f"{result} feeds refreshed successfully"}
     except Exception as e:
@@ -199,7 +192,11 @@ async def get_analysis():
     """Fetch the latest daily analysis."""
     analysis = get_latest_analysis()
     if not analysis:
-        raise HTTPException(status_code=404, detail="No analysis available")
+        return {
+            "analysis": None,
+            "generated_at": None,
+            "is_processing": refresh_manager.is_task_running("analysis"),
+        }
 
     return {
         **analysis,
@@ -233,6 +230,4 @@ async def get_server_info():
         return process_info
     except Exception as e:
         logger.error(f"Error getting server info: {e}")
-        raise HTTPException(
-            status_code=500, detail="Error fetching server information"
-        )
+        raise HTTPException(status_code=500, detail="Error fetching server information")

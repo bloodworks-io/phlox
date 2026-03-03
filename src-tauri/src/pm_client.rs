@@ -110,6 +110,7 @@ pub struct ServiceStatusData {
     pub llama: Option<ServiceInfo>,
     pub whisper: Option<ServiceInfo>,
     pub server: Option<ServiceInfo>,
+    pub request_token: Option<String>,
 }
 
 /// Info about a single service

@@ -76,14 +76,12 @@ class LocalEmbeddingFunction(EmbeddingFunction[Documents]):
                 embeddings.append(embedding["data"][0]["embedding"])
             elif isinstance(embedding, list):
                 # Handle direct list format
-                embeddings.append(
-                    embedding[0] if len(embedding) > 0 else embedding
-                )
+                embeddings.append(embedding[0] if len(embedding) > 0 else embedding)
             else:
                 # Handle other formats
                 embeddings.append(embedding)
 
-        return cast(Embeddings, embeddings)
+        return cast("Embeddings", embeddings)
 
 
 __all__ = ["LocalEmbeddingFunction"]

@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Create phlox user
+RUN useradd -m -u 1000 phlox
+
 # First copy dependency files to leverage Docker cache
 COPY server/pyproject.toml server/uv.lock /usr/src/app/server/
 
@@ -28,9 +31,10 @@ ENV TESTING=true
 ENV DB_ENCRYPTION_KEY=test_key_12345
 ENV DOCKER_CONTAINER=true
 
-# Create required directories
-RUN mkdir -p /usr/src/app/build /usr/src/app/data
-RUN echo "<html><body>Test</body></html>" > /usr/src/app/build/index.html
+# Create directories and set ownership
+RUN mkdir -p /usr/src/app/build /usr/src/app/data && \
+    echo "<html><body>Test</body></html>" > /usr/src/app/build/index.html && \
+    chown -R phlox:phlox /usr/src/app
 
 # Create the run_tests.sh script
 RUN echo '#!/bin/bash\n\
@@ -50,14 +54,15 @@ test_exit_code=$?\n\
 # Delete test database after tests\n\
 rm -f /usr/src/app/data/test_phlox_database.sqlite\n\
 \n\
-exit $test_exit_code' > /usr/src/app/run_tests.sh
+exit $test_exit_code' > /usr/src/app/run_tests.sh && \
+    chmod +x /usr/src/app/run_tests.sh
 
-RUN chmod +x /usr/src/app/run_tests.sh
+# Change permissions
+RUN chown -R phlox:phlox /usr/src/app
+
+# Switch to phlox user
+USER phlox
 
 # Run tests using the script
 ENTRYPOINT ["/usr/src/app/run_tests.sh"]
-
-RUN chmod +x /usr/src/app/run_tests.sh
-
-# Run tests using the script
 CMD ["/usr/src/app/run_tests.sh"]

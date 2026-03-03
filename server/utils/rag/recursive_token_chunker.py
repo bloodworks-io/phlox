@@ -2,14 +2,14 @@
 # Original code can be found at: https://github.com/langchain-ai/langchain/blob/master/libs/text-splitters/langchain_text_splitters/character.py
 # License: MIT License
 
-from typing import Any, List, Optional
+import re
+from typing import Any
+
 from .chunking_utils import Language
 from .fixed_token_chunker import TextSplitter
-import re
 
-def _split_text_with_regex(
-    text: str, separator: str, keep_separator: bool
-) -> List[str]:
+
+def _split_text_with_regex(text: str, separator: str, keep_separator: bool) -> list[str]:
     # Now that we have the separator, split the text
     if separator:
         if keep_separator:
@@ -25,6 +25,7 @@ def _split_text_with_regex(
         splits = list(text)
     return [s for s in splits if s != ""]
 
+
 class RecursiveTokenChunker(TextSplitter):
     """Splitting text by recursively look at characters.
 
@@ -36,17 +37,22 @@ class RecursiveTokenChunker(TextSplitter):
         self,
         chunk_size: int = 4000,
         chunk_overlap: int = 200,
-        separators: Optional[List[str]] = None,
+        separators: list[str] | None = None,
         keep_separator: bool = True,
         is_separator_regex: bool = False,
         **kwargs: Any,
     ) -> None:
         """Create a new TextSplitter."""
-        super().__init__(chunk_size=chunk_size, chunk_overlap=chunk_overlap, keep_separator=keep_separator, **kwargs)
+        super().__init__(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            keep_separator=keep_separator,
+            **kwargs,
+        )
         self._separators = separators or ["\n\n", "\n", ".", "?", "!", " ", ""]
         self._is_separator_regex = is_separator_regex
 
-    def _split_text(self, text: str, separators: List[str]) -> List[str]:
+    def _split_text(self, text: str, separators: list[str]) -> list[str]:
         """Split incoming text and return chunks."""
         final_chunks = []
         # Get appropriate separator to use
@@ -86,7 +92,7 @@ class RecursiveTokenChunker(TextSplitter):
             final_chunks.extend(merged_text)
         return final_chunks
 
-    def split_text(self, text: str) -> List[str]:
+    def split_text(self, text: str) -> list[str]:
         return self._split_text(text, self._separators)
 
     # @classmethod
@@ -97,7 +103,7 @@ class RecursiveTokenChunker(TextSplitter):
     #     return cls(separators=separators, is_separator_regex=True, **kwargs)
 
     @staticmethod
-    def get_separators_for_language(language: Language) -> List[str]:
+    def get_separators_for_language(language: Language) -> list[str]:
         if language == Language.CPP:
             return [
                 # Split along class definitions
@@ -554,6 +560,5 @@ class RecursiveTokenChunker(TextSplitter):
 
         else:
             raise ValueError(
-                f"Language {language} is not supported! "
-                f"Please choose from {list(Language)}"
+                f"Language {language} is not supported! Please choose from {list(Language)}"
             )

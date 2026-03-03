@@ -463,7 +463,7 @@ function AppContent({ setIsInitializing }) {
 
       <Box
         flex="1"
-        ml={isSmallScreen ? "0" : isSidebarCollapsed ? "80px" : "220px"}
+        ml={isSmallScreen ? "0" : isSidebarCollapsed ? "89px" : "220px"}
         minH="100vh"
         transition="margin-left 0.3s ease"
         bg={
@@ -484,19 +484,19 @@ function AppContent({ setIsInitializing }) {
             position="fixed"
             top="0"
             right="0"
-            left={isSmallScreen ? "0" : isSidebarCollapsed ? "60px" : "220px"}
+            left={isSmallScreen ? "0" : isSidebarCollapsed ? "76px" : "236px"}
             zIndex="1000"
             transition="left 0.3s ease"
           />
         )}
 
         <Box
-          m={isTauri() ? "5px" : "0"}
-          borderRadius={isTauri() ? "16px" : "0"}
+          m="0px"
+          borderRadius="0px"
           p={isTauri() ? "6" : "0"}
           pt={isSmallScreen && isTauri() ? "50px" : isTauri() ? "6" : "0"}
           className="main-bg"
-          height={isTauri() ? "calc(100vh - 10px)" : "100vh"}
+          height="100vh"
           overflowY="auto"
           position="relative"
         >
