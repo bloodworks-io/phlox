@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.10.0](https://github.com/bloodworks-io/phlox/compare/v0.9.7...v0.10.0) (2026-03-03)
+
+
+### Features
+
+* add tokens for desltop server ([6d08b23](https://github.com/bloodworks-io/phlox/commit/6d08b23eab2c3d22e47a0aff8442d4f4a0c7be73))
+* security middlewares ([d9e25f9](https://github.com/bloodworks-io/phlox/commit/d9e25f98313984d19c1fc239dfe034338246d607))
+* template change fetches latest encounter with that template ([60d7208](https://github.com/bloodworks-io/phlox/commit/60d7208cd2dd8ce20a1c9f42b7b6b5c1e4d172d8))
+
+
+### Bug Fixes
+
+* 404 when no analysis available ([2864223](https://github.com/bloodworks-io/phlox/commit/2864223ce4e5c9fb3bfdf47990d2516eaccd3c85))
+* avoid naming collision with llama and whisper binaries ([2bb8801](https://github.com/bloodworks-io/phlox/commit/2bb8801b821e761c02c3d11518595703e3575afe))
+* combine system messages into one ([86266af](https://github.com/bloodworks-io/phlox/commit/86266af5b16e934c93dd1e3b0cebf91a0fa6c193))
+* CSP ([a2715d6](https://github.com/bloodworks-io/phlox/commit/a2715d62e3880e2c3803b4b6deea4b7378dbb3f6))
+* local bearer auth ([725fb50](https://github.com/bloodworks-io/phlox/commit/725fb508d54b8d3dac15dbadafa7898ea8960147))
+* macos button positioning ([05eb266](https://github.com/bloodworks-io/phlox/commit/05eb266df0d9721ecab566f222cae1f60d66d172))
+* made template generation more robus ([5d97dc3](https://github.com/bloodworks-io/phlox/commit/5d97dc3f5868ee58a0ee633bcae11f75e306f5d5))
+* refresh db singleton in dev mode ([b7d33cf](https://github.com/bloodworks-io/phlox/commit/b7d33cfe5cc5732063ace9dbe0f0ebbb1b1b1bbe))
+* response format should be a dict ([718f72f](https://github.com/bloodworks-io/phlox/commit/718f72ffbfe5205148a3f2809f849ad1993a04a4))
+* response format structure ([08c0dff](https://github.com/bloodworks-io/phlox/commit/08c0dffcd76664ea3d67f6a443c58c5bc1c48272))
+* system messages appearing after user messages ([44dca49](https://github.com/bloodworks-io/phlox/commit/44dca4924c2838ab45309ff09187d26f62e707b8))
+* tauri CORS issue ([97c3ffa](https://github.com/bloodworks-io/phlox/commit/97c3ffab7f2328d327adf25f74f4f491a4ae3c17))
+* update template versioning, new templates ([d9b30ba](https://github.com/bloodworks-io/phlox/commit/d9b30baa25f1555b274c5ddaf92a93de357feb5d))
+* zip path traversal ([1be0242](https://github.com/bloodworks-io/phlox/commit/1be02422888eab274828baa2f2e29ea491afefa0))
+
 ## [0.9.7](https://github.com/bloodworks-io/phlox/compare/v0.9.6...v0.9.7) (2026-02-23)
 
 
