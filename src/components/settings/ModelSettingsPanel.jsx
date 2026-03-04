@@ -42,7 +42,7 @@ import {
 import { useState, useEffect } from "react";
 
 import { universalFetch } from "../../utils/helpers/apiHelpers";
-import { buildApiUrl } from "../../utils/helpers/apiConfig";
+import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
 
 const ModelSettingsPanel = ({
@@ -128,6 +128,11 @@ const ModelSettingsPanel = ({
       if (response.ok) {
         const data = await response.json();
         setIsDocker(!data.available && data.reason?.includes("Docker"));
+      } else if (response.status === 400) {
+        const data = await response.json();
+        if (data.detail?.includes("Tauri builds")) {
+          setIsDocker(true);
+        }
       }
     } catch (error) {
       console.error("Error checking Docker status:", error);
@@ -210,7 +215,7 @@ const ModelSettingsPanel = ({
                         className={`mode-selector-button ${isLocalInference ? "active" : ""}`}
                         leftIcon={<FaDesktop />}
                         onClick={() => handleInferenceTypeChange(true)}
-                        isDisabled={!localStatus?.available}
+                        isDisabled={!isTauri() && !localStatus?.available}
                       >
                         Local
                       </Button>
