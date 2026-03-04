@@ -4,7 +4,7 @@ import { buildApiUrl } from "../helpers/apiConfig";
 export const localModelApi = {
   // Streaming download helper for SSE
   streamSSE: async function* (url) {
-    const response = await fetch(url);
+    const response = await universalFetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
