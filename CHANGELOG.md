@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/bloodworks-io/phlox/compare/v0.10.0...v0.10.1) (2026-03-04)
+
+
+### Bug Fixes
+
+* CORS issue on local build ([cbebe27](https://github.com/bloodworks-io/phlox/commit/cbebe27593dc3873b905dfcff8d6aeeae68b674b))
+
 ## [0.10.0](https://github.com/bloodworks-io/phlox/compare/v0.9.7...v0.10.0) (2026-03-03)
 
 
