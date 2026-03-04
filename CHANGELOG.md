@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/bloodworks-io/phlox/compare/v0.10.1...v0.10.2) (2026-03-04)
+
+
+### Bug Fixes
+
+* users unable to switch back to local models ([62652dd](https://github.com/bloodworks-io/phlox/commit/62652ddb555c069cd188fe9ddc673f7175d5694b))
+
 ## [0.10.1](https://github.com/bloodworks-io/phlox/compare/v0.10.0...v0.10.1) (2026-03-04)
 
 
