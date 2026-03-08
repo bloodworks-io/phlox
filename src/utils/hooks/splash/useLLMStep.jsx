@@ -5,6 +5,7 @@ import { validateLLMStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
 import { isTauri } from "../../helpers/apiConfig";
 import { localModelApi } from "../../api/localModelApi";
+import { downloadLlmModel as downloadLlmService } from "../../../services/localModelService";
 
 export const useLLMStep = (currentStep) => {
   const toast = useToast();
@@ -135,33 +136,17 @@ export const useLLMStep = (currentStep) => {
       setDownloadProgress(0);
 
       try {
-        // Stream the download
-        for await (const progress of localModelApi.streamDownloadLlmModel(
-          modelId,
-        )) {
-          if (progress.percentage !== undefined) {
-            setDownloadProgress(progress.percentage);
-          }
-        }
+        await downloadLlmService(modelId, {
+          onProgress: (progress) => {
+            if (progress.percentage !== undefined) {
+              setDownloadProgress(progress.percentage);
+            }
+          },
+          toast,
+        });
 
         // Refresh downloaded models after completion
         await fetchLocalModels();
-
-        toast({
-          title: "Download complete",
-          description: "Model downloaded successfully.",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } catch (error) {
-        toast({
-          title: "Download failed",
-          description: error.message || "Failed to download model.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
       } finally {
         setIsDownloadingLocal(false);
         setDownloadingModelId(null);

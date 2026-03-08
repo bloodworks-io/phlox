@@ -4,6 +4,7 @@ import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTranscriptionStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
 import { localModelApi } from "../../api/localModelApi";
+import { downloadWhisperModel as downloadWhisperService } from "../../../services/localModelService";
 
 export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
   const toast = useToast();
@@ -124,33 +125,17 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
       setWhisperDownloadProgress(0);
 
       try {
-        // Stream the download
-        for await (const progress of localModelApi.streamDownloadWhisperModel(
-          modelId,
-        )) {
-          if (progress.percentage !== undefined) {
-            setWhisperDownloadProgress(progress.percentage);
-          }
-        }
+        await downloadWhisperService(modelId, {
+          onProgress: (progress) => {
+            if (progress.percentage !== undefined) {
+              setWhisperDownloadProgress(progress.percentage);
+            }
+          },
+          toast,
+        });
 
         // Refresh downloaded models after completion
         await fetchLocalWhisperModels();
-
-        toast({
-          title: "Download complete",
-          description: "Whisper model downloaded successfully.",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } catch (error) {
-        toast({
-          title: "Download failed",
-          description: error.message || "Failed to download Whisper model.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
       } finally {
         setIsDownloadingWhisper(false);
         setDownloadingWhisperModelId(null);
