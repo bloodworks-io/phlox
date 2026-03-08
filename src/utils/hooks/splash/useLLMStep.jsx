@@ -5,7 +5,7 @@ import { validateLLMStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
 import { isTauri } from "../../helpers/apiConfig";
 import { localModelApi } from "../../api/localModelApi";
-import { downloadLlmModel as downloadLlmService } from "../../../services/localModelService";
+import { downloadLlmModel as downloadLlmService } from "../../../services/localModelService.jsx";
 
 export const useLLMStep = (currentStep) => {
   const toast = useToast();

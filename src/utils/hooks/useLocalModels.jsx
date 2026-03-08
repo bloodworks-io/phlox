@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@chakra-ui/react";
 import { localModelApi } from "../api/localModelApi";
 import { invoke } from "@tauri-apps/api/core";
-import { downloadLlmModel as downloadLlmService, downloadWhisperModel as downloadWhisperService } from "../services/localModelService";
+import { downloadLlmModel as downloadLlmService, downloadWhisperModel as downloadWhisperService } from "../services/localModelService.jsx";
 
 export const useLocalModels = () => {
   const [models, setModels] = useState([]);
