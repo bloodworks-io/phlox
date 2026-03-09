@@ -206,11 +206,11 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
         .arg("8192")
         .arg("--n-gpu-layers")
         .arg("99")
-        .arg("--jinja");
+        .arg("--jinja")
         .arg("--cache-type-k")
         .arg("q8_0")
         .arg("--cache-type-v")
-        .arg("q8_0")
+        .arg("q8_0");
 
     // Check for Qwen3 model
     if let Some(filename) = model_path.file_name().and_then(|n| n.to_str()) {
