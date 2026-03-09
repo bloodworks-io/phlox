@@ -36,7 +36,7 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         You are a medical documentation expert that analyzes clinical notes and creates structured templates.
         For each section:
         1. Determine the format style (bullets, numbered, narrative, etc)
-        2. Identify the exact bullet/numbering pattern used (-, 1., •, *, etc), if any
+        2. Identify the exact bullet/numbering pattern used (-, 1., •, *, #, etc), if any
         3. Create an appropriate section starter that matches the format (include heading and initial format marker if any)
         4. Extract the section text from the example note verbatim to serve as a style example
         5. Create a specific, actionable system prompt that instructs how to generate similar content for this section

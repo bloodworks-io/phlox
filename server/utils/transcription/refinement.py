@@ -233,6 +233,6 @@ def _format_bulleted_list(key_points: list[str], field: TemplateField) -> str:
     formatted_key_points = []
     for point in key_points:
         # Strip any existing bullets
-        cleaned_point = re.sub(r"^[•\-\*]\s*", "", point.strip())
+        cleaned_point = re.sub(r"^[•\-\*#]\s*", "", point.strip())
         formatted_key_points.append(f"{bullet_char} {_capitalize_first_char(cleaned_point)}")
     return "\n".join(formatted_key_points)

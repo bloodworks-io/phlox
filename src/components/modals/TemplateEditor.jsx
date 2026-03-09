@@ -375,6 +375,7 @@ const FieldEditor = ({
                                             <option value="-">-</option>
                                             <option value="*">*</option>
                                             <option value="→">→</option>
+                                            <option value="#">#</option>
                                         </Select>
                                     </Box>
                                 )}
