@@ -250,15 +250,33 @@ export const usePatient = (initialPatient = null) => {
       if (data.length > 0) {
         const latestEncounter = data[0];
 
+        // Fetch full patient data to get all template_data fields (not just persistent ones)
+        let fullTemplateData = latestEncounter.template_data || {};
+        try {
+          const fullPatientResponse = await universalFetch(
+            `/api/patient/id/${latestEncounter.id}`,
+          );
+          if (fullPatientResponse.ok) {
+            const fullPatient = await fullPatientResponse.json();
+            fullTemplateData = fullPatient.template_data || {};
+          }
+        } catch (error) {
+          console.error("Error fetching full patient data:", error);
+        }
+
         // Create a new patient object with the passed selectedDate
         const newPatient = {
           ...latestEncounter,
           id: null,
           encounter_date: selectedDate, // Use the passed selectedDate
           template_data: {
-            ...latestEncounter.template_data,
+            ...latestEncounter.template_data, // Use persistent data for pre-fill
           },
           isNewEncounter: true,
+          // Preserve full previous visit data for the panel
+          previous_visit_template_data: fullTemplateData,
+          previous_visit_template_key: latestEncounter.template_key,
+          previous_visit_encounter_date: latestEncounter.encounter_date,
         };
 
         // Fetch the previous visit summary
