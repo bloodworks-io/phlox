@@ -163,6 +163,8 @@ export const resetJobsItems = async (
     }
 };
 
+const debounceState = new Map();
+
 export const toggleJobsItem = async (
     patientId,
     index,
@@ -192,6 +194,45 @@ export const toggleJobsItem = async (
     } catch (error) {
         console.error("Error toggling jobs item:", error);
         throw error;
+    }
+};
+
+const executeUpdate = async (patientId, jobsList, refreshSidebar) => {
+    try {
+        await patientApi.updateJobsList(patientId, jobsList);
+        if (typeof refreshSidebar === "function") {
+            refreshSidebar();
+        }
+    } catch (error) {
+        console.error("Error updating jobs list (debounced):", error);
+    } finally {
+        debounceState.delete(patientId);
+    }
+};
+
+export const debouncedUpdateJobsList = (
+    patientId,
+    jobsList,
+    refreshSidebar,
+    debounceMs = 500,
+) => {
+    const existing = debounceState.get(patientId);
+    if (existing) {
+        clearTimeout(existing.timer);
+    }
+
+    const timer = setTimeout(() => {
+        executeUpdate(patientId, jobsList, refreshSidebar);
+    }, debounceMs);
+
+    debounceState.set(patientId, { timer, jobsList, refreshSidebar });
+};
+
+export const flushPendingJobsUpdate = (patientId) => {
+    const existing = debounceState.get(patientId);
+    if (existing) {
+        clearTimeout(existing.timer);
+        executeUpdate(patientId, existing.jobsList, existing.refreshSidebar);
     }
 };
 
