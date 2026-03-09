@@ -81,6 +81,23 @@ def get_all_templates() -> list[dict[str, Any]]:
         raise
 
 
+def get_base_key(template_key: str) -> str:
+    """
+    Extract the base key by removing the version number suffix.
+    The version number is always the last underscore followed by digits.
+
+    Examples:
+        itp_follow-up_note-b_1 → itp_follow-up_note-b
+        progress_note_2 → progress_note
+        soap_01 → soap
+        phlox_1 → phlox
+    """
+    parts = template_key.rsplit("_", 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        return parts[0]
+    return template_key
+
+
 def save_template(template: ClinicalTemplate) -> str:
     """
     Save a new clinical template.
@@ -126,7 +143,7 @@ def update_template(template: ClinicalTemplate) -> str:
     Returns the template key (either existing or new version).
     """
     try:
-        base_key = template.template_key.split("_")[0]
+        base_key = get_base_key(template.template_key)
 
         # Get the current version of the template
         get_db().cursor.execute(
@@ -294,21 +311,28 @@ def restore_template(template_key: str) -> bool:
         raise
 
 
-def template_exists(template_key: str) -> bool:
+def template_exists(template_key: str, include_deleted: bool = False) -> bool:
     """
-    Check if a template exists (including deleted ones).
+    Check if a template exists.
 
     Args:
         template_key (str): The key of the template to check.
+        include_deleted (bool): If True, includes soft-deleted templates. Default False.
 
     Returns:
         bool: True if the template exists.
     """
     try:
-        get_db().cursor.execute(
-            "SELECT COUNT(*) FROM clinical_templates WHERE template_key = ?",
-            (template_key,),
-        )
+        if include_deleted:
+            get_db().cursor.execute(
+                "SELECT COUNT(*) FROM clinical_templates WHERE template_key = ?",
+                (template_key,),
+            )
+        else:
+            get_db().cursor.execute(
+                "SELECT COUNT(*) FROM clinical_templates WHERE template_key = ? AND deleted = FALSE",
+                (template_key,),
+            )
         count = get_db().cursor.fetchone()[0]
         return count > 0
     except Exception as e:
