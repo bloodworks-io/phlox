@@ -4,32 +4,28 @@ version = "0.7.1"
 requires-python = ">=3.12"
 dependencies = [
     "APScheduler>=3.10.4",
-    "fastapi>=0.115.8",
+    "fastapi[standard]>=0.115.8",
     "feedparser>=6.0.11",
-    "httptools>=0.7.1",
     "httpx>=0.28.1",
     "icalendar>=5.0.13",
     "json-repair>=0.55.0",
-    "numpy>=2.4.1",
     "ollama>=0.4.7",
     "openai>=1.76.2",
     "platformdirs>=4.3.8",
     "pydantic>=2.10.6",
     "python-dotenv>=1.0.1",
-    "python-multipart>=0.0.22",
     "rapidfuzz>=3.14.0",
     "sqlcipher3>=0.6.2",
-    "tiktoken>=0.7.0",
-    "urllib3>=2.6.3",
-    "uvicorn>=0.34.0",
 ]
 
 [project.optional-dependencies]
 rag = [
     "chromadb>=0.6.3",
+    "numpy>=2.4.1",
     "Pillow>=12.1.1",
     "PyMuPDF>=1.24.9",
     "pytesseract>=0.3.13",
+    "tiktoken>=0.7.0",
 ]
 docker = [
     "phlox-server[rag]",
