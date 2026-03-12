@@ -3,7 +3,7 @@ import json
 import logging
 import re
 
-import Levenshtein
+from rapidfuzz.distance import Levenshtein
 from server.database.config.manager import config_manager
 from server.database.entities.patient import get_unique_primary_conditions
 from server.schemas.patient import Condition, Patient, Summary
@@ -43,7 +43,7 @@ def _find_best_condition_match(
 
         # Try different similarity measures
         ratios = [
-            Levenshtein.ratio(normalized_input, normalized_existing),
+            Levenshtein.normalized_similarity(normalized_input, normalized_existing),
             # Also check if one is contained in the other (for cases like "Iron deficiency" vs "iron deficiency anaemia")
             max(
                 (
@@ -269,7 +269,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
                     # Get top 10 most similar conditions for disambiguation
                     candidates = []
                     for existing in existing_conditions:
-                        similarity = Levenshtein.ratio(cleaned_condition.lower(), existing.lower())
+                        similarity = Levenshtein.normalized_similarity(cleaned_condition.lower(), existing.lower())
                         candidates.append((existing, similarity))
 
                     # Sort by similarity and take top 10
