@@ -2,7 +2,7 @@
 
 import logging
 
-import aiohttp
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -47,21 +47,19 @@ async def ollama_ps(base_url: str, timeout: int = 80) -> dict:
         Dictionary with models information
     """
     try:
-        async with (
-            aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session,
-            session.get(f"{base_url}/api/ps") as response,
-        ):
-            if response.status == 200:
-                result = await response.json()
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(f"{base_url}/api/ps")
+            if response.status_code == 200:
+                result = response.json()
                 return result
             else:
-                error_text = await response.text()
+                error_text = response.text
                 logger.error(
-                    f"Ollama ps request failed with status {response.status}: {error_text}"
+                    f"Ollama ps request failed with status {response.status_code}: {error_text}"
                 )
                 return {
                     "models": [],
-                    "error": f"Request failed with status {response.status}",
+                    "error": f"Request failed with status {response.status_code}",
                 }
     except Exception as e:
         logger.error(f"Unexpected error getting Ollama process info: {e}")

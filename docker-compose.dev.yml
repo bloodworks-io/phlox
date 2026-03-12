@@ -7,6 +7,7 @@ services:
         environment:
             DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
             NODE_ENV: development
+            LLM_EXTRA_BODY: '{"extra_body": {"chat_template_kwargs": {"enable_thinking": false}}}'
             TZ: Australia/Melbourne
             SERVER_HOST: 0.0.0.0 # Bind to all interfaces
             RATE_LIMIT_ENABLED: false

@@ -3,7 +3,7 @@ import re
 import time
 from typing import Union
 
-import aiohttp
+import httpx
 from server.database.config.manager import config_manager
 
 logger = logging.getLogger(__name__)
@@ -64,104 +64,41 @@ async def _transcribe_local_whisper(
 
     filename, content_type = _detect_audio_format(audio_buffer)
 
-    async with aiohttp.ClientSession() as session:
-        form_data = aiohttp.FormData()
-        form_data.add_field(
-            "file",
-            audio_buffer,
-            filename=filename,
-            content_type=content_type,
-        )
-        form_data.add_field("response_format", "verbose_json")
-        form_data.add_field("language", "en")
-        form_data.add_field("temperature", "0.0")
+    async with httpx.AsyncClient(timeout=httpx.Timeout(600.0)) as client:
+        files = {
+            "file": (filename, audio_buffer, content_type)
+        }
+        data = {
+            "response_format": "verbose_json",
+            "language": "en",
+            "temperature": "0.0",
+        }
 
         transcription_start = time.perf_counter()
 
         try:
-            async with session.post(whisper_url, data=form_data) as response:
-                transcription_end = time.perf_counter()
-                transcription_duration = transcription_end - transcription_start
-
-                if response.status != 200:
-                    error_text = await response.text()
-                    raise ValueError(f"Whisper local server error: {error_text}")
-
-                try:
-                    data = await response.json()
-                except Exception as e:
-                    raise ValueError(f"Failed to parse response: {e}")
-
-                if "text" not in data:
-                    raise ValueError("No text in whisper.cpp response")
-
-                if "segments" in data:
-                    transcript_text = "\n".join(
-                        segment["text"].strip() for segment in data["segments"]
-                    )
-                else:
-                    transcript_text = data["text"]
-
-                # Clean repetitive text patterns
-                transcript_text = _clean_repetitive_text(transcript_text)
-
-                return {
-                    "text": transcript_text,
-                    "transcriptionDuration": float(f"{transcription_duration:.2f}"),
-                }
-        except aiohttp.ClientError as e:
-            raise ValueError(f"Cannot connect to local whisper server: {e}")
-
-
-async def _transcribe_external_api(
-    audio_buffer: bytes, config: dict
-) -> dict[str, Union[str, float]]:
-    """Transcribe using external Whisper API (existing logic)."""
-    filename, content_type = _detect_audio_format(audio_buffer)
-    async with aiohttp.ClientSession() as session:
-        form_data = aiohttp.FormData()
-        form_data.add_field(
-            "file",
-            audio_buffer,
-            filename=filename,
-            content_type=content_type,
-        )
-        form_data.add_field("model", config["WHISPER_MODEL"])
-        form_data.add_field("language", "en")
-        form_data.add_field("temperature", "0.1")
-        form_data.add_field("vad_filter", "true")
-        form_data.add_field("response_format", "verbose_json")
-        form_data.add_field("timestamp_granularities[]", "segment")
-
-        transcription_start = time.perf_counter()
-
-        headers = {"Authorization": f"Bearer {config['WHISPER_KEY']}"}
-
-        async with session.post(
-            f"{config['WHISPER_BASE_URL']}/v1/audio/transcriptions",
-            data=form_data,
-            headers=headers,
-        ) as response:
+            response = await client.post(whisper_url, data=data, files=files)
             transcription_end = time.perf_counter()
             transcription_duration = transcription_end - transcription_start
 
-            if response.status != 200:
-                error_text = await response.text()
-                raise ValueError(f"Transcription failed: {error_text}")
+            if response.status_code != 200:
+                error_text = response.text
+                raise ValueError(f"Whisper local server error: {error_text}")
 
             try:
-                data = await response.json()
+                result = response.json()
             except Exception as e:
                 raise ValueError(f"Failed to parse response: {e}")
 
-            if "text" not in data:
-                raise ValueError("Transcription failed, no text in response")
+            if "text" not in result:
+                raise ValueError("No text in whisper.cpp response")
 
-            if "segments" in data:
-                # Extract text from each segment and join with newlines
-                transcript_text = "\n".join(segment["text"].strip() for segment in data["segments"])
+            if "segments" in result:
+                transcript_text = "\n".join(
+                    segment["text"].strip() for segment in result["segments"]
+                )
             else:
-                transcript_text = data["text"]
+                transcript_text = result["text"]
 
             # Clean repetitive text patterns
             transcript_text = _clean_repetitive_text(transcript_text)
@@ -170,6 +107,70 @@ async def _transcribe_external_api(
                 "text": transcript_text,
                 "transcriptionDuration": float(f"{transcription_duration:.2f}"),
             }
+        except httpx.RequestError as e:
+            raise ValueError(f"Cannot connect to local whisper server: {e}")
+
+
+async def _transcribe_external_api(
+    audio_buffer: bytes, config: dict
+) -> dict[str, Union[str, float]]:
+    """Transcribe using external Whisper API (existing logic)."""
+    filename, content_type = _detect_audio_format(audio_buffer)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(600.0)) as client:
+        files = {
+            "file": (filename, audio_buffer, content_type)
+        }
+        data = {
+            "model": config["WHISPER_MODEL"],
+            "language": "en",
+            "temperature": "0.1",
+            "vad_filter": "true",
+            "response_format": "verbose_json",
+            "timestamp_granularities[]": "segment",
+        }
+
+        transcription_start = time.perf_counter()
+
+        headers = {"Authorization": f"Bearer {config['WHISPER_KEY']}"}
+
+        try:
+            response = await client.post(
+                f"{config['WHISPER_BASE_URL']}/v1/audio/transcriptions",
+                data=data,
+                files=files,
+                headers=headers,
+            )
+        except httpx.RequestError as e:
+            raise ValueError(f"Transcription failed: {e}")
+
+        transcription_end = time.perf_counter()
+        transcription_duration = transcription_end - transcription_start
+
+        if response.status_code != 200:
+            error_text = response.text
+            raise ValueError(f"Transcription failed: {error_text}")
+
+        try:
+            result = response.json()
+        except Exception as e:
+            raise ValueError(f"Failed to parse response: {e}")
+
+        if "text" not in result:
+            raise ValueError("Transcription failed, no text in response")
+
+        if "segments" in result:
+            # Extract text from each segment and join with newlines
+            transcript_text = "\n".join(segment["text"].strip() for segment in result["segments"])
+        else:
+            transcript_text = result["text"]
+
+        # Clean repetitive text patterns
+        transcript_text = _clean_repetitive_text(transcript_text)
+
+        return {
+            "text": transcript_text,
+            "transcriptionDuration": float(f"{transcription_duration:.2f}"),
+        }
 
 
 def _clean_repetitive_text(text: str) -> str:
@@ -212,3 +213,4 @@ def _detect_audio_format(audio_buffer):
         return "recording.m4a", "audio/mp4"
     # Default to WAV if we can't determine
     return "recording.wav", "audio/wav"
+
