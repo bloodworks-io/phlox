@@ -24,7 +24,6 @@ dependencies = [
     "python-multipart>=0.0.22",
     "sqlcipher3>=0.6.2",
     "tiktoken>=0.7.0",
-    "Unidecode>=1.4.0",
     "urllib3>=2.6.3",
     "uvicorn>=0.34.0",
 ]
