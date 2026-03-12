@@ -21,6 +21,11 @@
           "type": "generic",
           "path": "server/_version.py",
           "line": "^__version__ = "
+        },
+        {
+          "type": "toml",
+          "path": "server/pyproject.toml",
+          "jsonpath": "$.project.version"
         }
       ]
     }
