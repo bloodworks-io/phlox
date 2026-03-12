@@ -4,7 +4,7 @@ version = "0.7.1"
 requires-python = ">=3.12"
 dependencies = [
     "APScheduler>=3.10.4",
-    "fastapi[standard]>=0.115.8",
+    "fastapi>=0.115.8",
     "feedparser>=6.0.11",
     "httpx>=0.28.1",
     "icalendar>=5.0.13",
@@ -13,9 +13,9 @@ dependencies = [
     "openai>=1.76.2",
     "platformdirs>=4.3.8",
     "pydantic>=2.10.6",
-    "python-dotenv>=1.0.1",
     "rapidfuzz>=3.14.0",
     "sqlcipher3>=0.6.2",
+    "uvicorn[standard]>=0.41.0",
 ]
 
 [project.optional-dependencies]
