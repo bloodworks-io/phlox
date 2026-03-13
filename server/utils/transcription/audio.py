@@ -131,7 +131,10 @@ async def _transcribe_external_api(
 
         transcription_start = time.perf_counter()
 
-        headers = {"Authorization": f"Bearer {config['WHISPER_KEY']}"}
+        headers = {}
+        whisper_key = config.get('WHISPER_KEY', '').strip()
+        if whisper_key:
+            headers["Authorization"] = f"Bearer {whisper_key}"
 
         try:
             response = await client.post(
