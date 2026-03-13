@@ -89,7 +89,6 @@ $NUITKA_CMD \
     --output-dir=server/dist \
     --output-filename=phlox-server \
     --macos-target-arch=$ARCH \
-    --follow-imports \
     --include-package=server \
     --include-module=sqlcipher3 \
     --nofollow-import-to=chromadb \
@@ -97,6 +96,8 @@ $NUITKA_CMD \
     --nofollow-import-to=fitz \
     --nofollow-import-to=PyMuPDF \
     --nofollow-import-to=pytesseract \
+    --nofollow-import-to=server.tests \
+    --nofollow-import-to=server.database.testing \
     server/server.py
 
 # Check if the build was successful
