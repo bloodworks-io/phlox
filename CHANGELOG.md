@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.11.0](https://github.com/bloodworks-io/phlox/compare/v0.10.2...v0.11.0) (2026-03-13)
+
+
+### Features
+
+* full previous note now appears in the previous visit panel ([4a43ddc](https://github.com/bloodworks-io/phlox/commit/4a43ddcaff25389e2319c1bbf80f8b943b3e9c85))
+
+
+### Bug Fixes
+
+* debounce job list updates ([79fba1e](https://github.com/bloodworks-io/phlox/commit/79fba1e9784e858f2b155a45cbef28894fed032f))
+* empty header error ([49a5066](https://github.com/bloodworks-io/phlox/commit/49a50662815c035acb9cbc3790d53e64c3778d94))
+* generated template collision issues ([371df90](https://github.com/bloodworks-io/phlox/commit/371df90c141cb17f97f33a80ec74039bfdf77a79))
+* process syntax ([bdf2bf3](https://github.com/bloodworks-io/phlox/commit/bdf2bf3039683e3d338e01da8953242457a320dd))
+* service status indicator in tauri builds not working correctly ([b41b6c8](https://github.com/bloodworks-io/phlox/commit/b41b6c8e2016ccdb0fa7ae2a23dd383fa70c6ca8))
+
 ## [0.10.2](https://github.com/bloodworks-io/phlox/compare/v0.10.1...v0.10.2) (2026-03-04)
 
 
