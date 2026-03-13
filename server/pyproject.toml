@@ -1,6 +1,6 @@
 [project]
 name = "phlox-server"
-version = "0.7.1"
+version = "0.11.0"
 requires-python = ">=3.12"
 dependencies = [
     "APScheduler>=3.10.4",
