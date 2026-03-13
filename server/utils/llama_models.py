@@ -29,38 +29,39 @@ class DownloadProgress:
     current_file: str  # "model" or "coreml"
 
 
-# Pre-configured Unsloth Qwen3 models from HuggingFace
+# Pre-configured Unsloth Qwen3.5 models from HuggingFace
 # Source: https://huggingface.co/unsloth
+# Released: February 2026
 # Note: Filenames must match exactly what's on HuggingFace
 PRECONFIGURED_MODELS = {
-    "qwen3-0.6b": {
-        "repo_id": "unsloth/Qwen3-0.6B-GGUF",
-        "filename": "Qwen3-0.6B-Q4_K_M.gguf",
-        "size_mb": 523,
+    "qwen3.5-0.8b": {
+        "repo_id": "unsloth/Qwen3.5-0.8B-GGUF",
+        "filename": "Qwen3.5-0.8B-Q4_K_M.gguf",
+        "size_mb": 1500,
         "description": "Fast but limited quality",
         "category": "tiny",
         "min_ram_gb": 1,
         "recommended_ram_gb": 2,
         "simple_name": "Tiny",
         "tier": [],
-        "parameters_billions": 0.6,
+        "parameters_billions": 0.8,
     },
-    "qwen3-1.7b": {
-        "repo_id": "unsloth/Qwen3-1.7B-GGUF",
-        "filename": "Qwen3-1.7B-Q4_K_M.gguf",
-        "size_mb": 1400,
+    "qwen3.5-2b": {
+        "repo_id": "unsloth/Qwen3.5-2B-GGUF",
+        "filename": "Qwen3.5-2B-Q4_K_M.gguf",
+        "size_mb": 1700,
         "description": "Fast and capable for everyday tasks",
         "category": "small",
         "min_ram_gb": 2,
         "recommended_ram_gb": 4,
         "simple_name": "Small",
         "tier": [1],
-        "parameters_billions": 1.7,
+        "parameters_billions": 2.0,
     },
-    "qwen3-4b": {
-        "repo_id": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
-        "filename": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
-        "size_mb": 2600,
+    "qwen3.5-4b": {
+        "repo_id": "unsloth/Qwen3.5-4B-GGUF",
+        "filename": "Qwen3.5-4B-Q4_K_M.gguf",
+        "size_mb": 2740,
         "description": "A great balance of speed and quality",
         "category": "medium",
         "min_ram_gb": 4,
@@ -69,33 +70,33 @@ PRECONFIGURED_MODELS = {
         "tier": [1, 2],
         "parameters_billions": 4.0,
     },
-    "qwen3-8b": {
-        "repo_id": "unsloth/Qwen3-8B-GGUF",
-        "filename": "Qwen3-8B-Q4_K_M.gguf",
-        "size_mb": 5200,
+    "qwen3.5-9b": {
+        "repo_id": "unsloth/Qwen3.5-9B-GGUF",
+        "filename": "Qwen3.5-9B-Q4_K_M.gguf",
+        "size_mb": 5500,
         "description": "High quality, good for most users",
         "category": "medium",
         "min_ram_gb": 6,
         "recommended_ram_gb": 12,
         "simple_name": "Large",
         "tier": [1, 2, 3],
-        "parameters_billions": 8.0,
+        "parameters_billions": 9.0,
     },
-    "qwen3-14b": {
-        "repo_id": "unsloth/Qwen3-14B-GGUF",
-        "filename": "Qwen3-14B-Q4_K_M.gguf",
-        "size_mb": 9300,
+    "qwen3.5-27b": {
+        "repo_id": "unsloth/Qwen3.5-27B-GGUF",
+        "filename": "Qwen3.5-27B-Q4_K_M.gguf",
+        "size_mb": 16000,
         "description": "Excellent quality, slower responses",
         "category": "large",
-        "min_ram_gb": 12,
-        "recommended_ram_gb": 16,
+        "min_ram_gb": 16,
+        "recommended_ram_gb": 24,
         "simple_name": "Extra Large",
         "tier": [2, 3],
-        "parameters_billions": 14.0,
+        "parameters_billions": 27.0,
     },
-    "qwen3-30b": {
-        "repo_id": "unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF",
-        "filename": "Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf",
+    "qwen3.5-35b-a3b": {
+        "repo_id": "unsloth/Qwen3.5-35B-A3B-GGUF",
+        "filename": "Qwen3.5-35B-A3B-Q4_K_M.gguf",
         "size_mb": 19000,
         "description": "Fast and excellent quality (MoE)",
         "category": "large",
@@ -103,20 +104,8 @@ PRECONFIGURED_MODELS = {
         "recommended_ram_gb": 32,
         "simple_name": "Premium",
         "tier": [3],
-        "parameters_billions": 30.0,
-        "active_parameters_billions": 3.0,  # A3B architecture - only 3B active
-    },
-    "qwen3-32b": {
-        "repo_id": "unsloth/Qwen3-32B-GGUF",
-        "filename": "Qwen3-32B-Q4_K_M.gguf",
-        "size_mb": 20000,
-        "description": "Top-tier quality, requires high-end hardware",
-        "category": "large",
-        "min_ram_gb": 24,
-        "recommended_ram_gb": 32,
-        "simple_name": "Ultra",
-        "tier": [],
-        "parameters_billions": 32.0,
+        "parameters_billions": 35.0,
+        "active_parameters_billions": 3.0,  # A3B architecture - only ~3B active
     },
 }
 
@@ -387,8 +376,8 @@ class LlamaModelManager:
                 logger.warning(f"Failed to delete model selection file: {e}")
 
     def get_default_model_filename(self) -> str:
-        """Get the filename for the default model (qwen3-4b)."""
-        return PRECONFIGURED_MODELS["qwen3-4b"]["filename"]
+        """Get the filename for the default model (qwen3.5-4b)."""
+        return PRECONFIGURED_MODELS["qwen3.5-4b"]["filename"]
 
     def get_selected_model_id(self) -> str | None:
         """Get the model_id of the currently selected model.

@@ -29,9 +29,9 @@ class LocalLLMClient:
         # Convert messages to Ollama format
         prompt = self._messages_to_prompt(messages)
 
-        import aiohttp
+        import httpx
 
-        async with aiohttp.ClientSession() as session:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(600.0)) as client:
             url = f"{self.ollama_url}/api/generate"
             data = {
                 "model": self.current_model,
@@ -39,10 +39,11 @@ class LocalLLMClient:
                 "stream": False,
                 **kwargs,
             }
-            async with session.post(url, json=data) as response:
-                if response.status == 200:
-                    result = await response.json()
-                    return result.get("response", "")
+
+            response = await client.post(url, json=data)
+            if response.status_code == 200:
+                result = response.json()
+                return result.get("response", "")
         return ""
 
     def _messages_to_prompt(self, messages):

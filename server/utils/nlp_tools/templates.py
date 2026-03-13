@@ -36,7 +36,7 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         You are a medical documentation expert that analyzes clinical notes and creates structured templates.
         For each section:
         1. Determine the format style (bullets, numbered, narrative, etc)
-        2. Identify the exact bullet/numbering pattern used (-, 1., •, *, etc), if any
+        2. Identify the exact bullet/numbering pattern used (-, 1., •, *, #, etc), if any
         3. Create an appropriate section starter that matches the format (include heading and initial format marker if any)
         4. Extract the section text from the example note verbatim to serve as a style example
         5. Create a specific, actionable system prompt that instructs how to generate similar content for this section
@@ -196,7 +196,7 @@ def generate_field_key(field_name: str) -> str:
 def generate_unique_template_key(base_name: str) -> str:
     """
     Generate a unique template key based on the template name.
-    If base name already exists, append -a, -b, -c etc.
+    If base name already exists (including soft-deleted), append -a, -b, -c etc.
     All template keys will have _1 appended as initial version.
 
     Args:
@@ -208,14 +208,15 @@ def generate_unique_template_key(base_name: str) -> str:
     base_key = generate_field_key(base_name)
     version = "_1"  # Initial version number
 
-    # First try without any suffix
-    if not template_exists(f"{base_key}{version}"):
+    # First try without any suffix - check both active and deleted templates
+    # since UNIQUE constraint applies to all rows regardless of deleted status
+    if not template_exists(f"{base_key}{version}", include_deleted=True):
         return f"{base_key}{version}"
 
     # If exists, try with suffixes -a through -z
     for suffix in (chr(i) for i in range(97, 123)):  # a through z
         test_key = f"{base_key}-{suffix}{version}"
-        if not template_exists(test_key):
+        if not template_exists(test_key, include_deleted=True):
             return test_key
 
     # If we somehow run out of letters, add timestamp

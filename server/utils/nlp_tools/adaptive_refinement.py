@@ -1,7 +1,7 @@
 import json
 import logging
 
-import Levenshtein
+from rapidfuzz.distance import Levenshtein
 from server.database.config.manager import config_manager
 from server.schemas.grammars import ConsolidatedInstructions
 from server.utils.llm_client import repair_json
@@ -379,7 +379,7 @@ def calculate_content_change_ratio(initial_content: str, modified_content: str) 
         return 1.0
 
     # Calculate similarity ratio using Levenshtein
-    similarity = Levenshtein.ratio(initial_content, modified_content)
+    similarity = Levenshtein.normalized_similarity(initial_content, modified_content)
     change_ratio = 1.0 - similarity
 
     logger.info(

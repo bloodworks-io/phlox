@@ -891,6 +891,10 @@ const PatientDetails = ({
         isOpen={isPreviousVisitPanelOpen}
         onClose={() => setIsPreviousVisitPanelOpen(false)}
         previousVisitSummary={patient.previous_visit_summary}
+        previousVisitTemplateData={patient.previous_visit_template_data}
+        previousVisitTemplateKey={patient.previous_visit_template_key}
+        previousVisitEncounterDate={patient.previous_visit_encounter_date}
+        templates={templates}
       />
     </Box>
   );

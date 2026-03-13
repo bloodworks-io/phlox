@@ -22,7 +22,7 @@ import {
   useToast,
   Spinner,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FaUser, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
 import {
   FaFileAlt,
@@ -35,6 +35,8 @@ import { RepeatIcon } from "@chakra-ui/icons";
 import {
   toggleJobsItem,
   resetJobsItems,
+  debouncedUpdateJobsList,
+  flushPendingJobsUpdate,
 } from "../../utils/patient/patientHandlers";
 import { motion, AnimatePresence } from "framer-motion";
 import { colors } from "../../theme/colors";
@@ -53,6 +55,15 @@ const PatientTable = ({
   const theme = useTheme();
   const toast = useToast();
   const [loadingStates, setLoadingStates] = useState({});
+  const pendingJobsUpdates = useRef(new Map());
+
+  useEffect(() => {
+    return () => {
+      pendingJobsUpdates.current.forEach((_, patientId) => {
+        flushPendingJobsUpdate(patientId);
+      });
+    };
+  }, []);
 
   const formatName = (name) => {
     const nameParts = name.split(", ");
@@ -348,7 +359,20 @@ const PatientTable = ({
                     }
                   }
 
-                  toggleJobsItem(patient.id, index, patients, refreshSidebar);
+                  const updatedJobsList = [...patient.jobs_list];
+                  updatedJobsList[index].completed = nextChecked;
+
+                  setPatients((prevPatients) =>
+                    prevPatients.map((p) =>
+                      p.id === patient.id
+                        ? { ...p, jobs_list: updatedJobsList }
+                        : p,
+                    ),
+                  );
+
+                  pendingJobsUpdates.current.set(patient.id, updatedJobsList);
+
+                  debouncedUpdateJobsList(patient.id, updatedJobsList, refreshSidebar);
                 }}
                 alignItems="flex-start"
                 sx={{

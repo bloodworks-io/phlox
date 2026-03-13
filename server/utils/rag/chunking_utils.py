@@ -5,8 +5,7 @@ from enum import Enum
 
 import tiktoken
 from chromadb.utils import embedding_functions
-from fuzzywuzzy import fuzz, process
-
+from rapidfuzz import fuzz, process
 
 class BaseChunker(ABC):
     @abstractmethod

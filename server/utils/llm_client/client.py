@@ -13,8 +13,6 @@ import os
 from collections.abc import AsyncGenerator
 from typing import Any, Union
 
-from unidecode import unidecode
-
 from server.database.config.manager import config_manager
 
 from .base import LLMProviderType
@@ -137,9 +135,13 @@ class AsyncLLMClient:
                 model=model, messages=messages, format=schema, options=options
             )
 
-            # Convert to simple ASCII; handle emdashes
-            response_str = unidecode(
-                response["message"]["content"].replace("—", "-").replace("–", "-")
+           # Handle emdashes and ensure ascii
+            response_str = (
+                response["message"]["content"]
+                .replace("—", "-")
+                .replace("–", "-")
+                .encode("ascii", "ignore")
+                .decode("ascii")
             )
 
         return repair_json(response_str)
