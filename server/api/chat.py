@@ -1,12 +1,13 @@
 import json
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 
 from server.schemas.chat import ChatRequest, ChatResponse
 from server.utils.chat import ChatEngine
+from server.utils.nlp_tools.document_processing import extract_text_from_document
 
 router = APIRouter()
 
@@ -61,4 +62,40 @@ async def chat(
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    """
+    Generic image/document upload endpoint for chat.
+
+    Accepts images (png, jpg, etc.) and PDFs.
+    Currently uses OCR to extract text; designed to be extensible for multimodal LLM.
+
+    Returns extracted text for the LLM to interpret.
+    """
+    try:
+        logging.info(f"Received image upload: {file.filename}, content_type: {file.content_type}")
+
+        content = await file.read()
+        content_type = file.content_type
+
+        # OCR extract text using existing pipeline
+        # (handles both images and PDFs - converts PDFs to images internally)
+        extracted_text = await extract_text_from_document(content, content_type)
+
+        logging.info(f"Successfully extracted {len(extracted_text)} characters from image")
+
+        return {
+            "text": extracted_text,
+            "content_type": content_type,
+            "filename": file.filename
+        }
+    except RuntimeError as e:
+        # OCR dependencies not available
+        logging.error(f"OCR not available: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error processing image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
