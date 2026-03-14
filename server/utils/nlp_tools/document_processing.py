@@ -299,6 +299,9 @@ async def process_document_field(
         if not system_prompt:
             system_prompt = f"You are a medical documentation assistant. Extract the {field_name} from the provided medical document."
 
+        if hasattr(field, "style_example") and field.style_example:
+            system_prompt += f"\n\nOutput style example:\n{field.style_example}"
+
         json_schema_instruction = (
             "Output MUST be ONLY valid JSON with top-level key "
             '"key_points" (array of strings). Example: ' + json.dumps({"key_points": ["..."]})
