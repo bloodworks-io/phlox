@@ -504,6 +504,7 @@ function AppContent({ setIsInitializing }) {
             position="absolute"
             top={5}
             right={5}
+            zIndex="1001"
             aria-label="Toggle color mode"
             icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
             className="dark-toggle"

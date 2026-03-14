@@ -90,7 +90,7 @@ export const floatingStyles = (props) => ({
     },
     ".message-box": {
         padding: "10px",
-        borderRadius: "8px",
+        borderRadius: "2xl",
         wordBreak: "break-word",
     },
     ".message-box.assistant": {
@@ -102,12 +102,12 @@ export const floatingStyles = (props) => ({
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textSecondary} !important`,
-        borderRadius: "lg !important",
+        borderRadius: "2xl !important",
     },
     ".message-box.user": {
         backgroundColor: colors.light.secondaryButton,
         color: colors.light.invertedText,
-        borderRadius: "lg !important",
+        borderRadius: "2xl !important",
     },
     ".message-box ul, .message-box ol": {
         paddingLeft: "20px",
@@ -211,5 +211,56 @@ export const floatingStyles = (props) => ({
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
                 : `1px solid ${colors.dark.surface} !important`,
+    },
+    // Dashboard chat styles
+    ".dashboard-chat-container": {
+        height: "calc(100vh - 60px)",
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+    },
+    ".dashboard-chat-input-container": {
+        background:
+            props.colorMode === "light"
+                ? `linear-gradient(to bottom, ${colors.light.secondary}ee, ${colors.light.surface}ee) !important`
+                : "linear-gradient(to bottom, rgba(45, 47, 65, 0.95), rgba(38, 40, 56, 0.95)) !important",
+        backdropFilter: "blur(20px) saturate(180%)",
+        border:
+            props.colorMode === "light"
+                ? `1px solid ${colors.light.surface2} !important`
+                : "1px solid rgba(0, 0, 0, 0.2) !important",
+        boxShadow:
+            props.colorMode === "light"
+                ? `0 8px 32px rgba(76, 79, 105, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important`
+                : "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important",
+        borderRadius: "full !important",
+        padding: "10px 16px !important",
+        transition: "all 0.3s ease",
+    },
+    ".dashboard-chat-messages": {
+        height: "calc(100vh - 160px)",
+        overflowY: "auto",
+        paddingBottom: "100px", // Space for fixed input
+    },
+    ".dashboard-chat-greeting": {
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textPrimary} !important`
+                : `${colors.dark.textPrimary} !important`,
+    },
+    ".dashboard-chat-suggestions": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.crust} !important`
+                : `${colors.dark.overlay0} !important`,
+        borderRadius: "xl !important",
+        border:
+            props.colorMode === "light"
+                ? `1px solid ${colors.light.surface} !important`
+                : "none !important",
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textSecondary} !important`
+                : `${colors.dark.textTertiary} !important`,
     },
 });
