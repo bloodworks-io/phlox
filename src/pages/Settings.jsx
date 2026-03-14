@@ -21,6 +21,7 @@ import { isChatEnabled } from "../utils/helpers/featureFlags";
 import { templateService } from "../utils/services/templateService";
 import LocalModelManagerModal from "../components/modals/LocalModelManagerModal";
 import { localModelApi } from "../utils/api/localModelApi";
+import { useDebounce } from "../utils/hooks/useDebounce";
 
 const Settings = () => {
   const [userSettings, setUserSettings] = useState({
@@ -135,29 +136,37 @@ const Settings = () => {
     fetchSettings();
   }, [fetchSettings]);
 
+  const debouncedWhisperUrl = useDebounce(config?.WHISPER_BASE_URL, 600);
+  const debouncedLlmBaseUrl = useDebounce(config?.LLM_BASE_URL, 600);
+  const debouncedLlmProvider = useDebounce(config?.LLM_PROVIDER, 100);
+
   useEffect(() => {
     const validateUrls = async () => {
-      if (config?.WHISPER_BASE_URL) {
+      if (debouncedWhisperUrl) {
         const whisperValid = await settingsService.validateUrl(
           "whisper",
-          config.WHISPER_BASE_URL,
+          debouncedWhisperUrl,
         );
         setUrlStatus((prev) => ({ ...prev, whisper: whisperValid }));
+      } else {
+        setUrlStatus((prev) => ({ ...prev, whisper: false }));
       }
 
-      if (config?.LLM_BASE_URL) {
+      if (debouncedLlmBaseUrl) {
         // Use provider type from config for URL validation
-        const providerType = config?.LLM_PROVIDER || "ollama";
+        const providerType = debouncedLlmProvider || "ollama";
         const llmValid = await settingsService.validateUrl(
           providerType,
-          config.LLM_BASE_URL,
+          debouncedLlmBaseUrl,
         );
         setUrlStatus((prev) => ({ ...prev, llm: llmValid }));
+      } else {
+        setUrlStatus((prev) => ({ ...prev, llm: false }));
       }
     };
 
     validateUrls();
-  }, [config?.WHISPER_BASE_URL, config?.LLM_BASE_URL, config?.LLM_PROVIDER]);
+  }, [debouncedWhisperUrl, debouncedLlmBaseUrl, debouncedLlmProvider]);
 
   useEffect(() => {
     const fetchLetterTemplates = async () => {

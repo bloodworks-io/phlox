@@ -1,26 +1,26 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 
-export const mcpApi = {
-  fetchMcpServers: async () =>
+export const toolsApi = {
+  fetchToolServers: async () =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/config/mcp");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch MCP servers",
+      errorMessage: "Failed to fetch tool servers",
     }),
 
-  fetchEnabledMcpServers: async () =>
+  fetchEnabledToolServers: async () =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/config/mcp/enabled");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch enabled MCP servers",
+      errorMessage: "Failed to fetch enabled tool servers",
     }),
 
-  addMcpServer: async (server) =>
+  addToolServer: async (server) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/config/mcp");
@@ -30,10 +30,10 @@ export const mcpApi = {
           body: JSON.stringify(server),
         });
       },
-      errorMessage: "Failed to add MCP server",
+      errorMessage: "Failed to add tool server",
     }),
 
-  updateMcpServer: async (serverId, server) =>
+  updateToolServer: async (serverId, server) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(`/api/config/mcp/${serverId}`);
@@ -43,10 +43,10 @@ export const mcpApi = {
           body: JSON.stringify(server),
         });
       },
-      errorMessage: "Failed to update MCP server",
+      errorMessage: "Failed to update tool server",
     }),
 
-  deleteMcpServer: async (serverId) =>
+  deleteToolServer: async (serverId) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(`/api/config/mcp/${serverId}`);
@@ -54,10 +54,10 @@ export const mcpApi = {
           method: "DELETE",
         });
       },
-      errorMessage: "Failed to delete MCP server",
+      errorMessage: "Failed to delete tool server",
     }),
 
-  toggleMcpServer: async (serverId, enabled) =>
+  toggleToolServer: async (serverId, enabled) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(`/api/config/mcp/${serverId}/toggle`);
@@ -67,10 +67,10 @@ export const mcpApi = {
           body: JSON.stringify({ enabled }),
         });
       },
-      errorMessage: `Failed to ${enabled ? "enable" : "disable"} MCP server`,
+      errorMessage: `Failed to ${enabled ? "enable" : "disable"} tool server`,
     }),
 
-  testMcpServer: async (serverId) =>
+  testToolServer: async (serverId) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(`/api/config/mcp/${serverId}/test`);
@@ -78,10 +78,10 @@ export const mcpApi = {
           method: "POST",
         });
       },
-      errorMessage: "Failed to test MCP server",
+      errorMessage: "Failed to test tool server",
     }),
 
-  refreshMcpTools: async () =>
+  refreshTools: async () =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/config/mcp/refresh-tools");
@@ -89,6 +89,6 @@ export const mcpApi = {
           method: "POST",
         });
       },
-      errorMessage: "Failed to refresh MCP tools",
+      errorMessage: "Failed to refresh tools",
     }),
 };

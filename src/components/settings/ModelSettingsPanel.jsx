@@ -42,7 +42,7 @@ import {
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
 
-import McpSettingsTab from "./McpSettingsTab";
+import ToolsSettingsTab from "./ToolsSettingsTab";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
@@ -373,11 +373,11 @@ const ModelSettingsPanel = ({
                       </Tab>
                     </Tooltip>
                   )}
-                  <Tooltip label="Configure MCP (Model Context Protocol) servers">
+                  <Tooltip label="Configure external tool servers">
                     <Tab className="tab-style">
                       <HStack>
                         <FaPuzzlePiece />
-                        <Text>MCP</Text>
+                        <Text>Tools</Text>
                       </HStack>
                     </Tab>
                   </Tooltip>
@@ -685,9 +685,9 @@ const ModelSettingsPanel = ({
                     </TabPanel>
                   )}
 
-                  {/* MCP Tab */}
+                  {/* Tools Tab */}
                   <TabPanel className="floating-main">
-                    <McpSettingsTab />
+                    <ToolsSettingsTab />
                   </TabPanel>
                 </TabPanels>
               </Tabs>
