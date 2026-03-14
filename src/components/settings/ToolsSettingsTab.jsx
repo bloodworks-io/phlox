@@ -5,6 +5,7 @@ import {
     Badge,
     Box,
     Button,
+    Checkbox,
     Flex,
     FormControl,
     FormErrorMessage,
@@ -75,6 +76,7 @@ const ToolsSettingsTab = ({ className }) => {
 
     const [serverName, setServerName] = useState("");
     const [serverUrl, setServerUrl] = useState("");
+    const [allowSensitiveData, setAllowSensitiveData] = useState(false);
 
     const [nameError, setNameError] = useState("");
     const [urlError, setUrlError] = useState("");
@@ -157,6 +159,7 @@ const ToolsSettingsTab = ({ className }) => {
             const serverData = {
                 name: serverName,
                 url: serverUrl,
+                allow_sensitive_data: allowSensitiveData,
             };
 
             await toolsApi.addToolServer(serverData);
@@ -172,6 +175,7 @@ const ToolsSettingsTab = ({ className }) => {
 
             setServerName("");
             setServerUrl("");
+            setAllowSensitiveData(false);
             setShowAddForm(false);
             fetchServers();
         } catch (error) {
@@ -246,19 +250,61 @@ const ToolsSettingsTab = ({ className }) => {
         }
     };
 
+    const handleToggleSensitiveData = async (serverId, allowSensitive) => {
+        setIsLoading(true);
+        try {
+            await toolsApi.updateToolServer(serverId, { allow_sensitive_data: allowSensitive });
+            await toolsApi.refreshTools();
+
+            toast({
+                title: "Success",
+                description: `Sensitive data ${allowSensitive ? "allowed" : "sanitized"}`,
+                status: allowSensitive ? "warning" : "success",
+                duration: 3000,
+                isClosable: true,
+            });
+
+            fetchServers();
+        } catch (error) {
+            console.error("Error toggling sensitive data:", error);
+            toast({
+                title: "Error",
+                description: "Failed to update sensitive data setting",
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleTestServer = async (serverId) => {
         setTestingServerId(serverId);
         try {
             const result = await toolsApi.testToolServer(serverId);
 
             if (result.success) {
+                const serverInfo = result.server_info;
+                const toolCount = result.tools?.length || 0;
+                const serverName = serverInfo?.name || "";
+                const serverVersion = serverInfo?.version || "";
+
+                let description = `Found ${toolCount} tools`;
+                if (serverName) {
+                    description = `${serverName}${serverVersion ? ` v${serverVersion}` : ""} - ${toolCount} tools`;
+                }
+
                 toast({
                     title: "Connection Successful",
-                    description: `Found ${result.tools?.length || 0} tools`,
+                    description: description,
                     status: "success",
-                    duration: 3000,
+                    duration: 4000,
                     isClosable: true,
                 });
+
+                // Refresh to get updated description
+                fetchServers();
             } else {
                 toast({
                     title: "Connection Failed",
@@ -468,6 +514,27 @@ const ToolsSettingsTab = ({ className }) => {
                             </FormErrorMessage>
                         </FormControl>
 
+                        <FormControl>
+                            <HStack spacing={2}>
+                                <Checkbox
+                                    isChecked={allowSensitiveData}
+                                    onChange={(e) => setAllowSensitiveData(e.target.checked)}
+                                    colorScheme="red"
+                                    size="sm"
+                                >
+                                    <Text fontSize="xs">Allow sensitive data (PHI)</Text>
+                                </Checkbox>
+                                <Tooltip label="When enabled, patient data will be sent to this server without sanitization. Only enable for fully trusted servers.">
+                                    <Box>
+                                        <FaLock style={{ opacity: 0.6, color: warningIconColor }} />
+                                    </Box>
+                                </Tooltip>
+                            </HStack>
+                            <Text fontSize="xs" className="pill-box-icons" mt={1}>
+                                Default: sanitized. Enable only for trusted servers.
+                            </Text>
+                        </FormControl>
+
                         <HStack justify="flex-end" w="100%">
                             <Button
                                 onClick={() => setShowAddForm(false)}
@@ -536,6 +603,17 @@ const ToolsSettingsTab = ({ className }) => {
                                                     ? "Active"
                                                     : "Disabled"}
                                             </Badge>
+                                            {server.allow_sensitive_data && (
+                                                <Tooltip label="PHI allowed - data sent without sanitization">
+                                                    <Badge
+                                                        size="sm"
+                                                        colorScheme="red"
+                                                        fontSize="xs"
+                                                    >
+                                                        PHI
+                                                    </Badge>
+                                                </Tooltip>
+                                            )}
                                         </HStack>
                                         <Text
                                             fontSize="xs"
@@ -543,6 +621,16 @@ const ToolsSettingsTab = ({ className }) => {
                                         >
                                             {server.url}
                                         </Text>
+                                        {server.description && (
+                                            <Text
+                                                fontSize="xs"
+                                                className="pill-box-icons"
+                                                fontStyle="italic"
+                                                opacity={0.8}
+                                            >
+                                                {server.description}
+                                            </Text>
+                                        )}
                                     </Box>
                                 </HStack>
 
@@ -559,6 +647,29 @@ const ToolsSettingsTab = ({ className }) => {
                                                 testingServerId === server.id
                                             }
                                             aria-label="Test connection"
+                                        />
+                                    </Tooltip>
+
+                                    <Tooltip
+                                        label={
+                                            server.allow_sensitive_data
+                                                ? "PHI allowed - click to sanitize"
+                                                : "PHI sanitized - click to allow"
+                                        }
+                                    >
+                                        <IconButton
+                                            size="sm"
+                                            variant="ghost"
+                                            icon={<FaLock />}
+                                            colorScheme={server.allow_sensitive_data ? "red" : "gray"}
+                                            opacity={server.allow_sensitive_data ? 1 : 0.4}
+                                            onClick={() =>
+                                                handleToggleSensitiveData(
+                                                    server.id,
+                                                    !server.allow_sensitive_data,
+                                                )
+                                            }
+                                            aria-label="Toggle PHI sanitization"
                                         />
                                     </Tooltip>
 
@@ -586,6 +697,7 @@ const ToolsSettingsTab = ({ className }) => {
                                             size="sm"
                                             icon={<DeleteIcon />}
                                             colorScheme="red"
+                                            variant="ghost"
                                             onClick={() =>
                                                 handleDeleteServer(server.id)
                                             }

@@ -547,7 +547,10 @@ def migrate_to_v5(cursor, db):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 url TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                server_version TEXT DEFAULT '',
                 enabled BOOLEAN DEFAULT 1,
+                allow_sensitive_data BOOLEAN DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )

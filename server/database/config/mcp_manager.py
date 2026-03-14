@@ -46,7 +46,7 @@ class McpConfigManager:
         try:
             self.db.cursor.execute(
                 """
-                SELECT id, name, url, enabled, created_at, updated_at
+                SELECT id, name, url, description, server_version, enabled, allow_sensitive_data, created_at, updated_at
                 FROM mcp_servers
                 ORDER BY created_at DESC
                 """
@@ -56,7 +56,10 @@ class McpConfigManager:
                     "id": row["id"],
                     "name": row["name"],
                     "url": row["url"],
+                    "description": row["description"] or "",
+                    "server_version": row["server_version"] or "",
                     "enabled": bool(row["enabled"]),
+                    "allow_sensitive_data": bool(row["allow_sensitive_data"]),
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
                 })
@@ -79,12 +82,22 @@ class McpConfigManager:
                 return server.copy()
         return None
 
-    def add_server(self, name: str, url: str) -> dict[str, Any]:
+    def add_server(
+        self,
+        name: str,
+        url: str,
+        allow_sensitive_data: bool = False,
+        description: str = "",
+        server_version: str = "",
+    ) -> dict[str, Any]:
         """Add a new MCP server configuration.
 
         Args:
             name: Human-readable name for the server
             url: URL for the MCP server endpoint (e.g., http://localhost:3000/mcp)
+            allow_sensitive_data: Whether to allow PHI in tool arguments (default: False)
+            description: Optional description of the server
+            server_version: Version string from the server's initialize response
 
         Returns:
             The created server configuration
@@ -99,24 +112,29 @@ class McpConfigManager:
 
         self.db.cursor.execute(
             """
-            INSERT INTO mcp_servers (name, url)
-            VALUES (?, ?)
+            INSERT INTO mcp_servers (name, url, description, server_version, allow_sensitive_data)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (name, url),
+            (name, url, description, server_version, 1 if allow_sensitive_data else 0),
         )
+        # Capture lastrowid before commit (it may be reset after commit)
+        new_id = self.db.cursor.lastrowid
         self.db.commit()
 
         # Reload configs
         self._load_configs()
 
         # Return the newly created server
-        return self.get_server(self.db.cursor.lastrowid)
+        return self.get_server(new_id)
 
     def update_server(
         self,
         server_id: int,
         name: str | None = None,
         url: str | None = None,
+        allow_sensitive_data: bool | None = None,
+        description: str | None = None,
+        server_version: str | None = None,
     ) -> dict[str, Any] | None:
         """Update an existing MCP server configuration.
 
@@ -137,6 +155,18 @@ class McpConfigManager:
         if url is not None:
             updates.append("url = ?")
             params.append(url)
+
+        if allow_sensitive_data is not None:
+            updates.append("allow_sensitive_data = ?")
+            params.append(1 if allow_sensitive_data else 0)
+
+        if description is not None:
+            updates.append("description = ?")
+            params.append(description)
+
+        if server_version is not None:
+            updates.append("server_version = ?")
+            params.append(server_version)
 
         if updates:
             updates.append("updated_at = CURRENT_TIMESTAMP")

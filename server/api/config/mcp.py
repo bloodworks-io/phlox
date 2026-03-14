@@ -14,6 +14,9 @@ class McpServerCreate(BaseModel):
 
     name: str
     url: str
+    allow_sensitive_data: bool = False
+    description: str = ""
+    server_version: str = ""
 
 
 class McpServerUpdate(BaseModel):
@@ -21,6 +24,9 @@ class McpServerUpdate(BaseModel):
 
     name: str | None = None
     url: str | None = None
+    allow_sensitive_data: bool | None = None
+    description: str | None = None
+    server_version: str | None = None
 
 
 @router.get("/mcp")
@@ -53,6 +59,9 @@ async def add_mcp_server(data: McpServerCreate):
         server = mcp_config_manager.add_server(
             name=data.name,
             url=data.url,
+            allow_sensitive_data=data.allow_sensitive_data,
+            description=data.description,
+            server_version=data.server_version,
         )
         return JSONResponse(
             content={"message": "MCP server added successfully", "server": server}
@@ -70,6 +79,9 @@ async def update_mcp_server(server_id: int, data: McpServerUpdate):
         server_id=server_id,
         name=data.name,
         url=data.url,
+        allow_sensitive_data=data.allow_sensitive_data,
+        description=data.description,
+        server_version=data.server_version,
     )
     if not server:
         raise HTTPException(status_code=404, detail="MCP server not found")
@@ -104,7 +116,8 @@ async def toggle_mcp_server(server_id: int, enabled: bool = Body(..., embed=True
 async def test_mcp_server(server_id: int):
     """Test connection to an MCP server and list its tools.
 
-    Returns the server's tools if connection is successful.
+    Returns the server's tools and server info if connection is successful.
+    Also updates the server's stored description/version from the server's info.
     """
     from server.utils.mcp.client import McpServerClient
 
@@ -121,16 +134,30 @@ async def test_mcp_server(server_id: int):
                     "success": False,
                     "message": "Failed to connect to MCP server",
                     "tools": [],
+                    "server_info": None,
                 },
                 status_code=400,
             )
 
         tools = await client.list_tools()
+        server_info = client.get_server_info()
+
+        # Update server with discovered info if available
+        if server_info:
+            description = f"{server_info.get('name', '')} - {len(tools)} tools available"
+            server_version = server_info.get("version", "")
+            mcp_config_manager.update_server(
+                server_id,
+                description=description,
+                server_version=server_version,
+            )
+
         return JSONResponse(
             content={
                 "success": True,
                 "message": "Connected successfully",
                 "tools": tools,
+                "server_info": server_info,
             }
         )
     except Exception as e:
@@ -139,6 +166,7 @@ async def test_mcp_server(server_id: int):
                 "success": False,
                 "message": f"Error: {str(e)}",
                 "tools": [],
+                "server_info": None,
             },
             status_code=500,
         )

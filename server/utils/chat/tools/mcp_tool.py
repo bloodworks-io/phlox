@@ -15,9 +15,33 @@ from server.utils.chat.streaming.response import (
     stream_llm_response,
     tool_response_message,
 )
+from server.utils.chat.tools.sanitization import sanitize_query_for_external_search
 from server.utils.mcp.client import call_mcp_tool
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_arguments(args: Any, allow_sensitive: bool) -> Any:
+    """Recursively sanitize string values in arguments to remove PHI.
+
+    Args:
+        args: The arguments to sanitize (can be dict, list, str, or other)
+        allow_sensitive: If True, return args unchanged
+
+    Returns:
+        Sanitized arguments with PHI patterns removed from strings
+    """
+    if allow_sensitive:
+        return args
+
+    if isinstance(args, str):
+        return sanitize_query_for_external_search(args)
+    elif isinstance(args, dict):
+        return {k: _sanitize_arguments(v, allow_sensitive) for k, v in args.items()}
+    elif isinstance(args, list):
+        return [_sanitize_arguments(item, allow_sensitive) for item in args]
+    else:
+        return args
 
 
 async def execute(
@@ -128,13 +152,26 @@ async def execute(
         except json.JSONDecodeError:
             logger.error("Failed to parse function arguments JSON")
 
+    # Get server config to check allow_sensitive_data flag
+    from server.database.config.mcp_manager import mcp_config_manager
+
+    server_config = mcp_config_manager.get_server(server_id)
+    allow_sensitive = server_config.get("allow_sensitive_data", False) if server_config else False
+
+    # Sanitize arguments if sensitive data is not allowed
+    sanitized_arguments = _sanitize_arguments(function_arguments, allow_sensitive)
+
+    if sanitized_arguments != function_arguments:
+        logger.info(f"Sanitized MCP tool arguments for server {server_id}")
+
     logger.info(
-        f"Executing MCP tool '{original_tool_name}' on server {server_id}"
+        f"Executing MCP tool '{original_tool_name}' on server {server_id} "
+        f"(allow_sensitive_data={allow_sensitive})"
     )
     yield status_message(f"Calling {original_tool_name}...")
 
     try:
-        response = await call_mcp_tool(server_id, original_tool_name, function_arguments)
+        response = await call_mcp_tool(server_id, original_tool_name, sanitized_arguments)
 
         if hasattr(response, "content"):
             # MCP CallToolResponse has a content attribute

@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 # Global cache for MCP tools (synchronous access)
 _mcp_tools_cache: list[dict[str, Any]] = []
+# Global cache for MCP server info (server_id -> info dict)
+_mcp_server_info_cache: dict[int, dict[str, Any]] = {}
 
 
 class McpServerClient:
@@ -30,6 +32,7 @@ class McpServerClient:
         self.session: ClientSession | None = None
         self.exit_stack = AsyncExitStack()
         self._tools_cache: list[dict[str, Any]] | None = None
+        self._server_info: dict[str, Any] | None = None
 
     async def connect(self) -> bool:
         """Connect to the MCP server via Streamable HTTP.
@@ -53,10 +56,28 @@ class McpServerClient:
                 ClientSession(sse_transport[0], sse_transport[1])
             )
 
-            await self.session.initialize()
+            # Initialize and capture server info
+            init_result = await self.session.initialize()
+
+            # Extract server info from InitializeResult
+            if init_result and hasattr(init_result, "serverInfo"):
+                self._server_info = {
+                    "name": getattr(init_result.serverInfo, "name", "Unknown"),
+                    "version": getattr(init_result.serverInfo, "version", ""),
+                }
+            else:
+                self._server_info = {"name": self.server_config.get("name", "Unknown"), "version": ""}
+
+            # Cache server info if we have a server ID
+            server_id = self.server_config.get("id")
+            if server_id and self._server_info:
+                global _mcp_server_info_cache
+                _mcp_server_info_cache[server_id] = self._server_info
 
             logger.info(
-                f"Connected to MCP server '{self.server_config['name']}' via Streamable HTTP"
+                f"Connected to MCP server '{self.server_config['name']}' "
+                f"({self._server_info.get('name', 'Unknown')} v{self._server_info.get('version', '?')}) "
+                f"via Streamable HTTP"
             )
             return True
 
@@ -143,6 +164,14 @@ class McpServerClient:
         """Sanitize a server name for use in tool names."""
         return name.lower().replace("-", "_").replace(" ", "_").replace("/", "_")
 
+    def get_server_info(self) -> dict[str, Any] | None:
+        """Get the server info from the initialization response.
+
+        Returns:
+            Dict with 'name' and 'version' keys, or None if not connected
+        """
+        return self._server_info
+
 
 async def get_mcp_tools() -> list[dict[str, Any]]:
     """Get all available tools from enabled MCP servers.
@@ -181,6 +210,18 @@ def get_mcp_tools_sync() -> list[dict[str, Any]]:
         List of cached tool definitions
     """
     return _mcp_tools_cache.copy()
+
+
+def get_mcp_server_info_sync(server_id: int) -> dict[str, Any] | None:
+    """Get cached server info for a specific MCP server.
+
+    Args:
+        server_id: The ID of the MCP server
+
+    Returns:
+        Dict with 'name' and 'version' keys, or None if not cached
+    """
+    return _mcp_server_info_cache.get(server_id)
 
 
 async def refresh_mcp_tools_cache() -> None:
