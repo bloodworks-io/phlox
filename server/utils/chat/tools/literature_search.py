@@ -69,7 +69,7 @@ def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -
         return "No relevant literature available"
 
     output_strings = []
-    distance_threshold = 0.2
+    distance_threshold = 0.4
     logger.info(f"Filtering results with distance threshold: {distance_threshold}")
 
     for i, doc_list in enumerate(context["documents"]):
@@ -87,7 +87,7 @@ def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -
                     f'According to {formatted_source}:\n\n"...{cleaned_doc}..."\n'
                 )
             else:
-                logger.info(f"Skipping document with distance {distance} (below threshold)")
+                logger.info(f"Skipping document with distance {distance} (above threshold)")
 
     if not output_strings:
         logger.info("No relevant literature matching query found.")

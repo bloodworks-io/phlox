@@ -14,26 +14,19 @@ from server.schemas.rag import (
     DeleteFileRequest,
     ModifyCollectionRequest,
 )
-from server.utils.rag.chroma import CHROMADB_AVAILABLE, ChromaManager
+from server.utils.rag.chroma import CHROMADB_AVAILABLE, get_chroma_manager
 from server.utils.rag.processing import (
     generate_specialty_suggestions,
 )
 
 router = APIRouter()
 
-# Only initialize chroma_manager if dependencies are available
-if CHROMADB_AVAILABLE:
-    chroma_manager = ChromaManager()
-else:
-    chroma_manager = None
-
-
 logger = logging.getLogger(__name__)
 
 
 # Helper function to check if RAG is available
 def _check_rag_available():
-    if not CHROMADB_AVAILABLE or chroma_manager is None:
+    if not CHROMADB_AVAILABLE or get_chroma_manager() is None:
         raise HTTPException(
             status_code=503,
             detail="RAG features are not available.",
@@ -45,6 +38,7 @@ async def get_files():
     """API endpoint to retrieve the list of document collections."""
     _check_rag_available()
     try:
+        chroma_manager = get_chroma_manager()
         collections = chroma_manager.list_collections()
         return {"files": collections}
     except Exception as e:
@@ -56,6 +50,7 @@ async def get_collection_files(collection_name: str):
     """API endpoint to retrieve files for a specific collection."""
     _check_rag_available()
     try:
+        chroma_manager = get_chroma_manager()
         files = chroma_manager.get_files_for_collection(collection_name)
         return {"files": files}
     except Exception as e:
@@ -70,6 +65,7 @@ async def modify_collection(request: ModifyCollectionRequest):
     """API endpoint to modify the name of a collection."""
     _check_rag_available()
     try:
+        chroma_manager = get_chroma_manager()
         success = chroma_manager.modify_collection_name(request.old_name, request.new_name)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to rename collection")
@@ -83,6 +79,7 @@ async def delete_collection_endpoint(name: str):
     """API endpoint to delete a collection."""
     _check_rag_available()
     try:
+        chroma_manager = get_chroma_manager()
         success = chroma_manager.delete_collection(name)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to delete collection")
@@ -96,6 +93,7 @@ async def delete_file_endpoint(request: DeleteFileRequest):
     """API endpoint to delete a file from a collection."""
     _check_rag_available()
     try:
+        chroma_manager = get_chroma_manager()
         success = chroma_manager.delete_file_from_collection(
             request.collection_name, request.file_name
         )
@@ -113,6 +111,7 @@ async def delete_file_endpoint(request: DeleteFileRequest):
 async def extract_pdf_info(file: UploadFile = File(...)):
     """API endpoint to extract information from a PDF."""
     _check_rag_available()
+    chroma_manager = get_chroma_manager()
     logger.info(f"Request received for /extract-pdf-info: filename='{file.filename}'")
     temp_dir = TEMP_DIR
     os.makedirs(temp_dir, exist_ok=True)  # Ensure temp dir exists
@@ -201,6 +200,7 @@ async def commit_to_db(request: CommitRequest):
     """API endpoint to commit data to the database."""
     _check_rag_available()
     try:
+        chroma_manager = get_chroma_manager()
         chroma_manager.commit_to_vectordb(
             request.disease_name,
             request.focus_area,
@@ -232,6 +232,7 @@ async def clear_database():
     """API endpoint to clear the entire RAG database."""
     _check_rag_available()
     try:
+        chroma_manager = get_chroma_manager()
         success = chroma_manager.reset_database()
         if not success:
             raise HTTPException(status_code=500, detail="Failed to reset RAG database")

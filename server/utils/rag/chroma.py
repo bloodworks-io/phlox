@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import threading
 
 # Optional RAG dependencies
 try:
@@ -30,6 +31,21 @@ prompts = config_manager.get_prompts_and_options()
 
 logger = logging.getLogger(__name__)
 
+_chroma_manager_instance = None
+_chroma_lock = threading.Lock()
+
+
+def get_chroma_manager():
+    """Get the ChromaManager singleton."""
+    global _chroma_manager_instance
+    if _chroma_manager_instance is None:
+        with _chroma_lock:
+            if _chroma_manager_instance is None:
+                if not CHROMADB_AVAILABLE:
+                    return None
+                _chroma_manager_instance = ChromaManager()
+    return _chroma_manager_instance
+
 
 class ChromaManager:
     """
@@ -45,6 +61,24 @@ class ChromaManager:
 
         self.config = config_manager.get_config()
         self.prompts = config_manager.get_prompts_and_options()
+
+        self.chroma_client = chromadb.PersistentClient(
+            path=str(DATA_DIR / "chroma"),
+            settings=Settings(anonymized_telemetry=False, allow_reset=True),
+        )
+        self.extracted_text_store = None
+
+        self._reload_embedding_function()
+
+        self.llm_client = get_llm_client()
+
+    def _reload_embedding_function(self):
+        """Reload the embedding function with fresh config.
+
+        This is called on init and can be called again when config changes.
+        Follows the same pattern as database connection refresh.
+        """
+        self.config = config_manager.get_config()
 
         # Initialize embedding function based on provider type
         provider_type = self.config.get("LLM_PROVIDER", "ollama").lower()
@@ -69,15 +103,10 @@ class ChromaManager:
         else:
             raise ValueError(f"Unsupported LLM provider type: {provider_type}")
 
-        # Create the LLM client
-        self.llm_client = get_llm_client()
-
-        # Initialize Chroma client
-        self.chroma_client = chromadb.PersistentClient(
-            path=str(DATA_DIR / "chroma"),
-            settings=Settings(anonymized_telemetry=False, allow_reset=True),
+        logger.info(
+            f"Reloaded embedding function: provider={provider_type}, "
+            f"model={self.config.get('EMBEDDING_MODEL', 'N/A')}"
         )
-        self.extracted_text_store = None
 
     async def get_structured_response(self, messages, schema, options=None):
         """Get structured response."""
