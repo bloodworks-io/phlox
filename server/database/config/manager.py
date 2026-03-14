@@ -76,8 +76,12 @@ class ConfigManager:
             self.options[category][key] = value
 
     def get_config(self):
-        """Returns the configuration settings."""
-        return self.config
+        """Returns the configuration settings with fallbacks applied."""
+        config = self.config.copy()
+        # Fall back to PRIMARY_MODEL if SECONDARY_MODEL is not set
+        if not config.get("SECONDARY_MODEL"):
+            config["SECONDARY_MODEL"] = config.get("PRIMARY_MODEL", "")
+        return config
 
     def get_prompts(self):
         """Returns the prompts."""
