@@ -109,20 +109,24 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "get_previous_encounter",
-                "description": "Retrieve the most recent previous encounter for a patient using their UR number. Use this to understand the patient's medical history, persistent conditions, or prior treatments.",
+                "description": "Retrieve previous encounters for a patient. You can search by UR number OR patient name. Use UR number if known; otherwise use patient name to search for matching patients.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "ur_number": {
                             "type": "string",
-                            "description": "The patient's UR number (medical record number)",
+                            "description": "Patient's UR number (preferred if known)",
+                        },
+                        "patient_name": {
+                            "type": "string",
+                            "description": "Patient's name to search (use if UR number is unknown)",
                         },
                         "current_encounter_date": {
                             "type": "string",
-                            "description": "The current encounter date in YYYY-MM-DD format to exclude from results",
+                            "description": "Current encounter date in YYYY-MM-DD format to exclude from results",
                         },
                     },
-                    "required": ["ur_number"],
+                    "required": [],
                     "additionalProperties": False,
                 },
                 "strict": True,
@@ -137,6 +141,92 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
                     "type": "object",
                     "properties": {},
                     "required": [],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "create_note",
+                "description": "Create a new patient encounter note for a specific date. Use this when scheduling patients, creating notes from a clinic list, or setting up encounters for upcoming appointments. IMPORTANT: Always include the ur_number when creating notes for existing patients to ensure their history is carried forward.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "patient_name": {
+                            "type": "string",
+                            "description": "Full name of the patient",
+                        },
+                        "encounter_date": {
+                            "type": "string",
+                            "description": "Date of the encounter in YYYY-MM-DD format",
+                        },
+                        "ur_number": {
+                            "type": "string",
+                            "description": "Patient's UR number (medical record number). IMPORTANT: Always provide this for existing patients to fetch their history and pre-fill persistent fields.",
+                        },
+                        "dob": {
+                            "type": "string",
+                            "description": "Patient's date of birth in YYYY-MM-DD format, if known",
+                        },
+                        "initial_notes": {
+                            "type": "string",
+                            "description": "Any initial notes or context for the encounter",
+                        },
+                    },
+                    "required": ["patient_name", "encounter_date"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_patient_jobs",
+                "description": "Get outstanding jobs/tasks for a specific patient. Use this when the user asks about pending tasks, follow-ups, or outstanding items for a patient.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "ur_number": {
+                            "type": "string",
+                            "description": "Patient's UR number (medical record number)",
+                        },
+                        "patient_name": {
+                            "type": "string",
+                            "description": "Patient's name (use if UR number is not known)",
+                        },
+                    },
+                    "required": [],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "todo_list",
+                "description": "Access the user's global todo list. Use this to list todos, add new tasks, mark tasks as complete, or delete tasks.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["list", "add", "complete", "delete"],
+                            "description": "Action to perform: 'list' all todos, 'add' a new task, 'complete' a task, or 'delete' a task",
+                        },
+                        "task": {
+                            "type": "string",
+                            "description": "Task description (required for 'add' action)",
+                        },
+                        "todo_id": {
+                            "type": "integer",
+                            "description": "Todo item ID (required for 'complete' and 'delete' actions)",
+                        },
+                    },
+                    "required": ["action"],
                     "additionalProperties": False,
                 },
                 "strict": True,

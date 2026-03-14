@@ -21,6 +21,24 @@ export const chatApi = {
     });
   },
 
+  uploadImage: async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const url = await buildApiUrl("/api/chat/upload-image");
+    const response = await universalFetch(url, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload image: ${response.status}`);
+    }
+
+    return response.json();
+    // Returns: { text: "...", content_type: "image/png", filename: "..." }
+  },
+
   generateLetter: async (letterData) => {
     return handleApiRequest({
       apiCall: async () => {

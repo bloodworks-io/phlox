@@ -23,8 +23,9 @@ export const useChat = ({ mode = "patient" } = {}) => {
       patient = null,
       currentTemplate = null,
       rawTranscription = null,
+      attachments = null,
     ) => {
-      if (!input.trim()) return;
+      if (!input.trim() && !attachments) return;
 
       // For patient mode, require patient and template
       if (mode === "patient" && (!patient || !currentTemplate)) return;
@@ -33,9 +34,27 @@ export const useChat = ({ mode = "patient" } = {}) => {
       setStreamStarted(false);
       setChatExpanded(true);
 
-      // Add user message to UI immediately
-      const userMessage = { role: "user", content: input };
+      // Build content for API (includes extracted text from attachments)
+      let contentForApi = input.trim();
+      if (attachments && attachments.length > 0) {
+        const attachmentTexts = attachments.map(
+          (att) => `[Content extracted from ${att.filename}]:\n${att.extractedText}`
+        );
+        contentForApi = contentForApi
+          ? `${contentForApi}\n\n${attachmentTexts.join("\n\n")}`
+          : attachmentTexts.join("\n\n");
+      }
+
+      // Add user message to UI (attachments shown as chips, not inline text)
+      const userMessage = {
+        role: "user",
+        content: input.trim(),
+        attachments: attachments,
+      };
       setMessages((prev) => [...prev, userMessage]);
+
+      // Message for API includes extracted text
+      const userMessageForApi = { role: "user", content: contentForApi };
 
       // Clear input immediately when sending
       setUserInput("");
@@ -58,9 +77,10 @@ export const useChat = ({ mode = "patient" } = {}) => {
         }
 
         // Messages for API are just the conversation history (no initial message with patient data)
+        // Use userMessageForApi which includes extracted attachment text
         const messagesForApi = initialMessage
-          ? [initialMessage, ...messages, userMessage]
-          : [...messages, userMessage];
+          ? [initialMessage, ...messages, userMessageForApi]
+          : [...messages, userMessageForApi];
 
         let fullContent = "";
 

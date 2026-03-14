@@ -16,6 +16,7 @@ from server.utils.chat.streaming.response import (
     stream_llm_response,
     tool_response_message,
 )
+from server.utils.chat.tools.patient_utils import find_ur_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -136,16 +137,43 @@ async def execute(
         except json.JSONDecodeError:
             logger.error("Failed to parse function arguments JSON")
 
-    ur_number = function_arguments.get("ur_number", "")
+    ur_number = function_arguments.get("ur_number")
+    patient_name = function_arguments.get("patient_name")
     current_encounter_date = function_arguments.get("current_encounter_date")
 
     # Track citations for the function response
     citations: list[str] = []
     result_content: str = ""
 
+    # If patient_name provided but no ur_number, search for patient
+    if not ur_number and patient_name:
+        logger.info(f"Searching for patient by name: '{patient_name}'")
+        yield status_message(f"Searching for patient '{patient_name}'...")
+        match = await find_ur_by_name(patient_name)
+        if not match:
+            logger.info(f"No patient found with name matching '{patient_name}'")
+            result_content = f"No patient found with name matching '{patient_name}'. Please verify the name or provide a UR number."
+            message_list.append(
+                tool_response_message(
+                    tool_call_id=tool_call.get("id", ""),
+                    content=result_content,
+                )
+            )
+            if llm_client is not None:
+                async for chunk in stream_llm_response(
+                    llm_client=llm_client,
+                    model=config["PRIMARY_MODEL"],
+                    messages=message_list,
+                    options=context_question_options,
+                ):
+                    yield chunk
+            yield end_message(function_response={"content": result_content, "citations": citations})
+            return
+        ur_number = match.ur_number
+
     if not ur_number:
-        logger.info("No UR number provided for previous encounter search")
-        result_content = "Error: No UR number provided. Please specify the patient's UR number."
+        logger.info("No UR number or patient name provided for previous encounter search")
+        result_content = "Error: Please provide either ur_number or patient_name."
         message_list.append(
             tool_response_message(
                 tool_call_id=tool_call.get("id", ""),

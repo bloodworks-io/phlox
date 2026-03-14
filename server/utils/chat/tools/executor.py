@@ -90,6 +90,30 @@ async def execute_tool_streaming(
         ):
             yield result
 
+    elif function_name == "create_note":
+        from .create_note import execute
+
+        async for result in execute(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
+    elif function_name == "get_patient_jobs":
+        from .patient_jobs import execute
+
+        async for result in execute(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
+    elif function_name == "todo_list":
+        from .todo_list import execute
+
+        async for result in execute(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
     elif function_name == "get_relevant_literature":
         from .direct_response import execute as execute_direct
         from .literature_search import execute as execute_literature

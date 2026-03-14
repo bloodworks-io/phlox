@@ -10,11 +10,11 @@ class Patient(BaseModel):
 
     id: int | None = None
     name: str
-    dob: str
-    ur_number: str
-    gender: str
+    dob: str | None = None
+    ur_number: str | None = None
+    gender: str | None = None
     encounter_date: str
-    template_key: str
+    template_key: str | None = None
     template_data: dict[str, Any] | None = None
     raw_transcription: str | None = None
     transcription_duration: float | None = None

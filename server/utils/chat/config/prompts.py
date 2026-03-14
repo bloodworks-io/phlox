@@ -6,6 +6,7 @@ for chat interactions.
 """
 
 import logging
+from datetime import datetime
 
 from server.database.config.manager import config_manager
 from server.utils.helpers import calculate_age
@@ -57,6 +58,9 @@ def build_system_messages(patient_context: dict | None = None, template_fields: 
 
     # Start with the main system prompt
     content = prompts["prompts"]["chat"]["system"]
+
+    today_readable = datetime.now().strftime("%A, %B %d, %Y")
+    content += f"\n\nToday's date is {today_readable} ({today})."
 
     # Append doctor context if available
     if doctor_name or specialty:
