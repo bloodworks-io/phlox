@@ -66,15 +66,19 @@ export const chatApi = {
         if (line.trim() && line.startsWith("data: ")) {
           try {
             const data = JSON.parse(line.slice(6));
-            if (data.type === "end" && data.function_response) {
-              // Handle function response at the end of stream
-              yield {
-                type: "context",
-                content: data.function_response.reduce((acc, item, index) => {
-                  acc[index + 1] = item;
-                  return acc;
-                }, {}),
-              };
+            if (data.type === "end" && data.function_response?.citations) {
+              // Convert citations array to the format expected by frontend
+              const contextData = data.function_response.citations.reduce((acc, item, index) => {
+                acc[index + 1] = item;
+                return acc;
+              }, {});
+
+              if (Object.keys(contextData).length > 0) {
+                yield {
+                  type: "context",
+                  content: contextData,
+                };
+              }
             } else {
               yield data;
             }
