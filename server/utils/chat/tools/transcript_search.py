@@ -44,6 +44,19 @@ async def execute(
     """
     logger.info("Executing transcript_search tool...")
 
+    if llm_client is None:
+        logger.warning("transcript_search called without LLM client")
+        yield status_message("Generating response...")
+
+        message_list.append(
+            tool_response_message(
+                tool_call_id=tool_call.get("id", ""),
+                content="This tool is only available in chat context with an active transcript. Please answer the user's question using other available information.",
+            )
+        )
+
+        return
+
     # Check if transcript is available
     if not raw_transcription:
         logger.info("No transcript available.")

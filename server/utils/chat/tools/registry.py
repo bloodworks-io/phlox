@@ -145,17 +145,41 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
     ]
 
 
-def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
+def get_tools_definition(collection_names: list[str], *, exclude_chat_only: bool = False) -> list[dict[str, Any]]:
     """
     Get the tools definition based on available collections and MCP servers.
 
     Args:
         collection_names: List of available collection names
+        exclude_chat_only: If True, exclude tools that only work in chat context
 
     Returns:
         List of tool definitions including built-in and MCP tools
     """
+    CHAT_ONLY_TOOLS = {"transcript_search", "direct_response"}
+    from server.database.config.manager import config_manager
+
     built_in_tools = _get_built_in_tools(collection_names)
+
+    # Filter out disabled tools based on user settings
+    user_settings = config_manager.get_user_settings()
+    disabled_tools = set(user_settings.get("disabled_tools", ["pubmed_search", "wiki_search"]))
+
+    enabled_tools = [
+        tool for tool in built_in_tools
+        if tool["function"]["name"] not in disabled_tools
+    ]
+
+    if disabled_tools:
+        logger.info(f"Filtered out disabled tools: {disabled_tools}")
+
+    # Filter out chat-only tools if requested
+    if exclude_chat_only:
+        enabled_tools = [
+            tool for tool in enabled_tools
+            if tool["function"]["name"] not in CHAT_ONLY_TOOLS
+        ]
+        logger.info(f"Filtered out chat-only tools: {CHAT_ONLY_TOOLS}")
 
     # Add MCP tools if available
     try:
@@ -165,7 +189,7 @@ def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
         if mcp_tools:
             # Return the tool definitions (without internal metadata)
             for tool in mcp_tools:
-                built_in_tools.append(
+                enabled_tools.append(
                     {
                         "type": tool["type"],
                         "function": tool["function"],
@@ -178,4 +202,4 @@ def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
     except Exception as e:
         logger.error(f"Failed to load MCP tools: {e}")
 
-    return built_in_tools
+    return enabled_tools

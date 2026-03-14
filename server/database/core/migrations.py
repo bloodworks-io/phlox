@@ -539,7 +539,7 @@ def migrate_to_v4(cursor, db):
 
 
 def migrate_to_v5(cursor, db):
-    """Add MCP servers configuration table."""
+    """Add MCP servers configuration table and disabled_tools to user_settings."""
     try:
         cursor.execute(
             """
@@ -553,8 +553,13 @@ def migrate_to_v5(cursor, db):
             )
         """
         )
+
+        cursor.execute(
+            'ALTER TABLE user_settings ADD COLUMN disabled_tools JSON DEFAULT \'["pubmed_search", "wiki_search"]\'',
+        )
+
         db.commit()
-        logging.info("Successfully added mcp_servers table")
+        logging.info("Successfully added mcp_servers table and disabled_tools column")
 
     except Exception as e:
         logging.error(f"Error during v5 migration: {e}")

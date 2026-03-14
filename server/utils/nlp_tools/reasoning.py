@@ -8,6 +8,7 @@ from server.utils.chat.tools import execute_tool_non_streaming, get_tools_defini
 from server.utils.helpers import calculate_age
 from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
+from server.utils.rag.chroma import get_chroma_manager
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
@@ -55,7 +56,11 @@ async def stream_clinical_reasoning_with_tools(
             section_title = section_name.replace("_", " ").title()
             formatted_note += f"{section_title}:\n{content}\n\n"
 
-    tools = get_tools_definition([])
+    # Get available collections for literature search
+    chroma_mgr = get_chroma_manager()
+    collection_names = chroma_mgr.list_collections() if chroma_mgr else []
+
+    tools = get_tools_definition(collection_names, exclude_chat_only=True)
 
     patient_info = f"Demographics: {age} year old {"male" if gender == "M" else "female"}"
     if ur_number:
@@ -126,7 +131,7 @@ Highlight potential documentation gaps and provide standard literature correlati
                 else:
                     yield {"type": "status", "message": f"Processing {function_name}..."}
 
-                result, tool_citations = await execute_tool_non_streaming(tool_call, config)
+                result, tool_citations = await execute_tool_non_streaming(tool_call, config, chroma_manager=get_chroma_manager())
                 if tool_citations:
                     citations.extend(tool_citations)
                 tool_id = tool_call.get("id", "")
