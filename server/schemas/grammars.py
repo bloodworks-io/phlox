@@ -116,6 +116,10 @@ class ClinicalReasoning(BaseModel):
     differentials: list[ReasoningItem]
     investigations: list[ReasoningItem]
     clinical_considerations: list[ReasoningItem]
+    citations: list[str] = Field(
+        default_factory=list,
+        description="Tool citations from sources used in reasoning (PubMed, Wikipedia, etc.)",
+    )
 
 
 # Letter

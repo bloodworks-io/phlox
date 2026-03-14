@@ -8,13 +8,41 @@ for chat interactions.
 import logging
 
 from server.database.config.manager import config_manager
+from server.utils.helpers import calculate_age
 
 logger = logging.getLogger(__name__)
 
 
-def build_system_messages() -> list:
+def _format_template_data(template_data: dict, fields: list) -> str:
+    """
+    Format template data into a readable string.
+
+    Args:
+        template_data: Dictionary of field_key -> value
+        fields: List of field definitions with field_key and field_name
+
+    Returns:
+        Formatted string of template data
+    """
+    lines = []
+    for field in fields:
+        field_key = field.get("field_key")
+        field_name = field.get("field_name", field_key)
+        value = template_data.get(field_key, f"No {field_name.lower()} available")
+        lines.append(f"{field_name}:")
+        lines.append(value)
+        lines.append("")  # Empty line for spacing
+    return "\n".join(lines)
+
+
+def build_system_messages(patient_context: dict | None = None, template_fields: list | None = None) -> list:
     """
     Build the system messages for chat interactions.
+
+    Args:
+        patient_context: Optional patient context containing name, dob, ur_number,
+                        encounter_date, and template_data
+        template_fields: Optional list of template field definitions for formatting
 
     Returns:
         list: A list containing a single system message with combined content.
@@ -41,5 +69,49 @@ def build_system_messages() -> list:
         else:
             doctor_context += f" a {specialty} specialist."
         content += doctor_context
+
+    # Add patient context if provided
+    if patient_context:
+        name = patient_context.get("name", "")
+        dob = patient_context.get("dob", "")
+        ur_number = patient_context.get("ur_number", "")
+        encounter_date = patient_context.get("encounter_date")
+        template_data = patient_context.get("template_data")
+
+        # Calculate age
+        age = ""
+        if dob:
+            try:
+                age = calculate_age(dob, encounter_date)
+            except ValueError:
+                age = ""
+
+        # Build patient header
+        content += "\n\nHere is the most recent note that the doctor is working on for patient"
+        patient_header_parts = []
+        if name:
+            patient_header_parts.append(name)
+        if dob:
+            patient_header_parts.append(f"DOB: {dob}")
+        if age != "":
+            patient_header_parts.append(f"{age} years old")
+        if ur_number:
+            patient_header_parts.append(f"UR: {ur_number}")
+
+        if patient_header_parts:
+            content += " " + ", ".join(patient_header_parts)
+
+        # Add UR number context for tools
+        if ur_number:
+            content += f"\n\nPatient Context: UR Number is {ur_number}."
+
+        # Add current encounter date for tools
+        if encounter_date:
+            content += f"\nCurrent Encounter Date: {encounter_date}."
+
+        # Add template data (patient notes)
+        if template_data and template_fields:
+            formatted_notes = _format_template_data(template_data, template_fields)
+            content += "\n\n" + formatted_notes
 
     return [{"role": "system", "content": content}]

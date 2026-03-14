@@ -8,7 +8,7 @@ from server.database.core.connection import get_db
 from server.database.entities.patient import get_patients_by_date
 from server.schemas.grammars import PatientAnalysis, PreviousVisitSummary
 from server.utils.llm_client.client import get_llm_client
-from server.utils.nlp_tools.reasoning import run_clinical_reasoning
+from server.utils.nlp_tools.reasoning import stream_clinical_reasoning_with_tools
 
 logger = logging.getLogger(__name__)
 
@@ -283,16 +283,26 @@ async def run_nightly_reasoning():
             patient_id = patient["id"]
             async with sem:
                 try:
-                    reasoning_output = await run_clinical_reasoning(
+                    # Consume streaming response - background job doesn't need status updates
+                    reasoning_result = None
+                    async for event in stream_clinical_reasoning_with_tools(
                         patient["template_data"],
                         patient["dob"],
                         patient["encounter_date"],
                         patient["gender"],
-                    )
+                        patient.get("ur_number"),
+                    ):
+                        if event["type"] == "result":
+                            reasoning_result = event["data"]
+                            break
+
+                    if not reasoning_result:
+                        raise ValueError("No reasoning result generated")
+
                     return {
                         "patient_id": patient_id,
                         "success": True,
-                        "reasoning": reasoning_output,
+                        "reasoning": reasoning_result,
                     }
                 except Exception as e:
                     logging.error(f"Error processing reasoning for patient {patient_id}: {str(e)}")
@@ -315,7 +325,7 @@ async def run_nightly_reasoning():
                 try:
                     get_db().cursor.execute(
                         "UPDATE patients SET reasoning_output = ? WHERE id = ?",
-                        (json.dumps(result["reasoning"].dict()), patient_id),
+                        (json.dumps(result["reasoning"]), patient_id),
                     )
                     successful_updates += 1
                 except Exception as e:

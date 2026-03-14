@@ -5,7 +5,7 @@ import traceback
 
 from fastapi import APIRouter, BackgroundTasks, Body
 from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from server.database.entities.analysis import generate_previous_visit_summary
 from server.database.entities.jobs import (
@@ -36,7 +36,6 @@ from server.schemas.patient import (
 from server.utils.nlp_tools.adaptive_refinement import (
     generate_adaptive_refinement_suggestions,
 )
-from server.utils.nlp_tools.reasoning import run_clinical_reasoning
 from server.utils.nlp_tools.summarisation import summarise_encounter
 from server.utils.nlp_tools.summarization_manager import summarization_manager
 
@@ -424,24 +423,30 @@ async def get_incomplete_jobs_count():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{patient_id}/reasoning")
-async def generate_reasoning(patient_id: int):
-    """Run reasoning analysis on a completed patient note."""
+@router.post("/{patient_id}/reasoning/stream")
+async def generate_reasoning_stream(patient_id: int):
+    """Run reasoning analysis with streaming status updates via Server-Sent Events."""
     try:
         patient = get_patient_by_id(patient_id)
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
-        reasoning_output = await run_clinical_reasoning(
-            patient["template_data"],
-            patient["dob"],
-            patient["encounter_date"],
-            patient["gender"],
-        )
+        async def generate():
+            from server.utils.nlp_tools.reasoning import stream_clinical_reasoning_with_tools
 
-        update_patient_reasoning(patient_id, reasoning_output.dict())
+            async for event in stream_clinical_reasoning_with_tools(
+                patient["template_data"],
+                patient["dob"],
+                patient["encounter_date"],
+                patient["gender"],
+                patient.get("ur_number"),
+            ):
+                if event["type"] == "result":
+                    # Save to database before sending
+                    update_patient_reasoning(patient_id, event["data"])
+                yield f"data: {json.dumps(event)}\n\n"
 
-        return JSONResponse(content=reasoning_output.dict())
+        return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
-        logging.error(f"Reasoning error: {e}")
+        logging.error(f"Reasoning stream error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
