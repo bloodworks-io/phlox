@@ -511,7 +511,6 @@ export const LLMStep = ({
                 onChange={(e) => {
                   setLlmBaseUrl(e.target.value);
                 }}
-                onBlur={fetchLLMModels}
                 className="input-style"
                 size="md"
               />

@@ -6,6 +6,7 @@ import { settingsService } from "../../../utils/settings/settingsUtils";
 import { isTauri } from "../../helpers/apiConfig";
 import { localModelApi } from "../../api/localModelApi";
 import { downloadLlmModel as downloadLlmService } from "../../services/localModelService.jsx";
+import { useDebounce } from "../useDebounce";
 
 export const useLLMStep = (currentStep) => {
     const toast = useToast();
@@ -29,6 +30,9 @@ export const useLLMStep = (currentStep) => {
     const [lastValidatedLlmUrl, setLastValidatedLlmUrl] = useState("");
     const [isFetchingLLMModels, setIsFetchingLLMModels] = useState(false);
 
+    const debouncedLlmBaseUrl = useDebounce(llmBaseUrl, 600);
+    const debouncedLlmProvider = useDebounce(llmProvider, 100);
+
     // Local mode state
     const [localAvailableModels, setLocalAvailableModels] = useState([]);
     const [localDownloadedModels, setLocalDownloadedModels] = useState([]);
@@ -41,14 +45,14 @@ export const useLLMStep = (currentStep) => {
     const fetchLLMModels = useCallback(async () => {
         if (inferenceMode === "local") return;
 
-        if (!llmBaseUrl || !llmProvider) {
+        if (!debouncedLlmBaseUrl || !debouncedLlmProvider) {
             setAvailableModels([]);
             setLlmUrlValidated(false);
             setLastValidatedLlmUrl("");
             return;
         }
 
-        if (llmUrlValidated && llmBaseUrl === lastValidatedLlmUrl) {
+        if (llmUrlValidated && debouncedLlmBaseUrl === lastValidatedLlmUrl) {
             return;
         }
 
@@ -56,7 +60,7 @@ export const useLLMStep = (currentStep) => {
         try {
             let models = [];
             await settingsService.fetchLLMModels(
-                { LLM_BASE_URL: llmBaseUrl, LLM_PROVIDER: llmProvider },
+                { LLM_BASE_URL: debouncedLlmBaseUrl, LLM_PROVIDER: debouncedLlmProvider },
                 (fetchedModels) => {
                     models = fetchedModels;
                 },
@@ -65,7 +69,7 @@ export const useLLMStep = (currentStep) => {
 
             if (models.length > 0) {
                 setLlmUrlValidated(true);
-                setLastValidatedLlmUrl(llmBaseUrl);
+                setLastValidatedLlmUrl(debouncedLlmBaseUrl);
             } else {
                 setLlmUrlValidated(false);
                 setLastValidatedLlmUrl("");
@@ -87,8 +91,8 @@ export const useLLMStep = (currentStep) => {
             setIsFetchingLLMModels(false);
         }
     }, [
-        llmBaseUrl,
-        llmProvider,
+        debouncedLlmBaseUrl,
+        debouncedLlmProvider,
         toast,
         llmUrlValidated,
         lastValidatedLlmUrl,

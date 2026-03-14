@@ -334,7 +334,6 @@ export const TranscriptionStep = ({
                 onChange={(e) => {
                   setWhisperBaseUrl(e.target.value);
                 }}
-                onBlur={fetchWhisperModels}
                 className="input-style"
                 style={{
                   width: "100%",
