@@ -38,9 +38,11 @@ import {
   FaDatabase,
   FaMicrophone,
   FaBrain,
+  FaPuzzlePiece,
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
 
+import McpSettingsTab from "./McpSettingsTab";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
@@ -371,6 +373,14 @@ const ModelSettingsPanel = ({
                       </Tab>
                     </Tooltip>
                   )}
+                  <Tooltip label="Configure MCP (Model Context Protocol) servers">
+                    <Tab className="tab-style">
+                      <HStack>
+                        <FaPuzzlePiece />
+                        <Text>MCP</Text>
+                      </HStack>
+                    </Tab>
+                  </Tooltip>
                 </TabList>
                 <TabPanels>
                   {/* Whisper Tab */}
@@ -674,6 +684,11 @@ const ModelSettingsPanel = ({
                       </VStack>
                     </TabPanel>
                   )}
+
+                  {/* MCP Tab */}
+                  <TabPanel className="floating-main">
+                    <McpSettingsTab />
+                  </TabPanel>
                 </TabPanels>
               </Tabs>
             )}

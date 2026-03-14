@@ -12,7 +12,7 @@ from server.database.config.defaults.letters import DefaultLetters
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.defaults.templates import DefaultTemplates
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 def run_migrations(patient_db):
@@ -534,5 +534,29 @@ def migrate_to_v4(cursor, db):
 
     except Exception as e:
         logging.error(f"Error during v4 migration: {e}")
+        db.rollback()
+        raise
+
+
+def migrate_to_v5(cursor, db):
+    """Add MCP servers configuration table."""
+    try:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mcp_servers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                url TEXT NOT NULL,
+                enabled BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """
+        )
+        db.commit()
+        logging.info("Successfully added mcp_servers table")
+
+    except Exception as e:
+        logging.error(f"Error during v5 migration: {e}")
         db.rollback()
         raise

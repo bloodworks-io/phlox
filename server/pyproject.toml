@@ -22,6 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 rag = [
     "chromadb>=0.6.3",
+    "mcp>=0.9.0",
     "numpy>=2.4.1",
     "Pillow>=12.1.1",
     "PyMuPDF>=1.24.9",
