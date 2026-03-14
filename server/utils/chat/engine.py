@@ -15,16 +15,7 @@ from server.utils.chat.streaming.response import (
     status_message,
     stream_llm_response,
 )
-from server.utils.chat.tools import get_tools_definition
-from server.utils.chat.tools.direct_response import (
-    execute as execute_direct_response,
-)
-from server.utils.chat.tools.literature_search import (
-    execute as execute_literature_search,
-)
-from server.utils.chat.tools.transcript_search import (
-    execute as execute_transcript_search,
-)
+from server.utils.chat.tools import execute_tool_streaming, get_tools_definition
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client.base import LLMProviderType
 from server.utils.llm_client.client import get_llm_client
@@ -51,9 +42,6 @@ class ChatEngine:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-        # Build system messages
-        self.CHAT_SYSTEM_MESSAGE = build_system_messages()
-
         # Get the unified LLM client
         self.llm_client = get_llm_client()
 
@@ -66,9 +54,20 @@ class ChatEngine:
 
         self.last_successful_collection = "misc"
 
-    async def get_streaming_response(self, conversation_history: list, raw_transcription=None):
+    async def get_streaming_response(
+        self,
+        conversation_history: list,
+        raw_transcription=None,
+        patient_context: dict | None = None,
+    ):
         """
         Generate a streaming response based on the conversation history and relevant literature.
+
+        Args:
+            conversation_history: List of conversation messages
+            raw_transcription: Optional raw transcription
+            patient_context: Optional patient context dict containing name, dob, ur_number,
+                           encounter_date, template_data, and template_fields
         """
         prompts = config_manager.get_prompts_and_options()
         collection_names = (
@@ -77,9 +76,8 @@ class ChatEngine:
 
         context_question_options = prompts["options"]["general"]
         context_question_options.pop("stop", None)
-        print(context_question_options)
 
-        # Clean </think> tags from conversation history
+        # Clean</think> tags from conversation history
         cleaned_conversation_history = clean_think_tags(conversation_history)
 
         # Filter out any system messages from conversation history to ensure
@@ -87,13 +85,17 @@ class ChatEngine:
         # ensures system messages are only at the beginning)
         filtered_history = [m for m in cleaned_conversation_history if m.get("role") != "system"]
 
-        message_list = self.CHAT_SYSTEM_MESSAGE + filtered_history
+        # Build system messages with patient context
+        template_fields = patient_context.get("template_fields") if patient_context else None
+        message_list = build_system_messages(patient_context, template_fields) + filtered_history
+
+        self.logger.info(f"Message list: {message_list}")
 
         # First call to determine if we need literature or direct response
         self.logger.info("Initial LLM call to determine tool usage...")
 
-        # Get tool definitions (empty list if no collections available)
-        tools = get_tools_definition(collection_names) if collection_names else []
+        # Get tool definitions (always includes built-in tools)
+        tools = get_tools_definition(collection_names)
 
         try:
             response = await self.llm_client.chat(
@@ -174,6 +176,8 @@ class ChatEngine:
         """
         Execute a tool call and yield streaming responses.
 
+        Uses the central tool executor for unified tool dispatch.
+
         Args:
             tool_call: The tool call to execute
             message_list: The current message list
@@ -184,65 +188,40 @@ class ChatEngine:
         Yields:
             Dict: Streaming response chunks
         """
-        function_name = tool_call["function"]["name"]
+        self.logger.info(f"Executing tool via central executor: {tool_call['function']['name']}")
 
-        self.logger.info(f"LLM chose tool: {function_name}")
+        async for result in execute_tool_streaming(
+            tool_call=tool_call,
+            llm_client=self.llm_client,
+            config=self.config,
+            message_list=message_list,
+            context_question_options=context_question_options,
+            chroma_manager=self.chroma_manager,
+            conversation_history=conversation_history,
+            raw_transcription=raw_transcription,
+        ):
+            yield result
 
-        if function_name == "direct_response":
-            async for result in execute_direct_response(
-                tool_call=tool_call,
-                llm_client=self.llm_client,
-                config=self.config,
-                message_list=message_list,
-                context_question_options=context_question_options,
-            ):
-                yield result
+    async def stream_chat(
+        self,
+        conversation_history: list,
+        raw_transcription=None,
+        patient_context: dict | None = None,
+    ):
+        """Stream chat response from the LLM
 
-        elif function_name == "transcript_search":
-            async for result in execute_transcript_search(
-                tool_call=tool_call,
-                llm_client=self.llm_client,
-                config=self.config,
-                message_list=message_list,
-                conversation_history=conversation_history,
-                raw_transcription=raw_transcription,
-                context_question_options=context_question_options,
-            ):
-                yield result
-
-        else:  # get_relevant_literature
-            # Check if RAG is available before executing literature search
-            if self.chroma_manager is None:
-                self.logger.warning(
-                    "Literature search requested but RAG dependencies not available. Falling back to direct response."
-                )
-                # Fall back to direct response
-                async for result in execute_direct_response(
-                    tool_call=tool_call,
-                    llm_client=self.llm_client,
-                    config=self.config,
-                    message_list=message_list,
-                    context_question_options=context_question_options,
-                ):
-                    yield result
-            else:
-                async for result in execute_literature_search(
-                    tool_call=tool_call,
-                    llm_client=self.llm_client,
-                    config=self.config,
-                    chroma_manager=self.chroma_manager,
-                    message_list=message_list,
-                    context_question_options=context_question_options,
-                ):
-                    yield result
-
-    async def stream_chat(self, conversation_history: list, raw_transcription=None):
-        """Stream chat response from the LLM"""
+        Args:
+            conversation_history: List of conversation messages
+            raw_transcription: Optional raw transcription
+            patient_context: Optional patient context dict
+        """
         try:
             self.logger.info("Starting LLM stream...")
             yield start_message()
 
-            async for chunk in self.get_streaming_response(conversation_history, raw_transcription):
+            async for chunk in self.get_streaming_response(
+                conversation_history, raw_transcription, patient_context
+            ):
                 yield chunk
 
         except Exception as e:

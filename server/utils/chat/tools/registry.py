@@ -5,18 +5,20 @@ This module provides the tool definitions used by the ChatEngine
 to determine which actions to take based on user input.
 """
 
+import logging
 from typing import Any
 
+logger = logging.getLogger(__name__)
 
-def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
-    """
-    Get the tools definition based on available collections.
+
+def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
+    """Get built-in tool definitions.
 
     Args:
-        collection_names (list): List of available collection names
+        collection_names: List of available collection names
 
     Returns:
-        list: List of tool definitions
+        List of built-in tool definitions
     """
     collection_names_string = ", ".join(collection_names)
     return [
@@ -60,6 +62,75 @@ def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
         {
             "type": "function",
             "function": {
+                "name": "pubmed_search",
+                "description": "Search PubMed for medical literature and research articles. Use this when the user asks about recent research, clinical studies, or medical publications.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The search query for PubMed (e.g., 'diabetes treatment guidelines')",
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Maximum number of results to return (default: 5, max: 20)",
+                        },
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "wiki_search",
+                "description": "Search Wikipedia for general medical information, drug information, disease overviews, and clinical guidelines. Use this for background information, drug details, or when PubMed is too specific. IMPORTANT: Use only 1-2 word queries (e.g., 'hydroxyurea', 'thrombocythemia', 'aspirin') not full sentences.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The search query - use only 1-2 words maximum (e.g., 'hydroxyurea', 'warfarin')",
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Maximum number of results to return (default: 3, max: 10)",
+                        },
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_previous_encounter",
+                "description": "Retrieve the most recent previous encounter for a patient using their UR number. Use this to understand the patient's medical history, persistent conditions, or prior treatments.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "ur_number": {
+                            "type": "string",
+                            "description": "The patient's UR number (medical record number)",
+                        },
+                        "current_encounter_date": {
+                            "type": "string",
+                            "description": "The current encounter date in YYYY-MM-DD format to exclude from results",
+                        },
+                    },
+                    "required": ["ur_number"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "direct_response",
                 "description": "Use this tool if the most recent question from the user is a non-medical query (greetings, chat, clarifications).",
                 "parameters": {
@@ -72,3 +143,39 @@ def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
             },
         },
     ]
+
+
+def get_tools_definition(collection_names: list[str]) -> list[dict[str, Any]]:
+    """
+    Get the tools definition based on available collections and MCP servers.
+
+    Args:
+        collection_names: List of available collection names
+
+    Returns:
+        List of tool definitions including built-in and MCP tools
+    """
+    built_in_tools = _get_built_in_tools(collection_names)
+
+    # Add MCP tools if available
+    try:
+        from server.utils.mcp.client import get_mcp_tools_sync
+
+        mcp_tools = get_mcp_tools_sync()
+        if mcp_tools:
+            # Return the tool definitions (without internal metadata)
+            for tool in mcp_tools:
+                built_in_tools.append(
+                    {
+                        "type": tool["type"],
+                        "function": tool["function"],
+                    }
+                )
+            logger.info(f"Loaded {len(mcp_tools)} tools from MCP servers")
+    except ImportError:
+        # MCP not installed, skip
+        pass
+    except Exception as e:
+        logger.error(f"Failed to load MCP tools: {e}")
+
+    return built_in_tools

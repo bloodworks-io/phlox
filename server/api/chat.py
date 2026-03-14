@@ -44,11 +44,16 @@ async def chat(
 
         conversation_history = chat_request.messages
         raw_transcription = chat_request.raw_transcription
+        patient_context = (
+            chat_request.patient_context.model_dump() if chat_request.patient_context else None
+        )
 
         async def generate():
             chunk_count = 0
             async for chunk in chat_engine.stream_chat(
-                conversation_history, raw_transcription=raw_transcription
+                conversation_history,
+                raw_transcription=raw_transcription,
+                patient_context=patient_context,
             ):
                 chunk_count += 1
                 yield f"data: {json.dumps(chunk)}\n\n"
