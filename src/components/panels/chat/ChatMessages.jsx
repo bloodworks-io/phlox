@@ -11,8 +11,8 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
-import ReactMarkdown from "react-markdown";
 import { parseMessageContent } from "../../../utils/chat/messageParser";
+import MarkdownRenderer from "../../common/MarkdownRenderer";
 
 const ChatMessages = ({ messages, toggleThinkingVisibility }) => {
   const filteredMessages = messages.filter((m) => m.role !== "system");
@@ -95,11 +95,11 @@ const ChatMessages = ({ messages, toggleThinkingVisibility }) => {
                     </Box>
                   )}
                   <Box fontSize="sm">
-                    <ReactMarkdown>
+                    <MarkdownRenderer>
                       {parsed.hasThinkTag
                         ? parsed.afterContent
                         : parsed.content}
-                    </ReactMarkdown>
+                    </MarkdownRenderer>
                   </Box>
                   {message.role === "assistant" && message.context && (
                     <HStack wrap="wrap" spacing={1} mt={1}>

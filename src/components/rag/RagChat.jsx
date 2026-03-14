@@ -21,7 +21,7 @@ import {
   ChevronUpIcon,
 } from "@chakra-ui/icons";
 import { useState, useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
+import MarkdownRenderer from "../common/MarkdownRenderer";
 import { MdChat } from "react-icons/md";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
@@ -268,11 +268,11 @@ const RagChat = ({ isCollapsed, setIsCollapsed }) => {
 
                         {/* Render content after  tag or full content if no tag */}
                         <Box fontSize="sm !important">
-                          <ReactMarkdown>
+                          <MarkdownRenderer>
                             {parsed.hasThinkTag
                               ? parsed.afterContent
                               : parsed.content}
-                          </ReactMarkdown>
+                          </MarkdownRenderer>
                         </Box>
 
                         {/* Render context links */}
