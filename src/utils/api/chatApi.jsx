@@ -3,7 +3,7 @@ import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 
 export const chatApi = {
-  sendMessage: async (messages, rawTranscription = null) => {
+  sendMessage: async (messages, rawTranscription = null, patientContext = null) => {
     return handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/chat");
@@ -13,6 +13,7 @@ export const chatApi = {
           body: JSON.stringify({
             messages,
             raw_transcription: rawTranscription,
+            patient_context: patientContext,
           }),
         });
       },
@@ -35,7 +36,7 @@ export const chatApi = {
     });
   },
 
-  streamMessage: async function* (messages, rawTranscription = null) {
+  streamMessage: async function* (messages, rawTranscription = null, patientContext = null) {
     const url = await buildApiUrl("/api/chat");
     const response = await universalFetch(url, {
       method: "POST",
@@ -43,6 +44,7 @@ export const chatApi = {
       body: JSON.stringify({
         messages,
         raw_transcription: rawTranscription,
+        patient_context: patientContext,
       }),
     });
 

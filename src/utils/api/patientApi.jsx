@@ -108,19 +108,64 @@ export const patientApi = {
     });
   },
 
-  generateReasoning: async (patientId, toast) => {
-    return handleApiRequest({
-      apiCall: async () => {
-        const url = await buildApiUrl(`/api/patient/${patientId}/reasoning`);
-        return universalFetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-      },
-      successMessage: "Clinical reasoning generated successfully.",
-      errorMessage: "Error running clinical reasoning",
-      toast,
+  /**
+   * Generate clinical reasoning with streaming status updates
+   * @param {number} patientId - The patient ID
+   * @param {function} onStatus - Callback for status updates (receives status string)
+   * @param {object} toast - Chakra UI toast for notifications
+   * @returns {Promise<object>} - The reasoning result
+   */
+  generateReasoningStream: async (patientId, onStatus, toast) => {
+    const url = await buildApiUrl(`/api/patient/${patientId}/reasoning/stream`);
+    const response = await universalFetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to generate reasoning");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let result = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.type === "status" && onStatus) {
+              onStatus(data.message);
+            } else if (data.type === "result") {
+              result = data.data;
+            }
+          } catch (e) {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+    }
+
+    if (toast) {
+      toast({
+        title: "Success",
+        description: "Clinical reasoning generated successfully.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+
+    return result;
   },
 
   fetchPatientHistoryByTemplate: async (urNumber, templateKey) => {

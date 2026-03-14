@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { chatApi } from "../api/chatApi";
-import { formatInitialMessage } from "../chat/messageUtils";
+import { formatPatientContext } from "../chat/messageUtils";
 
 // Simple mode for RAG chat (no patient/template required)
 const RAG_SYSTEM_MESSAGE = {
@@ -43,17 +43,24 @@ export const useChat = ({ mode = "patient" } = {}) => {
 
       try {
         let initialMessage;
+        let patientContext = null;
 
         if (mode === "rag") {
           initialMessage = RAG_SYSTEM_MESSAGE;
         } else {
-          initialMessage = formatInitialMessage(currentTemplate, patient);
-          if (!initialMessage) {
+          // Format patient context for the backend to build the system message
+          patientContext = formatPatientContext(currentTemplate, patient);
+          if (!patientContext) {
             throw new Error("Failed to format patient context");
           }
+          // No initial message needed - backend will build system message from patient context
+          initialMessage = null;
         }
 
-        const messagesForApi = [initialMessage, ...messages, userMessage];
+        // Messages for API are just the conversation history (no initial message with patient data)
+        const messagesForApi = initialMessage
+          ? [initialMessage, ...messages, userMessage]
+          : [...messages, userMessage];
 
         let fullContent = "";
 
@@ -71,6 +78,7 @@ export const useChat = ({ mode = "patient" } = {}) => {
         for await (const chunk of chatApi.streamMessage(
           messagesForApi,
           rawTranscription,
+          patientContext,
         )) {
           if (!streamStarted && chunk.type === "chunk") {
             setStreamStarted(true);

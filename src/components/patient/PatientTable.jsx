@@ -132,7 +132,12 @@ const PatientTable = ({
   const handleGenerateReasoning = async (patientId) => {
     try {
       setLoadingStates((prev) => ({ ...prev, [patientId]: true }));
-      const res = await patientApi.generateReasoning(patientId, toast);
+      // Use streaming API, ignore status updates (table just shows spinner)
+      const res = await patientApi.generateReasoningStream(
+        patientId,
+        () => {}, // No-op status callback - table only shows spinner
+        toast,
+      );
       const updatedPatients = patients.map((patient) =>
         patient.id === patientId
           ? { ...patient, reasoning: res, activeSection: "summary" }

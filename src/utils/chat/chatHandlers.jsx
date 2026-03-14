@@ -1,7 +1,7 @@
 import { chatApi } from "../api/chatApi";
 import {
     validateInput,
-    formatInitialMessage,
+    formatPatientContext,
     // truncateConversationHistory, // We might integrate truncation later if needed
 } from "./messageUtils";
 
@@ -41,11 +41,10 @@ export const handleChat = async (
     setMessages((prev) => [...prev, newUserMessage]);
     setUserInput(""); // Clear input immediately
 
-    // Prepare the messages array for the API request
-    // Start preparing the request *after* user message is added to state
-    const initialMessage = formatInitialMessage(currentTemplate, patientData);
-    if (!initialMessage) {
-        console.error("Failed to format initial message");
+    // Format patient context for the backend to build the system message
+    const patientContext = formatPatientContext(currentTemplate, patientData);
+    if (!patientContext) {
+        console.error("Failed to format patient context");
         setMessages((prev) => [
             ...prev,
             { role: "assistant", content: "Error preparing context for chat." },
@@ -55,8 +54,8 @@ export const handleChat = async (
     }
 
     // Use the state *before* adding the assistant's placeholder
+    // Messages are just the conversation history (no initial message with patient data)
     const messagesForApi = [
-        initialMessage,
         // Filter out any previous assistant error messages if needed
         ...currentMessages.filter(
             (msg) =>
@@ -84,6 +83,7 @@ export const handleChat = async (
         for await (const chunk of chatApi.streamMessage(
             messagesForApi,
             rawTranscription,
+            patientContext,
         )) {
             if (chunk.type === "chunk" && chunk.content) {
                 streamedContent += chunk.content;
