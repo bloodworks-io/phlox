@@ -40,7 +40,7 @@ def test_get_config():
 
 
 def test_get_all_options():
-    response = client.get("/api/config/ollama")
+    response = client.get("/api/config/options")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, dict)
@@ -69,7 +69,7 @@ def test_update_config():
 
 def test_update_options():
     new_options = {"TEST_OPTION": "test_option_value"}
-    response = client.post("/api/config/ollama/TEST_CATEGORY", json=new_options)
+    response = client.post("/api/config/options/TEST_CATEGORY", json=new_options)
     assert response.status_code == 200
     data = response.json()
     assert "updated" in data.get("message", "").lower()

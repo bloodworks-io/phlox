@@ -7,29 +7,30 @@ from fastapi.responses import JSONResponse
 from server.constants import IS_DOCKER
 from server.database.config.manager import config_manager
 from server.utils.llm_client.manager import LocalModelManager
+from server.utils.url_utils import build_openai_v1_url, build_whisper_v1_url
 
 router = APIRouter()
 
 
-@router.get("/ollama")
+@router.get("/options")
 async def get_options():
-    """Retrieve all options configuration (for backward compatibility)."""
+    """Retrieve all options configuration."""
     prompts_and_options = config_manager.get_prompts_and_options()
     return JSONResponse(content=prompts_and_options["options"])
 
 
-@router.post("/ollama/{category}")
+@router.post("/options/{category}")
 async def update_options(category: str, data: dict = Body(...)):
-    """Update options for a specific category (for backward compatibility)."""
+    """Update options for a specific category."""
     config_manager.update_options(category, data)
     return {"message": f"{category} options updated successfully"}
 
 
 @router.get("/llm/models")
 async def get_llm_models(
-    provider: str = Query(..., description="LLM provider type (ollama, openai, or local)"),
+    provider: str = Query(..., description="LLM provider type (openai or local)"),
     baseUrl: str = Query(None, description="The base URL for the LLM API"),
-    apiKey: str = Query(None, description="API key (required for OpenAI)"),
+    apiKey: str = Query(None, description="Optional API key for authenticated OpenAI-compatible endpoints"),
 ):
     """Fetch available models from the configured LLM provider."""
     try:
@@ -49,31 +50,17 @@ async def get_llm_models(
                 logging.error(f"Error fetching local models: {e}")
                 return {"models": [], "error": "Failed to fetch local models"}
 
-        elif provider.lower() == "ollama":
-            if not baseUrl:
-                raise HTTPException(status_code=400, detail="baseUrl is required for Ollama")
-
-            async with httpx.AsyncClient() as client:
-                url = f"{baseUrl}/api/tags"
-                response = await client.get(url, timeout=5.0)
-
-                if response.status_code == 200:
-                    return response.json()
-                else:
-                    raise HTTPException(
-                        status_code=response.status_code,
-                        detail="Failed to fetch Ollama models",
-                    )
-
         elif provider.lower() == "openai":
             if not baseUrl:
-                raise HTTPException(status_code=400, detail="baseUrl is required for OpenAI")
+                raise HTTPException(
+                    status_code=400,
+                    detail="baseUrl is required for OpenAI-compatible providers",
+                )
 
-            # For OpenAI-compatible endpoints
             headers = {"Authorization": f"Bearer {apiKey}"} if apiKey else {}
 
             async with httpx.AsyncClient(headers=headers) as client:
-                url = f"{baseUrl}/v1/models"
+                url = build_openai_v1_url(baseUrl, "models")
                 try:
                     response = await client.get(url, timeout=5.0)
 
@@ -81,9 +68,41 @@ async def get_llm_models(
                         data = response.json()
                         model_list = []
 
-                        # Extract model names from response
-                        if isinstance(data, dict) and "data" in data:
-                            model_list = [model.get("id") for model in data["data"]]
+                        # Be tolerant of common OpenAI-compatible response shapes
+                        if isinstance(data, dict):
+                            if isinstance(data.get("data"), list):
+                                for model in data["data"]:
+                                    if isinstance(model, dict):
+                                        model_id = model.get("id") or model.get("name")
+                                        if model_id:
+                                            model_list.append(model_id)
+                                    elif isinstance(model, str):
+                                        model_list.append(model)
+
+                            elif isinstance(data.get("models"), list):
+                                for model in data["models"]:
+                                    if isinstance(model, dict):
+                                        model_id = model.get("id") or model.get("name")
+                                        if model_id:
+                                            model_list.append(model_id)
+                                    elif isinstance(model, str):
+                                        model_list.append(model)
+
+                            # Rare but valid shape: {"id": "..."} or {"name": "..."}
+                            elif data.get("id") or data.get("name"):
+                                model_list.append(data.get("id") or data.get("name"))
+
+                        elif isinstance(data, list):
+                            for model in data:
+                                if isinstance(model, dict):
+                                    model_id = model.get("id") or model.get("name")
+                                    if model_id:
+                                        model_list.append(model_id)
+                                elif isinstance(model, str):
+                                    model_list.append(model)
+
+                        # Deduplicate while preserving order
+                        model_list = list(dict.fromkeys(model_list))
 
                         return {"models": model_list}
                     elif response.status_code in [401, 403]:
@@ -91,16 +110,15 @@ async def get_llm_models(
                         return {"models": [], "error": "Authentication failed"}
                     else:
                         # Some OpenAI-compatible APIs may not support model listing
-                        # Return empty list in this case
                         return {"models": []}
-                except:
+                except Exception:
                     # Endpoint might not be available, return empty list
                     return {"models": []}
 
         else:
             raise HTTPException(
                 status_code=400,
-                detail="Unsupported provider type. Must be 'ollama', 'openai', or 'local'",
+                detail="Unsupported provider type. Must be 'openai' or 'local'",
             )
 
     except Exception as e:
@@ -112,12 +130,17 @@ async def get_llm_models(
 async def get_whisper_models(
     whisperEndpoint: str = Query(..., description="The endpoint for Whisper API"),
 ):
-    """Fetch available Whisper models from the configured endpoint. Only works if the instance has a /v1/models endpoint (eg Speaches); otherwise returns an empty list"""
+    """Fetch available Whisper models from the configured endpoint.
+
+    Accepts endpoints with or without a terminal /v1 segment.
+    Only works if the instance exposes a compatible /v1/models endpoint
+    (e.g. Speaches); otherwise returns an empty list.
+    """
     try:
         # First try to fetch models from the endpoint
         async with httpx.AsyncClient() as client:
             try:
-                url = f"{whisperEndpoint}/v1/models"
+                url = build_whisper_v1_url(whisperEndpoint, "models")
                 response = await client.get(url, timeout=5.0)
 
                 if response.status_code == 200:

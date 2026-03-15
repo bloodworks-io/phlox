@@ -137,8 +137,12 @@ async def _transcribe_external_api(
             headers["Authorization"] = f"Bearer {whisper_key}"
 
         try:
+            whisper_base_url = (config.get("WHISPER_BASE_URL") or "").strip().rstrip("/")
+            if whisper_base_url.lower().endswith("/v1"):
+                whisper_base_url = whisper_base_url[:-3]
+
             response = await client.post(
-                f"{config['WHISPER_BASE_URL']}/v1/audio/transcriptions",
+                f"{whisper_base_url}/v1/audio/transcriptions",
                 data=data,
                 files=files,
                 headers=headers,
@@ -216,4 +220,3 @@ def _detect_audio_format(audio_buffer):
         return "recording.m4a", "audio/mp4"
     # Default to WAV if we can't determine
     return "recording.wav", "audio/wav"
-

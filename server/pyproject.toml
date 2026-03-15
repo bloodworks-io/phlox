@@ -9,7 +9,6 @@ dependencies = [
     "httpx>=0.28.1",
     "icalendar>=5.0.13",
     "json-repair>=0.55.0",
-    "ollama>=0.4.7",
     "openai>=1.76.2",
     "platformdirs>=4.3.8",
     "pydantic>=2.10.6",

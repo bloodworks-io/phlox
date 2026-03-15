@@ -9,7 +9,6 @@ try:
     import fitz  # PyMuPDF
     from chromadb.config import Settings
     from chromadb.utils.embedding_functions import (
-        OllamaEmbeddingFunction,
         ONNXMiniLM_L6_V2,
         OpenAIEmbeddingFunction,
     )
@@ -26,6 +25,7 @@ from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
 from server.utils.llm_client.base import LLMProviderType
 from server.utils.llm_client.client import get_llm_client
+from server.utils.url_utils import normalize_openai_base_url
 
 prompts = config_manager.get_prompts_and_options()
 
@@ -81,17 +81,13 @@ class ChromaManager:
         self.config = config_manager.get_config()
 
         # Initialize embedding function based on provider type
-        provider_type = self.config.get("LLM_PROVIDER", "ollama").lower()
+        provider_type = self.config.get("LLM_PROVIDER", "openai").lower()
 
-        # Get base URL with default for Ollama
-        base_url = self.config.get("LLM_BASE_URL") or "http://127.0.0.1:11434"
+        # Normalize configured base URL and allow optional '/v1' in user input.
+        raw_base_url = self.config.get("LLM_BASE_URL") or "http://127.0.0.1:11434"
+        base_url = normalize_openai_base_url(raw_base_url)
 
-        if provider_type == LLMProviderType.OLLAMA.value:
-            self.embedding_model = OllamaEmbeddingFunction(
-                url=f"{base_url}/api/embeddings",
-                model_name=self.config["EMBEDDING_MODEL"],
-            )
-        elif provider_type == LLMProviderType.OPENAI_COMPATIBLE.value:
+        if provider_type == LLMProviderType.OPENAI_COMPATIBLE.value:
             self.embedding_model = OpenAIEmbeddingFunction(
                 model_name=self.config["EMBEDDING_MODEL"],
                 api_key=self.config.get("LLM_API_KEY") or "cant-be-empty",

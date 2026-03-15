@@ -465,6 +465,8 @@ def migrate_to_v3(cursor, db):
         raise
 
 
+
+
 def migrate_to_v4(cursor, db):
     """Add has_completed_splash_screen and scribe_is_ambient columns to user_settings table.
     Add Dictation letter template.
@@ -539,7 +541,9 @@ def migrate_to_v4(cursor, db):
 
 
 def migrate_to_v5(cursor, db):
-    """Add MCP servers configuration table and disabled_tools to user_settings."""
+    """Add MCP servers configuration table and disabled_tools to user_settings.
+    Also normalize legacy LLM provider values from ollama to openai-compatible.
+    """
     try:
         cursor.execute(
             """
@@ -561,8 +565,27 @@ def migrate_to_v5(cursor, db):
             'ALTER TABLE user_settings ADD COLUMN disabled_tools JSON DEFAULT \'["pubmed_search", "wiki_search"]\'',
         )
 
+        # Normalize legacy provider value
+        cursor.execute("SELECT value FROM config WHERE key = 'LLM_PROVIDER'")
+        row = cursor.fetchone()
+
+        if row is None:
+            cursor.execute(
+                "INSERT INTO config (key, value) VALUES (?, ?)",
+                ("LLM_PROVIDER", json.dumps("openai")),
+            )
+        else:
+            provider_value = json.loads(row["value"])
+            if isinstance(provider_value, str) and provider_value.lower() == "ollama":
+                cursor.execute(
+                    "UPDATE config SET value = ? WHERE key = 'LLM_PROVIDER'",
+                    (json.dumps("openai"),),
+                )
+
         db.commit()
-        logging.info("Successfully added mcp_servers table and disabled_tools column")
+        logging.info(
+            "Successfully added mcp_servers table, disabled_tools column, and normalized LLM provider"
+        )
 
     except Exception as e:
         logging.error(f"Error during v5 migration: {e}")

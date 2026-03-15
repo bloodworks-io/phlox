@@ -20,14 +20,12 @@ export const useLLMStep = (currentStep) => {
     );
 
     // Remote mode state
-    const [llmProvider, setLlmProvider] = useState("ollama");
+    const [llmProvider, setLlmProvider] = useState("openai");
     const [llmBaseUrl, setLlmBaseUrl] = useState(
         import.meta.env.VITE_OLLAMA_BASE_URL || "http://localhost:11434",
     );
     const [primaryModel, setPrimaryModel] = useState("");
     const [availableModels, setAvailableModels] = useState([]);
-    const [llmUrlValidated, setLlmUrlValidated] = useState(false);
-    const [lastValidatedLlmUrl, setLastValidatedLlmUrl] = useState("");
     const [isFetchingLLMModels, setIsFetchingLLMModels] = useState(false);
 
     const debouncedLlmBaseUrl = useDebounce(llmBaseUrl, 600);
@@ -47,12 +45,6 @@ export const useLLMStep = (currentStep) => {
 
         if (!debouncedLlmBaseUrl || !debouncedLlmProvider) {
             setAvailableModels([]);
-            setLlmUrlValidated(false);
-            setLastValidatedLlmUrl("");
-            return;
-        }
-
-        if (llmUrlValidated && debouncedLlmBaseUrl === lastValidatedLlmUrl) {
             return;
         }
 
@@ -60,20 +52,15 @@ export const useLLMStep = (currentStep) => {
         try {
             let models = [];
             await settingsService.fetchLLMModels(
-                { LLM_BASE_URL: debouncedLlmBaseUrl, LLM_PROVIDER: debouncedLlmProvider },
+                {
+                    LLM_BASE_URL: debouncedLlmBaseUrl,
+                    LLM_PROVIDER: debouncedLlmProvider,
+                },
                 (fetchedModels) => {
                     models = fetchedModels;
                 },
             );
             setAvailableModels(models);
-
-            if (models.length > 0) {
-                setLlmUrlValidated(true);
-                setLastValidatedLlmUrl(debouncedLlmBaseUrl);
-            } else {
-                setLlmUrlValidated(false);
-                setLastValidatedLlmUrl("");
-            }
         } catch (error) {
             toast({
                 title: "Error fetching LLM models",
@@ -85,19 +72,10 @@ export const useLLMStep = (currentStep) => {
                 isClosable: true,
             });
             setAvailableModels([]);
-            setLlmUrlValidated(false);
-            setLastValidatedLlmUrl("");
         } finally {
             setIsFetchingLLMModels(false);
         }
-    }, [
-        debouncedLlmBaseUrl,
-        debouncedLlmProvider,
-        toast,
-        llmUrlValidated,
-        lastValidatedLlmUrl,
-        inferenceMode,
-    ]);
+    }, [debouncedLlmBaseUrl, debouncedLlmProvider, toast, inferenceMode]);
 
     // Fetch local models
     const fetchLocalModels = useCallback(async () => {

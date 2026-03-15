@@ -306,10 +306,15 @@ async def get_repo_gguf_files(repo_id: str):
 async def get_local_model_status():
     """Get status using bundled llama-server."""
     if IS_DOCKER:
-        raise HTTPException(
-            status_code=400,
-            detail="Local models are only available in Tauri builds",
-        )
+        return {
+            "available": False,
+            "llama_server_running": False,
+            "models": [],
+            "models_count": 0,
+            "selected_model_id": None,
+            "is_docker": True,
+            "reason": "Local models are only available in Tauri builds",
+        }
 
     models = llama_model_manager.get_downloaded_models()
     selected_model_id = llama_model_manager.get_selected_model_id()
@@ -320,6 +325,7 @@ async def get_local_model_status():
         "models": models,
         "models_count": len(models),
         "selected_model_id": selected_model_id,
+        "is_docker": False,
     }
 
 

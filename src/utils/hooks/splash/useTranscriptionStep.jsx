@@ -18,8 +18,7 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
     const [availableWhisperModels, setAvailableWhisperModels] = useState([]);
     const [whisperModelListAvailable, setWhisperModelListAvailable] =
         useState(false);
-    const [whisperUrlValidated, setWhisperUrlValidated] = useState(false);
-    const [lastValidatedWhisperUrl, setLastValidatedWhisperUrl] = useState("");
+
     const [isFetchingWhisperModels, setIsFetchingWhisperModels] =
         useState(false);
 
@@ -42,12 +41,6 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
         if (!debouncedWhisperBaseUrl) {
             setAvailableWhisperModels([]);
             setWhisperModelListAvailable(false);
-            setWhisperUrlValidated(false);
-            setLastValidatedWhisperUrl("");
-            return;
-        }
-
-        if (whisperUrlValidated && debouncedWhisperBaseUrl === lastValidatedWhisperUrl) {
             return;
         }
 
@@ -66,9 +59,6 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
             );
             setAvailableWhisperModels(models);
             setWhisperModelListAvailable(listAvailable);
-
-            setWhisperUrlValidated(true);
-            setLastValidatedWhisperUrl(debouncedWhisperBaseUrl);
         } catch (error) {
             toast({
                 title: "Error fetching Whisper models",
@@ -81,18 +71,10 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
             });
             setAvailableWhisperModels([]);
             setWhisperModelListAvailable(false);
-            setWhisperUrlValidated(false);
-            setLastValidatedWhisperUrl("");
         } finally {
             setIsFetchingWhisperModels(false);
         }
-    }, [
-        debouncedWhisperBaseUrl,
-        toast,
-        whisperUrlValidated,
-        lastValidatedWhisperUrl,
-        inferenceMode,
-    ]);
+    }, [debouncedWhisperBaseUrl, toast, inferenceMode]);
 
     // Fetch local Whisper models
     const fetchLocalWhisperModels = useCallback(async () => {

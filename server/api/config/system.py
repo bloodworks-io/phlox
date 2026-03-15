@@ -3,27 +3,28 @@ import logging
 import httpx
 from fastapi import APIRouter
 
+from server.utils.url_utils import build_openai_v1_url, build_whisper_v1_url
+
 router = APIRouter()
+
+
 
 
 def _get_llm_status_url(config: dict) -> str | None:
     """Determine the LLM status check URL based on provider configuration."""
-    provider_type = config.get("LLM_PROVIDER", "ollama").lower()
+    provider_type = (config.get("LLM_PROVIDER") or "openai").lower()
     base_url = config.get("LLM_BASE_URL")
 
     if provider_type == "local":
         from server.utils.allocated_ports import get_llama_port
 
         return f"http://127.0.0.1:{get_llama_port()}/v1/models"
-    elif provider_type == "ollama":
-        # Use configured URL or fall back to default Ollama port
+
+    if provider_type == "openai":
+        # Default to Ollama's standard host, and normalize optional /v1 suffix.
         url = base_url or "http://127.0.0.1:11434"
-        return f"{url}/api/tags"
-    elif provider_type == "openai":
-        # OpenAI-compatible API requires configured base URL
-        if base_url:
-            return f"{base_url}/v1/models"
-        return None
+        return build_openai_v1_url(url, "models")
+
     return None
 
 
@@ -38,7 +39,7 @@ def _get_whisper_status_url(config: dict) -> str | None:
         return f"http://127.0.0.1:{get_whisper_port()}/v1/models"
 
     if whisper_base_url:
-        return f"{whisper_base_url}/v1/models"
+        return build_whisper_v1_url(whisper_base_url, "models")
 
     return None
 
@@ -58,13 +59,9 @@ async def get_server_status():
             async with httpx.AsyncClient() as client:
                 try:
                     response = await client.get(llm_url, timeout=2.0)
-                    provider_type = config.get("LLM_PROVIDER", "ollama").lower()
-                    if provider_type == "ollama":
-                        status["llm"] = response.status_code == 200
-                    else:
-                        # For openai-compatible APIs (including local llama-server)
-                        # If we get 401/403, the service exists but requires auth
-                        status["llm"] = response.status_code in [200, 401, 403]
+                    # For OpenAI-compatible APIs (including local llama-server),
+                    # 401/403 indicates reachable service that requires authentication.
+                    status["llm"] = response.status_code in [200, 401, 403]
                 except Exception:
                     pass
 
