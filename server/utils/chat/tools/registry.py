@@ -232,6 +232,70 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
                 "strict": True,
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "search_patient_notes",
+                "description": "Search through a patient's historical notes and encounters for specific terms or conditions. Use this when the user asks about a patient's history with a particular condition, specialist, medication, or event. Uses fuzzy matching to find relevant mentions.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "ur_number": {
+                            "type": "string",
+                            "description": "Patient's UR number (preferred)",
+                        },
+                        "patient_name": {
+                            "type": "string",
+                            "description": "Patient's name (if UR number unknown)",
+                        },
+                        "search_term": {
+                            "type": "string",
+                            "description": "The word or phrase to search for (e.g., 'nephrologist', 'diabetes', 'MRI')",
+                        },
+                    },
+                    "required": ["search_term"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "list_outstanding_jobs",
+                "description": "Get a list of all patients with outstanding (incomplete) jobs or follow-up tasks. Use this when the user asks about pending work, follow-ups needed, or what tasks are outstanding across patients.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "complete_job",
+                "description": "Mark a specific job or task as completed for a patient encounter. Use this when the user confirms a task has been done or wants to tick off a job. IMPORTANT: You need the patient_id (record ID) from list_outstanding_jobs or get_patient_jobs, not just the patient name.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "patient_id": {
+                            "type": "integer",
+                            "description": "The database record ID of the patient encounter (obtained from list_outstanding_jobs or get_patient_jobs)",
+                        },
+                        "job_id": {
+                            "type": "integer",
+                            "description": "The ID of the job within that record's jobs_list to mark as completed",
+                        },
+                    },
+                    "required": ["patient_id", "job_id"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
     ]
 
 

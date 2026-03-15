@@ -114,6 +114,30 @@ async def execute_tool_streaming(
         ):
             yield result
 
+    elif function_name == "search_patient_notes":
+        from .search_patient_notes import execute
+
+        async for result in execute(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
+    elif function_name == "list_outstanding_jobs":
+        from .list_outstanding_jobs import execute
+
+        async for result in execute(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
+    elif function_name == "complete_job":
+        from .complete_job import execute
+
+        async for result in execute(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
     elif function_name == "get_relevant_literature":
         from .direct_response import execute as execute_direct
         from .literature_search import execute as execute_literature
