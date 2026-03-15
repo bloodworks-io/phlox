@@ -543,6 +543,7 @@ def migrate_to_v4(cursor, db):
 def migrate_to_v5(cursor, db):
     """Add MCP servers configuration table and disabled_tools to user_settings.
     Also normalize legacy LLM provider values from ollama to openai-compatible.
+    Seed document/image processing config defaults.
     Drop unused RSS and analysis tables.
     """
     try:
@@ -583,6 +584,16 @@ def migrate_to_v5(cursor, db):
                     (json.dumps("openai"),),
                 )
 
+        # Seed document/image processing defaults
+        cursor.execute(
+            "INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)",
+            ("DOCUMENT_IMAGE_PROCESSING_MODE", json.dumps("auto")),
+        )
+        cursor.execute(
+            "INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)",
+            ("VISION_CAPABILITY_CACHE", json.dumps({})),
+        )
+
         # Drop unused tables (RSS and analysis features removed)
         cursor.execute("DROP TABLE IF EXISTS rss_feeds")
         cursor.execute("DROP TABLE IF EXISTS rss_items")
@@ -592,7 +603,7 @@ def migrate_to_v5(cursor, db):
         db.commit()
         logging.info(
             "Successfully added mcp_servers table, disabled_tools column, normalized LLM provider, "
-            "and dropped unused RSS/analysis tables"
+            "seeded document/image processing defaults, and dropped unused RSS/analysis tables"
         )
 
     except Exception as e:

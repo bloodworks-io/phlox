@@ -7,6 +7,7 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
+from pydantic import BaseModel
 
 from server.constants import TEMP_DIR
 from server.schemas.rag import (
@@ -22,6 +23,47 @@ from server.utils.rag.processing import (
 router = APIRouter()
 
 logger = logging.getLogger(__name__)
+
+
+class ExtractTextPayload(BaseModel):
+    extracted_text: str
+    filename: str
+
+
+async def _extract_rag_metadata_from_text(chroma_manager, extracted_text: str, filename: str) -> dict:
+    """Shared helper to derive RAG metadata from extracted text and stage it for commit."""
+    if not extracted_text or not extracted_text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not extract text from PDF '{filename}'. Check if it's searchable.",
+        )
+
+    logger.debug(f"Text extracted. Length: {len(extracted_text)}. Storing temporarily.")
+    chroma_manager.set_extracted_text(extracted_text)
+
+    logger.info("Attempting to determine disease name...")
+    disease_name = await chroma_manager.get_disease_name(extracted_text)
+    logger.info(f"Disease name determined: '{disease_name}'")
+
+    logger.debug("Attempting to determine focus area...")
+    focus_area = await chroma_manager.get_focus_area(extracted_text)
+    logger.debug(f"Focus area determined: '{focus_area}'")
+
+    logger.debug("Attempting to determine document source...")
+    document_source = await chroma_manager.get_document_source(extracted_text)
+    logger.debug(f"Document source determined: '{document_source}'")
+
+    logger.info(
+        f"PDF processing complete for '{filename}': disease='{disease_name}', focus='{focus_area}', source='{document_source}'"
+    )
+
+    return {
+        "disease_name": disease_name,
+        "focus_area": focus_area,
+        "document_source": document_source,
+        "filename": filename,
+        "message": "PDF information extracted. Ready for commit.",
+    }
 
 
 # Helper function to check if RAG is available
@@ -136,46 +178,12 @@ async def extract_pdf_info(file: UploadFile = File(...)):
             logger.warning(
                 f"No text extracted from PDF '{file.filename}'. It might be empty or image-based."
             )
-            # Decide how to handle: proceed with empty text, or raise error?
-            # Raising error might be better if text is essential.
-            raise HTTPException(
-                status_code=400,
-                detail=f"Could not extract text from PDF '{file.filename}'. Check if it's searchable.",
-            )
 
-        logger.debug(f"Text extracted. Length: {len(extracted_text)}. Storing temporarily.")
-        chroma_manager.set_extracted_text(extracted_text)  # Store for potential commit later
-
-        # --- Await the async LLM calls ---
-        logger.info("Attempting to determine disease name...")
-        disease_name = await chroma_manager.get_disease_name(extracted_text)
-        logger.info(f"Disease name determined: '{disease_name}'")
-
-        logger.debug("Attempting to determine focus area...")
-        focus_area = await chroma_manager.get_focus_area(extracted_text)
-        logger.debug(f"Focus area determined: '{focus_area}'")
-
-        logger.debug("Attempting to determine document source...")
-        document_source = await chroma_manager.get_document_source(extracted_text)
-        logger.debug(f"Document source determined: '{document_source}'")
-        # --- End of awaited calls ---
-
-        filename = file.filename  # Keep original filename
-
-        logger.info(
-            f"PDF processing complete for '{filename}': disease='{disease_name}', focus='{focus_area}', source='{document_source}'"
+        return await _extract_rag_metadata_from_text(
+            chroma_manager=chroma_manager,
+            extracted_text=extracted_text,
+            filename=file.filename,
         )
-
-        # Return the extracted information. The text itself is stored in chroma_manager instance
-        # and will be used by commit_to_vectordb if called next.
-        return {
-            "disease_name": disease_name,
-            "focus_area": focus_area,
-            "document_source": document_source,
-            "filename": filename,
-            # Optionally include a snippet or confirmation message
-            "message": "PDF information extracted. Ready for commit.",
-        }
     except HTTPException as http_exc:
         # Re-raise HTTPExceptions specifically
         raise http_exc
@@ -193,6 +201,34 @@ async def extract_pdf_info(file: UploadFile = File(...)):
                     f"Error removing temporary file '{file_location}': {e}",
                     exc_info=True,
                 )
+
+
+@router.post("/extract-pdf-info-from-text")
+async def extract_pdf_info_from_text(payload: ExtractTextPayload):
+    """API endpoint to extract metadata from already-extracted PDF text (frontend text-first flow)."""
+    _check_rag_available()
+    chroma_manager = get_chroma_manager()
+
+    logger.info(
+        "Request received for /extract-pdf-info-from-text: filename='%s', text_length=%d",
+        payload.filename,
+        len(payload.extracted_text or ""),
+    )
+
+    try:
+        return await _extract_rag_metadata_from_text(
+            chroma_manager=chroma_manager,
+            extracted_text=payload.extracted_text,
+            filename=payload.filename,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error processing extracted text for '{payload.filename}': {e}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=f"Error processing extracted text: {str(e)}")
 
 
 @router.post("/commit-to-vectordb")

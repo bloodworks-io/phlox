@@ -1,12 +1,12 @@
+import io
 import json
 import logging
 import re
 import threading
 
-# Optional RAG dependencies
+# Optional RAG dependencies (core)
 try:
     import chromadb
-    import fitz  # PyMuPDF
     from chromadb.config import Settings
     from chromadb.utils.embedding_functions import (
         ONNXMiniLM_L6_V2,
@@ -19,7 +19,27 @@ try:
 except ImportError:
     CHROMADB_AVAILABLE = False
     chromadb = None
+
+try:
+    from pypdf import PdfReader
+
+    PDF_TEXT_AVAILABLE = True
+except ImportError:
+    PDF_TEXT_AVAILABLE = False
+    PdfReader = None
+
+# Optional OCR dependencies (fallback path for scanned PDFs)
+try:
+    from PIL import Image
+    import fitz  # PyMuPDF for rasterization
+    import pytesseract
+
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    Image = None
     fitz = None
+    pytesseract = None
 
 from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
@@ -57,7 +77,7 @@ class ChromaManager:
         Initializes the ChromaManager with configuration settings and clients.
         """
         if not CHROMADB_AVAILABLE:
-            raise RuntimeError("RAG features require chromadb and PyMuPDF. ")
+            raise RuntimeError("RAG features require chromadb.")
 
         self.config = config_manager.get_config()
         self.prompts = config_manager.get_prompts_and_options()
@@ -346,18 +366,73 @@ class ChromaManager:
         """
         Extracts text from a PDF file.
 
+        Prefer text-layer extraction via pypdf.
+        If extracted text is insufficient, fallback to OCR if available.
+
         Args:
             pdf_path (str): Path to the PDF file.
 
         Returns:
             str: Extracted text from the PDF.
         """
-        text = ""
-        document = fitz.open(pdf_path)
-        for page_num in range(len(document)):
-            page = document.load_page(page_num)
-            text += page.get_text()
-        return text
+
+        def _is_text_usable(text: str) -> bool:
+            normalized = (text or "").strip()
+            if len(normalized) < 120:
+                return False
+            alnum_count = sum(1 for ch in normalized if ch.isalnum())
+            return alnum_count >= 80
+
+        pdf_bytes = b""
+        with open(pdf_path, "rb") as pdf_file:
+            pdf_bytes = pdf_file.read()
+
+        text_layer_output = ""
+
+        if PDF_TEXT_AVAILABLE:
+            try:
+                reader = PdfReader(io.BytesIO(pdf_bytes))
+                text_parts = []
+                for page in reader.pages:
+                    text_parts.append(page.extract_text() or "")
+                text_layer_output = "\n\n".join(text_parts).strip()
+            except Exception as e:
+                logger.warning("Failed text-layer extraction for '%s': %s", pdf_path, e)
+                text_layer_output = ""
+
+        if _is_text_usable(text_layer_output):
+            return text_layer_output
+
+        # OCR fallback for scanned/image-based PDFs (typically Docker deployments
+        # where OCR dependencies are installed and no visual model is configured).
+        if OCR_AVAILABLE:
+            try:
+                ocr_texts = []
+                document = fitz.open(stream=pdf_bytes, filetype="pdf")
+                for page_num in range(document.page_count):
+                    page = document[page_num]
+                    pix = page.get_pixmap()
+                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                    ocr_texts.append(pytesseract.image_to_string(img))
+                ocr_output = "\n\n".join(ocr_texts).strip()
+
+                if _is_text_usable(ocr_output):
+                    return ocr_output
+
+                # If OCR ran but still weak, return best available output.
+                if ocr_output:
+                    return ocr_output
+            except Exception as e:
+                logger.warning("OCR fallback failed for '%s': %s", pdf_path, e)
+
+        # Return partial text-layer output if that's all we have.
+        if text_layer_output:
+            return text_layer_output
+
+        raise RuntimeError(
+            "Could not extract usable PDF text. Install pypdf and/or "
+            "PyMuPDF + Pillow + pytesseract for OCR fallback."
+        )
 
     async def get_disease_name(self, text):
         """

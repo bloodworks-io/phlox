@@ -16,6 +16,10 @@ import {
 import { ChevronDownIcon, ChevronRightIcon, AddIcon } from "@chakra-ui/icons";
 import { MdFileUpload } from "react-icons/md";
 import { ragApi } from "../../utils/api/ragApi";
+import { chatApi } from "../../utils/api/chatApi";
+import { extractPdfTextOrRenderForVision } from "../../utils/helpers/pdfVisionHelpers";
+import { universalFetch } from "../../utils/helpers/apiHelpers";
+import { buildApiUrl } from "../../utils/helpers/apiConfig";
 
 const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
     const [pdfFile, setPdfFile] = useState(null);
@@ -37,23 +41,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
     const handleExtractPdfInfo = async () => {
         setIsExtracting(true);
         try {
-            if (pdfFile) {
-                const formData = new FormData();
-                formData.append("file", pdfFile);
-                const data = await ragApi.extractPdfInfo(formData);
-                setPdfData(data);
-                setSuggestedCollection(data.disease_name);
-                setCustomCollectionName(data.disease_name);
-                setDocumentSource(data.document_source);
-                setFocusArea(data.focus_area);
-                toast({
-                    title: "Extraction Successful",
-                    description: "PDF information extracted successfully",
-                    status: "success",
-                    duration: 3000,
-                    isClosable: true,
-                });
-            } else {
+            if (!pdfFile) {
                 toast({
                     title: "No file selected",
                     description: "Please select a PDF file to upload",
@@ -61,7 +49,155 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                     duration: 3000,
                     isClosable: true,
                 });
+                return;
             }
+
+            const filenameForUpload = pdfFile.name || "uploaded.pdf";
+            let data = null;
+            let usedLegacyFallback = false;
+            let mode = "auto";
+            let visionCapable = false;
+
+            try {
+                const configResponse = await universalFetch(
+                    await buildApiUrl("/api/config/global"),
+                );
+                if (configResponse.ok) {
+                    const cfg = await configResponse.json();
+                    const rawMode = String(
+                        cfg?.DOCUMENT_IMAGE_PROCESSING_MODE || "auto",
+                    )
+                        .trim()
+                        .toLowerCase();
+                    mode =
+                        rawMode === "vision" ||
+                        rawMode === "ocr" ||
+                        rawMode === "auto"
+                            ? rawMode
+                            : "auto";
+
+                    try {
+                        const capability =
+                            await chatApi.getCurrentVisionCapability();
+                        visionCapable = Boolean(capability?.vision_capable);
+                    } catch (capabilityError) {
+                        console.warn(
+                            "Could not load cached current vision capability, falling back to legacy flag:",
+                            capabilityError,
+                        );
+                        visionCapable = Boolean(cfg?.VISION_MODEL_CAPABLE);
+                    }
+                }
+            } catch (configError) {
+                console.warn(
+                    "Could not load processing mode config, defaulting to auto:",
+                    configError,
+                );
+            }
+
+            const shouldUseVision =
+                mode === "vision" || (mode === "auto" && visionCapable);
+            const allowOcrFallback = mode !== "vision";
+
+            if (mode === "vision" && !visionCapable) {
+                throw new Error(
+                    "Vision mode is enabled, but the selected endpoint/model is not marked as vision-capable.",
+                );
+            }
+
+            if (shouldUseVision) {
+                try {
+                    const pdfResult =
+                        await extractPdfTextOrRenderForVision(pdfFile);
+
+                    let extractedText = "";
+                    if (pdfResult.strategy === "text") {
+                        extractedText = pdfResult.textResult?.text || "";
+                    } else {
+                        const visualResult =
+                            await chatApi.analyzeVisualDocument({
+                                filename: filenameForUpload,
+                                content_type: "application/pdf",
+                                strategy: "vision",
+                                pages: (
+                                    pdfResult.imageResult?.images || []
+                                ).map((img) => ({
+                                    page_number: img.pageNumber,
+                                    data_url: img.dataUrl,
+                                    mime_type: img.mimeType,
+                                    width: img.width,
+                                    height: img.height,
+                                })),
+                                fallback_text: pdfResult.textResult?.text || "",
+                                extraction_info: {
+                                    reason:
+                                        pdfResult.textResult?.quality?.reason ||
+                                        "No usable embedded PDF text",
+                                    stats:
+                                        pdfResult.textResult?.quality?.stats ||
+                                        {},
+                                    page_count:
+                                        pdfResult.textResult?.pageCount || 0,
+                                    processed_pages:
+                                        pdfResult.textResult?.processedPages ||
+                                        0,
+                                    rendered_pages:
+                                        pdfResult.imageResult?.renderedPages ||
+                                        0,
+                                },
+                            });
+
+                        extractedText =
+                            visualResult.text ||
+                            pdfResult.textResult?.text ||
+                            "";
+                    }
+
+                    if (!extractedText.trim()) {
+                        throw new Error(
+                            "Could not extract usable text from frontend visual/text-first path.",
+                        );
+                    }
+
+                    data = await ragApi.extractPdfInfoFromText({
+                        extracted_text: extractedText,
+                        filename: filenameForUpload,
+                    });
+                } catch (visionPathError) {
+                    if (!allowOcrFallback) {
+                        throw visionPathError;
+                    }
+
+                    console.warn(
+                        "Vision path unavailable; falling back to backend OCR/PDF extraction:",
+                        visionPathError,
+                    );
+                    usedLegacyFallback = true;
+                    const formData = new FormData();
+                    formData.append("file", pdfFile);
+                    data = await ragApi.extractPdfInfo(formData);
+                }
+            } else {
+                usedLegacyFallback = true;
+                const formData = new FormData();
+                formData.append("file", pdfFile);
+                data = await ragApi.extractPdfInfo(formData);
+            }
+
+            setPdfData(data);
+            setSuggestedCollection(data.disease_name);
+            setCustomCollectionName(data.disease_name);
+            setDocumentSource(data.document_source);
+            setFocusArea(data.focus_area);
+            toast({
+                title: "Extraction Successful",
+                description: usedLegacyFallback
+                    ? "PDF information extracted via backend fallback"
+                    : "PDF information extracted successfully",
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+            });
         } catch (error) {
             console.error("Error extracting PDF info:", error);
             toast({

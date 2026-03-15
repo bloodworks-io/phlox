@@ -18,7 +18,6 @@ const VALID_IMAGE_TYPES = [
     "image/jpeg",
     "image/jpg",
     "image/gif",
-    "image/webp",
     "application/pdf",
 ];
 
@@ -97,7 +96,7 @@ const DashboardChatInput = ({
         const file = files[0];
         if (
             VALID_IMAGE_TYPES.includes(file.type) ||
-            file.name.match(/\.(png|jpe?g|gif|webp|pdf)$/i)
+            file.name.match(/\.(png|jpe?g|gif|pdf)$/i)
         ) {
             if (onImageSelect) {
                 onImageSelect(file);
@@ -242,7 +241,7 @@ const DashboardChatInput = ({
                         ref={fileInputRef}
                         onChange={handleFileSelect}
                         display="none"
-                        accept="image/*,.pdf"
+                        accept="image/png,image/jpeg,image/jpg,image/gif,.png,.jpg,.jpeg,.gif,.pdf"
                     />
 
                     <Textarea

@@ -24,7 +24,10 @@ import {
     ModalFooter,
     ModalBody,
     Button,
+    Alert,
+    AlertIcon,
     useColorModeValue,
+    useToast,
 } from "@chakra-ui/react";
 import {
     ChevronRightIcon,
@@ -46,6 +49,7 @@ import ToolsSettingsTab from "./ToolsSettingsTab";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
+import { chatApi } from "../../utils/api/chatApi";
 
 const ModelSettingsPanel = ({
     isCollapsed,
@@ -69,6 +73,12 @@ const ModelSettingsPanel = ({
     const [isEmbeddingModelModalOpen, setIsEmbeddingModelModalOpen] =
         useState(false);
     const [pendingEmbeddingModel, setPendingEmbeddingModel] = useState(null);
+    const [isProbingVision, setIsProbingVision] = useState(false);
+    const [visionProbeDetail, setVisionProbeDetail] = useState("");
+    const [visionProbeStatus, setVisionProbeStatus] = useState("info");
+    const [currentVisionCapability, setCurrentVisionCapability] =
+        useState(null);
+    const toast = useToast();
 
     // Determine if we're using local inference
     const isLocalInference = config?.LLM_PROVIDER === "local";
@@ -79,11 +89,16 @@ const ModelSettingsPanel = ({
     useEffect(() => {
         checkLocalStatus();
         checkIfDocker();
+        loadCurrentVisionCapability();
 
         if (isTauri()) {
             fetchDownloadedWhisperModel();
         }
     }, []);
+
+    useEffect(() => {
+        loadCurrentVisionCapability();
+    }, [config?.LLM_PROVIDER, config?.LLM_BASE_URL, config?.PRIMARY_MODEL]);
 
     useEffect(() => {
         // Refresh Whisper model when model manager closes (desktop only)
@@ -161,6 +176,16 @@ const ModelSettingsPanel = ({
         }
     };
 
+    const loadCurrentVisionCapability = async () => {
+        try {
+            const result = await chatApi.getCurrentVisionCapability();
+            setCurrentVisionCapability(result || null);
+        } catch (error) {
+            console.error("Error loading current vision capability:", error);
+            setCurrentVisionCapability(null);
+        }
+    };
+
     const handleInferenceTypeChange = (isLocal) => {
         if (isLocal) {
             handleConfigChange("LLM_PROVIDER", "local");
@@ -191,6 +216,63 @@ const ModelSettingsPanel = ({
     const handleCancelEmbeddingChange = () => {
         setIsEmbeddingModelModalOpen(false);
         setPendingEmbeddingModel(null);
+    };
+
+    const handleProbeVisionCapability = async () => {
+        setIsProbingVision(true);
+        setVisionProbeDetail("");
+        setVisionProbeStatus("info");
+
+        try {
+            const result = await chatApi.probeVisionCapability({
+                model: config?.PRIMARY_MODEL || "",
+                base_url: config?.LLM_BASE_URL || "",
+                api_key: config?.LLM_API_KEY || "",
+            });
+
+            const capable = Boolean(result?.vision_capable);
+            const detail =
+                result?.detail ||
+                (capable
+                    ? "Vision input accepted by endpoint/model."
+                    : "Vision input was not accepted by endpoint/model.");
+
+            if (!config?.DOCUMENT_IMAGE_PROCESSING_MODE) {
+                handleConfigChange("DOCUMENT_IMAGE_PROCESSING_MODE", "auto");
+            }
+
+            setVisionProbeStatus(capable ? "success" : "warning");
+            setVisionProbeDetail(detail);
+
+            // Refresh cached current capability view after probe is stored server-side
+            await loadCurrentVisionCapability();
+
+            toast({
+                title: capable
+                    ? "Vision capability detected"
+                    : "Vision capability not detected",
+                description: detail,
+                status: capable ? "success" : "warning",
+                duration: 4500,
+                isClosable: true,
+            });
+        } catch (error) {
+            const detail =
+                error?.message || "Failed to probe visual capability.";
+            setVisionProbeStatus("error");
+            setVisionProbeDetail(detail);
+            setCurrentVisionCapability(null);
+
+            toast({
+                title: "Vision capability probe failed",
+                description: detail,
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+            });
+        } finally {
+            setIsProbingVision(false);
+        }
     };
 
     return (
@@ -760,6 +842,133 @@ const ModelSettingsPanel = ({
                                                             ),
                                                         )}
                                                     </Select>
+                                                </Box>
+
+                                                <Box>
+                                                    <Tooltip label="Choose how PDFs/images are handled: visual LLM, OCR fallback, or automatic selection">
+                                                        <Text
+                                                            fontSize="sm"
+                                                            mb="1"
+                                                            fontWeight={"bold"}
+                                                        >
+                                                            Document/Image
+                                                            Processing Mode
+                                                        </Text>
+                                                    </Tooltip>
+                                                    <Select
+                                                        size="sm"
+                                                        value={
+                                                            config?.DOCUMENT_IMAGE_PROCESSING_MODE ||
+                                                            "auto"
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleConfigChange(
+                                                                "DOCUMENT_IMAGE_PROCESSING_MODE",
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="input-style"
+                                                    >
+                                                        <option value="auto">
+                                                            Auto (prefer visual
+                                                            if available)
+                                                        </option>
+                                                        <option value="vision">
+                                                            Vision only
+                                                        </option>
+                                                        <option value="ocr">
+                                                            OCR only
+                                                        </option>
+                                                    </Select>
+                                                    <Text
+                                                        fontSize="xs"
+                                                        color="gray.500"
+                                                        mt="1"
+                                                    >
+                                                        Auto uses visual
+                                                        processing when vision
+                                                        capability is detected;
+                                                        otherwise it falls back
+                                                        to OCR-compatible
+                                                        endpoints.
+                                                    </Text>
+                                                </Box>
+
+                                                <Box>
+                                                    <Tooltip label="Send a tiny test image to check whether the selected endpoint/model accepts image inputs">
+                                                        <Text
+                                                            fontSize="sm"
+                                                            mb="1"
+                                                            fontWeight={"bold"}
+                                                        >
+                                                            Vision Capability
+                                                            Probe
+                                                        </Text>
+                                                    </Tooltip>
+
+                                                    <HStack spacing={3} mb={2}>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={
+                                                                handleProbeVisionCapability
+                                                            }
+                                                            isLoading={
+                                                                isProbingVision
+                                                            }
+                                                        >
+                                                            Test Vision Support
+                                                        </Button>
+                                                        <Badge
+                                                            colorScheme={
+                                                                currentVisionCapability?.vision_capable
+                                                                    ? "green"
+                                                                    : currentVisionCapability
+                                                                      ? "red"
+                                                                      : "gray"
+                                                            }
+                                                        >
+                                                            {currentVisionCapability
+                                                                ? currentVisionCapability.vision_capable
+                                                                    ? "Vision capable"
+                                                                    : "Not vision-capable"
+                                                                : "Unknown"}
+                                                        </Badge>
+                                                    </HStack>
+                                                    {currentVisionCapability ? (
+                                                        <Text
+                                                            fontSize="xs"
+                                                            color="gray.500"
+                                                            mb={2}
+                                                        >
+                                                            Source:{" "}
+                                                            {currentVisionCapability.source ||
+                                                                "cache"}
+                                                            {currentVisionCapability.probed_at
+                                                                ? ` • Probed: ${currentVisionCapability.probed_at}`
+                                                                : ""}
+                                                        </Text>
+                                                    ) : null}
+
+                                                    {visionProbeDetail ? (
+                                                        <Alert
+                                                            status={
+                                                                visionProbeStatus
+                                                            }
+                                                            borderRadius="sm"
+                                                            py={2}
+                                                        >
+                                                            <AlertIcon />
+                                                            <Text
+                                                                fontSize="xs"
+                                                                whiteSpace="pre-wrap"
+                                                            >
+                                                                {
+                                                                    visionProbeDetail
+                                                                }
+                                                            </Text>
+                                                        </Alert>
+                                                    ) : null}
                                                 </Box>
                                             </VStack>
                                         </VStack>

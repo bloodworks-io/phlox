@@ -4,16 +4,25 @@ import json
 import logging
 from typing import Any
 
-from PIL import Image
-
-# Optional OCR dependencies
+# Optional PDF text-layer dependency (preferred path for PDFs)
 try:
-    import fitz  # PyMuPDF for PDF processing
+    from pypdf import PdfReader
+
+    PDF_TEXT_AVAILABLE = True
+except ImportError:
+    PDF_TEXT_AVAILABLE = False
+    PdfReader = None
+
+# Optional OCR dependencies (fallback path)
+try:
+    from PIL import Image
+    import fitz  # PyMuPDF for PDF rasterization
     import pytesseract
 
     OCR_AVAILABLE = True
 except ImportError:
     OCR_AVAILABLE = False
+    Image = None
     fitz = None
     pytesseract = None
 
@@ -37,45 +46,32 @@ async def process_document_content(
     gender: str | None = None,
 ) -> tuple[str, str, str]:
     """
-    Process document content using OCR first, then pass the extracted text to the LLM.
+    Process document content and return legacy section outputs.
 
-    This function handles both images and PDFs, extracting text and analyzing it to
-    generate structured medical information.
+    This function now extracts document text first, then reuses the shared
+    extracted-text processing path.
+    """
+    extracted_text = await extract_text_from_document(document_buffer, content_type)
+    return await _process_extracted_text_sections(extracted_text, name=name, dob=dob, gender=gender)
 
-    Args:
-        document_buffer: Binary content of the document
-        content_type: MIME type of the document
-        name: Patient name, if available
-        dob: Patient date of birth, if available
-        gender: Patient gender, if available
 
-    Returns:
-        Tuple containing primary_history, additional_history, and investigations
-
-    Raises:
-        Exception: If processing fails
+async def _process_extracted_text_sections(
+    extracted_text: str,
+    name: str | None = None,
+    dob: str | None = None,
+    gender: str | None = None,
+) -> tuple[str, str, str]:
+    """
+    Process already-extracted document text and return legacy section outputs.
     """
     config = config_manager.get_config()
     prompts = config_manager.get_prompts_and_options()
     options = prompts["options"]["general"].copy()
     del options["stop"]
 
-    # Extract text from document using OCR
-    extracted_text = await extract_text_from_document(document_buffer, content_type)
-
-    # Prepare patient context
-    patient_context = _build_patient_context(name, dob, gender)
-
     async def process_section(section_type: str, system_prompt: str) -> str:
         """
         Process a specific section of the medical document using LLM.
-
-        Args:
-            section_type: Type of section to extract
-            system_prompt: System prompt for the LLM
-
-        Returns:
-            Extracted and formatted content for the section
         """
         client = get_llm_client()
         messages = [
@@ -115,25 +111,19 @@ async def process_document_content(
         - [Investigation/test result]""",
     }
 
-    # Process all sections concurrently
     try:
         logger.info("Starting concurrent processing of document sections")
         results = await asyncio.gather(
             *[process_section(section, prompt) for section, prompt in prompts.items()]
         )
 
-        # Combine results
-        primary_history = results[0]
-        primary_history = "# " + primary_history.split("#", 1)[-1].strip()
+        primary_history = "# " + results[0].split("#", 1)[-1].strip()
 
-        # Combine Additional History, Medications, and Social History
-        additional_history = results[1]
-        additional_history = "# " + additional_history.split("#", 1)[-1].strip() + "\n\n"
+        additional_history = "# " + results[1].split("#", 1)[-1].strip() + "\n\n"
         additional_history += "Medications:\n" + results[2].strip() + "\n\n"
         additional_history += "Social History:\n" + results[3].strip()
 
-        investigations = results[4]
-        investigations = "- " + investigations.split("-", 1)[-1].strip()
+        investigations = "- " + results[4].split("-", 1)[-1].strip()
 
         logger.info("Successfully processed all document sections")
         return primary_history, additional_history, investigations
@@ -145,7 +135,12 @@ async def process_document_content(
 
 async def extract_text_from_document(document_buffer: bytes, content_type: str) -> str:
     """
-    Extract text from document using OCR or return raw text.
+    Extract text from document.
+
+    Strategy:
+    1) For PDFs, prefer direct extraction from PDF text layer.
+    2) If PDF text appears insufficient, fallback to OCR if available.
+    3) For images, use OCR when available.
 
     Args:
         document_buffer: Binary content of the document
@@ -155,11 +150,8 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
         Extracted text from the document
 
     Raises:
-        RuntimeError: If OCR dependencies are not available
+        RuntimeError: If required extraction dependencies are not available
     """
-    if not OCR_AVAILABLE:
-        raise RuntimeError("Document processing requires PyMuPDF and pytesseract.")
-
     logger.info(f"Extracting text from document with content type: {content_type}")
 
     # If content type is text, return the text directly
@@ -168,27 +160,86 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
             return document_buffer.decode("utf-8")
         return document_buffer
 
-    extracted_texts = []
-
     if content_type == "application/pdf":
-        # Handle PDF
-        logger.debug("Processing PDF document with PyMuPDF")
-        pdf_document = fitz.open(stream=document_buffer, filetype="pdf")
-        for page_num in range(pdf_document.page_count):
-            page = pdf_document[page_num]
-            pix = page.get_pixmap()
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            text = pytesseract.image_to_string(img)
-            extracted_texts.append(text)
-            logger.debug(f"Extracted text from PDF page {page_num + 1}/{pdf_document.page_count}")
-    else:
-        # Handle single image
-        logger.debug("Processing image document with Tesseract OCR")
-        img = Image.open(io.BytesIO(document_buffer))
+        logger.debug("Processing PDF document (text-layer first strategy)")
+        text_from_layer = _extract_pdf_text_layer(document_buffer)
+
+        if _is_extracted_text_usable(text_from_layer):
+            logger.info("Using extracted PDF text layer content")
+            return text_from_layer
+
+        logger.info("PDF text layer unavailable/insufficient; attempting OCR fallback")
+        if OCR_AVAILABLE:
+            return _extract_pdf_text_with_ocr(document_buffer)
+
+        if text_from_layer.strip():
+            logger.warning(
+                "Returning partial PDF text layer output because OCR dependencies are unavailable"
+            )
+            return text_from_layer
+
+        raise RuntimeError(
+            "No usable PDF text found and OCR dependencies are unavailable. "
+            "Install pypdf for text-layer extraction and/or PyMuPDF + Pillow + pytesseract for OCR fallback."
+        )
+
+    # Non-PDF binary documents are treated as images and require OCR
+    if not OCR_AVAILABLE:
+        raise RuntimeError("Image document processing requires PyMuPDF, Pillow and pytesseract.")
+
+    logger.debug("Processing image document with Tesseract OCR")
+    img = Image.open(io.BytesIO(document_buffer))
+    text = pytesseract.image_to_string(img)
+    return text
+
+
+def _extract_pdf_text_layer(document_buffer: bytes) -> str:
+    """
+    Extract text from embedded PDF text layer using pypdf.
+    """
+    if not PDF_TEXT_AVAILABLE:
+        logger.debug("pypdf not available; skipping PDF text-layer extraction")
+        return ""
+
+    try:
+        reader = PdfReader(io.BytesIO(document_buffer))
+        page_texts = []
+        for page in reader.pages:
+            page_texts.append(page.extract_text() or "")
+        return "\n\n".join(page_texts).strip()
+    except Exception as e:
+        logger.warning(f"Failed PDF text-layer extraction: {e}")
+        return ""
+
+
+def _extract_pdf_text_with_ocr(document_buffer: bytes) -> str:
+    """
+    OCR fallback for PDFs: rasterize pages with PyMuPDF then OCR with pytesseract.
+    """
+    extracted_texts = []
+    pdf_document = fitz.open(stream=document_buffer, filetype="pdf")
+
+    for page_num in range(pdf_document.page_count):
+        page = pdf_document[page_num]
+        pix = page.get_pixmap()
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
         text = pytesseract.image_to_string(img)
         extracted_texts.append(text)
+        logger.debug(f"Extracted text from PDF page {page_num + 1}/{pdf_document.page_count}")
 
-    return "\n\n".join(extracted_texts)
+    return "\n\n".join(extracted_texts).strip()
+
+
+def _is_extracted_text_usable(text: str) -> bool:
+    """
+    Heuristic check for whether extracted text is likely usable.
+    """
+    normalized = (text or "").strip()
+    if len(normalized) < 120:
+        return False
+
+    alnum_count = sum(1 for ch in normalized if ch.isalnum())
+    return alnum_count >= 80
 
 
 async def process_document_with_template(
@@ -199,40 +250,57 @@ async def process_document_with_template(
 ) -> dict[str, str]:
     """
     Process document content and extract information to fill template fields.
-
-    Args:
-        document_buffer: Binary content of the document
-        content_type: MIME type of the document
-        template_fields: List of template field definitions
-        patient_context: Dictionary containing patient information
-
-    Returns:
-        Dictionary mapping field keys to extracted content
     """
     logger.info(
         f"Processing document with template containing {len(template_fields) if template_fields else 0} fields"
     )
 
-    config = config_manager.get_config()
-    prompts = config_manager.get_prompts_and_options()
-    options = prompts["options"]["general"].copy()
-
-    # Extract text from document using OCR
     logging.info("Extracting text from document")
     extracted_text = await extract_text_from_document(document_buffer, content_type)
 
-    # If there are no template fields, use the old method for backward compatibility
+    return await process_document_text_with_template(
+        extracted_text=extracted_text,
+        template_fields=template_fields,
+        patient_context=patient_context,
+    )
+
+
+async def process_document_text_with_template(
+    extracted_text: str,
+    template_fields: list[Any],
+    patient_context: dict[str, Any],
+) -> dict[str, str]:
+    """
+    Process already-extracted document text and extract information to fill template fields.
+    """
+    logger.info(
+        f"Processing extracted document text with template containing {len(template_fields) if template_fields else 0} fields"
+    )
+    return await _process_extracted_text_with_template(
+        extracted_text=extracted_text,
+        template_fields=template_fields,
+        patient_context=patient_context,
+    )
+
+
+async def _process_extracted_text_with_template(
+    extracted_text: str,
+    template_fields: list[Any],
+    patient_context: dict[str, Any],
+) -> dict[str, str]:
+    """
+    Shared template processing logic that operates on extracted text.
+    """
+    # If there are no template fields, use the legacy section-style extraction
     if not template_fields:
         logger.info("No template fields provided, using legacy processing method")
-        primary_history, additional_history, investigations = await process_document_content(
-            document_buffer,
-            content_type,
+        primary_history, additional_history, investigations = await _process_extracted_text_sections(
+            extracted_text,
             patient_context.get("name"),
             patient_context.get("dob"),
             patient_context.get("gender"),
         )
 
-        # Return a basic set of fields (this is used for backward compatibility)
         return {
             "primary_history": primary_history,
             "additional_history": additional_history,
@@ -240,7 +308,6 @@ async def process_document_with_template(
         }
 
     try:
-        # Process all template fields concurrently
         raw_results = await asyncio.gather(
             *[
                 process_document_field(extracted_text, field, patient_context)
@@ -248,7 +315,6 @@ async def process_document_with_template(
             ]
         )
 
-        # Refine all results concurrently
         refined_results = await asyncio.gather(
             *[
                 refine_field_content(result.content, field)
@@ -256,7 +322,6 @@ async def process_document_with_template(
             ]
         )
 
-        # Combine results into a dictionary
         results = {
             field.field_key: refined_content
             for field, refined_content in zip(template_fields, refined_results)
@@ -266,8 +331,115 @@ async def process_document_with_template(
         return results
 
     except Exception as e:
-        logger.error(f"Error processing document with template: {str(e)}")
+        logger.error(f"Error processing extracted text with template: {str(e)}")
         raise
+
+
+async def process_visual_document_with_template(
+    visual_pages: list[dict[str, Any]],
+    template_fields: list[Any],
+    patient_context: dict[str, Any],
+) -> dict[str, str]:
+    """
+    Process visual document pages directly with a multimodal model to fill template fields.
+
+    Each field is extracted from images directly (no OCR text pre-extraction step).
+    """
+    if not visual_pages:
+        raise ValueError("No visual pages were provided")
+
+    if not template_fields:
+        raise ValueError("Template fields are required for visual document processing")
+
+    # Keep only valid image data URLs and cap page count defensively
+    valid_pages = [
+        page
+        for page in visual_pages
+        if isinstance(page, dict)
+        and isinstance(page.get("data_url"), str)
+        and page.get("data_url", "").startswith("data:image/")
+    ][:8]
+
+    if not valid_pages:
+        raise ValueError("No valid image data URLs were provided")
+
+    config = config_manager.get_config()
+    options = config_manager.get_prompts_and_options()["options"]["general"].copy()
+    options["temperature"] = 0
+    options.pop("stop", None)
+
+    client = get_llm_client()
+    response_format = FieldResponse.model_json_schema()
+
+    # Build patient context once
+    context_str = ""
+    if patient_context:
+        context_str = _build_patient_context(
+            patient_context.get("name"),
+            patient_context.get("dob"),
+            patient_context.get("gender"),
+        )
+
+    async def process_visual_field(field: Any) -> tuple[str, str]:
+        field_name = field.field_name
+        system_prompt = getattr(field, "system_prompt", "") or ""
+
+        if not system_prompt:
+            system_prompt = (
+                f"You are a medical documentation assistant. "
+                f"Extract the {field_name} from the provided medical document images."
+            )
+
+        if hasattr(field, "style_example") and field.style_example:
+            system_prompt += f"\n\nOutput style example:\n{field.style_example}"
+
+        json_schema_instruction = (
+            "Output MUST be ONLY valid JSON with top-level key "
+            '"key_points" (array of strings). Example: ' + json.dumps({"key_points": ["..."]})
+        )
+
+        instruction = (
+            f"Please extract the {field_name} from these document images."
+            + (f"\n\nPatient context: {context_str}" if context_str else "")
+        )
+
+        user_content: list[dict[str, Any]] = [{"type": "text", "text": instruction}]
+        for page in valid_pages:
+            user_content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": page["data_url"]},
+                }
+            )
+
+        request_body = [
+            {
+                "role": "system",
+                "content": f"{system_prompt}\n\n{json_schema_instruction}",
+            },
+            {
+                "role": "user",
+                "content": user_content,
+            },
+        ]
+
+        logger.info(f"Processing visual document field: {field_name}")
+
+        response = await client.chat(
+            model=config["PRIMARY_MODEL"],
+            messages=request_body,
+            format=response_format,
+            options=options,
+        )
+
+        field_response = FieldResponse.model_validate_json(response["message"]["content"])
+        formatted_content = "\n".join(f"• {point.strip()}" for point in field_response.key_points)
+
+        refined_content = await refine_field_content(formatted_content, field)
+        return field.field_key, refined_content
+
+    results = await asyncio.gather(*[process_visual_field(field) for field in template_fields])
+    return {field_key: content for field_key, content in results}
 
 
 async def process_document_field(
@@ -317,25 +489,23 @@ async def process_document_field(
                 patient_context.get("gender"),
             )
 
+        # Build a single system message so strict chat templates don't reject
+        # requests with additional system messages later in the list.
+        system_content = f"{system_prompt}\n\n{json_schema_instruction}"
+        if context_str:
+            system_content += f"\n\nPatient context: {context_str}"
+
         # Create the request messages
         request_body = [
             {
                 "role": "system",
-                "content": (f"{system_prompt}\n\n{json_schema_instruction}"),
+                "content": system_content,
             },
-        ]
-
-        # Add patient context if available
-        if context_str:
-            request_body.append({"role": "system", "content": f"Patient context: {context_str}"})
-
-        # Add the document text as user input
-        request_body.append(
             {
                 "role": "user",
                 "content": f"Please extract the {field_name} from this medical document:\n\n{document_text}",
-            }
-        )
+            },
+        ]
 
         logger.info(f"Processing document field: {field_name}")
 
