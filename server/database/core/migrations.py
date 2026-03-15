@@ -543,6 +543,7 @@ def migrate_to_v4(cursor, db):
 def migrate_to_v5(cursor, db):
     """Add MCP servers configuration table and disabled_tools to user_settings.
     Also normalize legacy LLM provider values from ollama to openai-compatible.
+    Drop unused RSS and analysis tables.
     """
     try:
         cursor.execute(
@@ -582,9 +583,16 @@ def migrate_to_v5(cursor, db):
                     (json.dumps("openai"),),
                 )
 
+        # Drop unused tables (RSS and analysis features removed)
+        cursor.execute("DROP TABLE IF EXISTS rss_feeds")
+        cursor.execute("DROP TABLE IF EXISTS rss_items")
+        cursor.execute("DROP TABLE IF EXISTS combined_digests")
+        cursor.execute("DROP TABLE IF EXISTS daily_analysis")
+
         db.commit()
         logging.info(
-            "Successfully added mcp_servers table, disabled_tools column, and normalized LLM provider"
+            "Successfully added mcp_servers table, disabled_tools column, normalized LLM provider, "
+            "and dropped unused RSS/analysis tables"
         )
 
     except Exception as e:

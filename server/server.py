@@ -64,17 +64,10 @@ else:
 # Start the scheduler when the app starts
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from server.database.entities.analysis import (
-        generate_daily_analysis,
-        run_nightly_reasoning,
-    )
     from server.middleware import RateLimitMiddleware
 
     # Startup
     scheduler.start()
-    # Schedule jobs
-    scheduler.add_job(generate_daily_analysis, "cron", hour=3)
-    scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
     # Clean up zombie IPs from rate limiter every 5 minutes
     scheduler.add_job(
         RateLimitMiddleware.cleanup_all_zombie_ips,

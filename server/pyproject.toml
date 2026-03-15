@@ -5,7 +5,6 @@ requires-python = ">=3.12"
 dependencies = [
     "APScheduler>=3.10.4",
     "fastapi>=0.115.8",
-    "feedparser>=6.0.11",
     "httpx>=0.28.1",
     "icalendar>=5.0.13",
     "json-repair>=0.55.0",
