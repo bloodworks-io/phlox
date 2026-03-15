@@ -150,12 +150,6 @@ async def execute(
     if function_response_list == "No relevant literature available":
         logger.info("No relevant literature found in database.")
         result_content = "No relevant literature available in the database. Answer the user's question but inform them that you were unable to find any relevant information."
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
     else:
         logger.info(f"Retrieved relevant literature for disease: {disease_name}")
         if isinstance(function_response_list, list):
@@ -172,22 +166,5 @@ async def execute(
             function_response_string = str(function_response_list)
 
         result_content = f"The below text excerpts are taken from relevant sections of the guidelines; these may help you answer the user's question. The user has not sent you these documents, they have come from your own database.\n\n{function_response_string}"
-
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", "") if tool_call else "",
-                content=result_content,
-            )
-        )
-
-    if llm_client is not None:
-        yield status_message("Generating response with retrieved information...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
 
     yield end_message(function_response={"content": result_content, "citations": citations})

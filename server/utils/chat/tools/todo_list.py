@@ -142,21 +142,4 @@ async def execute(
         logger.error(f"Todo list error: {e}")
         result_content = f"Error managing todo list: {str(e)}"
 
-    message_list.append(
-        tool_response_message(
-            tool_call_id=tool_call.get("id", ""),
-            content=result_content,
-        )
-    )
-
-    if llm_client is not None:
-        yield status_message("Generating response...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
-
     yield end_message(function_response={"content": result_content, "citations": citations})

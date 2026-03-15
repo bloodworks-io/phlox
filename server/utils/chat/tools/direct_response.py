@@ -52,17 +52,8 @@ async def execute(
         )
         return
 
-    # Remove the assistant's tool call message from history since direct_response
-    # doesn't use tools - the tool call was just for routing, not for LLM context
-    if message_list and message_list[-1].get("role") == "assistant":
-        message_list.pop()
-
-    yield status_message("Generating response...")
-
-    async for chunk in stream_llm_response(
-        llm_client=llm_client,
-        model=config["PRIMARY_MODEL"],
-        messages=message_list,
-        options=context_question_options,
-    ):
-        yield chunk
+    # ChatEngine handles direct_response explicitly now by breaking the loop
+    # and doing a final stream, so we just yield an end message here.
+    # This block shouldn't be reached if ChatEngine properly breaks.
+    from server.utils.chat.streaming.response import end_message
+    yield end_message(function_response={"content": "Ready for direct response."})

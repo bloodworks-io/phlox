@@ -260,20 +260,8 @@ async def execute(
 
     if not patient_name:
         result_content = "Error: Patient name is required to create a note."
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
     elif not encounter_date:
         result_content = "Error: Encounter date is required to create a note. Please provide the date in YYYY-MM-DD format."
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
     else:
         try:
             result = await create_patient_note(
@@ -294,30 +282,8 @@ async def execute(
             else:
                 result_content = f"Failed to create note: {result.get('error', 'Unknown error')}"
 
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
         except Exception as e:
             logger.error(f"Create note error: {e}")
             result_content = f"Error creating note: {str(e)}"
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
-
-    if llm_client is not None:
-        yield status_message("Generating response...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
 
     yield end_message(function_response={"content": result_content, "citations": citations})

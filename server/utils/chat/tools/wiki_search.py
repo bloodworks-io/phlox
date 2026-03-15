@@ -138,12 +138,6 @@ async def execute(
     if not query:
         logger.info("No query provided for web search")
         result_content = "No query provided. Please specify a search query."
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
     else:
         try:
             logger.info(f"Searching Wikipedia for: '{query}'")
@@ -170,31 +164,8 @@ async def execute(
 
                 result_content = "Found the following relevant articles:\n\n" + "\n\n---\n\n".join(formatted)
                 logger.info(f"Retrieved {len(articles)} Wikipedia articles")
-
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
         except Exception as e:
             logger.error(f"Wikipedia search error: {e}")
             result_content = f"Error searching Wikipedia: {str(e)}"
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
-
-    if llm_client is not None:
-        yield status_message("Generating response with search results...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
 
     yield end_message(function_response={"content": result_content, "citations": citations})

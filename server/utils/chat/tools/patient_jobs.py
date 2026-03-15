@@ -175,12 +175,6 @@ async def execute(
 
     if not ur_number and not patient_name:
         result_content = "Error: Please provide either a UR number or patient name to look up jobs."
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
     else:
         try:
             result = await get_patient_jobs(
@@ -194,30 +188,8 @@ async def execute(
                 patient = result.get("patient", {})
                 citations.append(f"Jobs for {patient.get('name', 'patient')}")
 
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
         except Exception as e:
             logger.error(f"Get patient jobs error: {e}")
             result_content = f"Error retrieving patient jobs: {str(e)}"
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
-
-    if llm_client is not None:
-        yield status_message("Generating response...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
 
     yield end_message(function_response={"content": result_content, "citations": citations})

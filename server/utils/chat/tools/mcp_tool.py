@@ -73,20 +73,6 @@ async def execute(
     if not function_name.startswith("mcp_"):
         logger.error(f"Invalid MCP tool name: {function_name}")
         result_content = f"Invalid MCP tool name format: {function_name}"
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
-        yield status_message("Generating response...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
         yield end_message(function_response={"content": result_content, "citations": citations})
         return
 
@@ -102,20 +88,6 @@ async def execute(
     if not tool_def:
         logger.error(f"MCP tool not found: {function_name}")
         result_content = f"MCP tool not found: {function_name}"
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
-        yield status_message("Generating response...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
         yield end_message(function_response={"content": result_content, "citations": citations})
         return
 
@@ -125,20 +97,6 @@ async def execute(
     if not server_id or not original_tool_name:
         logger.error(f"MCP tool missing metadata: {function_name}")
         result_content = f"MCP tool configuration error: {function_name}"
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
-        yield status_message("Generating response...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
         yield end_message(function_response={"content": result_content, "citations": citations})
         return
 
@@ -196,31 +154,8 @@ async def execute(
         citation = f"MCP Tool ({original_tool_name}): {tool_result[:200]}..."
         citations.append(citation)
 
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
-
     except Exception as e:
         logger.error(f"Error executing MCP tool: {e}")
         result_content = f"Error calling MCP tool: {str(e)}"
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
-
-    if llm_client is not None:
-        yield status_message("Generating response with MCP results...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
 
     yield end_message(function_response={"content": result_content, "citations": citations})

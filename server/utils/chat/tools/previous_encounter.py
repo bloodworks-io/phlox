@@ -153,20 +153,6 @@ async def execute(
         if not match:
             logger.info(f"No patient found with name matching '{patient_name}'")
             result_content = f"No patient found with name matching '{patient_name}'. Please verify the name or provide a UR number."
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
-            if llm_client is not None:
-                async for chunk in stream_llm_response(
-                    llm_client=llm_client,
-                    model=config["PRIMARY_MODEL"],
-                    messages=message_list,
-                    options=context_question_options,
-                ):
-                    yield chunk
             yield end_message(function_response={"content": result_content, "citations": citations})
             return
         ur_number = match.ur_number
@@ -174,12 +160,6 @@ async def execute(
     if not ur_number:
         logger.info("No UR number or patient name provided for previous encounter search")
         result_content = "Error: Please provide either ur_number or patient_name."
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=result_content,
-            )
-        )
     else:
         try:
             logger.info(f"Fetching previous encounter for UR number: '{ur_number}', excluding date: {current_encounter_date}")
@@ -198,30 +178,8 @@ async def execute(
                 citation = f"Previous Encounter from {encounter_date}"
                 citations.append(citation)
 
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
         except Exception as e:
             logger.error(f"Previous encounter error: {e}")
             result_content = f"Error retrieving previous encounter: {str(e)}"
-            message_list.append(
-                tool_response_message(
-                    tool_call_id=tool_call.get("id", ""),
-                    content=result_content,
-                )
-            )
-
-    if llm_client is not None:
-        yield status_message("Generating response with previous encounter data...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
 
     yield end_message(function_response={"content": result_content, "citations": citations})

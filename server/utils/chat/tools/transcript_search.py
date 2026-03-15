@@ -62,20 +62,12 @@ async def execute(
         logger.info("No transcript available.")
         yield status_message("Generating response...")
 
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content="No transcript is available to query. Please answer the user's question without transcript information.",
-            )
+        from server.utils.chat.streaming.response import end_message
+        yield end_message(
+            function_response={
+                "content": "No transcript is available to query. Please answer the user's question without transcript information."
+            }
         )
-
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
     else:
         logger.info("Searching transcript for query...")
         yield status_message("Searching through transcript...")
@@ -117,27 +109,9 @@ async def execute(
 
         logger.info(f"Transcript query result: {cleaned_transcript_info[:200]}...")
 
-        # Add transcript info to original conversation as a tool response
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=f"The following information was found in the transcript:\n\n{cleaned_transcript_info}",
-            )
+        from server.utils.chat.streaming.response import end_message
+        yield end_message(
+            function_response={
+                "content": f"The following information was found in the transcript:\n\n{cleaned_transcript_info}"
+            }
         )
-
-        # Clean think tags again
-        cleaned_message_list = clean_think_tags(message_list)
-
-        logger.info(f"Transcript query messagelist: {cleaned_message_list}")
-        yield status_message("Generating response with transcript information...")
-
-        logger.info("Starting response stream to frontend")
-
-        # Stream the answer
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=cleaned_message_list,
-            options=context_question_options,
-        ):
-            yield chunk
