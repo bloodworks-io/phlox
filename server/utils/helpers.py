@@ -45,25 +45,29 @@ def calculate_age(dob: str, encounter_date: str = None) -> int:
 
 def clean_think_tags(message_list):
     """
-    Remove <think> tags and their contents from conversation history messages.
+    Remove reasoning tags and their contents from conversation history messages.
 
     Args:
         message_list (list): List of message dictionaries
 
     Returns:
-        list: Cleaned message list with <think> tags removed
+        list: Cleaned message list with reasoning tags removed
     """
+    
+    # Common reasoning tags used by different models
+    # We compile the regex pattern to match any of these pairs
+    pattern = r"(?:<(?:think|thinking|reason|reasoning|thought|Thought)>|<\|begin_of_thought\|>|◁think▷).*?(?:</(?:think|thinking|reason|reasoning|thought|Thought)>|<\|end_of_thought\|>|◁/think▷)"
 
     # Handle simple strings
     if isinstance(message_list, str):
-        return re.sub(r"<think>.*?</think>", "", message_list, flags=re.DOTALL)
+        return re.sub(pattern, "", message_list, flags=re.DOTALL)
 
     cleaned_messages = []
 
     for message in message_list:
         if "content" in message and isinstance(message["content"], str):
-            # Remove <think>...</think> patterns from content
-            cleaned_content = re.sub(r"<think>.*?</think>", "", message["content"], flags=re.DOTALL)
+            # Remove reasoning tag patterns from content
+            cleaned_content = re.sub(pattern, "", message["content"], flags=re.DOTALL)
             # Create a new message with cleaned content
             cleaned_message = message.copy()
             cleaned_message["content"] = cleaned_content.strip()

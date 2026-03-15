@@ -87,6 +87,68 @@ export const handleChat = async (
         )) {
             if (chunk.type === "chunk" && chunk.content) {
                 streamedContent += chunk.content;
+            } else if (chunk.type === "status" && chunk.content) {
+                const statusText = chunk.content.trim();
+
+                const callMatch = statusText.match(
+                    /^Calling tool:\s*([^|]+?)(?:\s*\|\s*query:\s*(.+))?$/i,
+                );
+
+                // Only render UI tool blocks for explicit tool-call status events.
+                // Ignore follow-up generic status messages to prevent duplicate cards.
+                if (!callMatch) {
+                    continue;
+                }
+
+                const toolName = (callMatch[1] ?? "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .replace(/^["'`]+|["'`]+$/g, "")
+                    .replace(/"/g, "'");
+
+                const toolQuery = (callMatch[2] ?? "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .replace(/"/g, "'");
+
+                const toClinicianActionLabel = (name) => {
+                    const normalized = String(name || "").toLowerCase();
+
+                    if (normalized.includes("pubmed")) {
+                        return "Searching PubMed for supporting evidence";
+                    }
+                    if (normalized.includes("wiki")) {
+                        return "Checking background reference information";
+                    }
+                    if (normalized.includes("literature")) {
+                        return "Searching medical literature";
+                    }
+                    if (normalized.includes("transcript")) {
+                        return "Reviewing encounter transcript";
+                    }
+                    if (normalized.includes("direct_response")) {
+                        return "Preparing response";
+                    }
+
+                    return "Gathering supporting information";
+                };
+
+                const clinicianStatusText = `${toClinicianActionLabel(toolName)}...`;
+
+                const escapeAttr = (value = "") =>
+                    String(value)
+                        .replace(/&/g, "&amp;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+
+                if (toolName) {
+                    const nameAttr = escapeAttr(toolName);
+                    const queryAttr = toolQuery
+                        ? ` query="${escapeAttr(toolQuery)}"`
+                        : "";
+                    streamedContent += `\n<tool name="${nameAttr}" status="running"${queryAttr}>${clinicianStatusText}</tool>\n`;
+                }
             } else if (
                 chunk.type === "context" ||
                 (chunk.type === "end" && chunk.function_response)

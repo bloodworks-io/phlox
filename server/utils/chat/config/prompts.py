@@ -59,6 +59,7 @@ def build_system_messages(patient_context: dict | None = None, template_fields: 
     # Start with the main system prompt
     content = prompts["prompts"]["chat"]["system"]
 
+    today = datetime.now().strftime("%Y-%m-%d")
     today_readable = datetime.now().strftime("%A, %B %d, %Y")
     content += f"\n\nToday's date is {today_readable} ({today})."
 

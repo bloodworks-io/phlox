@@ -71,8 +71,10 @@ async def openai_compatible_chat(
                         )
 
                         # Check for reasoning in the delta (only used for Chat streaming)
-                        reasoning = getattr(delta, "reasoning", None) or getattr(
-                            delta, "reasoning_content", None
+                        reasoning = (
+                            getattr(delta, "reasoning", None)
+                            or getattr(delta, "reasoning_content", None)
+                            or getattr(delta, "thinking", None)
                         )
 
                         # Normalize reasoning to </think> tags for consistency
@@ -96,8 +98,12 @@ async def openai_compatible_chat(
                                     "content": reasoning,
                                 },
                             }
-                        elif content:  # Only yield content if not empty
-                            # Close think tag if we were streaming reasoning
+                        # Check for tool calls in the delta
+                        tool_calls = None
+                        if hasattr(delta, "tool_calls") and delta.tool_calls:
+                            tool_calls = delta.tool_calls
+
+                        if content or tool_calls:  # Close think tag if we transition to content or tool calls
                             if reasoning_started:
                                 yield {
                                     "model": model,
@@ -107,11 +113,6 @@ async def openai_compatible_chat(
                                     },
                                 }
                                 reasoning_started = False
-
-                        # Check for tool calls in the delta
-                        tool_calls = None
-                        if hasattr(delta, "tool_calls") and delta.tool_calls:
-                            tool_calls = delta.tool_calls
 
                         response = {
                             "model": model,
@@ -126,6 +127,16 @@ async def openai_compatible_chat(
                             response["message"]["tool_calls"] = tool_calls
 
                         yield response
+
+                # If stream ends while reasoning, close the tag
+                if reasoning_started:
+                    yield {
+                        "model": model,
+                        "message": {
+                            "role": "assistant",
+                            "content": "</think>\n\n",
+                        },
+                    }
 
             return response_generator()
         else:
@@ -145,8 +156,10 @@ async def openai_compatible_chat(
             }
 
             # Add reasoning to result if present
-            reasoning = getattr(response.choices[0].message, "reasoning", None) or getattr(
-                response.choices[0].message, "reasoning_content", None
+            reasoning = (
+                getattr(response.choices[0].message, "reasoning", None)
+                or getattr(response.choices[0].message, "reasoning_content", None)
+                or getattr(response.choices[0].message, "thinking", None)
             )
 
             if reasoning:
