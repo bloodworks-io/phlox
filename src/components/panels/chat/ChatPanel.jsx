@@ -126,7 +126,7 @@ const ChatPanel = ({
                 <div ref={messagesEndRef} />
             </Box>
 
-            <Box p="3" borderTopWidth="1px" borderColor="inherit">
+            <Box p="3" className="floating-main">
                 {shouldShowQuickChatButtons && (
                     <QuickChatButtons
                         userSettings={userSettings}
