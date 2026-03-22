@@ -161,7 +161,7 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
         return document_buffer
 
     if content_type == "application/pdf":
-        logger.info("Backend PDF parsing invoked)
+        logger.info("Backend PDF parsing invoked")
         text_from_layer = _extract_pdf_text_layer(document_buffer)
 
         if _is_extracted_text_usable(text_from_layer):
