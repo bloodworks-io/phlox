@@ -367,6 +367,7 @@ class ChromaManager:
         Extracts text from a PDF file.
 
         Prefer text-layer extraction via pypdf.
+        
         If extracted text is insufficient, fallback to OCR if available.
 
         Args:
@@ -375,6 +376,7 @@ class ChromaManager:
         Returns:
             str: Extracted text from the PDF.
         """
+        logger.info("Backend RAG PDF parser invoked for file: %s", pdf_path)
 
         def _is_text_usable(text: str) -> bool:
             normalized = (text or "").strip()
@@ -401,11 +403,13 @@ class ChromaManager:
                 text_layer_output = ""
 
         if _is_text_usable(text_layer_output):
+            logger.info("Backend RAG PDF parser used pypdf text-layer output")
             return text_layer_output
 
         # OCR fallback for scanned/image-based PDFs (typically Docker deployments
         # where OCR dependencies are installed and no visual model is configured).
         if OCR_AVAILABLE:
+            logger.info("Backend RAG OCR fallback invoked (PyMuPDF + Pillow + pytesseract)")
             try:
                 ocr_texts = []
                 document = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -417,6 +421,7 @@ class ChromaManager:
                 ocr_output = "\n\n".join(ocr_texts).strip()
 
                 if _is_text_usable(ocr_output):
+                    logger.info("Backend RAG OCR fallback produced usable PDF text")
                     return ocr_output
 
                 # If OCR ran but still weak, return best available output.

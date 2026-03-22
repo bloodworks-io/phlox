@@ -1,13 +1,3 @@
-/**
- * Frontend PDF helpers:
- * 1) Extract embedded text directly in-browser (fast path)
- * 2) If text is insufficient, render pages to images for vision fallback
- *
- * This avoids backend OCR dependencies for common PDFs that already contain text.
- */
-
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
 const DEFAULT_TEXT_OPTIONS = {
     maxPages: 25,
     minTextLength: 250,
@@ -26,6 +16,20 @@ const DEFAULT_RENDER_OPTIONS = {
 let pdfjsModulePromise = null;
 let pdfjsWorkerConfigured = false;
 
+function resolvePdfWorkerSrc() {
+    try {
+        return new URL(
+            "../../../node_modules/pdfjs-dist/build/pdf.worker.min.mjs",
+            import.meta.url,
+        ).toString();
+    } catch {
+        return new URL(
+            "../../../node_modules/pdfjs-dist/build/pdf.worker.mjs",
+            import.meta.url,
+        ).toString();
+    }
+}
+
 async function getPdfJs() {
     if (!pdfjsModulePromise) {
         pdfjsModulePromise = import("pdfjs-dist/legacy/build/pdf");
@@ -34,7 +38,7 @@ async function getPdfJs() {
     const pdfjs = await pdfjsModulePromise;
 
     if (!pdfjsWorkerConfigured) {
-        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+        pdfjs.GlobalWorkerOptions.workerSrc = resolvePdfWorkerSrc();
         pdfjsWorkerConfigured = true;
     }
 

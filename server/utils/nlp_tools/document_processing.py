@@ -161,7 +161,7 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
         return document_buffer
 
     if content_type == "application/pdf":
-        logger.debug("Processing PDF document (text-layer first strategy)")
+        logger.info("Backend PDF parsing invoked)
         text_from_layer = _extract_pdf_text_layer(document_buffer)
 
         if _is_extracted_text_usable(text_from_layer):
@@ -170,6 +170,7 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
 
         logger.info("PDF text layer unavailable/insufficient; attempting OCR fallback")
         if OCR_AVAILABLE:
+            logger.info("Backend OCR fallback invoked for PDF")
             return _extract_pdf_text_with_ocr(document_buffer)
 
         if text_from_layer.strip():
@@ -197,6 +198,7 @@ def _extract_pdf_text_layer(document_buffer: bytes) -> str:
     """
     Extract text from embedded PDF text layer using pypdf.
     """
+    logger.info("Backend PDF parser component called: pypdf text-layer extraction")
     if not PDF_TEXT_AVAILABLE:
         logger.debug("pypdf not available; skipping PDF text-layer extraction")
         return ""
@@ -216,6 +218,7 @@ def _extract_pdf_text_with_ocr(document_buffer: bytes) -> str:
     """
     OCR fallback for PDFs: rasterize pages with PyMuPDF then OCR with pytesseract.
     """
+    logger.info("Backend PDF OCR component called: PyMuPDF rasterization + pytesseract")
     extracted_texts = []
     pdf_document = fitz.open(stream=document_buffer, filetype="pdf")
 
