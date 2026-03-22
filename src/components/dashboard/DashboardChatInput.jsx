@@ -6,12 +6,16 @@ import {
     IconButton,
     Text,
     useColorMode,
+    useColorModeValue,
     Image,
     HStack,
     Spinner,
     Input,
+    Badge,
+    Icon,
 } from "@chakra-ui/react";
 import { ArrowUpIcon, AttachmentIcon, CloseIcon } from "@chakra-ui/icons";
+import { FaFilePdf, FaFileImage } from "react-icons/fa";
 
 const VALID_IMAGE_TYPES = [
     "image/png",
@@ -170,105 +174,107 @@ const DashboardChatInput = ({
                 position="relative"
             >
                 {pendingImage && (
-                    <Box
+                    <HStack
+                        spacing={2}
                         mb={2}
-                        p={2}
+                        px={2}
+                        py={1.5}
                         borderRadius="md"
-                        bg={isLight ? "gray.100" : "gray.700"}
+                        bg={useColorModeValue("gray.100", "gray.700")}
+                        maxW="33%"
                     >
-                        <HStack spacing={2}>
-                            {pendingImage.type.startsWith("image/") ? (
-                                <Image
-                                    src={URL.createObjectURL(pendingImage)}
-                                    alt="Preview"
-                                    maxH="60px"
-                                    maxW="100px"
-                                    borderRadius="sm"
-                                    objectFit="cover"
-                                />
-                            ) : (
-                                <Flex
-                                    align="center"
-                                    justify="center"
-                                    h="60px"
-                                    w="60px"
-                                    bg={isLight ? "gray.200" : "gray.600"}
-                                    borderRadius="sm"
-                                >
-                                    <Text
-                                        fontSize="xs"
-                                        fontWeight="bold"
-                                        color="gray.500"
-                                    >
-                                        PDF
-                                    </Text>
-                                </Flex>
-                            )}
-                            <Text fontSize="sm" flex="1" isTruncated>
-                                {pendingImage.name}
-                            </Text>
-                            {isProcessingImage && <Spinner size="sm" />}
-                            <IconButton
-                                icon={<CloseIcon />}
-                                size="xs"
-                                aria-label="Remove image"
-                                onClick={onImageRemove}
-                                isDisabled={isProcessingImage}
+                        {pendingImage.type.startsWith("image/") ? (
+                            <Image
+                                src={URL.createObjectURL(pendingImage)}
+                                alt="Preview"
+                                boxSize="20px"
+                                borderRadius="sm"
+                                objectFit="cover"
+                                flexShrink={0}
                             />
-                        </HStack>
-                    </Box>
+                        ) : (
+                            <Icon
+                                as={FaFilePdf}
+                                boxSize={3.5}
+                                color={useColorModeValue("red.500", "red.300")}
+                                flexShrink={0}
+                            />
+                        )}
+                        <Text fontSize="xs" flex="1" isTruncated>
+                            {pendingImage.name}
+                        </Text>
+                        {isProcessingImage && (
+                            <Spinner size="xs" flexShrink={0} />
+                        )}
+                        <IconButton
+                            icon={<CloseIcon />}
+                            size="xs"
+                            variant="ghost"
+                            aria-label="Remove file"
+                            onClick={onImageRemove}
+                            isDisabled={isProcessingImage}
+                            flexShrink={0}
+                            minW="auto"
+                            h="auto"
+                            p={0.5}
+                        />
+                    </HStack>
                 )}
 
-                <Flex align="center" gap={2}>
-                    <IconButton
-                        icon={<AttachmentIcon />}
-                        onClick={() => fileInputRef.current?.click()}
-                        isDisabled={isLoading || isProcessingImage}
-                        aria-label="Attach image or PDF"
-                        size="sm"
-                        variant="ghost"
-                        color={
-                            isLight ? "gray.500" : "rgba(255, 255, 255, 0.6)"
-                        }
-                        _hover={{
-                            bg: isLight
-                                ? "gray.100"
-                                : "rgba(255, 255, 255, 0.1)",
-                        }}
-                    />
-                    <Input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileSelect}
-                        display="none"
-                        accept="image/png,image/jpeg,image/jpg,image/gif,.png,.jpg,.jpeg,.gif,.pdf"
-                    />
+                <Textarea
+                    ref={textareaRef}
+                    value={inputValue}
+                    onChange={handleTextChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    rows={1}
+                    resize="none"
+                    variant="unstyled"
+                    w="100%"
+                    minH={`${MIN_TEXTAREA_HEIGHT}px`}
+                    maxH={`${MAX_TEXTAREA_HEIGHT}px`}
+                    py="1.5"
+                    px="3"
+                    lineHeight="1.35"
+                    color={isLight ? "gray.800" : "white"}
+                    _placeholder={{
+                        color: isLight
+                            ? "gray.500"
+                            : "rgba(255, 255, 255, 0.6)",
+                    }}
+                    fontSize="md"
+                    isDisabled={isLoading || isProcessingImage}
+                    _focusVisible={{ boxShadow: "none" }}
+                />
 
-                    <Textarea
-                        ref={textareaRef}
-                        value={inputValue}
-                        onChange={handleTextChange}
-                        onKeyDown={handleKeyDown}
-                        placeholder={placeholder}
-                        rows={1}
-                        resize="none"
-                        variant="unstyled"
-                        flex="1"
-                        minH={`${MIN_TEXTAREA_HEIGHT}px`}
-                        maxH={`${MAX_TEXTAREA_HEIGHT}px`}
-                        py="1.5"
-                        px="3"
-                        lineHeight="1.35"
-                        color={isLight ? "gray.800" : "white"}
-                        _placeholder={{
-                            color: isLight
-                                ? "gray.500"
-                                : "rgba(255, 255, 255, 0.6)",
-                        }}
-                        fontSize="md"
-                        isDisabled={isLoading || isProcessingImage}
-                        _focusVisible={{ boxShadow: "none" }}
-                    />
+                <Flex align="center" justify="space-between" mt={1}>
+                    <HStack spacing={1}>
+                        <IconButton
+                            icon={<AttachmentIcon />}
+                            onClick={() => fileInputRef.current?.click()}
+                            isDisabled={isLoading || isProcessingImage}
+                            aria-label="Attach image or PDF"
+                            size="sm"
+                            variant="ghost"
+                            color={
+                                isLight
+                                    ? "gray.500"
+                                    : "rgba(255, 255, 255, 0.6)"
+                            }
+                            _hover={{
+                                bg: isLight
+                                    ? "gray.100"
+                                    : "rgba(255, 255, 255, 0.1)",
+                            }}
+                        />
+                        <Input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            display="none"
+                            accept="image/png,image/jpeg,image/jpg,image/gif,.png,.jpg,.jpeg,.gif,.pdf"
+                        />
+                    </HStack>
 
                     <IconButton
                         icon={<ArrowUpIcon />}

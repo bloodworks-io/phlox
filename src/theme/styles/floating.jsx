@@ -281,7 +281,7 @@ export const floatingStyles = (props) => ({
             props.colorMode === "light"
                 ? `0 8px 32px rgba(76, 79, 105, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important`
                 : "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important",
-        borderRadius: "full !important",
+        borderRadius: "3xl !important",
         padding: "10px 16px !important",
         transition: "all 0.3s ease",
     },
