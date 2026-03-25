@@ -156,7 +156,7 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
                     "properties": {
                         "patient_name": {
                             "type": "string",
-                            "description": "Full name of the patient",
+                            "description": "Patient name in 'Last, First' format (e.g., 'Smith, John')",
                         },
                         "encounter_date": {
                             "type": "string",

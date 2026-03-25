@@ -264,10 +264,28 @@ class ChatEngine:
                             # We MUST append the tool's response to the message_list to continue the loop
                             if function_response and "content" in function_response:
                                 from server.utils.chat.streaming.response import tool_response_message
-                                message_list.append(tool_response_message(
-                                    tool_call_id=final_tool_calls[0].get("id", ""),
-                                    content=function_response["content"]
-                                ))
+
+                                tool_content = function_response["content"]
+                                if not isinstance(tool_content, str):
+                                    tool_content = str(tool_content)
+
+                                # If this was the last allowed tool iteration, explicitly tell the model
+                                # that time is up and no further tool calls are allowed.
+                                if iterations >= MAX_ITERATIONS:
+                                    tool_content += (
+                                        "\n\n[TOOL_LIMIT_REACHED] "
+                                        "Tool execution budget is exhausted for this response. "
+                                        "Do not call any more tools. "
+                                        "Provide a final plain-text response summarizing what has been completed "
+                                        "and what remains."
+                                    )
+
+                                message_list.append(
+                                    tool_response_message(
+                                        tool_call_id=final_tool_calls[0].get("id", ""),
+                                        content=tool_content,
+                                    )
+                                )
                         elif result.get("type") != "end":
                             yield result
 

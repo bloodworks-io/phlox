@@ -30,6 +30,21 @@ logger = logging.getLogger(__name__)
 CREATE_NOTE_TOOL_NAME = "create_note"
 
 
+def format_patient_name(name: str) -> str:
+    """
+    Format patient name to 'Last, First' format.
+    """
+    if not name or "," in name:
+        return name  # Already formatted or empty
+
+    parts = name.strip().split()
+    if len(parts) == 1:
+        return name  # Single word, return as-is
+
+    # Last word is surname, rest is first name(s)
+    return f"{parts[-1]}, {' '.join(parts[:-1])}"
+
+
 async def _fetch_previous_encounter_data(ur_number: str) -> dict | None:
     """Fetch previous encounter data for a patient by UR number.
 
@@ -161,7 +176,7 @@ async def create_patient_note(
                     dob = patient_info["dob"]
                 if patient_info.get("gender"):
                     patient_gender = patient_info["gender"]
-                if patient_info.get("name") and not patient_name:
+                if patient_info.get("name"):
                     patient_name = patient_info["name"]
 
                 # Get template key from previous encounter
@@ -186,7 +201,7 @@ async def create_patient_note(
 
         # Create patient record
         patient = Patient(
-            name=patient_name,
+            name=format_patient_name(patient_name),
             dob=dob or "",
             ur_number=ur_number or "",
             gender=patient_gender,
