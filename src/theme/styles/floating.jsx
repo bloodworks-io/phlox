@@ -128,19 +128,10 @@ export const floatingStyles = (props) => ({
     ".message-box.user": {
         background:
             props.colorMode === "light"
-                ? CHAT_UI_TOKENS.userBubble.light.gradient
-                : CHAT_UI_TOKENS.userBubble.dark.gradient,
-        color: colors.light.invertedText,
+                ? "#f7931ecc !important"
+                : "#f7931e66 !important",
+        color: "#fff !important",
         borderRadius: "2xl !important",
-        backdropFilter: "blur(10px) saturate(140%)",
-        border:
-            props.colorMode === "light"
-                ? CHAT_UI_TOKENS.userBubble.light.border
-                : CHAT_UI_TOKENS.userBubble.dark.border,
-        boxShadow:
-            props.colorMode === "light"
-                ? CHAT_UI_TOKENS.userBubble.light.shadow
-                : CHAT_UI_TOKENS.userBubble.dark.shadow,
     },
     ".message-box ul, .message-box ol": {
         paddingLeft: "20px",
@@ -270,20 +261,14 @@ export const floatingStyles = (props) => ({
     ".dashboard-chat-input-container": {
         background:
             props.colorMode === "light"
-                ? `linear-gradient(to bottom, ${colors.light.secondary}ee, ${colors.light.surface}ee) !important`
-                : "linear-gradient(to bottom, rgba(45, 47, 65, 0.95), rgba(38, 40, 56, 0.95)) !important",
-        backdropFilter: "blur(20px) saturate(180%)",
+                ? `${colors.light.secondary} !important`
+                : `${colors.dark.surface} !important`,
         border:
             props.colorMode === "light"
-                ? `1px solid ${colors.light.surface2} !important`
-                : "1px solid rgba(0, 0, 0, 0.2) !important",
-        boxShadow:
-            props.colorMode === "light"
-                ? `0 8px 32px rgba(76, 79, 105, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important`
-                : "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important",
+                ? `1px solid ${colors.light.surface} !important`
+                : `1px solid ${colors.dark.surface2} !important`,
         borderRadius: "3xl !important",
         padding: "10px 16px !important",
-        transition: "all 0.3s ease",
     },
     ".dashboard-chat-messages": {
         height: "calc(100vh - 160px)",

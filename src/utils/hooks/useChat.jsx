@@ -12,27 +12,64 @@ const RAG_SYSTEM_MESSAGE = {
 const getClinicianToolActionLabel = (toolName = "") => {
     const normalized = String(toolName).toLowerCase();
 
+    // Literature/Search tools
     if (normalized.includes("pubmed")) {
         return "Searching PubMed evidence";
     }
-
     if (normalized.includes("wiki")) {
         return "Reviewing reference material";
     }
-
     if (normalized.includes("literature")) {
         return "Searching medical literature";
     }
 
+    // Transcript
     if (normalized.includes("transcript")) {
         return "Reviewing encounter transcript";
     }
 
+    // Patient tools
+    if (normalized.includes("create_note")) {
+        return "Creating patient note";
+    }
+    if (normalized.includes("get_previous_encounter")) {
+        return "Fetching previous encounter";
+    }
+    if (normalized.includes("search_patient_notes")) {
+        return "Searching patient notes";
+    }
+    if (normalized.includes("get_patient_jobs")) {
+        return "Fetching patient tasks";
+    }
+
+    // Job/Task tools
+    if (normalized.includes("todo_list")) {
+        return "Accessing todo list";
+    }
+    if (normalized.includes("list_outstanding_jobs")) {
+        return "Listing outstanding tasks";
+    }
+    if (normalized.includes("complete_job")) {
+        return "Completing task";
+    }
+
+    // Direct response
     if (normalized.includes("direct_response")) {
         return "Drafting response";
     }
 
-    return "Consulting medical sources";
+    // MCP tools - format: mcp_{server_name}_{tool_name}
+    if (normalized.startsWith("mcp_")) {
+        const parts = normalized.split("_");
+        if (parts.length >= 3) {
+            const serverName = parts[1];
+            const mcpToolName = parts.slice(2).join("_");
+            return `Using ${mcpToolName} (${serverName})`;
+        }
+        return `Using MCP tool: ${normalized}`;
+    }
+
+    return "Processing request";
 };
 
 export const useChat = ({ mode = "patient" } = {}) => {

@@ -308,10 +308,6 @@ const ChatMessages = ({
                                                 "";
                                             const toolQuery =
                                                 block?.attrs?.query || "";
-                                            const clinicianActivityText =
-                                                String(block?.content || "")
-                                                    .replace(/\s+/g, " ")
-                                                    .trim();
                                             const headerStatusLabel =
                                                 status === "running" ||
                                                 block.isPartial
@@ -353,25 +349,12 @@ const ChatMessages = ({
                                                             <ToolIcon size="0.75em" />
                                                             <Text
                                                                 fontSize="xs"
-                                                                fontWeight="semibold"
+                                                                fontWeight="bold"
                                                             >
                                                                 {
                                                                     presentation.label
                                                                 }
                                                             </Text>
-                                                            {headerStatusLabel && (
-                                                                <Badge
-                                                                    colorScheme={
-                                                                        presentation.colorScheme
-                                                                    }
-                                                                    variant="subtle"
-                                                                    fontSize="10px"
-                                                                >
-                                                                    {
-                                                                        headerStatusLabel
-                                                                    }
-                                                                </Badge>
-                                                            )}
                                                         </HStack>
                                                         <IconButton
                                                             aria-label={
@@ -405,33 +388,10 @@ const ChatMessages = ({
                                                             bg={presentation.bg}
                                                             borderRadius="sm"
                                                         >
-                                                            {toolQuery && (
-                                                                <Text
-                                                                    fontSize="xs"
-                                                                    mb={1}
-                                                                    color="gray.700"
-                                                                >
-                                                                    <strong>
-                                                                        Query:
-                                                                    </strong>{" "}
-                                                                    {toolQuery}
-                                                                </Text>
-                                                            )}
-                                                            {clinicianActivityText && (
-                                                                <Text
-                                                                    fontSize="xs"
-                                                                    mb={1}
-                                                                    color="gray.700"
-                                                                >
-                                                                    {
-                                                                        clinicianActivityText
-                                                                    }
-                                                                </Text>
-                                                            )}
                                                             <Text
-                                                                whiteSpace="pre-wrap"
-                                                                fontFamily="mono"
                                                                 fontSize="xs"
+                                                                color="gray.500"
+                                                                mb={1}
                                                             >
                                                                 {toolContent ||
                                                                     "(No tool output)"}

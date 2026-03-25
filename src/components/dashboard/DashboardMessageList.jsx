@@ -346,18 +346,6 @@ const DashboardMessageList = ({
                                                     blockIndex,
                                                 );
                                             const toolName = getToolName(block);
-                                            const status =
-                                                block?.attrs?.status ||
-                                                block?.attrs?.state ||
-                                                "";
-                                            const toolQuery =
-                                                block?.attrs?.query || "";
-                                            const activityText = String(
-                                                block?.content || status || "",
-                                            )
-                                                .replace(/\s+/g, " ")
-                                                .replace(/[:.]+$/, "")
-                                                .trim();
                                             const presentation =
                                                 getToolPresentation(toolName);
                                             const ToolIcon = presentation.icon;
@@ -384,9 +372,9 @@ const DashboardMessageList = ({
                                                         borderRadius="sm"
                                                     >
                                                         <HStack spacing={1.5} mr="1">
-                                                            <ToolIcon size="0.72em" />
+                                                            <ToolIcon size="0.75em" />
                                                             <Text
-                                                                fontWeight="medium"
+                                                                fontWeight="bold"
                                                                 fontSize="xs"
                                                             >
                                                                 {presentation.label}
@@ -416,7 +404,7 @@ const DashboardMessageList = ({
                                                     >
                                                         <Box
                                                             mt={1}
-                                                            p={1.5}
+                                                            p={1}
                                                             borderLeftWidth="3px"
                                                             borderColor={
                                                                 presentation.borderColor
@@ -424,30 +412,10 @@ const DashboardMessageList = ({
                                                             bg={presentation.bg}
                                                             borderRadius="sm"
                                                         >
-                                                            {activityText && (
-                                                                <Text
-                                                                    whiteSpace="pre-wrap"
-                                                                    fontSize="xs"
-                                                                    color="gray.700"
-                                                                    mb={1}
-                                                                >
-                                                                    {activityText}
-                                                                </Text>
-                                                            )}
-                                                            {toolQuery && (
-                                                                <Text
-                                                                    whiteSpace="pre-wrap"
-                                                                    fontSize="xs"
-                                                                    color="gray.600"
-                                                                    mb={1}
-                                                                >
-                                                                    Query: {toolQuery}
-                                                                </Text>
-                                                            )}
                                                             <Text
-                                                                whiteSpace="pre-wrap"
-                                                                fontFamily="mono"
                                                                 fontSize="xs"
+                                                                color="gray.500"
+                                                                mb={1}
                                                             >
                                                                 {toolContent ||
                                                                     "(No tool output)"}

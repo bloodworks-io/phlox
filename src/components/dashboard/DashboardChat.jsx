@@ -158,11 +158,6 @@ const DashboardChat = () => {
 
         // If there's an image/document, process it first
         if (hasImage) {
-            if (!hasMessages && !isIntroFading) {
-                setIsIntroFading(true);
-                await new Promise((resolve) => setTimeout(resolve, 240));
-            }
-
             setIsProcessingImage(true);
             try {
                 const messageText = userInput.trim();
@@ -367,9 +362,11 @@ const DashboardChat = () => {
                 align="center"
                 justify="center"
                 px="20px"
-                opacity={isIntroFading ? 0 : 1}
+                opacity={isIntroFading && !isProcessingImage ? 0 : 1}
                 transition="opacity 0.35s ease"
-                pointerEvents={isIntroFading ? "none" : "auto"}
+                pointerEvents={
+                    isIntroFading && !isProcessingImage ? "none" : "auto"
+                }
             >
                 <VStack spacing={8} w="100%" maxW="800px">
                     {/* Greeting */}
