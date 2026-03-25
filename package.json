@@ -3,22 +3,22 @@
     "version": "0.11.0",
     "private": true,
     "dependencies": {
-        "@chakra-ui/icons": "^2.1.1",
-        "@chakra-ui/react": "^2.8.2",
-        "@chakra-ui/utils": "^2.2.3",
-        "@emotion/react": "^11.11.4",
-        "@emotion/styled": "^11.11.5",
-        "@tauri-apps/api": "^2.5.0",
-        "@tauri-apps/plugin-http": "^2.4.4",
-        "framer-motion": "^11.2.10",
-        "js-tiktoken": "^1.0.12",
-        "pdfjs-dist": "^4.10.38",
-        "react": "^18.3.1",
-        "react-dom": "^18.3.1",
-        "react-icons": "^5.2.1",
-        "react-markdown": "^8.0.0",
-        "react-router-dom": "^6.23.1",
-        "react-textarea-autosize": "^8.5.3"
+        "@chakra-ui/icons": "2.2.4",
+        "@chakra-ui/react": "2.10.9",
+        "@chakra-ui/utils": "2.2.5",
+        "@emotion/react": "11.14.0",
+        "@emotion/styled": "11.14.1",
+        "@tauri-apps/api": "2.10.1",
+        "@tauri-apps/plugin-http": "2.5.7",
+        "framer-motion": "11.18.2",
+        "js-tiktoken": "1.0.21",
+        "pdfjs-dist": "4.10.38",
+        "react": "18.3.1",
+        "react-dom": "18.3.1",
+        "react-icons": "5.6.0",
+        "react-markdown": "8.0.7",
+        "react-router-dom": "6.30.3",
+        "react-textarea-autosize": "8.5.9"
     },
     "scripts": {
         "start": "pm2 start server/server.js --name phlox-server",
@@ -56,10 +56,10 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "@tauri-apps/cli": "^2.5.0",
-        "@vitejs/plugin-react": "^4.2.1",
-        "eslint-config-react-app": "^7.0.1",
-        "nodemon": "^2.0.7",
-        "vite": "^7.3.0"
+        "@tauri-apps/cli": "2.10.1",
+        "@vitejs/plugin-react": "4.7.0",
+        "eslint-config-react-app": "7.0.1",
+        "nodemon": "2.0.22",
+        "vite": "7.3.1"
     }
 }

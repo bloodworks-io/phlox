@@ -756,19 +756,6 @@ wheels = [
 ]
 
 [[package]]
-name = "icalendar"
-version = "6.3.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dateutil" },
-    { name = "tzdata" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5d/70/458092b3e7c15783423fe64d07e63ea3311a597e723be6a1060513e3db93/icalendar-6.3.2.tar.gz", hash = "sha256:e0c10ecbfcebe958d33af7d491f6e6b7580d11d475f2eeb29532d0424f9110a1", size = 178422, upload-time = "2025-11-05T12:49:32.286Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/ee/2ff96bb5bd88fe03ab90aedf5180f96dc0f3ae4648ca264b473055bcaaff/icalendar-6.3.2-py3-none-any.whl", hash = "sha256:d400e9c9bb8c025e5a3c77c236941bb690494be52528a0b43cc7e8b7c9505064", size = 242403, upload-time = "2025-11-05T12:49:30.691Z" },
-]
-
-[[package]]
 name = "identify"
 version = "2.6.16"
 source = { registry = "https://pypi.org/simple" }
@@ -1478,7 +1465,6 @@ dependencies = [
     { name = "apscheduler" },
     { name = "fastapi" },
     { name = "httpx" },
-    { name = "icalendar" },
     { name = "json-repair" },
     { name = "openai" },
     { name = "platformdirs" },
@@ -1534,47 +1520,46 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "apscheduler", specifier = ">=3.10.4" },
-    { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=1.8.3" },
-    { name = "chromadb", marker = "extra == 'rag'", specifier = ">=0.6.3" },
-    { name = "fastapi", specifier = ">=0.115.8" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "icalendar", specifier = ">=5.0.13" },
-    { name = "json-repair", specifier = ">=0.55.0" },
-    { name = "mcp", marker = "extra == 'rag'", specifier = ">=0.9.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14.0" },
-    { name = "numpy", marker = "extra == 'rag'", specifier = ">=2.4.1" },
-    { name = "openai", specifier = ">=1.76.2" },
+    { name = "apscheduler", specifier = "==3.11.2" },
+    { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = "==1.9.4" },
+    { name = "chromadb", marker = "extra == 'rag'", specifier = "==1.4.0" },
+    { name = "fastapi", specifier = "==0.128.0" },
+    { name = "httpx", specifier = "==0.28.1" },
+    { name = "json-repair", specifier = "==0.55.0" },
+    { name = "mcp", marker = "extra == 'rag'", specifier = "==1.26.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = "==1.19.1" },
+    { name = "numpy", marker = "extra == 'rag'", specifier = "==2.4.2" },
+    { name = "openai", specifier = "==2.14.0" },
     { name = "phlox-server", extras = ["rag"], marker = "extra == 'docker'" },
-    { name = "pillow", marker = "extra == 'rag'", specifier = ">=12.1.1" },
-    { name = "platformdirs", specifier = ">=4.3.8" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pydantic", specifier = ">=2.10.6" },
-    { name = "pymupdf", marker = "extra == 'rag'", specifier = ">=1.24.9" },
-    { name = "pypdf", marker = "extra == 'rag'", specifier = ">=5.0.0" },
-    { name = "pytesseract", marker = "extra == 'rag'", specifier = ">=0.3.13" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
-    { name = "python-multipart", specifier = ">=0.0.22" },
-    { name = "rapidfuzz", specifier = ">=3.14.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.0" },
-    { name = "sqlcipher3", specifier = ">=0.6.2" },
-    { name = "tiktoken", marker = "extra == 'rag'", specifier = ">=0.7.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
+    { name = "pillow", marker = "extra == 'rag'", specifier = "==12.1.1" },
+    { name = "platformdirs", specifier = "==4.5.1" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.5.1" },
+    { name = "pydantic", specifier = "==2.12.5" },
+    { name = "pymupdf", marker = "extra == 'rag'", specifier = "==1.26.7" },
+    { name = "pypdf", marker = "extra == 'rag'", specifier = "==6.8.0" },
+    { name = "pytesseract", marker = "extra == 'rag'", specifier = "==0.3.13" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = "==9.0.2" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==1.3.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.0.0" },
+    { name = "python-multipart", specifier = "==0.0.22" },
+    { name = "rapidfuzz", specifier = "==3.14.3" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.15.4" },
+    { name = "sqlcipher3", specifier = "==0.6.2" },
+    { name = "tiktoken", marker = "extra == 'rag'", specifier = "==0.12.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = "==0.41.0" },
 ]
 provides-extras = ["rag", "docker", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bandit", extras = ["toml"], specifier = ">=1.8.3" },
-    { name = "mypy", specifier = ">=1.14.0" },
-    { name = "nuitka", specifier = ">=2.0.0" },
-    { name = "pre-commit", specifier = ">=4.0.0" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pytest-asyncio", specifier = ">=0.23.0" },
-    { name = "pytest-cov", specifier = ">=5.0.0" },
-    { name = "ruff", specifier = ">=0.9.0" },
+    { name = "bandit", extras = ["toml"], specifier = "==1.9.4" },
+    { name = "mypy", specifier = "==1.19.1" },
+    { name = "nuitka", specifier = "==4.0" },
+    { name = "pre-commit", specifier = "==4.5.1" },
+    { name = "pytest", specifier = "==9.0.2" },
+    { name = "pytest-asyncio", specifier = "==1.3.0" },
+    { name = "pytest-cov", specifier = "==7.0.0" },
+    { name = "ruff", specifier = "==0.15.4" },
 ]
 
 [[package]]
