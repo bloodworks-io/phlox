@@ -22,7 +22,7 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
     const [isFetchingWhisperModels, setIsFetchingWhisperModels] =
         useState(false);
 
-    const debouncedWhisperBaseUrl = useDebounce(whisperBaseUrl, 600);
+    const debouncedWhisperBaseUrl = useDebounce(whisperBaseUrl, 500);
 
     // Local mode state
     const [localWhisperModels, setLocalWhisperModels] = useState([]);
@@ -38,11 +38,13 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
         // Only fetch remote models if in remote mode
         if (inferenceMode === "local") return;
 
+        // Guard: don't clear existing models during debounce settling
         if (!debouncedWhisperBaseUrl) {
-            setAvailableWhisperModels([]);
-            setWhisperModelListAvailable(false);
             return;
         }
+
+        // Guard: prevent concurrent fetches
+        if (isFetchingWhisperModels) return;
 
         setIsFetchingWhisperModels(true);
         try {

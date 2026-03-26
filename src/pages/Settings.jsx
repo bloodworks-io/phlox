@@ -139,9 +139,9 @@ const Settings = () => {
         fetchSettings();
     }, [fetchSettings]);
 
-    const debouncedWhisperUrl = useDebounce(config?.WHISPER_BASE_URL, 600);
-    const debouncedLlmBaseUrl = useDebounce(config?.LLM_BASE_URL, 600);
-    const debouncedLlmProvider = useDebounce(config?.LLM_PROVIDER, 100);
+    const debouncedWhisperUrl = useDebounce(config?.WHISPER_BASE_URL, 500);
+    const debouncedLlmBaseUrl = useDebounce(config?.LLM_BASE_URL, 500);
+    const debouncedLlmProvider = useDebounce(config?.LLM_PROVIDER, 500);
 
     useEffect(() => {
         const validateUrls = async () => {
@@ -173,9 +173,8 @@ const Settings = () => {
 
     useEffect(() => {
         const refreshWhisperModels = async () => {
+            // Guard: don't clear existing models during debounce settling
             if (!debouncedWhisperUrl) {
-                setWhisperModelOptions([]);
-                setWhisperModelListAvailable(false);
                 return;
             }
 
@@ -202,8 +201,8 @@ const Settings = () => {
                 return;
             }
 
+            // Guard: don't clear existing models during debounce settling
             if (!debouncedLlmBaseUrl) {
-                setModelOptions([]);
                 return;
             }
 

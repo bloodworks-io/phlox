@@ -28,8 +28,8 @@ export const useLLMStep = (currentStep) => {
     const [availableModels, setAvailableModels] = useState([]);
     const [isFetchingLLMModels, setIsFetchingLLMModels] = useState(false);
 
-    const debouncedLlmBaseUrl = useDebounce(llmBaseUrl, 600);
-    const debouncedLlmProvider = useDebounce(llmProvider, 100);
+    const debouncedLlmBaseUrl = useDebounce(llmBaseUrl, 500);
+    const debouncedLlmProvider = useDebounce(llmProvider, 500);
 
     // Local mode state
     const [localAvailableModels, setLocalAvailableModels] = useState([]);
@@ -43,10 +43,13 @@ export const useLLMStep = (currentStep) => {
     const fetchLLMModels = useCallback(async () => {
         if (inferenceMode === "local") return;
 
+        // Guard: don't clear existing models during debounce settling
         if (!debouncedLlmBaseUrl || !debouncedLlmProvider) {
-            setAvailableModels([]);
             return;
         }
+
+        // Guard: prevent concurrent fetches
+        if (isFetchingLLMModels) return;
 
         setIsFetchingLLMModels(true);
         try {
