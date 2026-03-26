@@ -105,14 +105,9 @@ class AsyncLLMClient:
         """
         response = await self.chat(model=model, messages=messages, format=schema, options=options)
 
-        # Handle emdashes and ensure ascii
-        response_str = (
-            response["message"]["content"]
-            .replace("—", "-")
-            .replace("–", "-")
-            .encode("ascii", "ignore")
-            .decode("ascii")
-        )
+        # Handle emdashes and en-dashes (can cause JSON parsing issues)
+        # Preserve UTF-8 characters for international language support
+        response_str = response["message"]["content"].replace("—", "-").replace("–", "-")
 
         return repair_json(response_str)
 
