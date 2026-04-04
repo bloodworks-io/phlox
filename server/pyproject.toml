@@ -84,3 +84,6 @@ warn_return_any = false
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv", "dist"]
+
+[tool.uv]
+exclude-newer = "7 days"
