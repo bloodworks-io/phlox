@@ -101,6 +101,7 @@ const PatientDetails = ({
         dob: patient?.dob,
         gender: patient?.gender,
         template: currentTemplate,
+        patientId: patient?.id,
         handleTranscriptionComplete: (data) =>
             handleTranscriptionComplete(data),
         setLoading,
@@ -898,6 +899,7 @@ const PatientDetails = ({
                 gender={patient.gender}
                 dob={patient.dob}
                 templateKey={currentTemplate?.template_key}
+                patientId={patient?.id}
             />
 
             {/* Document Panel */}

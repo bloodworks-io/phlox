@@ -56,6 +56,7 @@ async def transcribe(
     dob: str | None = Form(None),
     templateKey: str | None = Form(None),
     isAmbient: bool = Form(True),
+    patientId: int | None = Form(None),
 ):
     """Transcribes audio and processes the transcription."""
     try:
@@ -84,6 +85,15 @@ async def transcribe(
 
             template_fields = get_template_fields(templateKey)
 
+        # Look up primary condition for returning patients
+        primary_condition = None
+        if patientId:
+            from server.database.entities.patient import get_patient_by_id
+
+            existing_patient = get_patient_by_id(patientId)
+            if existing_patient and existing_patient.get("primary_condition"):
+                primary_condition = existing_patient["primary_condition"]
+
         # Create patient context
         patient_context = {"name": formatted_name, "dob": dob, "gender": gender}
 
@@ -93,6 +103,7 @@ async def transcribe(
             template_fields=template_fields,
             patient_context=patient_context,
             is_ambient=isAmbient,
+            primary_condition=primary_condition,
         )
 
         # Return the response in the expected format
@@ -139,6 +150,7 @@ async def reprocess_transcription(
     original_transcription_duration: float | None = Form(0),
     templateKey: str | None = Form(None),
     isAmbient: bool = Form(True),
+    patientId: int | None = Form(None),
 ):
     """Reprocesses an existing transcription."""
     try:
@@ -157,6 +169,15 @@ async def reprocess_transcription(
 
             template_fields = get_template_fields(templateKey)
 
+        # Look up primary condition for returning patients
+        primary_condition = None
+        if patientId:
+            from server.database.entities.patient import get_patient_by_id
+
+            existing_patient = get_patient_by_id(patientId)
+            if existing_patient and existing_patient.get("primary_condition"):
+                primary_condition = existing_patient["primary_condition"]
+
         # Create patient context
         patient_context = {"name": formatted_name, "dob": dob, "gender": gender}
 
@@ -167,6 +188,7 @@ async def reprocess_transcription(
             template_fields=template_fields,
             patient_context=patient_context,
             is_ambient=isAmbient,
+            primary_condition=primary_condition,
         )
         processing_end = time.perf_counter()
 

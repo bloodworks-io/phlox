@@ -9,6 +9,7 @@ export const useScribe = ({
   dob,
   gender,
   template,
+  patientId,
   handleTranscriptionComplete,
   setLoading,
   onSendStart,
@@ -139,7 +140,7 @@ export const useScribe = ({
           try {
             await transcribeAudio(
               blob,
-              { name, gender, dob, templateKey: template?.template_key },
+              { name, gender, dob, templateKey: template?.template_key, patientId },
               isAmbient,
             );
           } catch (error) {
@@ -153,7 +154,7 @@ export const useScribe = ({
         resolve(null);
       }
     });
-  }, [isRecording, transcribeAudio, name, gender, dob, template, isAmbient, onSendStart]);
+  }, [isRecording, transcribeAudio, name, gender, dob, template, isAmbient, patientId, onSendStart]);
 
   const resetRecording = useCallback(() => {
     if (isRecording) {
@@ -182,7 +183,7 @@ export const useScribe = ({
       try {
         await transcribeAudio(
           file,
-          { name, gender, dob, templateKey: template?.template_key },
+          { name, gender, dob, templateKey: template?.template_key, patientId },
           isAmbient,
         );
         return true;
@@ -191,7 +192,7 @@ export const useScribe = ({
         return false;
       }
     },
-    [transcribeAudio, name, gender, dob, template, isAmbient],
+    [transcribeAudio, name, gender, dob, template, isAmbient, patientId],
   );
 
   return {

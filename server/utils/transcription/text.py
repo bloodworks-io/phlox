@@ -19,6 +19,7 @@ async def process_transcription(
     template_fields: list[TemplateField],
     patient_context: dict[str, str],
     is_ambient: bool = True,
+    primary_condition: str | None = None,
 ) -> dict[str, Union[str, float]]:
     """
     Process the transcribed text to generate summaries for non-persistent template fields.
@@ -45,7 +46,7 @@ async def process_transcription(
         mode_label = "Ambient" if is_ambient else "Dictate"
         logger.info(f"Processing {total_fields} fields ({mode_label} Mode)...")
         raw_results_dict = await process_all_fields_concurrently(
-            transcript_text, non_persistent_fields, patient_context, is_ambient
+            transcript_text, non_persistent_fields, patient_context, is_ambient, primary_condition
         )
         # Convert to list of TemplateResponse for compatibility with refinement step
         raw_results = [
@@ -86,6 +87,7 @@ async def process_all_fields_concurrently(
     fields: list[TemplateField],
     patient_context: dict[str, str],
     is_ambient: bool = True,
+    primary_condition: str | None = None,
 ) -> dict[str, str]:
     """
     Process all template fields in a single LLM call using structured output.
@@ -129,6 +131,9 @@ INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
                 intro = "Extract relevant information for each of the following fields from the medical transcript."
             else:
                 intro = "Extract and organize information from the clinician's direct dictation for each of the following fields."
+
+            if primary_condition:
+                intro += f" This is a returning patient who sees the clinician for {primary_condition}."
 
             system_content = f"""{intro}
 
