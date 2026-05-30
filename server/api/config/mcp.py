@@ -1,5 +1,7 @@
 """MCP server configuration API endpoints."""
 
+import logging
+
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -155,10 +157,11 @@ async def test_mcp_server(server_id: int):
             }
         )
     except Exception as e:
+        logging.error(f"Error connecting to MCP server: {e}", exc_info=True)
         return JSONResponse(
             content={
                 "success": False,
-                "message": f"Error: {str(e)}",
+                "message": "An internal error occurred while connecting to the MCP server.",
                 "tools": [],
                 "server_info": None,
             },

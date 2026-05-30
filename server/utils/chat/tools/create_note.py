@@ -189,9 +189,7 @@ async def create_patient_note(
                     "previous_visit_summary": previous_data.get("previous_visit_summary"),
                 }
 
-                logger.info(
-                    f"Found previous encounter from {previous_data.get('encounter_date')} for patient {patient_name}"
-                )
+                logger.info(f"Found previous encounter for UR number {ur_number}")
             else:
                 logger.info(
                     f"No previous encounter found for UR number: {ur_number}, creating new patient record"
@@ -217,9 +215,7 @@ async def create_patient_note(
 
         patient_id = save_patient(patient)
 
-        logger.info(
-            f"Created patient note: ID={patient_id}, name={patient_name}, date={encounter_date}, ur_number={ur_number}"
-        )
+        logger.info(f"Created patient note: ID={patient_id}")
 
         return {
             "success": True,
