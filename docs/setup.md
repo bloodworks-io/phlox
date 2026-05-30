@@ -71,6 +71,15 @@ Follow these steps for a quick installation:
     # Required
     DB_ENCRYPTION_KEY=your_very_secret_key_here  # Generate a strong, random key!
     TZ=Australia/Melbourne  # Set your Timezone (e.g., America/New_York)
+
+    # Optional - Security
+    PROXY_AUTH_ENABLED=false          # Enable reverse proxy authentication
+    PROXY_AUTH_USER_HEADER=X-Forwarded-User  # Header containing authenticated username
+    PROXY_AUTH_ALLOWED_USERS=user1,user2     # Comma-separated list of allowed users
+    RATE_LIMIT_ENABLED=false          # Enable rate limiting
+
+    # Optional - LLM
+    LLM_EXTRA_BODY={"chat_template_kwargs": {"thinking": true}}  # Extra params for LLM requests (JSON string)
     ```
 
 4.  **Run Phlox:**
@@ -92,6 +101,8 @@ Follow these steps for a quick installation:
     - **Provider:** Select "Ollama" or "OpenAI-Compatible" and update the endpoint URL.
     - **Transcription Endpoint:** Depending on your endpoint configuration, you may need to specify a model and an API-key.
     - **Model Selection:**  Model selection options will depend on the models reported as available by your chosen endpoint.
+    - **Document Processing Mode:** Choose "Auto", "Vision", or "OCR" depending on your model's capabilities. Use the vision capability probe to test your endpoint.
+    - **Tools:** Enable/disable built-in tools and configure external MCP servers in the Tools tab.
     - **Other Settings:** Your name and specialty are provided as context during many LLM calls. This can improve the output of the LLM.
 
 ### Parakeet-Diarized Setup
@@ -128,5 +139,13 @@ pip install -r requirements.txt
    - All data could be stolen
 
 **Never expose Phlox to the open internet without some form of reverse proxy (Nginx/Caddy) or VPN.**
+
+For production deployments behind a reverse proxy, enable proxy authentication:
+```env
+PROXY_AUTH_ENABLED=true
+PROXY_AUTH_USER_HEADER=X-Forwarded-User
+PROXY_AUTH_ALLOWED_USERS=your_username
+RATE_LIMIT_ENABLED=true
+```
 
 If you encounter problems, please create an issue on the [GitHub repository](https://github.com/bloodworks-io/phlox/issues).

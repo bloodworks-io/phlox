@@ -16,12 +16,18 @@
 4.  **No Regulatory Compliance (HIPAA, GDPR, TGA, etc.):** Phlox, in its default configuration, **does not comply with regulations such as HIPAA, GDPR, or TGA regulations, or any other patient data privacy or medical device regulations.**
 
     - **Data Security and Privacy:** Phlox lacks advanced security features, user authentication, audit logs, and data access controls required for regulatory compliance.
-    - **Database Encryption:** While basic database encryption, this is not a comprehensive security measure.
+    - **Database Encryption:** While basic database encryption is available, this is not a comprehensive security measure.
     - **Transcription Data:**  Consider the privacy implications of your chosen Whisper transcription service, especially if using cloud-based APIs.
 
-5.  **No User Authentication/Authorization:** Phlox currently lacks user authentication and access controls. **Exposing Phlox to the public internet is highly discouraged and poses a significant security risk.**  Anyone with network access to your Phlox instance can potentially access all patient data.
+5.  **Authentication and Access Control:** By default, Phlox has no user authentication. Proxy authentication can be enabled for deployments behind a reverse proxy (see Setup guide). The desktop app requires a passphrase to unlock the encrypted database and uses native keychain integration. **Exposing Phlox to the public internet without authentication is highly discouraged and poses a significant security risk.**
 
-6.  **Intended Use - Educational and Personal:** Phlox is primarily intended for:
+6.  **MCP Server and External Tool Security:** When connecting external MCP servers or using built-in tools that call external APIs (PubMed, Wikipedia):
+    - Patient data may be transmitted to third-party services depending on configuration
+    - The "Filter Sensitive Data" toggle for MCP servers strips patient-identifying information from arguments, but is not guaranteed to catch all PHI
+    - External services may log, cache, or retain transmitted data
+    - You are responsible for ensuring that any external service complies with applicable privacy regulations
+
+7.  **Intended Use - Educational and Personal:** Phlox is primarily intended for:
     - **Educational purposes:**  To explore the potential of AI in administrative workflows and learn about LLMs and related technologies.
     - **Personal use:** For experimentation, research, and non-clinical exploration of AI-assisted note-taking and information management.
     - **Development and Research:** As a platform for further development, research, and contribution to open-source medical AI tools.
