@@ -225,9 +225,6 @@ export const LLMStep = ({
     // Get system specs for smart recommendations (only on desktop)
     const [systemSpecs, setSystemSpecs] = useState(null);
 
-    // Carousel state - track the index of the first visible model
-    const [carouselIndex, setCarouselIndex] = useState(0);
-
     useEffect(() => {
         if (isDesktop) {
             invoke("get_system_specs")
@@ -243,12 +240,6 @@ export const LLMStep = ({
     const allModelsOrdered = getSmartRecommendations(
         localAvailableModels,
         systemSpecs,
-    );
-
-    // Memoize model IDs to prevent unnecessary re-renders
-    const modelIds = useMemo(
-        () => allModelsOrdered.map((m) => m.id).join(","),
-        [allModelsOrdered.map((m) => m.id).join(",")],
     );
 
     // Find the index of the first recommended model (with fastest/best/recommended badge)

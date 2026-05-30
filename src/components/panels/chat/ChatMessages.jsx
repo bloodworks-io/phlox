@@ -306,8 +306,6 @@ const ChatMessages = ({
                                                 block?.attrs?.status ||
                                                 block?.attrs?.state ||
                                                 "";
-                                            const toolQuery =
-                                                block?.attrs?.query || "";
                                             const headerStatusLabel =
                                                 status === "running" ||
                                                 block.isPartial

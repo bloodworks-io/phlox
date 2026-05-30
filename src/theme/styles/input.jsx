@@ -311,7 +311,6 @@ export const inputStyles = (props) => ({
         maxHeight: "200px !important",
         fontFamily: "'Roboto', sans-serif",
         lineHeight: "1.6",
-        backgroundColor: "var(--chakra-colors-gray-50)",
     },
     ".scroll-container": {
         marginLeft: "-5px",

@@ -11,11 +11,10 @@ import {
     HStack,
     Spinner,
     Input,
-    Badge,
     Icon,
 } from "@chakra-ui/react";
 import { ArrowUpIcon, AttachmentIcon, CloseIcon } from "@chakra-ui/icons";
-import { FaFilePdf, FaFileImage } from "react-icons/fa";
+import { FaFilePdf } from "react-icons/fa";
 
 const VALID_IMAGE_TYPES = [
     "image/png",

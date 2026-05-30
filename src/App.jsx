@@ -57,11 +57,10 @@ function AppContent({ setIsInitializing }) {
     const [isModified, setIsModified] = useState(false);
 
     // Encryption state
-    const [encryptionStatus, setEncryptionStatus] = useState(null);
+    const [, setEncryptionStatus] = useState(null);
     const [showEncryptionSetup, setShowEncryptionSetup] = useState(false);
     const [showEncryptionUnlock, setShowEncryptionUnlock] = useState(false);
-    const [isLoadingEncryptionCheck, setIsLoadingEncryptionCheck] =
-        useState(true);
+    const [, setIsLoadingEncryptionCheck] = useState(true);
     const [showServerStartupLoader, setShowServerStartupLoader] =
         useState(false);
     const [isInGracePeriod, setIsInGracePeriod] = useState(true);
@@ -108,7 +107,7 @@ function AppContent({ setIsInitializing }) {
     const fetchPatientDetailsWrapper = useCallback(
         async (patientId) => {
             try {
-                const patientData = await handleLoadPatientDetails(patientId, {
+                await handleLoadPatientDetails(patientId, {
                     setPatient,
                     setSelectedDate,
                     isFromOutstandingJobs,
@@ -251,8 +250,6 @@ function AppContent({ setIsInitializing }) {
         useState(defaultCollapsed);
 
     const isSmallScreen = useBreakpointValue({ base: true, md: false });
-
-    const sidebarShouldHover = isSmallScreen && !isSidebarCollapsed;
 
     // Update sidebar state whenever the breakpoint changes
     useEffect(() => {
