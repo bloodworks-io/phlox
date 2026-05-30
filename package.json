@@ -23,7 +23,6 @@
     "scripts": {
         "start": "pm2 start server/server.js --name phlox-server",
         "start-react": "vite",
-        "start-server": "nodemon --ignore '/usr/src/app/venv/*' server/server.js",
         "dev": "parallel --tag --line-buffer ::: \"npm run start-react\" \"uvicorn server.server:app --reload --host 0.0.0.0 --port 6000\"",
         "build": "vite build",
         "build-server": "bash src-tauri/build-server.sh",
@@ -31,12 +30,6 @@
         "tauri": "tauri",
         "tauri-dev": "bash build-all.sh --debug --skip-cpp && tauri dev",
         "tauri-build": "bash build-all.sh && tauri build"
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
     },
     "browserslist": {
         "production": [
@@ -50,7 +43,7 @@
             "last 1 safari version"
         ]
     },
-    "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
+    "description": "Open-source patient management with AI-powered transcription and clinical notes.",
     "main": "index.js",
     "keywords": [],
     "author": "",
@@ -58,8 +51,6 @@
     "devDependencies": {
         "@tauri-apps/cli": "2.10.1",
         "@vitejs/plugin-react": "4.7.0",
-        "eslint-config-react-app": "7.0.1",
-        "nodemon": "2.0.22",
-        "vite": "7.3.1"
+        "vite": "7.3.2"
     }
 }
