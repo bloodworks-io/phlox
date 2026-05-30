@@ -7,7 +7,7 @@ from platformdirs import user_data_dir
 
 # Constants
 IS_TESTING = os.getenv("TESTING", "false").lower() == "true"
-IS_DOCKER = os.path.exists("/.dockerenv") or os.getenv("DOCKER_CONTAINER") == "true"
+IS_DOCKER = Path("/.dockerenv").exists() or os.getenv("DOCKER_CONTAINER") == "true"
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "false").lower() == "true"
 
 # Proxy auth configuration (for reverse proxy deployments)

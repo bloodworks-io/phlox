@@ -1,5 +1,4 @@
 import logging
-import os
 
 from fastapi import (
     APIRouter,
@@ -30,7 +29,9 @@ class ExtractTextPayload(BaseModel):
     filename: str
 
 
-async def _extract_rag_metadata_from_text(chroma_manager, extracted_text: str, filename: str) -> dict:
+async def _extract_rag_metadata_from_text(
+    chroma_manager, extracted_text: str, filename: str
+) -> dict:
     """Shared helper to derive RAG metadata from extracted text and stage it for commit."""
     if not extracted_text or not extracted_text.strip():
         raise HTTPException(
@@ -84,7 +85,7 @@ async def get_files():
         collections = chroma_manager.list_collections()
         return {"files": collections}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching collections: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching collections: {str(e)}") from e
 
 
 @router.get("/collection_files/{collection_name}")
@@ -99,7 +100,7 @@ async def get_collection_files(collection_name: str):
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching files for collection '{collection_name}': {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/modify")
@@ -113,7 +114,7 @@ async def modify_collection(request: ModifyCollectionRequest):
             raise HTTPException(status_code=500, detail="Failed to rename collection")
         return {"message": "Collection renamed successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error renaming collection: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error renaming collection: {str(e)}") from e
 
 
 @router.delete("/delete-collection/{name}")
@@ -127,7 +128,7 @@ async def delete_collection_endpoint(name: str):
             raise HTTPException(status_code=500, detail="Failed to delete collection")
         return {"message": "Collection deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting collection: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting collection: {str(e)}") from e
 
 
 @router.delete("/delete-file")
@@ -146,7 +147,7 @@ async def delete_file_endpoint(request: DeleteFileRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error deleting file from collection: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/extract-pdf-info")
@@ -156,8 +157,8 @@ async def extract_pdf_info(file: UploadFile = File(...)):
     chroma_manager = get_chroma_manager()
     logger.info(f"Request received for /extract-pdf-info: filename='{file.filename}'")
     temp_dir = TEMP_DIR
-    os.makedirs(temp_dir, exist_ok=True)  # Ensure temp dir exists
-    file_location = os.path.join(temp_dir, file.filename)
+    temp_dir.mkdir(parents=True, exist_ok=True)  # Ensure temp dir exists
+    file_location = temp_dir / file.filename
 
     if not file.filename:
         logger.error("Received /extract-pdf-info request with no filename.")
@@ -166,7 +167,7 @@ async def extract_pdf_info(file: UploadFile = File(...)):
     try:
         # Save the uploaded file temporarily
         logger.debug(f"Saving uploaded file to '{file_location}'")
-        with open(file_location, "wb") as f:
+        with file_location.open("wb") as f:
             content = await file.read()
             f.write(content)
         logger.debug(f"File saved successfully. Size: {len(content)} bytes.")
@@ -189,13 +190,13 @@ async def extract_pdf_info(file: UploadFile = File(...)):
         raise http_exc
     except Exception as e:
         logger.error(f"Error processing PDF '{file.filename}': {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}") from e
     finally:
         # Ensure the temporary file is always removed
-        if os.path.exists(file_location):
+        if file_location.exists():
             try:
                 logger.debug(f"Removing temporary file '{file_location}'")
-                os.remove(file_location)
+                file_location.unlink()
             except OSError as e:
                 logger.error(
                     f"Error removing temporary file '{file_location}': {e}",
@@ -228,7 +229,9 @@ async def extract_pdf_info_from_text(payload: ExtractTextPayload):
             f"Error processing extracted text for '{payload.filename}': {e}",
             exc_info=True,
         )
-        raise HTTPException(status_code=500, detail=f"Error processing extracted text: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing extracted text: {str(e)}"
+        ) from e
 
 
 @router.post("/commit-to-vectordb")
@@ -249,7 +252,7 @@ async def commit_to_db(request: CommitRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error committing data to database: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/suggestions")
@@ -260,7 +263,9 @@ async def get_rag_suggestions():
         suggestions = await generate_specialty_suggestions()
         return {"suggestions": suggestions}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating suggestions: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error generating suggestions: {str(e)}"
+        ) from e
 
 
 @router.post("/clear-database")
@@ -274,4 +279,4 @@ async def clear_database():
             raise HTTPException(status_code=500, detail="Failed to reset RAG database")
         return {"message": "RAG database cleared successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error clearing RAG database: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error clearing RAG database: {str(e)}") from e

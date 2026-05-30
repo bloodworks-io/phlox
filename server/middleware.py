@@ -63,10 +63,7 @@ def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
         return True
 
     # For rate limiting: skip non-API paths entirely
-    if check_api and not path.startswith("/api/"):
-        return True
-
-    return False
+    return bool(check_api and not path.startswith("/api/"))
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -318,7 +315,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             for client_ip, endpoints in list(cls._request_history.items()):
                 # Check if all endpoints for this IP are stale
                 all_stale = True
-                for endpoint, timestamps in endpoints.items():
+                for _endpoint, timestamps in endpoints.items():
                     # Keep if any timestamp is within window
                     if any(now - ts < cls.WINDOW_SECONDS for ts in timestamps):
                         all_stale = False

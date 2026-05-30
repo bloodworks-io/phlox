@@ -13,8 +13,6 @@ from server.database.core.connection import get_db
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,7 +65,7 @@ async def get_patient_jobs(
         if not row:
             return {
                 "success": False,
-                "error": f"No patient found with {'UR: ' + ur_number if ur_number else 'name: ' + patient_name}"
+                "error": f"No patient found with {'UR: ' + ur_number if ur_number else 'name: ' + patient_name}",
             }
 
         patient = dict(row)
@@ -76,7 +74,11 @@ async def get_patient_jobs(
         jobs_list = []
         if patient.get("jobs_list"):
             try:
-                jobs_list = json.loads(patient["jobs_list"]) if isinstance(patient["jobs_list"], str) else patient["jobs_list"]
+                jobs_list = (
+                    json.loads(patient["jobs_list"])
+                    if isinstance(patient["jobs_list"], str)
+                    else patient["jobs_list"]
+                )
             except json.JSONDecodeError:
                 jobs_list = []
 
@@ -136,10 +138,10 @@ def format_jobs_response(result: dict) -> str:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the get_patient_jobs tool.
 

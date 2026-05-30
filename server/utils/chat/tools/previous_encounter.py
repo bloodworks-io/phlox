@@ -13,8 +13,6 @@ from server.database.core.connection import get_db
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
 from server.utils.chat.tools.patient_utils import find_ur_by_name
 
@@ -106,10 +104,10 @@ def format_encounter_note(encounter: dict) -> str:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the previous encounter tool.
 
@@ -162,7 +160,9 @@ async def execute(
         result_content = "Error: Please provide either ur_number or patient_name."
     else:
         try:
-            logger.info(f"Fetching previous encounter for UR number: '{ur_number}', excluding date: {current_encounter_date}")
+            logger.info(
+                f"Fetching previous encounter for UR number: '{ur_number}', excluding date: {current_encounter_date}"
+            )
             encounter = await get_previous_encounter(ur_number, current_encounter_date)
 
             if not encounter:

@@ -37,7 +37,7 @@ async def generate_letter(request: LetterRequest):
         raise he
     except Exception as e:
         logging.error(f"Unexpected error in generate_letter endpoint: {e}")
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}") from e
 
 
 @router.post("/save")
@@ -49,7 +49,7 @@ async def save_letter(request: LetterSave):
         return {"message": "Letter saved successfully"}
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")
-        raise HTTPException(status_code=500, detail=e)
+        raise HTTPException(status_code=500, detail=e) from e
 
 
 @router.get("/fetch-letter")
@@ -60,7 +60,7 @@ async def fetch_letter(patientId: int):
         return JSONResponse(content={"letter": letter or "No letter attached to encounter"})
     except Exception as e:
         logging.error(f"Error fetching letter: {e}")
-        raise HTTPException(status_code=500, detail=e)
+        raise HTTPException(status_code=500, detail=e) from e
 
 
 @router.get("/templates")
@@ -84,7 +84,7 @@ async def get_templates() -> list[LetterTemplate]:
         )
     except Exception as e:
         logging.error(f"Error fetching letter templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/templates/{template_id}")
@@ -99,7 +99,7 @@ async def get_template(template_id: int) -> LetterTemplate:
         raise
     except Exception as e:
         logging.error(f"Error fetching letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/templates")
@@ -115,7 +115,7 @@ async def create_template(template: LetterTemplate = Body(...)) -> dict:
         )
     except Exception as e:
         logging.error(f"Error creating letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/templates/reset")
@@ -126,7 +126,7 @@ async def reset_templates() -> dict:
         return JSONResponse(content={"message": "Templates reset to defaults"})
     except Exception as e:
         logging.error(f"Error resetting letter templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.put("/templates/{template_id}")
@@ -141,7 +141,7 @@ async def update_template(template_id: int, template: LetterTemplate = Body(...)
         raise
     except Exception as e:
         logging.error(f"Error updating letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/templates/{template_id}")
@@ -156,4 +156,4 @@ async def delete_template(template_id: int) -> dict:
         raise
     except Exception as e:
         logging.error(f"Error deleting letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

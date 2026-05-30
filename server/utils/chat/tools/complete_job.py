@@ -45,10 +45,7 @@ async def complete_job(patient_id: int, job_id: int) -> dict:
         row = get_db().cursor.fetchone()
 
         if not row:
-            return {
-                "success": False,
-                "error": f"No patient record found with ID: {patient_id}"
-            }
+            return {"success": False, "error": f"No patient record found with ID: {patient_id}"}
 
         patient = dict(row)
 
@@ -65,10 +62,7 @@ async def complete_job(patient_id: int, job_id: int) -> dict:
                 jobs_list = []
 
         if not jobs_list:
-            return {
-                "success": False,
-                "error": f"No jobs found for patient record {patient_id}"
-            }
+            return {"success": False, "error": f"No jobs found for patient record {patient_id}"}
 
         # Find and update the job
         job_found = False
@@ -88,7 +82,7 @@ async def complete_job(patient_id: int, job_id: int) -> dict:
         if not job_found:
             return {
                 "success": False,
-                "error": f"No job with ID {job_id} found in patient record {patient_id}"
+                "error": f"No job with ID {job_id} found in patient record {patient_id}",
             }
 
         if already_completed:
@@ -155,10 +149,10 @@ def format_complete_job_response(result: dict) -> str:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the complete_job tool.
 

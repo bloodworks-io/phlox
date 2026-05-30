@@ -146,7 +146,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
         raise ValueError("DOB or Encounter Date is missing")
 
     template_values = []
-    for field_key, field_value in patient.template_data.items():
+    for _field_key, field_value in patient.template_data.items():
         if field_value:
             template_values.append(field_value)
 
@@ -269,7 +269,9 @@ async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
                     # Get top 10 most similar conditions for disambiguation
                     candidates = []
                     for existing in existing_conditions:
-                        similarity = Levenshtein.normalized_similarity(cleaned_condition.lower(), existing.lower())
+                        similarity = Levenshtein.normalized_similarity(
+                            cleaned_condition.lower(), existing.lower()
+                        )
                         candidates.append((existing, similarity))
 
                     # Sort by similarity and take top 10

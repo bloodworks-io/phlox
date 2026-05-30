@@ -5,7 +5,6 @@ with rotation to prevent disk space issues.
 """
 
 import logging
-import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -34,7 +33,7 @@ def create_backup(db_path: str, db_dir: Path) -> str | None:
         Path to backup file if successful, None if failed or no DB exists
     """
     # Skip if database doesn't exist yet (first run)
-    if not os.path.exists(db_path):
+    if not Path(db_path).exists():
         logging.info("No existing database to backup (first run)")
         return None
 
@@ -45,7 +44,7 @@ def create_backup(db_path: str, db_dir: Path) -> str | None:
 
         # Generate backup filename with version and timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        db_name = os.path.basename(db_path)
+        db_name = Path(db_path).name
         version = _get_app_version()
         backup_name = f"{db_name}.v{version}.{timestamp}.bak"
         backup_path = backup_dir / backup_name

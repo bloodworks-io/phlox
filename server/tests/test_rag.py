@@ -27,7 +27,7 @@ def test_get_files(monkeypatch):
 def test_get_collection_files(monkeypatch):
     # Patch chroma_manager.get_files_for_collection
     monkeypatch.setattr(
-        "server.api.rag.chroma_manager.get_files_for_collection", lambda name: ["file1", "file2"]
+        "server.api.rag.chroma_manager.get_files_for_collection", lambda _name: ["file1", "file2"]
     )
     response = client.get("/api/rag/collection_files/test_collection")
     assert response.status_code == 200
@@ -39,7 +39,7 @@ def test_get_collection_files(monkeypatch):
 def test_modify_collection(monkeypatch):
     # Patch chroma_manager.modify_collection_name to return True
     monkeypatch.setattr(
-        "server.api.rag.chroma_manager.modify_collection_name", lambda old, new: True
+        "server.api.rag.chroma_manager.modify_collection_name", lambda _old, _new: True
     )
     payload = {"old_name": "old_collection", "new_name": "new_collection"}
     response = client.post("/api/rag/modify", json=payload)
@@ -50,7 +50,7 @@ def test_modify_collection(monkeypatch):
 
 def test_delete_collection(monkeypatch):
     # Patch chroma_manager.delete_collection
-    monkeypatch.setattr("server.api.rag.chroma_manager.delete_collection", lambda name: True)
+    monkeypatch.setattr("server.api.rag.chroma_manager.delete_collection", lambda _name: True)
     response = client.delete("/api/rag/delete-collection/test_collection")
     assert response.status_code == 200
     data = response.json()
@@ -61,7 +61,7 @@ def test_commit_to_vectordb(monkeypatch):
     # We simply patch the commit_to_vectordb method to not raise.
     monkeypatch.setattr(
         "server.api.rag.chroma_manager.commit_to_vectordb",
-        lambda disease, focus, source, fname: None,
+        lambda _disease, _focus, _source, _fname: None,
     )
     payload = {
         "disease_name": "disease_a",
@@ -90,7 +90,7 @@ def test_get_rag_suggestions(monkeypatch):
 
 def test_clear_database(monkeypatch):
     # Patch clear_database in chroma_manager to simulate success.
-    monkeypatch.setattr("server.api.rag.chroma_manager.delete_collection", lambda name: True)
+    monkeypatch.setattr("server.api.rag.chroma_manager.delete_collection", lambda _name: True)
     response = client.post("/api/rag/clear-database")
     assert response.status_code == 200
     data = response.json()

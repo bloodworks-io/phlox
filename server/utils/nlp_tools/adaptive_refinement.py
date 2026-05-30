@@ -261,9 +261,9 @@ def _format_instructions_for_display(instructions: list[str]) -> str:
 async def _process_single_tool_call(
     response,
     current_instructions: list[str],
-    client,
-    model_name: str,
-    options: dict,
+    _client,
+    _model_name: str,
+    _options: dict,
 ) -> list[str]:
     """Process a single tool call to update the instruction list."""
 

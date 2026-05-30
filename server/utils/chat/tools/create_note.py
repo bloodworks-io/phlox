@@ -17,13 +17,11 @@ from server.database.entities.patient import (
 )
 from server.database.entities.templates import get_persistent_fields
 from server.schemas.patient import Patient
-from server.utils.chat.tools.patient_utils import find_ur_by_name
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
+from server.utils.chat.tools.patient_utils import find_ur_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +90,7 @@ async def _fetch_previous_encounter_data(ur_number: str) -> dict | None:
         full_template_data = full_patient.get("template_data", {})
         persistent_template_data = {}
         for field in persistent_fields:
-            field_key = field.field_key if hasattr(field, 'field_key') else field.get('field_key')
+            field_key = field.field_key if hasattr(field, "field_key") else field.get("field_key")
             if field_key and field_key in full_template_data:
                 persistent_template_data[field_key] = full_template_data[field_key]
 
@@ -191,9 +189,13 @@ async def create_patient_note(
                     "previous_visit_summary": previous_data.get("previous_visit_summary"),
                 }
 
-                logger.info(f"Found previous encounter from {previous_data.get('encounter_date')} for patient {patient_name}")
+                logger.info(
+                    f"Found previous encounter from {previous_data.get('encounter_date')} for patient {patient_name}"
+                )
             else:
-                logger.info(f"No previous encounter found for UR number: {ur_number}, creating new patient record")
+                logger.info(
+                    f"No previous encounter found for UR number: {ur_number}, creating new patient record"
+                )
 
         # Merge initial_notes into template_data
         if initial_notes:
@@ -215,7 +217,9 @@ async def create_patient_note(
 
         patient_id = save_patient(patient)
 
-        logger.info(f"Created patient note: ID={patient_id}, name={patient_name}, date={encounter_date}, ur_number={ur_number}")
+        logger.info(
+            f"Created patient note: ID={patient_id}, name={patient_name}, date={encounter_date}, ur_number={ur_number}"
+        )
 
         return {
             "success": True,
@@ -225,18 +229,15 @@ async def create_patient_note(
         }
     except Exception as e:
         logger.error(f"Error creating patient note: {e}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
 
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the create_note tool.
 
@@ -288,7 +289,9 @@ async def execute(
             )
 
             if result["success"]:
-                result_content = f"Successfully created note for {patient_name} on {encounter_date}."
+                result_content = (
+                    f"Successfully created note for {patient_name} on {encounter_date}."
+                )
                 if ur_number:
                     result_content += f" UR number: {ur_number}."
                 if result.get("patient_id"):

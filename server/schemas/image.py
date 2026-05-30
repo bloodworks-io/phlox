@@ -1,6 +1,5 @@
 """Image processing schemas."""
 
-from typing import Optional
 from pydantic import BaseModel
 
 
@@ -15,8 +14,8 @@ class ImageUploadResponse(BaseModel):
 class PatientSearchRequest(BaseModel):
     """Request for searching patients."""
 
-    name: Optional[str] = None
-    ur_number: Optional[str] = None
-    dob: Optional[str] = None
-    encounter_date: Optional[str] = None
+    name: str | None = None
+    ur_number: str | None = None
+    dob: str | None = None
+    encounter_date: str | None = None
     limit: int = 10

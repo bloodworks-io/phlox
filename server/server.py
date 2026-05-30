@@ -50,7 +50,7 @@ logger.info("Initialising application...")
 scheduler = AsyncIOScheduler()
 
 # Local request token for API authentication (desktop mode only)
-from server.utils.local_request_token import get_request_token, set_request_token
+from server.utils.local_request_token import get_request_token, set_request_token  # noqa: E402
 
 if IS_TESTING:
     try:
@@ -63,7 +63,7 @@ else:
 
 # Start the scheduler when the app starts
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     from server.middleware import RateLimitMiddleware
 
     # Startup
@@ -163,7 +163,9 @@ def initialize_and_get_app():
                 return {"success": "Database test succeeded", "result": result}
             except Exception as e:
                 logger.error(f"Database test failed: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Database test failed: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail=f"Database test failed: {str(e)}"
+                ) from e
 
     # Include routers
     app.include_router(patient.router, prefix="/api/patient")

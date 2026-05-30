@@ -14,8 +14,6 @@ import httpx
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
 from server.utils.chat.tools.sanitization import sanitize_query_for_external_search
 
@@ -96,10 +94,10 @@ async def search_wikipedia(query: str, max_results: int = 3) -> list[dict]:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the Wikipedia search tool.
 
@@ -149,7 +147,7 @@ async def execute(
             else:
                 formatted = []
                 for i, article in enumerate(articles):
-                    logger.info(f"Article {i+1} extract length: {len(article['extract'])} chars")
+                    logger.info(f"Article {i + 1} extract length: {len(article['extract'])} chars")
                     parts = [
                         f"Title: {article['title']}",
                     ]
@@ -162,7 +160,9 @@ async def execute(
                     citation = f"Wikipedia: {article['title']}. {article['url']}"
                     citations.append(citation)
 
-                result_content = "Found the following relevant articles:\n\n" + "\n\n---\n\n".join(formatted)
+                result_content = "Found the following relevant articles:\n\n" + "\n\n---\n\n".join(
+                    formatted
+                )
                 logger.info(f"Retrieved {len(articles)} Wikipedia articles")
         except Exception as e:
             logger.error(f"Wikipedia search error: {e}")

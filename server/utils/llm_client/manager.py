@@ -1,6 +1,7 @@
 """Local model manager for GGUF model file listing."""
 
 import logging
+from contextlib import suppress
 
 from server.constants import DATA_DIR
 
@@ -49,7 +50,7 @@ class LocalModelManager:
         model_path = self.models_dir / filename
         return model_path.exists()
 
-    def get_model_path(self, repo_id: str, filename: str) -> str:
+    def get_model_path(self, _repo_id: str, filename: str) -> str:
         """Get the full path to a model file."""
         # repo_id is ignored for GGUF files, we use the flat structure
         model_path = self.models_dir / filename
@@ -72,9 +73,7 @@ class LocalModelManager:
             # Also clean up the model selection file if it exists
             selection_file = DATA_DIR / "llm_model.txt"
             if selection_file.exists():
-                try:
+                with suppress(Exception):
                     selection_file.unlink()
-                except Exception:
-                    pass
             return True
         return False

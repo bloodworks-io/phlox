@@ -36,7 +36,9 @@ def _format_template_data(template_data: dict, fields: list) -> str:
     return "\n".join(lines)
 
 
-def build_system_messages(patient_context: dict | None = None, template_fields: list | None = None) -> list:
+def build_system_messages(
+    patient_context: dict | None = None, template_fields: list | None = None
+) -> list:
     """
     Build the system messages for chat interactions.
 

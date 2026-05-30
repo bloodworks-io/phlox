@@ -8,8 +8,6 @@ from server.utils.url_utils import build_openai_v1_url, build_whisper_v1_url
 router = APIRouter()
 
 
-
-
 def _get_llm_status_url(config: dict) -> str | None:
     """Determine the LLM status check URL based on provider configuration."""
     provider_type = (config.get("LLM_PROVIDER") or "openai").lower()

@@ -77,14 +77,16 @@ async def search_patients(
 
         patients = []
         for row in rows:
-            patients.append({
-                "ur_number": row["ur_number"],
-                "name": row["name"],
-                "dob": row["dob"],
-                "gender": row["gender"],
-                "last_encounter": row["last_encounter"],
-                "encounter_count": row["encounter_count"],
-            })
+            patients.append(
+                {
+                    "ur_number": row["ur_number"],
+                    "name": row["name"],
+                    "dob": row["dob"],
+                    "gender": row["gender"],
+                    "last_encounter": row["last_encounter"],
+                    "encounter_count": row["encounter_count"],
+                }
+            )
 
         return {
             "success": True,

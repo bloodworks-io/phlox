@@ -28,7 +28,7 @@ def test_get_patients():
 async def test_get_patient_not_found(monkeypatch):
     """Test GET /api/patient/{id} with non-existent ID"""
 
-    def fake_get_patient_by_id(*args):
+    def fake_get_patient_by_id(*_args):
         from fastapi import HTTPException
 
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -53,7 +53,7 @@ def test_search_patient():
 
 @pytest.fixture
 def mock_summarize(monkeypatch):
-    async def fake_summarize(*args, **kwargs):
+    async def fake_summarize(*_args, **_kwargs):
         return "Test summary", "Test condition"
 
     monkeypatch.setattr("server.utils.llm.summarisation.summarise_encounter", fake_summarize)
@@ -64,7 +64,7 @@ def mock_summarize(monkeypatch):
 @pytest.mark.asyncio
 async def test_save_patient(monkeypatch):
     # Mock summarize_encounter to avoid actual LLM calls
-    async def mock_summarize_encounter(*args, **kwargs):
+    async def mock_summarize_encounter(*_args, **_kwargs):
         return "Test summary", "Test condition"
 
     monkeypatch.setattr("server.api.patient.summarize_encounter", mock_summarize_encounter)
@@ -87,7 +87,7 @@ async def test_save_patient(monkeypatch):
         }
     }
 
-    def fake_save_patient(*args):
+    def fake_save_patient(*_args):
         return 123
 
     monkeypatch.setattr("server.api.patient.save_patient", fake_save_patient)
@@ -99,7 +99,7 @@ async def test_save_patient(monkeypatch):
 def test_delete_patient(monkeypatch):
     # Patch delete_patient_by_id to simulate a successful deletion
 
-    def fake_delete_patient_by_id(pid: int):
+    def fake_delete_patient_by_id(_pid: int):
         return True
 
     monkeypatch.setattr("server.api.patient.delete_patient_by_id", fake_delete_patient_by_id)

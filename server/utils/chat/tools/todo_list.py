@@ -18,8 +18,6 @@ from server.database.entities.todo import (
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,10 +47,10 @@ def format_todos_list(todos: list[dict]) -> str:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the todo_list tool.
 
@@ -136,7 +134,9 @@ async def execute(
                     result_content = f"Error: Todo with ID {todo_id} not found."
 
         else:
-            result_content = f"Error: Unknown action '{action}'. Valid actions are: list, add, complete, delete."
+            result_content = (
+                f"Error: Unknown action '{action}'. Valid actions are: list, add, complete, delete."
+            )
 
     except Exception as e:
         logger.error(f"Todo list error: {e}")

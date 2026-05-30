@@ -19,7 +19,6 @@ from server.utils.chat.streaming.response import (
 )
 from server.utils.chat.tools import execute_tool_streaming, get_tools_definition
 from server.utils.helpers import clean_think_tags
-from server.utils.llm_client.base import LLMProviderType
 from server.utils.llm_client.client import get_llm_client
 from server.utils.rag.chroma import CHROMADB_AVAILABLE, ChromaManager
 
@@ -166,13 +165,20 @@ class ChatEngine:
                                         accumulated_tool_calls[idx] = {
                                             "id": getattr(tc, "id", ""),
                                             "type": getattr(tc, "type", "function"),
-                                            "function": {"name": "", "arguments": ""}
+                                            "function": {"name": "", "arguments": ""},
                                         }
                                     if hasattr(tc, "function") and tc.function:
                                         if hasattr(tc.function, "name") and tc.function.name:
-                                            accumulated_tool_calls[idx]["function"]["name"] += tc.function.name
-                                        if hasattr(tc.function, "arguments") and tc.function.arguments:
-                                            accumulated_tool_calls[idx]["function"]["arguments"] += tc.function.arguments
+                                            accumulated_tool_calls[idx]["function"]["name"] += (
+                                                tc.function.name
+                                            )
+                                        if (
+                                            hasattr(tc.function, "arguments")
+                                            and tc.function.arguments
+                                        ):
+                                            accumulated_tool_calls[idx]["function"][
+                                                "arguments"
+                                            ] += tc.function.arguments
                                 # Ollama might yield dictionaries
                                 elif isinstance(tc, dict):
                                     # Ollama usually yields the full tool call at the end of the stream
@@ -201,13 +207,17 @@ class ChatEngine:
 
                 if not final_tool_calls:
                     # The LLM generated text without calling a tool.
-                    self.logger.info("LLM generated final response without tool calls. Breaking loop.")
+                    self.logger.info(
+                        "LLM generated final response without tool calls. Breaking loop."
+                    )
                     generated_final_answer = True
                     break
                 else:
                     # Check if the tool is direct_response
                     if final_tool_calls[0]["function"]["name"] == "direct_response":
-                        self.logger.info("LLM called direct_response tool. Breaking loop and streaming fallback.")
+                        self.logger.info(
+                            "LLM called direct_response tool. Breaking loop and streaming fallback."
+                        )
                         message_list.pop()
                         yield status_message("Generating response...")
                         async for chunk in stream_llm_response(
@@ -263,7 +273,9 @@ class ChatEngine:
                             function_response = result.get("function_response")
                             # We MUST append the tool's response to the message_list to continue the loop
                             if function_response and "content" in function_response:
-                                from server.utils.chat.streaming.response import tool_response_message
+                                from server.utils.chat.streaming.response import (
+                                    tool_response_message,
+                                )
 
                                 tool_content = function_response["content"]
                                 if not isinstance(tool_content, str):

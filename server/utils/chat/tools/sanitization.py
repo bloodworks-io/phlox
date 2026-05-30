@@ -32,9 +32,7 @@ def sanitize_query_for_external_search(
     # Remove common PHI patterns
     # UR numbers (various formats)
     sanitized = re.sub(r"\bUR\s*[:#]?\s*\d{4,}\b", "", sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(
-        r"\bUR\s*[:#]?\s*[A-Z]?\d{4,}[A-Z]?\b", "", sanitized, flags=re.IGNORECASE
-    )
+    sanitized = re.sub(r"\bUR\s*[:#]?\s*[A-Z]?\d{4,}[A-Z]?\b", "", sanitized, flags=re.IGNORECASE)
 
     # Medical record numbers
     sanitized = re.sub(r"\bMRN\s*[:#]?\s*\d+\b", "", sanitized, flags=re.IGNORECASE)
@@ -45,14 +43,10 @@ def sanitize_query_for_external_search(
 
     # Phone numbers
     sanitized = re.sub(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b", "", sanitized)
-    sanitized = re.sub(
-        r"\b\+?\d{1,3}[-.\s]?\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{4}\b", "", sanitized
-    )
+    sanitized = re.sub(r"\b\+?\d{1,3}[-.\s]?\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{4}\b", "", sanitized)
 
     # Email addresses
-    sanitized = re.sub(
-        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "", sanitized
-    )
+    sanitized = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "", sanitized)
 
     # Addresses (simple pattern for street addresses)
     sanitized = re.sub(

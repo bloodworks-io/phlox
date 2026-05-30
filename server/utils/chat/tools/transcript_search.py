@@ -10,7 +10,6 @@ from typing import Any
 
 from server.utils.chat.streaming.response import (
     status_message,
-    stream_llm_response,
     tool_response_message,
 )
 from server.utils.helpers import clean_think_tags
@@ -63,6 +62,7 @@ async def execute(
         yield status_message("Generating response...")
 
         from server.utils.chat.streaming.response import end_message
+
         yield end_message(
             function_response={
                 "content": "No transcript is available to query. Please answer the user's question without transcript information."
@@ -110,6 +110,7 @@ async def execute(
         logger.info(f"Transcript query result: {cleaned_transcript_info[:200]}...")
 
         from server.utils.chat.streaming.response import end_message
+
         yield end_message(
             function_response={
                 "content": f"The following information was found in the transcript:\n\n{cleaned_transcript_info}"

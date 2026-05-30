@@ -94,7 +94,7 @@ async def save_patient_data(request: SavePatientRequest, background_tasks: Backg
         return {"id": patient_id}
     except Exception as e:
         logging.error(f"Error processing patient data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def process_encounter_summarization(
@@ -252,7 +252,7 @@ async def get_patients(
 
     except Exception as e:
         logging.error(f"Error fetching patients: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/id/{id}")
@@ -273,7 +273,7 @@ async def get_patient(id: int, include_history: bool = False) -> Patient:
         raise
     except Exception as e:
         logging.error(f"Error fetching patient: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
 @router.get("/id/{id}/history")
@@ -288,7 +288,7 @@ async def get_patient_history_endpoint(id: int) -> list[Patient]:
         return JSONResponse(content=history)
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/search")
@@ -300,7 +300,7 @@ async def search_patient(ur_number: str) -> list[Patient]:
         return JSONResponse(content=patients)
     except Exception as e:
         logging.error(f"Error searching patients: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/history")
@@ -313,7 +313,7 @@ async def get_history_by_ur_number(
         return JSONResponse(content=history)
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/summary/{id}")
@@ -329,7 +329,7 @@ async def get_patient_summary(id: int):
         return JSONResponse(content={"summary": summary})
     except Exception as e:
         logging.error(f"Error getting patient summary: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/id/{id}")
@@ -342,7 +342,7 @@ async def delete_patient(id: int):
         raise HTTPException(status_code=404, detail="Patient not found")
     except Exception as e:
         logging.error(f"Error deleting patient: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/update-jobs-list")
@@ -355,7 +355,7 @@ async def update_jobs_list(update: JobsListUpdate):
         return {"id": update.patientId}
     except Exception as e:
         logging.error(f"Error processing to-do list update: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/update-jobs")
@@ -369,7 +369,7 @@ async def update_jobs(
         return JSONResponse(content={"message": "Jobs list updated successfully"})
     except Exception as e:
         logging.error(f"Error updating jobs list: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/update-jobs/{patient_id}")
@@ -383,7 +383,7 @@ async def update_patient_jobs(
         return JSONResponse(content={"message": "Jobs updated successfully"})
     except Exception as e:
         logging.error(f"Error updating patient jobs: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/outstanding-jobs")
@@ -408,7 +408,7 @@ async def get_patients_with_jobs():
         )
     except Exception as e:
         logging.error(f"Error fetching patients with jobs: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/incomplete-jobs-count")
@@ -420,7 +420,7 @@ async def get_incomplete_jobs_count():
     except Exception as e:
         logging.error(f"Error counting incomplete jobs: {e}")
         print("TRACEBACK:", traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/{patient_id}/reasoning/stream")
@@ -449,4 +449,4 @@ async def generate_reasoning_stream(patient_id: int):
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         logging.error(f"Reasoning stream error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

@@ -13,8 +13,6 @@ from typing import Any
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
 
 logger = logging.getLogger(__name__)
@@ -99,11 +97,11 @@ def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
     chroma_manager,
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
     Execute the literature search tool.

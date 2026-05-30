@@ -31,7 +31,7 @@ def calculate_age(dob: str, encounter_date: str = None) -> int:
             datetime.strptime(encounter_date, "%Y-%m-%d") if encounter_date else datetime.today()
         )
     except ValueError:
-        raise ValueError("Invalid date format. Use 'YYYY-MM-DD'.")
+        raise ValueError("Invalid date format. Use 'YYYY-MM-DD'.") from None
 
     age = encounter_date_obj.year - birth_date.year
     if (encounter_date_obj.month, encounter_date_obj.day) < (
@@ -53,7 +53,7 @@ def clean_think_tags(message_list):
     Returns:
         list: Cleaned message list with reasoning tags removed
     """
-    
+
     # Common reasoning tags used by different models
     # We compile the regex pattern to match any of these pairs
     pattern = r"(?:<(?:think|thinking|reason|reasoning|thought|Thought)>|<\|begin_of_thought\|>|◁think▷).*?(?:</(?:think|thinking|reason|reasoning|thought|Thought)>|<\|end_of_thought\|>|◁/think▷)"

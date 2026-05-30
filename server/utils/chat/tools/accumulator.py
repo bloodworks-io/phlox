@@ -63,9 +63,8 @@ class ToolResultAccumulator:
                     # Handle dict-style function_response with citations
                     if isinstance(self.function_response, dict):
                         # If function_response has content field, use it
-                        if "content" in self.function_response:
-                            if not self.content:
-                                self.content = self.function_response["content"]
+                        if "content" in self.function_response and not self.content:
+                            self.content = self.function_response["content"]
                         # Extract citations if present
                         if "citations" in self.function_response:
                             self.citations = self.function_response["citations"]
@@ -85,7 +84,7 @@ class ToolResultAccumulator:
 
 
 async def collect_tool_result(
-    stream: AsyncGenerator[dict[str, Any], None]
+    stream: AsyncGenerator[dict[str, Any], None],
 ) -> tuple[str, list[str] | None]:
     """Convenience function to collect streaming result.
 

@@ -1,11 +1,12 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 
 import tiktoken
 from chromadb.utils import embedding_functions
 from rapidfuzz import fuzz, process
+
 
 class BaseChunker(ABC):
     @abstractmethod
@@ -104,7 +105,7 @@ def openai_token_count(string: str) -> int:
         return len(string) // 4
 
 
-class Language(str, Enum):
+class Language(str, StrEnum):
     """Enum of the programming languages."""
 
     CPP = "cpp"

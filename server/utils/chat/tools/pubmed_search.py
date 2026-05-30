@@ -15,13 +15,8 @@ import httpx
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
-from server.utils.chat.tools.sanitization import (
-    sanitize_pubmed_query,
-    sanitize_query_for_external_search,
-)
+from server.utils.chat.tools.sanitization import sanitize_pubmed_query
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +34,15 @@ def parse_pubmed_article(article_elem: ET.Element, pmid: str) -> dict:
     Returns:
         Dictionary with article data including abstract if available
     """
-    article_data = {"pmid": pmid, "title": "", "authors": [], "journal": "", "pubdate": "", "abstract": "", "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"}
+    article_data = {
+        "pmid": pmid,
+        "title": "",
+        "authors": [],
+        "journal": "",
+        "pubdate": "",
+        "abstract": "",
+        "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+    }
 
     # Get title
     title_elem = article_elem.find(".//ArticleTitle")
@@ -150,10 +153,10 @@ async def search_pubmed(query: str, max_results: int = 5) -> list[dict]:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the PubMed search tool.
 
@@ -213,11 +216,15 @@ async def execute(
                     ]
                     if article.get("abstract"):
                         # Log abstract length for verification
-                        logger.info(f"Article {i+1} abstract length: {len(article['abstract'])} chars")
-                        logger.debug(f"Article {i+1} abstract preview: {article['abstract'][:200]}...")
+                        logger.info(
+                            f"Article {i + 1} abstract length: {len(article['abstract'])} chars"
+                        )
+                        logger.debug(
+                            f"Article {i + 1} abstract preview: {article['abstract'][:200]}..."
+                        )
                         parts.append(f"Abstract: {article['abstract']}")
                     else:
-                        logger.info(f"Article {i+1} has no abstract available")
+                        logger.info(f"Article {i + 1} has no abstract available")
                     parts.append(f"URL: {article['url']}")
                     formatted.append("\n".join(parts))
 
@@ -229,7 +236,9 @@ async def execute(
                     "Found the following relevant articles on PubMed:\n\n"
                     + "\n\n---\n\n".join(formatted)
                 )
-                logger.info(f"Retrieved {len(articles)} PubMed articles, total content length: {len(result_content)} chars")
+                logger.info(
+                    f"Retrieved {len(articles)} PubMed articles, total content length: {len(result_content)} chars"
+                )
                 logger.debug(f"Content preview: {result_content[:500]}...")
 
         except Exception as e:

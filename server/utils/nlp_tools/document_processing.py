@@ -15,9 +15,9 @@ except ImportError:
 
 # Optional OCR dependencies (fallback path)
 try:
-    from PIL import Image
     import fitz  # PyMuPDF for PDF rasterization
     import pytesseract
+    from PIL import Image
 
     OCR_AVAILABLE = True
 except ImportError:
@@ -57,9 +57,9 @@ async def process_document_content(
 
 async def _process_extracted_text_sections(
     extracted_text: str,
-    name: str | None = None,
-    dob: str | None = None,
-    gender: str | None = None,
+    _name: str | None = None,
+    _dob: str | None = None,
+    _gender: str | None = None,
 ) -> tuple[str, str, str]:
     """
     Process already-extracted document text and return legacy section outputs.
@@ -297,7 +297,11 @@ async def _process_extracted_text_with_template(
     # If there are no template fields, use the legacy section-style extraction
     if not template_fields:
         logger.info("No template fields provided, using legacy processing method")
-        primary_history, additional_history, investigations = await _process_extracted_text_sections(
+        (
+            primary_history,
+            additional_history,
+            investigations,
+        ) = await _process_extracted_text_sections(
             extracted_text,
             patient_context.get("name"),
             patient_context.get("dob"),
@@ -321,13 +325,13 @@ async def _process_extracted_text_with_template(
         refined_results = await asyncio.gather(
             *[
                 refine_field_content(result.content, field)
-                for result, field in zip(raw_results, template_fields)
+                for result, field in zip(raw_results, template_fields, strict=True)
             ]
         )
 
         results = {
             field.field_key: refined_content
-            for field, refined_content in zip(template_fields, refined_results)
+            for field, refined_content in zip(template_fields, refined_results, strict=True)
         }
 
         logger.info(f"Successfully processed {len(results)} template fields")
@@ -401,9 +405,8 @@ async def process_visual_document_with_template(
             '"key_points" (array of strings). Example: ' + json.dumps({"key_points": ["..."]})
         )
 
-        instruction = (
-            f"Please extract the {field_name} from these document images."
-            + (f"\n\nPatient context: {context_str}" if context_str else "")
+        instruction = f"Please extract the {field_name} from these document images." + (
+            f"\n\nPatient context: {context_str}" if context_str else ""
         )
 
         user_content: list[dict[str, Any]] = [{"type": "text", "text": instruction}]
@@ -442,7 +445,7 @@ async def process_visual_document_with_template(
         return field.field_key, refined_content
 
     results = await asyncio.gather(*[process_visual_field(field) for field in template_fields])
-    return {field_key: content for field_key, content in results}
+    return dict(results)
 
 
 async def process_document_field(
@@ -581,16 +584,16 @@ def _parse_model_output(output: str) -> tuple[str, str, str]:
     additional_history = ""
     investigations = ""
 
-    current_section = None
+    _current_section = None
     for section in sections:
         if section.startswith("Primary History:"):
-            current_section = "primary"
+            _current_section = "primary"
             primary_history = section.replace("Primary History:", "").strip()
         elif section.startswith("Additional History:"):
-            current_section = "additional"
+            _current_section = "additional"
             additional_history = section.replace("Additional History:", "").strip()
         elif section.startswith("Investigations:"):
-            current_section = "investigations"
+            _current_section = "investigations"
             investigations = section.replace("Investigations:", "").strip()
 
     return primary_history, additional_history, investigations

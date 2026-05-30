@@ -3,7 +3,6 @@
 This module provides a client for connecting to MCP servers via Streamable HTTP transport.
 """
 
-import asyncio
 import logging
 from contextlib import AsyncExitStack
 from typing import Any
@@ -43,14 +42,10 @@ class McpServerClient:
         try:
             url = self.server_config.get("url")
             if not url:
-                logger.error(
-                    f"No URL configured for MCP server '{self.server_config['name']}'"
-                )
+                logger.error(f"No URL configured for MCP server '{self.server_config['name']}'")
                 return False
 
-            sse_transport = await self.exit_stack.enter_async_context(
-                sse_client(url)
-            )
+            sse_transport = await self.exit_stack.enter_async_context(sse_client(url))
 
             self.session = await self.exit_stack.enter_async_context(
                 ClientSession(sse_transport[0], sse_transport[1])
@@ -66,7 +61,10 @@ class McpServerClient:
                     "version": getattr(init_result.serverInfo, "version", ""),
                 }
             else:
-                self._server_info = {"name": self.server_config.get("name", "Unknown"), "version": ""}
+                self._server_info = {
+                    "name": self.server_config.get("name", "Unknown"),
+                    "version": "",
+                }
 
             # Cache server info if we have a server ID
             server_id = self.server_config.get("id")
@@ -82,9 +80,7 @@ class McpServerClient:
             return True
 
         except Exception as e:
-            logger.error(
-                f"Failed to connect to MCP server '{self.server_config['name']}': {e}"
-            )
+            logger.error(f"Failed to connect to MCP server '{self.server_config['name']}': {e}")
             return False
 
     async def disconnect(self) -> None:
@@ -135,9 +131,7 @@ class McpServerClient:
             logger.error(f"Error listing tools from MCP server: {e}")
             return []
 
-    async def call_tool(
-        self, tool_name: str, arguments: dict[str, Any]
-    ) -> Any:
+    async def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """Call a tool on the MCP server.
 
         Args:
@@ -190,9 +184,7 @@ async def get_mcp_tools() -> list[dict[str, Any]]:
             server_tools = await client.list_tools()
             tools.extend(server_tools)
         except Exception as e:
-            logger.error(
-                f"Failed to get tools from MCP server '{server_config['name']}': {e}"
-            )
+            logger.error(f"Failed to get tools from MCP server '{server_config['name']}': {e}")
         finally:
             await client.disconnect()
 
@@ -229,9 +221,7 @@ async def refresh_mcp_tools_cache() -> None:
     await get_mcp_tools()
 
 
-async def call_mcp_tool(
-    server_id: int, tool_name: str, arguments: dict[str, Any]
-) -> Any:
+async def call_mcp_tool(server_id: int, tool_name: str, arguments: dict[str, Any]) -> Any:
     """Call a tool on a specific MCP server.
 
     Args:

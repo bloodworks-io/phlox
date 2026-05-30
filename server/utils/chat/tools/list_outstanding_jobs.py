@@ -32,11 +32,13 @@ def format_jobs_list(jobs_list: list) -> list[dict]:
     formatted = []
     for job in jobs_list:
         if isinstance(job, dict) and not job.get("completed", False):
-            formatted.append({
-                "id": job.get("id"),
-                "job": job.get("job", job.get("task", "Unknown task")),
-                "completed": job.get("completed", False),
-            })
+            formatted.append(
+                {
+                    "id": job.get("id"),
+                    "job": job.get("job", job.get("task", "Unknown task")),
+                    "completed": job.get("completed", False),
+                }
+            )
     return formatted
 
 
@@ -64,15 +66,17 @@ async def list_outstanding_jobs() -> dict:
 
             if incomplete_jobs:
                 total_jobs += len(incomplete_jobs)
-                results.append({
-                    "patient_id": patient["id"],
-                    "name": patient.get("name", "Unknown"),
-                    "ur_number": patient.get("ur_number"),
-                    "dob": patient.get("dob"),
-                    "encounter_date": patient.get("encounter_date"),
-                    "jobs": incomplete_jobs,
-                    "job_count": len(incomplete_jobs),
-                })
+                results.append(
+                    {
+                        "patient_id": patient["id"],
+                        "name": patient.get("name", "Unknown"),
+                        "ur_number": patient.get("ur_number"),
+                        "dob": patient.get("dob"),
+                        "encounter_date": patient.get("encounter_date"),
+                        "jobs": incomplete_jobs,
+                        "job_count": len(incomplete_jobs),
+                    }
+                )
 
         # Sort by encounter date (most recent first)
         results.sort(key=lambda x: x.get("encounter_date") or "", reverse=True)
@@ -131,11 +135,11 @@ def format_outstanding_jobs_response(result: dict) -> str:
 
 
 async def execute(
-    tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _tool_call: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the list_outstanding_jobs tool.
 

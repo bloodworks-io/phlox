@@ -63,7 +63,7 @@ async def stream_clinical_reasoning_with_tools(
 
     tools = get_tools_definition(collection_names, exclude_chat_only=True)
 
-    patient_info = f"Demographics: {age} year old {"male" if gender == "M" else "female"}"
+    patient_info = f"Demographics: {age} year old {'male' if gender == 'M' else 'female'}"
     if ur_number:
         patient_info += f"\nUR Number: {ur_number}"
     if encounter_date:
@@ -172,8 +172,6 @@ Highlight potential documentation gaps and provide standard literature correlati
         text = _truncate_for_trace(text)
         _append_trace_step(f"{label}:\n{text}")
 
-
-
     # Yield initial status
     yield {"type": "status", "message": "Analyzing clinical data..."}
 
@@ -198,9 +196,7 @@ Highlight potential documentation gaps and provide standard literature correlati
             msg = chunk["message"]
 
             reasoning_piece = (
-                msg.get("reasoning")
-                or msg.get("reasoning_content")
-                or msg.get("thinking")
+                msg.get("reasoning") or msg.get("reasoning_content") or msg.get("thinking")
             )
             if reasoning_piece:
                 accumulated_reasoning += _coerce_stream_piece(reasoning_piece)
@@ -223,7 +219,9 @@ Highlight potential documentation gaps and provide standard literature correlati
                             if hasattr(tc.function, "name") and tc.function.name:
                                 accumulated_tool_calls[idx]["function"]["name"] += tc.function.name
                             if hasattr(tc.function, "arguments") and tc.function.arguments:
-                                accumulated_tool_calls[idx]["function"]["arguments"] += tc.function.arguments
+                                accumulated_tool_calls[idx]["function"]["arguments"] += (
+                                    tc.function.arguments
+                                )
                     elif isinstance(tc, dict):
                         idx = tc.get("index", len(accumulated_tool_calls))
                         if idx not in accumulated_tool_calls:
@@ -305,26 +303,32 @@ Highlight potential documentation gaps and provide standard literature correlati
                 else:
                     yield {"type": "status", "message": f"Processing {function_name}..."}
 
-                result, tool_citations = await execute_tool_non_streaming(tool_call, config, chroma_manager=get_chroma_manager())
+                result, tool_citations = await execute_tool_non_streaming(
+                    tool_call, config, chroma_manager=get_chroma_manager()
+                )
                 result_preview = _truncate_for_trace(_coerce_text(result))
                 _append_trace_step(f"Tool result: {function_name}\n{result_preview}")
                 if tool_citations:
                     citations.extend(tool_citations)
                 tool_id = tool_call.get("id", "")
-                conversation.append({
-                    "role": "tool",
-                    "tool_call_id": tool_id,
-                    "content": result,
-                })
+                conversation.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_id,
+                        "content": result,
+                    }
+                )
             except Exception as e:
                 logger.error(f"Error executing tool in reasoning: {e}")
                 _append_trace_step(f"Tool error: {function_name} -> {str(e)}")
                 tool_id = tool_call.get("id", "")
-                conversation.append({
-                    "role": "tool",
-                    "tool_call_id": tool_id,
-                    "content": f"Error executing tool: {str(e)}",
-                })
+                conversation.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_id,
+                        "content": f"Error executing tool: {str(e)}",
+                    }
+                )
 
         tool_iterations += 1
 

@@ -85,7 +85,7 @@ async def test_template_field_processing_and_refinement(monkeypatch):
         refinement_rules=None,
     )
 
-    async def fake_chat(*args, **kwargs):
+    async def fake_chat(*_args, **_kwargs):
         # Match the FieldResponse format
         return {"message": {"content": '{"key_points": ["Point one", "Point two"]}'}}
 

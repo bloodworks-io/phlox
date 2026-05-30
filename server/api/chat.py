@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.exceptions import HTTPException
@@ -103,7 +103,7 @@ def _store_vision_probe_result(
         "vision_capable": bool(vision_capable),
         "status_code": int(status_code),
         "detail": detail,
-        "probed_at": datetime.now(timezone.utc).isoformat(),
+        "probed_at": datetime.now(datetime.UTC).isoformat(),
     }
 
     config_manager.update_config(
@@ -187,7 +187,7 @@ async def chat(
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         logging.error(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/upload-image")
@@ -212,18 +212,14 @@ async def upload_image(file: UploadFile = File(...)):
 
         logging.info(f"Successfully extracted {len(extracted_text)} characters from image")
 
-        return {
-            "text": extracted_text,
-            "content_type": content_type,
-            "filename": file.filename
-        }
+        return {"text": extracted_text, "content_type": content_type, "filename": file.filename}
     except RuntimeError as e:
         # OCR dependencies not available
         logging.error(f"OCR not available: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         logging.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/analyze-document-visual", response_model=VisualDocumentResponse)
@@ -258,8 +254,7 @@ async def analyze_document_visual(payload: VisualDocumentRequest):
                     "type": "text",
                     "text": (
                         "Fallback text from an earlier extraction attempt "
-                        "(may be partial/noisy):\n\n"
-                        + payload.fallback_text.strip()
+                        "(may be partial/noisy):\n\n" + payload.fallback_text.strip()
                     ),
                 }
             )
@@ -309,7 +304,7 @@ async def analyze_document_visual(payload: VisualDocumentRequest):
         raise
     except Exception as e:
         logging.error(f"Error analyzing visual document payload: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/vision-capability/current", response_model=VisionCurrentCapabilityResponse)
@@ -502,4 +497,4 @@ async def respond_visual(payload: DirectVisualChatRequest):
         raise
     except Exception as e:
         logging.error(f"Error generating direct visual response: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

@@ -12,8 +12,6 @@ from typing import Any
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
 from server.utils.chat.tools.sanitization import sanitize_query_for_external_search
 from server.utils.mcp.client import call_mcp_tool
@@ -46,10 +44,10 @@ def _sanitize_arguments(args: Any, allow_sensitive: bool) -> Any:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute an MCP tool call.
 
@@ -148,7 +146,9 @@ async def execute(
 
         logger.info(f"MCP tool result: {tool_result[:200]}...")
 
-        result_content = f"The following information was retrieved from the MCP server:\n\n{tool_result}"
+        result_content = (
+            f"The following information was retrieved from the MCP server:\n\n{tool_result}"
+        )
 
         # Build citation string for MCP tool
         citation = f"MCP Tool ({original_tool_name}): {tool_result[:200]}..."

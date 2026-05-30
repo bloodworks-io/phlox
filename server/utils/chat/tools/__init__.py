@@ -14,8 +14,8 @@ from server.utils.chat.tools.executor import (
 )
 from server.utils.chat.tools.registry import get_tools_definition
 from server.utils.chat.tools.sanitization import (
-    sanitize_query_for_external_search,
     sanitize_pubmed_query,
+    sanitize_query_for_external_search,
 )
 
 __all__ = [

@@ -11,6 +11,7 @@ import shutil
 import sys
 import time
 import zipfile
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -117,11 +118,11 @@ WHISPER_MODELS = {
 def get_data_dir() -> Path:
     """Get platform-specific data directory for storing models."""
     if os.name == "nt":  # Windows
-        data_dir = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
+        data_dir = os.environ.get("LOCALAPPDATA", str(Path.home()))
     elif sys.platform == "darwin":  # macOS
-        data_dir = os.path.expanduser("~/Library/Application Support")
+        data_dir = str(Path.home() / "Library/Application Support")
     else:  # Linux and others
-        data_dir = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
+        data_dir = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share"))
     return Path(data_dir)
 
 
@@ -271,7 +272,7 @@ class WhisperModelManager:
                 response.raise_for_status()
                 total_size = int(response.headers.get("content-length", 0))
 
-                with open(model_file, "wb") as f:
+                with model_file.open("wb") as f:
                     downloaded = 0
                     async for chunk in response.aiter_bytes(8192):
                         f.write(chunk)
@@ -327,7 +328,7 @@ class WhisperModelManager:
                         response.raise_for_status()
                         total_size = int(response.headers.get("content-length", 0))
 
-                        with open(zip_file, "wb") as f:
+                        with zip_file.open("wb") as f:
                             downloaded = 0
                             async for chunk in response.aiter_bytes(8192):
                                 f.write(chunk)
@@ -378,10 +379,8 @@ class WhisperModelManager:
                 except Exception as e:
                     # Clean up partial downloads on failure
                     if zip_file.exists():
-                        try:
+                        with suppress(Exception):
                             zip_file.unlink()
-                        except Exception:
-                            pass
                     # If Core ML download fails, log a warning but don't fail the entire download
                     # The model will still work with Metal GPU acceleration
                     logger.warning(f"Failed to download Core ML model for {model_id}: {e}")
@@ -390,15 +389,11 @@ class WhisperModelManager:
         except Exception:
             # If something fails mid-download, don't leave a corrupt partial file behind.
             if model_file.exists():
-                try:
+                with suppress(Exception):
                     model_file.unlink()
-                except Exception:
-                    pass
             if coreml_dir.exists():
-                try:
+                with suppress(Exception):
                     shutil.rmtree(coreml_dir)
-                except Exception:
-                    pass
             raise
 
         # Write the model selection file for Tauri to read

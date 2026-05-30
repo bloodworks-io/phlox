@@ -59,7 +59,7 @@ async def process_transcription(
         refined_results = await asyncio.gather(
             *[
                 refine_field_content(result.content, field, is_ambient=is_ambient)
-                for result, field in zip(raw_results, non_persistent_fields)
+                for result, field in zip(raw_results, non_persistent_fields, strict=True)
             ]
         )
         logger.info(f"Successfully refined {total_fields} fields")
@@ -67,7 +67,7 @@ async def process_transcription(
         # Combine results into a dictionary
         processed_fields = {
             field.field_key: refined_content
-            for field, refined_content in zip(non_persistent_fields, refined_results)
+            for field, refined_content in zip(non_persistent_fields, refined_results, strict=True)
         }
 
         process_duration = time.perf_counter() - process_start
@@ -133,7 +133,9 @@ INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
                 intro = "Extract and organize information from the clinician's direct dictation for each of the following fields."
 
             if primary_condition:
-                intro += f" This is a returning patient who sees the clinician for {primary_condition}."
+                intro += (
+                    f" This is a returning patient who sees the clinician for {primary_condition}."
+                )
 
             system_content = f"""{intro}
 

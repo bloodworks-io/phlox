@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Literal, Union
 
 from pydantic import BaseModel, validator
@@ -6,7 +6,7 @@ from pydantic import BaseModel, validator
 VALID_FIELD_TYPES = Literal["text", "number", "date", "boolean", "list", "structured"]
 
 
-class FormatStyle(str, Enum):
+class FormatStyle(str, StrEnum):
     BULLETS = "bullets"
     NUMBERED = "numbered"
     NARRATIVE = "narrative"

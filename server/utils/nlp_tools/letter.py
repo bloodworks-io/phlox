@@ -105,7 +105,7 @@ async def generate_letter_content(
 
     except Exception as e:
         logging.error(f"Error generating letter content: {e}")
-        raise HTTPException(status_code=500, detail=f"Error generating letter content: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating letter content: {e}") from e
 
 
 def _format_name(patient_name):

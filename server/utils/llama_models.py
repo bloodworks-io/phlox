@@ -7,6 +7,7 @@ from HuggingFace. Follows the Whisper pattern: 1 model at a time.
 
 import logging
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -159,7 +160,7 @@ class LlamaModelManager:
             # Check if this is a pre-configured model (case-insensitive match)
             model_info = None
             matched_filename = None
-            for model_id, info in PRECONFIGURED_MODELS.items():
+            for _model_id, info in PRECONFIGURED_MODELS.items():
                 if info["filename"].lower() == filename.lower():
                     model_info = info
                     matched_filename = info["filename"]  # Use the canonical filename
@@ -181,8 +182,7 @@ class LlamaModelManager:
                         "description": model_info["description"],
                         "path": str(model_file),
                         "category": model_info["category"],
-                        "is_selected": selected_filename == filename
-                        or selected_filename == matched_filename,
+                        "is_selected": selected_filename in (filename, matched_filename),
                     }
                 )
             else:
@@ -279,7 +279,7 @@ class LlamaModelManager:
                 response.raise_for_status()
                 total_size = int(response.headers.get("content-length", 0))
 
-                with open(model_file, "wb") as f:
+                with model_file.open("wb") as f:
                     downloaded = 0
                     async for chunk in response.aiter_bytes(8192):
                         f.write(chunk)
@@ -327,10 +327,8 @@ class LlamaModelManager:
         except Exception:
             # Clean up partial downloads on failure
             if model_file.exists():
-                try:
+                with suppress(Exception):
                     model_file.unlink()
-                except Exception:
-                    pass
             raise
 
         # Write the model selection file for Tauri to read

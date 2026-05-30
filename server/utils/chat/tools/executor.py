@@ -206,10 +206,10 @@ async def execute_tool_non_streaming(
 
     stream = execute_tool_streaming(
         tool_call=tool_call,
-        llm_client=None, 
+        llm_client=None,
         config=config,
-        message_list=[],  
-        context_question_options={},  
+        message_list=[],
+        context_question_options={},
         chroma_manager=chroma_manager,
     )
 

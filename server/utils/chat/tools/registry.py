@@ -299,7 +299,9 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
     ]
 
 
-def get_tools_definition(collection_names: list[str], *, exclude_chat_only: bool = False) -> list[dict[str, Any]]:
+def get_tools_definition(
+    collection_names: list[str], *, exclude_chat_only: bool = False
+) -> list[dict[str, Any]]:
     """
     Get the tools definition based on available collections and MCP servers.
 
@@ -320,8 +322,7 @@ def get_tools_definition(collection_names: list[str], *, exclude_chat_only: bool
     disabled_tools = set(user_settings.get("disabled_tools", ["pubmed_search", "wiki_search"]))
 
     enabled_tools = [
-        tool for tool in built_in_tools
-        if tool["function"]["name"] not in disabled_tools
+        tool for tool in built_in_tools if tool["function"]["name"] not in disabled_tools
     ]
 
     if disabled_tools:
@@ -330,8 +331,7 @@ def get_tools_definition(collection_names: list[str], *, exclude_chat_only: bool
     # Filter out chat-only tools if requested
     if exclude_chat_only:
         enabled_tools = [
-            tool for tool in enabled_tools
-            if tool["function"]["name"] not in CHAT_ONLY_TOOLS
+            tool for tool in enabled_tools if tool["function"]["name"] not in CHAT_ONLY_TOOLS
         ]
         logger.info(f"Filtered out chat-only tools: {CHAT_ONLY_TOOLS}")
 

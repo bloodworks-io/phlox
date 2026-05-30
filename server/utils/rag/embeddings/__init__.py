@@ -34,7 +34,7 @@ class LocalEmbeddingFunction(EmbeddingFunction[Documents]):
             except ImportError:
                 raise ImportError(
                     "llama-cpp-python not installed. Install with appropriate backend support."
-                )
+                ) from None
 
             model_path = self.model_manager.get_model_path(self.model_name)
             if not model_path.exists():

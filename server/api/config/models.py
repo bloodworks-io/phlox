@@ -30,7 +30,9 @@ async def update_options(category: str, data: dict = Body(...)):
 async def get_llm_models(
     provider: str = Query(..., description="LLM provider type (openai or local)"),
     baseUrl: str = Query(None, description="The base URL for the LLM API"),
-    apiKey: str = Query(None, description="Optional API key for authenticated OpenAI-compatible endpoints"),
+    apiKey: str = Query(
+        None, description="Optional API key for authenticated OpenAI-compatible endpoints"
+    ),
 ):
     """Fetch available models from the configured LLM provider."""
     try:
@@ -123,7 +125,7 @@ async def get_llm_models(
 
     except Exception as e:
         logging.error(f"Error fetching LLM models: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
 @router.get("/whisper/models")
@@ -173,7 +175,7 @@ async def get_whisper_models(
 
     except Exception as e:
         logging.error(f"Error in get_whisper_models: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
 @router.post("/reset-to-defaults")

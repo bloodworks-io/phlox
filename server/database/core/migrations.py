@@ -70,7 +70,7 @@ def run_migrations(patient_db):
         raise
 
 
-def migrate_to_v1(cursor, db):
+def migrate_to_v1(cursor, _db):
     """Initial schema setup."""
     cursor.execute(
         """
@@ -267,7 +267,7 @@ def migrate_to_v1(cursor, db):
     default_options = prompts_data["options"].get("general", {})
     for category, options in prompts_data["options"].items():
         if category != "reasoning":
-            for key, value in options.items():
+            for key, _value in options.items():
                 actual_value = options.get(key, default_options.get(key))
                 if actual_value is not None:
                     cursor.execute(
@@ -465,8 +465,6 @@ def migrate_to_v3(cursor, db):
         raise
 
 
-
-
 def migrate_to_v4(cursor, db):
     """Add has_completed_splash_screen and scribe_is_ambient columns to user_settings table.
     Add Dictation letter template.
@@ -568,7 +566,7 @@ def migrate_to_v5(cursor, db):
         )
 
         cursor.execute(
-            'ALTER TABLE user_settings ADD COLUMN advanced_options JSON DEFAULT \'{}\'',
+            "ALTER TABLE user_settings ADD COLUMN advanced_options JSON DEFAULT '{}'",
         )
 
         # Normalize legacy provider value

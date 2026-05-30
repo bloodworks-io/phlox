@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import threading
+from pathlib import Path
 
 # Optional RAG dependencies (core)
 try:
@@ -30,9 +31,9 @@ except ImportError:
 
 # Optional OCR dependencies (fallback path for scanned PDFs)
 try:
-    from PIL import Image
     import fitz  # PyMuPDF for rasterization
     import pytesseract
+    from PIL import Image
 
     OCR_AVAILABLE = True
 except ImportError:
@@ -367,7 +368,7 @@ class ChromaManager:
         Extracts text from a PDF file.
 
         Prefer text-layer extraction via pypdf.
-        
+
         If extracted text is insufficient, fallback to OCR if available.
 
         Args:
@@ -386,7 +387,7 @@ class ChromaManager:
             return alnum_count >= 80
 
         pdf_bytes = b""
-        with open(pdf_path, "rb") as pdf_file:
+        with Path(pdf_path).open("rb") as pdf_file:
             pdf_bytes = pdf_file.read()
 
         text_layer_output = ""

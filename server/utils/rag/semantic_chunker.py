@@ -13,7 +13,7 @@ class ClusterSemanticChunker(BaseChunker):
         embedding_function=None,
         max_chunk_size=400,
         min_chunk_size=50,
-        length_function=openai_token_count,
+        _length_function=openai_token_count,
     ):
         self.splitter = RecursiveTokenChunker(
             chunk_size=min_chunk_size,
@@ -56,7 +56,7 @@ class ClusterSemanticChunker(BaseChunker):
         sub_matrix = matrix[start : end + 1, start : end + 1]
         return np.sum(sub_matrix)
 
-    def _optimal_segmentation(self, matrix, max_cluster_size, window_size=3):
+    def _optimal_segmentation(self, matrix, max_cluster_size, _window_size=3):
         mean_value = np.mean(matrix[np.triu_indices(matrix.shape[0], k=1)])
         matrix = matrix - mean_value  # Normalize the matrix
         np.fill_diagonal(matrix, 0)  # Set diagonal to 1 to avoid trivial solutions

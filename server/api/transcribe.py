@@ -8,9 +8,9 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
+from pydantic import BaseModel
 
 from server.schemas.patient import TranscribeResponse
-from pydantic import BaseModel
 from server.utils.nlp_tools.document_processing import (
     process_document_text_with_template,
     process_document_with_template,
@@ -62,8 +62,6 @@ async def transcribe(
     try:
         # Read the audio file
         audio_buffer = await file.read()
-        audio_size = len(audio_buffer)
-        audio_duration = round(audio_size / (2 * 44100), 2)
 
         # Process the name if provided
         formatted_name = "N/A"
@@ -116,7 +114,7 @@ async def transcribe(
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/dictate")
@@ -138,7 +136,7 @@ async def dictate(file: UploadFile = File(...)):
         }
     except Exception as e:
         logging.error(f"Error occurred during dictation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/reprocess", response_model=TranscribeResponse)
@@ -182,7 +180,6 @@ async def reprocess_transcription(
         patient_context = {"name": formatted_name, "dob": dob, "gender": gender}
 
         # Process the transcription with template fields
-        processing_start = time.perf_counter()
         processing_result = await process_transcription(
             transcript_text=transcript_text,
             template_fields=template_fields,
@@ -190,7 +187,6 @@ async def reprocess_transcription(
             is_ambient=isAmbient,
             primary_condition=primary_condition,
         )
-        processing_end = time.perf_counter()
 
         # Return the response in the expected format
         return TranscribeResponse(
@@ -202,7 +198,7 @@ async def reprocess_transcription(
 
     except Exception as e:
         logging.error(f"Error occurred during reprocessing: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/process-document", response_model=TranscribeResponse)  # Changed response model
@@ -256,7 +252,7 @@ async def process_document(
         )
     except Exception as e:
         logging.error(f"Error processing document: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/process-document-visual", response_model=TranscribeResponse)
@@ -310,7 +306,7 @@ async def process_document_visual(payload: ProcessVisualDocumentRequest):
         raise
     except Exception as e:
         logging.error(f"Error processing visual document: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/process-document-from-text", response_model=TranscribeResponse)
@@ -363,4 +359,4 @@ async def process_document_from_text(payload: ProcessDocumentFromTextRequest):
         raise
     except Exception as e:
         logging.error(f"Error processing extracted document text: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

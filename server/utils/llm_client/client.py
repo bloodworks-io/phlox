@@ -82,7 +82,9 @@ class AsyncLLMClient:
                 max_retries=0,
             )
         except ImportError as error:
-            raise ImportError("OpenAI client not installed. Install with 'pip install openai'") from error
+            raise ImportError(
+                "OpenAI client not installed. Install with 'pip install openai'"
+            ) from error
 
     async def chat_with_structured_output(
         self,

@@ -78,7 +78,9 @@ def extract_text_from_record(record: dict) -> dict[str, str]:
     return texts
 
 
-def find_matches_in_text(text: str, search_term: str, threshold: int = FUZZY_THRESHOLD) -> list[dict]:
+def find_matches_in_text(
+    text: str, search_term: str, threshold: int = FUZZY_THRESHOLD
+) -> list[dict]:
     """Find fuzzy matches for search term in text.
 
     Args:
@@ -90,7 +92,6 @@ def find_matches_in_text(text: str, search_term: str, threshold: int = FUZZY_THR
         List of match dicts with score and context
     """
     matches = []
-    text_lower = text.lower()
     search_lower = search_term.lower()
 
     # Split text into sentences/segments for better context
@@ -162,7 +163,7 @@ async def search_patient_notes(
         if not rows:
             return {
                 "success": False,
-                "error": f"No patient found with {'UR: ' + ur_number if ur_number else 'name: ' + patient_name}"
+                "error": f"No patient found with {'UR: ' + ur_number if ur_number else 'name: ' + patient_name}",
             }
 
         # Search through all encounters
@@ -188,22 +189,26 @@ async def search_patient_notes(
             for field_name, text in texts.items():
                 matches = find_matches_in_text(text, search_term)
                 for match in matches:
-                    encounter_matches.append({
-                        "field": field_name,
-                        "score": match["score"],
-                        "context": match["context"],
-                    })
+                    encounter_matches.append(
+                        {
+                            "field": field_name,
+                            "score": match["score"],
+                            "context": match["context"],
+                        }
+                    )
 
             # Sort matches by score
             encounter_matches.sort(key=lambda x: x["score"], reverse=True)
 
             if encounter_matches:
-                results.append({
-                    "encounter_date": record["encounter_date"],
-                    "patient_id": record["id"],
-                    "matches": encounter_matches[:5],  # Top 5 matches per encounter
-                    "match_count": len(encounter_matches),
-                })
+                results.append(
+                    {
+                        "encounter_date": record["encounter_date"],
+                        "patient_id": record["id"],
+                        "matches": encounter_matches[:5],  # Top 5 matches per encounter
+                        "match_count": len(encounter_matches),
+                    }
+                )
 
         if not results:
             return {
@@ -261,7 +266,7 @@ def format_search_response(result: dict) -> str:
         for match in encounter["matches"]:
             field_display = match["field"].replace("_", " ").title()
             parts.append(f"  [{field_display}] (score: {match['score']})")
-            parts.append(f"    \"{match['context']}\"")
+            parts.append(f'    "{match["context"]}"')
         parts.append("")
 
     return "\n".join(parts)
@@ -269,10 +274,10 @@ def format_search_response(result: dict) -> str:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the search_patient_notes tool.
 

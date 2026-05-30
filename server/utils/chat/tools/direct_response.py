@@ -8,10 +8,7 @@ import logging
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from server.utils.chat.streaming.response import (
-    status_message,
-    stream_llm_response,
-)
+from server.utils.chat.streaming.response import status_message
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +16,9 @@ logger = logging.getLogger(__name__)
 async def execute(
     tool_call: dict[str, Any],
     llm_client,
-    config: dict[str, Any],
+    _config: dict[str, Any],
     message_list: list,
-    context_question_options: dict[str, Any],
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
     Execute the direct response tool.
@@ -56,4 +53,5 @@ async def execute(
     # and doing a final stream, so we just yield an end message here.
     # This block shouldn't be reached if ChatEngine properly breaks.
     from server.utils.chat.streaming.response import end_message
+
     yield end_message(function_response={"content": "Ready for direct response."})

@@ -4,6 +4,7 @@ We are using a temporary directory for testing and cleaning up afterward.
 """
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -21,8 +22,8 @@ def test_db(tmp_path_factory):
     # Cleanup: clear test database and remove temporary file
     db.clear_test_database()
     db.close()
-    if os.path.exists(db.db_path):
-        os.remove(db.db_path)
+    if Path(db.db_path).exists():
+        Path(db.db_path).unlink()
     os.environ.pop("TESTING")
     os.environ.pop("DB_ENCRYPTION_KEY")
 
@@ -30,7 +31,7 @@ def test_db(tmp_path_factory):
 def test_database_initialization(test_db):
     assert test_db.is_test is True
     assert "test_phlox_database.sqlite" in test_db.db_path
-    assert os.path.exists(test_db.db_path)
+    assert Path(test_db.db_path).exists()
 
 
 def test_create_tables(test_db):

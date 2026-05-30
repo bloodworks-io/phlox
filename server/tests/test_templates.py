@@ -14,7 +14,7 @@ client = TestClient(app)
 
 def test_set_default_template(monkeypatch):
     # Patch set_default_template in database.config
-    def fake_set_default_template(template_key: str):
+    def fake_set_default_template(_template_key: str):
         return
 
     monkeypatch.setattr("server.api.templates.set_default_template", fake_set_default_template)
@@ -58,10 +58,10 @@ def test_get_templates():
 
 def test_save_templates(monkeypatch):
     # Patch save_template and update_template
-    def fake_template_exists(key: str):
+    def fake_template_exists(_key: str):
         return False
 
-    def fake_save_template(template):
+    def fake_save_template(_template):
         return
 
     monkeypatch.setattr("server.api.templates.template_exists", fake_template_exists)
@@ -92,7 +92,7 @@ def test_save_templates(monkeypatch):
 
 def test_generate_template(monkeypatch):
     # Patch generate_template_from_note and save_template
-    async def fake_generate_template_from_note(note: str):
+    async def fake_generate_template_from_note(_note: str):
         from server.schemas.templates import ClinicalTemplate, TemplateField
 
         return ClinicalTemplate(
@@ -113,7 +113,7 @@ def test_generate_template(monkeypatch):
     monkeypatch.setattr(
         "server.api.templates.generate_template_from_note", fake_generate_template_from_note
     )
-    monkeypatch.setattr("server.api.templates.save_template", lambda template: "test_generated_01")
+    monkeypatch.setattr("server.api.templates.save_template", lambda _template: "test_generated_01")
     payload = {"exampleNote": "This is an example note."}
     response = client.post("/api/templates/generate", json=payload)
     assert response.status_code == 200

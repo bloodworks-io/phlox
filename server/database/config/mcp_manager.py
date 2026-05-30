@@ -8,7 +8,6 @@ from threading import Lock
 from typing import Any
 
 import sqlcipher3 as sqlite3
-
 from server.database.core.connection import get_db, is_db_initialized
 
 logger = logging.getLogger(__name__)
@@ -52,17 +51,19 @@ class McpConfigManager:
                 """
             )
             for row in self.db.cursor.fetchall():
-                self.servers.append({
-                    "id": row["id"],
-                    "name": row["name"],
-                    "url": row["url"],
-                    "description": row["description"] or "",
-                    "server_version": row["server_version"] or "",
-                    "enabled": bool(row["enabled"]),
-                    "allow_sensitive_data": bool(row["allow_sensitive_data"]),
-                    "created_at": row["created_at"],
-                    "updated_at": row["updated_at"],
-                })
+                self.servers.append(
+                    {
+                        "id": row["id"],
+                        "name": row["name"],
+                        "url": row["url"],
+                        "description": row["description"] or "",
+                        "server_version": row["server_version"] or "",
+                        "enabled": bool(row["enabled"]),
+                        "allow_sensitive_data": bool(row["allow_sensitive_data"]),
+                        "created_at": row["created_at"],
+                        "updated_at": row["updated_at"],
+                    }
+                )
         except sqlite3.OperationalError:
             # Table doesn't exist yet, will be created by migration
             logger.warning("mcp_servers table does not exist yet")

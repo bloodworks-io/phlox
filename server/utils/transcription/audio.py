@@ -54,7 +54,7 @@ async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
 
 
 async def _transcribe_local_whisper(
-    audio_buffer: bytes, config: dict
+    audio_buffer: bytes, _config: dict
 ) -> dict[str, Union[str, float]]:
     """Transcribe using local whisper.cpp server."""
     whisper_port = _get_whisper_port()
@@ -65,9 +65,7 @@ async def _transcribe_local_whisper(
     filename, content_type = _detect_audio_format(audio_buffer)
 
     async with httpx.AsyncClient(timeout=httpx.Timeout(600.0)) as client:
-        files = {
-            "file": (filename, audio_buffer, content_type)
-        }
+        files = {"file": (filename, audio_buffer, content_type)}
         data = {
             "response_format": "verbose_json",
             "language": "en",
@@ -88,7 +86,7 @@ async def _transcribe_local_whisper(
             try:
                 result = response.json()
             except Exception as e:
-                raise ValueError(f"Failed to parse response: {e}")
+                raise ValueError(f"Failed to parse response: {e}") from e
 
             if "text" not in result:
                 raise ValueError("No text in whisper.cpp response")
@@ -108,7 +106,7 @@ async def _transcribe_local_whisper(
                 "transcriptionDuration": float(f"{transcription_duration:.2f}"),
             }
         except httpx.RequestError as e:
-            raise ValueError(f"Cannot connect to local whisper server: {e}")
+            raise ValueError(f"Cannot connect to local whisper server: {e}") from e
 
 
 async def _transcribe_external_api(
@@ -117,9 +115,7 @@ async def _transcribe_external_api(
     """Transcribe using external Whisper API (existing logic)."""
     filename, content_type = _detect_audio_format(audio_buffer)
     async with httpx.AsyncClient(timeout=httpx.Timeout(600.0)) as client:
-        files = {
-            "file": (filename, audio_buffer, content_type)
-        }
+        files = {"file": (filename, audio_buffer, content_type)}
         data = {
             "model": config["WHISPER_MODEL"],
             "language": "en",
@@ -132,7 +128,7 @@ async def _transcribe_external_api(
         transcription_start = time.perf_counter()
 
         headers = {}
-        whisper_key = config.get('WHISPER_KEY', '').strip()
+        whisper_key = config.get("WHISPER_KEY", "").strip()
         if whisper_key:
             headers["Authorization"] = f"Bearer {whisper_key}"
 
@@ -148,7 +144,7 @@ async def _transcribe_external_api(
                 headers=headers,
             )
         except httpx.RequestError as e:
-            raise ValueError(f"Transcription failed: {e}")
+            raise ValueError(f"Transcription failed: {e}") from e
 
         transcription_end = time.perf_counter()
         transcription_duration = transcription_end - transcription_start
@@ -160,7 +156,7 @@ async def _transcribe_external_api(
         try:
             result = response.json()
         except Exception as e:
-            raise ValueError(f"Failed to parse response: {e}")
+            raise ValueError(f"Failed to parse response: {e}") from e
 
         if "text" not in result:
             raise ValueError("Transcription failed, no text in response")

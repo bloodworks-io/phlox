@@ -63,13 +63,11 @@ async def add_mcp_server(data: McpServerCreate):
             description=data.description,
             server_version=data.server_version,
         )
-        return JSONResponse(
-            content={"message": "MCP server added successfully", "server": server}
-        )
+        return JSONResponse(content={"message": "MCP server added successfully", "server": server})
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to add MCP server: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add MCP server: {str(e)}") from e
 
 
 @router.put("/mcp/{server_id}")
@@ -85,9 +83,7 @@ async def update_mcp_server(server_id: int, data: McpServerUpdate):
     )
     if not server:
         raise HTTPException(status_code=404, detail="MCP server not found")
-    return JSONResponse(
-        content={"message": "MCP server updated successfully", "server": server}
-    )
+    return JSONResponse(content={"message": "MCP server updated successfully", "server": server})
 
 
 @router.delete("/mcp/{server_id}")
@@ -106,9 +102,7 @@ async def toggle_mcp_server(server_id: int, enabled: bool = Body(..., embed=True
     if not success:
         raise HTTPException(status_code=404, detail="MCP server not found")
     return JSONResponse(
-        content={
-            "message": f"MCP server {'enabled' if enabled else 'disabled'} successfully"
-        }
+        content={"message": f"MCP server {'enabled' if enabled else 'disabled'} successfully"}
     )
 
 

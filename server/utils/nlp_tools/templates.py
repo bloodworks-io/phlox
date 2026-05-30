@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import time
 from datetime import datetime
 
 from server.database.config.defaults.templates import DefaultTemplates
@@ -30,7 +31,7 @@ async def generate_template_from_note(example_note: str) -> ClinicalTemplate:
         options = config_manager.get_prompts_and_options()["options"]["general"]
 
         client = get_llm_client(timeout=300)
-        model_name = config["PRIMARY_MODEL"].lower()
+        _model_name = config["PRIMARY_MODEL"].lower()
 
         system_prompt = """
         You are a medical documentation expert that analyzes clinical notes and creates structured templates.

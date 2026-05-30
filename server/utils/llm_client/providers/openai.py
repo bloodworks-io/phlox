@@ -103,16 +103,17 @@ async def openai_compatible_chat(
                         if hasattr(delta, "tool_calls") and delta.tool_calls:
                             tool_calls = delta.tool_calls
 
-                        if content or tool_calls:  # Close think tag if we transition to content or tool calls
-                            if reasoning_started:
-                                yield {
-                                    "model": model,
-                                    "message": {
-                                        "role": "assistant",
-                                        "content": "</think>\n\n",
-                                    },
-                                }
-                                reasoning_started = False
+                        if (
+                            (content or tool_calls) and reasoning_started
+                        ):  # Close think tag if we transition to content or tool calls
+                            yield {
+                                "model": model,
+                                "message": {
+                                    "role": "assistant",
+                                    "content": "</think>\n\n",
+                                },
+                            }
+                            reasoning_started = False
 
                         response = {
                             "model": model,

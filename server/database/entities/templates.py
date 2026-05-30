@@ -166,16 +166,17 @@ def update_template(template: ClinicalTemplate) -> str:
             current_fields_map = {f["field_key"]: f for f in current_fields if "field_key" in f}
             for field in new_fields:
                 prev = current_fields_map.get(field.get("field_key"))
-                if prev:
-                    if (
+                if (
+                    prev
+                    and (
                         "adaptive_refinement_instructions" not in field
                         or not field["adaptive_refinement_instructions"]
-                    ):
-                        # Only copy if previous version had something to copy
-                        if prev.get("adaptive_refinement_instructions"):
-                            field["adaptive_refinement_instructions"] = prev[
-                                "adaptive_refinement_instructions"
-                            ]
+                    )
+                    and prev.get("adaptive_refinement_instructions")
+                ):
+                    field["adaptive_refinement_instructions"] = prev[
+                        "adaptive_refinement_instructions"
+                    ]
             # Only update if there are actual changes
             if current["template_name"] == template.template_name and current_fields == new_fields:
                 return current["template_key"]  # Return existing key if no changes
