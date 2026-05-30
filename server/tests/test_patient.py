@@ -6,6 +6,7 @@ Assumes your patient-related endpoints are included from server/api/patient.py.
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock, MagicMock
 
 from server.api.patient import router as patient_router
 
@@ -67,7 +68,14 @@ async def test_save_patient(monkeypatch):
     async def mock_summarize_encounter(*_args, **_kwargs):
         return "Test summary", "Test condition"
 
-    monkeypatch.setattr("server.api.patient.summarize_encounter", mock_summarize_encounter)
+    monkeypatch.setattr("server.api.patient.summarise_encounter", mock_summarize_encounter)
+
+    # Mock summarization_manager to avoid token generation issues
+    mock_manager = MagicMock()
+    mock_manager.generate_token.return_value = "test-token"
+    mock_manager.should_process = AsyncMock(return_value=False)
+    mock_manager.mark_complete = AsyncMock()
+    monkeypatch.setattr("server.api.patient.summarization_manager", mock_manager)
 
     payload = {
         "patientData": {

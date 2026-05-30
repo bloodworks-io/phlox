@@ -6,7 +6,7 @@ from pydantic import BaseModel, validator
 VALID_FIELD_TYPES = Literal["text", "number", "date", "boolean", "list", "structured"]
 
 
-class FormatStyle(str, StrEnum):
+class FormatStyle(StrEnum):
     BULLETS = "bullets"
     NUMBERED = "numbered"
     NARRATIVE = "narrative"

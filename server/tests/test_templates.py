@@ -79,6 +79,7 @@ def test_save_templates(monkeypatch):
                     "persistent": False,
                     "system_prompt": "System prompt",
                     "initial_prompt": "Initial prompt",
+                    "style_example": "- Example bullet point",
                 }
             ],
         }
@@ -106,6 +107,7 @@ def test_generate_template(monkeypatch):
                     persistent=False,
                     system_prompt="Prompt",
                     initial_prompt="Initial",
+                    style_example="- Example item",
                 )
             ],
         )

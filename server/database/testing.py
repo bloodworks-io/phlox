@@ -87,9 +87,7 @@ def clear_test_database(db, cursor, is_test):
         tables = [
             "patients",
             "clinical_templates",
-            "rss_feeds",
             "todos",
-            "rss_items",
             "config",
             "prompts",
             "options",

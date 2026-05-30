@@ -105,7 +105,7 @@ def openai_token_count(string: str) -> int:
         return len(string) // 4
 
 
-class Language(str, StrEnum):
+class Language(StrEnum):
     """Enum of the programming languages."""
 
     CPP = "cpp"

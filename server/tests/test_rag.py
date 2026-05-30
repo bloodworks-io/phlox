@@ -1,7 +1,9 @@
 """
 Tests for RAG endpoints.
-We patch ChromaManager methods to simulate vector database interactions.
+We mock get_chroma_manager and CHROMADB_AVAILABLE to simulate vector database interactions.
 """
+
+from unittest.mock import MagicMock
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -13,22 +15,29 @@ app.include_router(rag_router, prefix="/api/rag")
 client = TestClient(app)
 
 
+def _setup_rag_mocks(monkeypatch, mock_cm: MagicMock):
+    """Common setup: enable RAG availability and return a mock chroma manager."""
+    monkeypatch.setattr("server.api.rag.CHROMADB_AVAILABLE", True)
+    monkeypatch.setattr("server.api.rag.get_chroma_manager", lambda: mock_cm)
+
+
 def test_get_files(monkeypatch):
-    # Patch chroma_manager.list_collections to return dummy collections
-    dummy_collections = ["disease_a", "disease_b"]
-    monkeypatch.setattr("server.api.rag.chroma_manager.list_collections", lambda: dummy_collections)
+    mock_cm = MagicMock()
+    mock_cm.list_collections.return_value = ["disease_a", "disease_b"]
+    _setup_rag_mocks(monkeypatch, mock_cm)
+
     response = client.get("/api/rag/files")
     assert response.status_code == 200
     data = response.json()
     assert "files" in data
-    assert set(data["files"]) == set(dummy_collections)
+    assert set(data["files"]) == {"disease_a", "disease_b"}
 
 
 def test_get_collection_files(monkeypatch):
-    # Patch chroma_manager.get_files_for_collection
-    monkeypatch.setattr(
-        "server.api.rag.chroma_manager.get_files_for_collection", lambda _name: ["file1", "file2"]
-    )
+    mock_cm = MagicMock()
+    mock_cm.get_files_for_collection.return_value = ["file1", "file2"]
+    _setup_rag_mocks(monkeypatch, mock_cm)
+
     response = client.get("/api/rag/collection_files/test_collection")
     assert response.status_code == 200
     data = response.json()
@@ -37,10 +46,10 @@ def test_get_collection_files(monkeypatch):
 
 
 def test_modify_collection(monkeypatch):
-    # Patch chroma_manager.modify_collection_name to return True
-    monkeypatch.setattr(
-        "server.api.rag.chroma_manager.modify_collection_name", lambda _old, _new: True
-    )
+    mock_cm = MagicMock()
+    mock_cm.modify_collection_name.return_value = True
+    _setup_rag_mocks(monkeypatch, mock_cm)
+
     payload = {"old_name": "old_collection", "new_name": "new_collection"}
     response = client.post("/api/rag/modify", json=payload)
     assert response.status_code == 200
@@ -49,8 +58,10 @@ def test_modify_collection(monkeypatch):
 
 
 def test_delete_collection(monkeypatch):
-    # Patch chroma_manager.delete_collection
-    monkeypatch.setattr("server.api.rag.chroma_manager.delete_collection", lambda _name: True)
+    mock_cm = MagicMock()
+    mock_cm.delete_collection.return_value = True
+    _setup_rag_mocks(monkeypatch, mock_cm)
+
     response = client.delete("/api/rag/delete-collection/test_collection")
     assert response.status_code == 200
     data = response.json()
@@ -58,11 +69,10 @@ def test_delete_collection(monkeypatch):
 
 
 def test_commit_to_vectordb(monkeypatch):
-    # We simply patch the commit_to_vectordb method to not raise.
-    monkeypatch.setattr(
-        "server.api.rag.chroma_manager.commit_to_vectordb",
-        lambda _disease, _focus, _source, _fname: None,
-    )
+    mock_cm = MagicMock()
+    mock_cm.commit_to_vectordb.return_value = None
+    _setup_rag_mocks(monkeypatch, mock_cm)
+
     payload = {
         "disease_name": "disease_a",
         "focus_area": "diagnosis",
@@ -76,10 +86,14 @@ def test_commit_to_vectordb(monkeypatch):
 
 
 def test_get_rag_suggestions(monkeypatch):
-    # Patch generate_specialty_suggestions to return a dummy list
-    monkeypatch.setattr(
-        "server.api.rag.generate_specialty_suggestions", lambda: ["Suggestion 1", "Suggestion 2"]
-    )
+    mock_cm = MagicMock()
+    _setup_rag_mocks(monkeypatch, mock_cm)
+
+    async def fake_suggestions():
+        return ["Suggestion 1", "Suggestion 2"]
+
+    monkeypatch.setattr("server.api.rag.generate_specialty_suggestions", fake_suggestions)
+
     response = client.get("/api/rag/suggestions")
     assert response.status_code == 200
     data = response.json()
@@ -89,8 +103,10 @@ def test_get_rag_suggestions(monkeypatch):
 
 
 def test_clear_database(monkeypatch):
-    # Patch clear_database in chroma_manager to simulate success.
-    monkeypatch.setattr("server.api.rag.chroma_manager.delete_collection", lambda _name: True)
+    mock_cm = MagicMock()
+    mock_cm.reset_database.return_value = True
+    _setup_rag_mocks(monkeypatch, mock_cm)
+
     response = client.post("/api/rag/clear-database")
     assert response.status_code == 200
     data = response.json()
