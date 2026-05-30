@@ -861,6 +861,7 @@ const PatientDetails = ({
                 onOpenTranscription={handleOpenTranscription}
                 isTranscriptionOpen={isTranscriptionPanelOpen}
                 hasRawTranscription={!!patient.raw_transcription}
+                onAudioDrop={scribeControls.handleAudioDrop}
             />
 
             {/* Floating Action Menu - always expanded on right side */}
