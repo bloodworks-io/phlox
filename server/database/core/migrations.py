@@ -567,6 +567,10 @@ def migrate_to_v5(cursor, db):
             'ALTER TABLE user_settings ADD COLUMN disabled_tools JSON DEFAULT \'["pubmed_search", "wiki_search"]\'',
         )
 
+        cursor.execute(
+            'ALTER TABLE user_settings ADD COLUMN advanced_options JSON DEFAULT \'{}\'',
+        )
+
         # Normalize legacy provider value
         cursor.execute("SELECT value FROM config WHERE key = 'LLM_PROVIDER'")
         row = cursor.fetchone()

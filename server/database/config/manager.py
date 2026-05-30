@@ -189,7 +189,8 @@ class ConfigManager:
                 default_letter_template_id,
                 has_completed_splash_screen,
                 scribe_is_ambient,
-                disabled_tools
+                disabled_tools,
+                advanced_options
             FROM user_settings LIMIT 1
             """)
         result = self.db.cursor.fetchone()
@@ -207,6 +208,10 @@ class ConfigManager:
                 settings["disabled_tools"] = json.loads(settings["disabled_tools"])
             else:
                 settings["disabled_tools"] = ["pubmed_search", "wiki_search"]
+            if settings.get("advanced_options"):
+                settings["advanced_options"] = json.loads(settings["advanced_options"])
+            else:
+                settings["advanced_options"] = {}
             return settings
         return {
             "name": "",
@@ -222,6 +227,7 @@ class ConfigManager:
             "has_completed_splash_screen": False,
             "scribe_is_ambient": True,
             "disabled_tools": ["pubmed_search", "wiki_search"],
+            "advanced_options": {},
         }
 
     def update_user_settings(self, settings: dict):
@@ -238,8 +244,9 @@ class ConfigManager:
                 default_letter_template_id,
                 has_completed_splash_screen,
                 scribe_is_ambient,
-                disabled_tools
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                disabled_tools,
+                advanced_options
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 settings.get("name", ""),
@@ -255,6 +262,7 @@ class ConfigManager:
                 bool(settings.get("has_completed_splash_screen", False)),
                 bool(settings.get("scribe_is_ambient", True)),
                 json.dumps(settings.get("disabled_tools", ["pubmed_search", "wiki_search"])),
+                json.dumps(settings.get("advanced_options", {})),
             ),
         )
         self.db.commit()
