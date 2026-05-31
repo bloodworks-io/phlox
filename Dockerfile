@@ -1,5 +1,5 @@
 # Stage 1: Build the React app
-FROM node:lts-slim as build
+FROM node:lts-slim AS build
 
 # Set the working directory
 WORKDIR /usr/src/app
