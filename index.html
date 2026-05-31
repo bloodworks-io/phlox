@@ -36,6 +36,14 @@
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
+        <script>
+            localStorage.setItem(
+                "chakra-ui-color-mode",
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+                    ? "dark"
+                    : "light",
+            );
+        </script>
         <script type="module" src="/src/index.jsx"></script>
     </body>
 </html>
