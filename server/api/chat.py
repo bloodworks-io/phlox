@@ -497,4 +497,6 @@ async def respond_visual(payload: DirectVisualChatRequest):
         raise
     except Exception as e:
         logging.error(f"Error generating direct visual response: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="An internal error occurred while processing the request.") from None
+        raise HTTPException(
+            status_code=500, detail="An internal error occurred while processing the request."
+        ) from None
