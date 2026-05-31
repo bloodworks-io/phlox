@@ -4,6 +4,7 @@ import time
 from typing import Union
 
 import httpx
+
 from server.database.config.manager import config_manager
 
 logger = logging.getLogger(__name__)

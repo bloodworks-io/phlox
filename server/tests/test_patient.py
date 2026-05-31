@@ -3,10 +3,11 @@ Tests for patient endpoints.
 Assumes your patient-related endpoints are included from server/api/patient.py.
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
 
 from server.api.patient import router as patient_router
 
