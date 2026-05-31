@@ -1,6 +1,6 @@
 {
     "name": "Phlox",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "private": true,
     "dependencies": {
         "@chakra-ui/icons": "2.2.4",

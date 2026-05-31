@@ -6,7 +6,7 @@
     "frontendDist": "../build"
   },
   "productName": "Phlox",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "identifier": "com.phlox.app",
   "app": {
     "windows": [
