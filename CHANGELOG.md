@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/bloodworks-io/phlox/compare/v1.0.1...v1.0.2) (2026-05-31)
+
+
+### Bug Fixes
+
+* **ci:** fix release-please version bumping ([0189edb](https://github.com/bloodworks-io/phlox/commit/0189edbfab158aa0e94aa7672243d1f7f7d3f1b7))
+* ruff check ([2d6cb2b](https://github.com/bloodworks-io/phlox/commit/2d6cb2bdf250ecf5f8c8e8fddd83bfd8ff5119b9))
+
 ## [1.0.1](https://github.com/bloodworks-io/phlox/compare/v1.0.0...v1.0.1) (2026-05-31)
 
 
