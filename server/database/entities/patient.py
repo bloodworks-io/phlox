@@ -507,7 +507,9 @@ def delete_patient_by_id(note_id: int) -> bool:
         raise
 
 
-def update_patient_summary(note_id: int, encounter_summary: str, primary_condition: str | None) -> None:
+def update_patient_summary(
+    note_id: int, encounter_summary: str, primary_condition: str | None
+) -> None:
     """
     Update only the encounter summary and primary condition fields for a patient.
 

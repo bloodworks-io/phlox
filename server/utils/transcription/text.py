@@ -3,7 +3,7 @@ import logging
 import random
 import re
 import time
-from typing import Any, Union
+from typing import Any
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import MultiFieldResponse

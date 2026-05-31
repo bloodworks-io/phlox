@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, UploadFile
@@ -104,7 +104,7 @@ def _store_vision_probe_result(
         "vision_capable": bool(vision_capable),
         "status_code": int(status_code),
         "detail": detail,
-        "probed_at": datetime.now(timezone.utc).isoformat(),
+        "probed_at": datetime.now(UTC).isoformat(),
     }
 
     config_manager.update_config(

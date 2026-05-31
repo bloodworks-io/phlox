@@ -249,7 +249,10 @@ Highlight potential documentation gaps and provide standard literature correlati
         accumulated_content = _strip_think_markers(accumulated_content).strip()
         tool_calls = [v for k, v in sorted(accumulated_tool_calls.items())]
 
-        assistant_message: dict[str, Any] = {"role": "assistant", "content": accumulated_content or ""}
+        assistant_message: dict[str, Any] = {
+            "role": "assistant",
+            "content": accumulated_content or "",
+        }
         if accumulated_reasoning:
             assistant_message["reasoning"] = accumulated_reasoning
         if tool_calls:

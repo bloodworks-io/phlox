@@ -57,9 +57,9 @@ async def process_document_content(
 
 async def _process_extracted_text_sections(
     extracted_text: str,
-    name: str | None = None,
-    dob: str | None = None,
-    gender: str | None = None,
+    _name: str | None = None,
+    _dob: str | None = None,
+    _gender: str | None = None,
 ) -> tuple[str, str, str]:
     """
     Process already-extracted document text and return legacy section outputs.

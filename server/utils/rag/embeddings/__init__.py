@@ -14,7 +14,7 @@ class LocalEmbeddingFunction(EmbeddingFunction[Documents]):
     Local embedding function using llama-cpp-python for generating embeddings.
     """
 
-    def __init__(self, model_name: str, models_dir: str | None = None):
+    def __init__(self, model_name: str, _models_dir: str | None = None):
         """
         Initialize the Local Embedding Function.
 

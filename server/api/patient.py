@@ -304,9 +304,7 @@ async def search_patient(ur_number: str):
 
 
 @router.get("/history")
-async def get_history_by_ur_number(
-    ur_number: str, template_key: str | None = None
-):
+async def get_history_by_ur_number(ur_number: str, template_key: str | None = None):
     """Get patient's historical encounters by UR number, optionally filtered by template type."""
     try:
         history = get_patient_history(ur_number, template_key)
