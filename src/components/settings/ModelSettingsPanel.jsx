@@ -26,6 +26,7 @@ import {
     Button,
     Alert,
     AlertIcon,
+    Spinner,
     useColorModeValue,
     useToast,
 } from "@chakra-ui/react";
@@ -60,6 +61,8 @@ const ModelSettingsPanel = ({
     selectedLocalModel = "",
     whisperModelOptions = [],
     whisperModelListAvailable = false,
+    whisperModelsLoading = false,
+    llmModelsLoading = false,
     urlStatus = { whisper: false, llm: false },
     onOpenLocalModelManager,
     showLocalManagerButton,
@@ -626,7 +629,14 @@ const ModelSettingsPanel = ({
                                                         </Text>
                                                     </Tooltip>
 
-                                                    {whisperModelListAvailable &&
+                                                    {whisperModelsLoading ? (
+                                                        <HStack spacing="2">
+                                                            <Spinner size="sm" />
+                                                            <Text fontSize="sm" color="gray.500">
+                                                                Loading models...
+                                                            </Text>
+                                                        </HStack>
+                                                    ) : whisperModelListAvailable &&
                                                     whisperModelOptions.length >
                                                         0 ? (
                                                         <Select
@@ -809,6 +819,14 @@ const ModelSettingsPanel = ({
                                                             Primary Model
                                                         </Text>
                                                     </Tooltip>
+                                                    {llmModelsLoading ? (
+                                                        <HStack spacing="2">
+                                                            <Spinner size="sm" />
+                                                            <Text fontSize="sm" color="gray.500">
+                                                                Loading models...
+                                                            </Text>
+                                                        </HStack>
+                                                    ) : (
                                                     <Select
                                                         size="sm"
                                                         value={
@@ -837,6 +855,7 @@ const ModelSettingsPanel = ({
                                                             ),
                                                         )}
                                                     </Select>
+                                                    )}
                                                 </Box>
 
                                                 <Box>
@@ -849,6 +868,14 @@ const ModelSettingsPanel = ({
                                                             Secondary Model
                                                         </Text>
                                                     </Tooltip>
+                                                    {llmModelsLoading ? (
+                                                        <HStack spacing="2">
+                                                            <Spinner size="sm" />
+                                                            <Text fontSize="sm" color="gray.500">
+                                                                Loading models...
+                                                            </Text>
+                                                        </HStack>
+                                                    ) : (
                                                     <Select
                                                         size="sm"
                                                         value={
@@ -877,6 +904,7 @@ const ModelSettingsPanel = ({
                                                             ),
                                                         )}
                                                     </Select>
+                                                    )}
                                                 </Box>
 
                                                 <Box>
@@ -1040,6 +1068,14 @@ const ModelSettingsPanel = ({
                                                             Embedding Model
                                                         </Text>
                                                     </Tooltip>
+                                                    {llmModelsLoading ? (
+                                                        <HStack spacing="2">
+                                                            <Spinner size="sm" />
+                                                            <Text fontSize="sm" color="gray.500">
+                                                                Loading models...
+                                                            </Text>
+                                                        </HStack>
+                                                    ) : (
                                                     <Select
                                                         size="sm"
                                                         value={
@@ -1067,6 +1103,7 @@ const ModelSettingsPanel = ({
                                                             ),
                                                         )}
                                                     </Select>
+                                                    )}
                                                     <Text
                                                         fontSize="xs"
                                                         color="gray.500"

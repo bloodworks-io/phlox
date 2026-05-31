@@ -44,7 +44,9 @@ const Settings = () => {
     const [letterTemplates, setLetterTemplates] = useState([]);
 
     const [config, setConfig] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [coreLoading, setCoreLoading] = useState(true);
+    const [llmModelsLoading, setLlmModelsLoading] = useState(false);
+    const [whisperModelsLoading, setWhisperModelsLoading] = useState(false);
     const [modelOptions, setModelOptions] = useState([]);
     const [selectedLocalModel, setSelectedLocalModel] = useState("");
     const [whisperModelOptions, setWhisperModelOptions] = useState([]);
@@ -67,13 +69,21 @@ const Settings = () => {
         chatSettings: true,
         localModels: true,
     });
-    const fetchSettings = useCallback(async () => {
+    const fetchCoreSettings = useCallback(async () => {
         try {
-            setLoading(true);
+            setCoreLoading(true);
             const configData = await settingsService.fetchConfig();
             setConfig(configData);
 
-            await Promise.all([
+            // Letter templates fetched here instead of a separate useEffect
+            const [letterResponse] = await Promise.all([
+                settingsService.fetchLetterTemplates().catch((error) => {
+                    console.error(
+                        "Failed to fetch letter templates:",
+                        error,
+                    );
+                    return { templates: [], default_template_id: null };
+                }),
                 settingsService.fetchPrompts(setPrompts),
                 // Only fetch model options if NOT using local models
                 configData?.LLM_PROVIDER !== "local"
@@ -89,45 +99,24 @@ const Settings = () => {
                 settingsService.fetchTemplates(setTemplates),
             ]);
 
+            // Set letter templates from parallel fetch
+            if (letterResponse) {
+                setLetterTemplates(letterResponse.templates);
+                if (letterResponse.default_template_id !== null) {
+                    setUserSettings((prev) => ({
+                        ...prev,
+                        default_letter_template_id:
+                            letterResponse.default_template_id,
+                    }));
+                }
+            }
+
             // Fetch and merge default template into user settings
             const defaultTemplate = await templateService.getDefaultTemplate();
             setUserSettings((prev) => ({
                 ...prev,
                 default_template: defaultTemplate.template_key,
             }));
-
-            // Fetch models based on provider
-            if (configData?.LLM_PROVIDER === "local") {
-                // Fetch local downloaded models
-                try {
-                    const localModels = await localModelApi.fetchLocalModels();
-                    const modelNames = localModels.models.map(
-                        (m) => m.name || m.filename,
-                    );
-                    setModelOptions(modelNames);
-                    const selectedLocal = localModels.models.find(
-                        (m) => m.is_selected,
-                    );
-                    setSelectedLocalModel(
-                        selectedLocal?.name || selectedLocal?.filename || "",
-                    );
-                } catch (error) {
-                    console.error("Error loading local models:", error);
-                }
-            } else if (configData?.LLM_BASE_URL) {
-                await settingsService.fetchLLMModels(
-                    configData,
-                    setModelOptions,
-                );
-            }
-
-            if (configData?.WHISPER_BASE_URL) {
-                await settingsService.fetchWhisperModels(
-                    configData.WHISPER_BASE_URL,
-                    setWhisperModelOptions,
-                    setWhisperModelListAvailable,
-                );
-            }
         } catch (error) {
             console.error("Error loading settings:", error);
             toast({
@@ -138,13 +127,13 @@ const Settings = () => {
                 isClosable: true,
             });
         } finally {
-            setLoading(false);
+            setCoreLoading(false);
         }
-    }, []);
+    }, [toast]);
 
     useEffect(() => {
-        fetchSettings();
-    }, [fetchSettings]);
+        fetchCoreSettings();
+    }, [fetchCoreSettings]);
 
     const debouncedWhisperUrl = useDebounce(config?.WHISPER_BASE_URL, 500);
     const debouncedLlmBaseUrl = useDebounce(config?.LLM_BASE_URL, 500);
@@ -185,6 +174,7 @@ const Settings = () => {
                 return;
             }
 
+            setWhisperModelsLoading(true);
             try {
                 await settingsService.fetchWhisperModels(
                     debouncedWhisperUrl,
@@ -195,6 +185,8 @@ const Settings = () => {
                 console.error("Error refreshing Whisper models:", error);
                 setWhisperModelOptions([]);
                 setWhisperModelListAvailable(false);
+            } finally {
+                setWhisperModelsLoading(false);
             }
         };
 
@@ -213,6 +205,7 @@ const Settings = () => {
                 return;
             }
 
+            setLlmModelsLoading(true);
             try {
                 await settingsService.fetchLLMModels(
                     {
@@ -225,6 +218,8 @@ const Settings = () => {
             } catch (error) {
                 console.error("Error refreshing LLM models:", error);
                 setModelOptions([]);
+            } finally {
+                setLlmModelsLoading(false);
             }
         };
 
@@ -236,25 +231,34 @@ const Settings = () => {
         config?.LLM_API_KEY,
     ]);
 
+    // Load local models when provider is "local"
     useEffect(() => {
-        const fetchLetterTemplates = async () => {
-            try {
-                const response = await settingsService.fetchLetterTemplates();
-                setLetterTemplates(response.templates);
+        if (config?.LLM_PROVIDER !== "local") return;
 
-                if (response.default_template_id !== null) {
-                    setUserSettings((prev) => ({
-                        ...prev,
-                        default_letter_template_id:
-                            response.default_template_id,
-                    }));
-                }
+        const fetchLocalModels = async () => {
+            setLlmModelsLoading(true);
+            try {
+                const localModels = await localModelApi.fetchLocalModels();
+                const modelNames = localModels.models.map(
+                    (m) => m.name || m.filename,
+                );
+                setModelOptions(modelNames);
+                const selectedLocal = localModels.models.find(
+                    (m) => m.is_selected,
+                );
+                setSelectedLocalModel(
+                    selectedLocal?.name || selectedLocal?.filename || "",
+                );
             } catch (error) {
-                console.error("Failed to fetch letter templates:", error);
+                console.error("Error loading local models:", error);
+                setModelOptions([]);
+            } finally {
+                setLlmModelsLoading(false);
             }
         };
-        fetchLetterTemplates();
-    }, []);
+
+        fetchLocalModels();
+    }, [config?.LLM_PROVIDER]);
 
     const toggleCollapse = (section) => {
         setCollapseStates((prev) => ({
@@ -274,7 +278,7 @@ const Settings = () => {
             });
 
             // Fetch settings again after saving
-            await fetchSettings();
+            await fetchCoreSettings();
 
             toast({
                 title: "Settings saved and refreshed",
@@ -294,7 +298,7 @@ const Settings = () => {
     };
 
     const handleRestoreDefaults = async () => {
-        await settingsService.resetToDefaults(fetchSettings, toast);
+        await settingsService.resetToDefaults(fetchCoreSettings, toast);
     };
 
     const handlePromptReset = async (promptType) => {
@@ -350,10 +354,10 @@ const Settings = () => {
     const handleClearDatabase = async (newEmbeddingModel) => {
         await settingsService.clearDatabase(newEmbeddingModel, config, toast);
         // Refresh settings after database clear
-        await fetchSettings();
+        await fetchCoreSettings();
     };
 
-    if (loading) {
+    if (coreLoading) {
         return <Box>Loading...</Box>;
     }
     return (
@@ -383,6 +387,8 @@ const Settings = () => {
                     embeddingModelOptions={modelOptions}
                     whisperModelOptions={whisperModelOptions}
                     whisperModelListAvailable={whisperModelListAvailable}
+                    whisperModelsLoading={whisperModelsLoading}
+                    llmModelsLoading={llmModelsLoading}
                     urlStatus={urlStatus}
                     onOpenLocalModelManager={localModelsDisclosure.onOpen}
                     showLocalManagerButton
