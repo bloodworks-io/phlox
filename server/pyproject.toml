@@ -9,7 +9,7 @@ dependencies = [
     "json-repair==0.55.0",
     "openai==2.14.0",
     "platformdirs==4.5.1",
-    "pydantic==2.12.5",
+    "pydantic==2.13.4",
     "python-multipart==0.0.22",
     "rapidfuzz==3.14.3",
     "sqlcipher3==0.6.2",
