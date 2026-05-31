@@ -6,6 +6,7 @@
       "changelog-path": "CHANGELOG.md",
       "include-v-in-tag": true,
       "include-component-in-tag": false,
+      "draft": true,
       "extra-files": [
         {
           "type": "toml",
@@ -19,8 +20,7 @@
         },
         {
           "type": "generic",
-          "path": "server/_version.py",
-          "line": "^__version__ = "
+          "path": "server/_version.py"
         },
         {
           "type": "toml",
