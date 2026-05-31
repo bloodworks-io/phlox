@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.0.0](https://github.com/bloodworks-io/phlox/compare/v0.11.0...v1.0.0) (2026-05-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** remove icalendar dependency
+* remove unused landing components, RSS system, and reasoning scheduler
+
+### Features
+
+* add pubmed, wikipedia tools; centralise tool calling; add streaming accumulator ([a8166a2](https://github.com/bloodworks-io/phlox/commit/a8166a2a4ad8baf931333465329e3fc42479311c))
+* add settings-driven hybrid document/chat/RAG processing with vision capability probing, direct visual LLM flows, and OCR fallback paths ([0fdbc57](https://github.com/bloodworks-io/phlox/commit/0fdbc579b3392241be02988fe3866850a93170b2))
+* filter sensitive data from MCP servers toggle ([b191e00](https://github.com/bloodworks-io/phlox/commit/b191e00003bb49d9c29831cf86da7a001a5aa7f1))
+* image upload endpoint ([3b67fc2](https://github.com/bloodworks-io/phlox/commit/3b67fc2dd8976d2e4f230e84e9f470a545a2f7e5))
+* initial implementation of agent dashboard ([745aa5d](https://github.com/bloodworks-io/phlox/commit/745aa5d1ce9ea62317277f6752dc932a5d926c6d))
+* initial mcp implementation ([f0c3ed1](https://github.com/bloodworks-io/phlox/commit/f0c3ed126970e87b45c10a9f4ac69f2efa21daea))
+* interleaved thinking/tool calling ([7794b1c](https://github.com/bloodworks-io/phlox/commit/7794b1ccc208563dcde7b29645557732c63cde27))
+* new tools for listing outstanding jobs, completing jobs, searching notes ([5c752fa](https://github.com/bloodworks-io/phlox/commit/5c752fabae39ac7c31f42c2a5c11b152f8a2cbf1))
+* reasoning can call tools ([7afbef9](https://github.com/bloodworks-io/phlox/commit/7afbef950055a10f7cd5c2cf4d69e84ab3c63884))
+
+
+### Bug Fixes
+
+* add style example to document processing ([38ce3c1](https://github.com/bloodworks-io/phlox/commit/38ce3c1c2ef5f444165d7ff78d5ba1bb2ac690d2))
+* chat logic not wired correctly in tauri ([c87aa2a](https://github.com/bloodworks-io/phlox/commit/c87aa2adec6a13b96dbcf85f14497234bc892927))
+* citations with new tool format in chat ([db5b9bf](https://github.com/bloodworks-io/phlox/commit/db5b9bf308e28b7ef820d9b0ea9d2a4b14890c9a))
+* debounce endpoints still not working properly ([ccfcb26](https://github.com/bloodworks-io/phlox/commit/ccfcb26b066b1723134e4377c043be5623f5074f))
+* debounce llm and whisper URL settings input ([91bffd4](https://github.com/bloodworks-io/phlox/commit/91bffd48cd70f3e23a3535a8ccdf1ef6355b9c8c))
+* preserve UTF-8 characters (addresses [#113](https://github.com/bloodworks-io/phlox/issues/113)) ([4c061ae](https://github.com/bloodworks-io/phlox/commit/4c061ae98116474f1583a3bcb025f194de2988ed))
+* resolve ~150 ruff lint errors across server codebase ([ae85e19](https://github.com/bloodworks-io/phlox/commit/ae85e193b95ef397de0ac850556b4f05059a1e64))
+* rewire file upload for transcription ([bf15d51](https://github.com/bloodworks-io/phlox/commit/bf15d51798a395045f717fb5d50b99b8bea22e83))
+* **security:** pin uv image, remove dead deps, update lockfiles ([9f63c1d](https://github.com/bloodworks-io/phlox/commit/9f63c1d416ddb277879b15f0bea0919b08df77ad))
+* **security:** remove clear-text PHI logging and error message fixes ([f13e4c9](https://github.com/bloodworks-io/phlox/commit/f13e4c9262638065070712188f02db826cbd0c33))
+* **security:** resolve 16 bandit findings across server codebase ([158fd4d](https://github.com/bloodworks-io/phlox/commit/158fd4db58749b003baf9e72ce422a40bbf6ae90))
+* server restart calls not working in tauri ([e75499c](https://github.com/bloodworks-io/phlox/commit/e75499c71003708d0b9af48e1c46b70360c816ac))
+* **tests:** re-architect stale test suite to resolve collection and runtime failures ([7b04502](https://github.com/bloodworks-io/phlox/commit/7b04502ef1d5a5d1ac2e308ebc323ecbc8ac29de))
+* tool calling broke on final round ([7daf128](https://github.com/bloodworks-io/phlox/commit/7daf1283af99b2bed7be6c4dde5744f354161a2a))
+* **types:** resolve type errors across codebase ([d184198](https://github.com/bloodworks-io/phlox/commit/d184198aa4a8a42d51d48a3cf453b6d3c3b7334b))
+* **ui:** dark/light mode inconsistency ([45e45de](https://github.com/bloodworks-io/phlox/commit/45e45de72746d688df9d9399d37a086341825dd9))
+* **ui:** dashboard collapse dimensions ([b2fb5c8](https://github.com/bloodworks-io/phlox/commit/b2fb5c86296d3d8e33c2edf305861527c3fd0384))
+* **ui:** render page immediately instead of blocking on slow external endpoints. ([c6733f2](https://github.com/bloodworks-io/phlox/commit/c6733f2f3067b6136581cade3be2f08a6f8bab59))
+* various tool calling fixes ([31f18b1](https://github.com/bloodworks-io/phlox/commit/31f18b1167d479f5ceb931ad7b075f1821e58f35))
+
+
+### Miscellaneous Chores
+
+* **deps:** remove icalendar dependency ([4823578](https://github.com/bloodworks-io/phlox/commit/48235788310277c99ad1b92f47f126ed65979acd))
+* remove unused landing components, RSS system, and reasoning scheduler ([5cb0ae4](https://github.com/bloodworks-io/phlox/commit/5cb0ae484b4ddd6bd41dd072fa4b8d9938a32432))
+
 ## [0.11.0](https://github.com/bloodworks-io/phlox/compare/v0.10.2...v0.11.0) (2026-03-13)
 
 
