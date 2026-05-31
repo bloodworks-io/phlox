@@ -26,6 +26,7 @@ jobs:
           cd server
           ~/.local/bin/uv venv .venv
           ~/.local/bin/uv pip install ruff ty bandit[toml] pydantic types-requests
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Run Ruff
         run: |

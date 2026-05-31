@@ -27,14 +27,18 @@ jobs:
           persist-credentials: false
           submodules: false
 
+      # whisper.cpp v1.8.4
       - name: Checkout whisper.cpp
         run: |
-          git clone --depth 1 --branch v1.8.3 https://github.com/ggerganov/whisper.cpp.git src-tauri/whisper.cpp
+          git clone https://github.com/ggml-org/whisper.cpp.git src-tauri/whisper.cpp
+          cd src-tauri/whisper.cpp && git checkout 9386f239401074690479731c1e41683fbbeac557
           rm -rf src-tauri/whisper.cpp/.git
 
+      # llama.cpp b9437
       - name: Checkout llama.cpp
         run: |
-          git clone --depth 1 --branch b8095 https://github.com/ggerganov/llama.cpp.git src-tauri/llama.cpp
+          git clone https://github.com/ggml-org/llama.cpp.git src-tauri/llama.cpp
+          cd src-tauri/llama.cpp && git checkout aa46bda89b9a8378ae76bb15fc2ce2f571f0983c
           rm -rf src-tauri/llama.cpp/.git
 
       - name: Import signing certificate

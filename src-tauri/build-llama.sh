@@ -32,7 +32,7 @@ fi
 # Check if llama.cpp directory exists
 if [ ! -d "$LLAMA_DIR" ]; then
   echo "llama.cpp directory not found. Cloning llama.cpp repository..."
-  git clone --depth 1 https://github.com/ggerganov/llama.cpp.git "$LLAMA_DIR"
+  git clone --depth 1 https://github.com/ggml-org/llama.cpp.git "$LLAMA_DIR"
   echo "llama.cpp cloned successfully"
 fi
 
