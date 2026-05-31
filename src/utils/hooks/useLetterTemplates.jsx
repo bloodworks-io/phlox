@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { letterApi } from "../api/letterApi";
 import { settingsApi } from "../api/settingsApi";
 
-export const useLetterTemplates = (patientId) => {
+export const useLetterTemplates = (noteId) => {
     const [letterTemplates, setLetterTemplates] = useState([]);
     const [defaultTemplateId, setDefaultTemplateId] = useState(null);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -24,7 +24,7 @@ export const useLetterTemplates = (patientId) => {
 
     // Fetch letter templates
     useEffect(() => {
-        if (!patientId) return;
+        if (!noteId) return;
 
         letterApi
             .fetchLetterTemplates()
@@ -49,7 +49,7 @@ export const useLetterTemplates = (patientId) => {
             .catch((err) =>
                 console.error("Error fetching letter templates:", err),
             );
-    }, [patientId]);
+    }, [noteId]);
 
     const selectTemplate = (template) => {
         if (template === "custom") {

@@ -250,19 +250,19 @@ def update_patient(patient: Patient) -> None:
     get_db().commit()
 
 
-def update_patient_reasoning(patient_id: int, reasoning_output: dict) -> None:
+def update_patient_reasoning(note_id: int, reasoning_output: dict) -> None:
     """
     Update the reasoning_output field for the specified patient.
 
     Args:
-        patient_id (int): The ID of the patient.
+        note_id (int): The ID of the patient.
         reasoning_output (dict): The reasoning output data.
     """
     try:
         reasoning_output_json = json.dumps(reasoning_output)
         get_db().cursor.execute(
             "UPDATE patients SET reasoning_output = ? WHERE id = ?",
-            (reasoning_output_json, patient_id),
+            (reasoning_output_json, note_id),
         )
         get_db().commit()
     except Exception as e:
@@ -341,18 +341,18 @@ def get_patients_by_date(
         raise
 
 
-def get_patient_by_id(patient_id: int) -> dict[str, Any] | None:
+def get_patient_by_id(note_id: int) -> dict[str, Any] | None:
     """
     Retrieve a patient by ID.
 
     Args:
-        patient_id (int): The patient's ID.
+        note_id (int): The patient's ID.
 
     Returns:
         Optional[Dict[str, Any]]: Patient data if found.
     """
     try:
-        get_db().cursor.execute("SELECT * FROM patients WHERE id = ?", (patient_id,))
+        get_db().cursor.execute("SELECT * FROM patients WHERE id = ?", (note_id,))
         row = get_db().cursor.fetchone()
         if row:
             patient = dict(row)
@@ -488,18 +488,18 @@ def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
         raise
 
 
-def delete_patient_by_id(patient_id: int) -> bool:
+def delete_patient_by_id(note_id: int) -> bool:
     """
     Delete a patient record.
 
     Args:
-        patient_id (int): The ID of the patient to delete.
+        note_id (int): The ID of the patient to delete.
 
     Returns:
         bool: True if deleted successfully.
     """
     try:
-        get_db().cursor.execute("DELETE FROM patients WHERE id = ?", (patient_id,))
+        get_db().cursor.execute("DELETE FROM patients WHERE id = ?", (note_id,))
         get_db().commit()
         return get_db().cursor.rowcount > 0
     except Exception as e:
@@ -507,7 +507,7 @@ def delete_patient_by_id(patient_id: int) -> bool:
         raise
 
 
-def update_patient_summary(patient_id: int, encounter_summary: str, primary_condition: str) -> None:
+def update_patient_summary(note_id: int, encounter_summary: str, primary_condition: str) -> None:
     """
     Update only the encounter summary and primary condition fields for a patient.
 
@@ -515,7 +515,7 @@ def update_patient_summary(patient_id: int, encounter_summary: str, primary_cond
     these fields after the patient record has already been saved.
 
     Args:
-        patient_id (int): The ID of the patient to update.
+        note_id (int): The ID of the patient to update.
         encounter_summary (str): The generated encounter summary.
         primary_condition (str): The extracted primary condition.
     """
@@ -532,7 +532,7 @@ def update_patient_summary(patient_id: int, encounter_summary: str, primary_cond
                 encounter_summary,
                 primary_condition,
                 datetime.now().isoformat(),
-                patient_id,
+                note_id,
             ),
         )
         get_db().commit()

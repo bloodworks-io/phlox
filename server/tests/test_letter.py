@@ -41,7 +41,7 @@ async def test_save_letter(monkeypatch):
         return "This is a generated letter."
 
     monkeypatch.setattr("server.api.letter.generate_letter_content", fake_generate_letter_content)
-    payload = {"patientId": 123, "letter": "This is a saved letter."}
+    payload = {"noteId": 123, "letter": "This is a saved letter."}
     response = client.post("/api/letter/save", json=payload)
     assert response.status_code == 200
     data = response.json()
@@ -50,11 +50,11 @@ async def test_save_letter(monkeypatch):
 
 
 def test_fetch_letter(monkeypatch):
-    async def fake_fetch_patient_letter(_patientId):
+    async def fake_fetch_patient_letter(_noteId):
         return "Fetched letter content."
 
     monkeypatch.setattr("server.api.letter.fetch_patient_letter", fake_fetch_patient_letter)
-    response = client.get("/api/letter/fetch-letter?patientId=123")
+    response = client.get("/api/letter/fetch-letter?noteId=123")
     assert response.status_code == 200
     data = response.json()
     assert "letter" in data

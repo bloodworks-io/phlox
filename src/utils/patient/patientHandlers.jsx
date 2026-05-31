@@ -33,7 +33,7 @@ export const handleSavePatient = async (
             refreshSidebar,
         );
         if (savedPatient && !patient.id) {
-            navigate(`/patient/${savedPatient.id}`);
+            navigate(`/note/${savedPatient.id}`);
         }
         return savedPatient;
     } catch (error) {
@@ -63,10 +63,10 @@ export const handleSearchPatient = async (
     }
 };
 
-export const handleLoadPatientDetails = async (patientId, setters) => {
+export const handleLoadPatientDetails = async (noteId, setters) => {
     try {
         const patientData = await patientApi.fetchPatientDetails(
-            patientId,
+            noteId,
             setters,
         );
         return patientData;
@@ -76,15 +76,15 @@ export const handleLoadPatientDetails = async (patientId, setters) => {
     }
 };
 
-export const handleFetchPatientLetter = async (patientId) => {
-    const response = await letterApi.fetchLetter(patientId);
+export const handleFetchPatientLetter = async (noteId) => {
+    const response = await letterApi.fetchLetter(noteId);
 
     return response;
 };
 
-export const handleSavePatientLetter = async (patientId, letter, toast) => {
+export const handleSavePatientLetter = async (noteId, letter, toast) => {
     try {
-        await letterApi.savePatientLetter(patientId, letter);
+        await letterApi.savePatientLetter(noteId, letter);
         toast({
             title: "Success",
             description: "Letter saved successfully",
@@ -99,17 +99,17 @@ export const handleSavePatientLetter = async (patientId, letter, toast) => {
 };
 
 export const handleUpdateJobsList = async (
-    patientId,
+    noteId,
     jobsList,
     patients,
     setPatients,
     refreshSidebar,
 ) => {
     try {
-        await patientApi.updateJobsList(patientId, jobsList);
+        await patientApi.updateJobsList(noteId, jobsList);
         setPatients((prevPatients) =>
             prevPatients.map((p) =>
-                p.id === patientId ? { ...p, jobs_list: jobsList } : p,
+                p.id === noteId ? { ...p, jobs_list: jobsList } : p,
             ),
         );
         refreshSidebar();
@@ -120,14 +120,14 @@ export const handleUpdateJobsList = async (
 };
 
 export const resetJobsItems = async (
-    patientId,
+    noteId,
     patients,
     setPatients,
     refreshSidebar,
 ) => {
     try {
         // Find the patient
-        const patient = patients.find((p) => p.id === patientId);
+        const patient = patients.find((p) => p.id === noteId);
         if (!patient) {
             console.error("Patient not found");
             return;
@@ -140,13 +140,13 @@ export const resetJobsItems = async (
         }));
 
         // Update the jobs list on the server
-        await patientApi.updateJobsList(patientId, updatedJobsList);
+        await patientApi.updateJobsList(noteId, updatedJobsList);
 
         // Update the local state
         if (setPatients) {
             setPatients((prevPatients) =>
                 prevPatients.map((p) =>
-                    p.id === patientId
+                    p.id === noteId
                         ? { ...p, jobs_list: updatedJobsList }
                         : p,
                 ),
@@ -166,7 +166,7 @@ export const resetJobsItems = async (
 const debounceState = new Map();
 
 export const toggleJobsItem = async (
-    patientId,
+    noteId,
     index,
     patients,
     refreshSidebar,
@@ -177,13 +177,13 @@ export const toggleJobsItem = async (
     }
 
     try {
-        const patient = patients.find((p) => p.id === patientId);
+        const patient = patients.find((p) => p.id === noteId);
         if (patient) {
             const updatedJobsList = [...patient.jobs_list];
             updatedJobsList[index].completed =
                 !updatedJobsList[index].completed;
 
-            await patientApi.updateJobsList(patientId, updatedJobsList);
+            await patientApi.updateJobsList(noteId, updatedJobsList);
 
             // Since we're not passing setPatients anymore, we'll rely on refreshSidebar
             // to update the UI
@@ -197,42 +197,42 @@ export const toggleJobsItem = async (
     }
 };
 
-const executeUpdate = async (patientId, jobsList, refreshSidebar) => {
+const executeUpdate = async (noteId, jobsList, refreshSidebar) => {
     try {
-        await patientApi.updateJobsList(patientId, jobsList);
+        await patientApi.updateJobsList(noteId, jobsList);
         if (typeof refreshSidebar === "function") {
             refreshSidebar();
         }
     } catch (error) {
         console.error("Error updating jobs list (debounced):", error);
     } finally {
-        debounceState.delete(patientId);
+        debounceState.delete(noteId);
     }
 };
 
 export const debouncedUpdateJobsList = (
-    patientId,
+    noteId,
     jobsList,
     refreshSidebar,
     debounceMs = 500,
 ) => {
-    const existing = debounceState.get(patientId);
+    const existing = debounceState.get(noteId);
     if (existing) {
         clearTimeout(existing.timer);
     }
 
     const timer = setTimeout(() => {
-        executeUpdate(patientId, jobsList, refreshSidebar);
+        executeUpdate(noteId, jobsList, refreshSidebar);
     }, debounceMs);
 
-    debounceState.set(patientId, { timer, jobsList, refreshSidebar });
+    debounceState.set(noteId, { timer, jobsList, refreshSidebar });
 };
 
-export const flushPendingJobsUpdate = (patientId) => {
-    const existing = debounceState.get(patientId);
+export const flushPendingJobsUpdate = (noteId) => {
+    const existing = debounceState.get(noteId);
     if (existing) {
         clearTimeout(existing.timer);
-        executeUpdate(patientId, existing.jobsList, existing.refreshSidebar);
+        executeUpdate(noteId, existing.jobsList, existing.refreshSidebar);
     }
 };
 

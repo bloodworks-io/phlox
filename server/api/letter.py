@@ -44,8 +44,8 @@ async def generate_letter(request: LetterRequest):
 async def save_letter(request: LetterSave):
     """Saves a letter."""
     try:
-        update_patient_letter(request.patientId, request.letter)
-        logging.info(f"Patient letter updated for ID: {request.patientId}")
+        update_patient_letter(request.noteId, request.letter)
+        logging.info(f"Patient letter updated for ID: {request.noteId}")
         return {"message": "Letter saved successfully"}
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")
@@ -53,10 +53,10 @@ async def save_letter(request: LetterSave):
 
 
 @router.get("/fetch-letter")
-async def fetch_letter(patientId: int):
-    """Fetches a letter by patient ID."""
+async def fetch_letter(noteId: int):
+    """Fetches a letter by note ID."""
     try:
-        letter = await fetch_patient_letter(patientId)
+        letter = await fetch_patient_letter(noteId)
         return JSONResponse(content={"letter": letter or "No letter attached to encounter"})
     except Exception as e:
         logging.error(f"Error fetching letter: {e}")

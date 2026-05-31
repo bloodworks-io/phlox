@@ -59,8 +59,8 @@ const PatientTable = ({
 
   useEffect(() => {
     return () => {
-      pendingJobsUpdates.current.forEach((_, patientId) => {
-        flushPendingJobsUpdate(patientId);
+      pendingJobsUpdates.current.forEach((_, noteId) => {
+        flushPendingJobsUpdate(noteId);
       });
     };
   }, []);
@@ -129,17 +129,17 @@ const PatientTable = ({
     }
   };
 
-  const handleGenerateReasoning = async (patientId) => {
+  const handleGenerateReasoning = async (noteId) => {
     try {
-      setLoadingStates((prev) => ({ ...prev, [patientId]: true }));
+      setLoadingStates((prev) => ({ ...prev, [noteId]: true }));
       // Use streaming API, ignore status updates (table just shows spinner)
       const res = await patientApi.generateReasoningStream(
-        patientId,
+        noteId,
         () => {}, // No-op status callback - table only shows spinner
         toast,
       );
       const updatedPatients = patients.map((patient) =>
-        patient.id === patientId
+        patient.id === noteId
           ? { ...patient, reasoning: res, activeSection: "summary" }
           : patient,
       );
@@ -153,7 +153,7 @@ const PatientTable = ({
         isClosable: true,
       });
     } finally {
-      setLoadingStates((prev) => ({ ...prev, [patientId]: false }));
+      setLoadingStates((prev) => ({ ...prev, [noteId]: false }));
     }
   };
 

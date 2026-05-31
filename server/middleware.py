@@ -263,9 +263,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def _get_limit_for_path(self, path: str) -> tuple[int, int]:
         """Get rate limit for a given path."""
         # Check for patient list vs detail
-        if path == "/api/patient" or path == "/api/patient/":
+        if path == "/api/note" or path == "/api/note/":
             return self.PATIENT_LIST_LIMIT
-        if path.startswith("/api/patient/"):
+        if path.startswith("/api/note/"):
             return self.PATIENT_DETAIL_LIMIT
 
         # Check other endpoints
@@ -277,9 +277,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _get_endpoint_key(self, path: str) -> str:
         """Get endpoint key for rate limiting (groups related paths)."""
-        if path.startswith("/api/patient/") and path != "/api/patient/":
-            # Group all individual patient requests
-            return "/api/patient/detail"
+        if path.startswith("/api/note/") and path != "/api/note/":
+            # Group all individual note requests
+            return "/api/note/detail"
         for prefix in self.RATE_LIMITS:
             if path.startswith(prefix):
                 return prefix

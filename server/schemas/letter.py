@@ -47,9 +47,9 @@ class LetterSave(BaseModel):
     Represents a request to save a generated letter.
 
     Attributes:
-        patientId (int): Unique identifier of the patient
+        noteId (int): Unique identifier of the note
         letter (str): Content of the letter to be saved
     """
 
-    patientId: int
+    noteId: int
     letter: str

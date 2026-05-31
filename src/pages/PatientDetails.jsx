@@ -101,7 +101,7 @@ const PatientDetails = ({
         dob: patient?.dob,
         gender: patient?.gender,
         template: currentTemplate,
-        patientId: patient?.id,
+        noteId: patient?.id,
         handleTranscriptionComplete: (data) =>
             handleTranscriptionComplete(data),
         setLoading,
@@ -510,7 +510,7 @@ const PatientDetails = ({
                     setIsSummaryModified(false);
                     setInitialTranscriptionContent({});
                     setHasTranscriptionOccurred(false);
-                    navigate(`/patient/${savedPatient.id}`);
+                    navigate(`/note/${savedPatient.id}`);
                 }
             } else {
                 await savePatient(
@@ -840,7 +840,7 @@ const PatientDetails = ({
                 <ReasoningPanel
                     isOpen={reasoning.isReasoningOpen}
                     onClose={reasoning.closeReasoning}
-                    patientId={patient?.id}
+                    noteId={patient?.id}
                     initialReasoning={patient?.reasoning_output}
                     onReasoningGenerated={handleReasoningGenerated}
                 />
@@ -899,7 +899,7 @@ const PatientDetails = ({
                 gender={patient.gender}
                 dob={patient.dob}
                 templateKey={currentTemplate?.template_key}
-                patientId={patient?.id}
+                noteId={patient?.id}
             />
 
             {/* Document Panel */}

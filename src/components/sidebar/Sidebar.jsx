@@ -100,7 +100,7 @@ const Sidebar = ({
     // Function definitions remain the same
     const fetchPatients = async (date) => {
         try {
-            const url = await buildApiUrl(`/api/patient/list?date=${date}`);
+            const url = await buildApiUrl(`/api/note/list?date=${date}`);
             const response = await universalFetch(url);
             if (!response.ok) {
                 throw new Error("Network response was not ok");
@@ -116,7 +116,7 @@ const Sidebar = ({
 
     const fetchIncompleteJobsCount = async () => {
         try {
-            const url = await buildApiUrl(`/api/patient/incomplete-jobs-count`);
+            const url = await buildApiUrl(`/api/note/incomplete-jobs-count`);
             const response = await universalFetch(url);
             if (!response.ok) {
                 throw new Error("Network response was not ok");
@@ -142,7 +142,7 @@ const Sidebar = ({
         if (patientToDelete) {
             try {
                 const url = await buildApiUrl(
-                    `/api/patient/id/${patientToDelete.id}`,
+                    `/api/note/id/${patientToDelete.id}`,
                 );
                 const response = await universalFetch(url, {
                     method: "DELETE",

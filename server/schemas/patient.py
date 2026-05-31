@@ -91,11 +91,11 @@ class JobsListUpdate(BaseModel):
     Represents an update to a patient's jobs list.
 
     Attributes:
-        patientId (int): Unique identifier of the patient
+        noteId (int): Unique identifier of the note
         jobsList (List[Job]): List of jobs for the patient
     """
 
-    patientId: int
+    noteId: int
     jobsList: list[Job]
 
 

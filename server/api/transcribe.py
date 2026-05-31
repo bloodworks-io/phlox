@@ -56,7 +56,7 @@ async def transcribe(
     dob: str | None = Form(None),
     templateKey: str | None = Form(None),
     isAmbient: bool = Form(True),
-    patientId: int | None = Form(None),
+    noteId: int | None = Form(None),
 ):
     """Transcribes audio and processes the transcription."""
     try:
@@ -85,10 +85,10 @@ async def transcribe(
 
         # Look up primary condition for returning patients
         primary_condition = None
-        if patientId:
+        if noteId:
             from server.database.entities.patient import get_patient_by_id
 
-            existing_patient = get_patient_by_id(patientId)
+            existing_patient = get_patient_by_id(noteId)
             if existing_patient and existing_patient.get("primary_condition"):
                 primary_condition = existing_patient["primary_condition"]
 
@@ -148,7 +148,7 @@ async def reprocess_transcription(
     original_transcription_duration: float | None = Form(0),
     templateKey: str | None = Form(None),
     isAmbient: bool = Form(True),
-    patientId: int | None = Form(None),
+    noteId: int | None = Form(None),
 ):
     """Reprocesses an existing transcription."""
     try:
@@ -169,10 +169,10 @@ async def reprocess_transcription(
 
         # Look up primary condition for returning patients
         primary_condition = None
-        if patientId:
+        if noteId:
             from server.database.entities.patient import get_patient_by_id
 
-            existing_patient = get_patient_by_id(patientId)
+            existing_patient = get_patient_by_id(noteId)
             if existing_patient and existing_patient.get("primary_condition"):
                 primary_condition = existing_patient["primary_condition"]
 

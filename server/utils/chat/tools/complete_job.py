@@ -21,11 +21,11 @@ logger = logging.getLogger(__name__)
 COMPLETE_JOB_TOOL_NAME = "complete_job"
 
 
-async def complete_job(patient_id: int, job_id: int) -> dict:
+async def complete_job(note_id: int, job_id: int) -> dict:
     """Mark a job as completed for a patient.
 
     Args:
-        patient_id: The database record ID of the patient encounter
+        note_id: The database record ID of the patient encounter
         job_id: The ID of the job within that record's jobs_list
 
     Returns:
@@ -39,13 +39,13 @@ async def complete_job(patient_id: int, job_id: int) -> dict:
             FROM patients
             WHERE id = ?
             """,
-            (patient_id,),
+            (note_id,),
         )
 
         row = get_db().cursor.fetchone()
 
         if not row:
-            return {"success": False, "error": f"No patient record found with ID: {patient_id}"}
+            return {"success": False, "error": f"No patient record found with ID: {note_id}"}
 
         patient = dict(row)
 
@@ -62,7 +62,7 @@ async def complete_job(patient_id: int, job_id: int) -> dict:
                 jobs_list = []
 
         if not jobs_list:
-            return {"success": False, "error": f"No jobs found for patient record {patient_id}"}
+            return {"success": False, "error": f"No jobs found for patient record {note_id}"}
 
         # Find and update the job
         job_found = False
@@ -82,7 +82,7 @@ async def complete_job(patient_id: int, job_id: int) -> dict:
         if not job_found:
             return {
                 "success": False,
-                "error": f"No job with ID {job_id} found in patient record {patient_id}",
+                "error": f"No job with ID {job_id} found in patient record {note_id}",
             }
 
         if already_completed:
@@ -99,7 +99,7 @@ async def complete_job(patient_id: int, job_id: int) -> dict:
             }
 
         # Update the jobs list in the database
-        update_patient_jobs_list(patient_id, jobs_list)
+        update_patient_jobs_list(note_id, jobs_list)
 
         return {
             "success": True,
@@ -180,18 +180,18 @@ async def execute(
         except json.JSONDecodeError:
             logger.error("Failed to parse function arguments JSON")
 
-    patient_id = function_arguments.get("patient_id")
+    note_id = function_arguments.get("note_id")
     job_id = function_arguments.get("job_id")
 
     result_content: str = ""
     citations: list[str] = []
 
-    if patient_id is None or job_id is None:
-        result_content = "Error: Both patient_id and job_id are required to complete a job."
+    if note_id is None or job_id is None:
+        result_content = "Error: Both note_id and job_id are required to complete a job."
     else:
         try:
             result = await complete_job(
-                patient_id=int(patient_id),
+                note_id=int(note_id),
                 job_id=int(job_id),
             )
 

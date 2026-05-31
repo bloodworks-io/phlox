@@ -5,7 +5,7 @@ import { buildApiUrl } from "../helpers/apiConfig";
 export const patientApi = {
   async savePatientData(saveRequest, toast, refreshSidebar) {
     try {
-      const url = await buildApiUrl("/api/patient/save");
+      const url = await buildApiUrl("/api/note/save");
       const response = await universalFetch(url, {
         method: "POST",
         headers: {
@@ -44,7 +44,7 @@ export const patientApi = {
     return handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(
-          `/api/patient/search?ur_number=${urNumber}`,
+          `/api/note/search?ur_number=${urNumber}`,
         );
         return universalFetch(url);
       },
@@ -73,10 +73,10 @@ export const patientApi = {
     });
   },
 
-  fetchPatientDetails: async (patientId, setters) => {
+  fetchPatientDetails: async (noteId, setters) => {
     return handleApiRequest({
       apiCall: async () => {
-        const url = await buildApiUrl(`/api/patient/id/${patientId}`);
+        const url = await buildApiUrl(`/api/note/id/${noteId}`);
         return universalFetch(url);
       },
       onSuccess: (patientData) => {
@@ -94,14 +94,14 @@ export const patientApi = {
     });
   },
 
-  updateJobsList: async (patientId, jobsList) => {
+  updateJobsList: async (noteId, jobsList) => {
     return handleApiRequest({
       apiCall: async () => {
-        const url = await buildApiUrl(`/api/patient/update-jobs-list`);
+        const url = await buildApiUrl(`/api/note/update-jobs-list`);
         return universalFetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ patientId, jobsList }),
+          body: JSON.stringify({ noteId, jobsList }),
         });
       },
       errorMessage: "Failed to update jobs list",
@@ -110,13 +110,13 @@ export const patientApi = {
 
   /**
    * Generate clinical reasoning with streaming status updates
-   * @param {number} patientId - The patient ID
+   * @param {number} noteId - The patient ID
    * @param {function} onStatus - Callback for status updates (receives status string)
    * @param {object} toast - Chakra UI toast for notifications
    * @returns {Promise<object>} - The reasoning result
    */
-  generateReasoningStream: async (patientId, onStatus, toast) => {
-    const url = await buildApiUrl(`/api/patient/${patientId}/reasoning/stream`);
+  generateReasoningStream: async (noteId, onStatus, toast) => {
+    const url = await buildApiUrl(`/api/note/${noteId}/reasoning/stream`);
     const response = await universalFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -170,7 +170,7 @@ export const patientApi = {
 
   fetchPatientHistoryByTemplate: async (urNumber, templateKey) => {
     const url = await buildApiUrl(
-      `/api/patient/history?ur_number=${urNumber}&template_key=${templateKey}`,
+      `/api/note/history?ur_number=${urNumber}&template_key=${templateKey}`,
     );
     const response = await universalFetch(url);
     if (!response.ok) throw new Error("Failed to fetch patient history");

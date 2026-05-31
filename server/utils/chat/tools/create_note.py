@@ -213,13 +213,13 @@ async def create_patient_note(
             process_duration=None,
         )
 
-        patient_id = save_patient(patient)
+        note_id = save_patient(patient)
 
-        logger.info(f"Created patient note: ID={patient_id}")
+        logger.info(f"Created patient note: ID={note_id}")
 
         return {
             "success": True,
-            "patient_id": patient_id,
+            "note_id": note_id,
             "message": f"Created note for {patient_name} on {encounter_date}",
             **previous_visit_context,  # Include previous visit context for frontend
         }
@@ -290,8 +290,8 @@ async def execute(
                 )
                 if ur_number:
                     result_content += f" UR number: {ur_number}."
-                if result.get("patient_id"):
-                    result_content += f" Patient ID: {result['patient_id']}."
+                if result.get("note_id"):
+                    result_content += f" Patient ID: {result['note_id']}."
                 citations.append(f"Created note for {patient_name}")
             else:
                 result_content = f"Failed to create note: {result.get('error', 'Unknown error')}"

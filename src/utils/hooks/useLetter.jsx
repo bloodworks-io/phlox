@@ -70,15 +70,15 @@ export const useLetter = (setIsModified) => {
         }
     };
 
-    const saveLetter = async (patientId) => {
-        if (!patientId || !finalCorrespondence) {
+    const saveLetter = async (noteId) => {
+        if (!noteId || !finalCorrespondence) {
             showErrorToast("Patient ID and letter content are required");
             return;
         }
 
         setSaveState("saving");
         try {
-            await letterApi.saveLetter(patientId, finalCorrespondence);
+            await letterApi.saveLetter(noteId, finalCorrespondence);
             setIsModified(false);
             setSaveState("saved");
             setTimeout(() => setSaveState("idle"), 2000);
@@ -167,10 +167,10 @@ export const useLetter = (setIsModified) => {
         setLetterContext([]);
     }
 
-    async function loadLetter(patientId) {
+    async function loadLetter(noteId) {
         setLoading(true);
         try {
-            const response = await letterApi.fetchLetter(patientId);
+            const response = await letterApi.fetchLetter(noteId);
             setFinalCorrespondence(
                 response.letter || "No letter attached to encounter",
             );

@@ -10,7 +10,7 @@ import { EmptyState } from "./components/EmptyState";
 
 const ReasoningPanel = forwardRef(
     (
-        { isOpen, onClose, patientId, initialReasoning, onReasoningGenerated },
+        { isOpen, onClose, noteId, initialReasoning, onReasoningGenerated },
         ref,
     ) => {
         const { colorMode } = useColorMode();
@@ -25,7 +25,7 @@ const ReasoningPanel = forwardRef(
             handleGenerateReasoning,
             handleMouseDown,
         } = useReasoning({
-            patientId,
+            noteId,
             initialReasoning,
             onReasoningGenerated,
         });

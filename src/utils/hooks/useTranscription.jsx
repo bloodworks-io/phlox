@@ -105,8 +105,8 @@ export const useTranscription = (onTranscriptionComplete, setLoading) => {
             if (metadata.dob) formData.append("dob", metadata.dob);
             if (metadata.templateKey)
                 formData.append("templateKey", metadata.templateKey);
-            if (metadata.patientId)
-                formData.append("patientId", metadata.patientId);
+            if (metadata.noteId)
+                formData.append("noteId", metadata.noteId);
             formData.append("isAmbient", isAmbient);
 
             const data = await transcriptionApi.transcribeAudio(formData);
@@ -148,8 +148,8 @@ export const useTranscription = (onTranscriptionComplete, setLoading) => {
             if (metadata.dob) formData.append("dob", metadata.dob);
             if (metadata.templateKey)
                 formData.append("templateKey", metadata.templateKey);
-            if (metadata.patientId)
-                formData.append("patientId", metadata.patientId);
+            if (metadata.noteId)
+                formData.append("noteId", metadata.noteId);
             formData.append("isAmbient", isAmbient);
 
             formData.append(

@@ -204,7 +204,7 @@ async def search_patient_notes(
                 results.append(
                     {
                         "encounter_date": record["encounter_date"],
-                        "patient_id": record["id"],
+                        "note_id": record["id"],
                         "matches": encounter_matches[:5],  # Top 5 matches per encounter
                         "match_count": len(encounter_matches),
                     }

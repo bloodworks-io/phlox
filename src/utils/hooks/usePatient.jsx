@@ -45,16 +45,16 @@ export const usePatient = (initialPatient = null) => {
   const { defaultTemplate, loadDefaultTemplate } = useTemplate();
   const { currentTemplate } = useTemplateSelection();
 
-  const loadPatientDetails = async (patientId) => {
+  const loadPatientDetails = async (noteId) => {
     setLoading(true);
     try {
-      const patientData = await patientApi.fetchPatientDetails(patientId, {
+      const patientData = await patientApi.fetchPatientDetails(noteId, {
         setPatient,
         setSelectedDate,
         isFromOutstandingJobs,
         setIsFromOutstandingJobs,
       });
-      const letter = await letterApi.fetchLetter(patientId);
+      const letter = await letterApi.fetchLetter(noteId);
       setFinalCorrespondence(letter || "No letter attached to encounter");
     } catch (error) {
       handleError(error, toast);
@@ -181,7 +181,7 @@ export const usePatient = (initialPatient = null) => {
       if (response) {
         setIsModified(false);
         if (!patient.id && response.id) {
-          navigate(`/patient/${response.id}`);
+          navigate(`/note/${response.id}`);
         }
       }
 
@@ -242,7 +242,7 @@ export const usePatient = (initialPatient = null) => {
   const searchPatient = async (urNumber, selectedDate) => {
     try {
       const response = await universalFetch(
-        `/api/patient/search?ur_number=${urNumber}`,
+        `/api/note/search?ur_number=${urNumber}`,
       );
       if (!response.ok) throw new Error("Search failed");
 
@@ -254,7 +254,7 @@ export const usePatient = (initialPatient = null) => {
         let fullTemplateData = latestEncounter.template_data || {};
         try {
           const fullPatientResponse = await universalFetch(
-            `/api/patient/id/${latestEncounter.id}`,
+            `/api/note/id/${latestEncounter.id}`,
           );
           if (fullPatientResponse.ok) {
             const fullPatient = await fullPatientResponse.json();
@@ -282,7 +282,7 @@ export const usePatient = (initialPatient = null) => {
         // Fetch the previous visit summary
         try {
           const summaryResponse = await universalFetch(
-            `/api/patient/summary/${latestEncounter.id}`,
+            `/api/note/summary/${latestEncounter.id}`,
           );
           if (summaryResponse.ok) {
             const summaryData = await summaryResponse.json();

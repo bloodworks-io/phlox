@@ -109,25 +109,25 @@ export const letterApi = {
     });
   },
 
-  fetchLetter: async (patientId) => {
+  fetchLetter: async (noteId) => {
     return handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(
-          `/api/letter/fetch-letter?patientId=${patientId}`,
+          `/api/letter/fetch-letter?noteId=${noteId}`,
         );
         return universalFetch(url);
       },
     });
   },
 
-  saveLetter: async (patientId, content) =>
+  saveLetter: async (noteId, content) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/letter/save");
         return universalFetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ patientId, letter: content }),
+          body: JSON.stringify({ noteId, letter: content }),
         });
       },
     }),

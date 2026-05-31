@@ -168,7 +168,7 @@ def initialize_and_get_app():
                 ) from e
 
     # Include routers
-    app.include_router(patient.router, prefix="/api/patient")
+    app.include_router(patient.router, prefix="/api/note")
     app.include_router(transcribe.router, prefix="/api/transcribe")
     app.include_router(dashboard.router, prefix="/api/dashboard")
 
@@ -189,12 +189,12 @@ def initialize_and_get_app():
     app.include_router(letter.router, prefix="/api/letter")
 
     # React app routes
-    @app.get("/new-patient")
+    @app.get("/new-note")
     @app.get("/settings")
     @app.get("/rag")
     @app.get("/clinic-summary")
     @app.get("/outstanding-tasks")
-    @app.get("/patient/{patient_id}")
+    @app.get("/note/{note_id}")
     async def serve_react_app():
         return FileResponse(BUILD_DIR / "index.html")
 

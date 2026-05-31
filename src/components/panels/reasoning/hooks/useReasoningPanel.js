@@ -3,7 +3,7 @@ import { useToast } from "@chakra-ui/react";
 import { patientApi } from "../../../../utils/api/patientApi";
 
 export const useReasoningPanel = ({
-    patientId,
+    noteId,
     initialReasoning,
     onReasoningGenerated,
 }) => {
@@ -21,7 +21,7 @@ export const useReasoningPanel = ({
     // Update reasoning when initialReasoning changes
     useEffect(() => {
         setReasoning(initialReasoning);
-    }, [patientId, initialReasoning]);
+    }, [noteId, initialReasoning]);
 
     const handleGenerateReasoning = useCallback(async () => {
         setLoading(true);
@@ -29,7 +29,7 @@ export const useReasoningPanel = ({
         try {
             // Use streaming API for real-time status updates
             const res = await patientApi.generateReasoningStream(
-                patientId,
+                noteId,
                 (statusMessage) => setStatus(statusMessage),
                 toast,
             );
@@ -44,7 +44,7 @@ export const useReasoningPanel = ({
         } finally {
             setLoading(false);
         }
-    }, [patientId, toast, onReasoningGenerated]);
+    }, [noteId, toast, onReasoningGenerated]);
 
     // Resize functionality
     const handleMouseDown = useCallback((e) => {

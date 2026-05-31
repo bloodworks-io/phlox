@@ -277,11 +277,11 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "complete_job",
-                "description": "Mark a specific job or task as completed for a patient encounter. Use this when the user confirms a task has been done or wants to tick off a job. IMPORTANT: You need the patient_id (record ID) from list_outstanding_jobs or get_patient_jobs, not just the patient name.",
+                "description": "Mark a specific job or task as completed for a patient encounter. Use this when the user confirms a task has been done or wants to tick off a job. IMPORTANT: You need the note_id (record ID) from list_outstanding_jobs or get_patient_jobs, not just the patient name.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "patient_id": {
+                        "note_id": {
                             "type": "integer",
                             "description": "The database record ID of the patient encounter (obtained from list_outstanding_jobs or get_patient_jobs)",
                         },
@@ -290,7 +290,7 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
                             "description": "The ID of the job within that record's jobs_list to mark as completed",
                         },
                     },
-                    "required": ["patient_id", "job_id"],
+                    "required": ["note_id", "job_id"],
                     "additionalProperties": False,
                 },
                 "strict": True,

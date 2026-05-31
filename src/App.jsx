@@ -105,9 +105,9 @@ function AppContent({ setIsInitializing }) {
     } = usePatient();
 
     const fetchPatientDetailsWrapper = useCallback(
-        async (patientId) => {
+        async (noteId) => {
             try {
-                await handleLoadPatientDetails(patientId, {
+                await handleLoadPatientDetails(noteId, {
                     setPatient,
                     setSelectedDate,
                     isFromOutstandingJobs,
@@ -121,9 +121,9 @@ function AppContent({ setIsInitializing }) {
     );
 
     useEffect(() => {
-        if (location.pathname.startsWith("/patient/")) {
-            const patientId = location.pathname.split("/").pop();
-            fetchPatientDetailsWrapper(patientId);
+        if (location.pathname.startsWith("/note/")) {
+            const noteId = location.pathname.split("/").pop();
+            fetchPatientDetailsWrapper(noteId);
         }
     }, [location, fetchPatientDetailsWrapper]);
 
@@ -133,7 +133,7 @@ function AppContent({ setIsInitializing }) {
             if (resetLetter) {
                 resetLetter(); // Clear the letter when creating new patient
             }
-            handleNavigation("/new-patient");
+            handleNavigation("/new-note");
         } catch (error) {
             console.error("Error creating new patient:", error);
             toast({
@@ -152,10 +152,10 @@ function AppContent({ setIsInitializing }) {
     ) => {
         setIsFromOutstandingJobs(fromOutstandingJobs);
         if (isModified) {
-            setPendingNavigation(`/patient/${selectedPatient.id}`);
+            setPendingNavigation(`/note/${selectedPatient.id}`);
             onOpen();
         } else {
-            navigate(`/patient/${selectedPatient.id}`);
+            navigate(`/note/${selectedPatient.id}`);
         }
     };
 
@@ -522,7 +522,7 @@ function AppContent({ setIsInitializing }) {
                 >
                     <Routes>
                         <Route
-                            path="/new-patient"
+                            path="/new-note"
                             element={
                                 <PatientDetails
                                     patient={patient}
@@ -541,7 +541,7 @@ function AppContent({ setIsInitializing }) {
                             }
                         />
                         <Route
-                            path="/patient/:id"
+                            path="/note/:id"
                             element={
                                 <PatientDetails
                                     patient={patient}

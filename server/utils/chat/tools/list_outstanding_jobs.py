@@ -68,7 +68,7 @@ async def list_outstanding_jobs() -> dict:
                 total_jobs += len(incomplete_jobs)
                 results.append(
                     {
-                        "patient_id": patient["id"],
+                        "note_id": patient["id"],
                         "name": patient.get("name", "Unknown"),
                         "ur_number": patient.get("ur_number"),
                         "dob": patient.get("dob"),
@@ -122,7 +122,7 @@ def format_outstanding_jobs_response(result: dict) -> str:
         parts.append(f"\nPatient: {patient['name']}")
         parts.append(f"  UR Number: {patient.get('ur_number', 'N/A')}")
         parts.append(f"  Encounter Date: {patient.get('encounter_date', 'N/A')}")
-        parts.append(f"  Patient ID: {patient['patient_id']}")
+        parts.append(f"  Patient ID: {patient['note_id']}")
         parts.append(f"  Outstanding Jobs ({patient['job_count']}):")
 
         for job in patient["jobs"]:

@@ -3,7 +3,7 @@ export const API_ENDPOINTS = {
     PATIENT: {
         SAVE: "/api/save-patient",
         SEARCH: "/api/search-patient",
-        DETAILS: "/api/patient",
+        DETAILS: "/api/note",
         LETTER: "/api/fetch-letter",
         SAVE_LETTER: "/api/save-letter",
         UPDATE_JOBS: "/api/update-jobs-list",

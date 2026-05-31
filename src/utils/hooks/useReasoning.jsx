@@ -4,7 +4,7 @@ import { patientApi } from "../api/patientApi";
 
 
 export const useReasoning = (options = {}) => {
-    const { patientId, initialReasoning, onReasoningGenerated } = options;
+    const { noteId, initialReasoning, onReasoningGenerated } = options;
 
     const [isReasoningOpen, setIsReasoningOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -23,17 +23,17 @@ export const useReasoning = (options = {}) => {
         if (initialReasoning !== undefined) {
             setReasoning(initialReasoning);
         }
-    }, [patientId, initialReasoning]);
+    }, [noteId, initialReasoning]);
 
-    // Only provide API handler if patientId is available
+    // Only provide API handler if noteId is available
     const handleGenerateReasoning = useCallback(async () => {
-        if (!patientId) return;
+        if (!noteId) return;
 
         setLoading(true);
         setStatus("Initializing reasoning engine...");
         try {
             const res = await patientApi.generateReasoningStream(
-                patientId,
+                noteId,
                 (statusMessage) => setStatus(statusMessage),
                 toast,
             );
@@ -48,7 +48,7 @@ export const useReasoning = (options = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [patientId, toast, onReasoningGenerated]);
+    }, [noteId, toast, onReasoningGenerated]);
 
     const openReasoning = useCallback(() => {
         setIsReasoningOpen(true);
@@ -124,7 +124,7 @@ export const useReasoning = (options = {}) => {
         toggleReasoning,
         updateDimensions,
         resetReasoning,
-        handleGenerateReasoning: patientId ? handleGenerateReasoning : undefined,
+        handleGenerateReasoning: noteId ? handleGenerateReasoning : undefined,
         handleMouseDown,
     };
 };
