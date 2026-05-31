@@ -46,6 +46,7 @@ const Settings = () => {
     const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(true);
     const [modelOptions, setModelOptions] = useState([]);
+    const [selectedLocalModel, setSelectedLocalModel] = useState("");
     const [whisperModelOptions, setWhisperModelOptions] = useState([]);
     const [whisperModelListAvailable, setWhisperModelListAvailable] =
         useState(false);
@@ -104,6 +105,12 @@ const Settings = () => {
                         (m) => m.name || m.filename,
                     );
                     setModelOptions(modelNames);
+                    const selectedLocal = localModels.models.find(
+                        (m) => m.is_selected,
+                    );
+                    setSelectedLocalModel(
+                        selectedLocal?.name || selectedLocal?.filename || "",
+                    );
                 } catch (error) {
                     console.error("Error loading local models:", error);
                 }
@@ -372,6 +379,7 @@ const Settings = () => {
                     config={config}
                     handleConfigChange={handleConfigChange}
                     modelOptions={modelOptions}
+                    selectedLocalModel={selectedLocalModel}
                     embeddingModelOptions={modelOptions}
                     whisperModelOptions={whisperModelOptions}
                     whisperModelListAvailable={whisperModelListAvailable}
