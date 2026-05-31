@@ -52,7 +52,9 @@ async def process_document_content(
     extracted-text processing path.
     """
     extracted_text = await extract_text_from_document(document_buffer, content_type)
-    return await _process_extracted_text_sections(extracted_text, _name=name, _dob=dob, _gender=gender)
+    return await _process_extracted_text_sections(
+        extracted_text, _name=name, _dob=dob, _gender=gender
+    )
 
 
 async def _process_extracted_text_sections(
