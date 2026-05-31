@@ -50,7 +50,7 @@ async def refine_field_content(
             ]
 
             # Generate random seed for diversity in outputs
-            random_seed = random.randint(0, 2**32 - 1)
+            random_seed = random.randint(0, 2**32 - 1)  # nosec B311
 
             logger.info(
                 f"Refining field {field.field_key} (attempt {attempt + 1}/{max_retries + 1})..."

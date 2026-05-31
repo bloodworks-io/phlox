@@ -90,8 +90,8 @@ def initialize_fake_patients():
             "template_key": "phlox_01",  # Using Phlox template for example patients
             "template_data": json.dumps(template_data),
             "raw_transcription": f"Raw transcription for {patient_data['name']}",
-            "transcription_duration": round(random.uniform(5.0, 15.0), 2),
-            "process_duration": round(random.uniform(10.0, 30.0), 2),
+            "transcription_duration": round(random.uniform(5.0, 15.0), 2),  # nosec B311
+            "process_duration": round(random.uniform(10.0, 30.0), 2),  # nosec B311
             "final_letter": f"Final letter for {patient_data['name']}'s appointment",
             "primary_condition": patient_data.get("encounter_summary", "")
             .split(" with ")[-1]

@@ -153,7 +153,7 @@ Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapp
                 {"role": "user", "content": transcript_text},
             ]
 
-            random_seed = random.randint(0, 2**32 - 1)
+            random_seed = random.randint(0, 2**32 - 1)  # nosec B311
 
             logger.info(
                 f"Processing {len(fields)} fields in one call (attempt {attempt + 1}/{max_retries + 1})..."

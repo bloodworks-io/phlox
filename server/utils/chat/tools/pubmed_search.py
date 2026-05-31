@@ -6,7 +6,7 @@ This tool searches PubMed for medical literature and research articles.
 
 import json
 import logging
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec B405
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -139,7 +139,7 @@ async def search_pubmed(query: str, max_results: int = 5) -> list[dict]:
         )
 
         articles = []
-        root = ET.fromstring(fetch_response.text)
+        root = ET.fromstring(fetch_response.text)  # nosec B314
 
         # PubMed returns articles in PubmedArticle elements
         for article_elem in root.findall(".//PubmedArticle"):

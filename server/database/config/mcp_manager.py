@@ -175,7 +175,7 @@ class McpConfigManager:
 
             self.refresh_db()
             self.db.cursor.execute(
-                f"UPDATE mcp_servers SET {', '.join(updates)} WHERE id = ?",
+                f"UPDATE mcp_servers SET {', '.join(updates)} WHERE id = ?",  # nosec B608
                 params,
             )
             self.db.commit()

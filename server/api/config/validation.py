@@ -71,8 +71,7 @@ async def validate_url(
                 if response.status_code in [200, 401, 403, 404]:
                     return {"valid": True}
             except Exception:
-                # Fall through to chat endpoint probe
-                pass
+                logging.debug("Models endpoint unreachable, falling through to chat probe")
 
             chat_url = build_openai_v1_url(url, "chat/completions")
             try:

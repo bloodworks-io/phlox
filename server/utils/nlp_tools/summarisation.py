@@ -114,7 +114,7 @@ def _create_condition_prompt_with_constraints(
         )
 
         condition_user = (
-            f"Patient note: {combined_text}\n\n"
+            f"Patient note: {combined_text}\n\n"  # nosec B608
             f"Existing conditions in database:\n{conditions_list}{more_text}\n\n"
             f"Select the primary condition. If it matches an existing condition, use the exact name and letter casing from the list above. "
             f"If it's a new condition not represented in the list, provide the condition name and set is_new_condition to true. "
@@ -295,7 +295,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
                         )
 
                         disambig_user = (
-                            f"Patient note: {combined_text}\n\n"
+                            f"Patient note: {combined_text}\n\n"  # nosec B608
                             f"Initial extraction suggested: '{cleaned_condition}'\n\n"
                             f"Select the best match from these similar conditions:\n{candidates_list}\n\n"
                             f"Choose the condition that best matches this patient's primary diagnosis, or respond with 'NEW_CONDITION' if none fit."

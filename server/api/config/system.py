@@ -61,7 +61,7 @@ async def get_server_status():
                     # 401/403 indicates reachable service that requires authentication.
                     status["llm"] = response.status_code in [200, 401, 403]
                 except Exception:
-                    pass
+                    logging.debug("LLM status check failed (service unreachable)")
 
         # Check Whisper status
         whisper_url = _get_whisper_status_url(config)
@@ -72,7 +72,7 @@ async def get_server_status():
                     # If we get a 401/403, the service exists but requires auth
                     status["whisper"] = response.status_code in [200, 401, 403]
                 except Exception:
-                    pass
+                    logging.debug("Whisper status check failed (service unreachable)")
 
         return status
     except Exception as e:

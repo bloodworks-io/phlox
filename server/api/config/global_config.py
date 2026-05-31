@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
 
@@ -24,7 +26,6 @@ async def update_config(data: dict = Body(...)):
         if chroma_mgr is not None:
             chroma_mgr._reload_embedding_function()
     except Exception:
-        # Silently ignore if RAG is not available or configured
-        pass
+        logging.debug("ChromaDB reload skipped during config update")
 
     return {"message": "config.js updated successfully"}

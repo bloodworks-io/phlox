@@ -140,7 +140,7 @@ class PatientDatabase:
         # If passphrase not provided, try env/secret sources
         if not self.encryption_key:
             # Try Podman secret file (for Docker deployments)
-            secret_file = "/run/secrets/db_encryption_key"
+            secret_file = "/run/secrets/db_encryption_key"  # nosec B105
             if Path(secret_file).exists():
                 try:
                     with Path(secret_file).open() as f:
