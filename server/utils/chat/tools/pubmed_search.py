@@ -69,7 +69,8 @@ def parse_pubmed_article(article_elem: ET.Element, pmid: str) -> dict:
         for author in authors_list.findall("Author"):
             last_name = author.find("LastName")
             fore_name = author.find("ForeName")
-            if last_name is not None:
+            name = ""
+            if last_name is not None and last_name.text:
                 name = last_name.text
                 if fore_name is not None:
                     name += f" {fore_name.text[0] if fore_name.text else ''}"

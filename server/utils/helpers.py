@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def calculate_age(dob: str, encounter_date: str = None) -> int:
+def calculate_age(dob: str, encounter_date: str | None = None) -> int:
     """
     Calculate the age of a patient at the time of encounter or current date.
 

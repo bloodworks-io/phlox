@@ -51,7 +51,7 @@ async def find_ur_by_name(patient_name: str, threshold: int = 70) -> PatientMatc
             score = fuzz.token_set_ratio(patient_name.lower(), row["name"].lower())
             if score > best_score and score >= threshold:
                 best_score = score
-                best_match = PatientMatch(ur_number=row["ur_number"], name=row["name"], score=score)
+                best_match = PatientMatch(ur_number=row["ur_number"], name=row["name"], score=int(score))
 
         if best_match:
             logger.info(
@@ -95,7 +95,7 @@ async def find_multiple_patients_by_name(
             score = fuzz.token_set_ratio(patient_name.lower(), row["name"].lower())
             if score >= threshold:
                 matches.append(
-                    PatientMatch(ur_number=row["ur_number"], name=row["name"], score=score)
+                    PatientMatch(ur_number=row["ur_number"], name=row["name"], score=int(score))
                 )
 
         # Sort by score descending and limit

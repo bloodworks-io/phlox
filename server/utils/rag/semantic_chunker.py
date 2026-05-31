@@ -48,6 +48,9 @@ class ClusterSemanticChunker(BaseChunker):
                     (embedding_matrix, batch_embedding_matrix), axis=0
                 )
 
+        if embedding_matrix is None:
+            return np.array([[]])
+
         similarity_matrix = np.dot(embedding_matrix, embedding_matrix.T)
 
         return similarity_matrix

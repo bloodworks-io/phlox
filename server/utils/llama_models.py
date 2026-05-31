@@ -161,9 +161,9 @@ class LlamaModelManager:
             model_info = None
             matched_filename = None
             for _model_id, info in PRECONFIGURED_MODELS.items():
-                if info["filename"].lower() == filename.lower():
+                if str(info["filename"]).lower() == filename.lower():
                     model_info = info
-                    matched_filename = info["filename"]  # Use the canonical filename
+                    matched_filename = str(info["filename"])  # Use the canonical filename
                     break
 
             if model_info:
@@ -171,7 +171,7 @@ class LlamaModelManager:
                 model_id = next(
                     k
                     for k, v in PRECONFIGURED_MODELS.items()
-                    if v["filename"].lower() == filename.lower()
+                    if str(v["filename"]).lower() == filename.lower()
                 )
                 models.append(
                     {
@@ -239,8 +239,8 @@ class LlamaModelManager:
         # Check if it's a pre-configured model
         if model_id in PRECONFIGURED_MODELS:
             model_info = PRECONFIGURED_MODELS[model_id]
-            repo_id = model_info["repo_id"]
-            filename = model_info["filename"]
+            repo_id = str(model_info["repo_id"])
+            filename = str(model_info["filename"])
         elif "/" in model_id:
             # Custom format: "repo_id/filename.gguf"
             parts = model_id.split("/", 1)
@@ -375,7 +375,7 @@ class LlamaModelManager:
 
     def get_default_model_filename(self) -> str:
         """Get the filename for the default model (qwen3.5-4b)."""
-        return PRECONFIGURED_MODELS["qwen3.5-4b"]["filename"]
+        return str(PRECONFIGURED_MODELS["qwen3.5-4b"]["filename"])
 
     def get_selected_model_id(self) -> str | None:
         """Get the model_id of the currently selected model.
@@ -391,7 +391,7 @@ class LlamaModelManager:
 
         # Try to map filename to model_id for pre-configured models
         for model_id, info in PRECONFIGURED_MODELS.items():
-            if info["filename"].lower() == selected_filename.lower():
+            if str(info["filename"]).lower() == selected_filename.lower():
                 return model_id
 
         # For custom models, return the filename (or repo_id/filename format if applicable)

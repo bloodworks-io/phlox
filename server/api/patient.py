@@ -84,7 +84,7 @@ async def save_patient_data(request: SavePatientRequest, background_tasks: Backg
         if request.adaptive_refinement:
             background_tasks.add_task(
                 process_adaptive_refinement,
-                template_key=patient.template_key,
+                template_key=patient.template_key or "",
                 refinement_data=request.adaptive_refinement,
             )
 
@@ -212,10 +212,10 @@ async def get_patients(
     date: str,
     template_key: str | None = None,
     detailed: str | None = None,
-) -> list[Patient]:
+):
     """Get patients for a specific date."""
     try:
-        include_data = detailed and detailed.lower() == "true"
+        include_data: bool = detailed is not None and detailed.lower() == "true"
         patients = get_patients_by_date(date, template_key, include_data)
 
         if include_data:
@@ -256,7 +256,7 @@ async def get_patients(
 
 
 @router.get("/id/{id}")
-async def get_patient(id: int, include_history: bool = False) -> Patient:
+async def get_patient(id: int, include_history: bool = False):
     """Get patient by ID with option to include history."""
     try:
         patient = get_patient_by_id(id)
@@ -277,7 +277,7 @@ async def get_patient(id: int, include_history: bool = False) -> Patient:
 
 
 @router.get("/id/{id}/history")
-async def get_patient_history_endpoint(id: int) -> list[Patient]:
+async def get_patient_history_endpoint(id: int):
     """Get patient's historical encounters with persistent fields."""
     try:
         patient = get_patient_by_id(id)
@@ -292,7 +292,7 @@ async def get_patient_history_endpoint(id: int) -> list[Patient]:
 
 
 @router.get("/search")
-async def search_patient(ur_number: str) -> list[Patient]:
+async def search_patient(ur_number: str):
     """Search for patients by UR number."""
     try:
         patients = search_patient_by_ur_number(ur_number)
@@ -306,7 +306,7 @@ async def search_patient(ur_number: str) -> list[Patient]:
 @router.get("/history")
 async def get_history_by_ur_number(
     ur_number: str, template_key: str | None = None
-) -> list[Patient]:
+):
     """Get patient's historical encounters by UR number, optionally filtered by template type."""
     try:
         history = get_patient_history(ur_number, template_key)

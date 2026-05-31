@@ -60,7 +60,7 @@ async def execute_tool_streaming(
             llm_client,
             config,
             message_list,
-            conversation_history,
+            conversation_history or [],
             raw_transcription,
             context_question_options,
         ):

@@ -73,8 +73,8 @@ async def transcribe(
 
         # Perform transcription
         transcription_result = await transcribe_audio(audio_buffer)
-        transcript_text = transcription_result["text"]
-        transcription_duration = transcription_result["transcriptionDuration"]
+        transcript_text = str(transcription_result["text"])
+        transcription_duration = float(transcription_result["transcriptionDuration"])
 
         # Get template fields if template key is provided
         template_fields = []
@@ -106,10 +106,10 @@ async def transcribe(
 
         # Return the response in the expected format
         return TranscribeResponse(
-            fields=processing_result["fields"],
+            fields=dict(processing_result["fields"]),
             rawTranscription=transcript_text,
             transcriptionDuration=transcription_duration,
-            processDuration=processing_result["process_duration"],
+            processDuration=float(processing_result["process_duration"]),
         )
 
     except Exception as e:
@@ -126,8 +126,8 @@ async def dictate(file: UploadFile = File(...)):
 
         # Perform transcription
         transcription_result = await transcribe_audio(audio_buffer)
-        transcript_text = transcription_result["text"]
-        transcription_duration = transcription_result["transcriptionDuration"]
+        transcript_text = str(transcription_result["text"])
+        transcription_duration = float(transcription_result["transcriptionDuration"])
 
         # Return the response
         return {
@@ -190,10 +190,10 @@ async def reprocess_transcription(
 
         # Return the response in the expected format
         return TranscribeResponse(
-            fields=processing_result["fields"],
+            fields=dict(processing_result["fields"]),
             rawTranscription=transcript_text,
-            transcriptionDuration=original_transcription_duration,
-            processDuration=processing_result["process_duration"],
+            transcriptionDuration=original_transcription_duration or 0.0,
+            processDuration=float(processing_result["process_duration"]),
         )
 
     except Exception as e:
@@ -238,7 +238,7 @@ async def process_document(
         # Process the document
         process_start = time.perf_counter()
         result = await process_document_with_template(
-            document_buffer, content_type, template_fields, patient_context
+            document_buffer, content_type or "", template_fields, patient_context
         )
         process_end = time.perf_counter()
         process_duration = process_end - process_start

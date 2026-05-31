@@ -57,9 +57,9 @@ async def process_document_content(
 
 async def _process_extracted_text_sections(
     extracted_text: str,
-    _name: str | None = None,
-    _dob: str | None = None,
-    _gender: str | None = None,
+    name: str | None = None,
+    dob: str | None = None,
+    gender: str | None = None,
 ) -> tuple[str, str, str]:
     """
     Process already-extracted document text and return legacy section outputs.
@@ -189,8 +189,8 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
         raise RuntimeError("Image document processing requires PyMuPDF, Pillow and pytesseract.")
 
     logger.debug("Processing image document with Tesseract OCR")
-    img = Image.open(io.BytesIO(document_buffer))
-    text = pytesseract.image_to_string(img)
+    img = Image.open(io.BytesIO(document_buffer))  # ty: ignore
+    text = pytesseract.image_to_string(img)  # ty: ignore
     return text
 
 
@@ -204,7 +204,7 @@ def _extract_pdf_text_layer(document_buffer: bytes) -> str:
         return ""
 
     try:
-        reader = PdfReader(io.BytesIO(document_buffer))
+        reader = PdfReader(io.BytesIO(document_buffer))  # ty: ignore
         page_texts = []
         for page in reader.pages:
             page_texts.append(page.extract_text() or "")
@@ -220,13 +220,13 @@ def _extract_pdf_text_with_ocr(document_buffer: bytes) -> str:
     """
     logger.info("Backend PDF OCR component called: PyMuPDF rasterization + pytesseract")
     extracted_texts = []
-    pdf_document = fitz.open(stream=document_buffer, filetype="pdf")
+    pdf_document = fitz.open(stream=document_buffer, filetype="pdf")  # ty: ignore
 
     for page_num in range(pdf_document.page_count):
         page = pdf_document[page_num]
         pix = page.get_pixmap()
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        text = pytesseract.image_to_string(img)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)  # ty: ignore
+        text = pytesseract.image_to_string(img)  # ty: ignore
         extracted_texts.append(text)
         logger.debug(f"Extracted text from PDF page {page_num + 1}/{pdf_document.page_count}")
 
@@ -250,7 +250,7 @@ async def process_document_with_template(
     content_type: str,
     template_fields: list[Any],
     patient_context: dict[str, Any],
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """
     Process document content and extract information to fill template fields.
     """
@@ -272,7 +272,7 @@ async def process_document_text_with_template(
     extracted_text: str,
     template_fields: list[Any],
     patient_context: dict[str, Any],
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """
     Process already-extracted document text and extract information to fill template fields.
     """
@@ -290,7 +290,7 @@ async def _process_extracted_text_with_template(
     extracted_text: str,
     template_fields: list[Any],
     patient_context: dict[str, Any],
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """
     Shared template processing logic that operates on extracted text.
     """
@@ -346,7 +346,7 @@ async def process_visual_document_with_template(
     visual_pages: list[dict[str, Any]],
     template_fields: list[Any],
     patient_context: dict[str, Any],
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """
     Process visual document pages directly with a multimodal model to fill template fields.
 
@@ -387,7 +387,7 @@ async def process_visual_document_with_template(
             patient_context.get("gender"),
         )
 
-    async def process_visual_field(field: Any) -> tuple[str, str]:
+    async def process_visual_field(field: Any) -> tuple[Any, str | dict]:
         field_name = field.field_name
         system_prompt = getattr(field, "system_prompt", "") or ""
 

@@ -62,4 +62,4 @@ class ChatResponse(BaseModel):
     """
 
     message: str
-    context: dict = None
+    context: dict | None = None

@@ -63,7 +63,7 @@ async def test_process_transcription_no_fields():
     patient_context = {"name": "Doe, John", "dob": "1990-01-01", "gender": "M"}
     # Mock the LLM call layer since even empty fields triggers config/LLM access
     with patch("server.utils.transcription.text.process_all_fields_concurrently", return_value={}):
-        result = await process_transcription(transcript_text, template_fields, patient_context)
+        result = await process_transcription(transcript_text, template_fields, patient_context)  # ty: ignore
     # Expect fields dict to be empty, and process_duration present
     assert "fields" in result
     assert result["fields"] == {}

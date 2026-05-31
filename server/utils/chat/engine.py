@@ -7,6 +7,7 @@ the LLM client, ChromaManager, and tool execution.
 
 import json
 import logging
+from typing import Any
 
 from server.database.config.manager import config_manager
 from server.utils.chat.config.prompts import build_system_messages
@@ -120,7 +121,7 @@ class ChatEngine:
                 accumulated_content = ""
                 accumulated_output = ""
                 thinking_open = False
-                accumulated_tool_calls = {}
+                accumulated_tool_calls: dict[int, dict[str, Any]] = {}
 
                 async for chunk in stream:
                     if "message" in chunk:
@@ -196,7 +197,7 @@ class ChatEngine:
                 final_tool_calls = [v for k, v in sorted(accumulated_tool_calls.items())]
 
                 # Format the assistant message for history
-                assistant_message = {"role": "assistant"}
+                assistant_message: dict[str, Any] = {"role": "assistant"}
                 assistant_message["content"] = accumulated_output or accumulated_content
 
                 if final_tool_calls:
@@ -294,7 +295,7 @@ class ChatEngine:
 
                                 message_list.append(
                                     tool_response_message(
-                                        tool_call_id=final_tool_calls[0].get("id", ""),
+                                        tool_call_id=str(final_tool_calls[0].get("id", "")),
                                         content=tool_content,
                                     )
                                 )
@@ -335,11 +336,11 @@ class ChatEngine:
 
     async def _execute_tool_call(
         self,
-        tool_call: dict,
-        message_list: list,
-        conversation_history: list,
-        raw_transcription: str,
-        context_question_options: dict,
+        tool_call: dict[str, Any],
+        message_list: list[dict[str, Any]],
+        conversation_history: list[dict[str, Any]],
+        raw_transcription: str | None,
+        context_question_options: dict[str, Any],
     ):
         """
         Execute a tool call and yield streaming responses.
@@ -401,5 +402,10 @@ class ChatEngine:
 if __name__ == "__main__":
     chat_engine = ChatEngine()
     conversation_history = [{"role": "user", "content": "What are the symptoms of diabetes?"}]
-    response = chat_engine.chat(conversation_history)
-    print(response)
+
+    async def _run():  # type: ignore[misc]
+        async for chunk in chat_engine.stream_chat(conversation_history):
+            print(chunk)
+
+    import asyncio
+    asyncio.run(_run())

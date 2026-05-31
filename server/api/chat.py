@@ -1,6 +1,7 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.exceptions import HTTPException
@@ -103,7 +104,7 @@ def _store_vision_probe_result(
         "vision_capable": bool(vision_capable),
         "status_code": int(status_code),
         "detail": detail,
-        "probed_at": datetime.now(datetime.UTC).isoformat(),
+        "probed_at": datetime.now(timezone.utc).isoformat(),
     }
 
     config_manager.update_config(
@@ -119,8 +120,8 @@ def _build_visual_user_content(
     pages: list[VisualDocumentPage],
     instruction: str,
     max_pages: int = 8,
-) -> tuple[list[dict], int]:
-    user_content = [{"type": "text", "text": instruction}]
+) -> tuple[list[dict[str, Any]], int]:
+    user_content: list[dict[str, Any]] = [{"type": "text", "text": instruction}]
     added_images = 0
 
     for page in pages[:max_pages]:
@@ -208,7 +209,7 @@ async def upload_image(file: UploadFile = File(...)):
 
         # OCR extract text using existing pipeline
         # (handles both images and PDFs - converts PDFs to images internally)
-        extracted_text = await extract_text_from_document(content, content_type)
+        extracted_text = await extract_text_from_document(content, content_type or "")
 
         logging.info(f"Successfully extracted {len(extracted_text)} characters from image")
 

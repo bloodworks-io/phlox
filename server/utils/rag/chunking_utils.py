@@ -67,7 +67,7 @@ def rigorous_document_search(document: str, target: str):
     # Find the sentence that matches the query best
     best_match = process.extractOne(target, sentences, scorer=fuzz.token_sort_ratio)
 
-    if best_match[1] < 98:
+    if best_match is None or best_match[1] < 98:
         return None
 
     reference = best_match[0]

@@ -89,9 +89,9 @@ class AsyncLLMClient:
     async def chat_with_structured_output(
         self,
         model: str,
-        messages: list[dict[str, str]],
-        schema: dict,
-        options: dict | None = None,
+        messages: list[dict[str, Any]],
+        schema: dict[str, Any],
+        options: dict[str, Any] | None = None,
     ) -> str:
         """
         Send a chat completion request with structured output.
@@ -107,19 +107,25 @@ class AsyncLLMClient:
         """
         response = await self.chat(model=model, messages=messages, format=schema, options=options)
 
+        # chat() with stream=False always returns dict
+        if isinstance(response, dict):
+            message_content = response["message"]["content"]  # ty: ignore
+        else:
+            raise RuntimeError("Expected dict response, got async generator")
+
         # Handle emdashes and en-dashes (can cause JSON parsing issues)
         # Preserve UTF-8 characters for international language support
-        response_str = response["message"]["content"].replace("—", "-").replace("–", "-")
+        response_str = message_content.replace("—", "-").replace("–", "-")
 
         return repair_json(response_str)
 
     async def chat(
         self,
         model: str,
-        messages: list[dict[str, str]],
-        format: dict | None = None,
-        options: dict | None = None,
-        tools: list[dict] | None = None,
+        messages: list[dict[str, Any]],
+        format: dict[str, Any] | None = None,
+        options: dict[str, Any] | None = None,
+        tools: list[dict[str, Any]] | None = None,
         stream: bool = False,
     ) -> Union[dict[str, Any], AsyncGenerator]:
         """Send a chat completion request."""

@@ -50,7 +50,7 @@ class LocalModelManager:
         model_path = self.models_dir / filename
         return model_path.exists()
 
-    def get_model_path(self, _repo_id: str, filename: str) -> str:
+    def get_model_path(self, _repo_id: str, filename: str) -> str | None:
         """Get the full path to a model file."""
         # repo_id is ignored for GGUF files, we use the flat structure
         model_path = self.models_dir / filename

@@ -90,7 +90,7 @@ class McpConfigManager:
         allow_sensitive_data: bool = False,
         description: str = "",
         server_version: str = "",
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | None:
         """Add a new MCP server configuration.
 
         Args:

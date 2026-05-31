@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from typing import Any
 
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.manager import config_manager
@@ -86,7 +87,7 @@ Highlight potential documentation gaps and provide standard literature correlati
     tool_iterations = 0
     citations: list[str] = []
     reasoning_trace: list[str] = []
-    conversation = [{"role": "user", "content": initial_prompt}]
+    conversation: list[dict[str, Any]] = [{"role": "user", "content": initial_prompt}]
 
     def _coerce_text(value) -> str:
         if value is None:
@@ -187,7 +188,7 @@ Highlight potential documentation gaps and provide standard literature correlati
 
         accumulated_reasoning = ""
         accumulated_content = ""
-        accumulated_tool_calls = {}
+        accumulated_tool_calls: dict[int, dict[str, Any]] = {}
 
         async for chunk in stream:
             if "message" not in chunk:
@@ -248,7 +249,7 @@ Highlight potential documentation gaps and provide standard literature correlati
         accumulated_content = _strip_think_markers(accumulated_content).strip()
         tool_calls = [v for k, v in sorted(accumulated_tool_calls.items())]
 
-        assistant_message = {"role": "assistant", "content": accumulated_content or ""}
+        assistant_message: dict[str, Any] = {"role": "assistant", "content": accumulated_content or ""}
         if accumulated_reasoning:
             assistant_message["reasoning"] = accumulated_reasoning
         if tool_calls:
@@ -414,4 +415,4 @@ Highlight potential documentation gaps and provide standard literature correlati
     result = ClinicalReasoning.model_validate(content_dict)
 
     # Yield final result
-    yield {"type": "result", "data": result.dict()}
+    yield {"type": "result", "data": result.model_dump()}

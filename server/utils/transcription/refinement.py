@@ -2,7 +2,7 @@ import json
 import logging
 import random
 import re
-from typing import Union
+from typing import Any, Union
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import (
@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 
 
 async def refine_field_content(
-    content: Union[str, dict], field: TemplateField, is_ambient: bool = True
+    content: Any, field: TemplateField, is_ambient: bool = True
 ) -> Union[str, dict]:
     """
     Refine the content of a single field using style examples and format schema.
@@ -86,6 +86,7 @@ async def refine_field_content(
                     f"Error refining field {field.field_key} after {max_retries + 1} attempts: {e}"
                 )
                 raise
+    raise RuntimeError("Unreachable")  # All loop paths return or raise
 
 
 def determine_format_details(field: TemplateField, prompts: dict) -> dict:

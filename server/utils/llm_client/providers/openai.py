@@ -1,6 +1,7 @@
 """OpenAI-compatible provider implementation."""
 
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -8,12 +9,12 @@ logger = logging.getLogger(__name__)
 async def openai_compatible_chat(
     client,
     model: str,
-    messages: list,
-    format: dict = None,
-    options: dict = None,
-    tools: list = None,
+    messages: list[dict[str, Any]],
+    format: dict[str, Any] | None = None,
+    options: dict[str, Any] | None = None,
+    tools: list[dict[str, Any]] | None = None,
     stream: bool = False,
-    extra_body: dict = None,
+    extra_body: dict[str, Any] | None = None,
 ):
     """
     Send chat request to OpenAI-compatible API using the OpenAI client.
@@ -22,7 +23,7 @@ async def openai_compatible_chat(
     """
     try:
         # Prepare parameters for OpenAI
-        params = {
+        params: dict[str, Any] = {
             "model": model,
             "messages": messages,
         }

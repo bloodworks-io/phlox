@@ -9,6 +9,7 @@ import secrets
 import socket
 import sys
 from contextlib import asynccontextmanager, closing
+from typing import Any
 
 import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -56,9 +57,9 @@ if IS_TESTING:
     try:
         from server.tests.test_database import test_db as test_database
     except ImportError:
-        test_database = None
+        test_database: Any = None
 else:
-    test_database = None
+    test_database: Any = None
 
 
 # Start the scheduler when the app starts
@@ -156,7 +157,7 @@ def initialize_and_get_app():
     if IS_TESTING and test_database is not None:
 
         @app.get("/test-db")
-        async def test_db():
+        async def test_db():  # type: ignore[misc]
             try:
                 result = test_database()
                 logger.info(f"Database test succeeded: {result}")
@@ -220,7 +221,7 @@ if IS_DOCKER:
     app = initialize_and_get_app()
 else:
     # Desktop mode: app will be initialized after passphrase is received
-    app = None
+    app: Any = None
 
 
 def find_free_port():

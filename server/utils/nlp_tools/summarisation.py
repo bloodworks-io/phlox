@@ -146,7 +146,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
         raise ValueError("DOB or Encounter Date is missing")
 
     template_values = []
-    for _field_key, field_value in patient.template_data.items():
+    for _field_key, field_value in (patient.template_data or {}).items():
         if field_value:
             template_values.append(field_value)
 

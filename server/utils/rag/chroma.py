@@ -83,7 +83,7 @@ class ChromaManager:
         self.config = config_manager.get_config()
         self.prompts = config_manager.get_prompts_and_options()
 
-        self.chroma_client = chromadb.PersistentClient(
+        self.chroma_client = chromadb.PersistentClient(  # ty: ignore
             path=str(DATA_DIR / "chroma"),
             settings=Settings(anonymized_telemetry=False, allow_reset=True),
         )
@@ -394,7 +394,7 @@ class ChromaManager:
 
         if PDF_TEXT_AVAILABLE:
             try:
-                reader = PdfReader(io.BytesIO(pdf_bytes))
+                reader = PdfReader(io.BytesIO(pdf_bytes))  # ty: ignore
                 text_parts = []
                 for page in reader.pages:
                     text_parts.append(page.extract_text() or "")
@@ -413,12 +413,12 @@ class ChromaManager:
             logger.info("Backend RAG OCR fallback invoked (PyMuPDF + Pillow + pytesseract)")
             try:
                 ocr_texts = []
-                document = fitz.open(stream=pdf_bytes, filetype="pdf")
+                document = fitz.open(stream=pdf_bytes, filetype="pdf")  # ty: ignore
                 for page_num in range(document.page_count):
                     page = document[page_num]
                     pix = page.get_pixmap()
-                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                    ocr_texts.append(pytesseract.image_to_string(img))
+                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)  # ty: ignore
+                    ocr_texts.append(pytesseract.image_to_string(img))  # ty: ignore
                 ocr_output = "\n\n".join(ocr_texts).strip()
 
                 if _is_text_usable(ocr_output):

@@ -41,7 +41,7 @@ def get_db() -> "PatientDatabase":
     return _db_instance
 
 
-def initialize_database(passphrase: str = None, db_dir=DATA_DIR) -> "PatientDatabase":
+def initialize_database(passphrase: str | None = None, db_dir=DATA_DIR) -> "PatientDatabase":
     """Initialize the database singleton with optional passphrase.
 
     Args:
@@ -121,7 +121,7 @@ class PatientDatabase:
             logging.error(f"Error initializing templates: {e}")
             raise
 
-    def __init__(self, passphrase: str = None, db_dir=DATA_DIR):
+    def __init__(self, passphrase: str | None = None, db_dir=DATA_DIR):
         """Initialize the database connection.
 
         Args:
@@ -199,6 +199,10 @@ class PatientDatabase:
     def commit(self):
         """Commit current transaction."""
         self.db.commit()
+
+    def rollback(self):
+        """Rollback current transaction."""
+        self.db.rollback()
 
     def close(self):
         """Close database connection."""

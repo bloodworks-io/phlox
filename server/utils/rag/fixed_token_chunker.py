@@ -170,7 +170,7 @@ class TextSplitter(BaseChunker, ABC):
             }
             kwargs = {**kwargs, **extra_kwargs}
 
-        return cls(length_function=_tiktoken_encoder, **kwargs)
+        return cls(length_function=_tiktoken_encoder, **kwargs)  # ty: ignore
 
 
 class FixedTokenChunker(TextSplitter):

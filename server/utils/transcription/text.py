@@ -3,7 +3,7 @@ import logging
 import random
 import re
 import time
-from typing import Union
+from typing import Any, Union
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import MultiFieldResponse
@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 async def process_transcription(
     transcript_text: str,
     template_fields: list[TemplateField],
-    patient_context: dict[str, str],
+    patient_context: dict[str, str | None],
     is_ambient: bool = True,
     primary_condition: str | None = None,
-) -> dict[str, Union[str, float]]:
+) -> dict[str, Any]:
     """
     Process the transcribed text to generate summaries for non-persistent template fields.
 
@@ -85,7 +85,7 @@ async def process_transcription(
 async def process_all_fields_concurrently(
     transcript_text: str,
     fields: list[TemplateField],
-    patient_context: dict[str, str],
+    patient_context: dict[str, str | None],
     is_ambient: bool = True,
     primary_condition: str | None = None,
 ) -> dict[str, str]:
@@ -199,6 +199,7 @@ Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapp
                     f"Error processing all fields concurrently after {max_retries + 1} attempts: {e}"
                 )
                 raise
+    raise RuntimeError("Unreachable: process_all_fields_concurrently exhausted retries")
 
 
 def _capitalize_first_char(text: str) -> str:
@@ -220,7 +221,7 @@ def clean_list_spacing(text: str) -> str:
     return text.strip()
 
 
-def _build_patient_context(context: dict[str, str]) -> str:
+def _build_patient_context(context: dict[str, str | None]) -> str:
     """
     Build patient context string from dictionary.
 

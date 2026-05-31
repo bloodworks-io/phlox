@@ -247,7 +247,7 @@ class WhisperModelManager:
         self._delete_all_models()
         self._delete_all_coreml_models()
 
-        url = model_info["url"]
+        url = str(model_info["url"])
         logger.info(f"Downloading {model_id} from {url}")
 
         # Hugging Face "resolve" URLs commonly 302-redirect to a signed blob URL.
@@ -306,7 +306,7 @@ class WhisperModelManager:
             logger.info(f"Successfully downloaded {model_id} to {model_file}")
 
             # Download Core ML model if available
-            coreml_url = model_info.get("coreml_url")
+            coreml_url = str(model_info["coreml_url"]) if model_info.get("coreml_url") else None
             if coreml_url:
                 logger.info(f"Downloading Core ML model for {model_id} from {coreml_url}")
                 zip_file = self.models_dir / f"ggml-{model_id}-encoder.mlmodelc.zip"

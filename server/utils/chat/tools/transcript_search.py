@@ -23,7 +23,7 @@ async def execute(
     config: dict[str, Any],
     message_list: list,
     conversation_history: list,
-    raw_transcription: str,
+    raw_transcription: str | None,
     context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """

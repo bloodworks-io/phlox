@@ -44,13 +44,13 @@ def save_patient(patient: Patient) -> int:
 
         # Generate jobs list from plan if one exists
         jobs_list = []
-        if hasattr(patient, "template_data"):
+        if hasattr(patient, "template_data") and patient.template_data:
             template_data = (
                 json.loads(patient.template_data)
                 if isinstance(patient.template_data, str)
                 else patient.template_data
             )
-            if plan := template_data.get("plan"):
+            if plan := template_data.get("plan") if isinstance(template_data, dict) else None:
                 jobs_list = generate_jobs_list_from_plan(plan)
 
         # Check if all jobs are completed
@@ -507,7 +507,7 @@ def delete_patient_by_id(note_id: int) -> bool:
         raise
 
 
-def update_patient_summary(note_id: int, encounter_summary: str, primary_condition: str) -> None:
+def update_patient_summary(note_id: int, encounter_summary: str, primary_condition: str | None) -> None:
     """
     Update only the encounter summary and primary condition fields for a patient.
 

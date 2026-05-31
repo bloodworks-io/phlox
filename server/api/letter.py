@@ -64,7 +64,7 @@ async def fetch_letter(noteId: int):
 
 
 @router.get("/templates")
-async def get_templates() -> list[LetterTemplate]:
+async def get_templates():
     """Get all letter templates."""
     try:
         templates = get_letter_templates()
@@ -88,7 +88,7 @@ async def get_templates() -> list[LetterTemplate]:
 
 
 @router.get("/templates/{template_id}")
-async def get_template(template_id: int) -> LetterTemplate:
+async def get_template(template_id: int):
     """Get a letter template by ID."""
     try:
         template = get_letter_template_by_id(template_id)
@@ -103,7 +103,7 @@ async def get_template(template_id: int) -> LetterTemplate:
 
 
 @router.post("/templates")
-async def create_template(template: LetterTemplate = Body(...)) -> dict:
+async def create_template(template: LetterTemplate = Body(...)):
     """Create a letter template."""
     try:
         template_id = save_letter_template(template)
@@ -119,7 +119,7 @@ async def create_template(template: LetterTemplate = Body(...)) -> dict:
 
 
 @router.post("/templates/reset")
-async def reset_templates() -> dict:
+async def reset_templates():
     """Reset letter templates to default."""
     try:
         reset_default_templates()
@@ -130,7 +130,7 @@ async def reset_templates() -> dict:
 
 
 @router.put("/templates/{template_id}")
-async def update_template(template_id: int, template: LetterTemplate = Body(...)) -> dict:
+async def update_template(template_id: int, template: LetterTemplate = Body(...)):
     """Update a letter template."""
     try:
         success = update_letter_template(template_id, template)
@@ -145,7 +145,7 @@ async def update_template(template_id: int, template: LetterTemplate = Body(...)
 
 
 @router.delete("/templates/{template_id}")
-async def delete_template(template_id: int) -> dict:
+async def delete_template(template_id: int):
     """Delete a letter template."""
     try:
         success = delete_letter_template(template_id)

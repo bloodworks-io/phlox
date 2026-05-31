@@ -163,7 +163,7 @@ async def search_patient_notes(
         if not rows:
             return {
                 "success": False,
-                "error": f"No patient found with {'UR: ' + ur_number if ur_number else 'name: ' + patient_name}",
+                "error": f"No patient found with {'UR: ' + ur_number if ur_number else 'name: ' + (patient_name or '')}",
             }
 
         # Search through all encounters
