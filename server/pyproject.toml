@@ -37,7 +37,7 @@ dev = [
     "pytest-cov==7.0.0",
     "ruff==0.15.4",
     "bandit[toml]==1.9.4",
-    "pre-commit==4.5.1",
+    "pre-commit==4.6.0",
 ]
 
 [dependency-groups]
@@ -48,7 +48,7 @@ dev = [
     "pytest-cov==7.0.0",
     "ruff==0.15.4",
     "bandit[toml]==1.9.4",
-    "pre-commit==4.5.1",
+    "pre-commit==4.6.0",
 ]
 
 [tool.setuptools]
