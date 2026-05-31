@@ -233,7 +233,7 @@ async def generate_template(request_body: dict):
     try:
         generated_template = await generate_template_from_note(example_note)
         save_template(generated_template)
-        return JSONResponse(content=generated_template.dict())
+        return JSONResponse(content=generated_template.model_dump())
     except Exception as e:
         logging.error(f"Error generating template from example: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e

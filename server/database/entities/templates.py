@@ -125,7 +125,7 @@ def save_template(template: ClinicalTemplate) -> str:
             (
                 template.template_key,
                 template.template_name,
-                json.dumps([field.dict() for field in template.fields]),
+                json.dumps([field.model_dump() for field in template.fields]),
                 now,
                 now,
             ),
@@ -160,7 +160,7 @@ def update_template(template: ClinicalTemplate) -> str:
         if current:
             # Compare current and new content
             current_fields = json.loads(current["fields"])
-            new_fields = [field.dict() for field in template.fields]
+            new_fields = [field.model_dump() for field in template.fields]
 
             # Copy over previous adaptive refinement instructions
             current_fields_map = {f["field_key"]: f for f in current_fields if "field_key" in f}
@@ -230,7 +230,7 @@ def update_template(template: ClinicalTemplate) -> str:
             (
                 new_template_key,
                 template.template_name,
-                json.dumps([field.dict() for field in template.fields]),
+                json.dumps([field.model_dump() for field in template.fields]),
                 now,
                 now,
             ),
