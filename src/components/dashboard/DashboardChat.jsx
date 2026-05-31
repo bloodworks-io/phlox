@@ -462,16 +462,19 @@ const DashboardChat = () => {
 
     // Active chat state - messages at top, input at bottom
     return (
-        <Box className="dashboard-chat-container">
-            {/* Messages Area */}
+        <Box
+            className="dashboard-chat-container"
+            display="flex"
+            flexDirection="column"
+            h="100%"
+            position="relative"
+            pt="60px"
+        >
+            {/* Messages Area - scrollable middle */}
             <Box
                 className="dashboard-chat-messages"
-                position="fixed"
-                top="80px"
-                left="0"
-                right="0"
-                bottom="110px"
-                w="100%"
+                flex="1"
+                overflowY="auto"
                 px="0"
             >
                 <DashboardMessageList
@@ -481,7 +484,7 @@ const DashboardChat = () => {
                 />
             </Box>
 
-            {/* Fixed Bottom Input */}
+            {/* Bottom Input */}
             <DashboardChatInput
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}

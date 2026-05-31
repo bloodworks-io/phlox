@@ -123,18 +123,16 @@ const DashboardChatInput = ({
 
     return (
         <Flex
-            position={isBottom ? "fixed" : "relative"}
-            bottom={isBottom ? "20px" : "auto"}
-            left={isBottom ? "50%" : "auto"}
-            transform={isBottom ? "translateX(-50%)" : "none"}
-            zIndex={isBottom ? "1000" : "auto"}
+            position="relative"
             direction="column"
             align="center"
             w="100%"
             maxW="800px"
-            mx={isBottom ? "auto" : "0"}
-            px={isBottom ? "20px" : "0"}
-            flex={isBottom ? "none" : "0 0 auto"}
+            mx="auto"
+            px="20px"
+            pt={isBottom ? "2" : "0"}
+            pb={isBottom ? "0" : "0"}
+            flex="0 0 auto"
         >
             {isDragOver && (
                 <Flex

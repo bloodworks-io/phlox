@@ -471,7 +471,7 @@ function AppContent({ setIsInitializing }) {
 
             <Box
                 flex="1"
-                ml={isSmallScreen ? "0" : isSidebarCollapsed ? "89px" : "220px"}
+                ml={isSmallScreen ? "0" : isSidebarCollapsed ? "96px" : "236px"}
                 minH="100vh"
                 transition="margin-left 0.3s ease"
                 bg={
@@ -496,7 +496,7 @@ function AppContent({ setIsInitializing }) {
                             isSmallScreen
                                 ? "0"
                                 : isSidebarCollapsed
-                                  ? "76px"
+                                  ? "96px"
                                   : "236px"
                         }
                         zIndex="1000"
