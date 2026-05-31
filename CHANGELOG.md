@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/bloodworks-io/phlox/compare/v1.0.0...v1.0.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* **deps:** bump deps; remove clear-text logging in chat engine ([394795f](https://github.com/bloodworks-io/phlox/commit/394795f1cd7b3e15228fddb1aade8d46e90f075d))
+
 ## [1.0.0](https://github.com/bloodworks-io/phlox/compare/v0.11.0...v1.0.0) (2026-05-31)
 
 
