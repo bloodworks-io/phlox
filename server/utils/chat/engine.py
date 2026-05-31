@@ -405,7 +405,7 @@ if __name__ == "__main__":
 
     async def _run():  # type: ignore[misc]
         async for chunk in chat_engine.stream_chat(conversation_history):
-            print(chunk)
+            pass  # chunks are processed by the caller
 
     import asyncio
 

@@ -183,7 +183,7 @@ jobs:
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
-                  password: ${{ secrets.GHCR_PAT }} # <-- changed from GITHUB_TOKEN
+                  password: ${{ secrets.GHCR_PAT }}
 
             - name: Extract version from tag
               id: meta
