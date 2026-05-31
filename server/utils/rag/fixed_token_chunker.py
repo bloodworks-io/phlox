@@ -4,16 +4,14 @@
 
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Collection, Iterable
+from collections.abc import Callable, Collection, Iterable, Set
+from dataclasses import dataclass
 from typing import (
-    AbstractSet,
     Any,
     Literal,
     TypeVar,
     Union,
 )
-
-from dataclasses import dataclass
 
 from .chunking_utils import BaseChunker
 
@@ -135,7 +133,7 @@ class TextSplitter(BaseChunker, ABC):
         cls: type[TS],
         encoding_name: str = "gpt2",
         model_name: str | None = None,
-        allowed_special: Union[Literal["all"], AbstractSet[str]] = set(),
+        allowed_special: Union[Literal["all"], Set[str]] = set(),
         disallowed_special: Union[Literal["all"], Collection[str]] = "all",
         **kwargs: Any,
     ) -> TS:
@@ -147,7 +145,7 @@ class TextSplitter(BaseChunker, ABC):
                 "Could not import tiktoken python package. "
                 "This is needed in order to calculate max_tokens_for_prompt. "
                 "Please install it with `pip install tiktoken`."
-            )
+            ) from None
 
         if model_name is not None:
             enc = tiktoken.encoding_for_model(model_name)
@@ -172,7 +170,7 @@ class TextSplitter(BaseChunker, ABC):
             }
             kwargs = {**kwargs, **extra_kwargs}
 
-        return cls(length_function=_tiktoken_encoder, **kwargs)
+        return cls(length_function=_tiktoken_encoder, **kwargs)  # ty: ignore
 
 
 class FixedTokenChunker(TextSplitter):
@@ -184,7 +182,7 @@ class FixedTokenChunker(TextSplitter):
         model_name: str | None = None,
         chunk_size: int = 4000,
         chunk_overlap: int = 200,
-        allowed_special: Union[Literal["all"], AbstractSet[str]] = set(),
+        allowed_special: Union[Literal["all"], Set[str]] = set(),
         disallowed_special: Union[Literal["all"], Collection[str]] = "all",
         **kwargs: Any,
     ) -> None:
@@ -197,7 +195,7 @@ class FixedTokenChunker(TextSplitter):
                 "Could not import tiktoken python package. "
                 "This is needed in order to for FixedTokenChunker. "
                 "Please install it with `pip install tiktoken`."
-            )
+            ) from None
 
         if model_name is not None:
             enc = tiktoken.encoding_for_model(model_name)

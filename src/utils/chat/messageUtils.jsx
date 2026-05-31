@@ -7,7 +7,12 @@ export const validateInput = (userInput) => {
     return userInput.trim() !== "";
 };
 
-export const formatInitialMessage = (template, patientData) => {
+export const formatPatientContext = (template, patientData) => {
+    /**
+     * Format patient context for the backend to build the system message.
+     * Returns patient context object with name, dob, ur_number, encounter_date,
+     * template_data, and template_fields.
+     */
     if (!patientData || !template) {
         console.error(
             "Patient data and template are required for chat context",
@@ -32,23 +37,16 @@ export const formatInitialMessage = (template, patientData) => {
         return null;
     }
 
-    // Create content array with template fields
-    const contentArray = template.fields
-        .map((field) => {
-            const value =
-                template_data[field.field_key] ||
-                `No ${field.field_name.toLowerCase()} available`;
-            return [
-                `${field.field_name}:`,
-                value,
-                "", // Add empty line for spacing
-            ];
-        })
-        .flat();
-
     return {
-        role: "user",
-        content: contentArray.join("\n"),
+        name: patientData.name,
+        dob: patientData.dob,
+        ur_number: patientData.ur_number,
+        encounter_date: patientData.encounter_date,
+        template_data: template_data,
+        template_fields: template.fields.map((field) => ({
+            field_key: field.field_key,
+            field_name: field.field_name,
+        })),
     };
 };
 

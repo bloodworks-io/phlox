@@ -9,6 +9,7 @@ import secrets
 import socket
 import sys
 from contextlib import asynccontextmanager, closing
+from typing import Any
 
 import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -50,31 +51,24 @@ logger.info("Initialising application...")
 scheduler = AsyncIOScheduler()
 
 # Local request token for API authentication (desktop mode only)
-from server.utils.local_request_token import get_request_token, set_request_token
+from server.utils.local_request_token import get_request_token, set_request_token  # noqa: E402
 
 if IS_TESTING:
     try:
         from server.tests.test_database import test_db as test_database
     except ImportError:
-        test_database = None
+        test_database: Any = None
 else:
-    test_database = None
+    test_database: Any = None
 
 
 # Start the scheduler when the app starts
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    from server.database.entities.analysis import (
-        generate_daily_analysis,
-        run_nightly_reasoning,
-    )
+async def lifespan(_app: FastAPI):
     from server.middleware import RateLimitMiddleware
 
     # Startup
     scheduler.start()
-    # Schedule jobs
-    scheduler.add_job(generate_daily_analysis, "cron", hour=3)
-    scheduler.add_job(run_nightly_reasoning, "cron", hour=4)
     # Clean up zombie IPs from rate limiter every 5 minutes
     scheduler.add_job(
         RateLimitMiddleware.cleanup_all_zombie_ips,
@@ -163,43 +157,46 @@ def initialize_and_get_app():
     if IS_TESTING and test_database is not None:
 
         @app.get("/test-db")
-        async def test_db():
+        async def test_db():  # type: ignore[misc]
             try:
                 result = test_database()
                 logger.info(f"Database test succeeded: {result}")
                 return {"success": "Database test succeeded", "result": result}
             except Exception as e:
                 logger.error(f"Database test failed: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Database test failed: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail=f"Database test failed: {str(e)}"
+                ) from e
 
     # Include routers
-    app.include_router(patient.router, prefix="/api/patient")
+    app.include_router(patient.router, prefix="/api/note")
     app.include_router(transcribe.router, prefix="/api/transcribe")
     app.include_router(dashboard.router, prefix="/api/dashboard")
 
-    # Conditionally include RAG routers if dependencies are available
+    # Always register chat router (works without chromadb)
+    from server.api import chat
+
+    app.include_router(chat.router, prefix="/api/chat")
+
+    # Conditionally include RAG router (requires chromadb)
     if CHROMADB_AVAILABLE:
-        from server.api import (
-            chat,
-            rag,
-        )
+        from server.api import rag
 
         app.include_router(rag.router, prefix="/api/rag")
-        app.include_router(chat.router, prefix="/api/chat")
     else:
-        logger.warning("RAG/Chat features disabled - dependencies not available.")
+        logger.warning("RAG features disabled - chromadb not available.")
 
     app.include_router(config_router, prefix="/api/config")
     app.include_router(templates.router, prefix="/api/templates")
     app.include_router(letter.router, prefix="/api/letter")
 
     # React app routes
-    @app.get("/new-patient")
+    @app.get("/new-note")
     @app.get("/settings")
     @app.get("/rag")
     @app.get("/clinic-summary")
     @app.get("/outstanding-tasks")
-    @app.get("/patient/{patient_id}")
+    @app.get("/note/{note_id}")
     async def serve_react_app():
         return FileResponse(BUILD_DIR / "index.html")
 
@@ -224,7 +221,7 @@ if IS_DOCKER:
     app = initialize_and_get_app()
 else:
     # Desktop mode: app will be initialized after passphrase is received
-    app = None
+    app: Any = None
 
 
 def find_free_port():
@@ -310,7 +307,7 @@ if __name__ == "__main__":
         # Docker mode
         config = uvicorn.Config(
             app,
-            host=os.getenv("SERVER_HOST", "0.0.0.0"),
+            host=os.getenv("SERVER_HOST", "0.0.0.0"),  # nosec B104
             port=int(os.getenv("PORT", 5000)),
             timeout_keep_alive=300,
             timeout_graceful_shutdown=10,

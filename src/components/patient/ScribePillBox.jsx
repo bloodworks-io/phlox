@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { Box, Tooltip, useColorMode, Text } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import {
@@ -574,7 +574,41 @@ const ScribePillBox = ({
   isTranscriptionOpen,
   // Other
   hasRawTranscription,
+  // Audio file drop
+  onAudioDrop,
 }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+
+      if (!onAudioDrop) return;
+
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith("audio/")) {
+        await onAudioDrop(file);
+      }
+    },
+    [onAudioDrop],
+  );
+
   if (isLoading) {
     return (
       <PillBox
@@ -599,7 +633,27 @@ const ScribePillBox = ({
         className="pill-box-scribe"
         left="50%"
         transform="translateX(-50%)"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
+        {/* Drop zone overlay */}
+        {isDragOver && (
+          <Box
+            position="absolute"
+            top="-8px"
+            left="-8px"
+            right="-8px"
+            bottom="-8px"
+            borderRadius="full"
+            border="2px dashed"
+            borderColor="blue.400"
+            bg="rgba(66, 153, 225, 0.15)"
+            zIndex={-1}
+            pointerEvents="none"
+          />
+        )}
+
         {/* Left: Mode toggle / Reset */}
         <ModeResetButton
           isRecording={isRecording}

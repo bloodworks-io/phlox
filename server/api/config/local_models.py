@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-import os
+from pathlib import Path
 
 from fastapi import APIRouter, Body
 from fastapi.exceptions import HTTPException
@@ -28,7 +28,9 @@ async def get_downloaded_whisper_models():
         return {"models": models}
     except Exception as e:
         logging.error(f"Error getting downloaded Whisper models: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get downloaded Whisper models")
+        raise HTTPException(
+            status_code=500, detail="Failed to get downloaded Whisper models"
+        ) from e
 
 
 @router.get("/local/models/available")
@@ -45,7 +47,7 @@ async def get_available_llm_models():
         return {"models": models}
     except Exception as e:
         logging.error(f"Error getting available models: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get available models")
+        raise HTTPException(status_code=500, detail="Failed to get available models") from e
 
 
 @router.get("/local/models")
@@ -62,7 +64,7 @@ async def get_downloaded_llm_models():
         return {"models": models}
     except Exception as e:
         logging.error(f"Error getting downloaded models: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get downloaded models")
+        raise HTTPException(status_code=500, detail="Failed to get downloaded models") from e
 
 
 @router.post("/local/models/download")
@@ -89,9 +91,9 @@ async def download_llm_model(
         downloaded_path = await llama_model_manager.download_model(model_id)
 
         # Get file info for response
-        file_size = os.path.getsize(downloaded_path)
+        file_size = Path(downloaded_path).stat().st_size
         file_size_mb = round(file_size / (1024 * 1024), 2)
-        actual_filename = os.path.basename(downloaded_path)
+        actual_filename = Path(downloaded_path).name
 
         return {
             "message": "Model downloaded successfully",
@@ -102,10 +104,10 @@ async def download_llm_model(
         }
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logging.error(f"Error downloading model {model_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to download model: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to download model: {str(e)}") from e
 
 
 @router.get("/local/models/download/stream")
@@ -163,9 +165,9 @@ async def download_llm_model_stream(model_id: str):
             downloaded_path = await download_task
 
             # Get file info for response
-            file_size = os.path.getsize(downloaded_path)
+            file_size = Path(downloaded_path).stat().st_size
             file_size_mb = round(file_size / (1024 * 1024), 2)
-            actual_filename = os.path.basename(downloaded_path)
+            actual_filename = Path(downloaded_path).name
 
             yield f"data: {json.dumps({'type': 'complete', 'path': downloaded_path, 'filename': actual_filename, 'size_mb': file_size_mb})}\n\n"
 
@@ -197,7 +199,7 @@ async def delete_llm_model(filename: str):
         raise
     except Exception as e:
         logging.error(f"Error deleting model {filename}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete model")
+        raise HTTPException(status_code=500, detail="Failed to delete model") from e
 
 
 @router.get("/local/models/search")
@@ -234,7 +236,7 @@ async def search_huggingface_models(
                 gguf_files = [f for f in files if f.endswith(".gguf")]
                 model_info["gguf_files"] = gguf_files[:10]
                 model_info["has_gguf"] = len(gguf_files) > 0
-            except:
+            except Exception:
                 model_info["gguf_files"] = []
                 model_info["has_gguf"] = False
 
@@ -244,11 +246,11 @@ async def search_huggingface_models(
 
         return {"models": results}
 
-    except ImportError:
-        raise HTTPException(status_code=500, detail="huggingface_hub not installed")
+    except ImportError as e:
+        raise HTTPException(status_code=500, detail="huggingface_hub not installed") from e
     except Exception as e:
         logging.error(f"Error searching models: {e}")
-        raise HTTPException(status_code=500, detail="Failed to search models")
+        raise HTTPException(status_code=500, detail="Failed to search models") from e
 
 
 @router.get("/local/models/repo/{repo_id:path}")
@@ -292,24 +294,29 @@ async def get_repo_gguf_files(repo_id: str):
             "quantizations": quantizations,
         }
 
-    except ImportError:
-        raise HTTPException(status_code=500, detail="huggingface_hub not installed")
+    except ImportError as e:
+        raise HTTPException(status_code=500, detail="huggingface_hub not installed") from e
     except Exception as e:
         logging.error(f"Error getting repo files for {repo_id}: {e}")
         raise HTTPException(
             status_code=404,
             detail="Repository not found or error accessing files",
-        )
+        ) from e
 
 
 @router.get("/local/status")
 async def get_local_model_status():
     """Get status using bundled llama-server."""
     if IS_DOCKER:
-        raise HTTPException(
-            status_code=400,
-            detail="Local models are only available in Tauri builds",
-        )
+        return {
+            "available": False,
+            "llama_server_running": False,
+            "models": [],
+            "models_count": 0,
+            "selected_model_id": None,
+            "is_docker": True,
+            "reason": "Local models are only available in Tauri builds",
+        }
 
     models = llama_model_manager.get_downloaded_models()
     selected_model_id = llama_model_manager.get_selected_model_id()
@@ -320,6 +327,7 @@ async def get_local_model_status():
         "models": models,
         "models_count": len(models),
         "selected_model_id": selected_model_id,
+        "is_docker": False,
     }
 
 

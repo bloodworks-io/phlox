@@ -3,6 +3,8 @@ Tests for patient endpoints.
 Assumes your patient-related endpoints are included from server/api/patient.py.
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -11,13 +13,13 @@ from server.api.patient import router as patient_router
 
 # Create a minimal FastAPI app with the patient router.
 app = FastAPI()
-app.include_router(patient_router, prefix="/api/patient")
+app.include_router(patient_router, prefix="/api/note")
 client = TestClient(app)
 
 
 def test_get_patients():
     # Assumes that GET /api/patients?date=2023-06-15 returns a list (possibly empty)
-    response = client.get("/api/patient/list?date=2023-06-15")
+    response = client.get("/api/note/list?date=2023-06-15")
     assert response.status_code == 200
     data = response.json()
     # Data should be a list
@@ -28,7 +30,7 @@ def test_get_patients():
 async def test_get_patient_not_found(monkeypatch):
     """Test GET /api/patient/{id} with non-existent ID"""
 
-    def fake_get_patient_by_id(*args):
+    def fake_get_patient_by_id(*_args):
         from fastapi import HTTPException
 
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -38,13 +40,13 @@ async def test_get_patient_not_found(monkeypatch):
         "server.database.entities.patient.get_patient_by_id",
         fake_get_patient_by_id,
     )
-    response = client.get("/api/patient/id/999999")
+    response = client.get("/api/note/id/999999")
     assert response.status_code == 404
 
 
 def test_search_patient():
     # Query search-patient endpoint with a dummy UR number
-    response = client.get("/api/patient/search?ur_number=NON_EXISTENT")
+    response = client.get("/api/note/search?ur_number=NON_EXISTENT")
     assert response.status_code == 200
     data = response.json()
     # Expect data to be a list
@@ -53,7 +55,7 @@ def test_search_patient():
 
 @pytest.fixture
 def mock_summarize(monkeypatch):
-    async def fake_summarize(*args, **kwargs):
+    async def fake_summarize(*_args, **_kwargs):
         return "Test summary", "Test condition"
 
     monkeypatch.setattr("server.utils.llm.summarisation.summarise_encounter", fake_summarize)
@@ -64,10 +66,17 @@ def mock_summarize(monkeypatch):
 @pytest.mark.asyncio
 async def test_save_patient(monkeypatch):
     # Mock summarize_encounter to avoid actual LLM calls
-    async def mock_summarize_encounter(*args, **kwargs):
+    async def mock_summarize_encounter(*_args, **_kwargs):
         return "Test summary", "Test condition"
 
-    monkeypatch.setattr("server.api.patient.summarize_encounter", mock_summarize_encounter)
+    monkeypatch.setattr("server.api.patient.summarise_encounter", mock_summarize_encounter)
+
+    # Mock summarization_manager to avoid token generation issues
+    mock_manager = MagicMock()
+    mock_manager.generate_token.return_value = "test-token"
+    mock_manager.should_process = AsyncMock(return_value=False)
+    mock_manager.mark_complete = AsyncMock()
+    monkeypatch.setattr("server.api.patient.summarization_manager", mock_manager)
 
     payload = {
         "patientData": {
@@ -87,23 +96,23 @@ async def test_save_patient(monkeypatch):
         }
     }
 
-    def fake_save_patient(*args):
+    def fake_save_patient(*_args):
         return 123
 
     monkeypatch.setattr("server.api.patient.save_patient", fake_save_patient)
 
-    response = client.post("/api/patient/save", json=payload)
+    response = client.post("/api/note/save", json=payload)
     assert response.status_code == 200
 
 
 def test_delete_patient(monkeypatch):
     # Patch delete_patient_by_id to simulate a successful deletion
 
-    def fake_delete_patient_by_id(pid: int):
+    def fake_delete_patient_by_id(_pid: int):
         return True
 
     monkeypatch.setattr("server.api.patient.delete_patient_by_id", fake_delete_patient_by_id)
-    response = client.delete("/api/patient/id/123")
+    response = client.delete("/api/note/id/123")
     assert response.status_code == 200
     data = response.json()
     assert "message" in data

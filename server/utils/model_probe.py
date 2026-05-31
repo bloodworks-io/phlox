@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 async def probe_and_store_model_behavior(
     provider: str,
-    base_url: str | None,
-    api_key: str | None,
+    _base_url: str | None,
+    _api_key: str | None,
     model: str,
 ) -> dict[str, Any]:
     """

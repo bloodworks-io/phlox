@@ -76,8 +76,12 @@ class ConfigManager:
             self.options[category][key] = value
 
     def get_config(self):
-        """Returns the configuration settings."""
-        return self.config
+        """Returns the configuration settings with fallbacks applied."""
+        config = self.config.copy()
+        # Fall back to PRIMARY_MODEL if SECONDARY_MODEL is not set
+        if not config.get("SECONDARY_MODEL"):
+            config["SECONDARY_MODEL"] = config.get("PRIMARY_MODEL", "")
+        return config
 
     def get_prompts(self):
         """Returns the prompts."""
@@ -184,7 +188,9 @@ class ConfigManager:
                 default_template_key,
                 default_letter_template_id,
                 has_completed_splash_screen,
-                scribe_is_ambient
+                scribe_is_ambient,
+                disabled_tools,
+                advanced_options
             FROM user_settings LIMIT 1
             """)
         result = self.db.cursor.fetchone()
@@ -198,6 +204,14 @@ class ConfigManager:
                 )
             if "scribe_is_ambient" in settings:
                 settings["scribe_is_ambient"] = bool(settings["scribe_is_ambient"])
+            if settings.get("disabled_tools"):
+                settings["disabled_tools"] = json.loads(settings["disabled_tools"])
+            else:
+                settings["disabled_tools"] = ["pubmed_search", "wiki_search"]
+            if settings.get("advanced_options"):
+                settings["advanced_options"] = json.loads(settings["advanced_options"])
+            else:
+                settings["advanced_options"] = {}
             return settings
         return {
             "name": "",
@@ -212,6 +226,8 @@ class ConfigManager:
             "default_letter_template_id": None,
             "has_completed_splash_screen": False,
             "scribe_is_ambient": True,
+            "disabled_tools": ["pubmed_search", "wiki_search"],
+            "advanced_options": {},
         }
 
     def update_user_settings(self, settings: dict):
@@ -227,8 +243,10 @@ class ConfigManager:
                 default_template_key,
                 default_letter_template_id,
                 has_completed_splash_screen,
-                scribe_is_ambient
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                scribe_is_ambient,
+                disabled_tools,
+                advanced_options
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 settings.get("name", ""),
@@ -243,6 +261,8 @@ class ConfigManager:
                 settings.get("default_letter_template_id"),
                 bool(settings.get("has_completed_splash_screen", False)),
                 bool(settings.get("scribe_is_ambient", True)),
+                json.dumps(settings.get("disabled_tools", ["pubmed_search", "wiki_search"])),
+                json.dumps(settings.get("advanced_options", {})),
             ),
         )
         self.db.commit()

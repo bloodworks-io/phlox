@@ -3,6 +3,27 @@ import { MinusIcon } from "@chakra-ui/icons";
 import { colors } from "../colors";
 import { WiDayThunderstorm } from "react-icons/wi";
 
+const CHAT_UI_TOKENS = {
+    chevron: {
+        light: "#9ca3af",
+        dark: "#9ca3af",
+    },
+    userBubble: {
+        light: {
+            gradient:
+                "linear-gradient(180deg, rgba(247, 147, 30, 0.88), rgba(230, 95, 35, 0.82)) !important",
+            border: "1px solid rgba(255, 255, 255, 0.32) !important",
+            shadow: "0 6px 18px rgba(230, 95, 35, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important",
+        },
+        dark: {
+            gradient:
+                "linear-gradient(180deg, rgba(247, 147, 30, 0.34), rgba(230, 95, 35, 0.26)) !important",
+            border: "1px solid rgba(255, 167, 102, 0.28) !important",
+            shadow: "0 6px 20px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important",
+        },
+    },
+};
+
 export const floatingStyles = (props) => ({
     ".chat-icon": {
         backgroundColor:
@@ -90,24 +111,27 @@ export const floatingStyles = (props) => ({
     },
     ".message-box": {
         padding: "10px",
-        borderRadius: "8px",
+        borderRadius: "2xl",
         wordBreak: "break-word",
     },
     ".message-box.assistant": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? colors.light.secondary
-                : colors.dark.secondary,
+        backgroundColor: "transparent !important",
         color:
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textSecondary} !important`,
-        borderRadius: "lg !important",
+        borderRadius: "0 !important",
+        border: "none !important",
+        boxShadow: "none !important",
+        padding: "0 !important",
     },
     ".message-box.user": {
-        backgroundColor: colors.light.secondaryButton,
-        color: colors.light.invertedText,
-        borderRadius: "lg !important",
+        background:
+            props.colorMode === "light"
+                ? "#f7931ecc !important"
+                : "#f7931e66 !important",
+        color: "#fff !important",
+        borderRadius: "2xl !important",
     },
     ".message-box ul, .message-box ol": {
         paddingLeft: "20px",
@@ -150,6 +174,21 @@ export const floatingStyles = (props) => ({
             props.colorMode === "light"
                 ? `${colors.light.crust} !important`
                 : `${colors.dark.base} !important`,
+    },
+    ".chat-disclosure-icon": {
+        color:
+            props.colorMode === "light"
+                ? `${CHAT_UI_TOKENS.chevron.light} !important`
+                : `${CHAT_UI_TOKENS.chevron.dark} !important`,
+        backgroundColor: "transparent !important",
+        border: "none !important",
+        boxShadow: "none !important",
+        minWidth: "auto !important",
+        height: "auto !important",
+        padding: "0 !important",
+    },
+    ".chat-disclosure-icon:hover, .chat-disclosure-icon:active": {
+        backgroundColor: "transparent !important",
     },
     ".fam-main-button": {
         backgroundColor:
@@ -211,5 +250,50 @@ export const floatingStyles = (props) => ({
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
                 : `1px solid ${colors.dark.surface} !important`,
+    },
+    // Dashboard chat styles
+    ".dashboard-chat-container": {
+        height: "calc(100vh - 60px)",
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+    },
+    ".dashboard-chat-input-container": {
+        background:
+            props.colorMode === "light"
+                ? `${colors.light.secondary} !important`
+                : `${colors.dark.surface} !important`,
+        border:
+            props.colorMode === "light"
+                ? `1px solid ${colors.light.surface} !important`
+                : `1px solid ${colors.dark.surface2} !important`,
+        borderRadius: "3xl !important",
+        padding: "10px 16px !important",
+    },
+    ".dashboard-chat-messages": {
+        height: "calc(100vh - 160px)",
+        overflowY: "auto",
+        paddingBottom: "100px", // Space for fixed input
+    },
+    ".dashboard-chat-greeting": {
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textPrimary} !important`
+                : `${colors.dark.textPrimary} !important`,
+    },
+    ".dashboard-chat-suggestions": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.crust} !important`
+                : `${colors.dark.overlay0} !important`,
+        borderRadius: "xl !important",
+        border:
+            props.colorMode === "light"
+                ? `1px solid ${colors.light.surface} !important`
+                : "none !important",
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textSecondary} !important`
+                : `${colors.dark.textTertiary} !important`,
     },
 });

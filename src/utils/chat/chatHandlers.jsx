@@ -1,7 +1,7 @@
 import { chatApi } from "../api/chatApi";
 import {
     validateInput,
-    formatInitialMessage,
+    formatPatientContext,
     // truncateConversationHistory, // We might integrate truncation later if needed
 } from "./messageUtils";
 
@@ -41,11 +41,10 @@ export const handleChat = async (
     setMessages((prev) => [...prev, newUserMessage]);
     setUserInput(""); // Clear input immediately
 
-    // Prepare the messages array for the API request
-    // Start preparing the request *after* user message is added to state
-    const initialMessage = formatInitialMessage(currentTemplate, patientData);
-    if (!initialMessage) {
-        console.error("Failed to format initial message");
+    // Format patient context for the backend to build the system message
+    const patientContext = formatPatientContext(currentTemplate, patientData);
+    if (!patientContext) {
+        console.error("Failed to format patient context");
         setMessages((prev) => [
             ...prev,
             { role: "assistant", content: "Error preparing context for chat." },
@@ -55,8 +54,8 @@ export const handleChat = async (
     }
 
     // Use the state *before* adding the assistant's placeholder
+    // Messages are just the conversation history (no initial message with patient data)
     const messagesForApi = [
-        initialMessage,
         // Filter out any previous assistant error messages if needed
         ...currentMessages.filter(
             (msg) =>
@@ -84,9 +83,72 @@ export const handleChat = async (
         for await (const chunk of chatApi.streamMessage(
             messagesForApi,
             rawTranscription,
+            patientContext,
         )) {
             if (chunk.type === "chunk" && chunk.content) {
                 streamedContent += chunk.content;
+            } else if (chunk.type === "status" && chunk.content) {
+                const statusText = chunk.content.trim();
+
+                const callMatch = statusText.match(
+                    /^Calling tool:\s*([^|]+?)(?:\s*\|\s*query:\s*(.+))?$/i,
+                );
+
+                // Only render UI tool blocks for explicit tool-call status events.
+                // Ignore follow-up generic status messages to prevent duplicate cards.
+                if (!callMatch) {
+                    continue;
+                }
+
+                const toolName = (callMatch[1] ?? "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .replace(/^["'`]+|["'`]+$/g, "")
+                    .replace(/"/g, "'");
+
+                const toolQuery = (callMatch[2] ?? "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .replace(/"/g, "'");
+
+                const toClinicianActionLabel = (name) => {
+                    const normalized = String(name || "").toLowerCase();
+
+                    if (normalized.includes("pubmed")) {
+                        return "Searching PubMed for supporting evidence";
+                    }
+                    if (normalized.includes("wiki")) {
+                        return "Checking background reference information";
+                    }
+                    if (normalized.includes("literature")) {
+                        return "Searching medical literature";
+                    }
+                    if (normalized.includes("transcript")) {
+                        return "Reviewing encounter transcript";
+                    }
+                    if (normalized.includes("direct_response")) {
+                        return "Preparing response";
+                    }
+
+                    return "Gathering supporting information";
+                };
+
+                const clinicianStatusText = `${toClinicianActionLabel(toolName)}...`;
+
+                const escapeAttr = (value = "") =>
+                    String(value)
+                        .replace(/&/g, "&amp;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+
+                if (toolName) {
+                    const nameAttr = escapeAttr(toolName);
+                    const queryAttr = toolQuery
+                        ? ` query="${escapeAttr(toolQuery)}"`
+                        : "";
+                    streamedContent += `\n<tool name="${nameAttr}" status="running"${queryAttr}>${clinicianStatusText}</tool>\n`;
+                }
             } else if (
                 chunk.type === "context" ||
                 (chunk.type === "end" && chunk.function_response)

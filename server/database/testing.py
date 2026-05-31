@@ -87,9 +87,7 @@ def clear_test_database(db, cursor, is_test):
         tables = [
             "patients",
             "clinical_templates",
-            "rss_feeds",
             "todos",
-            "rss_items",
             "config",
             "prompts",
             "options",
@@ -97,7 +95,7 @@ def clear_test_database(db, cursor, is_test):
         ]
         try:
             for table in tables:
-                cursor.execute(f"DELETE FROM {table}")
+                cursor.execute(f"DELETE FROM {table}")  # nosec B608
             db.commit()
         except Exception as e:
             logging.error(f"Failed to clear test database: {str(e)}")

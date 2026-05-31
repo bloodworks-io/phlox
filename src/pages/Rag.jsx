@@ -1,8 +1,7 @@
-// Page component for RAG functionality.
+// Page component for document management (upload and explore)
 import React, { useState, useEffect } from "react";
 import { Box, Text, VStack, useToast } from "@chakra-ui/react";
 import { ragApi } from "../utils/api/ragApi";
-import RagChat from "../components/rag/RagChat";
 import DocumentExplorer from "../components/rag/DocumentExplorer";
 import Uploader from "../components/rag/Uploader";
 import DeleteModal from "../components/rag/DeleteModal";
@@ -12,12 +11,13 @@ const Rag = () => {
   const [loading, setLoading] = useState(true);
   const [itemToDelete, setItemToDelete] = useState(null);
   const toast = useToast();
-  // Collapse states
+
+  // Collapse states - both expanded by default
   const [collapseStates, setCollapseStates] = useState({
-    chat: false,
-    explorer: true,
-    uploader: true,
+    explorer: false,
+    uploader: false,
   });
+
   const toggleCollapse = (section) => {
     setCollapseStates((prev) => ({
       ...prev,
@@ -91,15 +91,17 @@ const Rag = () => {
       setItemToDelete(null);
     }
   };
+
   return (
     <Box p="5" borderRadius="sm" w="100%">
       <Text as="h2" mb="4">
         Documents
       </Text>
       <VStack spacing="5" align="stretch">
-        <RagChat
-          isCollapsed={collapseStates.chat}
-          setIsCollapsed={() => toggleCollapse("chat")}
+        <Uploader
+          isCollapsed={collapseStates.uploader}
+          setIsCollapsed={() => toggleCollapse("uploader")}
+          setCollections={setCollections}
         />
         <DocumentExplorer
           isCollapsed={collapseStates.explorer}
@@ -108,11 +110,6 @@ const Rag = () => {
           setCollections={setCollections}
           loading={loading}
           setItemToDelete={setItemToDelete}
-        />
-        <Uploader
-          isCollapsed={collapseStates.uploader}
-          setIsCollapsed={() => toggleCollapse("uploader")}
-          setCollections={setCollections}
         />
       </VStack>
       <DeleteModal
@@ -124,4 +121,5 @@ const Rag = () => {
     </Box>
   );
 };
+
 export default Rag;

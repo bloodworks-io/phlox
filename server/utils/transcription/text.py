@@ -3,7 +3,7 @@ import logging
 import random
 import re
 import time
-from typing import Union
+from typing import Any
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import MultiFieldResponse
@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 async def process_transcription(
     transcript_text: str,
     template_fields: list[TemplateField],
-    patient_context: dict[str, str],
+    patient_context: dict[str, str | None],
     is_ambient: bool = True,
-) -> dict[str, Union[str, float]]:
+    primary_condition: str | None = None,
+) -> dict[str, Any]:
     """
     Process the transcribed text to generate summaries for non-persistent template fields.
 
@@ -45,7 +46,7 @@ async def process_transcription(
         mode_label = "Ambient" if is_ambient else "Dictate"
         logger.info(f"Processing {total_fields} fields ({mode_label} Mode)...")
         raw_results_dict = await process_all_fields_concurrently(
-            transcript_text, non_persistent_fields, patient_context, is_ambient
+            transcript_text, non_persistent_fields, patient_context, is_ambient, primary_condition
         )
         # Convert to list of TemplateResponse for compatibility with refinement step
         raw_results = [
@@ -58,7 +59,7 @@ async def process_transcription(
         refined_results = await asyncio.gather(
             *[
                 refine_field_content(result.content, field, is_ambient=is_ambient)
-                for result, field in zip(raw_results, non_persistent_fields)
+                for result, field in zip(raw_results, non_persistent_fields, strict=True)
             ]
         )
         logger.info(f"Successfully refined {total_fields} fields")
@@ -66,7 +67,7 @@ async def process_transcription(
         # Combine results into a dictionary
         processed_fields = {
             field.field_key: refined_content
-            for field, refined_content in zip(non_persistent_fields, refined_results)
+            for field, refined_content in zip(non_persistent_fields, refined_results, strict=True)
         }
 
         process_duration = time.perf_counter() - process_start
@@ -84,8 +85,9 @@ async def process_transcription(
 async def process_all_fields_concurrently(
     transcript_text: str,
     fields: list[TemplateField],
-    patient_context: dict[str, str],
+    patient_context: dict[str, str | None],
     is_ambient: bool = True,
+    primary_condition: str | None = None,
 ) -> dict[str, str]:
     """
     Process all template fields in a single LLM call using structured output.
@@ -130,6 +132,11 @@ INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
             else:
                 intro = "Extract and organize information from the clinician's direct dictation for each of the following fields."
 
+            if primary_condition:
+                intro += (
+                    f" This is a returning patient who sees the clinician for {primary_condition}."
+                )
+
             system_content = f"""{intro}
 
 {patient_context_str}
@@ -146,7 +153,7 @@ Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapp
                 {"role": "user", "content": transcript_text},
             ]
 
-            random_seed = random.randint(0, 2**32 - 1)
+            random_seed = random.randint(0, 2**32 - 1)  # nosec B311
 
             logger.info(
                 f"Processing {len(fields)} fields in one call (attempt {attempt + 1}/{max_retries + 1})..."
@@ -192,6 +199,7 @@ Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapp
                     f"Error processing all fields concurrently after {max_retries + 1} attempts: {e}"
                 )
                 raise
+    raise RuntimeError("Unreachable: process_all_fields_concurrently exhausted retries")
 
 
 def _capitalize_first_char(text: str) -> str:
@@ -213,7 +221,7 @@ def clean_list_spacing(text: str) -> str:
     return text.strip()
 
 
-def _build_patient_context(context: dict[str, str]) -> str:
+def _build_patient_context(context: dict[str, str | None]) -> str:
     """
     Build patient context string from dictionary.
 

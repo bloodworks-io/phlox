@@ -125,7 +125,7 @@ def save_template(template: ClinicalTemplate) -> str:
             (
                 template.template_key,
                 template.template_name,
-                json.dumps([field.dict() for field in template.fields]),
+                json.dumps([field.model_dump() for field in template.fields]),
                 now,
                 now,
             ),
@@ -160,22 +160,23 @@ def update_template(template: ClinicalTemplate) -> str:
         if current:
             # Compare current and new content
             current_fields = json.loads(current["fields"])
-            new_fields = [field.dict() for field in template.fields]
+            new_fields = [field.model_dump() for field in template.fields]
 
             # Copy over previous adaptive refinement instructions
             current_fields_map = {f["field_key"]: f for f in current_fields if "field_key" in f}
             for field in new_fields:
                 prev = current_fields_map.get(field.get("field_key"))
-                if prev:
-                    if (
+                if (
+                    prev
+                    and (
                         "adaptive_refinement_instructions" not in field
                         or not field["adaptive_refinement_instructions"]
-                    ):
-                        # Only copy if previous version had something to copy
-                        if prev.get("adaptive_refinement_instructions"):
-                            field["adaptive_refinement_instructions"] = prev[
-                                "adaptive_refinement_instructions"
-                            ]
+                    )
+                    and prev.get("adaptive_refinement_instructions")
+                ):
+                    field["adaptive_refinement_instructions"] = prev[
+                        "adaptive_refinement_instructions"
+                    ]
             # Only update if there are actual changes
             if current["template_name"] == template.template_name and current_fields == new_fields:
                 return current["template_key"]  # Return existing key if no changes
@@ -229,7 +230,7 @@ def update_template(template: ClinicalTemplate) -> str:
             (
                 new_template_key,
                 template.template_name,
-                json.dumps([field.dict() for field in template.fields]),
+                json.dumps([field.model_dump() for field in template.fields]),
                 now,
                 now,
             ),

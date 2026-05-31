@@ -56,7 +56,7 @@ impl ClientRequest {
             },
             ClientRequest::Stop { service } => RequestWrapper {
                 request_type: "stop",
-                payload: Some(serde_json::json!({ "service": service })),
+                payload: Some(serde_json::json!(service)),
             },
             ClientRequest::Status => RequestWrapper {
                 request_type: "status",

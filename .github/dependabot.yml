@@ -1,6 +1,5 @@
 version: 2
 updates:
-  # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -13,6 +12,8 @@ updates:
       - "dependencies"
       - "github-actions"
       - "security"
+    cooldown:
+      default-days: 7
 
   # Enable version updates for npm
   - package-ecosystem: "npm"
@@ -27,6 +28,8 @@ updates:
       - "dependencies"
       - "javascript"
     versioning-strategy: increase
+    cooldown:
+      default-days: 7
 
   # Enable version updates for npm in src-tauri
   - package-ecosystem: "npm"
@@ -41,8 +44,9 @@ updates:
       - "dependencies"
       - "javascript"
     versioning-strategy: increase
+    cooldown:
+      default-days: 7
 
-  # Enable version updates for uv
   - package-ecosystem: "pip"
     directory: "/server"
     schedule:
@@ -56,6 +60,7 @@ updates:
       - "python"
     versioning-strategy: increase-if-necessary
     ignore:
-      # Temporary ignore for major version bumps that may break compatibility
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+    cooldown:
+      default-days: 7

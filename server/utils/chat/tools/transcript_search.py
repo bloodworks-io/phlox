@@ -10,7 +10,6 @@ from typing import Any
 
 from server.utils.chat.streaming.response import (
     status_message,
-    stream_llm_response,
     tool_response_message,
 )
 from server.utils.helpers import clean_think_tags
@@ -24,7 +23,7 @@ async def execute(
     config: dict[str, Any],
     message_list: list,
     conversation_history: list,
-    raw_transcription: str,
+    raw_transcription: str | None,
     context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
@@ -44,25 +43,31 @@ async def execute(
     """
     logger.info("Executing transcript_search tool...")
 
-    # Check if transcript is available
-    if not raw_transcription:
-        logger.info("No transcript available.")
+    if llm_client is None:
+        logger.warning("transcript_search called without LLM client")
         yield status_message("Generating response...")
 
         message_list.append(
             tool_response_message(
                 tool_call_id=tool_call.get("id", ""),
-                content="No transcript is available to query. Please answer the user's question without transcript information.",
+                content="This tool is only available in chat context with an active transcript. Please answer the user's question using other available information.",
             )
         )
 
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
+        return
+
+    # Check if transcript is available
+    if not raw_transcription:
+        logger.info("No transcript available.")
+        yield status_message("Generating response...")
+
+        from server.utils.chat.streaming.response import end_message
+
+        yield end_message(
+            function_response={
+                "content": "No transcript is available to query. Please answer the user's question without transcript information."
+            }
+        )
     else:
         logger.info("Searching transcript for query...")
         yield status_message("Searching through transcript...")
@@ -104,27 +109,10 @@ async def execute(
 
         logger.info(f"Transcript query result: {cleaned_transcript_info[:200]}...")
 
-        # Add transcript info to original conversation as a tool response
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content=f"The following information was found in the transcript:\n\n{cleaned_transcript_info}",
-            )
+        from server.utils.chat.streaming.response import end_message
+
+        yield end_message(
+            function_response={
+                "content": f"The following information was found in the transcript:\n\n{cleaned_transcript_info}"
+            }
         )
-
-        # Clean think tags again
-        cleaned_message_list = clean_think_tags(message_list)
-
-        logger.info(f"Transcript query messagelist: {cleaned_message_list}")
-        yield status_message("Generating response with transcript information...")
-
-        logger.info("Starting response stream to frontend")
-
-        # Stream the answer
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=cleaned_message_list,
-            options=context_question_options,
-        ):
-            yield chunk

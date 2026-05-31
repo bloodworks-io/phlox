@@ -63,10 +63,7 @@ def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
         return True
 
     # For rate limiting: skip non-API paths entirely
-    if check_api and not path.startswith("/api/"):
-        return True
-
-    return False
+    return bool(check_api and not path.startswith("/api/"))
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -266,9 +263,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def _get_limit_for_path(self, path: str) -> tuple[int, int]:
         """Get rate limit for a given path."""
         # Check for patient list vs detail
-        if path == "/api/patient" or path == "/api/patient/":
+        if path == "/api/note" or path == "/api/note/":
             return self.PATIENT_LIST_LIMIT
-        if path.startswith("/api/patient/"):
+        if path.startswith("/api/note/"):
             return self.PATIENT_DETAIL_LIMIT
 
         # Check other endpoints
@@ -280,9 +277,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _get_endpoint_key(self, path: str) -> str:
         """Get endpoint key for rate limiting (groups related paths)."""
-        if path.startswith("/api/patient/") and path != "/api/patient/":
-            # Group all individual patient requests
-            return "/api/patient/detail"
+        if path.startswith("/api/note/") and path != "/api/note/":
+            # Group all individual note requests
+            return "/api/note/detail"
         for prefix in self.RATE_LIMITS:
             if path.startswith(prefix):
                 return prefix
@@ -318,7 +315,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             for client_ip, endpoints in list(cls._request_history.items()):
                 # Check if all endpoints for this IP are stale
                 all_stale = True
-                for endpoint, timestamps in endpoints.items():
+                for _endpoint, timestamps in endpoints.items():
                     # Keep if any timestamp is within window
                     if any(now - ts < cls.WINDOW_SECONDS for ts in timestamps):
                         all_stale = False

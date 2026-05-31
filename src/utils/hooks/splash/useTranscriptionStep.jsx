@@ -5,6 +5,7 @@ import { validateTranscriptionStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
 import { localModelApi } from "../../api/localModelApi";
 import { downloadWhisperModel as downloadWhisperService } from "../../services/localModelService.jsx";
+import { useDebounce } from "../useDebounce";
 
 export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
     const toast = useToast();
@@ -17,10 +18,11 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
     const [availableWhisperModels, setAvailableWhisperModels] = useState([]);
     const [whisperModelListAvailable, setWhisperModelListAvailable] =
         useState(false);
-    const [whisperUrlValidated, setWhisperUrlValidated] = useState(false);
-    const [lastValidatedWhisperUrl, setLastValidatedWhisperUrl] = useState("");
+
     const [isFetchingWhisperModels, setIsFetchingWhisperModels] =
         useState(false);
+
+    const debouncedWhisperBaseUrl = useDebounce(whisperBaseUrl, 500);
 
     // Local mode state
     const [localWhisperModels, setLocalWhisperModels] = useState([]);
@@ -36,24 +38,20 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
         // Only fetch remote models if in remote mode
         if (inferenceMode === "local") return;
 
-        if (!whisperBaseUrl) {
-            setAvailableWhisperModels([]);
-            setWhisperModelListAvailable(false);
-            setWhisperUrlValidated(false);
-            setLastValidatedWhisperUrl("");
+        // Guard: don't clear existing models during debounce settling
+        if (!debouncedWhisperBaseUrl) {
             return;
         }
 
-        if (whisperUrlValidated && whisperBaseUrl === lastValidatedWhisperUrl) {
-            return;
-        }
+        // Guard: prevent concurrent fetches
+        if (isFetchingWhisperModels) return;
 
         setIsFetchingWhisperModels(true);
         try {
             let models = [];
             let listAvailable = false;
             await settingsService.fetchWhisperModels(
-                whisperBaseUrl,
+                debouncedWhisperBaseUrl,
                 (fetchedModels) => {
                     models = fetchedModels;
                 },
@@ -63,9 +61,6 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
             );
             setAvailableWhisperModels(models);
             setWhisperModelListAvailable(listAvailable);
-
-            setWhisperUrlValidated(true);
-            setLastValidatedWhisperUrl(whisperBaseUrl);
         } catch (error) {
             toast({
                 title: "Error fetching Whisper models",
@@ -78,18 +73,10 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
             });
             setAvailableWhisperModels([]);
             setWhisperModelListAvailable(false);
-            setWhisperUrlValidated(false);
-            setLastValidatedWhisperUrl("");
         } finally {
             setIsFetchingWhisperModels(false);
         }
-    }, [
-        whisperBaseUrl,
-        toast,
-        whisperUrlValidated,
-        lastValidatedWhisperUrl,
-        inferenceMode,
-    ]);
+    }, [debouncedWhisperBaseUrl, toast, inferenceMode]);
 
     // Fetch local Whisper models
     const fetchLocalWhisperModels = useCallback(async () => {

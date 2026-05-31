@@ -1,8 +1,8 @@
 import datetime
 import json
-import os
 import random
 import sys
+from pathlib import Path
 
 # Add the parent directory of 'server' to the Python path
 sys.path.append("/usr/src/app")
@@ -18,7 +18,7 @@ from server.database.entities.templates import save_template
 from server.schemas.templates import ClinicalTemplate, TemplateField
 
 # Get the directory of the current script
-current_dir = os.path.dirname(os.path.abspath(__file__))
+current_dir = Path(__file__).resolve().parent
 
 
 def generate_jobs_list_from_plan(plan: str) -> list[dict]:
@@ -58,16 +58,16 @@ def initialize_fake_patients():
     today = datetime.date.today()
     yesterday = today - datetime.timedelta(days=1)
 
-    json_file_path = os.path.join(current_dir, "example_patients.json")
+    json_file_path = current_dir / "example_patients.json"
 
-    with open(json_file_path) as f:
+    with json_file_path.open() as f:
         data = json.load(f)
 
     fake_patients = []
     encounter_dates = [today] * 10 + [yesterday] * 10
     random.shuffle(encounter_dates)
 
-    for patient_data, encounter_date in zip(data["patients"], encounter_dates):
+    for patient_data, encounter_date in zip(data["patients"], encounter_dates, strict=True):
         # Convert old format to template data
         template_data = {
             "primary_history": patient_data["primary_history"],
@@ -90,8 +90,8 @@ def initialize_fake_patients():
             "template_key": "phlox_01",  # Using Phlox template for example patients
             "template_data": json.dumps(template_data),
             "raw_transcription": f"Raw transcription for {patient_data['name']}",
-            "transcription_duration": round(random.uniform(5.0, 15.0), 2),
-            "process_duration": round(random.uniform(10.0, 30.0), 2),
+            "transcription_duration": round(random.uniform(5.0, 15.0), 2),  # nosec B311
+            "process_duration": round(random.uniform(10.0, 30.0), 2),  # nosec B311
             "final_letter": f"Final letter for {patient_data['name']}'s appointment",
             "primary_condition": patient_data.get("encounter_summary", "")
             .split(" with ")[-1]

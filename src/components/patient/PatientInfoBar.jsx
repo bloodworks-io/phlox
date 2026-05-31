@@ -27,7 +27,7 @@ const PatientInfoBar = ({ patient, setPatient, handleSearch }) => {
                             className="pill-box-icons"
                         />
                         <Input
-                            placeholder="Name"
+                            placeholder="Last, First"
                             size="sm"
                             value={patient.name || ""}
                             onChange={(e) =>

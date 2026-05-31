@@ -7,6 +7,7 @@ from HuggingFace. Follows the Whisper pattern: 1 model at a time.
 
 import logging
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -159,10 +160,10 @@ class LlamaModelManager:
             # Check if this is a pre-configured model (case-insensitive match)
             model_info = None
             matched_filename = None
-            for model_id, info in PRECONFIGURED_MODELS.items():
-                if info["filename"].lower() == filename.lower():
+            for _model_id, info in PRECONFIGURED_MODELS.items():
+                if str(info["filename"]).lower() == filename.lower():
                     model_info = info
-                    matched_filename = info["filename"]  # Use the canonical filename
+                    matched_filename = str(info["filename"])  # Use the canonical filename
                     break
 
             if model_info:
@@ -170,7 +171,7 @@ class LlamaModelManager:
                 model_id = next(
                     k
                     for k, v in PRECONFIGURED_MODELS.items()
-                    if v["filename"].lower() == filename.lower()
+                    if str(v["filename"]).lower() == filename.lower()
                 )
                 models.append(
                     {
@@ -181,8 +182,7 @@ class LlamaModelManager:
                         "description": model_info["description"],
                         "path": str(model_file),
                         "category": model_info["category"],
-                        "is_selected": selected_filename == filename
-                        or selected_filename == matched_filename,
+                        "is_selected": selected_filename in (filename, matched_filename),
                     }
                 )
             else:
@@ -239,8 +239,8 @@ class LlamaModelManager:
         # Check if it's a pre-configured model
         if model_id in PRECONFIGURED_MODELS:
             model_info = PRECONFIGURED_MODELS[model_id]
-            repo_id = model_info["repo_id"]
-            filename = model_info["filename"]
+            repo_id = str(model_info["repo_id"])
+            filename = str(model_info["filename"])
         elif "/" in model_id:
             # Custom format: "repo_id/filename.gguf"
             parts = model_id.split("/", 1)
@@ -279,7 +279,7 @@ class LlamaModelManager:
                 response.raise_for_status()
                 total_size = int(response.headers.get("content-length", 0))
 
-                with open(model_file, "wb") as f:
+                with model_file.open("wb") as f:
                     downloaded = 0
                     async for chunk in response.aiter_bytes(8192):
                         f.write(chunk)
@@ -327,10 +327,8 @@ class LlamaModelManager:
         except Exception:
             # Clean up partial downloads on failure
             if model_file.exists():
-                try:
+                with suppress(Exception):
                     model_file.unlink()
-                except Exception:
-                    pass
             raise
 
         # Write the model selection file for Tauri to read
@@ -377,7 +375,7 @@ class LlamaModelManager:
 
     def get_default_model_filename(self) -> str:
         """Get the filename for the default model (qwen3.5-4b)."""
-        return PRECONFIGURED_MODELS["qwen3.5-4b"]["filename"]
+        return str(PRECONFIGURED_MODELS["qwen3.5-4b"]["filename"])
 
     def get_selected_model_id(self) -> str | None:
         """Get the model_id of the currently selected model.
@@ -393,7 +391,7 @@ class LlamaModelManager:
 
         # Try to map filename to model_id for pre-configured models
         for model_id, info in PRECONFIGURED_MODELS.items():
-            if info["filename"].lower() == selected_filename.lower():
+            if str(info["filename"]).lower() == selected_filename.lower():
                 return model_id
 
         # For custom models, return the filename (or repo_id/filename format if applicable)

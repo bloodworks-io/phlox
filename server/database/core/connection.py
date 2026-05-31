@@ -23,7 +23,6 @@ from server.database.core.initialization import (
     set_initial_default_template,
 )
 from server.database.core.migrations import run_migrations
-from server.database.testing import clear_test_database, run_database_test
 
 # Module-level state for lazy initialization
 _db_instance = None
@@ -42,7 +41,7 @@ def get_db() -> "PatientDatabase":
     return _db_instance
 
 
-def initialize_database(passphrase: str = None, db_dir=DATA_DIR) -> "PatientDatabase":
+def initialize_database(passphrase: str | None = None, db_dir=DATA_DIR) -> "PatientDatabase":
     """Initialize the database singleton with optional passphrase.
 
     Args:
@@ -73,12 +72,12 @@ class PatientDatabase:
 
     def ensure_data_directory(self):
         """Ensure the data directory exists."""
-        if not os.path.exists(self.db_dir):
+        if not Path(self.db_dir).exists():
             logging.info(
                 "Data directory does not exist. Creating data directory at %s",
                 self.db_dir,
             )
-            os.makedirs(self.db_dir, exist_ok=True)
+            Path(self.db_dir).mkdir(parents=True, exist_ok=True)
         else:
             logging.info("Data directory exists.")
         logging.info(f"Database path: {self.db_path}")
@@ -86,7 +85,7 @@ class PatientDatabase:
     def connect_to_database(self):
         """Establish encrypted database connection."""
         try:
-            db_exists = os.path.exists(self.db_path)
+            db_exists = Path(self.db_path).exists()
             self.db = sqlite3.connect(self.db_path, check_same_thread=False)
             self.db.row_factory = sqlite3.Row
             self.cursor = self.db.cursor()
@@ -102,7 +101,7 @@ class PatientDatabase:
                     self.cursor.execute("SELECT count(*) FROM sqlite_master")
                 except sqlite3.DatabaseError:
                     logging.error("Failed to decrypt existing database. Wrong encryption key?")
-                    raise ValueError("Cannot decrypt database - wrong key?")
+                    raise ValueError("Cannot decrypt database - wrong key?") from None
             else:
                 # New database - set up encryption
                 logging.info("No existing database, creating new database...")
@@ -122,7 +121,7 @@ class PatientDatabase:
             logging.error(f"Error initializing templates: {e}")
             raise
 
-    def __init__(self, passphrase: str = None, db_dir=DATA_DIR):
+    def __init__(self, passphrase: str | None = None, db_dir=DATA_DIR):
         """Initialize the database connection.
 
         Args:
@@ -136,15 +135,15 @@ class PatientDatabase:
         # Set up database name and path first (needed for error handling)
         self.is_test = os.environ.get("TESTING", "False").lower() == "true"
         self.db_name = "test_phlox_database.sqlite" if self.is_test else "phlox_database.sqlite"
-        self.db_path = os.path.join(self.db_dir, self.db_name)
+        self.db_path = str(Path(self.db_dir) / self.db_name)
 
         # If passphrase not provided, try env/secret sources
         if not self.encryption_key:
             # Try Podman secret file (for Docker deployments)
-            secret_file = "/run/secrets/db_encryption_key"
-            if os.path.exists(secret_file):
+            secret_file = "/run/secrets/db_encryption_key"  # nosec B105
+            if Path(secret_file).exists():
                 try:
-                    with open(secret_file) as f:
+                    with Path(secret_file).open() as f:
                         self.encryption_key = f.read().strip()
                     logging.info("Using encryption key from Podman secret")
                 except Exception as e:
@@ -158,7 +157,7 @@ class PatientDatabase:
 
         if not self.encryption_key:
             # Check if this is a first-run scenario
-            if not os.path.exists(self.db_path):
+            if not Path(self.db_path).exists():
                 # New database - this is acceptable if key will be provided
                 logging.warning(
                     "No encryption key provided for new database. "
@@ -193,11 +192,17 @@ class PatientDatabase:
         Returns:
             True if test successful
         """
+        from server.database.testing import run_database_test
+
         return run_database_test(self.cursor, self.db)
 
     def commit(self):
         """Commit current transaction."""
         self.db.commit()
+
+    def rollback(self):
+        """Rollback current transaction."""
+        self.db.rollback()
 
     def close(self):
         """Close database connection."""
@@ -208,7 +213,9 @@ class PatientDatabase:
 
     def clear_test_database(self):
         """Clear all test data from database."""
-        clear_test_database(self.db, self.cursor, self.is_test)
+        from server.database.testing import clear_test_database as _clear
+
+        _clear(self.db, self.cursor, self.is_test)
 
     def __enter__(self):
         """Context manager entry."""

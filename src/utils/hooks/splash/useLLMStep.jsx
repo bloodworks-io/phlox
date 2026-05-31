@@ -6,6 +6,7 @@ import { settingsService } from "../../../utils/settings/settingsUtils";
 import { isTauri } from "../../helpers/apiConfig";
 import { localModelApi } from "../../api/localModelApi";
 import { downloadLlmModel as downloadLlmService } from "../../services/localModelService.jsx";
+import { useDebounce } from "../useDebounce";
 
 export const useLLMStep = (currentStep) => {
     const toast = useToast();
@@ -19,15 +20,16 @@ export const useLLMStep = (currentStep) => {
     );
 
     // Remote mode state
-    const [llmProvider, setLlmProvider] = useState("ollama");
+    const [llmProvider, setLlmProvider] = useState("openai");
     const [llmBaseUrl, setLlmBaseUrl] = useState(
         import.meta.env.VITE_OLLAMA_BASE_URL || "http://localhost:11434",
     );
     const [primaryModel, setPrimaryModel] = useState("");
     const [availableModels, setAvailableModels] = useState([]);
-    const [llmUrlValidated, setLlmUrlValidated] = useState(false);
-    const [lastValidatedLlmUrl, setLastValidatedLlmUrl] = useState("");
     const [isFetchingLLMModels, setIsFetchingLLMModels] = useState(false);
+
+    const debouncedLlmBaseUrl = useDebounce(llmBaseUrl, 500);
+    const debouncedLlmProvider = useDebounce(llmProvider, 500);
 
     // Local mode state
     const [localAvailableModels, setLocalAvailableModels] = useState([]);
@@ -41,35 +43,27 @@ export const useLLMStep = (currentStep) => {
     const fetchLLMModels = useCallback(async () => {
         if (inferenceMode === "local") return;
 
-        if (!llmBaseUrl || !llmProvider) {
-            setAvailableModels([]);
-            setLlmUrlValidated(false);
-            setLastValidatedLlmUrl("");
+        // Guard: don't clear existing models during debounce settling
+        if (!debouncedLlmBaseUrl || !debouncedLlmProvider) {
             return;
         }
 
-        if (llmUrlValidated && llmBaseUrl === lastValidatedLlmUrl) {
-            return;
-        }
+        // Guard: prevent concurrent fetches
+        if (isFetchingLLMModels) return;
 
         setIsFetchingLLMModels(true);
         try {
             let models = [];
             await settingsService.fetchLLMModels(
-                { LLM_BASE_URL: llmBaseUrl, LLM_PROVIDER: llmProvider },
+                {
+                    LLM_BASE_URL: debouncedLlmBaseUrl,
+                    LLM_PROVIDER: debouncedLlmProvider,
+                },
                 (fetchedModels) => {
                     models = fetchedModels;
                 },
             );
             setAvailableModels(models);
-
-            if (models.length > 0) {
-                setLlmUrlValidated(true);
-                setLastValidatedLlmUrl(llmBaseUrl);
-            } else {
-                setLlmUrlValidated(false);
-                setLastValidatedLlmUrl("");
-            }
         } catch (error) {
             toast({
                 title: "Error fetching LLM models",
@@ -81,19 +75,10 @@ export const useLLMStep = (currentStep) => {
                 isClosable: true,
             });
             setAvailableModels([]);
-            setLlmUrlValidated(false);
-            setLastValidatedLlmUrl("");
         } finally {
             setIsFetchingLLMModels(false);
         }
-    }, [
-        llmBaseUrl,
-        llmProvider,
-        toast,
-        llmUrlValidated,
-        lastValidatedLlmUrl,
-        inferenceMode,
-    ]);
+    }, [debouncedLlmBaseUrl, debouncedLlmProvider, toast, inferenceMode]);
 
     // Fetch local models
     const fetchLocalModels = useCallback(async () => {

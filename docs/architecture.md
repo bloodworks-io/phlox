@@ -9,12 +9,14 @@
 - User interface and interactions
 - API calls to backend
 - Audio recording and playback
+- PDF processing and vision rendering (client-side via PDF.js)
 
 ### Backend (FastAPI)
 - REST API endpoints
 - Core application logic
 - Integrates with Ollama or any OpenAI compatible endpoint, Whisper, and ChromaDB
 - Database operations
+- MCP server management and tool routing
 
 ### Database (SQLite)
 - Local file-based storage
@@ -24,14 +26,28 @@
   - Clinical notes
   - Templates
   - Settings
+  - Todo items
 
 ### LLM
-- Local model inference (or remote if prefered)
+- Local model inference (or remote if preferred)
 - Handles:
   - Note generation
   - Clinical summaries
-  - RSS processing
+  - Chat and tool-calling
   - RAG queries
+  - Reasoning and citations
+  - Document/vision processing
+
+### Tool System
+- **Built-in tools** registered in the tool registry, including:
+  - PubMed search, Wikipedia lookup, literature search
+  - Patient note search, transcript search
+  - Outstanding job listing and completion
+  - Note creation
+  - Todo list management
+- **MCP tools** loaded dynamically from external MCP servers via SSE transport
+- Tool executor dispatches calls and handles streaming vs non-streaming responses
+- Interleaved thinking/tool-calling for complex multi-step queries
 
 ### Transcription
 - Compatible with any Whisper endpoint
@@ -84,9 +100,15 @@ Audio → Raw Transcription → JSON Extraction → Refinement (style + adaptive
 
 ### RAG (ChromaDB)
 - Vector database for document storage
-- Requires a tool calling model to be selected.
+- Requires a tool calling model to be selected
 - Enables context-aware queries
 - Stores medical document embeddings
+
+### Document/Vision Processing
+- Hybrid pipeline with automatic capability probing
+- When the configured model supports vision, PDFs and images are sent directly for visual analysis
+- Falls back to text extraction (pypdf) with OCR (Tesseract) when vision is unavailable
+- Processing mode configurable per deployment: "auto" (default), "vision", or "ocr"
 
 ## Data Persistence
 - SQLite database and ChromaDB data persisted on host

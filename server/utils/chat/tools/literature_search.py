@@ -13,8 +13,6 @@ from typing import Any
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
-    tool_response_message,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,7 +67,7 @@ def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -
         return "No relevant literature available"
 
     output_strings = []
-    distance_threshold = 0.2
+    distance_threshold = 0.4
     logger.info(f"Filtering results with distance threshold: {distance_threshold}")
 
     for i, doc_list in enumerate(context["documents"]):
@@ -87,7 +85,7 @@ def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -
                     f'According to {formatted_source}:\n\n"...{cleaned_doc}..."\n'
                 )
             else:
-                logger.info(f"Skipping document with distance {distance} (below threshold)")
+                logger.info(f"Skipping document with distance {distance} (above threshold)")
 
     if not output_strings:
         logger.info("No relevant literature matching query found.")
@@ -99,11 +97,11 @@ def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
     chroma_manager,
-    message_list: list,
-    context_question_options: dict[str, Any],
+    _message_list: list,
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
     Execute the literature search tool.
@@ -143,42 +141,28 @@ async def execute(
         question=question,
     )
 
-    function_response = None
+    # Track citations and content for the function response
+    citations: list[str] = []
+    result_content: str = ""
 
     if function_response_list == "No relevant literature available":
         logger.info("No relevant literature found in database.")
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", ""),
-                content="No relevant literature available in the database. Answer the user's question but inform them that you were unable to find any relevant information.",
-            )
-        )
+        result_content = "No relevant literature available in the database. Answer the user's question but inform them that you were unable to find any relevant information."
     else:
         logger.info(f"Retrieved relevant literature for disease: {disease_name}")
         if isinstance(function_response_list, list):
+            # Build citations from excerpts
+            for excerpt in function_response_list:
+                # Extract source from the excerpt format "According to {source}:\n\n..."
+                match = re.search(r"According to ([^:]+):", excerpt)
+                if match:
+                    source = match.group(1)
+                    citations.append(f"Clinical Guidelines ({source})")
+
             function_response_string = "\n".join(function_response_list)
         else:
             function_response_string = str(function_response_list)
 
-        message_list.append(
-            tool_response_message(
-                tool_call_id=tool_call.get("id", "") if tool_call else "",
-                content=f"The below text excerpts are taken from relevant sections of the guidelines; these may help you answer the user's question. The user has not sent you these documents, they have come from your own database.\n\n{function_response_string}",
-            )
-        )
+        result_content = f"The below text excerpts are taken from relevant sections of the guidelines; these may help you answer the user's question. The user has not sent you these documents, they have come from your own database.\n\n{function_response_string}"
 
-        function_response = function_response_list
-
-    yield status_message("Generating response with retrieved information...")
-
-    # Stream the context answer
-    async for chunk in stream_llm_response(
-        llm_client=llm_client,
-        model=config["PRIMARY_MODEL"],
-        messages=message_list,
-        options=context_question_options,
-    ):
-        yield chunk
-
-    # Yield the function response at the end
-    yield end_message(function_response=function_response)
+    yield end_message(function_response={"content": result_content, "citations": citations})

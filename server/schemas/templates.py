@@ -1,12 +1,12 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Literal, Union
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 VALID_FIELD_TYPES = Literal["text", "number", "date", "boolean", "list", "structured"]
 
 
-class FormatStyle(str, Enum):
+class FormatStyle(StrEnum):
     BULLETS = "bullets"
     NUMBERED = "numbered"
     NARRATIVE = "narrative"
@@ -27,7 +27,8 @@ class TemplateField(BaseModel):
     refinement_rules: list[str] | None = None
     adaptive_refinement_instructions: list[str] | None = None
 
-    @validator("field_type")
+    @field_validator("field_type")
+    @classmethod
     def validate_field_type(cls, v):
         valid_types = ["text", "number", "date", "boolean", "list", "structured"]
         if v not in valid_types:

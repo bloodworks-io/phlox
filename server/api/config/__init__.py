@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from .global_config import router as global_router
 from .local_models import router as local_models_router
+from .mcp import router as mcp_router
 from .models import router as models_router
 from .prompts import router as prompts_router
 from .system import router as system_router
@@ -20,3 +21,4 @@ router.include_router(user_router)
 router.include_router(system_router)
 router.include_router(local_models_router)
 router.include_router(whisper_models_router)
+router.include_router(mcp_router)

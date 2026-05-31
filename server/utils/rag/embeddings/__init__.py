@@ -14,7 +14,7 @@ class LocalEmbeddingFunction(EmbeddingFunction[Documents]):
     Local embedding function using llama-cpp-python for generating embeddings.
     """
 
-    def __init__(self, model_name: str, models_dir: str = None):
+    def __init__(self, model_name: str, _models_dir: str | None = None):
         """
         Initialize the Local Embedding Function.
 
@@ -23,7 +23,7 @@ class LocalEmbeddingFunction(EmbeddingFunction[Documents]):
             models_dir (str): Directory where models are stored.
         """
         self.model_name = model_name
-        self.model_manager = LocalModelManager(models_dir)
+        self.model_manager = LocalModelManager()
         self._llm = None
 
     def _ensure_model_loaded(self):
@@ -34,7 +34,7 @@ class LocalEmbeddingFunction(EmbeddingFunction[Documents]):
             except ImportError:
                 raise ImportError(
                     "llama-cpp-python not installed. Install with appropriate backend support."
-                )
+                ) from None
 
             model_path = self.model_manager.get_model_path(self.model_name)
             if not model_path.exists():

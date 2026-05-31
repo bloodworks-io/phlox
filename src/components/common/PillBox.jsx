@@ -19,6 +19,7 @@ const PillBox = ({
   zIndex = "1050",
   px = 4,
   py = 3,
+  ...rest
 }) => {
   const { colorMode } = useColorMode();
 
@@ -36,6 +37,7 @@ const PillBox = ({
       borderRadius="full"
       px={px}
       py={py}
+      {...rest}
     >
       <Flex align="center" gap={gap} flexDirection={flexDirection}>
         {children}

@@ -12,7 +12,7 @@ from server.database.config.defaults.letters import DefaultLetters
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.defaults.templates import DefaultTemplates
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 def run_migrations(patient_db):
@@ -70,7 +70,7 @@ def run_migrations(patient_db):
         raise
 
 
-def migrate_to_v1(cursor, db):
+def migrate_to_v1(cursor, _db):
     """Initial schema setup."""
     cursor.execute(
         """
@@ -267,7 +267,7 @@ def migrate_to_v1(cursor, db):
     default_options = prompts_data["options"].get("general", {})
     for category, options in prompts_data["options"].items():
         if category != "reasoning":
-            for key, value in options.items():
+            for key, _value in options.items():
                 actual_value = options.get(key, default_options.get(key))
                 if actual_value is not None:
                     cursor.execute(
@@ -534,5 +534,81 @@ def migrate_to_v4(cursor, db):
 
     except Exception as e:
         logging.error(f"Error during v4 migration: {e}")
+        db.rollback()
+        raise
+
+
+def migrate_to_v5(cursor, db):
+    """Add MCP servers configuration table and disabled_tools to user_settings.
+    Also normalize legacy LLM provider values from ollama to openai-compatible.
+    Seed document/image processing config defaults.
+    Drop unused RSS and analysis tables.
+    """
+    try:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mcp_servers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                url TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                server_version TEXT DEFAULT '',
+                enabled BOOLEAN DEFAULT 1,
+                allow_sensitive_data BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """
+        )
+
+        cursor.execute(
+            'ALTER TABLE user_settings ADD COLUMN disabled_tools JSON DEFAULT \'["pubmed_search", "wiki_search"]\'',
+        )
+
+        cursor.execute(
+            "ALTER TABLE user_settings ADD COLUMN advanced_options JSON DEFAULT '{}'",
+        )
+
+        # Normalize legacy provider value
+        cursor.execute("SELECT value FROM config WHERE key = 'LLM_PROVIDER'")
+        row = cursor.fetchone()
+
+        if row is None:
+            cursor.execute(
+                "INSERT INTO config (key, value) VALUES (?, ?)",
+                ("LLM_PROVIDER", json.dumps("openai")),
+            )
+        else:
+            provider_value = json.loads(row["value"])
+            if isinstance(provider_value, str) and provider_value.lower() == "ollama":
+                cursor.execute(
+                    "UPDATE config SET value = ? WHERE key = 'LLM_PROVIDER'",
+                    (json.dumps("openai"),),
+                )
+
+        # Seed document/image processing defaults
+        cursor.execute(
+            "INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)",
+            ("DOCUMENT_IMAGE_PROCESSING_MODE", json.dumps("auto")),
+        )
+        cursor.execute(
+            "INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)",
+            ("VISION_CAPABILITY_CACHE", json.dumps({})),
+        )
+
+        # Drop unused tables (RSS and analysis features removed)
+        cursor.execute("DROP TABLE IF EXISTS rss_feeds")
+        cursor.execute("DROP TABLE IF EXISTS rss_items")
+        cursor.execute("DROP TABLE IF EXISTS combined_digests")
+        cursor.execute("DROP TABLE IF EXISTS daily_analysis")
+
+        db.commit()
+        logging.info(
+            "Successfully added mcp_servers table, disabled_tools column, normalized LLM provider, "
+            "seeded document/image processing defaults, and dropped unused RSS/analysis tables"
+        )
+
+    except Exception as e:
+        logging.error(f"Error during v5 migration: {e}")
         db.rollback()
         raise

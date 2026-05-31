@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install Node.js dependencies
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copy the rest of the application
 COPY . .
@@ -20,7 +20,7 @@ RUN npm run build
 FROM python:3.12-slim
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv@sha256:03bdc89bb9798628846e60c3a9ad19006c8c3c724ccd2985a33145c039a0577b /uv /usr/local/bin/uv
 
 # Set the working directory
 WORKDIR /usr/src/app

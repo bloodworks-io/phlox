@@ -5,7 +5,7 @@ import traceback
 
 from fastapi import APIRouter, BackgroundTasks, Body
 from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from server.database.entities.analysis import generate_previous_visit_summary
 from server.database.entities.jobs import (
@@ -36,7 +36,6 @@ from server.schemas.patient import (
 from server.utils.nlp_tools.adaptive_refinement import (
     generate_adaptive_refinement_suggestions,
 )
-from server.utils.nlp_tools.reasoning import run_clinical_reasoning
 from server.utils.nlp_tools.summarisation import summarise_encounter
 from server.utils.nlp_tools.summarization_manager import summarization_manager
 
@@ -68,15 +67,15 @@ async def save_patient_data(request: SavePatientRequest, background_tasks: Backg
         if patient.id:
             update_patient(patient)
             logging.info(f"Patient updated with ID: {patient.id}")
-            patient_id = patient.id
+            note_id = patient.id
         else:
-            patient_id = save_patient(patient)
-            logging.info(f"Patient saved with ID: {patient_id}")
+            note_id = save_patient(patient)
+            logging.info(f"Patient saved with ID: {note_id}")
 
         # Queue background summarization
         background_tasks.add_task(
             process_encounter_summarization,
-            patient_id=patient_id,
+            note_id=note_id,
             patient_data=patient,
             task_token=task_token,
         )
@@ -85,21 +84,21 @@ async def save_patient_data(request: SavePatientRequest, background_tasks: Backg
         if request.adaptive_refinement:
             background_tasks.add_task(
                 process_adaptive_refinement,
-                template_key=patient.template_key,
+                template_key=patient.template_key or "",
                 refinement_data=request.adaptive_refinement,
             )
 
         # Small delay for UI feedback - makes the save feel intentional
         await asyncio.sleep(0.3)
 
-        return {"id": patient_id}
+        return {"id": note_id}
     except Exception as e:
         logging.error(f"Error processing patient data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def process_encounter_summarization(
-    patient_id: int,
+    note_id: int,
     patient_data: Patient,
     task_token: str,
 ) -> None:
@@ -110,29 +109,29 @@ async def process_encounter_summarization(
     proceeding, to avoid redundant LLM calls.
 
     Args:
-        patient_id: The ID of the patient to summarize.
+        note_id: The ID of the patient to summarize.
         patient_data: The patient data (captured at save time).
         task_token: The unique token for this task (timestamp).
     """
     # Check if this task is still the latest one for this patient
-    if not await summarization_manager.should_process(patient_id, task_token):
-        logging.info(f"Skipping stale summarization task for patient {patient_id}")
+    if not await summarization_manager.should_process(note_id, task_token):
+        logging.info(f"Skipping stale summarization task for patient {note_id}")
         return
 
     try:
-        logging.info(f"Processing summarization for patient {patient_id}")
+        logging.info(f"Processing summarization for patient {note_id}")
 
         # Perform the actual summarization (LLM calls)
         encounter_summary, primary_condition = await summarise_encounter(patient=patient_data)
 
         # Update the patient record with the summary
-        update_patient_summary(patient_id, encounter_summary, primary_condition)
+        update_patient_summary(note_id, encounter_summary, primary_condition)
 
-        logging.info(f"Completed summarization for patient {patient_id}")
+        logging.info(f"Completed summarization for patient {note_id}")
     except Exception as e:
-        logging.error(f"Error in background summarization for patient {patient_id}: {e}")
+        logging.error(f"Error in background summarization for patient {note_id}: {e}")
     finally:
-        await summarization_manager.mark_complete(patient_id)
+        await summarization_manager.mark_complete(note_id)
 
 
 async def process_adaptive_refinement(template_key: str, refinement_data: dict):
@@ -213,10 +212,10 @@ async def get_patients(
     date: str,
     template_key: str | None = None,
     detailed: str | None = None,
-) -> list[Patient]:
+):
     """Get patients for a specific date."""
     try:
-        include_data = detailed and detailed.lower() == "true"
+        include_data: bool = detailed is not None and detailed.lower() == "true"
         patients = get_patients_by_date(date, template_key, include_data)
 
         if include_data:
@@ -253,11 +252,11 @@ async def get_patients(
 
     except Exception as e:
         logging.error(f"Error fetching patients: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/id/{id}")
-async def get_patient(id: int, include_history: bool = False) -> Patient:
+async def get_patient(id: int, include_history: bool = False):
     """Get patient by ID with option to include history."""
     try:
         patient = get_patient_by_id(id)
@@ -274,11 +273,11 @@ async def get_patient(id: int, include_history: bool = False) -> Patient:
         raise
     except Exception as e:
         logging.error(f"Error fetching patient: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
 @router.get("/id/{id}/history")
-async def get_patient_history_endpoint(id: int) -> list[Patient]:
+async def get_patient_history_endpoint(id: int):
     """Get patient's historical encounters with persistent fields."""
     try:
         patient = get_patient_by_id(id)
@@ -289,11 +288,11 @@ async def get_patient_history_endpoint(id: int) -> list[Patient]:
         return JSONResponse(content=history)
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/search")
-async def search_patient(ur_number: str) -> list[Patient]:
+async def search_patient(ur_number: str):
     """Search for patients by UR number."""
     try:
         patients = search_patient_by_ur_number(ur_number)
@@ -301,20 +300,18 @@ async def search_patient(ur_number: str) -> list[Patient]:
         return JSONResponse(content=patients)
     except Exception as e:
         logging.error(f"Error searching patients: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/history")
-async def get_history_by_ur_number(
-    ur_number: str, template_key: str | None = None
-) -> list[Patient]:
+async def get_history_by_ur_number(ur_number: str, template_key: str | None = None):
     """Get patient's historical encounters by UR number, optionally filtered by template type."""
     try:
         history = get_patient_history(ur_number, template_key)
         return JSONResponse(content=history)
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/summary/{id}")
@@ -330,7 +327,7 @@ async def get_patient_summary(id: int):
         return JSONResponse(content={"summary": summary})
     except Exception as e:
         logging.error(f"Error getting patient summary: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/id/{id}")
@@ -343,7 +340,7 @@ async def delete_patient(id: int):
         raise HTTPException(status_code=404, detail="Patient not found")
     except Exception as e:
         logging.error(f"Error deleting patient: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/update-jobs-list")
@@ -351,40 +348,40 @@ async def update_jobs_list(update: JobsListUpdate):
     """Update a patient's job list."""
 
     try:
-        update_patient_jobs_list(update.patientId, update.jobsList)
+        update_patient_jobs_list(update.noteId, update.jobsList)
 
-        return {"id": update.patientId}
+        return {"id": update.noteId}
     except Exception as e:
         logging.error(f"Error processing to-do list update: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/update-jobs")
 async def update_jobs(
-    patient_id: int,
+    note_id: int,
     jobs_list: list[dict] = Body(..., description="Updated jobs list"),
 ):
     """Update a patient's jobs list."""
     try:
-        update_patient_jobs_list(patient_id, jobs_list)
+        update_patient_jobs_list(note_id, jobs_list)
         return JSONResponse(content={"message": "Jobs list updated successfully"})
     except Exception as e:
         logging.error(f"Error updating jobs list: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/update-jobs/{patient_id}")
+@router.post("/update-jobs/{note_id}")
 async def update_patient_jobs(
-    patient_id: int,
+    note_id: int,
     jobs_list: list[dict] = Body(...),
 ):
     """Update a patient's jobs list."""
     try:
-        update_patient_jobs_list(patient_id, jobs_list)
+        update_patient_jobs_list(note_id, jobs_list)
         return JSONResponse(content={"message": "Jobs updated successfully"})
     except Exception as e:
         logging.error(f"Error updating patient jobs: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/outstanding-jobs")
@@ -409,7 +406,7 @@ async def get_patients_with_jobs():
         )
     except Exception as e:
         logging.error(f"Error fetching patients with jobs: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/incomplete-jobs-count")
@@ -421,27 +418,33 @@ async def get_incomplete_jobs_count():
     except Exception as e:
         logging.error(f"Error counting incomplete jobs: {e}")
         print("TRACEBACK:", traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/{patient_id}/reasoning")
-async def generate_reasoning(patient_id: int):
-    """Run reasoning analysis on a completed patient note."""
+@router.post("/{note_id}/reasoning/stream")
+async def generate_reasoning_stream(note_id: int):
+    """Run reasoning analysis with streaming status updates via Server-Sent Events."""
     try:
-        patient = get_patient_by_id(patient_id)
+        patient = get_patient_by_id(note_id)
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
-        reasoning_output = await run_clinical_reasoning(
-            patient["template_data"],
-            patient["dob"],
-            patient["encounter_date"],
-            patient["gender"],
-        )
+        async def generate():
+            from server.utils.nlp_tools.reasoning import stream_clinical_reasoning_with_tools
 
-        update_patient_reasoning(patient_id, reasoning_output.dict())
+            async for event in stream_clinical_reasoning_with_tools(
+                patient["template_data"],
+                patient["dob"],
+                patient["encounter_date"],
+                patient["gender"],
+                patient.get("ur_number"),
+            ):
+                if event["type"] == "result":
+                    # Save to database before sending
+                    update_patient_reasoning(note_id, event["data"])
+                yield f"data: {json.dumps(event)}\n\n"
 
-        return JSONResponse(content=reasoning_output.dict())
+        return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
-        logging.error(f"Reasoning error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Reasoning stream error: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e

@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 
 from server.database.config.defaults.templates import DefaultTemplates
-from server.schemas.templates import ClinicalTemplate, TemplateField
+from server.schemas.templates import TemplateField
 
 
 def template_exists(cursor, template_key: str) -> bool:
@@ -29,7 +29,7 @@ def template_exists(cursor, template_key: str) -> bool:
     return cursor.fetchone() is not None
 
 
-def initialize_templates(cursor, db):
+def initialize_templates(cursor, _db):
     """Create default templates if they don't exist, or update if they do.
 
     Default templates are synced on every startup to ensure users get the latest
@@ -44,7 +44,7 @@ def initialize_templates(cursor, db):
         template_key = template_data["template_key"]
         template_name = template_data["template_name"]
         fields = [TemplateField(**field) for field in template_data["fields"]]
-        fields_json = json.dumps([field.dict() for field in fields])
+        fields_json = json.dumps([field.model_dump() for field in fields])
 
         cursor.execute(
             "SELECT deleted, created_at FROM clinical_templates WHERE template_key = ?",

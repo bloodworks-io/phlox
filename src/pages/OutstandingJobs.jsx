@@ -9,7 +9,7 @@ const OutstandingJobs = ({ handleSelectPatient, refreshSidebar }) => {
 
   const fetchPatientsWithJobs = async () => {
     try {
-      const url = await buildApiUrl(`/api/patient/outstanding-jobs`);
+      const url = await buildApiUrl(`/api/note/outstanding-jobs`);
       const response = await universalFetch(url);
       if (!response.ok) {
         throw new Error("Network response was not ok");

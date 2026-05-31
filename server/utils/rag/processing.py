@@ -1,5 +1,4 @@
 import json
-import os
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import ClinicalSuggestionList
@@ -8,15 +7,6 @@ from server.utils.llm_client.client import get_llm_client
 # Initialize ConfigManager
 config = config_manager.get_config()
 prompts = config_manager.get_prompts_and_options()
-
-
-# Function to process all PDFs in a given directory
-async def process_pdfs_in_directory(directory_path):
-    """Processes all PDFs in a given directory."""
-    for filename in os.listdir(directory_path):
-        if filename.endswith(".pdf"):
-            pdf_path = os.path.join(directory_path, filename)
-            await process_single_pdf(pdf_path)
 
 
 async def generate_specialty_suggestions():

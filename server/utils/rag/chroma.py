@@ -1,14 +1,15 @@
+import io
 import json
 import logging
 import re
+import threading
+from pathlib import Path
 
-# Optional RAG dependencies
+# Optional RAG dependencies (core)
 try:
     import chromadb
-    import fitz  # PyMuPDF
     from chromadb.config import Settings
     from chromadb.utils.embedding_functions import (
-        OllamaEmbeddingFunction,
         ONNXMiniLM_L6_V2,
         OpenAIEmbeddingFunction,
     )
@@ -19,16 +20,52 @@ try:
 except ImportError:
     CHROMADB_AVAILABLE = False
     chromadb = None
+
+try:
+    from pypdf import PdfReader
+
+    PDF_TEXT_AVAILABLE = True
+except ImportError:
+    PDF_TEXT_AVAILABLE = False
+    PdfReader = None
+
+# Optional OCR dependencies (fallback path for scanned PDFs)
+try:
+    import fitz  # PyMuPDF for rasterization
+    import pytesseract
+    from PIL import Image
+
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    Image = None
     fitz = None
+    pytesseract = None
 
 from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
 from server.utils.llm_client.base import LLMProviderType
 from server.utils.llm_client.client import get_llm_client
+from server.utils.url_utils import normalize_openai_base_url
 
 prompts = config_manager.get_prompts_and_options()
 
 logger = logging.getLogger(__name__)
+
+_chroma_manager_instance = None
+_chroma_lock = threading.Lock()
+
+
+def get_chroma_manager():
+    """Get the ChromaManager singleton."""
+    global _chroma_manager_instance
+    if _chroma_manager_instance is None:
+        with _chroma_lock:
+            if _chroma_manager_instance is None:
+                if not CHROMADB_AVAILABLE:
+                    return None
+                _chroma_manager_instance = ChromaManager()
+    return _chroma_manager_instance
 
 
 class ChromaManager:
@@ -41,23 +78,37 @@ class ChromaManager:
         Initializes the ChromaManager with configuration settings and clients.
         """
         if not CHROMADB_AVAILABLE:
-            raise RuntimeError("RAG features require chromadb and PyMuPDF. ")
+            raise RuntimeError("RAG features require chromadb.")
 
         self.config = config_manager.get_config()
         self.prompts = config_manager.get_prompts_and_options()
 
+        self.chroma_client = chromadb.PersistentClient(  # ty: ignore
+            path=str(DATA_DIR / "chroma"),
+            settings=Settings(anonymized_telemetry=False, allow_reset=True),
+        )
+        self.extracted_text_store = None
+
+        self._reload_embedding_function()
+
+        self.llm_client = get_llm_client()
+
+    def _reload_embedding_function(self):
+        """Reload the embedding function with fresh config.
+
+        This is called on init and can be called again when config changes.
+        Follows the same pattern as database connection refresh.
+        """
+        self.config = config_manager.get_config()
+
         # Initialize embedding function based on provider type
-        provider_type = self.config.get("LLM_PROVIDER", "ollama").lower()
+        provider_type = self.config.get("LLM_PROVIDER", "openai").lower()
 
-        # Get base URL with default for Ollama
-        base_url = self.config.get("LLM_BASE_URL") or "http://127.0.0.1:11434"
+        # Normalize configured base URL and allow optional '/v1' in user input.
+        raw_base_url = self.config.get("LLM_BASE_URL") or "http://127.0.0.1:11434"
+        base_url = normalize_openai_base_url(raw_base_url)
 
-        if provider_type == LLMProviderType.OLLAMA.value:
-            self.embedding_model = OllamaEmbeddingFunction(
-                url=f"{base_url}/api/embeddings",
-                model_name=self.config["EMBEDDING_MODEL"],
-            )
-        elif provider_type == LLMProviderType.OPENAI_COMPATIBLE.value:
+        if provider_type == LLMProviderType.OPENAI_COMPATIBLE.value:
             self.embedding_model = OpenAIEmbeddingFunction(
                 model_name=self.config["EMBEDDING_MODEL"],
                 api_key=self.config.get("LLM_API_KEY") or "cant-be-empty",
@@ -69,15 +120,10 @@ class ChromaManager:
         else:
             raise ValueError(f"Unsupported LLM provider type: {provider_type}")
 
-        # Create the LLM client
-        self.llm_client = get_llm_client()
-
-        # Initialize Chroma client
-        self.chroma_client = chromadb.PersistentClient(
-            path=str(DATA_DIR / "chroma"),
-            settings=Settings(anonymized_telemetry=False, allow_reset=True),
+        logger.info(
+            f"Reloaded embedding function: provider={provider_type}, "
+            f"model={self.config.get('EMBEDDING_MODEL', 'N/A')}"
         )
-        self.extracted_text_store = None
 
     async def get_structured_response(self, messages, schema, options=None):
         """Get structured response."""
@@ -321,18 +367,78 @@ class ChromaManager:
         """
         Extracts text from a PDF file.
 
+        Prefer text-layer extraction via pypdf.
+
+        If extracted text is insufficient, fallback to OCR if available.
+
         Args:
             pdf_path (str): Path to the PDF file.
 
         Returns:
             str: Extracted text from the PDF.
         """
-        text = ""
-        document = fitz.open(pdf_path)
-        for page_num in range(len(document)):
-            page = document.load_page(page_num)
-            text += page.get_text()
-        return text
+        logger.info("Backend RAG PDF parser invoked for file: %s", pdf_path)
+
+        def _is_text_usable(text: str) -> bool:
+            normalized = (text or "").strip()
+            if len(normalized) < 120:
+                return False
+            alnum_count = sum(1 for ch in normalized if ch.isalnum())
+            return alnum_count >= 80
+
+        pdf_bytes = b""
+        with Path(pdf_path).open("rb") as pdf_file:
+            pdf_bytes = pdf_file.read()
+
+        text_layer_output = ""
+
+        if PDF_TEXT_AVAILABLE:
+            try:
+                reader = PdfReader(io.BytesIO(pdf_bytes))  # ty: ignore
+                text_parts = []
+                for page in reader.pages:
+                    text_parts.append(page.extract_text() or "")
+                text_layer_output = "\n\n".join(text_parts).strip()
+            except Exception as e:
+                logger.warning("Failed text-layer extraction for '%s': %s", pdf_path, e)
+                text_layer_output = ""
+
+        if _is_text_usable(text_layer_output):
+            logger.info("Backend RAG PDF parser used pypdf text-layer output")
+            return text_layer_output
+
+        # OCR fallback for scanned/image-based PDFs (typically Docker deployments
+        # where OCR dependencies are installed and no visual model is configured).
+        if OCR_AVAILABLE:
+            logger.info("Backend RAG OCR fallback invoked (PyMuPDF + Pillow + pytesseract)")
+            try:
+                ocr_texts = []
+                document = fitz.open(stream=pdf_bytes, filetype="pdf")  # ty: ignore
+                for page_num in range(document.page_count):
+                    page = document[page_num]
+                    pix = page.get_pixmap()
+                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)  # ty: ignore
+                    ocr_texts.append(pytesseract.image_to_string(img))  # ty: ignore
+                ocr_output = "\n\n".join(ocr_texts).strip()
+
+                if _is_text_usable(ocr_output):
+                    logger.info("Backend RAG OCR fallback produced usable PDF text")
+                    return ocr_output
+
+                # If OCR ran but still weak, return best available output.
+                if ocr_output:
+                    return ocr_output
+            except Exception as e:
+                logger.warning("OCR fallback failed for '%s': %s", pdf_path, e)
+
+        # Return partial text-layer output if that's all we have.
+        if text_layer_output:
+            return text_layer_output
+
+        raise RuntimeError(
+            "Could not extract usable PDF text. Install pypdf and/or "
+            "PyMuPDF + Pillow + pytesseract for OCR fallback."
+        )
 
     async def get_disease_name(self, text):
         """

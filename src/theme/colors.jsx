@@ -5,6 +5,7 @@ const baseColorsLight = {
     base: "#eff1f5",
     secondary: "#e6e9ef",
     surface: "#ccd0da",
+    surface1: "#bcc0cc",
     surface2: "#acb0be",
     crust: "#dce0e8",
     overlay0: "#8c8fa1",

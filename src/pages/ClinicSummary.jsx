@@ -14,7 +14,7 @@ const ClinicSummary = ({
   const fetchPatients = async (date, detailed = true) => {
     try {
       const url = await buildApiUrl(
-        `/api/patient/list?date=${date}&detailed=${detailed}`,
+        `/api/note/list?date=${date}&detailed=${detailed}`,
       );
       const response = await universalFetch(url);
       if (!response.ok) {

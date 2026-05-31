@@ -55,10 +55,6 @@ const Letter = forwardRef(
       getInstructions,
     } = useLetterTemplates(patient?.id);
 
-    const { onCopy } = useClipboard(
-      finalCorrespondence || "No letter attached to encounter",
-    );
-
     // Clear the save timer on unmount
     useEffect(() => {
       return () => {
@@ -85,6 +81,9 @@ const Letter = forwardRef(
         }, 100);
       }
     }, [isOpen, finalCorrespondence]);
+
+    const textToCopy = finalCorrespondence || "No letter attached to encounter";
+    const { onCopy } = useClipboard(textToCopy, { format: "text/plain" });
 
     const handleCopy = () => {
       onCopy();

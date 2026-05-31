@@ -11,7 +11,7 @@ Welcome to the Phlox documentation! This site provides comprehensive information
     - [Task Manager](./features/task_manager.md)
     - [Correspondence Generation](./features/correspondence.md)
     - [AI Features](./features/ai.md)
-    - [Dashboard with RSS Reader](./features/dashboard.md)
+    - [Agent Dashboard](./features/dashboard.md)
 - [Architecture Overview](./architecture.md)
 - [Setup and Installation](./setup.md)
 - [Warnings, Limitations, and Regulatory Considerations](./warnings.md)

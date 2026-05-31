@@ -21,6 +21,7 @@ DEFAULT_PROMPTS = {
             "- Considerations: 3-5 focused points - red flags, missed diagnoses, or management gaps\n"
             "- Thinking: Keep brief; do NOT restate case details\n"
             "- Critical flag: Use 'critical: true' ONLY for potentially fatal or urgent misses (e.g., missed anticoagulation when INR is critical, missed life-threatening diagnosis). Do NOT flag routine suggestions.\n\n"
+            "PHI PROTECTION: When using search tools, NEVER include patient names, dates of birth, addresses, or other identifying information in your search queries. Use only clinical terms (e.g., 'diabetes complications' not 'John Smith diabetes').\n\n"
             "Prioritize actionable insights over exhaustive lists. Quality > quantity."
         },
     },

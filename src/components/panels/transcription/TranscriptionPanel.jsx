@@ -26,6 +26,7 @@ const TranscriptionPanel = ({
   gender,
   dob,
   templateKey,
+  noteId,
 }) => {
   const { colorMode } = useColorMode();
   const [showSuccess, setShowSuccess] = useState(false);
@@ -36,7 +37,7 @@ const TranscriptionPanel = ({
     try {
       await reprocessTranscription(
         rawTranscription,
-        { name, gender, dob, templateKey },
+        { name, gender, dob, templateKey, noteId },
         transcriptionDuration,
         isAmbient,
       );

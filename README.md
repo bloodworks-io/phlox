@@ -17,7 +17,7 @@
 
 </div>
 
-Phlox is an open-source patient management system integrating AI-powered medical transcription, clinical note generation, and an AI chatbot interface. It's designed to run locally, utilizing local models for inference and transcription.
+Phlox is an open-source patient management system integrating AI-powered medical transcription, clinical note generation, an AI chatbot interface, and agentic tool-calling capabilities. It's designed to run locally, utilizing local models for inference and transcription.
 
 ## Key Features ✨
 
@@ -26,10 +26,13 @@ Phlox is an open-source patient management system integrating AI-powered medical
 - **🎤 AI Medical Transcription & Summarization:** Convert patient encounters to structured clinical notes using customizable templates.
 - **📝 Flexible Template System:**  Structure clinical notes to your preferences, with versioning and automated template generation from example notes.
 - **✅ Task Manager:**  Parse clinical plans into actionable task lists with AI-generated summaries.
-- **✉️  Correspondence Generation:**  One-click generation of patient letters based on clinical notes.
+- **✉️  Correspondence Generation:**  One-click generation of patient letters based on clinical notes, with support for both ambient listening and dictate mode.
 - **🤖 AI-chat/RAG:** Reference tool to query medical guidelines, literature, and documentation backed by a local knowledge base (ChromaDB).
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.
-- **📰 Dashboard with RSS Reader:** Stay updated with LLM-summarized articles from medical RSS feeds.
+- **🛠️ Agentic Tool-Calling System:** Built-in tools including PubMed search, Wikipedia lookup, patient note search, transcript search, outstanding job management, and note creation — with interleaved thinking for complex multi-step queries.
+- **🔌 MCP Server Support:** Connect external tool servers via the Model Context Protocol (SSE transport). Tools are dynamically loaded and can be toggled per-server, with optional sensitive data filtering to prevent PHI from being sent to external servers.
+- **📄 Vision-Enhanced Document Processing:** Hybrid PDF processing — uses vision models directly when available, falling back to OCR. Supports image uploads for clinical document analysis.
+- **📋 Agent Dashboard:** Central hub with chat-driven clinic management, built-in todo panel, outstanding jobs view, and clinic summary by date.
 
 <p align="center">
   <img src="/docs/images/readme_screenshot.png" width="500" alt="Phlox Screenshot">
@@ -55,6 +58,14 @@ Pre-built Apple Silicon binaries are available from [GitHub Releases](https://gi
 
 ### Docker/Podman (Extended Reference Tools)
 
+Pre-built images are available from [GitHub Container Registry](https://github.com/bloodworks-io/phlox/pkgs/container/phlox):
+
+```bash
+docker pull ghcr.io/bloodworks-io/phlox:latest
+```
+
+Or build from source:
+
 1. **Prerequisites:** Podman/Docker, Ollama/OpenAI-compatible endpoint, Whisper endpoint.
 2. **Hardware Requirements:** For reasonable performance, a GPU (CUDA, ROCm) or Apple M-Series chip is strongly recommended. Without these, especially with larger models, the system will run extremely slowly.
 3. **Clone:** `git clone https://github.com/bloodworks-io/phlox.git && cd phlox`
@@ -73,7 +84,7 @@ The complete Phlox experience with all features:
 - Correspondence generation
 - AI Chat interface
 - RAG/document knowledge base
-- Dashboard with RSS reader
+- Agent Dashboard with agentic tool-calling and MCP server support
 
 ### Desktop App (Streamlined)
 Native desktop application for Apple Silicon:
@@ -91,7 +102,7 @@ Here's what's coming next for Phlox:
 - [x] Use structured JSON outputs for managing LLM responses
 - [x] Add support for OpenAI-compatible endpoints
 - [x] Tauri desktop app with local inference (llama.cpp + whisper bundled)
-- [ ] MCP server support for custom tools and agentic workflows
+- [x] MCP server support for custom tools and agentic workflows
 - [ ] Advanced template version control
 - [ ] Meeting and multi-disciplinary meeting scribing
 
@@ -103,7 +114,7 @@ Phlox is **not** suitable for production deployment in the form provided in this
 
 AI outputs can be unreliable. Always verify AI-generated content and use professional clinical judgment. The application displays a disclaimer on startup with full details.
 
-**Security note:** The Docker deployment binds to `0.0.0.0` by default and has no authentication. You MUST place it behind a reverse proxy with an authentication layer like [Authelia](https://github.com/authelia/authelia). The desktop app requires a passphrase to unlock the encrypted database.
+**Security note:** The Docker deployment binds to `0.0.0.0` by default and has no authentication by default. You MUST place it behind a reverse proxy with an authentication layer like [Authelia](https://github.com/authelia/authelia). Proxy authentication (Traefik, Caddy, Nginx) and rate limiting are supported via environment variables. The desktop app requires a passphrase to unlock the encrypted database.
 
 ## License 📄
 

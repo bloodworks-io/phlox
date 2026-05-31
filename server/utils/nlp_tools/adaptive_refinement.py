@@ -261,22 +261,14 @@ def _format_instructions_for_display(instructions: list[str]) -> str:
 async def _process_single_tool_call(
     response,
     current_instructions: list[str],
-    client,
-    model_name: str,
-    options: dict,
+    _client,
+    _model_name: str,
+    _options: dict,
 ) -> list[str]:
     """Process a single tool call to update the instruction list."""
 
-    # Get tool calls from response
-    config = config_manager.get_config()
-
-    # Import the enum for proper comparison
-    from server.utils.llm_client import LLMProviderType
-
-    if config.get("LLM_PROVIDER", "ollama").lower() == LLMProviderType.OPENAI_COMPATIBLE.value:
-        tool_calls = response["message"].get("tool_calls")
-    else:
-        tool_calls = response.get("tool_calls")
+    # Tool calls are normalized under response["message"] by the LLM client.
+    tool_calls = response.get("message", {}).get("tool_calls")
 
     if not tool_calls:
         logger.info("LLM chose to keep instructions unchanged (no tool calls)")

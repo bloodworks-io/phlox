@@ -6,12 +6,12 @@ from server.database.core.connection import get_db
 from server.schemas.letter import LetterTemplate
 
 
-def update_patient_letter(patient_id: int, letter: str) -> None:
+def update_patient_letter(note_id: int, letter: str) -> None:
     """
     Update a patient's final letter.
 
     Args:
-        patient_id (int): The patient's ID.
+        note_id (int): The patient's ID.
         letter (str): The letter content.
     """
     try:
@@ -22,7 +22,7 @@ def update_patient_letter(patient_id: int, letter: str) -> None:
                 updated_at = ?
             WHERE id = ?
             """,
-            (letter, datetime.now().isoformat(), patient_id),
+            (letter, datetime.now().isoformat(), note_id),
         )
         get_db().commit()
     except Exception as e:
@@ -30,18 +30,18 @@ def update_patient_letter(patient_id: int, letter: str) -> None:
         raise
 
 
-async def fetch_patient_letter(patient_id: int) -> str | None:
+async def fetch_patient_letter(note_id: int) -> str | None:
     """
     Fetch a patient's final letter.
 
     Args:
-        patient_id (int): The patient's ID.
+        note_id (int): The patient's ID.
 
     Returns:
         Optional[str]: The letter content if found.
     """
     try:
-        get_db().cursor.execute("SELECT final_letter FROM patients WHERE id = ?", (patient_id,))
+        get_db().cursor.execute("SELECT final_letter FROM patients WHERE id = ?", (note_id,))
         row = get_db().cursor.fetchone()
         return row["final_letter"] if row else None
     except Exception as e:

@@ -1,7 +1,7 @@
 """
 LLM Client Package
 
-A unified client interface for LLM providers (Ollama, OpenAI-compatible, Local).
+A unified client interface for OpenAI-compatible and local providers.
 
 Public API:
 - get_llm_client(): Factory function to create a configured LLM client

@@ -24,7 +24,12 @@ jobs:
       - name: Install dependencies
         run: |
           cd server
-          ~/.local/bin/uv pip install --system ruff ty bandit[toml] pydantic types-requests
+          ~/.local/bin/uv venv .venv
+          ~/.local/bin/uv pip install \
+            ruff ty bandit[toml] pydantic types-requests \
+            fastapi httpx "uvicorn[standard]" APScheduler platformdirs \
+            openai json-repair rapidfuzz python-multipart pytest
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Run Ruff
         run: |

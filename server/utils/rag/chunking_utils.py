@@ -1,11 +1,12 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 
 import tiktoken
 from chromadb.utils import embedding_functions
 from rapidfuzz import fuzz, process
+
 
 class BaseChunker(ABC):
     @abstractmethod
@@ -66,7 +67,7 @@ def rigorous_document_search(document: str, target: str):
     # Find the sentence that matches the query best
     best_match = process.extractOne(target, sentences, scorer=fuzz.token_sort_ratio)
 
-    if best_match[1] < 98:
+    if best_match is None or best_match[1] < 98:
         return None
 
     reference = best_match[0]
@@ -104,7 +105,7 @@ def openai_token_count(string: str) -> int:
         return len(string) // 4
 
 
-class Language(str, Enum):
+class Language(StrEnum):
     """Enum of the programming languages."""
 
     CPP = "cpp"

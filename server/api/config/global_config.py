@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
 
@@ -16,4 +18,14 @@ async def get_config():
 async def update_config(data: dict = Body(...)):
     """Update other configuration items with provided data."""
     config_manager.update_config(data)
+
+    try:
+        from server.utils.rag.chroma import get_chroma_manager
+
+        chroma_mgr = get_chroma_manager()
+        if chroma_mgr is not None:
+            chroma_mgr._reload_embedding_function()
+    except Exception:
+        logging.debug("ChromaDB reload skipped during config update")
+
     return {"message": "config.js updated successfully"}

@@ -27,14 +27,18 @@ jobs:
           persist-credentials: false
           submodules: false
 
+      # whisper.cpp v1.8.4
       - name: Checkout whisper.cpp
         run: |
-          git clone --depth 1 --branch v1.8.3 https://github.com/ggerganov/whisper.cpp.git src-tauri/whisper.cpp
+          git clone https://github.com/ggml-org/whisper.cpp.git src-tauri/whisper.cpp
+          cd src-tauri/whisper.cpp && git checkout 9386f239401074690479731c1e41683fbbeac557
           rm -rf src-tauri/whisper.cpp/.git
 
+      # llama.cpp b9437
       - name: Checkout llama.cpp
         run: |
-          git clone --depth 1 --branch b8095 https://github.com/ggerganov/llama.cpp.git src-tauri/llama.cpp
+          git clone https://github.com/ggml-org/llama.cpp.git src-tauri/llama.cpp
+          cd src-tauri/llama.cpp && git checkout aa46bda89b9a8378ae76bb15fc2ce2f571f0983c
           rm -rf src-tauri/llama.cpp/.git
 
       - name: Import signing certificate
@@ -160,3 +164,40 @@ jobs:
           files: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: meta
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

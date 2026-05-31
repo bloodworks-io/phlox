@@ -80,7 +80,7 @@ def get_patients_with_outstanding_jobs():
         raise
 
 
-def update_patient_jobs_list(patient_id: int, jobs_list: list):
+def update_patient_jobs_list(note_id: int, jobs_list: list):
     """Updates a patient's jobs list in the database."""
     try:
         # Need to fix this; sloppy
@@ -100,10 +100,10 @@ def update_patient_jobs_list(patient_id: int, jobs_list: list):
 
         get_db().cursor.execute(
             "UPDATE patients SET jobs_list = ?, all_jobs_completed = ? WHERE id = ?",
-            (serialized_jobs_list, all_jobs_completed, patient_id),
+            (serialized_jobs_list, all_jobs_completed, note_id),
         )
         get_db().commit()
-        logging.info(f"Updated jobs list for patient {patient_id}")
+        logging.info(f"Updated jobs list for patient {note_id}")
 
     except Exception as e:
         logging.error(f"Error updating jobs list: {e}")

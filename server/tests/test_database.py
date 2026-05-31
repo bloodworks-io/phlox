@@ -4,6 +4,7 @@ We are using a temporary directory for testing and cleaning up afterward.
 """
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -21,27 +22,27 @@ def test_db(tmp_path_factory):
     # Cleanup: clear test database and remove temporary file
     db.clear_test_database()
     db.close()
-    if os.path.exists(db.db_path):
-        os.remove(db.db_path)
-    os.environ.pop("TESTING")
-    os.environ.pop("DB_ENCRYPTION_KEY")
+    if Path(db.db_path).exists():
+        Path(db.db_path).unlink()
 
 
 def test_database_initialization(test_db):
     assert test_db.is_test is True
     assert "test_phlox_database.sqlite" in test_db.db_path
-    assert os.path.exists(test_db.db_path)
+    assert Path(test_db.db_path).exists()
 
 
 def test_create_tables(test_db):
     tables = [
         "patients",
-        "rss_feeds",
+        "clinical_templates",
         "todos",
-        "rss_items",
         "config",
         "prompts",
         "options",
+        "user_settings",
+        "letter_templates",
+        "mcp_servers",
     ]
     for table in tables:
         test_db.cursor.execute(
@@ -67,33 +68,16 @@ def test_insert_and_retrieve_patient(test_db):
     assert patient["ur_number"] == "UR12345"
 
 
-def test_insert_and_retrieve_rss_feed(test_db):
-    test_db.cursor.execute(
-        """
-        INSERT INTO rss_feeds (url, title, last_refreshed)
-        VALUES (?, ?, ?)
-        """,
-        ("http://example.com/feed", "Test Feed", "2023-06-15 12:00:00"),
-    )
-    test_db.db.commit()
-    test_db.cursor.execute("SELECT * FROM rss_feeds WHERE url = ?", ("http://example.com/feed",))
-    feed = test_db.cursor.fetchone()
-    assert feed is not None
-    assert feed["title"] == "Test Feed"
-
-
 def test_clear_test_database(test_db):
     # Insert dummy data into a couple of tables
     test_db.cursor.execute("INSERT INTO patients (name) VALUES (?)", ("Test Patient",))
-    test_db.cursor.execute("INSERT INTO rss_feeds (url) VALUES (?)", ("http://test.com",))
     test_db.db.commit()
     # Now clear the database
     test_db.clear_test_database()
     tables = [
         "patients",
-        "rss_feeds",
+        "clinical_templates",
         "todos",
-        "rss_items",
         "config",
         "prompts",
         "options",
