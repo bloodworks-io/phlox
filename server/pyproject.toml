@@ -13,6 +13,7 @@ dependencies = [
     "python-multipart==0.0.22",
     "rapidfuzz==3.14.3",
     "sqlcipher3==0.6.2",
+    "ty>=0.0.39",
     "uvicorn[standard]==0.41.0",
 ]
 
@@ -35,7 +36,6 @@ dev = [
     "pytest-asyncio==1.3.0",
     "pytest-cov==7.0.0",
     "ruff==0.15.4",
-    "mypy==1.19.1",
     "bandit[toml]==1.9.4",
     "pre-commit==4.5.1",
 ]
@@ -47,7 +47,6 @@ dev = [
     "pytest-asyncio==1.3.0",
     "pytest-cov==7.0.0",
     "ruff==0.15.4",
-    "mypy==1.19.1",
     "bandit[toml]==1.9.4",
     "pre-commit==4.5.1",
 ]
@@ -70,17 +69,30 @@ ignore = ["E501", "B008", "UP007", "SIM108"]
 quote-style = "double"
 indent-style = "space"
 
-[tool.mypy]
-python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-ignore_missing_imports = true
-plugins = ["pydantic.mypy"]
+[tool.ty.environment]
+python = ".venv"
+extra-paths = [".."]
 
-[[tool.mypy.overrides]]
-module = "server.*"
-disallow_untyped_defs = false
-warn_return_any = false
+[tool.ty.analysis]
+replace-imports-with-any = [
+    "sqlcipher3.**",
+    "tiktoken.**",
+    "pytesseract.**",
+    "pypdf.**",
+    "PIL.**",
+    "huggingface_hub.**",
+    "fitz.**",
+    "llama_cpp.**",
+    "chromadb.**",
+    "mcp.**",
+    "numpy.**",
+]
+
+[[tool.ty.overrides]]
+include = ["tests/**"]
+
+[tool.ty.overrides.rules]
+possibly-unresolved-reference = "warn"
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv", "dist"]

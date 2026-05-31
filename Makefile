@@ -9,7 +9,7 @@ help:
 	@echo "  make audit         - Check for security vulnerabilities"
 	@echo "  make lint          - Run Python linting (ruff)"
 	@echo "  make format        - Format Python code (ruff)"
-	@echo "  make typecheck     - Run Python type checking (mypy)"
+	@echo "  make typecheck     - Run Python type checking (ty)"
 	@echo "  make security      - Run Python security scan (bandit)"
 	@echo "  make install-hooks - Install pre-commit hooks"
 	@echo "  make check-all     - Run all quality checks"
@@ -51,7 +51,7 @@ format:
 	cd server && ruff check . --fix
 
 typecheck:
-	cd server && mypy .
+	cd server && ty check .
 
 security:
 	cd server && bandit -c pyproject.toml -r .
