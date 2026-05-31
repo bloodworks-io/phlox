@@ -23,7 +23,6 @@ from server.database.core.initialization import (
     set_initial_default_template,
 )
 from server.database.core.migrations import run_migrations
-from server.database.testing import clear_test_database, run_database_test
 
 # Module-level state for lazy initialization
 _db_instance = None
@@ -193,6 +192,8 @@ class PatientDatabase:
         Returns:
             True if test successful
         """
+        from server.database.testing import run_database_test
+
         return run_database_test(self.cursor, self.db)
 
     def commit(self):
@@ -208,7 +209,9 @@ class PatientDatabase:
 
     def clear_test_database(self):
         """Clear all test data from database."""
-        clear_test_database(self.db, self.cursor, self.is_test)
+        from server.database.testing import clear_test_database as _clear
+
+        _clear(self.db, self.cursor, self.is_test)
 
     def __enter__(self):
         """Context manager entry."""

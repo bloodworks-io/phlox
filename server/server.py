@@ -172,17 +172,18 @@ def initialize_and_get_app():
     app.include_router(transcribe.router, prefix="/api/transcribe")
     app.include_router(dashboard.router, prefix="/api/dashboard")
 
-    # Conditionally include RAG routers if dependencies are available
+    # Always register chat router (works without chromadb)
+    from server.api import chat
+
+    app.include_router(chat.router, prefix="/api/chat")
+
+    # Conditionally include RAG router (requires chromadb)
     if CHROMADB_AVAILABLE:
-        from server.api import (
-            chat,
-            rag,
-        )
+        from server.api import rag
 
         app.include_router(rag.router, prefix="/api/rag")
-        app.include_router(chat.router, prefix="/api/chat")
     else:
-        logger.warning("RAG/Chat features disabled - dependencies not available.")
+        logger.warning("RAG features disabled - chromadb not available.")
 
     app.include_router(config_router, prefix="/api/config")
     app.include_router(templates.router, prefix="/api/templates")

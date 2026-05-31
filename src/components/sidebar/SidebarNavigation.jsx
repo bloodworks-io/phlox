@@ -12,7 +12,7 @@ import { FaClinicMedical, FaTasks } from "react-icons/fa";
 import { GiBrain } from "react-icons/gi";
 import { SettingsIcon } from "@chakra-ui/icons";
 import { colors } from "../../theme/colors";
-import { isChatEnabled } from "../../utils/helpers/featureFlags";
+import { isRagEnabled } from "../../utils/helpers/featureFlags";
 import { SectionHeader } from "./SidebarHelpers";
 import { useState } from "react";
 
@@ -159,7 +159,7 @@ const SidebarNavigation = ({
                     </Tooltip>
 
                     {/* Documents button */}
-                    {isChatEnabled() && (
+                    {isRagEnabled() && (
                         <Tooltip
                             label="Documents"
                             placement={isCollapsed ? "right" : "top"}
