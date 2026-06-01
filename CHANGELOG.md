@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/bloodworks-io/phlox/compare/v1.0.3...v1.0.4) (2026-06-01)
+
+
+### Bug Fixes
+
+* harden CI build workflow security and disable draft releases ([7be7049](https://github.com/bloodworks-io/phlox/commit/7be70499ca816517356415fd65dcfe6db4476af5))
+
 ## [1.0.3](https://github.com/bloodworks-io/phlox/compare/v1.0.2...v1.0.3) (2026-06-01)
 
 
