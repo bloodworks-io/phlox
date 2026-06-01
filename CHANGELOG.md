@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/bloodworks-io/phlox/compare/v1.0.2...v1.0.3) (2026-06-01)
+
+
+### Bug Fixes
+
+* update stale /new-patient route references to /new-note ([9851a95](https://github.com/bloodworks-io/phlox/commit/9851a951e9f10d20f6bc4142ff932fb01805c2ad))
+
 ## [1.0.2](https://github.com/bloodworks-io/phlox/compare/v1.0.1...v1.0.2) (2026-05-31)
 
 
