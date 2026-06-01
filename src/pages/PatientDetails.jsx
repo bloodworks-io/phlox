@@ -40,7 +40,7 @@ const PatientDetails = ({
     onResetLetter,
 }) => {
     const location = useLocation();
-    const isNewPatient = location.pathname === "/new-patient";
+    const isNewPatient = location.pathname === "/new-note";
     const toast = useToast();
     const summaryRef = useRef(null);
     const [loading, setLoading] = useState(false);
@@ -497,7 +497,7 @@ const PatientDetails = ({
         e.preventDefault();
         setSaveLoading(true);
         try {
-            if (location.pathname === "/new-patient") {
+            if (location.pathname === "/new-note") {
                 const savedPatient = await savePatient(
                     refreshSidebar,
                     selectedDate,
