@@ -1,219 +1,219 @@
 name: Build and Release
 
 on:
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch:
+    push:
+        tags:
+            - "v*"
+    workflow_dispatch:
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  build:
-    permissions:
-      contents: write
-    strategy:
-      matrix:
-        include:
-          - platform: "macos-latest"
-            arch: "aarch64"
-            os: "darwin"
+    build:
+        permissions:
+            contents: write
+        strategy:
+            matrix:
+                include:
+                    - platform: "macos-latest"
+                      arch: "aarch64"
+                      os: "darwin"
 
-    runs-on: ${{ matrix.platform }}
+        runs-on: ${{ matrix.platform }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          persist-credentials: false
-          submodules: false
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+              with:
+                  persist-credentials: false
+                  submodules: false
 
-      # whisper.cpp v1.8.4
-      - name: Checkout whisper.cpp
-        run: |
-          git clone https://github.com/ggml-org/whisper.cpp.git src-tauri/whisper.cpp
-          cd src-tauri/whisper.cpp && git checkout 9386f239401074690479731c1e41683fbbeac557
-          EXPECTED="9386f239401074690479731c1e41683fbbeac557"
-          ACTUAL=$(git rev-parse HEAD)
-          if [ "$ACTUAL" != "$EXPECTED" ]; then
-            echo "❌ SHA mismatch: expected $EXPECTED, got $ACTUAL"
-            exit 1
-          fi
-          rm -rf src-tauri/whisper.cpp/.git
+            # whisper.cpp v1.8.4
+            - name: Checkout whisper.cpp
+              run: |
+                  git clone https://github.com/ggml-org/whisper.cpp.git src-tauri/whisper.cpp
+                  cd src-tauri/whisper.cpp && git checkout 9386f239401074690479731c1e41683fbbeac557
+                  EXPECTED="9386f239401074690479731c1e41683fbbeac557"
+                  ACTUAL=$(git rev-parse HEAD)
+                  if [ "$ACTUAL" != "$EXPECTED" ]; then
+                    echo "❌ SHA mismatch: expected $EXPECTED, got $ACTUAL"
+                    exit 1
+                  fi
+                  rm -rf src-tauri/whisper.cpp/.git
 
-      # llama.cpp b9437
-      - name: Checkout llama.cpp
-        run: |
-          git clone https://github.com/ggml-org/llama.cpp.git src-tauri/llama.cpp
-          cd src-tauri/llama.cpp && git checkout aa46bda89b9a8378ae76bb15fc2ce2f571f0983c
-          EXPECTED="aa46bda89b9a8378ae76bb15fc2ce2f571f0983c"
-          ACTUAL=$(git rev-parse HEAD)
-          if [ "$ACTUAL" != "$EXPECTED" ]; then
-            echo "❌ SHA mismatch: expected $EXPECTED, got $ACTUAL"
-            exit 1
-          fi
-          rm -rf src-tauri/llama.cpp/.git
+            # llama.cpp b9437
+            - name: Checkout llama.cpp
+              run: |
+                  git clone https://github.com/ggml-org/llama.cpp.git src-tauri/llama.cpp
+                  cd src-tauri/llama.cpp && git checkout aa46bda89b9a8378ae76bb15fc2ce2f571f0983c
+                  EXPECTED="aa46bda89b9a8378ae76bb15fc2ce2f571f0983c"
+                  ACTUAL=$(git rev-parse HEAD)
+                  if [ "$ACTUAL" != "$EXPECTED" ]; then
+                    echo "❌ SHA mismatch: expected $EXPECTED, got $ACTUAL"
+                    exit 1
+                  fi
+                  rm -rf src-tauri/llama.cpp/.git
 
-      - name: Import signing certificate
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        run: |
-          if [ -z "$APPLE_CERTIFICATE" ]; then
-            echo "❌ APPLE_CERTIFICATE secret is not set"
-            exit 1
-          fi
-          if [ -z "$APPLE_CERTIFICATE_PASSWORD" ]; then
-            echo "❌ APPLE_CERTIFICATE_PASSWORD secret is not set"
-            exit 1
-          fi
-          if [ -z "$APPLE_SIGNING_IDENTITY" ]; then
-            echo "❌ APPLE_SIGNING_IDENTITY secret is not set"
-            exit 1
-          fi
+            - name: Import signing certificate
+              env:
+                  APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+                  APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+                  APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+              run: |
+                  if [ -z "$APPLE_CERTIFICATE" ]; then
+                    echo "❌ APPLE_CERTIFICATE secret is not set"
+                    exit 1
+                  fi
+                  if [ -z "$APPLE_CERTIFICATE_PASSWORD" ]; then
+                    echo "❌ APPLE_CERTIFICATE_PASSWORD secret is not set"
+                    exit 1
+                  fi
+                  if [ -z "$APPLE_SIGNING_IDENTITY" ]; then
+                    echo "❌ APPLE_SIGNING_IDENTITY secret is not set"
+                    exit 1
+                  fi
 
-          # Generate and mask keychain password
-          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-          echo "::add-mask::$KEYCHAIN_PASSWORD"
+                  # Generate and mask keychain password
+                  KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+                  echo "::add-mask::$KEYCHAIN_PASSWORD"
 
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -lut 3600 build.keychain
-          
-          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+                  security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+                  security default-keychain -s build.keychain
+                  security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+                  security set-keychain-settings -lut 3600 build.keychain
 
-          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          rm -f certificate.p12
+                  echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
 
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+                  security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+                  rm -f certificate.p12
 
-          # Verify the identity is actually present before we waste time compiling
-          if ! security find-identity -v -p codesigning build.keychain | grep -q "$APPLE_SIGNING_IDENTITY"; then
-            echo "❌ Signing identity '$APPLE_SIGNING_IDENTITY' not found in keychain after import"
-            security find-identity -v -p codesigning build.keychain
-            exit 1
-          fi
+                  security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
 
-          echo "✅ Certificate imported and signing identity verified"
+                  # Verify the identity is actually present before we waste time compiling
+                  if ! security find-identity -v -p codesigning build.keychain | grep -q "$APPLE_SIGNING_IDENTITY"; then
+                    echo "❌ Signing identity '$APPLE_SIGNING_IDENTITY' not found in keychain after import"
+                    security find-identity -v -p codesigning build.keychain
+                    exit 1
+                  fi
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
-        with:
-          targets: aarch64-apple-darwin
+                  echo "✅ Certificate imported and signing identity verified"
 
-      - name: Install Node.js
-        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
-        with:
-          node-version: "20"
-          cache: "npm"
+            - name: Install Rust
+              uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
+              with:
+                  targets: aarch64-apple-darwin
 
-      - name: Install Python and uv
-        uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
-        with:
-          python-version: "3.12"
+            - name: Install Node.js
+              uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
+              with:
+                  node-version: "20"
+                  cache: "npm"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+            - name: Install Python and uv
+              uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
+              with:
+                  python-version: "3.12"
 
-      - name: Install ccache
-        run: brew install ccache
+            - name: Install uv
+              uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
-      - name: Cache Nuitka and ccache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: |
-            ~/Library/Caches/Nuitka
-            ~/.cache/ccache
-          key: nuitka-ccache-${{ runner.os }}-${{ hashFiles('server/**/*.py', 'server/uv.lock') }}
-          restore-keys: |
-            nuitka-ccache-${{ runner.os }}-
+            - name: Install ccache
+              run: brew install ccache
 
-      - name: Set up Python venv with uv
-        run: |
-          cd server
-          uv sync
-          uv pip install nuitka
+            - name: Cache Nuitka and ccache
+              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+              with:
+                  path: |
+                      ~/Library/Caches/Nuitka
+                      ~/.cache/ccache
+                  key: nuitka-ccache-${{ runner.os }}-${{ hashFiles('server/**/*.py', 'server/uv.lock') }}
+                  restore-keys: |
+                      nuitka-ccache-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: |
-          npm ci
-          cd src-tauri
-          npm ci
-          cd ..
+            - name: Set up Python venv with uv
+              run: |
+                  cd server
+                  uv sync
+                  uv pip install nuitka
 
-      - name: Build all components
-        env:
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        run: ./build-all.sh
+            - name: Install dependencies
+              run: |
+                  npm ci
+                  cd src-tauri
+                  npm ci
+                  cd ..
 
-      - name: Build and notarize Tauri app
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          cd src-tauri
-          npm run tauri build -- --target aarch64-apple-darwin
+            - name: Build all components
+              env:
+                  APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+              run: ./build-all.sh
 
-      - name: Upload DMG
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: Phlox-${{ matrix.os }}-${{ matrix.arch }}
-          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            - name: Build and notarize Tauri app
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+                  APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+                  APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+              run: |
+                  cd src-tauri
+                  npm run tauri build -- --target aarch64-apple-darwin
 
-      - name: Attach to Release
+            - name: Upload DMG
+              uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+              with:
+                  name: Phlox-${{ matrix.os }}-${{ matrix.arch }}
+                  path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+
+            - name: Attach to Release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974 # v2.1.0
+              with:
+                  files: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    docker:
+        runs-on: ubuntu-latest
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974 # v2.1.0
-        with:
-          files: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        permissions:
+            contents: read
+            packages: write
 
-  docker:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-    permissions:
-      contents: read
-      packages: write
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GHCR_PAT }}
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
+            - name: Extract version from tag
+              id: meta
+              run: |
+                  VERSION=${GITHUB_REF_NAME#v}
+                  if [[ ! "$VERSION" =~ ^[0-9] ]]; then
+                    VERSION="1.0.4"
+                  fi
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Extract version from tag
-        id: meta
-        run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          if [[ ! "$VERSION" =~ ^[0-9] ]]; then
-            VERSION="1.0.4"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Build and push
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
-            ghcr.io/${{ github.repository }}:latest
-          platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            - name: Build and push
+              uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+              with:
+                  context: .
+                  push: true
+                  tags: |
+                      ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+                      ghcr.io/${{ github.repository }}:latest
+                  platforms: linux/amd64
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max

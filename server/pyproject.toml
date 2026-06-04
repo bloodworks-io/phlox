@@ -13,7 +13,6 @@ dependencies = [
     "python-multipart==0.0.27",
     "rapidfuzz==3.14.3",
     "sqlcipher3==0.6.2",
-    "ty>=0.0.39",
     "uvicorn[standard]==0.41.0",
 ]
 
@@ -38,6 +37,7 @@ dev = [
     "ruff==0.15.4",
     "bandit[toml]==1.9.4",
     "pre-commit==4.5.1",
+    "ty==0.0.39",
 ]
 
 [dependency-groups]
@@ -49,6 +49,7 @@ dev = [
     "ruff==0.15.4",
     "bandit[toml]==1.9.4",
     "pre-commit==4.5.1",
+    "ty==0.0.39",
 ]
 
 [tool.setuptools]
