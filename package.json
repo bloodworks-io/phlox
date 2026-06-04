@@ -12,7 +12,7 @@
         "@tauri-apps/plugin-http": "2.5.7",
         "framer-motion": "11.18.2",
         "js-tiktoken": "1.0.21",
-        "pdfjs-dist": "4.10.38",
+        "pdfjs-dist": "5.7.284",
         "react": "18.3.1",
         "react-dom": "18.3.1",
         "react-icons": "5.6.0",
