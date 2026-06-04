@@ -50,7 +50,7 @@
     "license": "ISC",
     "devDependencies": {
         "@tauri-apps/cli": "2.10.1",
-        "@vitejs/plugin-react": "4.7.0",
+        "@vitejs/plugin-react": "6.0.2",
         "vite": "7.3.2"
     }
 }
