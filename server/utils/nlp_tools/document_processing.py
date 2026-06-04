@@ -27,10 +27,11 @@ except ImportError:
     pytesseract = None
 
 from server.database.config.manager import config_manager
-from server.schemas.grammars import FieldResponse
+from server.schemas.grammars import FieldResponse, MultiFieldResponse
 from server.schemas.templates import TemplateResponse
 from server.utils.helpers import calculate_age
 from server.utils.llm_client.client import get_llm_client
+from server.utils.llm_client.utils import repair_json
 from server.utils.transcription.refinement import refine_field_content
 
 # Set up module-level logger
@@ -350,9 +351,11 @@ async def process_visual_document_with_template(
     patient_context: dict[str, Any],
 ) -> dict[str, Any]:
     """
-    Process visual document pages directly with a multimodal model to fill template fields.
+    Process visual document pages with a multimodal model to fill template fields.
 
-    Each field is extracted from images directly (no OCR text pre-extraction step).
+    Uses a single LLM call with all images and all field instructions combined
+    (same pattern as process_all_fields_concurrently in text.py), then refines
+    each field through the existing refinement pipeline.
     """
     if not visual_pages:
         raise ValueError("No visual pages were provided")
@@ -377,10 +380,9 @@ async def process_visual_document_with_template(
     options["temperature"] = 0
     options.pop("stop", None)
 
-    client = get_llm_client()
-    response_format = FieldResponse.model_json_schema()
+    response_format = MultiFieldResponse.model_json_schema()
 
-    # Build patient context once
+    # Build patient context
     context_str = ""
     if patient_context:
         context_str = _build_patient_context(
@@ -389,65 +391,103 @@ async def process_visual_document_with_template(
             patient_context.get("gender"),
         )
 
-    async def process_visual_field(field: Any) -> tuple[Any, str | dict]:
-        field_name = field.field_name
-        system_prompt = getattr(field, "system_prompt", "") or ""
+    # Build combined field instructions (same pattern as text.py)
+    field_instructions = []
+    for field in template_fields:
+        field_instructions.append(
+            f"FIELD: {field.field_key}\n"
+            f"NAME: {field.field_name}\n"
+            f"INSTRUCTIONS: {(getattr(field, 'system_prompt', '') or '').strip()}"
+        )
 
-        if not system_prompt:
-            system_prompt = (
-                f"You are a medical documentation assistant. "
-                f"Extract the {field_name} from the provided medical document images."
+    system_content = (
+        "Extract relevant information for each field from the provided medical document images.\n"
+        f"{context_str}\n\n"
+        "For each field, extract only the most relevant information. "
+        "If no relevant information is found for a field, return an empty list for that field.\n\n"
+        "FIELDS:\n" + "\n".join(field_instructions) + "\n\n"
+        "Output MUST be ONLY valid JSON with top-level key "
+        '"field_summaries" (object mapping field_key to array of strings).'
+    )
+
+    # Build user content: instruction text + all page images
+    user_content: list[dict[str, Any]] = [
+        {"type": "text", "text": "Please extract the fields from these document images."}
+    ]
+    for page in valid_pages:
+        user_content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": page["data_url"]},
+            }
+        )
+
+    request_body = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": user_content},
+    ]
+
+    # Single LLM call with retries (same pattern as text.py)
+    max_retries = 2
+
+    client = get_llm_client(timeout=180)
+
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(
+                f"Processing {len(template_fields)} visual fields in one call "
+                f"with {len(valid_pages)} pages (attempt {attempt + 1}/{max_retries + 1})..."
             )
 
-        if hasattr(field, "style_example") and field.style_example:
-            system_prompt += f"\n\nOutput style example:\n{field.style_example}"
-
-        json_schema_instruction = (
-            "Output MUST be ONLY valid JSON with top-level key "
-            '"key_points" (array of strings). Example: ' + json.dumps({"key_points": ["..."]})
-        )
-
-        instruction = f"Please extract the {field_name} from these document images." + (
-            f"\n\nPatient context: {context_str}" if context_str else ""
-        )
-
-        user_content: list[dict[str, Any]] = [{"type": "text", "text": instruction}]
-        for page in valid_pages:
-            user_content.append(
-                {
-                    "type": "image_url",
-                    "image_url": {"url": page["data_url"]},
-                }
+            response = await client.chat(
+                model=config["PRIMARY_MODEL"],
+                messages=request_body,
+                format=response_format,
+                options=options,
             )
 
-        request_body = [
-            {
-                "role": "system",
-                "content": f"{system_prompt}\n\n{json_schema_instruction}",
-            },
-            {
-                "role": "user",
-                "content": user_content,
-            },
-        ]
+            # Repair and validate JSON
+            content = response["message"]["content"]
+            repaired_content = repair_json(content)
+            multi_field_response = MultiFieldResponse.model_validate_json(repaired_content)
 
-        logger.info(f"Processing visual document field: {field_name}")
+            # Convert to dict of formatted strings (with bullet points)
+            raw_results: dict[str, str] = {}
+            for field in template_fields:
+                key_points = multi_field_response.field_summaries.get(field.field_key, [])
+                formatted_content = "\n".join(f"• {point.strip()}" for point in key_points)
+                raw_results[field.field_key] = formatted_content
 
-        response = await client.chat(
-            model=config["PRIMARY_MODEL"],
-            messages=request_body,
-            format=response_format,
-            options=options,
-        )
+            logger.info(
+                f"Successfully extracted {len(template_fields)} fields from visual document"
+            )
 
-        field_response = FieldResponse.model_validate_json(response["message"]["content"])
-        formatted_content = "\n".join(f"• {point.strip()}" for point in field_response.key_points)
+            # Refine all fields concurrently (fast text-only calls)
+            refined_results = await asyncio.gather(
+                *[
+                    refine_field_content(raw_results[field.field_key], field)
+                    for field in template_fields
+                ]
+            )
 
-        refined_content = await refine_field_content(formatted_content, field)
-        return field.field_key, refined_content
+            return {
+                field.field_key: refined
+                for field, refined in zip(template_fields, refined_results, strict=True)
+            }
 
-    results = await asyncio.gather(*[process_visual_field(field) for field in template_fields])
-    return dict(results)
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(
+                    f"Visual document processing attempt {attempt + 1}/{max_retries + 1} failed: {e}. Retrying..."
+                )
+                continue
+            else:
+                logger.error(
+                    f"Visual document processing failed after {max_retries + 1} attempts: {e}"
+                )
+                raise
+
+    raise RuntimeError("Unreachable: process_visual_document_with_template exhausted retries")
 
 
 async def process_document_field(
