@@ -8,7 +8,7 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from server.schemas.patient import TranscribeResponse
 from server.utils.nlp_tools.document_processing import (
@@ -27,7 +27,7 @@ class ProcessDocumentFromTextRequest(BaseModel):
     name: str | None = None
     gender: str | None = None
     dob: str | None = None
-    templateKey: str | None = None
+    templateKey: str = Field(..., description="Template key is required for document processing")
 
 
 class VisualDocumentPage(BaseModel):
@@ -45,7 +45,7 @@ class ProcessVisualDocumentRequest(BaseModel):
     name: str | None = None
     gender: str | None = None
     dob: str | None = None
-    templateKey: str | None = None
+    templateKey: str = Field(..., description="Template key is required for document processing")
 
 
 @router.post("/audio", response_model=TranscribeResponse)
@@ -207,7 +207,7 @@ async def process_document(
     name: str | None = Form(None),
     gender: str | None = Form(None),
     dob: str | None = Form(None),
-    templateKey: str | None = Form(None),
+    templateKey: str = Form(..., description="Template key is required for document processing"),
 ):
     """Processes a document to extract information and fill template fields."""
     try:
@@ -225,12 +225,9 @@ async def process_document(
             first_name = name_parts[1].strip()
             formatted_name = f"{first_name} {last_name}"
 
-        # Get template fields if template key is provided
-        template_fields = []
-        if templateKey:
-            from server.database.entities.templates import get_template_fields
+        from server.database.entities.templates import get_template_fields
 
-            template_fields = get_template_fields(templateKey)
+        template_fields = get_template_fields(templateKey)
 
         # Create patient context
         patient_context = {"name": formatted_name, "dob": dob, "gender": gender}
@@ -270,12 +267,9 @@ async def process_document_visual(payload: ProcessVisualDocumentRequest):
             first_name = name_parts[1].strip() if len(name_parts) > 1 else ""
             formatted_name = f"{first_name} {last_name}".strip()
 
-        # Get template fields if template key is provided
-        template_fields = []
-        if payload.templateKey:
-            from server.database.entities.templates import get_template_fields
+        from server.database.entities.templates import get_template_fields
 
-            template_fields = get_template_fields(payload.templateKey)
+        template_fields = get_template_fields(payload.templateKey)
 
         # Create patient context
         patient_context = {
@@ -325,12 +319,9 @@ async def process_document_from_text(payload: ProcessDocumentFromTextRequest):
             first_name = name_parts[1].strip() if len(name_parts) > 1 else ""
             formatted_name = f"{first_name} {last_name}".strip()
 
-        # Get template fields if template key is provided
-        template_fields = []
-        if payload.templateKey:
-            from server.database.entities.templates import get_template_fields
+        from server.database.entities.templates import get_template_fields
 
-            template_fields = get_template_fields(payload.templateKey)
+        template_fields = get_template_fields(payload.templateKey)
 
         # Create patient context
         patient_context = {

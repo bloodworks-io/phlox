@@ -8,6 +8,7 @@ from typing import Any
 from server.database.config.manager import config_manager
 from server.schemas.grammars import MultiFieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
+from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
 from server.utils.transcription.refinement import refine_field_content
 
@@ -88,6 +89,7 @@ async def process_all_fields_concurrently(
     patient_context: dict[str, str | None],
     is_ambient: bool = True,
     primary_condition: str | None = None,
+    intro_override: str | None = None,
 ) -> dict[str, str]:
     """
     Process all template fields in a single LLM call using structured output.
@@ -100,6 +102,9 @@ async def process_all_fields_concurrently(
         fields: List of TemplateField objects to process.
         patient_context: Patient context (name, dob, gender, etc.).
         is_ambient: Whether the transcript is from an ambient session (True) or direct dictation (False).
+        primary_condition: Optional primary condition for returning patients (audio-specific).
+        intro_override: Optional intro text override. When provided, used instead of the
+            audio-specific is_ambient intro.
 
     Returns:
         Dict mapping field_key to formatted content string with bullet points.
@@ -127,7 +132,9 @@ INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
             patient_context_str = _build_patient_context(patient_context)
 
             # Use mode-specific intro for the system prompt
-            if is_ambient:
+            if intro_override is not None:
+                intro = intro_override
+            elif is_ambient:
                 intro = "Extract relevant information for each of the following fields from the medical transcript."
             else:
                 intro = "Extract and organize information from the clinician's direct dictation for each of the following fields."
@@ -167,8 +174,6 @@ Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapp
             )
 
             # Extract and repair JSON
-            from server.utils.llm_client import repair_json
-
             content = response["message"]["content"]
             repaired_content = repair_json(content)
 

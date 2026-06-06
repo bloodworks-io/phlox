@@ -1,6 +1,5 @@
 import asyncio
 import io
-import json
 import logging
 from typing import Any
 
@@ -27,113 +26,16 @@ except ImportError:
     pytesseract = None
 
 from server.database.config.manager import config_manager
-from server.schemas.grammars import FieldResponse, MultiFieldResponse
-from server.schemas.templates import TemplateResponse
+from server.schemas.grammars import MultiFieldResponse
 from server.utils.helpers import calculate_age
 from server.utils.llm_client.client import get_llm_client
 from server.utils.llm_client.utils import repair_json
 from server.utils.transcription.refinement import refine_field_content
+from server.utils.transcription.text import process_all_fields_concurrently
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-async def process_document_content(
-    document_buffer: bytes,
-    content_type: str,
-    name: str | None = None,
-    dob: str | None = None,
-    gender: str | None = None,
-) -> tuple[str, str, str]:
-    """
-    Process document content and return legacy section outputs.
-
-    This function now extracts document text first, then reuses the shared
-    extracted-text processing path.
-    """
-    extracted_text = await extract_text_from_document(document_buffer, content_type)
-    return await _process_extracted_text_sections(
-        extracted_text, _name=name, _dob=dob, _gender=gender
-    )
-
-
-async def _process_extracted_text_sections(
-    extracted_text: str,
-    _name: str | None = None,
-    _dob: str | None = None,
-    _gender: str | None = None,
-) -> tuple[str, str, str]:
-    """
-    Process already-extracted document text and return legacy section outputs.
-    """
-    config = config_manager.get_config()
-    prompts = config_manager.get_prompts_and_options()
-    options = prompts["options"]["general"].copy()
-    del options["stop"]
-
-    async def process_section(section_type: str, system_prompt: str) -> str:
-        """
-        Process a specific section of the medical document using LLM.
-        """
-        client = get_llm_client()
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": f"Please analyze this medical document text and provide the {section_type} summary:\n\n{extracted_text}",
-            },
-            {
-                "role": "assistant",
-                "content": f"{section_type}:\n",
-            },
-        ]
-
-        logger.debug(f"Processing {section_type} with LLM")
-        response = await client.chat(
-            model=config["PRIMARY_MODEL"],
-            messages=messages,
-            options=options,
-        )
-        return response["message"]["content"]
-
-    # Define prompts for each section
-    prompts = {
-        "Primary History": """You are a medical documentation assistant. Review this medical document text and extract the 'Primary History' defined as the main reason the patient has been referred to the specialist with relevant details. Format as:
-        # [Condition that has been referred]
-        - [Key detail]
-        - [Key detail]""",
-        "Additional History": """Extract any additional medical conditions not covered in the primary history. Format as:
-        # [Condition]
-        - [Key detail]""",
-        "Medications": """Extract all medications mentioned in the document. Format as:
-        - [Medication name, dose, frequency]""",
-        "Social History": """Extract all social history details; include relevant family medical history, alcohol, and smoking status. Format as:
-        - [Social history detail]""",
-        "Investigations": """Extract any test results or investigations mentioned; focusing on the items most relevant to the primary condition in the referral. Format as:
-        - [Investigation/test result]""",
-    }
-
-    try:
-        logger.info("Starting concurrent processing of document sections")
-        results = await asyncio.gather(
-            *[process_section(section, prompt) for section, prompt in prompts.items()]
-        )
-
-        primary_history = "# " + results[0].split("#", 1)[-1].strip()
-
-        additional_history = "# " + results[1].split("#", 1)[-1].strip() + "\n\n"
-        additional_history += "Medications:\n" + results[2].strip() + "\n\n"
-        additional_history += "Social History:\n" + results[3].strip()
-
-        investigations = "- " + results[4].split("-", 1)[-1].strip()
-
-        logger.info("Successfully processed all document sections")
-        return primary_history, additional_history, investigations
-
-    except Exception as e:
-        logger.error(f"Error processing document sections: {str(e)}")
-        raise
 
 
 async def extract_text_from_document(document_buffer: bytes, content_type: str) -> str:
@@ -295,40 +197,20 @@ async def _process_extracted_text_with_template(
     patient_context: dict[str, Any],
 ) -> dict[str, Any]:
     """
-    Shared template processing logic that operates on extracted text.
+    Template processing logic that operates on extracted document text.
     """
-    # If there are no template fields, use the legacy section-style extraction
-    if not template_fields:
-        logger.info("No template fields provided, using legacy processing method")
-        (
-            primary_history,
-            additional_history,
-            investigations,
-        ) = await _process_extracted_text_sections(
-            extracted_text,
-            patient_context.get("name"),
-            patient_context.get("dob"),
-            patient_context.get("gender"),
-        )
-
-        return {
-            "primary_history": primary_history,
-            "additional_history": additional_history,
-            "investigations": investigations,
-        }
-
     try:
-        raw_results = await asyncio.gather(
-            *[
-                process_document_field(extracted_text, field, patient_context)
-                for field in template_fields
-            ]
+        raw_results_dict = await process_all_fields_concurrently(
+            transcript_text=extracted_text,
+            fields=template_fields,
+            patient_context=patient_context,
+            intro_override="Extract relevant information for each field from the provided medical document.",
         )
 
         refined_results = await asyncio.gather(
             *[
-                refine_field_content(result.content, field)
-                for result, field in zip(raw_results, template_fields, strict=True)
+                refine_field_content(raw_results_dict[field.field_key], field)
+                for field in template_fields
             ]
         )
 
@@ -490,101 +372,6 @@ async def process_visual_document_with_template(
     raise RuntimeError("Unreachable: process_visual_document_with_template exhausted retries")
 
 
-async def process_document_field(
-    document_text: str, field: Any, patient_context: dict[str, Any]
-) -> TemplateResponse:
-    """Process a single document field by extracting key points from the document text.
-
-    Args:
-        document_text (str): The extracted text from the document to be analyzed.
-        field (Any): The template field configuration containing prompts.
-        patient_context (Dict[str, Any]): Patient context details.
-
-    Returns:
-        TemplateResponse: An object containing the field key and the formatted key points.
-    """
-    try:
-        config = config_manager.get_config()
-        client = get_llm_client()
-        options = config_manager.get_prompts_and_options()["options"]["general"].copy()
-
-        # Use FieldResponse for structured output
-        response_format = FieldResponse.model_json_schema()
-
-        # Get the field name and system prompt
-        field_name = field.field_name
-        system_prompt = getattr(field, "system_prompt", "") or ""
-
-        # If no system prompt is provided, create a default one
-        if not system_prompt:
-            system_prompt = f"You are a medical documentation assistant. Extract the {field_name} from the provided medical document."
-
-        if hasattr(field, "style_example") and field.style_example:
-            system_prompt += f"\n\nOutput style example:\n{field.style_example}"
-
-        json_schema_instruction = (
-            "Output MUST be ONLY valid JSON with top-level key "
-            '"key_points" (array of strings). Example: ' + json.dumps({"key_points": ["..."]})
-        )
-
-        # Build patient context for the prompt
-        context_str = ""
-        if patient_context:
-            # Convert dictionary to format expected by _build_patient_context
-            context_str = _build_patient_context(
-                patient_context.get("name"),
-                patient_context.get("dob"),
-                patient_context.get("gender"),
-            )
-
-        # Build a single system message so strict chat templates don't reject
-        # requests with additional system messages later in the list.
-        system_content = f"{system_prompt}\n\n{json_schema_instruction}"
-        if context_str:
-            system_content += f"\n\nPatient context: {context_str}"
-
-        # Create the request messages
-        request_body = [
-            {
-                "role": "system",
-                "content": system_content,
-            },
-            {
-                "role": "user",
-                "content": f"Please extract the {field_name} from this medical document:\n\n{document_text}",
-            },
-        ]
-
-        logger.info(f"Processing document field: {field_name}")
-
-        # Set temperature to 0 for deterministic output
-        options["temperature"] = 0
-
-        # Make the API call
-        response = await client.chat(
-            model=config["PRIMARY_MODEL"],
-            messages=request_body,
-            format=response_format,
-            options=options,
-        )
-
-        # Parse the response
-        field_response = FieldResponse.model_validate_json(response["message"]["content"])
-
-        # Convert key points into a formatted string
-        formatted_content = "\n".join(f"• {point.strip()}" for point in field_response.key_points)
-
-        return TemplateResponse(field_key=field.field_key, content=formatted_content)
-
-    except Exception as e:
-        logger.error(f"Error processing document field {field.field_key}: {e}")
-        # Return empty result on error
-        return TemplateResponse(
-            field_key=field.field_key,
-            content=f"Error extracting {field.field_name}: {str(e)}",
-        )
-
-
 def _build_patient_context(name: str | None, dob: str | None, gender: str | None) -> str:
     """
     Build context string from patient details.
@@ -606,36 +393,3 @@ def _build_patient_context(name: str | None, dob: str | None, gender: str | None
     if gender:
         context_parts.append(f"Gender: {'Male' if gender == 'M' else 'Female'}")
     return " | ".join(context_parts)
-
-
-def _parse_model_output(output: str) -> tuple[str, str, str]:
-    """
-    Parse the model output into separate sections.
-
-    Args:
-        output: Raw output from the LLM
-
-    Returns:
-        Tuple containing (primary_history, additional_history, investigations)
-    """
-    # Prepend the section headers that were removed
-    full_output = f"Primary History:\n#{output}"
-
-    sections = full_output.split("\n\n")
-    primary_history = ""
-    additional_history = ""
-    investigations = ""
-
-    _current_section = None
-    for section in sections:
-        if section.startswith("Primary History:"):
-            _current_section = "primary"
-            primary_history = section.replace("Primary History:", "").strip()
-        elif section.startswith("Additional History:"):
-            _current_section = "additional"
-            additional_history = section.replace("Additional History:", "").strip()
-        elif section.startswith("Investigations:"):
-            _current_section = "investigations"
-            investigations = section.replace("Investigations:", "").strip()
-
-    return primary_history, additional_history, investigations
