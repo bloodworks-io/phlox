@@ -4,12 +4,14 @@ MCP (Model Context Protocol) tool execution handler.
 This module handles execution of tools from MCP servers.
 """
 
+import base64
 import json
 import logging
 from collections.abc import AsyncGenerator
 from typing import Any
 
 from server.utils.chat.streaming.response import (
+    artifact_message,
     end_message,
     status_message,
 )
@@ -136,8 +138,27 @@ async def execute(
                 if hasattr(content_item, "text"):
                     content_parts.append(content_item.text)
                 elif hasattr(content_item, "data"):
-                    # Base64 or other data
-                    content_parts.append(f"[Binary data: {content_item.type}]")
+                    raw_data = content_item.data
+                    if isinstance(raw_data, bytes):
+                        b64_data = base64.b64encode(raw_data).decode("ascii")
+                    else:
+                        b64_data = raw_data
+
+                    mime_type = getattr(content_item, "mimeType", None) or "application/octet-stream"
+                    filename = getattr(content_item, "name", None) or f"{original_tool_name}_output"
+                    data_size = len(base64.b64decode(b64_data))
+
+                    yield artifact_message({
+                        "filename": filename,
+                        "mime_type": mime_type,
+                        "size": data_size,
+                        "data": b64_data,
+                    })
+
+                    content_parts.append(
+                        f"[File generated: {filename} ({len(raw_data)} bytes) — "
+                        f"available for download]"
+                    )
                 else:
                     content_parts.append(str(content_item))
             tool_result = "\n".join(content_parts)

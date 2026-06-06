@@ -255,6 +255,25 @@ export const useChat = ({ mode = "patient" } = {}) => {
                             };
                             return newMessages;
                         });
+                    } else if (chunk.type === "artifact" && chunk.artifact) {
+                        const { data: b64Data, ...meta } = chunk.artifact;
+                        const binary = atob(b64Data);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                        const blob = new Blob([bytes], { type: meta.mime_type });
+                        const blobUrl = URL.createObjectURL(blob);
+
+                        setMessages((prev) => {
+                            const newMessages = [...prev];
+                            const last = newMessages[newMessages.length - 1];
+                            const existing = last.artifacts || [];
+                            newMessages[newMessages.length - 1] = {
+                                ...last,
+                                artifacts: [...existing, { ...meta, url: blobUrl }],
+                                loading: false,
+                            };
+                            return newMessages;
+                        });
                     }
                 }
             } catch (error) {

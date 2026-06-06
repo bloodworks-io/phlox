@@ -93,6 +93,16 @@ def start_message() -> dict[str, Any]:
     return {"type": "start", "content": ""}
 
 
+def artifact_message(artifact: dict[str, Any]) -> dict[str, Any]:
+    """
+    Create an artifact message for delivering a file artifact to the UI.
+    """
+    return {
+        "type": "artifact",
+        "artifact": artifact,
+    }
+
+
 def tool_response_message(tool_call_id: str, content: str) -> dict[str, Any]:
     """
     Create a tool response message for the message list.
