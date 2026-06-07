@@ -159,7 +159,9 @@ class VectorStoreManager:
         """Stage extracted text for the next commit."""
         self.extracted_text_store = text
 
-    def commit_to_vectordb(self, disease_name: str, focus_area: str, document_source: str, filename: str) -> None:
+    def commit_to_vectordb(
+        self, disease_name: str, focus_area: str, document_source: str, filename: str
+    ) -> None:
         """Chunk staged text, embed, and store everything."""
         try:
             if self.extracted_text_store is None:
@@ -213,7 +215,7 @@ class VectorStoreManager:
                     filename=filename,
                     embedding=embedding,
                 )
-                for idx, (text, embedding) in enumerate(zip(texts, embeddings))
+                for idx, (text, embedding) in enumerate(zip(texts, embeddings, strict=True))
             ]
 
             self.backend.insert_chunks(chunks)
@@ -228,11 +230,8 @@ class VectorStoreManager:
 
     # Similarity search
 
-    def query_similar(
-        self, collection_name: str, query_text: str, n_results: int = 5
-    ) -> dict:
-        """Search for similar chunks in a collection.
-        """
+    def query_similar(self, collection_name: str, query_text: str, n_results: int = 5) -> dict:
+        """Search for similar chunks in a collection."""
         formatted = self.format_to_collection_name(collection_name)
         query_embedding = self.embedding_model([query_text])[0]
 
@@ -295,7 +294,7 @@ class VectorStoreManager:
             collection_name,
             model_name,
             dim,
-            list(zip(chunk_ids, all_embeddings)),
+            list(zip(chunk_ids, all_embeddings, strict=True)),
         )
 
     # PDF text extraction

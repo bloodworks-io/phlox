@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAICompatibleProvider:
-    """Embedding provider using an OpenAI-compatible /v1/embeddings endpoint.
-    """
+    """Embedding provider using an OpenAI-compatible /v1/embeddings endpoint."""
 
     def __init__(self, base_url: str, api_key: str, model_name: str):
         from openai import OpenAI

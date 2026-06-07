@@ -73,7 +73,9 @@ class ChatEngine:
         """
         prompts = config_manager.get_prompts_and_options()
         collection_names = (
-            self.vector_store_manager.list_collections() if self.vector_store_manager is not None else []
+            self.vector_store_manager.list_collections()
+            if self.vector_store_manager is not None
+            else []
         )
 
         context_question_options = prompts["options"]["general"]

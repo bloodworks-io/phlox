@@ -10,9 +10,7 @@ def migrate(cursor, _db):
     cursor.execute(
         "ALTER TABLE user_settings ADD COLUMN has_completed_splash_screen BOOLEAN DEFAULT TRUE"
     )
-    cursor.execute(
-        "ALTER TABLE user_settings ADD COLUMN scribe_is_ambient BOOLEAN DEFAULT TRUE"
-    )
+    cursor.execute("ALTER TABLE user_settings ADD COLUMN scribe_is_ambient BOOLEAN DEFAULT TRUE")
     cursor.execute("DELETE FROM options WHERE key = 'stop'")
 
     # Add Dictation template

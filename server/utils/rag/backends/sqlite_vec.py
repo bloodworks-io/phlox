@@ -141,8 +141,7 @@ class SqliteVecBackend(VectorStoreBackend):
             db.execute(f"ALTER TABLE vec_{old_safe} RENAME TO vec_{new_safe}")
             db.execute("UPDATE collections SET name = ? WHERE name = ?", (new_name, old_name))
             db.execute(
-                "UPDATE chunks SET collection_name = ?, disease_name = ? "
-                "WHERE collection_name = ?",
+                "UPDATE chunks SET collection_name = ?, disease_name = ? WHERE collection_name = ?",
                 (new_name, new_name, old_name),
             )
             db.execute(
@@ -244,8 +243,7 @@ class SqliteVecBackend(VectorStoreBackend):
                     (collection_name, filename),
                 )
                 db.execute(
-                    "DELETE FROM source_documents "
-                    "WHERE collection_name = ? AND filename = ?",
+                    "DELETE FROM source_documents WHERE collection_name = ? AND filename = ?",
                     (collection_name, filename),
                 )
                 db.commit()
@@ -271,8 +269,7 @@ class SqliteVecBackend(VectorStoreBackend):
         db = self._connect()
         try:
             vec_rows = db.execute(
-                f"SELECT chunk_id, distance FROM vec_{safe} "
-                f"WHERE embedding MATCH ? AND k = ?",
+                f"SELECT chunk_id, distance FROM vec_{safe} WHERE embedding MATCH ? AND k = ?",
                 (self._sqlite_vec.serialize_float32(query_embedding), n_results),
             ).fetchall()
         except Exception as e:
@@ -353,8 +350,7 @@ class SqliteVecBackend(VectorStoreBackend):
                     (chunk_id, self._sqlite_vec.serialize_float32(embedding)),
                 )
             db.execute(
-                "UPDATE collections SET embedding_model = ?, embedding_dim = ? "
-                "WHERE name = ?",
+                "UPDATE collections SET embedding_model = ?, embedding_dim = ? WHERE name = ?",
                 (model_name, dim, collection_name),
             )
             db.commit()

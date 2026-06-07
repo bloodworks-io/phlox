@@ -37,8 +37,7 @@ class SearchResult:
 
 
 class VectorStoreBackend(ABC):
-    """Abstract interface that every vector-store backend must implement.
-    """
+    """Abstract interface that every vector-store backend must implement."""
 
     # Collection lifecycle
     @abstractmethod
@@ -100,8 +99,7 @@ class VectorStoreBackend(ABC):
         dim: int,
         embeddings: list[tuple[str, list[float]]],
     ) -> int:
-        """Replace all embeddings in a collection.
-        """
+        """Replace all embeddings in a collection."""
 
     # Metadata queries
 

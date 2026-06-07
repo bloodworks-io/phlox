@@ -144,16 +144,20 @@ async def execute(
                     else:
                         b64_data = raw_data
 
-                    mime_type = getattr(content_item, "mimeType", None) or "application/octet-stream"
+                    mime_type = (
+                        getattr(content_item, "mimeType", None) or "application/octet-stream"
+                    )
                     filename = getattr(content_item, "name", None) or f"{original_tool_name}_output"
                     data_size = len(base64.b64decode(b64_data))
 
-                    yield artifact_message({
-                        "filename": filename,
-                        "mime_type": mime_type,
-                        "size": data_size,
-                        "data": b64_data,
-                    })
+                    yield artifact_message(
+                        {
+                            "filename": filename,
+                            "mime_type": mime_type,
+                            "size": data_size,
+                            "data": b64_data,
+                        }
+                    )
 
                     content_parts.append(
                         f"[File generated: {filename} ({len(raw_data)} bytes) — "
