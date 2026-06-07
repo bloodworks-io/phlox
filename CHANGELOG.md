@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/bloodworks-io/phlox/compare/v1.0.4...v1.0.5) (2026-06-04)
+
+
+### Bug Fixes
+
+* use single LLM call for visual document processing to prevent timeouts ([83bb6cd](https://github.com/bloodworks-io/phlox/commit/83bb6cda907cb79f2dc4c417213b6b0d7e3c850d))
+
 ## [1.0.4](https://github.com/bloodworks-io/phlox/compare/v1.0.3...v1.0.4) (2026-06-01)
 
 
