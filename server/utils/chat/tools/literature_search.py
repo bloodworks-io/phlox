@@ -23,20 +23,20 @@ def _sanitize_disease_name(disease_name: str) -> str:
     return re.sub(r"[.\(\n/].*", "", disease_name.lower().replace(" ", "_")).rstrip("_").strip()
 
 
-def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -> str | list:
+def _get_relevant_literature(vector_store_manager, disease_name: str, question: str) -> str | list:
     """
     Retrieve relevant literature for a given disease and question.
 
     Args:
-        chroma_manager: The ChromaManager instance.
-        disease_name (str): The name of the disease.
-        question (str): The question to search for in the literature.
+        vector_store_manager: The VectorStoreManager instance.
+        disease_name: The name of the disease.
+        question: The question to search for in the literature.
 
     Returns:
         str | list: Relevant literature excerpts or a message if no literature is found.
     """
     logger.info(f"Searching literature for disease: '{disease_name}' with query: '{question}'")
-    collection_names = chroma_manager.list_collections()
+    collection_names = vector_store_manager.list_collections()
     sanitized_disease_name = _sanitize_disease_name(disease_name)
 
     logger.info(f"Sanitized disease name: '{sanitized_disease_name}'")
@@ -48,16 +48,10 @@ def _get_relevant_literature(chroma_manager, disease_name: str, question: str) -
 
     logger.info(f"Found matching collection for '{sanitized_disease_name}'")
     try:
-        collection = chroma_manager.chroma_client.get_collection(
-            name=sanitized_disease_name,
-            embedding_function=chroma_manager.embedding_model,
-        )
-
-        logger.info(f"Querying collection with question: '{question}'")
-        context = collection.query(
-            query_texts=[question],
+        context = vector_store_manager.query_similar(
+            collection_name=sanitized_disease_name,
+            query_text=question,
             n_results=5,
-            include=["documents", "metadatas", "distances"],
         )
 
         logger.info(f"Query completed, received {len(context['documents'][0])} results")
@@ -99,7 +93,7 @@ async def execute(
     tool_call: dict[str, Any],
     _llm_client,
     _config: dict[str, Any],
-    chroma_manager,
+    vector_store_manager,
     _message_list: list,
     _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
@@ -110,7 +104,7 @@ async def execute(
         tool_call: The tool call to execute.
         llm_client: The LLM client instance.
         config: The configuration dictionary.
-        chroma_manager: The ChromaManager instance.
+        vector_store_manager: The VectorStoreManager instance.
         message_list: The current message list.
         context_question_options: The context question options.
 
@@ -136,7 +130,7 @@ async def execute(
     question = function_arguments.get("question", "") if function_arguments else ""
 
     function_response_list = _get_relevant_literature(
-        chroma_manager=chroma_manager,
+        vector_store_manager=vector_store_manager,
         disease_name=disease_name,
         question=question,
     )
