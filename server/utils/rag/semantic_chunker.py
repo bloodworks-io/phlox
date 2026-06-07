@@ -1,16 +1,16 @@
-# Taken from https://research.trychroma.com/evaluating-chunking
+# Semantic chunking based on embedding similarity clustering
 #
 
 import numpy as np
 
-from .chunking_utils import BaseChunker, get_openai_embedding_function, openai_token_count
+from .chunking_utils import BaseChunker, openai_token_count
 from .recursive_token_chunker import RecursiveTokenChunker
 
 
 class ClusterSemanticChunker(BaseChunker):
     def __init__(
         self,
-        embedding_function=None,
+        embedding_function,
         max_chunk_size=400,
         min_chunk_size=50,
         _length_function=openai_token_count,
@@ -22,8 +22,6 @@ class ClusterSemanticChunker(BaseChunker):
             separators=["\n\n", "\n", ".", "?", "!", " ", ""],
         )
 
-        if embedding_function is None:
-            embedding_function = get_openai_embedding_function()
         self._chunk_size = max_chunk_size
         self.max_cluster = max_chunk_size // min_chunk_size
         self.embedding_function = embedding_function

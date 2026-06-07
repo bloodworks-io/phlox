@@ -1,10 +1,8 @@
-import os
 import re
 from abc import ABC, abstractmethod
 from enum import StrEnum
 
 import tiktoken
-from chromadb.utils import embedding_functions
 from rapidfuzz import fuzz, process
 
 
@@ -76,18 +74,6 @@ def rigorous_document_search(document: str, target: str):
     end_index = start_index + len(reference)
 
     return reference, start_index, end_index
-
-
-def get_openai_embedding_function():
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if openai_api_key is None:
-        raise ValueError(
-            "You need to set an embedding function or set an OPENAI_API_KEY environment variable."
-        )
-    embedding_function = embedding_functions.OpenAIEmbeddingFunction(
-        api_key=os.getenv("OPENAI_API_KEY"), model_name="text-embedding-3-large"
-    )
-    return embedding_function
 
 
 # Count the number of tokens in each page_content
