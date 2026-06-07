@@ -1,3 +1,4 @@
+import { ragApi } from "../api/ragApi";
 import { settingsApi } from "../api/settingsApi";
 import { letterApi } from "../api/letterApi";
 import { settingsHelpers } from "../helpers/settingsHelpers";
@@ -331,6 +332,55 @@ export const settingsService = {
         toast({
           title: "Error",
           description: "Failed to clear RAG database",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+      throw error;
+    }
+  },
+
+  reEmbed: async (newEmbeddingModel, config, toast, onProgress = null) => {
+    try {
+      // Update config with new embedding model first
+      if (newEmbeddingModel) {
+        await settingsApi.updateConfig({
+          ...config,
+          EMBEDDING_MODEL: newEmbeddingModel,
+        });
+      }
+
+      // Stream re-embed progress
+      let result = null;
+      for await (const event of ragApi.streamReEmbed()) {
+        if (event.type === "error") {
+          throw new Error(event.message || "Re-embedding failed");
+        }
+
+        onProgress?.(event);
+
+        if (event.type === "complete") {
+          result = event;
+        }
+      }
+
+      if (toast && result) {
+        toast({
+          title: "Success",
+          description: `Re-embedded ${result.total_chunks_re_embedded || "all"} chunks with new model`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+
+      return result;
+    } catch (error) {
+      if (toast) {
+        toast({
+          title: "Error",
+          description: "Failed to re-embed documents",
           status: "error",
           duration: 3000,
           isClosable: true,

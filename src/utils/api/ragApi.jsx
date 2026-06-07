@@ -2,6 +2,35 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 
+async function* streamPostSSE(url) {
+    const response = await universalFetch(url, { method: "POST" });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n\n");
+
+        for (const line of lines) {
+            if (line.trim() && line.startsWith("data: ")) {
+                try {
+                    const data = JSON.parse(line.slice(6));
+                    yield data;
+                } catch (error) {
+                    console.error("Error parsing SSE chunk:", error, line);
+                }
+            }
+        }
+    }
+}
+
 export const ragApi = {
     fetchCollections: async () => {
         return handleApiRequest({
@@ -144,5 +173,23 @@ export const ragApi = {
             throw new Error(`Failed to download PDF: ${response.statusText}`);
         }
         return response.blob();
+    },
+
+    reEmbed: async () => {
+        return handleApiRequest({
+            apiCall: async () => {
+                const url = await buildApiUrl("/api/rag/re-embed");
+                return universalFetch(url, {
+                    method: "POST",
+                });
+            },
+            errorMessage: "Failed to re-embed documents",
+        });
+    },
+
+    streamReEmbed: async function* () {
+        const baseUrl = await buildApiUrl("");
+        const url = `${baseUrl}/api/rag/re-embed/stream`;
+        yield* streamPostSSE(url);
     },
 };

@@ -7,6 +7,7 @@ from fastapi import (
     Response,
     UploadFile,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from server.constants import TEMP_DIR
@@ -19,6 +20,7 @@ from server.schemas.rag import (
 from server.utils.rag.processing import (
     generate_specialty_suggestions,
 )
+from server.utils.rag.progress import stream_re_embed_progress
 from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 
 router = APIRouter()
@@ -326,6 +328,16 @@ async def re_embed():
             status_code=500,
             detail=f"Error during re-embedding: {str(e)}",
         ) from e
+
+
+@router.post("/re-embed/stream")
+async def re_embed_stream():
+    """Stream re-embedding progress via Server-Sent Events."""
+    _check_rag_available()
+    return StreamingResponse(
+        stream_re_embed_progress(),
+        media_type="text/event-stream",
+    )
 
 
 @router.get("/suggestions")

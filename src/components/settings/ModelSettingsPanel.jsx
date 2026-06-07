@@ -47,6 +47,7 @@ import {
 import { useState, useEffect } from "react";
 
 import ToolsSettingsTab from "./ToolsSettingsTab";
+import { ReEmbedProgress } from "../common/ReEmbedProgress";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
@@ -69,6 +70,7 @@ const ModelSettingsPanel = ({
     modelManagerRefreshKey = 0,
     embeddingModelOptions = [],
     handleClearDatabase,
+    handleReEmbed,
 }) => {
     const [localStatus, setLocalStatus] = useState(null);
     const [isDocker, setIsDocker] = useState(false);
@@ -77,6 +79,8 @@ const ModelSettingsPanel = ({
     const [isEmbeddingModelModalOpen, setIsEmbeddingModelModalOpen] =
         useState(false);
     const [pendingEmbeddingModel, setPendingEmbeddingModel] = useState(null);
+    const [isReEmbedding, setIsReEmbedding] = useState(false);
+    const [reEmbedProgress, setReEmbedProgress] = useState(null);
     const [isProbingVision, setIsProbingVision] = useState(false);
     const [visionProbeDetail, setVisionProbeDetail] = useState("");
     const [visionProbeStatus, setVisionProbeStatus] = useState("info");
@@ -208,12 +212,28 @@ const ModelSettingsPanel = ({
     };
 
     const handleConfirmEmbeddingChange = async () => {
+        setIsReEmbedding(true);
+        setReEmbedProgress({ percentage: 0 });
         try {
-            await handleClearDatabase(pendingEmbeddingModel);
+            await handleReEmbed(pendingEmbeddingModel, (event) => {
+                if (event.type === "batch_progress" || event.type === "collection_start") {
+                    setReEmbedProgress({
+                        percentage: event.percentage ?? 0,
+                        collection_index: event.collection_index ?? 0,
+                        total_collections: event.total_collections ?? 0,
+                        collection_name: event.collection_name ?? "",
+                        chunks_embedded: event.chunks_embedded ?? 0,
+                        total_chunks_in_collection: event.total_chunks_in_collection ?? 0,
+                    });
+                }
+            });
             setIsEmbeddingModelModalOpen(false);
             setPendingEmbeddingModel(null);
         } catch (error) {
             console.error("Error changing embedding model:", error);
+        } finally {
+            setIsReEmbedding(false);
+            setReEmbedProgress(null);
         }
     };
 
@@ -1059,7 +1079,7 @@ const ModelSettingsPanel = ({
                                                 </Box>
 
                                                 <Box>
-                                                    <Tooltip label="Model used for generating embeddings for RAG - changing this will require rebuilding the database">
+                                                    <Tooltip label="Model used for generating embeddings for RAG - changing this will re-embed all documents">
                                                         <Text
                                                             fontSize="sm"
                                                             mb="2"
@@ -1120,10 +1140,9 @@ const ModelSettingsPanel = ({
                                                         mt="2"
                                                         fontWeight="medium"
                                                     >
-                                                        ⚠️ Warning: Changing the
-                                                        embedding model will
-                                                        require rebuilding the
-                                                        RAG database
+                                                        ⚠️ Changing the embedding
+                                                        model will re-embed all
+                                                        documents automatically
                                                     </Text>
                                                 </Box>
                                             </VStack>
@@ -1144,38 +1163,52 @@ const ModelSettingsPanel = ({
             {/* Warning Modal for RAG Embedding Model Change */}
             <Modal
                 isOpen={isEmbeddingModelModalOpen}
-                onClose={handleCancelEmbeddingChange}
+                onClose={isReEmbedding ? undefined : handleCancelEmbeddingChange}
+                closeOnOverlayClick={!isReEmbedding}
+                closeOnEsc={!isReEmbedding}
                 size="md"
             >
                 <ModalOverlay />
                 <ModalContent className="modal-style">
-                    <ModalHeader>Warning: Database Reset Required</ModalHeader>
+                    <ModalHeader>Re-embed Documents</ModalHeader>
                     <ModalBody>
-                        <Text>
-                            Changing the embedding model requires clearing the
-                            entire RAG database. This will delete all existing
-                            document collections and their embeddings. This
-                            action cannot be undone.
-                        </Text>
-                        <Text mt={4} fontWeight="bold">
-                            Are you sure you want to proceed?
-                        </Text>
+                        {isReEmbedding ? (
+                            <VStack spacing={4} align="stretch">
+                                <Text>
+                                    Re-embedding documents with the new model…
+                                </Text>
+                                <ReEmbedProgress progress={reEmbedProgress} />
+                            </VStack>
+                        ) : (
+                            <>
+                                <Text>
+                                    Changing the embedding model will re-embed all
+                                    existing document collections with the new model.
+                                    Your documents and collections will be preserved.
+                                </Text>
+                                <Text mt={4} fontWeight="bold">
+                                    Are you sure you want to proceed?
+                                </Text>
+                            </>
+                        )}
                     </ModalBody>
-                    <ModalFooter>
-                        <Button
-                            className="red-button"
-                            mr={3}
-                            onClick={handleCancelEmbeddingChange}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className="green-button"
-                            onClick={handleConfirmEmbeddingChange}
-                        >
-                            Confirm Change
-                        </Button>
-                    </ModalFooter>
+                    {!isReEmbedding && (
+                        <ModalFooter>
+                            <Button
+                                className="red-button"
+                                mr={3}
+                                onClick={handleCancelEmbeddingChange}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="green-button"
+                                onClick={handleConfirmEmbeddingChange}
+                            >
+                                Confirm Change
+                            </Button>
+                        </ModalFooter>
+                    )}
                 </ModalContent>
             </Modal>
         </>

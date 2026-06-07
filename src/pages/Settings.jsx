@@ -357,6 +357,12 @@ const Settings = () => {
         await fetchCoreSettings();
     };
 
+    const handleReEmbed = async (newEmbeddingModel, onProgress = null) => {
+        await settingsService.reEmbed(newEmbeddingModel, config, toast, onProgress);
+        // Refresh settings after re-embed
+        await fetchCoreSettings();
+    };
+
     if (coreLoading) {
         return <Box>Loading...</Box>;
     }
@@ -394,6 +400,7 @@ const Settings = () => {
                     showLocalManagerButton
                     modelManagerRefreshKey={modelManagerRefreshKey}
                     handleClearDatabase={handleClearDatabase}
+                    handleReEmbed={handleReEmbed}
                 />
 
                 <PromptSettingsPanel
