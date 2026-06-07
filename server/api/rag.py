@@ -4,12 +4,14 @@ from fastapi import (
     APIRouter,
     File,
     HTTPException,
+    Response,
     UploadFile,
 )
 from pydantic import BaseModel
 
 from server.constants import TEMP_DIR
 from server.schemas.rag import (
+    BulkCommitRequest,
     CommitRequest,
     DeleteFileRequest,
     ModifyCollectionRequest,
@@ -94,7 +96,7 @@ async def get_collection_files(collection_name: str):
     _check_rag_available()
     try:
         vector_store_manager = get_vector_store_manager()
-        files = vector_store_manager.get_files_for_collection(collection_name)
+        files = vector_store_manager.get_files_for_collection_with_pdf_flag(collection_name)
         return {"files": files}
     except Exception as e:
         raise HTTPException(
@@ -147,6 +149,32 @@ async def delete_file_endpoint(request: DeleteFileRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error deleting file from collection: {str(e)}",
+        ) from e
+
+
+@router.get("/download-pdf/{collection_name}/{filename}")
+async def download_pdf(collection_name: str, filename: str):
+    """Download the original PDF stored for a file in a collection."""
+    _check_rag_available()
+    try:
+        vector_store_manager = get_vector_store_manager()
+        pdf_bytes = vector_store_manager.get_stored_pdf(collection_name, filename)
+        if pdf_bytes is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No stored PDF found for '{filename}' in collection '{collection_name}'",
+            )
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving PDF: {str(e)}",
         ) from e
 
 
@@ -251,6 +279,33 @@ async def commit_to_db(request: CommitRequest):
         )
 
         return {"message": "Data committed to the database successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error committing data to database: {str(e)}",
+        ) from e
+
+
+@router.post("/commit-direct")
+async def commit_direct(request: BulkCommitRequest):
+    """API endpoint to commit a document with pre-extracted text in a single call.
+
+    Used by the bulk upload path.
+    """
+    _check_rag_available()
+    try:
+        vector_store_manager = get_vector_store_manager()
+        vector_store_manager.commit_text_to_vectordb(
+            extracted_text=request.extracted_text,
+            disease_name=request.disease_name,
+            focus_area=request.focus_area,
+            document_source=request.document_source,
+            filename=request.filename,
+        )
+        return {
+            "message": "Data committed to the database successfully",
+            "filename": request.filename,
+        }
     except Exception as e:
         raise HTTPException(
             status_code=500,

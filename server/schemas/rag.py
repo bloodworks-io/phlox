@@ -31,6 +31,28 @@ class ModifyCollectionRequest(BaseModel):
     new_name: str
 
 
+class BulkCommitRequest(BaseModel):
+    """
+    Represents a request to commit a document with its pre-extracted text.
+
+    Used by the bulk upload path where the frontend holds extracted text
+    and sends it alongside metadata in a single request.
+
+    Attributes:
+        extracted_text (str): The text extracted from the PDF.
+        disease_name (str): The name of the disease associated with the document.
+        focus_area (str): The specific focus area or topic of the document.
+        document_source (str): The source or origin of the document.
+        filename (str): The name of the file to be committed.
+    """
+
+    extracted_text: str
+    disease_name: str
+    focus_area: str
+    document_source: str
+    filename: str
+
+
 class DeleteFileRequest(BaseModel):
     """
     Represents a request to delete a specific file from a collection.

@@ -129,6 +129,16 @@ class VectorStoreManager:
         formatted = self.format_to_collection_name(collection_name)
         return self.backend.get_files_for_collection(formatted)
 
+    def get_files_for_collection_with_pdf_flag(self, collection_name: str) -> list[dict]:
+        """Return files for a collection with a ``has_pdf`` flag per file."""
+        formatted = self.format_to_collection_name(collection_name)
+        return self.backend.get_files_for_collection_with_pdf_flag(formatted)
+
+    def get_stored_pdf(self, collection_name: str, filename: str) -> bytes | None:
+        """Retrieve stored PDF bytes by collection and filename."""
+        formatted = self.format_to_collection_name(collection_name)
+        return self.backend.get_stored_pdf(formatted, filename)
+
     def delete_file_from_collection(self, collection_name: str, file_name: str) -> bool:
         formatted = self.format_to_collection_name(collection_name)
         return self.backend.delete_file_from_collection(formatted, file_name)
@@ -164,6 +174,71 @@ class VectorStoreManager:
         """Stage raw PDF bytes for the next commit (stored if config enabled)."""
         self.extracted_pdf_bytes = pdf_bytes
 
+    def _commit_text_impl(
+        self,
+        extracted_text: str,
+        disease_name: str,
+        focus_area: str,
+        document_source: str,
+        filename: str,
+        pdf_bytes: bytes | None = None,
+    ) -> None:
+        """Core commit logic: chunk text, embed, and store everything."""
+        logger.info(
+            "Committing to vectordb: disease=%s focus_area=%s source=%s filename=%s",
+            disease_name,
+            focus_area,
+            document_source,
+            filename,
+        )
+
+        formatted = self.format_to_collection_name(disease_name)
+
+        # Chunk the text
+        chunker = ClusterSemanticChunker(
+            embedding_function=self.embedding_model,
+            max_chunk_size=500,
+            min_chunk_size=150,
+        )
+        texts = chunker.split_text(extracted_text)
+        logger.info("Chunking complete: %d chunks produced", len(texts))
+
+        # Generate embeddings
+        embeddings = self.embedding_model(texts)
+        dim = len(embeddings[0])
+        logger.info("Embeddings generated: %d vectors, dim=%d", len(embeddings), dim)
+
+        # Ensure collection exists
+        self.backend.create_collection(formatted, self._model_name, dim)
+
+        # Store source document (include raw PDF if config enabled)
+        user_settings = config_manager.get_user_settings()
+        store_pdfs = user_settings.get("advanced_options", {}).get("store_original_pdfs", False)
+        stored_pdf = pdf_bytes if store_pdfs else None
+        source_doc_id = self.backend.store_source_document(
+            formatted, filename, extracted_text, stored_pdf
+        )
+
+        # Build chunk data objects
+        chunks = [
+            ChunkData(
+                id=f"{filename}_{idx}",
+                collection_name=formatted,
+                source_document_id=source_doc_id,
+                chunk_index=idx,
+                text=text,
+                disease_name=formatted,
+                focus_area=focus_area,
+                source=document_source,
+                filename=filename,
+                embedding=embedding,
+            )
+            for idx, (text, embedding) in enumerate(zip(texts, embeddings, strict=True))
+        ]
+
+        self.backend.insert_chunks(chunks)
+        logger.info("Documents successfully added: %d", len(texts))
+
     def commit_to_vectordb(
         self, disease_name: str, focus_area: str, document_source: str, filename: str
     ) -> None:
@@ -173,65 +248,46 @@ class VectorStoreManager:
                 raise ValueError(
                     "Extracted text not available. Please extract the PDF information first."
                 )
-
-            logger.info(
-                "Committing to vectordb: disease=%s focus_area=%s source=%s filename=%s",
-                disease_name,
-                focus_area,
-                document_source,
-                filename,
+            self._commit_text_impl(
+                extracted_text=self.extracted_text_store,
+                disease_name=disease_name,
+                focus_area=focus_area,
+                document_source=document_source,
+                filename=filename,
+                pdf_bytes=self.extracted_pdf_bytes,
             )
-
-            formatted = self.format_to_collection_name(disease_name)
-
-            # Chunk the text
-            chunker = ClusterSemanticChunker(
-                embedding_function=self.embedding_model,
-                max_chunk_size=500,
-                min_chunk_size=150,
-            )
-            texts = chunker.split_text(self.extracted_text_store)
-            logger.info("Chunking complete: %d chunks produced", len(texts))
-
-            # Generate embeddings
-            embeddings = self.embedding_model(texts)
-            dim = len(embeddings[0])
-            logger.info("Embeddings generated: %d vectors, dim=%d", len(embeddings), dim)
-
-            # Ensure collection exists
-            self.backend.create_collection(formatted, self._model_name, dim)
-
-            # Store source document (include raw PDF if config enabled)
-            user_settings = config_manager.get_user_settings()
-            store_pdfs = user_settings.get("advanced_options", {}).get("store_original_pdfs", False)
-            pdf_bytes = self.extracted_pdf_bytes if store_pdfs else None
-            source_doc_id = self.backend.store_source_document(
-                formatted, filename, self.extracted_text_store, pdf_bytes
-            )
-
-            # Build chunk data objects
-            chunks = [
-                ChunkData(
-                    id=f"{filename}_{idx}",
-                    collection_name=formatted,
-                    source_document_id=source_doc_id,
-                    chunk_index=idx,
-                    text=text,
-                    disease_name=formatted,
-                    focus_area=focus_area,
-                    source=document_source,
-                    filename=filename,
-                    embedding=embedding,
-                )
-                for idx, (text, embedding) in enumerate(zip(texts, embeddings, strict=True))
-            ]
-
-            self.backend.insert_chunks(chunks)
-            logger.info("Documents successfully added: %d", len(texts))
-
         except Exception:
             logger.exception(
                 "Failed to commit to vectordb (disease=%s, filename=%s)",
+                disease_name,
+                filename,
+            )
+
+    def commit_text_to_vectordb(
+        self,
+        extracted_text: str,
+        disease_name: str,
+        focus_area: str,
+        document_source: str,
+        filename: str,
+    ) -> None:
+        """Commit directly with extracted text (no staging required).
+
+        Used by the bulk upload path where the frontend holds the text and
+        sends it alongside the metadata in a single request.
+        """
+        try:
+            self._commit_text_impl(
+                extracted_text=extracted_text,
+                disease_name=disease_name,
+                focus_area=focus_area,
+                document_source=document_source,
+                filename=filename,
+                pdf_bytes=None,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to commit text directly to vectordb (disease=%s, filename=%s)",
                 disease_name,
                 filename,
             )
