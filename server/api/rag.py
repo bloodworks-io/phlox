@@ -14,10 +14,10 @@ from server.schemas.rag import (
     DeleteFileRequest,
     ModifyCollectionRequest,
 )
-from server.utils.rag.chroma import CHROMADB_AVAILABLE, get_chroma_manager
 from server.utils.rag.processing import (
     generate_specialty_suggestions,
 )
+from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ class ExtractTextPayload(BaseModel):
 
 
 async def _extract_rag_metadata_from_text(
-    chroma_manager, extracted_text: str, filename: str
+    vector_store_manager, extracted_text: str, filename: str
 ) -> dict:
     """Shared helper to derive RAG metadata from extracted text and stage it for commit."""
     if not extracted_text or not extracted_text.strip():
@@ -40,18 +40,18 @@ async def _extract_rag_metadata_from_text(
         )
 
     logger.debug(f"Text extracted. Length: {len(extracted_text)}. Storing temporarily.")
-    chroma_manager.set_extracted_text(extracted_text)
+    vector_store_manager.set_extracted_text(extracted_text)
 
     logger.info("Attempting to determine disease name...")
-    disease_name = await chroma_manager.get_disease_name(extracted_text)
+    disease_name = await vector_store_manager.get_disease_name(extracted_text)
     logger.info(f"Disease name determined: '{disease_name}'")
 
     logger.debug("Attempting to determine focus area...")
-    focus_area = await chroma_manager.get_focus_area(extracted_text)
+    focus_area = await vector_store_manager.get_focus_area(extracted_text)
     logger.debug(f"Focus area determined: '{focus_area}'")
 
     logger.debug("Attempting to determine document source...")
-    document_source = await chroma_manager.get_document_source(extracted_text)
+    document_source = await vector_store_manager.get_document_source(extracted_text)
     logger.debug(f"Document source determined: '{document_source}'")
 
     logger.info(
@@ -69,7 +69,7 @@ async def _extract_rag_metadata_from_text(
 
 # Helper function to check if RAG is available
 def _check_rag_available():
-    if not CHROMADB_AVAILABLE or get_chroma_manager() is None:
+    if not VECTOR_STORE_AVAILABLE or get_vector_store_manager() is None:
         raise HTTPException(
             status_code=503,
             detail="RAG features are not available.",
@@ -81,8 +81,8 @@ async def get_files():
     """API endpoint to retrieve the list of document collections."""
     _check_rag_available()
     try:
-        chroma_manager = get_chroma_manager()
-        collections = chroma_manager.list_collections()
+        vector_store_manager = get_vector_store_manager()
+        collections = vector_store_manager.list_collections()
         return {"files": collections}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching collections: {str(e)}") from e
@@ -93,8 +93,8 @@ async def get_collection_files(collection_name: str):
     """API endpoint to retrieve files for a specific collection."""
     _check_rag_available()
     try:
-        chroma_manager = get_chroma_manager()
-        files = chroma_manager.get_files_for_collection(collection_name)
+        vector_store_manager = get_vector_store_manager()
+        files = vector_store_manager.get_files_for_collection(collection_name)
         return {"files": files}
     except Exception as e:
         raise HTTPException(
@@ -108,8 +108,8 @@ async def modify_collection(request: ModifyCollectionRequest):
     """API endpoint to modify the name of a collection."""
     _check_rag_available()
     try:
-        chroma_manager = get_chroma_manager()
-        success = chroma_manager.modify_collection_name(request.old_name, request.new_name)
+        vector_store_manager = get_vector_store_manager()
+        success = vector_store_manager.modify_collection_name(request.old_name, request.new_name)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to rename collection")
         return {"message": "Collection renamed successfully"}
@@ -122,8 +122,8 @@ async def delete_collection_endpoint(name: str):
     """API endpoint to delete a collection."""
     _check_rag_available()
     try:
-        chroma_manager = get_chroma_manager()
-        success = chroma_manager.delete_collection(name)
+        vector_store_manager = get_vector_store_manager()
+        success = vector_store_manager.delete_collection(name)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to delete collection")
         return {"message": "Collection deleted successfully"}
@@ -136,8 +136,8 @@ async def delete_file_endpoint(request: DeleteFileRequest):
     """API endpoint to delete a file from a collection."""
     _check_rag_available()
     try:
-        chroma_manager = get_chroma_manager()
-        success = chroma_manager.delete_file_from_collection(
+        vector_store_manager = get_vector_store_manager()
+        success = vector_store_manager.delete_file_from_collection(
             request.collection_name, request.file_name
         )
         if not success:
@@ -154,7 +154,7 @@ async def delete_file_endpoint(request: DeleteFileRequest):
 async def extract_pdf_info(file: UploadFile = File(...)):
     """API endpoint to extract information from a PDF."""
     _check_rag_available()
-    chroma_manager = get_chroma_manager()
+    vector_store_manager = get_vector_store_manager()
     logger.info(f"Request received for /extract-pdf-info: filename='{file.filename}'")
     temp_dir = TEMP_DIR
     temp_dir.mkdir(parents=True, exist_ok=True)  # Ensure temp dir exists
@@ -174,14 +174,14 @@ async def extract_pdf_info(file: UploadFile = File(...)):
 
         # Extract text from the PDF (synchronous)
         logger.info(f"Extracting text from '{file_location}'")
-        extracted_text = chroma_manager.extract_text_from_pdf(file_location)
+        extracted_text = vector_store_manager.extract_text_from_pdf(file_location)
         if not extracted_text:
             logger.warning(
                 f"No text extracted from PDF '{file.filename}'. It might be empty or image-based."
             )
 
         return await _extract_rag_metadata_from_text(
-            chroma_manager=chroma_manager,
+            vector_store_manager=vector_store_manager,
             extracted_text=extracted_text,
             filename=file.filename,
         )
@@ -208,7 +208,7 @@ async def extract_pdf_info(file: UploadFile = File(...)):
 async def extract_pdf_info_from_text(payload: ExtractTextPayload):
     """API endpoint to extract metadata from already-extracted PDF text (frontend text-first flow)."""
     _check_rag_available()
-    chroma_manager = get_chroma_manager()
+    vector_store_manager = get_vector_store_manager()
 
     logger.info(
         "Request received for /extract-pdf-info-from-text: filename='%s', text_length=%d",
@@ -218,7 +218,7 @@ async def extract_pdf_info_from_text(payload: ExtractTextPayload):
 
     try:
         return await _extract_rag_metadata_from_text(
-            chroma_manager=chroma_manager,
+            vector_store_manager=vector_store_manager,
             extracted_text=payload.extracted_text,
             filename=payload.filename,
         )
@@ -239,8 +239,8 @@ async def commit_to_db(request: CommitRequest):
     """API endpoint to commit data to the database."""
     _check_rag_available()
     try:
-        chroma_manager = get_chroma_manager()
-        chroma_manager.commit_to_vectordb(
+        vector_store_manager = get_vector_store_manager()
+        vector_store_manager.commit_to_vectordb(
             request.disease_name,
             request.focus_area,
             request.document_source,
@@ -252,6 +252,21 @@ async def commit_to_db(request: CommitRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error committing data to database: {str(e)}",
+        ) from e
+
+
+@router.post("/re-embed")
+async def re_embed():
+    """API endpoint to re-embed all collections with the current embedding model."""
+    _check_rag_available()
+    try:
+        vector_store_manager = get_vector_store_manager()
+        result = vector_store_manager.re_embed_all()
+        return {"message": "Re-embedding completed successfully", **result}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error during re-embedding: {str(e)}",
         ) from e
 
 
@@ -273,8 +288,8 @@ async def clear_database():
     """API endpoint to clear the entire RAG database."""
     _check_rag_available()
     try:
-        chroma_manager = get_chroma_manager()
-        success = chroma_manager.reset_database()
+        vector_store_manager = get_vector_store_manager()
+        success = vector_store_manager.reset_database()
         if not success:
             raise HTTPException(status_code=500, detail="Failed to reset RAG database")
         return {"message": "RAG database cleared successfully"}
