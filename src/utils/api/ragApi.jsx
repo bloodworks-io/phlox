@@ -120,4 +120,29 @@ export const ragApi = {
             errorMessage: "Failed to commit data to database",
         });
     },
+
+    commitDirect: async (data) => {
+        return handleApiRequest({
+            apiCall: async () => {
+                const url = await buildApiUrl("/api/rag/commit-direct");
+                return universalFetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+            },
+            errorMessage: "Failed to commit data to database",
+        });
+    },
+
+    downloadPdf: async (collectionName, filename) => {
+        const url = await buildApiUrl(
+            `/api/rag/download-pdf/${collectionName}/${encodeURIComponent(filename)}`,
+        );
+        const response = await universalFetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to download PDF: ${response.statusText}`);
+        }
+        return response.blob();
+    },
 };

@@ -98,11 +98,6 @@ const Rag = () => {
         Documents
       </Text>
       <VStack spacing="5" align="stretch">
-        <Uploader
-          isCollapsed={collapseStates.uploader}
-          setIsCollapsed={() => toggleCollapse("uploader")}
-          setCollections={setCollections}
-        />
         <DocumentExplorer
           isCollapsed={collapseStates.explorer}
           setIsCollapsed={() => toggleCollapse("explorer")}
@@ -110,6 +105,11 @@ const Rag = () => {
           setCollections={setCollections}
           loading={loading}
           setItemToDelete={setItemToDelete}
+        />
+        <Uploader
+          isCollapsed={collapseStates.uploader}
+          setIsCollapsed={() => toggleCollapse("uploader")}
+          setCollections={setCollections}
         />
       </VStack>
       <DeleteModal
