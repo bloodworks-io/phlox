@@ -229,6 +229,52 @@ class SqliteVecBackend(VectorStoreBackend):
         finally:
             db.close()
 
+    def get_files_for_collection_with_pdf_flag(self, collection_name: str) -> list[dict]:
+        """Return files for a collection with a ``has_pdf`` flag per file.
+
+        Each dict has keys ``filename`` (str) and ``has_pdf`` (bool).
+        """
+        db = self._connect()
+        try:
+            rows = db.execute(
+                "SELECT DISTINCT filename FROM chunks WHERE collection_name = ?",
+                (collection_name,),
+            ).fetchall()
+            filenames = [r[0] for r in rows if r[0]]
+            if not filenames:
+                return []
+
+            # Check which files have a non-null pdf_blob in source_documents
+            placeholders = ",".join("?" * len(filenames))
+            pdf_rows = db.execute(
+                f"SELECT filename, pdf_blob IS NOT NULL FROM source_documents "
+                f"WHERE collection_name = ? AND filename IN ({placeholders})",
+                [collection_name, *filenames],
+            ).fetchall()
+            pdf_map = {r[0]: bool(r[1]) for r in pdf_rows}
+
+            return [{"filename": f, "has_pdf": pdf_map.get(f, False)} for f in filenames]
+        except Exception as e:
+            logger.error("Error retrieving files with pdf flag for '%s': %s", collection_name, e)
+            return []
+        finally:
+            db.close()
+
+    def get_stored_pdf(self, collection_name: str, filename: str) -> bytes | None:
+        """Retrieve stored PDF bytes by collection and filename."""
+        db = self._connect()
+        try:
+            row = db.execute(
+                "SELECT pdf_blob FROM source_documents WHERE collection_name = ? AND filename = ?",
+                (collection_name, filename),
+            ).fetchone()
+            return row[0] if row and row[0] else None
+        except Exception as e:
+            logger.error("Error retrieving PDF for '%s/%s': %s", collection_name, filename, e)
+            return None
+        finally:
+            db.close()
+
     def delete_file_from_collection(self, collection_name: str, filename: str) -> bool:
         safe = _safe_table_name(collection_name)
         db = self._connect()

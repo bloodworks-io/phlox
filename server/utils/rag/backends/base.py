@@ -65,8 +65,7 @@ class VectorStoreBackend(ABC):
     def store_source_document(
         self, collection_name: str, filename: str, full_text: str, pdf_bytes: bytes | None = None
     ) -> int:
-        """Insert a source document and return its integer ID.
-        """
+        """Insert a source document and return its integer ID."""
 
     @abstractmethod
     def insert_chunks(self, chunks: list[ChunkData]) -> None:
@@ -79,6 +78,14 @@ class VectorStoreBackend(ABC):
     @abstractmethod
     def delete_file_from_collection(self, collection_name: str, filename: str) -> bool:
         """Remove all chunks/embeddings for a file.  Return True on success."""
+
+    @abstractmethod
+    def get_files_for_collection_with_pdf_flag(self, collection_name: str) -> list[dict]:
+        """Return files for a collection with a ``has_pdf`` flag per file."""
+
+    @abstractmethod
+    def get_stored_pdf(self, collection_name: str, filename: str) -> bytes | None:
+        """Retrieve stored PDF bytes by collection and filename."""
 
     # Similarity search
 
