@@ -5,117 +5,23 @@ import {
     Text,
     HStack,
     VStack,
-    IconButton,
-    Collapse,
-    Tooltip,
     Spinner,
-    Badge,
     Image,
     Button,
     Link,
+    useColorMode,
 } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon, ExternalLinkIcon, DownloadIcon } from "@chakra-ui/icons";
+import { ExternalLinkIcon, DownloadIcon } from "@chakra-ui/icons";
 import {
-    FaTools,
-    FaWikipediaW,
-    FaBookMedical,
-    FaSearch,
-    FaFileAlt,
-    FaRegCommentDots,
     FaFilePdf,
     FaFileImage,
     FaFile,
 } from "react-icons/fa";
 import { parseMessageContent } from "../../../utils/chat/messageParser";
+import { groupActivityTrace } from "../../../utils/chat/activityTrace";
+import ActivityTraceBlock from "../../common/ActivityTraceBlock";
 import MarkdownRenderer from "../../common/MarkdownRenderer";
-
-const getToolName = (toolBlock) => {
-    const attrs = toolBlock?.attrs || {};
-    return (
-        attrs.name ||
-        attrs.tool ||
-        attrs.function ||
-        attrs.function_name ||
-        attrs.id ||
-        "unknown_tool"
-    );
-};
-
-const getToolPresentation = (toolName = "") => {
-    const normalized = String(toolName).toLowerCase();
-
-    if (normalized.includes("wiki")) {
-        return {
-            icon: FaWikipediaW,
-            label: "Wikipedia",
-            colorScheme: "blue",
-            borderColor: "blue.300",
-            bg: "blue.50",
-        };
-    }
-
-    if (normalized.includes("pubmed")) {
-        return {
-            icon: FaBookMedical,
-            label: "PubMed",
-            colorScheme: "teal",
-            borderColor: "teal.300",
-            bg: "teal.50",
-        };
-    }
-
-    if (normalized.includes("literature")) {
-        return {
-            icon: FaSearch,
-            label: "Literature",
-            colorScheme: "green",
-            borderColor: "green.300",
-            bg: "green.50",
-        };
-    }
-
-    if (normalized.includes("transcript")) {
-        return {
-            icon: FaFileAlt,
-            label: "Transcript",
-            colorScheme: "orange",
-            borderColor: "orange.300",
-            bg: "orange.50",
-        };
-    }
-
-    if (normalized.includes("direct_response")) {
-        return {
-            icon: FaRegCommentDots,
-            label: "Direct response",
-            colorScheme: "gray",
-            borderColor: "gray.300",
-            bg: "gray.50",
-        };
-    }
-
-    return {
-        icon: FaTools,
-        label: "Tool",
-        colorScheme: "purple",
-        borderColor: "purple.300",
-        bg: "purple.50",
-    };
-};
-
-const formatToolContent = (value = "") => {
-    const content = String(value ?? "");
-    const trimmed = content.trim();
-
-    if (!trimmed) return "";
-
-    try {
-        const parsed = JSON.parse(trimmed);
-        return JSON.stringify(parsed, null, 2);
-    } catch {
-        return content;
-    }
-};
+import { CitationList } from "../reasoning/components/CitationList";
 
 const formatFileSize = (bytes) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -190,6 +96,7 @@ const ChatMessages = ({
     getThinkingBlockState,
 }) => {
     const [expandedToolBlocks, setExpandedToolBlocks] = useState({});
+    const { colorMode } = useColorMode();
 
     const filteredMessages = useMemo(
         () =>
@@ -220,10 +127,12 @@ const ChatMessages = ({
                 if (message.role === "system") return null;
 
                 const parsed = parseMessageContent(message.content || "");
-                const blocks =
+                const rawBlocks =
                     parsed?.blocks && parsed.blocks.length > 0
                         ? parsed.blocks
                         : [{ type: "text", content: message.content || "" }];
+
+                const blocks = groupActivityTrace(rawBlocks);
 
                 return (
                     <Flex
@@ -286,189 +195,35 @@ const ChatMessages = ({
                                     )}
 
                                     {blocks.map((block, blockIndex) => {
-                                        if (block.type === "think") {
-                                            const isExpanded =
-                                                getThinkingBlockState
-                                                    ? getThinkingBlockState(
-                                                          message,
-                                                          blockIndex,
-                                                      )
-                                                    : Boolean(
-                                                          message.isThinkingExpanded,
-                                                      );
-
+                                        if (
+                                            block.type === "activity-trace"
+                                        ) {
                                             return (
-                                                <Box
-                                                    width="100%"
-                                                    my={0.5}
-                                                    key={`think-${messageIndex}-${blockIndex}`}
-                                                >
-                                                    <Flex
-                                                        align="center"
-                                                        onClick={() =>
-                                                            toggleThinkingVisibility(
-                                                                messageIndex,
-                                                                blockIndex,
-                                                            )
-                                                        }
-                                                        cursor="pointer"
-                                                        p={1}
-                                                        borderRadius="sm"
-                                                        className="thinking-toggle"
-                                                    >
-                                                        <Text
-                                                            mr="2"
-                                                            fontWeight="medium"
-                                                        >
-                                                            Thinking
-                                                            {block.isPartial
-                                                                ? "..."
-                                                                : ""}
-                                                        </Text>
-                                                        <IconButton
-                                                            aria-label={
-                                                                isExpanded
-                                                                    ? "Collapse thinking"
-                                                                    : "Expand thinking"
-                                                            }
-                                                            icon={
-                                                                isExpanded ? (
-                                                                    <ChevronUpIcon />
-                                                                ) : (
-                                                                    <ChevronDownIcon />
-                                                                )
-                                                            }
-                                                            variant="ghost"
-                                                            size="xs"
-                                                            className="chat-disclosure-icon"
-                                                        />
-                                                    </Flex>
-                                                    <Collapse
-                                                        in={isExpanded}
-                                                        animateOpacity
-                                                    >
-                                                        <Box
-                                                            className="thinking-block"
-                                                            mt={2}
-                                                            p={2}
-                                                            borderLeftWidth="3px"
-                                                            borderColor="blue.300"
-                                                            bg="blackAlpha.50"
-                                                            borderRadius="sm"
-                                                        >
-                                                            <Text
-                                                                whiteSpace="pre-wrap"
-                                                                className="thinking-block-text"
-                                                            >
-                                                                {block.content}
-                                                            </Text>
-                                                        </Box>
-                                                    </Collapse>
-                                                </Box>
-                                            );
-                                        }
-
-                                        if (block.type === "tool") {
-                                            const isExpanded = getToolExpanded(
-                                                messageIndex,
-                                                blockIndex,
-                                            );
-                                            const toolName = getToolName(block);
-                                            const status =
-                                                block?.attrs?.status ||
-                                                block?.attrs?.state ||
-                                                "";
-                                            const headerStatusLabel =
-                                                status === "running" ||
-                                                block.isPartial
-                                                    ? "Running"
-                                                    : status
-                                                      ? String(status)
-                                                      : "";
-                                            const toolContent =
-                                                formatToolContent(
-                                                    block.content,
-                                                );
-                                            const presentation =
-                                                getToolPresentation(toolName);
-                                            const ToolIcon = presentation.icon;
-
-                                            return (
-                                                <Box
-                                                    width="100%"
-                                                    my={0.5}
-                                                    key={`tool-${messageIndex}-${blockIndex}`}
-                                                >
-                                                    <Flex
-                                                        align="center"
-                                                        onClick={() =>
-                                                            toggleToolExpanded(
-                                                                messageIndex,
-                                                                blockIndex,
-                                                            )
-                                                        }
-                                                        cursor="pointer"
-                                                        p={0.5}
-                                                        borderRadius="sm"
-                                                        className="thinking-toggle"
-                                                    >
-                                                        <HStack
-                                                            spacing={1.5}
-                                                            mr="1"
-                                                        >
-                                                            <ToolIcon size="0.75em" />
-                                                            <Text
-                                                                fontSize="xs"
-                                                                fontWeight="bold"
-                                                            >
-                                                                {
-                                                                    presentation.label
-                                                                }
-                                                            </Text>
-                                                        </HStack>
-                                                        <IconButton
-                                                            aria-label={
-                                                                isExpanded
-                                                                    ? "Collapse tool output"
-                                                                    : "Expand tool output"
-                                                            }
-                                                            icon={
-                                                                isExpanded ? (
-                                                                    <ChevronUpIcon />
-                                                                ) : (
-                                                                    <ChevronDownIcon />
-                                                                )
-                                                            }
-                                                            variant="ghost"
-                                                            size="xs"
-                                                            className="chat-disclosure-icon"
-                                                        />
-                                                    </Flex>
-                                                    <Collapse
-                                                        in={isExpanded}
-                                                        animateOpacity
-                                                    >
-                                                        <Box
-                                                            mt={1}
-                                                            p={1}
-                                                            borderLeftWidth="3px"
-                                                            borderColor={
-                                                                presentation.borderColor
-                                                            }
-                                                            bg={presentation.bg}
-                                                            borderRadius="sm"
-                                                        >
-                                                            <Text
-                                                                fontSize="xs"
-                                                                color="gray.500"
-                                                                mb={1}
-                                                            >
-                                                                {toolContent ||
-                                                                    "(No tool output)"}
-                                                            </Text>
-                                                        </Box>
-                                                    </Collapse>
-                                                </Box>
+                                                <ActivityTraceBlock
+                                                    key={`trace-${messageIndex}-${blockIndex}`}
+                                                    traceBlocks={
+                                                        block.traceBlocks
+                                                    }
+                                                    currentActivity={
+                                                        block.currentActivity
+                                                    }
+                                                    messageIndex={
+                                                        messageIndex
+                                                    }
+                                                    message={message}
+                                                    getThinkingBlockState={
+                                                        getThinkingBlockState
+                                                    }
+                                                    toggleThinkingVisibility={
+                                                        toggleThinkingVisibility
+                                                    }
+                                                    expandedToolBlocks={
+                                                        expandedToolBlocks
+                                                    }
+                                                    toggleToolExpanded={
+                                                        toggleToolExpanded
+                                                    }
+                                                />
                                             );
                                         }
 
@@ -489,40 +244,13 @@ const ChatMessages = ({
 
                                     {message.role === "assistant" &&
                                         message.context && (
-                                            <HStack
-                                                wrap="wrap"
-                                                spacing={1}
-                                                mt={1}
-                                            >
-                                                {Object.entries(
+                                            <CitationList
+                                                citations={Object.values(
                                                     message.context,
-                                                ).map(([key, val]) => (
-                                                    <Tooltip
-                                                        key={key}
-                                                        label={val}
-                                                        placement="top"
-                                                        hasArrow
-                                                        fontSize="xs"
-                                                        maxWidth="400px"
-                                                        shouldWrapChildren
-                                                        bg="gray.700"
-                                                        color="white"
-                                                    >
-                                                        <Text
-                                                            as="span"
-                                                            color="blue.500"
-                                                            cursor="pointer"
-                                                            fontSize="xs"
-                                                            _hover={{
-                                                                textDecoration:
-                                                                    "underline",
-                                                            }}
-                                                        >
-                                                            [{key}]
-                                                        </Text>
-                                                    </Tooltip>
-                                                ))}
-                                            </HStack>
+                                                ).filter(Boolean)}
+                                                colorMode={colorMode}
+                                                inline
+                                            />
                                         )}
 
                                     {message.role === "assistant" &&
