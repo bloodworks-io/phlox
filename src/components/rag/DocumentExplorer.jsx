@@ -17,6 +17,7 @@ import {
     ChevronRightIcon,
     EditIcon,
     DeleteIcon,
+    DownloadIcon,
 } from "@chakra-ui/icons";
 import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
 import { MdOutlineFolderCopy } from "react-icons/md";
@@ -109,6 +110,29 @@ const DocumentExplorer = ({
                         isClosable: true,
                     });
                 });
+        }
+    };
+
+    const handleDownloadPdf = async (collectionName, filename) => {
+        try {
+            const blob = await ragApi.downloadPdf(collectionName, filename);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error downloading PDF:", error);
+            toast({
+                title: "Error",
+                description: "Failed to download PDF",
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
         }
     };
     return (
@@ -242,7 +266,10 @@ const DocumentExplorer = ({
                                                 </ListItem>
                                             ) : collection.files.length > 0 ? (
                                                 collection.files.map(
-                                                    (file, index) => (
+                                                    (file, index) => {
+                                                        const fileName = typeof file === "string" ? file : file.filename;
+                                                        const hasPdf = typeof file === "object" ? file.has_pdf : false;
+                                                        return (
                                                         <ListItem
                                                             key={index}
                                                             display="flex"
@@ -255,30 +282,44 @@ const DocumentExplorer = ({
                                                                 color="blue.500"
                                                             />
                                                             <Text fontSize="sm">
-                                                                {file}
+                                                                {fileName}
                                                             </Text>
-                                                            <IconButton
-                                                                icon={
-                                                                    <DeleteIcon />
-                                                                }
-                                                                aria-label="Delete file"
-                                                                onClick={() =>
-                                                                    setItemToDelete(
-                                                                        {
-                                                                            type: "file",
-                                                                            name: file,
-                                                                            collection:
-                                                                                collection.name,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                size="xs"
-                                                                variant="ghost"
-                                                                colorScheme="red"
-                                                                ml="auto"
-                                                            />
+                                                            <Flex ml="auto">
+                                                                {hasPdf && (
+                                                                    <IconButton
+                                                                        icon={<DownloadIcon />}
+                                                                        aria-label="Download PDF"
+                                                                        onClick={() =>
+                                                                            handleDownloadPdf(collection.name, fileName)
+                                                                        }
+                                                                        size="xs"
+                                                                        variant="ghost"
+                                                                        colorScheme="blue"
+                                                                        mr="1"
+                                                                    />
+                                                                )}
+                                                                <IconButton
+                                                                    icon={
+                                                                        <DeleteIcon />
+                                                                    }
+                                                                    aria-label="Delete file"
+                                                                    onClick={() =>
+                                                                        setItemToDelete(
+                                                                            {
+                                                                                type: "file",
+                                                                                name: fileName,
+                                                                                collection:
+                                                                                    collection.name,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                    size="xs"
+                                                                    variant="ghost"
+                                                                    colorScheme="red"
+                                                                />
+                                                            </Flex>
                                                         </ListItem>
-                                                    ),
+                                                    )},
                                                 )
                                             ) : (
                                                 <ListItem
