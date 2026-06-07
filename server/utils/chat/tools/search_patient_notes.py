@@ -79,7 +79,11 @@ def extract_text_from_record(record: dict) -> dict[str, str]:
 
 
 def find_matches_in_text(
-    text: str, search_term: str, threshold: int = FUZZY_THRESHOLD
+    text: str,
+    search_term: str,
+    threshold: int = FUZZY_THRESHOLD,
+    context_window: int = 0,
+    max_context_chars: int = 500,
 ) -> list[dict]:
     """Find fuzzy matches for search term in text.
 
@@ -87,6 +91,8 @@ def find_matches_in_text(
         text: The text to search
         search_term: The term to search for
         threshold: Minimum fuzzy match score (0-100)
+        context_window: Number of surrounding segments to include before/after each match
+        max_context_chars: Maximum characters for the context string
 
     Returns:
         List of match dicts with score and context
@@ -95,18 +101,21 @@ def find_matches_in_text(
     search_lower = search_term.lower()
 
     # Split text into sentences/segments for better context
-    segments = text.replace("\n", " ").split(". ")
+    segments = [s.strip() for s in text.replace("\n", " ").split(". ") if s.strip()]
 
-    for segment in segments:
-        segment = segment.strip()
-        if not segment:
-            continue
-
+    for i, segment in enumerate(segments):
         # Check for fuzzy match
         score = fuzz.partial_ratio(search_lower, segment.lower())
         if score >= threshold:
-            # Truncate long segments for context
-            context = segment[:300] + "..." if len(segment) > 300 else segment
+            # Include surrounding segments if context_window > 0
+            if context_window > 0:
+                start = max(0, i - context_window)
+                end = min(len(segments), i + context_window + 1)
+                context = ". ".join(segments[start:end])
+                if len(context) > max_context_chars:
+                    context = context[:max_context_chars] + "..."
+            else:
+                context = segment[:300] + "..." if len(segment) > 300 else segment
             matches.append({"score": score, "context": context})
 
     return matches
@@ -187,7 +196,7 @@ async def search_patient_notes(
             # Search for matches in each field
             encounter_matches = []
             for field_name, text in texts.items():
-                matches = find_matches_in_text(text, search_term)
+                matches = find_matches_in_text(text, search_term, context_window=1)
                 for match in matches:
                     encounter_matches.append(
                         {

@@ -26,11 +26,17 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "transcript_search",
-                "description": "Use this tool if the user asks about something from the transcript, interview, or conversation with the patient. This will search the transcript for relevant information.",
+                "description": "Search the patient transcript for specific terms or topics using fuzzy matching. Returns matching transcript segments with relevance scores and surrounding context. Use when the user asks about something mentioned in the patient conversation. Provide multiple terms for broad topics (e.g. ['smoking', 'alcohol', 'living situation'] for social history).",
                 "parameters": {
                     "type": "object",
-                    "properties": {},
-                    "required": [],
+                    "properties": {
+                        "search_term": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Word or phrase(s) to search for in the transcript. Use a single term for specific queries or multiple terms for broad topics (e.g. ['smoking', 'alcohol', 'living situation', 'occupation'] for social history).",
+                        },
+                    },
+                    "required": ["search_term"],
                     "additionalProperties": False,
                 },
                 "strict": True,
