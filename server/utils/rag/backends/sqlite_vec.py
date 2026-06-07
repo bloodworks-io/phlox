@@ -60,6 +60,7 @@ class SqliteVecBackend(VectorStoreBackend):
                     collection_name TEXT NOT NULL REFERENCES collections(name) ON DELETE CASCADE,
                     filename        TEXT NOT NULL,
                     full_text       TEXT NOT NULL,
+                    pdf_blob        BLOB,
                     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(collection_name, filename)
                 );
@@ -165,13 +166,15 @@ class SqliteVecBackend(VectorStoreBackend):
 
     # Document storage
 
-    def store_source_document(self, collection_name: str, filename: str, full_text: str) -> int:
+    def store_source_document(
+        self, collection_name: str, filename: str, full_text: str, pdf_bytes: bytes | None = None
+    ) -> int:
         db = self._connect()
         try:
             db.execute(
-                "INSERT INTO source_documents (collection_name, filename, full_text) "
-                "VALUES (?, ?, ?)",
-                (collection_name, filename, full_text),
+                "INSERT INTO source_documents (collection_name, filename, full_text, pdf_blob) "
+                "VALUES (?, ?, ?, ?)",
+                (collection_name, filename, full_text, pdf_bytes),
             )
             row_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
             db.commit()

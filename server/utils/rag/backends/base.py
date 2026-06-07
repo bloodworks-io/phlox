@@ -62,8 +62,11 @@ class VectorStoreBackend(ABC):
 
     # Document storage
     @abstractmethod
-    def store_source_document(self, collection_name: str, filename: str, full_text: str) -> int:
-        """Insert a source document and return its integer ID."""
+    def store_source_document(
+        self, collection_name: str, filename: str, full_text: str, pdf_bytes: bytes | None = None
+    ) -> int:
+        """Insert a source document and return its integer ID.
+        """
 
     @abstractmethod
     def insert_chunks(self, chunks: list[ChunkData]) -> None:

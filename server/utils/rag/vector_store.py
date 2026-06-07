@@ -82,6 +82,7 @@ class VectorStoreManager:
         self.config = config_manager.get_config()
         self.prompts = config_manager.get_prompts_and_options()
         self.extracted_text_store: str | None = None
+        self.extracted_pdf_bytes: bytes | None = None
 
         # Initialise backend (default: sqlite-vec)
         self.backend: VectorStoreBackend = backend or SqliteVecBackend(str(DB_PATH))
@@ -159,6 +160,10 @@ class VectorStoreManager:
         """Stage extracted text for the next commit."""
         self.extracted_text_store = text
 
+    def set_extracted_pdf(self, pdf_bytes: bytes) -> None:
+        """Stage raw PDF bytes for the next commit (stored if config enabled)."""
+        self.extracted_pdf_bytes = pdf_bytes
+
     def commit_to_vectordb(
         self, disease_name: str, focus_area: str, document_source: str, filename: str
     ) -> None:
@@ -196,9 +201,12 @@ class VectorStoreManager:
             # Ensure collection exists
             self.backend.create_collection(formatted, self._model_name, dim)
 
-            # Store source document
+            # Store source document (include raw PDF if config enabled)
+            user_settings = config_manager.get_user_settings()
+            store_pdfs = user_settings.get("advanced_options", {}).get("store_original_pdfs", False)
+            pdf_bytes = self.extracted_pdf_bytes if store_pdfs else None
             source_doc_id = self.backend.store_source_document(
-                formatted, filename, self.extracted_text_store
+                formatted, filename, self.extracted_text_store, pdf_bytes
             )
 
             # Build chunk data objects

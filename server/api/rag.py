@@ -172,6 +172,9 @@ async def extract_pdf_info(file: UploadFile = File(...)):
             f.write(content)
         logger.debug(f"File saved successfully. Size: {len(content)} bytes.")
 
+        # Stage raw PDF bytes for optional storage
+        vector_store_manager.set_extracted_pdf(content)
+
         # Extract text from the PDF (synchronous)
         logger.info(f"Extracting text from '{file_location}'")
         extracted_text = vector_store_manager.extract_text_from_pdf(file_location)
