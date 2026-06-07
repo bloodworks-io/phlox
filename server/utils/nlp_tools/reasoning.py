@@ -10,7 +10,7 @@ from server.utils.chat.tools import execute_tool_non_streaming, get_tools_defini
 from server.utils.helpers import calculate_age
 from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
-from server.utils.rag.chroma import get_chroma_manager
+from server.utils.rag.vector_store import get_vector_store_manager
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
@@ -59,8 +59,8 @@ async def stream_clinical_reasoning_with_tools(
             formatted_note += f"{section_title}:\n{content}\n\n"
 
     # Get available collections for literature search
-    chroma_mgr = get_chroma_manager()
-    collection_names = chroma_mgr.list_collections() if chroma_mgr else []
+    vector_store_mgr = get_vector_store_manager()
+    collection_names = vector_store_mgr.list_collections() if vector_store_mgr else []
 
     tools = get_tools_definition(collection_names, exclude_chat_only=True)
 
@@ -308,7 +308,7 @@ Highlight potential documentation gaps and provide standard literature correlati
                     yield {"type": "status", "message": f"Processing {function_name}..."}
 
                 result, tool_citations = await execute_tool_non_streaming(
-                    tool_call, config, chroma_manager=get_chroma_manager()
+                    tool_call, config, vector_store_manager=get_vector_store_manager()
                 )
                 result_preview = _truncate_for_trace(_coerce_text(result))
                 _append_trace_step(f"Tool result: {function_name}\n{result_preview}")

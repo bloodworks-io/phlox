@@ -151,7 +151,7 @@ def initialize_and_get_app():
         transcribe,
     )
     from server.api.config import router as config_router
-    from server.utils.rag.chroma import CHROMADB_AVAILABLE
+    from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE
 
     # Only create test endpoint in testing environment
     if IS_TESTING and test_database is not None:
@@ -173,18 +173,18 @@ def initialize_and_get_app():
     app.include_router(transcribe.router, prefix="/api/transcribe")
     app.include_router(dashboard.router, prefix="/api/dashboard")
 
-    # Always register chat router (works without chromadb)
+    # Always register chat router (works without vector store)
     from server.api import chat
 
     app.include_router(chat.router, prefix="/api/chat")
 
-    # Conditionally include RAG router (requires chromadb)
-    if CHROMADB_AVAILABLE:
+    # Conditionally include RAG router (requires sqlite-vec)
+    if VECTOR_STORE_AVAILABLE:
         from server.api import rag
 
         app.include_router(rag.router, prefix="/api/rag")
     else:
-        logger.warning("RAG features disabled - chromadb not available.")
+        logger.warning("RAG features disabled - sqlite-vec not available.")
 
     app.include_router(config_router, prefix="/api/config")
     app.include_router(templates.router, prefix="/api/templates")
