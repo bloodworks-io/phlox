@@ -26,13 +26,15 @@ const getCitationIcon = (citation) => {
     return FaGlobe; // MCP tools / other
 };
 
-export const CitationList = ({ citations, colorMode }) => {
+export const CitationList = ({ citations, colorMode, inline = false }) => {
     if (!citations || citations.length === 0) return null;
+
+    const unique = [...new Set(citations)];
 
     return (
         <Box
-            mt={4}
-            pt={3}
+            mt={inline ? 2 : 4}
+            pt={inline ? 2 : 3}
             borderTop="1px solid"
             borderColor="gray.200"
             _dark={{
@@ -54,7 +56,7 @@ export const CitationList = ({ citations, colorMode }) => {
                 align="stretch"
                 spacing={2}
             >
-                {citations.map(
+                {unique.map(
                     (citation, i) => {
                         const Icon = getCitationIcon(
                             citation,

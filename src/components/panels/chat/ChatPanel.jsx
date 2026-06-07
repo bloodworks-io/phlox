@@ -27,6 +27,8 @@ const ChatPanel = ({
 }) => {
     const [userSettings, setUserSettings] = useState(null);
     const messagesEndRef = useRef(null);
+    const scrollContainerRef = useRef(null);
+    const userIsNearBottomRef = useRef(true);
     const filteredMessages = messages.filter((m) => m.role !== "system");
 
     const getThinkingBlockState = (message, blockIndex = 0) => {
@@ -76,7 +78,7 @@ const ChatPanel = ({
     }, []);
 
     useEffect(() => {
-        if (messagesEndRef.current) {
+        if (messagesEndRef.current && userIsNearBottomRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
     }, [messages]);
@@ -107,7 +109,20 @@ const ChatPanel = ({
         >
             <ChatHeader onClose={onClose} />
 
-            <Box flex="1" overflowY="auto" p="4" className="floating-main">
+            <Box
+                ref={scrollContainerRef}
+                flex="1"
+                overflowY="auto"
+                p="4"
+                className="floating-main"
+                onScroll={() => {
+                    const el = scrollContainerRef.current;
+                    if (el) {
+                        userIsNearBottomRef.current =
+                            el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+                    }
+                }}
+            >
                 <ChatMessages
                     messages={messages}
                     toggleThinkingVisibility={toggleThinkingVisibility}

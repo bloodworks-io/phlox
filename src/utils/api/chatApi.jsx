@@ -147,16 +147,30 @@ export const chatApi = {
                         const data = JSON.parse(line.slice(6));
                         if (data.type === "end" && data.function_response) {
                             // Handle function response at the end of stream
-                            yield {
-                                type: "context",
-                                content: data.function_response.reduce(
-                                    (acc, item, index) => {
-                                        acc[index + 1] = item;
-                                        return acc;
-                                    },
-                                    {},
-                                ),
-                            };
+
+                            const fr = data.function_response;
+                            let citations;
+                            if (Array.isArray(fr)) {
+                                citations = fr;
+                            } else if (
+                                fr &&
+                                typeof fr === "object" &&
+                                Array.isArray(fr.citations)
+                            ) {
+                                citations = fr.citations;
+                            }
+
+                            if (citations && citations.length > 0) {
+                                yield {
+                                    type: "context",
+                                    content: Object.fromEntries(
+                                        citations.map((item, index) => [
+                                            index + 1,
+                                            item,
+                                        ]),
+                                    ),
+                                };
+                            }
                         } else {
                             yield data;
                         }
