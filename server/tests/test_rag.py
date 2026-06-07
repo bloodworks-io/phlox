@@ -1,6 +1,6 @@
 """
 Tests for RAG endpoints.
-We mock get_chroma_manager and CHROMADB_AVAILABLE to simulate vector database interactions.
+We mock get_vector_store_manager and VECTOR_STORE_AVAILABLE to simulate vector database interactions.
 """
 
 from unittest.mock import MagicMock
@@ -15,16 +15,16 @@ app.include_router(rag_router, prefix="/api/rag")
 client = TestClient(app)
 
 
-def _setup_rag_mocks(monkeypatch, mock_cm: MagicMock):
-    """Common setup: enable RAG availability and return a mock chroma manager."""
-    monkeypatch.setattr("server.api.rag.CHROMADB_AVAILABLE", True)
-    monkeypatch.setattr("server.api.rag.get_chroma_manager", lambda: mock_cm)
+def _setup_rag_mocks(monkeypatch, mock_vsm: MagicMock):
+    """Common setup: enable RAG availability and return a mock vector store manager."""
+    monkeypatch.setattr("server.api.rag.VECTOR_STORE_AVAILABLE", True)
+    monkeypatch.setattr("server.api.rag.get_vector_store_manager", lambda: mock_vsm)
 
 
 def test_get_files(monkeypatch):
-    mock_cm = MagicMock()
-    mock_cm.list_collections.return_value = ["disease_a", "disease_b"]
-    _setup_rag_mocks(monkeypatch, mock_cm)
+    mock_vsm = MagicMock()
+    mock_vsm.list_collections.return_value = ["disease_a", "disease_b"]
+    _setup_rag_mocks(monkeypatch, mock_vsm)
 
     response = client.get("/api/rag/files")
     assert response.status_code == 200
@@ -34,9 +34,9 @@ def test_get_files(monkeypatch):
 
 
 def test_get_collection_files(monkeypatch):
-    mock_cm = MagicMock()
-    mock_cm.get_files_for_collection.return_value = ["file1", "file2"]
-    _setup_rag_mocks(monkeypatch, mock_cm)
+    mock_vsm = MagicMock()
+    mock_vsm.get_files_for_collection.return_value = ["file1", "file2"]
+    _setup_rag_mocks(monkeypatch, mock_vsm)
 
     response = client.get("/api/rag/collection_files/test_collection")
     assert response.status_code == 200
@@ -46,9 +46,9 @@ def test_get_collection_files(monkeypatch):
 
 
 def test_modify_collection(monkeypatch):
-    mock_cm = MagicMock()
-    mock_cm.modify_collection_name.return_value = True
-    _setup_rag_mocks(monkeypatch, mock_cm)
+    mock_vsm = MagicMock()
+    mock_vsm.modify_collection_name.return_value = True
+    _setup_rag_mocks(monkeypatch, mock_vsm)
 
     payload = {"old_name": "old_collection", "new_name": "new_collection"}
     response = client.post("/api/rag/modify", json=payload)
@@ -58,9 +58,9 @@ def test_modify_collection(monkeypatch):
 
 
 def test_delete_collection(monkeypatch):
-    mock_cm = MagicMock()
-    mock_cm.delete_collection.return_value = True
-    _setup_rag_mocks(monkeypatch, mock_cm)
+    mock_vsm = MagicMock()
+    mock_vsm.delete_collection.return_value = True
+    _setup_rag_mocks(monkeypatch, mock_vsm)
 
     response = client.delete("/api/rag/delete-collection/test_collection")
     assert response.status_code == 200
@@ -69,9 +69,9 @@ def test_delete_collection(monkeypatch):
 
 
 def test_commit_to_vectordb(monkeypatch):
-    mock_cm = MagicMock()
-    mock_cm.commit_to_vectordb.return_value = None
-    _setup_rag_mocks(monkeypatch, mock_cm)
+    mock_vsm = MagicMock()
+    mock_vsm.commit_to_vectordb.return_value = None
+    _setup_rag_mocks(monkeypatch, mock_vsm)
 
     payload = {
         "disease_name": "disease_a",
@@ -85,9 +85,26 @@ def test_commit_to_vectordb(monkeypatch):
     assert "committed" in data.get("message", "").lower()
 
 
+def test_re_embed(monkeypatch):
+    mock_vsm = MagicMock()
+    mock_vsm.re_embed_all.return_value = {
+        "collections_processed": 2,
+        "total_chunks_re_embedded": 50,
+        "new_model": "text-embedding-3-small",
+        "new_dimension": 1536,
+    }
+    _setup_rag_mocks(monkeypatch, mock_vsm)
+
+    response = client.post("/api/rag/re-embed")
+    assert response.status_code == 200
+    data = response.json()
+    assert "collections_processed" in data
+    assert data["total_chunks_re_embedded"] == 50
+
+
 def test_get_rag_suggestions(monkeypatch):
-    mock_cm = MagicMock()
-    _setup_rag_mocks(monkeypatch, mock_cm)
+    mock_vsm = MagicMock()
+    _setup_rag_mocks(monkeypatch, mock_vsm)
 
     async def fake_suggestions():
         return ["Suggestion 1", "Suggestion 2"]
@@ -103,9 +120,9 @@ def test_get_rag_suggestions(monkeypatch):
 
 
 def test_clear_database(monkeypatch):
-    mock_cm = MagicMock()
-    mock_cm.reset_database.return_value = True
-    _setup_rag_mocks(monkeypatch, mock_cm)
+    mock_vsm = MagicMock()
+    mock_vsm.reset_database.return_value = True
+    _setup_rag_mocks(monkeypatch, mock_vsm)
 
     response = client.post("/api/rag/clear-database")
     assert response.status_code == 200
