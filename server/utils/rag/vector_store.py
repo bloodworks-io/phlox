@@ -319,8 +319,12 @@ class VectorStoreManager:
     def re_embed_all(self) -> dict:
         """Re-embed all collections with the current embedding model.
 
+        Reloads the embedding function from fresh config first, so that
+        a config change (e.g. new EMBEDDING_MODEL) is picked up.
+
         Returns a summary dict with counts.
         """
+        self._reload_embedding_function()
         collection_names = self.backend.list_collections()
         new_model = self._model_name
         new_dim = self.embedding_model.dimension
