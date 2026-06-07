@@ -44,6 +44,7 @@ class BulkCommitRequest(BaseModel):
         focus_area (str): The specific focus area or topic of the document.
         document_source (str): The source or origin of the document.
         filename (str): The name of the file to be committed.
+        pdf_base64 (str | None): Base64-encoded raw PDF bytes (optional).
     """
 
     extracted_text: str
@@ -51,6 +52,7 @@ class BulkCommitRequest(BaseModel):
     focus_area: str
     document_source: str
     filename: str
+    pdf_base64: str | None = None
 
 
 class DeleteFileRequest(BaseModel):

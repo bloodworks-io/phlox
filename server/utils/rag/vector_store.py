@@ -215,6 +215,8 @@ class VectorStoreManager:
         user_settings = config_manager.get_user_settings()
         store_pdfs = user_settings.get("advanced_options", {}).get("store_original_pdfs", False)
         stored_pdf = pdf_bytes if store_pdfs else None
+        if store_pdfs:
+            logger.info("store_original_pdfs enabled — pdf_bytes=%s", "present" if pdf_bytes else "None")
         source_doc_id = self.backend.store_source_document(
             formatted, filename, extracted_text, stored_pdf
         )
@@ -270,6 +272,7 @@ class VectorStoreManager:
         focus_area: str,
         document_source: str,
         filename: str,
+        pdf_bytes: bytes | None = None,
     ) -> None:
         """Commit directly with extracted text (no staging required).
 
@@ -283,7 +286,7 @@ class VectorStoreManager:
                 focus_area=focus_area,
                 document_source=document_source,
                 filename=filename,
-                pdf_bytes=None,
+                pdf_bytes=pdf_bytes,
             )
         except Exception:
             logger.exception(

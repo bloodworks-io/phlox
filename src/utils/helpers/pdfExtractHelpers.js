@@ -164,8 +164,23 @@ export async function extractPdfMetadata(file) {
         extractedText = null;
     }
 
+    // Read raw file bytes as base64 for PDF storage
+    let pdfBase64 = null;
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        pdfBase64 = btoa(
+            new Uint8Array(arrayBuffer).reduce(
+                (data, byte) => data + String.fromCharCode(byte),
+                "",
+            ),
+        );
+    } catch (e) {
+        console.warn("Could not read PDF bytes for storage:", e);
+    }
+
     return {
         extractedText,
+        pdfBase64,
         disease_name: metadata.disease_name,
         focus_area: metadata.focus_area,
         document_source: metadata.document_source,

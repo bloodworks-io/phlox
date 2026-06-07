@@ -1,3 +1,4 @@
+import base64
 import logging
 
 from fastapi import (
@@ -296,6 +297,10 @@ async def commit_direct(request: BulkCommitRequest):
     """
     _check_rag_available()
     try:
+        pdf_bytes = None
+        if request.pdf_base64:
+            pdf_bytes = base64.b64decode(request.pdf_base64)
+
         vector_store_manager = get_vector_store_manager()
         vector_store_manager.commit_text_to_vectordb(
             extracted_text=request.extracted_text,
@@ -303,6 +308,7 @@ async def commit_direct(request: BulkCommitRequest):
             focus_area=request.focus_area,
             document_source=request.document_source,
             filename=request.filename,
+            pdf_bytes=pdf_bytes,
         )
         return {
             "message": "Data committed to the database successfully",

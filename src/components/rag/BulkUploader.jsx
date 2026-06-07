@@ -153,6 +153,7 @@ const BulkUploader = ({ setCollections }) => {
                 updateQueueEntry(entry.id, {
                     status: STATUS.EXTRACTED,
                     extractedText: result.extractedText,
+                    pdfBase64: result.pdfBase64,
                     metadata: {
                         disease_name: result.disease_name,
                         focus_area: result.focus_area,
@@ -217,6 +218,7 @@ const BulkUploader = ({ setCollections }) => {
                         focus_area: entry.metadata.focus_area,
                         document_source: entry.metadata.document_source,
                         filename: entry.metadata.filename,
+                        pdf_base64: entry.pdfBase64 || null,
                     });
                 } else {
                     // Legacy two-step path (backend OCR fallback)

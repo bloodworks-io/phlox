@@ -10,6 +10,7 @@ import {
     Collapse,
     IconButton,
     Spinner,
+    Tooltip,
     useToast,
 } from "@chakra-ui/react";
 import {
@@ -177,6 +178,7 @@ const DocumentExplorer = ({
                                         className="documentExplorer-style"
                                         _hover={{ bg: "gray.100" }}
                                     >
+                                        <Tooltip label="Toggle collection" hasArrow>
                                         <IconButton
                                             icon={
                                                 expandedCollections[
@@ -198,6 +200,7 @@ const DocumentExplorer = ({
                                             mr="2"
                                             className="documentExplorer-button"
                                         />
+                                        </Tooltip>
                                         <Box
                                             as={
                                                 expandedCollections[
@@ -215,6 +218,7 @@ const DocumentExplorer = ({
                                             )}
                                         </Text>
                                         <Flex ml="auto">
+                                            <Tooltip label="Rename collection" hasArrow>
                                             <IconButton
                                                 icon={<EditIcon />}
                                                 aria-label="Rename collection"
@@ -232,6 +236,8 @@ const DocumentExplorer = ({
                                                 variant="ghost"
                                                 colorScheme="blue"
                                             />
+                                            </Tooltip>
+                                            <Tooltip label="Delete collection" hasArrow>
                                             <IconButton
                                                 icon={<DeleteIcon />}
                                                 aria-label="Delete collection"
@@ -246,6 +252,7 @@ const DocumentExplorer = ({
                                                 variant="ghost"
                                                 colorScheme="red"
                                             />
+                                            </Tooltip>
                                         </Flex>
                                     </Flex>
                                     <Collapse
@@ -286,6 +293,7 @@ const DocumentExplorer = ({
                                                             </Text>
                                                             <Flex ml="auto">
                                                                 {hasPdf && (
+                                                                    <Tooltip label="Download PDF" hasArrow>
                                                                     <IconButton
                                                                         icon={<DownloadIcon />}
                                                                         aria-label="Download PDF"
@@ -297,7 +305,9 @@ const DocumentExplorer = ({
                                                                         colorScheme="blue"
                                                                         mr="1"
                                                                     />
+                                                                    </Tooltip>
                                                                 )}
+                                                                <Tooltip label="Delete file" hasArrow>
                                                                 <IconButton
                                                                     icon={
                                                                         <DeleteIcon />
@@ -317,6 +327,7 @@ const DocumentExplorer = ({
                                                                     variant="ghost"
                                                                     colorScheme="red"
                                                                 />
+                                                                </Tooltip>
                                                             </Flex>
                                                         </ListItem>
                                                     )},
