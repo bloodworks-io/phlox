@@ -1,5 +1,4 @@
 name: Nightly Docker Build
-
 on:
     schedule:
         - cron: "0 17 * * *" # 3AM AEST (UTC+10)
@@ -8,11 +7,46 @@ on:
 permissions:
     contents: read
     packages: write
+    actions: read
 
 jobs:
-    docker:
+    # --- JOB 1: Check if there are new commits ---
+    check_changes:
         runs-on: ubuntu-latest
+        outputs:
+            has_changes: ${{ steps.check.outputs.has_changes }}
+        steps:
+            - name: Determine if build is needed
+              id: check
+              run: |
+                  # 1. Get the timestamp of the last SUCCESSFUL run of this exact workflow
+                  # Note: Ensure "nightly.yml" matches the actual filename of this workflow!
+                  LAST_RUN=$(gh api "repos/${{ github.repository }}/actions/workflows/nightly.yml/runs?status=success" \
+                    --jq '.workflow_runs[0].updated_at // "1970-01-01T00:00:00Z"')
 
+                  # 2. Get the timestamp of the latest commit on the development branch
+                  LATEST_COMMIT=$(gh api repos/${{ github.repository }}/commits/development \
+                    --jq '.commit.committer.date')
+
+                  echo "Last successful run: $LAST_RUN"
+                  echo "Latest commit: $LATEST_COMMIT"
+
+                  # 3. Compare timestamps (Bash string comparison works perfectly for ISO8601)
+                  # We also force 'true' if you clicked "Run Workflow" manually
+                  if [[ "$LATEST_COMMIT" > "$LAST_RUN" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                      echo "has_changes=true" >> $GITHUB_OUTPUT
+                  else
+                      echo "has_changes=false" >> $GITHUB_OUTPUT
+                      echo "No new commits since last successful run. Skipping build."
+                  fi
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # --- JOB 2: Build & Push Docker Image ---
+    docker:
+        needs: check_changes
+        if: needs.check_changes.outputs.has_changes == 'true'
+        runs-on: ubuntu-latest
         steps:
             - name: Checkout repository
               uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -27,7 +61,7 @@ jobs:
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
-                  password: ${{ secrets.GHCR_PAT }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push
               uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
