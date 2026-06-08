@@ -14,6 +14,7 @@ import {
 import { AttachmentIcon } from "@chakra-ui/icons";
 import { FaFilePdf, FaFileImage } from "react-icons/fa";
 import MarkdownRenderer from "../common/MarkdownRenderer";
+import ArtifactCard from "../common/ArtifactCard";
 import { parseMessageContent } from "../../utils/chat/messageParser";
 import { groupActivityTrace } from "../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../common/ActivityTraceBlock";
@@ -212,6 +213,26 @@ const DashboardMessageList = ({
                                                 colorMode={colorMode}
                                                 inline
                                             />
+                                        )}
+
+                                    {message.role === "assistant" &&
+                                        message.artifacts &&
+                                        message.artifacts.length > 0 && (
+                                            <VStack
+                                                align="start"
+                                                spacing={1}
+                                                mt={1}
+                                                width="100%"
+                                            >
+                                                {message.artifacts.map(
+                                                    (artifact, idx) => (
+                                                        <ArtifactCard
+                                                            key={`artifact-${messageIndex}-${idx}`}
+                                                            artifact={artifact}
+                                                        />
+                                                    ),
+                                                )}
+                                            </VStack>
                                         )}
                                 </VStack>
                             )}
