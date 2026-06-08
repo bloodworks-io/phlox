@@ -138,6 +138,22 @@ async def execute_tool_streaming(
         ):
             yield result
 
+    elif function_name == "list_pdf_form_templates":
+        from .pdf_forms import list_templates as execute_list
+
+        async for result in execute_list(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
+    elif function_name == "fill_pdf_form":
+        from .pdf_forms import fill_form as execute_fill
+
+        async for result in execute_fill(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
     elif function_name == "get_relevant_literature":
         from .direct_response import execute as execute_direct
         from .literature_search import execute as execute_literature
