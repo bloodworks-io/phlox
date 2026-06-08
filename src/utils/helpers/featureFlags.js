@@ -15,3 +15,11 @@ export const isChatEnabled = () => {
 export const isRagEnabled = () => {
   return !isTauri();
 };
+
+/**
+ * Check if PDF form template features are enabled.
+ * No dependency on sqlite-vec or vector embeddings — always available.
+ */
+export const isPdfFormsEnabled = () => {
+  return true;
+};

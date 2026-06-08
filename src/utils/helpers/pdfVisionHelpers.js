@@ -18,7 +18,7 @@ const DEFAULT_RENDER_OPTIONS = {
 let pdfjsModulePromise = null;
 let pdfjsWorkerConfigured = false;
 
-async function getPdfJs() {
+export async function getPdfJs() {
     if (!pdfjsModulePromise) {
         pdfjsModulePromise = import("pdfjs-dist/legacy/build/pdf");
     }
