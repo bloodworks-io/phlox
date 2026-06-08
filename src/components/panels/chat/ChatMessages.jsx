@@ -14,6 +14,7 @@ import { groupActivityTrace } from "../../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../../common/ActivityTraceBlock";
 import MarkdownRenderer from "../../common/MarkdownRenderer";
 import ArtifactCard from "../../common/ArtifactCard";
+import FormFillArtifact from "../../pdf-forms/FormFillArtifact";
 import { CitationList } from "../reasoning/components/CitationList";
 
 const ChatMessages = ({
@@ -189,12 +190,18 @@ const ChatMessages = ({
                                                 width="100%"
                                             >
                                                 {message.artifacts.map(
-                                                    (artifact, idx) => (
-                                                        <ArtifactCard
-                                                            key={`artifact-${messageIndex}-${idx}`}
-                                                            artifact={artifact}
-                                                        />
-                                                    ),
+                                                    (artifact, idx) =>
+                                                        artifact.type === "form_fill" ? (
+                                                            <FormFillArtifact
+                                                                key={`artifact-${messageIndex}-${idx}`}
+                                                                artifact={artifact}
+                                                            />
+                                                        ) : (
+                                                            <ArtifactCard
+                                                                key={`artifact-${messageIndex}-${idx}`}
+                                                                artifact={artifact}
+                                                            />
+                                                        ),
                                                 )}
                                             </VStack>
                                         )}
