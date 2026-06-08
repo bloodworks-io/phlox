@@ -21,7 +21,6 @@ rag = [
     "mcp==1.26.0",
     "numpy==2.4.2",
     "Pillow==12.2.0",
-    "PyMuPDF==1.26.7",
     "pypdf==6.10.2",
     "pytesseract==0.3.13",
     "sqlite-vec==0.1.9",

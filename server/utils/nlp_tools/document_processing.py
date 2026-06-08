@@ -12,9 +12,8 @@ except ImportError:
     PDF_TEXT_AVAILABLE = False
     PdfReader = None
 
-# Optional OCR dependencies (fallback path)
+# Optional OCR dependencies (for image documents)
 try:
-    import fitz  # PyMuPDF for PDF rasterization
     import pytesseract
     from PIL import Image
 
@@ -22,7 +21,6 @@ try:
 except ImportError:
     OCR_AVAILABLE = False
     Image = None
-    fitz = None
     pytesseract = None
 
 from server.database.config.manager import config_manager
@@ -73,25 +71,21 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
             logger.info("Using extracted PDF text layer content")
             return text_from_layer
 
-        logger.info("PDF text layer unavailable/insufficient; attempting OCR fallback")
-        if OCR_AVAILABLE:
-            logger.info("Backend OCR fallback invoked for PDF")
-            return _extract_pdf_text_with_ocr(document_buffer)
-
         if text_from_layer.strip():
             logger.warning(
-                "Returning partial PDF text layer output because OCR dependencies are unavailable"
+                "Returning partial PDF text layer output because it's the best available"
             )
             return text_from_layer
 
         raise RuntimeError(
-            "No usable PDF text found and OCR dependencies are unavailable. "
-            "Install pypdf for text-layer extraction and/or PyMuPDF + Pillow + pytesseract for OCR fallback."
+            "No usable PDF text found. "
+            "Frontend PDF text extraction (pdfjs-dist) is the primary path. "
+            "Install pypdf for backend fallback text-layer extraction."
         )
 
     # Non-PDF binary documents are treated as images and require OCR
     if not OCR_AVAILABLE:
-        raise RuntimeError("Image document processing requires PyMuPDF, Pillow and pytesseract.")
+        raise RuntimeError("Image document processing requires Pillow and pytesseract.")
 
     logger.debug("Processing image document with Tesseract OCR")
     img = Image.open(io.BytesIO(document_buffer))  # ty: ignore
@@ -117,25 +111,6 @@ def _extract_pdf_text_layer(document_buffer: bytes) -> str:
     except Exception as e:
         logger.warning(f"Failed PDF text-layer extraction: {e}")
         return ""
-
-
-def _extract_pdf_text_with_ocr(document_buffer: bytes) -> str:
-    """
-    OCR fallback for PDFs: rasterize pages with PyMuPDF then OCR with pytesseract.
-    """
-    logger.info("Backend PDF OCR component called: PyMuPDF rasterization + pytesseract")
-    extracted_texts = []
-    pdf_document = fitz.open(stream=document_buffer, filetype="pdf")  # ty: ignore
-
-    for page_num in range(pdf_document.page_count):
-        page = pdf_document[page_num]
-        pix = page.get_pixmap()
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)  # ty: ignore
-        text = pytesseract.image_to_string(img)  # ty: ignore
-        extracted_texts.append(text)
-        logger.debug(f"Extracted text from PDF page {page_num + 1}/{pdf_document.page_count}")
-
-    return "\n\n".join(extracted_texts).strip()
 
 
 def _is_extracted_text_usable(text: str) -> bool:

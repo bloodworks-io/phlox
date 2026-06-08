@@ -27,21 +27,8 @@ except ImportError:
     PDF_TEXT_AVAILABLE = False
     PdfReader = None
 
-# Optional OCR dependencies (fallback path for scanned PDFs)
-try:
-    import fitz  # PyMuPDF for rasterization
-    import pytesseract
-    from PIL import Image
-
-    OCR_AVAILABLE = True
-except ImportError:
-    OCR_AVAILABLE = False
-    Image = None
-    fitz = None
-    pytesseract = None
-
-from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
+from server.database.core.documents_db import DOCUMENTS_DB_PATH
 from server.utils.llm_client.client import get_llm_client
 from server.utils.url_utils import normalize_openai_base_url
 
@@ -51,8 +38,6 @@ logger = logging.getLogger(__name__)
 
 _vector_store_instance = None
 _vector_store_lock = threading.Lock()
-
-DB_PATH = DATA_DIR / "vectors.sqlite"
 
 
 def get_vector_store_manager():
@@ -69,10 +54,7 @@ def get_vector_store_manager():
 
 class VectorStoreManager:
     """
-    Backend-agnostic manager for vector storage and retrieval.
-
-    Owns the higher-level workflow (chunking → embedding → storage → search)
-    and delegates raw storage to a ``VectorStoreBackend`` implementation.
+    Mnager for vector storage and retrieval.
     """
 
     def __init__(self, backend: VectorStoreBackend | None = None):
@@ -85,7 +67,7 @@ class VectorStoreManager:
         self.extracted_pdf_bytes: bytes | None = None
 
         # Initialise backend (default: sqlite-vec)
-        self.backend: VectorStoreBackend = backend or SqliteVecBackend(str(DB_PATH))
+        self.backend: VectorStoreBackend = backend or SqliteVecBackend(str(DOCUMENTS_DB_PATH))
 
         self._reload_embedding_function()
         self.llm_client = get_llm_client()
@@ -216,7 +198,9 @@ class VectorStoreManager:
         store_pdfs = user_settings.get("advanced_options", {}).get("store_original_pdfs", False)
         stored_pdf = pdf_bytes if store_pdfs else None
         if store_pdfs:
-            logger.info("store_original_pdfs enabled — pdf_bytes=%s", "present" if pdf_bytes else "None")
+            logger.info(
+                "store_original_pdfs enabled — pdf_bytes=%s", "present" if pdf_bytes else "None"
+            )
         source_doc_id = self.backend.store_source_document(
             formatted, filename, extracted_text, stored_pdf
         )
@@ -371,10 +355,8 @@ class VectorStoreManager:
     # PDF text extraction
 
     def extract_text_from_pdf(self, pdf_path: str) -> str:
-        """Extract text from a PDF file.
-
-        Prefer text-layer extraction via pypdf.
-        Fall back to OCR if available and text is insufficient.
+        """
+        Extract text from a PDF file using pypdf.
         """
         logger.info("Backend RAG PDF parser invoked for file: %s", pdf_path)
 
@@ -406,34 +388,14 @@ class VectorStoreManager:
             logger.info("Backend RAG PDF parser used pypdf text-layer output")
             return text_layer_output
 
-        # OCR fallback
-        if OCR_AVAILABLE:
-            logger.info("Backend RAG OCR fallback invoked (PyMuPDF + Pillow + pytesseract)")
-            try:
-                ocr_texts = []
-                document = fitz.open(stream=pdf_bytes, filetype="pdf")  # ty: ignore
-                for page_num in range(document.page_count):
-                    page = document[page_num]
-                    pix = page.get_pixmap()
-                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)  # ty: ignore
-                    ocr_texts.append(pytesseract.image_to_string(img))  # ty: ignore
-                ocr_output = "\n\n".join(ocr_texts).strip()
-
-                if _is_text_usable(ocr_output):
-                    logger.info("Backend RAG OCR fallback produced usable PDF text")
-                    return ocr_output
-
-                if ocr_output:
-                    return ocr_output
-            except Exception as e:
-                logger.warning("OCR fallback failed for '%s': %s", pdf_path, e)
-
         if text_layer_output:
+            logger.warning("Returning partial pypdf text-layer output")
             return text_layer_output
 
         raise RuntimeError(
-            "Could not extract usable PDF text. Install pypdf and/or "
-            "PyMuPDF + Pillow + pytesseract for OCR fallback."
+            "Could not extract usable PDF text. "
+            "The frontend should handle PDF text extraction via pdfjs-dist. "
+            "Install pypdf as a backend fallback."
         )
 
     # LLM-based metadata extraction
