@@ -190,6 +190,10 @@ def initialize_and_get_app():
     app.include_router(templates.router, prefix="/api/templates")
     app.include_router(letter.router, prefix="/api/letter")
 
+    from server.api import pdf_forms
+
+    app.include_router(pdf_forms.router, prefix="/api/pdf-forms")
+
     # React app routes
     @app.get("/new-note")
     @app.get("/settings")
