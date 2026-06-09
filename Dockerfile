@@ -49,6 +49,9 @@ RUN mkdir -p /usr/src/app/data \
 # Install Python dependencies
 RUN uv pip install --system --no-cache ./server[docker]
 
+# Pre-cache tiktoken encodings so they don't need to be fetched at runtime
+RUN python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
+
 # Copy remaining server code
 COPY server/ ./server
 
