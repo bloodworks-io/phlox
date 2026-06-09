@@ -204,7 +204,7 @@ async def detect_fields(template_id: str, body: DetectFieldsRequest):  # noqa: A
         {"role": "user", "content": user_content},
     ]
 
-    client = get_llm_client(timeout=120)
+    client = get_llm_client(timeout=180)
     try:
         raw = await client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],

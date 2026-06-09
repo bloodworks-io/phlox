@@ -75,14 +75,16 @@ export const pdfFormsApi = {
 
   detectFields: async (id, pages) => {
     return handleApiRequest({
-      apiCall: async () => {
+      apiCall: async (signal) => {
         const url = await buildApiUrl(`/api/pdf-forms/templates/${id}/detect-fields`);
         return universalFetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pages }),
+          signal,
         });
       },
+      timeout: 240000,
       errorMessage: "Failed to detect fields",
     });
   },
