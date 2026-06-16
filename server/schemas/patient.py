@@ -31,6 +31,18 @@ class Patient(BaseModel):
         arbitrary_types_allowed = True
 
 
+class DemographicsExtraction(BaseModel):
+    """Demographics extracted from an uploaded document (all fields optional)."""
+
+    first_name: str | None = None
+    last_name: str | None = None
+    dob: str | None = None
+    gender: str | None = None
+    ur_number: str | None = None
+    address: str | None = None
+    phone: str | None = None
+
+
 class AdaptiveRefinementData(BaseModel):
     """
     Represents adaptive refinement data for a specific field.

@@ -25,6 +25,7 @@ except ImportError:
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import MultiFieldResponse
+from server.schemas.patient import DemographicsExtraction
 from server.utils.helpers import calculate_age
 from server.utils.llm_client.client import get_llm_client
 from server.utils.llm_client.utils import repair_json
@@ -125,6 +126,82 @@ def _is_extracted_text_usable(text: str) -> bool:
     return alnum_count >= 80
 
 
+# Free-text fields the LLM sometimes returns in ALL CAPS; title-cased after
+# extraction (kept out of the prompt — simple post-processing only).
+_DEMOGRAPHICS_TITLE_CASE_FIELDS = ("first_name", "last_name", "address")
+
+
+def _normalize_extracted_demographics(data: dict[str, Any]) -> dict[str, Any]:
+    """Title-case name/address fields; leave identifiers and dates untouched."""
+    for key in _DEMOGRAPHICS_TITLE_CASE_FIELDS:
+        value = data.get(key)
+        if isinstance(value, str) and value:
+            data[key] = value.title()
+    return data
+
+
+async def extract_demographics_from_document(
+    document_buffer: bytes, content_type: str
+) -> dict[str, Any]:
+    """Extract patient demographics from an uploaded document."""
+    extracted_text = await extract_text_from_document(document_buffer, content_type)
+    return await _extract_demographics_from_text(extracted_text)
+
+
+async def _extract_demographics_from_text(text: str) -> dict[str, Any]:
+    """One LLM call to pull patient demographics out of document text.
+
+    Returns only fields the model could determine (others omitted, not null),
+    so the caller can merge without blanking existing values.
+    """
+    config = config_manager.get_config()
+    options = config_manager.get_prompts_and_options()["options"]["general"].copy()
+    options["temperature"] = 0
+    options.pop("stop", None)
+
+    response_format = DemographicsExtraction.model_json_schema()
+
+    system_content = (
+        "Extract the patient's demographic details from the provided document text. "
+        "Return ONLY valid JSON with these keys: "
+        "first_name, last_name, dob (ISO YYYY-MM-DD when determinable), "
+        "gender (single letter 'M' or 'F' when stated), ur_number, address, phone. "
+        "Use null for any field not present in the document. Do not guess or infer."
+    )
+
+    request_body = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": text or "(no text)"},
+    ]
+
+    client = get_llm_client(timeout=120)
+    max_retries = 2
+
+    for attempt in range(max_retries + 1):
+        try:
+            response = await client.chat(
+                model=config["PRIMARY_MODEL"],
+                messages=request_body,
+                format=response_format,
+                options=options,
+            )
+            repaired = repair_json(response["message"]["content"])
+            data = DemographicsExtraction.model_validate_json(repaired)
+            # Keep only populated fields so merges don't clobber existing values.
+            result = {k: v for k, v in data.model_dump().items() if v}
+            return _normalize_extracted_demographics(result)
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(
+                    f"Demographics extraction attempt {attempt + 1} failed: {e}. Retrying..."
+                )
+                continue
+            logger.error(f"Demographics extraction failed after {max_retries + 1} attempts: {e}")
+            raise
+
+    raise RuntimeError("Unreachable: demographics extraction exhausted retries")
+
+
 async def process_document_with_template(
     document_buffer: bytes,
     content_type: str,
@@ -202,23 +279,18 @@ async def _process_extracted_text_with_template(
         raise
 
 
-async def process_visual_document_with_template(
+async def _run_vision_extraction(
+    system_content: str,
+    response_model: type,
     visual_pages: list[dict[str, Any]],
-    template_fields: list[Any],
-    patient_context: dict[str, Any],
-) -> dict[str, Any]:
-    """
-    Process visual document pages with a multimodal model to fill template fields.
-
-    Uses a single LLM call with all images and all field instructions combined
-    (same pattern as process_all_fields_concurrently in text.py), then refines
-    each field through the existing refinement pipeline.
+):
+    """Shared vision-LLM core: filter pages, call the model with retries, and
+    validate the JSON response against ``response_model`` (a pydantic class).
+    Returns the validated pydantic instance. Used by demographics visual
+    extraction; the template visual path can adopt it as a follow-up.
     """
     if not visual_pages:
         raise ValueError("No visual pages were provided")
-
-    if not template_fields:
-        raise ValueError("Template fields are required for visual document processing")
 
     # Keep only valid image data URLs and cap page count defensively
     valid_pages = [
@@ -237,7 +309,85 @@ async def process_visual_document_with_template(
     options["temperature"] = 0
     options.pop("stop", None)
 
-    response_format = MultiFieldResponse.model_json_schema()
+    response_format = response_model.model_json_schema()
+
+    user_content: list[dict[str, Any]] = [
+        {"type": "text", "text": "Please extract the fields from these document images."}
+    ]
+    for page in valid_pages:
+        user_content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": page["data_url"]},
+            }
+        )
+
+    request_body = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": user_content},
+    ]
+
+    client = get_llm_client(timeout=180)
+    max_retries = 2
+
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(
+                f"Vision extraction with {len(valid_pages)} pages "
+                f"(attempt {attempt + 1}/{max_retries + 1})..."
+            )
+            response = await client.chat(
+                model=config["PRIMARY_MODEL"],
+                messages=request_body,
+                format=response_format,
+                options=options,
+            )
+            repaired_content = repair_json(response["message"]["content"])
+            return response_model.model_validate_json(repaired_content)
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(
+                    f"Vision extraction attempt {attempt + 1}/{max_retries + 1} failed: {e}. Retrying..."
+                )
+                continue
+            logger.error(
+                f"Vision extraction failed after {max_retries + 1} attempts: {e}"
+            )
+            raise
+
+    raise RuntimeError("Unreachable: vision extraction exhausted retries")
+
+
+async def extract_demographics_from_visual_pages(
+    visual_pages: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Extract patient demographics from rendered document page images."""
+    system_content = (
+        "Extract the patient's demographic details from the provided document images. "
+        "Return ONLY valid JSON with these keys: "
+        "first_name, last_name, dob (ISO YYYY-MM-DD when determinable), "
+        "gender (single letter 'M' or 'F' when stated), ur_number, address, phone. "
+        "Use null for any field not present in the document. Do not guess or infer."
+    )
+    data = await _run_vision_extraction(system_content, DemographicsExtraction, visual_pages)
+    result = {k: v for k, v in data.model_dump().items() if v}
+    return _normalize_extracted_demographics(result)
+
+
+async def process_visual_document_with_template(
+    visual_pages: list[dict[str, Any]],
+    template_fields: list[Any],
+    patient_context: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Process visual document pages with a multimodal model to fill template fields.
+
+    Builds the template field instructions, delegates the vision call to the
+    shared ``_run_vision_extraction`` core, then bullet-formats and refines each
+    field through the existing refinement pipeline.
+    """
+    if not template_fields:
+        raise ValueError("Template fields are required for visual document processing")
 
     # Build patient context
     context_str = ""
@@ -267,84 +417,33 @@ async def process_visual_document_with_template(
         '"field_summaries" (object mapping field_key to array of strings).'
     )
 
-    # Build user content: instruction text + all page images
-    user_content: list[dict[str, Any]] = [
-        {"type": "text", "text": "Please extract the fields from these document images."}
-    ]
-    for page in valid_pages:
-        user_content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": page["data_url"]},
-            }
-        )
+    multi_field_response = await _run_vision_extraction(
+        system_content, MultiFieldResponse, visual_pages
+    )
 
-    request_body = [
-        {"role": "system", "content": system_content},
-        {"role": "user", "content": user_content},
-    ]
+    # Convert to dict of formatted strings (with bullet points)
+    raw_results: dict[str, str] = {}
+    for field in template_fields:
+        key_points = multi_field_response.field_summaries.get(field.field_key, [])
+        formatted_content = "\n".join(f"• {point.strip()}" for point in key_points)
+        raw_results[field.field_key] = formatted_content
 
-    # Single LLM call with retries (same pattern as text.py)
-    max_retries = 2
+    logger.info(
+        f"Successfully extracted {len(template_fields)} fields from visual document"
+    )
 
-    client = get_llm_client(timeout=180)
+    # Refine all fields concurrently (fast text-only calls)
+    refined_results = await asyncio.gather(
+        *[
+            refine_field_content(raw_results[field.field_key], field)
+            for field in template_fields
+        ]
+    )
 
-    for attempt in range(max_retries + 1):
-        try:
-            logger.info(
-                f"Processing {len(template_fields)} visual fields in one call "
-                f"with {len(valid_pages)} pages (attempt {attempt + 1}/{max_retries + 1})..."
-            )
-
-            response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=request_body,
-                format=response_format,
-                options=options,
-            )
-
-            # Repair and validate JSON
-            content = response["message"]["content"]
-            repaired_content = repair_json(content)
-            multi_field_response = MultiFieldResponse.model_validate_json(repaired_content)
-
-            # Convert to dict of formatted strings (with bullet points)
-            raw_results: dict[str, str] = {}
-            for field in template_fields:
-                key_points = multi_field_response.field_summaries.get(field.field_key, [])
-                formatted_content = "\n".join(f"• {point.strip()}" for point in key_points)
-                raw_results[field.field_key] = formatted_content
-
-            logger.info(
-                f"Successfully extracted {len(template_fields)} fields from visual document"
-            )
-
-            # Refine all fields concurrently (fast text-only calls)
-            refined_results = await asyncio.gather(
-                *[
-                    refine_field_content(raw_results[field.field_key], field)
-                    for field in template_fields
-                ]
-            )
-
-            return {
-                field.field_key: refined
-                for field, refined in zip(template_fields, refined_results, strict=True)
-            }
-
-        except Exception as e:
-            if attempt < max_retries:
-                logger.warning(
-                    f"Visual document processing attempt {attempt + 1}/{max_retries + 1} failed: {e}. Retrying..."
-                )
-                continue
-            else:
-                logger.error(
-                    f"Visual document processing failed after {max_retries + 1} attempts: {e}"
-                )
-                raise
-
-    raise RuntimeError("Unreachable: process_visual_document_with_template exhausted retries")
+    return {
+        field.field_key: refined
+        for field, refined in zip(template_fields, refined_results, strict=True)
+    }
 
 
 def _build_patient_context(name: str | None, dob: str | None, gender: str | None) -> str:
