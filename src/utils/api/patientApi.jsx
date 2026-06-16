@@ -108,6 +108,20 @@ export const patientApi = {
     });
   },
 
+  extractJobs: async (planText) => {
+    const url = await buildApiUrl(`/api/note/extract-jobs`);
+    const response = await universalFetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan: planText }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to extract jobs");
+    }
+    return response.json();
+  },
+
   /**
    * Generate clinical reasoning with streaming status updates
    * @param {number} noteId - The patient ID
