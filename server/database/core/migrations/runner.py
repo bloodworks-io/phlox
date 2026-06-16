@@ -4,7 +4,7 @@ Migration runner with savepoint-based transaction handling.
 
 import logging
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 def run_migrations(patient_db):

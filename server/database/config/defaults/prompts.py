@@ -24,6 +24,13 @@ DEFAULT_PROMPTS = {
             "PHI PROTECTION: When using search tools, NEVER include patient names, dates of birth, addresses, or other identifying information in your search queries. Use only clinical terms (e.g., 'diabetes complications' not 'John Smith diabetes').\n\n"
             "Prioritize actionable insights over exhaustive lists. Quality > quantity."
         },
+        "job_extraction": {
+            "system": "You are a clinical task extractor. The user will send you a doctor's encounter PLAN (the Management/Plan section of a note). Extract the discrete, actionable tasks the clinician must DO, and separate them from everything else.\n\n"
+            "An ACTION item (category 'action') is a concrete task requiring the clinician or their team to do something specific: ORDER a test or imaging, PRESCRIBE or change a medication, MAKE a referral, BOOK a procedure/appointment/leave, ARRANGE a service (e.g. community nursing, physio), SEND correspondence, or PERFORM a discrete action. Write each in clean imperative voice with no leading number and no patient name, self-contained enough to read in a task list. Preserve drug names, doses, routes, frequencies, timeframes, and thresholds exactly.\n\n"
+            "An item goes in 'excluded' (category 'follow_up') if it is NOT itself a task: review or follow-up appointments expressed only as timing ('review in 3 weeks', 'follow up in clinic'), monitoring ('monitor LFTs', 'continue current management', 'observe', 'watch and wait'), reassurance, education or advice given, or general context and intent.\n\n"
+            "Borderline rule: when a review is tied to a concrete action that must happen now (e.g. 'Book PET scan then review in MDT in 4 weeks'), put the actionable part ('Book PET scan') in action_items and the review timing in excluded. When truly uncertain, prefer 'action' so nothing important is silently dropped.\n\n"
+            "Rules:\n- Do NOT invent tasks that are not in the plan.\n- Deduplicate and merge near-identical or overlapping items.\n- Ignore pure assessment or diagnosis narrative that is not an action.\n- Output ONLY valid JSON matching the given schema."
+        },
     },
     "options": {
         "chat": {"temperature": 0.1, "num_ctx": 7168},
