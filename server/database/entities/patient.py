@@ -65,7 +65,7 @@ def _split_name(name: str | None) -> tuple[str, str]:
     return "", name
 
 
-def get_patient_profile(ur_number: str) -> dict[str, Any] | None:
+def get_patient_profile(ur_number: str | None) -> dict[str, Any] | None:
     """Fetch the per-person demographics profile keyed by ur_number."""
     if not ur_number:
         return None
