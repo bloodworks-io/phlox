@@ -41,6 +41,9 @@ export const formatPatientContext = (template, patientData) => {
         name: patientData.name,
         dob: patientData.dob,
         ur_number: patientData.ur_number,
+        gender: patientData.gender,
+        address: patientData.address,
+        phone: patientData.phone,
         encounter_date: patientData.encounter_date,
         template_data: template_data,
         template_fields: template.fields.map((field) => ({

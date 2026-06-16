@@ -82,6 +82,9 @@ def build_system_messages(
         name = patient_context.get("name", "")
         dob = patient_context.get("dob", "")
         ur_number = patient_context.get("ur_number", "")
+        gender = patient_context.get("gender", "")
+        phone = patient_context.get("phone", "")
+        address = patient_context.get("address", "")
         encounter_date = patient_context.get("encounter_date")
         template_data = patient_context.get("template_data")
 
@@ -104,6 +107,8 @@ def build_system_messages(
             patient_header_parts.append(f"{age} years old")
         if ur_number:
             patient_header_parts.append(f"UR: {ur_number}")
+        if gender:
+            patient_header_parts.append(f"Gender: {gender}")
 
         if patient_header_parts:
             content += " " + ", ".join(patient_header_parts)
@@ -111,6 +116,12 @@ def build_system_messages(
         # Add UR number context for tools
         if ur_number:
             content += f"\n\nPatient Context: UR Number is {ur_number}."
+
+        # Contact details (available to form filling etc.)
+        if phone:
+            content += f"\nPatient phone: {phone}."
+        if address:
+            content += f"\nPatient address: {address}."
 
         # Add current encounter date for tools
         if encounter_date:
