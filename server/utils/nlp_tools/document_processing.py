@@ -3,6 +3,8 @@ import io
 import logging
 from typing import Any
 
+from pydantic import BaseModel
+
 # Optional PDF text-layer dependency (preferred path for PDFs)
 try:
     from pypdf import PdfReader
@@ -281,7 +283,7 @@ async def _process_extracted_text_with_template(
 
 async def _run_vision_extraction(
     system_content: str,
-    response_model: type,
+    response_model: type[BaseModel],
     visual_pages: list[dict[str, Any]],
 ):
     """Shared vision-LLM core: filter pages, call the model with retries, and
@@ -350,9 +352,7 @@ async def _run_vision_extraction(
                     f"Vision extraction attempt {attempt + 1}/{max_retries + 1} failed: {e}. Retrying..."
                 )
                 continue
-            logger.error(
-                f"Vision extraction failed after {max_retries + 1} attempts: {e}"
-            )
+            logger.error(f"Vision extraction failed after {max_retries + 1} attempts: {e}")
             raise
 
     raise RuntimeError("Unreachable: vision extraction exhausted retries")
@@ -428,16 +428,11 @@ async def process_visual_document_with_template(
         formatted_content = "\n".join(f"• {point.strip()}" for point in key_points)
         raw_results[field.field_key] = formatted_content
 
-    logger.info(
-        f"Successfully extracted {len(template_fields)} fields from visual document"
-    )
+    logger.info(f"Successfully extracted {len(template_fields)} fields from visual document")
 
     # Refine all fields concurrently (fast text-only calls)
     refined_results = await asyncio.gather(
-        *[
-            refine_field_content(raw_results[field.field_key], field)
-            for field in template_fields
-        ]
+        *[refine_field_content(raw_results[field.field_key], field) for field in template_fields]
     )
 
     return {

@@ -268,9 +268,7 @@ async def extract_demographics(file: UploadFile = File(...)):
     """Extract patient demographics from an uploaded document (referral, ID, etc.)."""
     try:
         document_buffer = await file.read()
-        result = await extract_demographics_from_document(
-            document_buffer, file.content_type or ""
-        )
+        result = await extract_demographics_from_document(document_buffer, file.content_type or "")
         return result
     except Exception as e:
         logging.error(f"Error extracting demographics: {e}")
