@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Modal,
     ModalOverlay,
@@ -14,8 +14,14 @@ import {
     Input,
     Select,
     Button,
+    Icon,
+    Spinner,
+    useColorMode,
 } from "@chakra-ui/react";
-import { FaUserEdit } from "react-icons/fa";
+import { FaUserEdit, FaFileUpload } from "react-icons/fa";
+import { colors } from "../../theme/colors";
+import { transcriptionApi } from "../../utils/api/transcriptionApi";
+import { extractFromFile } from "../../utils/helpers/documentExtraction";
 
 const Field = ({ label, required, children }) => (
     <Box flex={1} minW="0">
@@ -32,7 +38,13 @@ const Field = ({ label, required, children }) => (
 );
 
 const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
+    const { colorMode } = useColorMode();
+    const c = colors[colorMode];
     const [form, setForm] = useState({});
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [isExtracting, setIsExtracting] = useState(false);
+    const [extractError, setExtractError] = useState(null);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (!isOpen || !patient) return;
@@ -45,9 +57,57 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
             address: patient.address || "",
             phone: patient.phone || "",
         });
+        setIsDragOver(false);
+        setIsExtracting(false);
+        setExtractError(null);
     }, [isOpen, patient]);
 
     const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+    const handleFile = async (file) => {
+        if (!file) return;
+        setIsExtracting(true);
+        setExtractError(null);
+        try {
+            const data = await extractFromFile(
+                file,
+                {
+                    fromText: transcriptionApi.extractDemographicsFromText,
+                    visual: transcriptionApi.extractDemographicsVisual,
+                    legacyFile: (formData) =>
+                        transcriptionApi.extractDemographics(formData),
+                },
+                {},
+            );
+            // Merge only the fields the model returned (others left untouched).
+            if (data && typeof data === "object") {
+                setForm((prev) => ({ ...prev, ...data }));
+            }
+        } catch (e) {
+            setExtractError("Couldn't read demographics from that document.");
+        } finally {
+            setIsExtracting(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer.types.includes("Files")) setIsDragOver(true);
+    };
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+    };
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleFile(file);
+    };
 
     const requiredMet =
         form.first_name?.trim() &&
@@ -95,6 +155,56 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
                     className="custom-scrollbar"
                 >
                     <VStack spacing={4} align="stretch">
+                        {/* Document drop zone — auto-fills fields from a referral/ID/etc. */}
+                        <Box
+                            position="relative"
+                            borderRadius="md"
+                            border="2px dashed"
+                            borderColor={isDragOver ? "blue.400" : c.surface}
+                            bg={
+                                isDragOver
+                                    ? "rgba(66, 153, 225, 0.15)"
+                                    : "transparent"
+                            }
+                            p={3}
+                            textAlign="center"
+                            cursor="pointer"
+                            transition="all 0.15s"
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                        >
+                            <Input
+                                type="file"
+                                ref={fileInputRef}
+                                accept=".pdf,.txt,image/*"
+                                onChange={(e) =>
+                                    handleFile(e.target.files?.[0])
+                                }
+                                display="none"
+                            />
+                            <HStack
+                                spacing={2}
+                                justify="center"
+                                color={c.textSecondary}
+                                fontSize="sm"
+                            >
+                                <Icon as={FaFileUpload} />
+                                <Text>
+                                    {isExtracting
+                                        ? "Reading document…"
+                                        : "Drop a document to auto-fill, or click to browse"}
+                                </Text>
+                                {isExtracting && <Spinner size="xs" />}
+                            </HStack>
+                            {extractError && (
+                                <Text fontSize="xs" color="red.400" mt={1}>
+                                    {extractError}
+                                </Text>
+                            )}
+                        </Box>
+
                         <HStack spacing={3} align="flex-start">
                             <Field label="First name" required>
                                 <Input

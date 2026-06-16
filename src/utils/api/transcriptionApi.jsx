@@ -61,6 +61,59 @@ export const transcriptionApi = {
         });
     },
 
+    extractDemographics: async (formData) => {
+        return handleApiRequest({
+            apiCall: async (signal) => {
+                const url = await buildApiUrl(
+                    `/api/transcribe/extract-demographics`,
+                );
+                return universalFetch(url, {
+                    method: "POST",
+                    body: formData,
+                    signal,
+                });
+            },
+            timeout: 180000,
+            errorMessage: "Error extracting demographics from document",
+        });
+    },
+
+    extractDemographicsFromText: async (payload) => {
+        return handleApiRequest({
+            apiCall: async (signal) => {
+                const url = await buildApiUrl(
+                    `/api/transcribe/extract-demographics-from-text`,
+                );
+                return universalFetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                    signal,
+                });
+            },
+            timeout: 180000,
+            errorMessage: "Error extracting demographics from text",
+        });
+    },
+
+    extractDemographicsVisual: async (payload) => {
+        return handleApiRequest({
+            apiCall: async (signal) => {
+                const url = await buildApiUrl(
+                    `/api/transcribe/extract-demographics-visual`,
+                );
+                return universalFetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                    signal,
+                });
+            },
+            timeout: 300000,
+            errorMessage: "Error extracting demographics from visual document",
+        });
+    },
+
     processDocumentFromText: async (payload) => {
         return handleApiRequest({
             apiCall: async (signal) => {
