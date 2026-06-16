@@ -424,7 +424,7 @@ const PatientTable = ({
                     <Tr>
                       <Th width="25%">Patient Details</Th>
                       <Th width="45%">Reasoning / Encounter Summary</Th>
-                      <Th width="30%">Plan</Th>
+                      <Th width="30%">Jobs</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
@@ -445,7 +445,7 @@ const PatientTable = ({
               <Tr>
                 <Th width="25%">Patient Details</Th>
                 <Th width="45%">Reasoning / Encounter Summary</Th>
-                <Th width="30%">Plan</Th>
+                <Th width="30%">Jobs</Th>
               </Tr>
             </Thead>
             <Tbody>
