@@ -37,6 +37,98 @@ def get_unique_primary_conditions():
         return []
 
 
+def _display_name(patient: Patient) -> str:
+    """Encounter display name: prefer the explicit name, else format first/last."""
+    if patient.name:
+        return patient.name
+    first = (patient.first_name or "").strip()
+    last = (patient.last_name or "").strip()
+    if last and first:
+        return f"{last}, {first}"
+    return last or first
+
+
+def _split_name(name: str | None) -> tuple[str, str]:
+    """Split a legacy display name into (first_name, last_name).
+
+    Handles "Last, First", "First Last", and bare names.
+    """
+    if not name:
+        return "", ""
+    name = name.strip()
+    if ", " in name:
+        last, first = name.split(", ", 1)
+        return first.strip(), last.strip()
+    if " " in name:
+        first, last = name.rsplit(" ", 1)
+        return first.strip(), last.strip()
+    return "", name
+
+
+def get_patient_profile(ur_number: str) -> dict[str, Any] | None:
+    """Fetch the per-person demographics profile keyed by ur_number."""
+    if not ur_number:
+        return None
+    try:
+        get_db().cursor.execute(
+            """
+            SELECT first_name, last_name, dob, gender, address, phone
+            FROM patient_profiles WHERE ur_number = ?
+            """,
+            (ur_number,),
+        )
+        row = get_db().cursor.fetchone()
+        return dict(row) if row else None
+    except Exception as e:
+        logging.error(f"Error fetching patient profile: {e}")
+        return None
+
+
+def upsert_patient_profile(
+    ur_number: str | None,
+    first_name: str | None,
+    last_name: str | None,
+    dob: str | None,
+    gender: str | None,
+    address: str | None,
+    phone: str | None,
+) -> None:
+    """Insert or update the per-person demographics profile (source of truth)."""
+    if not ur_number:
+        return
+    try:
+        get_db().cursor.execute(
+            """
+            INSERT INTO patient_profiles
+                (ur_number, first_name, last_name, dob, gender, address, phone, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(ur_number) DO UPDATE SET
+                first_name = excluded.first_name,
+                last_name = excluded.last_name,
+                dob = excluded.dob,
+                gender = excluded.gender,
+                address = excluded.address,
+                phone = excluded.phone,
+                updated_at = excluded.updated_at
+            """,
+            (
+                ur_number,
+                first_name,
+                last_name,
+                dob,
+                gender,
+                address,
+                phone,
+                datetime.now().isoformat(),
+            ),
+        )
+        get_db().commit()
+    except Exception as e:
+        get_db().rollback()
+        logging.error(f"Error upserting patient profile: {e}")
+        raise
+
+
 def save_patient(patient: Patient) -> int:
     """Saves patient data."""
     try:
@@ -77,7 +169,7 @@ def save_patient(patient: Patient) -> int:
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                patient.name,
+                _display_name(patient),
                 patient.dob,
                 patient.ur_number,
                 patient.gender,
@@ -97,6 +189,19 @@ def save_patient(patient: Patient) -> int:
             ),
         )
         get_db().commit()
+
+        # patient_profiles is the source of truth for demographics.
+        if patient.ur_number:
+            upsert_patient_profile(
+                patient.ur_number,
+                patient.first_name,
+                patient.last_name,
+                patient.dob,
+                patient.gender,
+                patient.address,
+                patient.phone,
+            )
+
         return get_db().cursor.lastrowid
     except Exception as e:
         get_db().rollback()
@@ -228,7 +333,7 @@ def update_patient(patient: Patient) -> None:
         WHERE id = ?
         """,
         (
-            patient.name,
+            _display_name(patient),
             patient.dob,
             patient.ur_number,
             patient.gender,
@@ -248,6 +353,18 @@ def update_patient(patient: Patient) -> None:
         ),
     )
     get_db().commit()
+
+    # Keep the source-of-truth profile in sync with the edited demographics.
+    if patient.ur_number:
+        upsert_patient_profile(
+            patient.ur_number,
+            patient.first_name,
+            patient.last_name,
+            patient.dob,
+            patient.gender,
+            patient.address,
+            patient.phone,
+        )
 
 
 def update_patient_reasoning(note_id: int, reasoning_output: dict) -> None:
@@ -364,6 +481,16 @@ def get_patient_by_id(note_id: int) -> dict[str, Any] | None:
                     patient["reasoning_output"] = json.loads(patient["reasoning_output"])
                 except json.JSONDecodeError:
                     patient["reasoning_output"] = None
+
+            profile = get_patient_profile(patient.get("ur_number"))
+            first_name = profile.get("first_name") if profile else None
+            last_name = profile.get("last_name") if profile else None
+            if not (first_name or last_name):
+                first_name, last_name = _split_name(patient.get("name"))
+            patient["first_name"] = first_name
+            patient["last_name"] = last_name
+            patient["address"] = profile.get("address") if profile else None
+            patient["phone"] = profile.get("phone") if profile else None
             return patient
         return None
     except Exception as e:
@@ -469,6 +596,12 @@ def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
                     for field in persistent_fields
                 }
 
+                profile = get_patient_profile(row["ur_number"])
+                first_name = profile.get("first_name") if profile else None
+                last_name = profile.get("last_name") if profile else None
+                if not (first_name or last_name):
+                    first_name, last_name = _split_name(row["name"])
+
                 encounters.append(
                     {
                         "id": row["id"],
@@ -476,6 +609,10 @@ def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
                         "gender": row["gender"],
                         "dob": row["dob"],
                         "ur_number": row["ur_number"],
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "address": profile.get("address") if profile else None,
+                        "phone": profile.get("phone") if profile else None,
                         "encounter_date": row["encounter_date"],
                         "template_key": row["template_key"],
                         "template_data": persistent_data,
