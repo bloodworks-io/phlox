@@ -1,93 +1,86 @@
-// Component containing patient's basic information fields for editing.
-import React from "react";
-import { Box, Flex, Input, Select, Tooltip } from "@chakra-ui/react";
-import { BiMaleFemale } from "react-icons/bi";
-import { FaUser, FaBirthdayCake, FaIdBadge } from "react-icons/fa";
+import {
+    Box,
+    Flex,
+    Text,
+    Tooltip,
+    IconButton,
+    useColorMode,
+} from "@chakra-ui/react";
+import { FaEdit } from "react-icons/fa";
+import { colors } from "../../theme/colors";
+import { getAvatarColor, getInitials } from "../sidebar/SidebarHelpers";
 
-const PatientInfoBar = ({ patient, setPatient }) => {
-    const handleChange = (field, value) => {
-        setPatient((prev) => ({ ...prev, [field]: value }));
-    };
+const PatientInfoBar = ({ patient, onEdit }) => {
+    const { colorMode } = useColorMode();
+    const c = colors[colorMode];
+
+    const name = patient.name || "New patient";
+    const meta = [
+        patient.gender,
+        patient.dob,
+        patient.ur_number && `UR ${patient.ur_number}`,
+    ].filter(Boolean);
 
     return (
-        <Flex justifyContent="center" alignItems="center" height="40px">
-            <Box className="pill-box">
-                <Tooltip label="Patient Name" aria-label="Patient Name Tooltip">
-                    <Flex alignItems="center" flexBasis="25%">
-                        <FaUser
-                            style={{ marginRight: "8px" }}
-                            className="pill-box-icons"
-                        />
-                        <Input
-                            placeholder="Last, First"
-                            size="sm"
-                            value={patient.name || ""}
-                            onChange={(e) =>
-                                handleChange("name", e.target.value)
-                            }
-                            className="input-style"
-                        />
-                    </Flex>
-                </Tooltip>
-                <Tooltip label="Gender" aria-label="Gender Tooltip">
-                    <Flex alignItems="center" flexBasis="15%">
-                        <BiMaleFemale
-                            style={{ marginRight: "8px", marginLeft: "8px" }}
-                            className="pill-box-icons"
-                        />
-                        <Select
-                            placeholder="M/F"
-                            size="sm"
-                            value={patient.gender || ""}
-                            onChange={(e) =>
-                                handleChange("gender", e.target.value)
-                            }
-                            className="input-style"
-                        >
-                            <option value="M">M</option>
-                            <option value="F">F</option>
-                        </Select>
-                    </Flex>
-                </Tooltip>
-                <Tooltip
-                    label="Date of Birth"
-                    aria-label="Date of Birth Tooltip"
+        <Flex justify="center" w="100%">
+            <Flex
+                className="panels-bg"
+                borderRadius="lg"
+                p={3}
+                px={5}
+                align="center"
+                gap={4}
+                maxW="100%"
+            >
+                <Flex
+                    align="center"
+                    justify="center"
+                    boxSize="38px"
+                    borderRadius="full"
+                    bg={getAvatarColor(patient.name)}
+                    color="#fff"
+                    fontSize="sm"
+                    fontWeight="700"
+                    flexShrink={0}
+                    sx={{ fontFamily: '"Space Grotesk", sans-serif' }}
                 >
-                    <Flex alignItems="center" flexBasis="25%">
-                        <FaBirthdayCake
-                            style={{ marginRight: "8px", marginLeft: "8px" }}
-                            className="pill-box-icons"
-                        />
-                        <Input
-                            placeholder="Date of Birth"
-                            type="date"
-                            size="sm"
-                            value={patient.dob || ""}
-                            onChange={(e) =>
-                                handleChange("dob", e.target.value)
-                            }
-                            className="input-style"
-                        />
-                    </Flex>
+                    {(patient.name && getInitials(patient.name)) || "?"}
+                </Flex>
+
+                <Box minW="0">
+                    <Text
+                        fontSize="lg"
+                        fontWeight="700"
+                        color={c.textPrimary}
+                        noOfLines={1}
+                        sx={{ fontFamily: '"Space Grotesk", sans-serif' }}
+                    >
+                        {name}
+                    </Text>
+                    <Text
+                        fontSize="sm"
+                        color={c.textSecondary}
+                        noOfLines={1}
+                        sx={{ fontFamily: '"Roboto", sans-serif' }}
+                    >
+                        {meta.length
+                            ? meta.join("  ·  ")
+                            : "No demographics yet"}
+                    </Text>
+                </Box>
+
+                <Tooltip label="Edit patient details">
+                    <IconButton
+                        icon={<FaEdit />}
+                        aria-label="Edit patient details"
+                        size="sm"
+                        variant="ghost"
+                        color={c.textSecondary}
+                        onClick={onEdit}
+                        flexShrink={0}
+                    />
                 </Tooltip>
-                <Tooltip label="UR Number" aria-label="UR Number Tooltip">
-                    <Flex alignItems="center" flexBasis="25%">
-                        <FaIdBadge
-                            style={{ marginRight: "8px", marginLeft: "8px" }}
-                            className="pill-box-icons"
-                        />
-                        <Input
-                            placeholder="UR Number"
-                            size="sm"
-                            value={patient.ur_number || ""}
-                            onChange={(e) =>
-                                handleChange("ur_number", e.target.value)
-                            }
-                            className="input-style"
-                        />
-                    </Flex>
-                </Tooltip>
-            </Box>
+            </Flex>
         </Flex>
     );
 };

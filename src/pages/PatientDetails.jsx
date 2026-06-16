@@ -2,6 +2,7 @@ import {
     Box,
     VStack,
     useClipboard,
+    useDisclosure,
     useToast,
     Spinner,
     Center,
@@ -27,6 +28,7 @@ import PreviousVisitPanel from "../components/panels/previous-visit/PreviousVisi
 import { usePatient } from "../utils/hooks/usePatient";
 import { patientApi } from "../utils/api/patientApi";
 import WrapUpModal from "../components/modals/WrapUpModal";
+import DemographicsModal from "../components/modals/DemographicsModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useChat } from "../utils/hooks/useChat";
 import { useLetter } from "../utils/hooks/useLetter";
@@ -59,6 +61,11 @@ const PatientDetails = ({
     const [saveLoading, setSaveLoading] = useState(false);
     const [wrapUpLoading, setWrapUpLoading] = useState(false);
     const [isWrapUpOpen, setIsWrapUpOpen] = useState(false);
+    const {
+        isOpen: isDemographicsOpen,
+        onOpen: onOpenDemographics,
+        onClose: onCloseDemographics,
+    } = useDisclosure();
     const [isLetterModified, setIsLetterModified] = useState(false);
     const [isSummaryModified, setIsSummaryModified] = useState(false);
     const previousTranscriptionRef = useRef(null);
@@ -864,14 +871,7 @@ const PatientDetails = ({
     return (
         <Box p={[2, 4, 5]} borderRadius="sm" w="100%" pb="100px">
             <VStack spacing={[3, 4, 5]} align="stretch">
-                <PatientInfoBar
-                    patient={patient}
-                    setPatient={setPatient}
-                    template={currentTemplate}
-                    templates={templates}
-                    isNewPatient={isNewPatient}
-                    isSearchedPatient={isSearchedPatient}
-                />
+                <PatientInfoBar patient={patient} onEdit={onOpenDemographics} />
 
                 <Summary
                     ref={summaryRef}
@@ -901,6 +901,13 @@ const PatientDetails = ({
                     onConfirm={handleWrapUpConfirm}
                     planText={patient?.template_data?.plan || ""}
                     submitting={wrapUpLoading}
+                />
+
+                <DemographicsModal
+                    isOpen={isDemographicsOpen}
+                    onClose={onCloseDemographics}
+                    patient={patient}
+                    setPatient={setPatient}
                 />
 
                 <Letter

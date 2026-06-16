@@ -80,9 +80,13 @@ export const usePatient = (initialPatient = null) => {
             const newPatient = {
                 id: null,
                 name: "",
+                first_name: "",
+                last_name: "",
                 dob: "",
                 ur_number: "",
                 gender: "",
+                address: "",
+                phone: "",
                 template_key: "",
                 template_data: {},
                 raw_transcription: "",
@@ -121,10 +125,10 @@ export const usePatient = (initialPatient = null) => {
     ) => {
         const missingFields = [];
 
-        if (!patient?.name) missingFields.push("Name");
+        if (!patient?.first_name) missingFields.push("First name");
+        if (!patient?.last_name) missingFields.push("Last name");
         if (!patient?.dob) missingFields.push("Date of Birth");
         if (!patient?.ur_number) missingFields.push("UR Number");
-        if (!patient?.gender) missingFields.push("Gender");
 
         if (missingFields.length > 0) {
             toast({
