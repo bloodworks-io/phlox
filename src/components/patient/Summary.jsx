@@ -24,7 +24,7 @@ import {
   CheckIcon,
   AttachmentIcon,
 } from "@chakra-ui/icons";
-import { FaSave, FaFileAlt, FaThumbtack } from "react-icons/fa";
+import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { patientApi } from "../../utils/api/patientApi";
@@ -41,6 +41,8 @@ const Summary = forwardRef(
       handleSavePatientData,
       setParentIsModified,
       saveLoading,
+      onWrapUp,
+      wrapUpLoading,
       setIsModified,
       onCopy,
       recentlyCopied,
@@ -288,7 +290,7 @@ const Summary = forwardRef(
                 >
                   {recentlyCopied ? "Copied!" : "Copy to Clipboard"}
                 </GreyButton>
-                <GreenButton
+                <GreyButton
                   onClick={handleSavePatientData}
                   isLoading={saveLoading}
                   loadingText="Saving"
@@ -296,7 +298,25 @@ const Summary = forwardRef(
                   leftIcon={saveLoading ? null : <FaSave />}
                 >
                   {saveLoading ? "Saving..." : "Save Encounter"}
-                </GreenButton>
+                </GreyButton>
+                <Tooltip
+                  label="Review AI-extracted jobs, then finish and move to a new note"
+                  placement="top"
+                >
+                  <Box>
+                    <GreenButton
+                      onClick={onWrapUp}
+                      isLoading={wrapUpLoading}
+                      loadingText="Wrapping"
+                      width="150px"
+                      ml="2"
+                      leftIcon={wrapUpLoading ? null : <FaCheckDouble />}
+                      isDisabled={saveLoading}
+                    >
+                      {wrapUpLoading ? "Wrapping..." : "Wrap Up"}
+                    </GreenButton>
+                  </Box>
+                </Tooltip>
               </Flex>
             </Flex>
           </Collapse>

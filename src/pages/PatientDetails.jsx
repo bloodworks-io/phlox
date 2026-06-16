@@ -24,6 +24,8 @@ import TranscriptionPanel from "../components/panels/transcription/Transcription
 import DocumentPanel from "../components/panels/document/DocumentPanel";
 import PreviousVisitPanel from "../components/panels/previous-visit/PreviousVisitPanel";
 import { usePatient } from "../utils/hooks/usePatient";
+import { patientApi } from "../utils/api/patientApi";
+import WrapUpModal from "../components/modals/WrapUpModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useChat } from "../utils/hooks/useChat";
 import { useLetter } from "../utils/hooks/useLetter";
@@ -50,6 +52,8 @@ const PatientDetails = ({
     const hasDefaultTemplateBeenSet = useRef(false);
     const navigate = useNavigate();
     const [saveLoading, setSaveLoading] = useState(false);
+    const [wrapUpLoading, setWrapUpLoading] = useState(false);
+    const [isWrapUpOpen, setIsWrapUpOpen] = useState(false);
     const [isLetterModified, setIsLetterModified] = useState(false);
     const [isSummaryModified, setIsSummaryModified] = useState(false);
     const previousTranscriptionRef = useRef(null);
@@ -91,6 +95,8 @@ const PatientDetails = ({
         setPatient,
         setIsModified,
         savePatient,
+        savePatientCore,
+        createNewPatient,
         searchPatient,
         loadPatientDetails,
     } = usePatient(initialPatient, setInitialPatient);
@@ -530,6 +536,68 @@ const PatientDetails = ({
         }
     };
 
+    const handleOpenWrapUp = () => {
+        const missingFields = [];
+        if (!patient?.name) missingFields.push("Name");
+        if (!patient?.dob) missingFields.push("Date of Birth");
+        if (!patient?.ur_number) missingFields.push("UR Number");
+        if (!patient?.gender) missingFields.push("Gender");
+
+        if (missingFields.length > 0) {
+            toast({
+                title: "Missing Required Fields",
+                description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+        setIsWrapUpOpen(true);
+    };
+
+    const handleWrapUpConfirm = async (curatedJobs) => {
+        setWrapUpLoading(true);
+        try {
+            const saved = await savePatientCore(
+                refreshSidebar,
+                selectedDate,
+                toast,
+                hasTranscriptionOccurred ? initialTranscriptionContent : null,
+            );
+            if (!saved) {
+                return;
+            }
+            const noteId = saved.id ?? patient.id;
+
+            try {
+                await patientApi.updateJobsList(noteId, curatedJobs);
+            } catch (jobsErr) {
+                console.error("Failed to write curated jobs:", jobsErr);
+                toast({
+                    title: "Jobs not saved",
+                    description:
+                        "The note was saved, but the curated jobs couldn't be written. Please try again.",
+                    status: "warning",
+                    duration: 5000,
+                    isClosable: true,
+                });
+                return;
+            }
+            setIsSummaryModified(false);
+            setInitialTranscriptionContent({});
+            setHasTranscriptionOccurred(false);
+            setIsWrapUpOpen(false);
+            await createNewPatient();
+            navigate("/new-note");
+        } catch (error) {
+            console.error("Error during wrap up:", error);
+            // savePatientCore surfaces its own toast on save failure; keep modal open.
+        } finally {
+            setWrapUpLoading(false);
+        }
+    };
+
     const handleLetterChange = (newValue) => {
         letterHook.setFinalCorrespondence(newValue);
         setIsModified(true);
@@ -778,7 +846,9 @@ const PatientDetails = ({
                     setPatient={setPatient}
                     handleGenerateLetterClick={handleGenerateLetterClick}
                     handleSavePatientData={handleSavePatientData}
+                    onWrapUp={handleOpenWrapUp}
                     saveLoading={saveLoading}
+                    wrapUpLoading={wrapUpLoading}
                     setIsModified={setIsSummaryModified}
                     setParentIsModified={setIsSummaryModified}
                     template={currentTemplate}
@@ -788,6 +858,14 @@ const PatientDetails = ({
                     onCopy={handleCopy}
                     recentlyCopied={recentlyCopied}
                     isEncounterSaved={Boolean(patient?.id)}
+                />
+
+                <WrapUpModal
+                    isOpen={isWrapUpOpen}
+                    onClose={() => setIsWrapUpOpen(false)}
+                    onConfirm={handleWrapUpConfirm}
+                    planText={patient?.template_data?.plan || ""}
+                    submitting={wrapUpLoading}
                 />
 
                 <Letter
