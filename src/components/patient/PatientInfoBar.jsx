@@ -1,18 +1,10 @@
 // Component containing patient's basic information fields for editing.
 import React from "react";
-import {
-    Box,
-    Flex,
-    Input,
-    IconButton,
-    Select,
-    Tooltip,
-} from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
+import { Box, Flex, Input, Select, Tooltip } from "@chakra-ui/react";
 import { BiMaleFemale } from "react-icons/bi";
 import { FaUser, FaBirthdayCake, FaIdBadge } from "react-icons/fa";
 
-const PatientInfoBar = ({ patient, setPatient, handleSearch }) => {
+const PatientInfoBar = ({ patient, setPatient }) => {
     const handleChange = (field, value) => {
         setPatient((prev) => ({ ...prev, [field]: value }));
     };
@@ -92,19 +84,6 @@ const PatientInfoBar = ({ patient, setPatient, handleSearch }) => {
                                 handleChange("ur_number", e.target.value)
                             }
                             className="input-style"
-                            sx={{
-                                borderTopLeftRadius: "md !important",
-                                borderBottomLeftRadius: "md !important",
-                                borderTopRightRadius: "0 !important",
-                                borderBottomRightRadius: "0 !important",
-                            }}
-                        />
-                        <IconButton
-                            icon={<SearchIcon />}
-                            aria-label="Search UR Number"
-                            size="sm"
-                            onClick={() => handleSearch(patient.ur_number)}
-                            className="search-button"
                         />
                     </Flex>
                 </Tooltip>

@@ -13,6 +13,7 @@ import {
     useTemplateSelection,
 } from "../utils/templates/templateContext";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
+import NewNoteStartCard from "../components/patient/NewNoteStartCard";
 import Scribe, { useScribe } from "../components/patient/Scribe";
 import Summary from "../components/patient/Summary";
 import Chat from "../components/panels/chat/Chat";
@@ -50,6 +51,9 @@ const PatientDetails = ({
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [isSearchedPatient, setIsSearchedPatient] = useState(false);
     const [searchResult, setSearchResult] = useState(null);
+    const [startCardDismissed, setStartCardDismissed] = useState(false);
+    const showStartCard =
+        isNewPatient && !isSearchedPatient && !startCardDismissed;
     const hasDefaultTemplateBeenSet = useRef(false);
     const navigate = useNavigate();
     const [saveLoading, setSaveLoading] = useState(false);
@@ -209,11 +213,13 @@ const PatientDetails = ({
                 "Resetting isSearchedPatient - viewing historical patient",
             );
         }
+        setStartCardDismissed(false);
     }, [location.pathname]);
 
     useEffect(() => {
         if (isNewPatient && !patient?.id) {
             setIsSearchedPatient(false);
+            setStartCardDismissed(false);
             console.log("Resetting isSearchedPatient - new patient");
         }
     }, [isNewPatient, patient?.id]);
@@ -845,13 +851,22 @@ const PatientDetails = ({
         );
     }
 
+    if (showStartCard) {
+        return (
+            <NewNoteStartCard
+                onFind={handleSearch}
+                onNewPatient={() => setStartCardDismissed(true)}
+                isSearchLoading={isSearchLoading}
+            />
+        );
+    }
+
     return (
         <Box p={[2, 4, 5]} borderRadius="sm" w="100%" pb="100px">
             <VStack spacing={[3, 4, 5]} align="stretch">
                 <PatientInfoBar
                     patient={patient}
                     setPatient={setPatient}
-                    handleSearch={handleSearch}
                     template={currentTemplate}
                     templates={templates}
                     isNewPatient={isNewPatient}

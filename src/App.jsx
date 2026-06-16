@@ -54,6 +54,7 @@ function AppContent({ setIsInitializing }) {
     const [showSplashScreen, setShowSplashScreen] = useState(undefined);
     const [isLoadingSplashCheck, setIsLoadingSplashCheck] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [newNoteKey, setNewNoteKey] = useState(0);
     const [isModified, setIsModified] = useState(false);
 
     // Encryption state
@@ -130,6 +131,7 @@ function AppContent({ setIsInitializing }) {
     const handleNewPatient = async () => {
         try {
             await createNewPatient();
+            setNewNoteKey((k) => k + 1);
             if (resetLetter) {
                 resetLetter(); // Clear the letter when creating new patient
             }
@@ -525,6 +527,7 @@ function AppContent({ setIsInitializing }) {
                             path="/new-note"
                             element={
                                 <PatientDetails
+                                    key={`new-note-${newNoteKey}`}
                                     patient={patient}
                                     setPatient={setPatient}
                                     selectedDate={selectedDate}
