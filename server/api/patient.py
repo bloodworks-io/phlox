@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from server.database.entities.analysis import generate_previous_visit_summary
 from server.database.entities.jobs import (
     count_incomplete_jobs,
+    generate_jobs_list_from_plan,
     get_patients_with_outstanding_jobs,
     update_patient_jobs_list,
 )
@@ -29,6 +30,7 @@ from server.database.entities.templates import (
     update_field_adaptive_instructions,
 )
 from server.schemas.patient import (
+    JobExtractionRequest,
     JobsListUpdate,
     Patient,
     SavePatientRequest,
@@ -36,6 +38,7 @@ from server.schemas.patient import (
 from server.utils.nlp_tools.adaptive_refinement import (
     generate_adaptive_refinement_suggestions,
 )
+from server.utils.nlp_tools.jobs import extract_jobs_from_plan
 from server.utils.nlp_tools.summarisation import summarise_encounter
 from server.utils.nlp_tools.summarization_manager import summarization_manager
 
@@ -354,6 +357,45 @@ async def update_jobs_list(update: JobsListUpdate):
     except Exception as e:
         logging.error(f"Error processing to-do list update: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/extract-jobs")
+async def extract_jobs(request: JobExtractionRequest):
+    """Extract curated, actionable jobs from a plan string (Wrap Up modal).
+    """
+    plan = (request.plan or "").strip()
+    if not plan:
+        return {"action_items": [], "excluded": [], "fallback": "empty"}
+
+    try:
+        result = await extract_jobs_from_plan(plan)
+
+        # Model failure / nothing usable -> fall back to the basic splitter
+        if not result.action_items and not result.excluded:
+            dumb = json.loads(generate_jobs_list_from_plan(plan))
+            return {
+                "action_items": [
+                    {"text": j["job"], "category": "action", "rationale": None} for j in dumb
+                ],
+                "excluded": [],
+                "fallback": "heuristic",
+            }
+
+        return {
+            "action_items": [item.model_dump() for item in result.action_items],
+            "excluded": [item.model_dump() for item in result.excluded],
+            "fallback": None,
+        }
+    except Exception as e:
+        logging.error(f"Error extracting jobs: {e}")
+        dumb = json.loads(generate_jobs_list_from_plan(plan))
+        return {
+            "action_items": [
+                {"text": j["job"], "category": "action", "rationale": None} for j in dumb
+            ],
+            "excluded": [],
+            "fallback": "heuristic",
+        }
 
 
 @router.post("/update-jobs")

@@ -99,6 +99,14 @@ class JobsListUpdate(BaseModel):
     jobsList: list[Job]
 
 
+class JobExtractionRequest(BaseModel):
+    """
+    Request body for extracting curated jobs from a plan string.
+    """
+
+    plan: str
+
+
 class DocumentProcessResponse(BaseModel):
     """
     Represents the response from document processing.
