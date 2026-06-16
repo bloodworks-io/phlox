@@ -361,8 +361,7 @@ async def update_jobs_list(update: JobsListUpdate):
 
 @router.post("/extract-jobs")
 async def extract_jobs(request: JobExtractionRequest):
-    """Extract curated, actionable jobs from a plan string (Wrap Up modal).
-    """
+    """Extract curated, actionable jobs from a plan string (Wrap Up modal)."""
     plan = (request.plan or "").strip()
     if not plan:
         return {"action_items": [], "excluded": [], "fallback": "empty"}

@@ -12,17 +12,14 @@ JSON_SCHEMA_INSTRUCTION = (
     + json.dumps(
         {
             "action_items": [{"text": "Book PET scan", "category": "action"}],
-            "excluded": [
-                {"text": "Review in clinic in 4 weeks", "category": "follow_up"}
-            ],
+            "excluded": [{"text": "Review in clinic in 4 weeks", "category": "follow_up"}],
         }
     )
 )
 
 
 async def extract_jobs_from_plan(plan: str) -> JobExtractionResult:
-    """Extract curated, actionable jobs from an encounter plan.
-    """
+    """Extract curated, actionable jobs from an encounter plan."""
     try:
         config = config_manager.get_config()
         prompts = config_manager.get_prompts_and_options()
