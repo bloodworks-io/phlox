@@ -26,6 +26,7 @@ def _get_store():
 
     return PDFFormStore()
 
+
 async def list_templates(
     _tool_call: dict[str, Any],
     _llm_client,
@@ -66,6 +67,7 @@ async def list_templates(
         content = f"Error listing templates: {exc}"
 
     yield end_message(function_response={"content": content, "citations": []})
+
 
 async def fill_form(
     tool_call: dict[str, Any],

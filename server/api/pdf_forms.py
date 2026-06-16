@@ -55,7 +55,9 @@ async def create_template(
     try:
         heights = json.loads(page_heights)
     except (json.JSONDecodeError, TypeError) as exc:
-        raise HTTPException(status_code=400, detail="page_heights must be a valid JSON array") from exc
+        raise HTTPException(
+            status_code=400, detail="page_heights must be a valid JSON array"
+        ) from exc
 
     store = _get_store()
     template = store.create_template(

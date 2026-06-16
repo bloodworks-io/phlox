@@ -177,7 +177,9 @@ class PDFFormStore:
             (template_id,),
         ).fetchall()
         field_cols = [d[0] for d in db.execute("SELECT * FROM pdf_form_fields LIMIT 0").description]
-        template["fields"] = [_row_to_field(dict(zip(field_cols, r, strict=True))) for r in field_rows]
+        template["fields"] = [
+            _row_to_field(dict(zip(field_cols, r, strict=True))) for r in field_rows
+        ]
         return template
 
     def get_template_pdf(self, template_id: str) -> bytes | None:
