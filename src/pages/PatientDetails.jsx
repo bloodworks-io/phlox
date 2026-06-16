@@ -32,6 +32,7 @@ import { useLetter } from "../utils/hooks/useLetter";
 import { useReasoning } from "../utils/hooks/useReasoning";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { useToastMessage } from "../utils/hooks/UseToastMessage";
+import { DEFAULT_TOAST_CONFIG } from "../utils/constants";
 
 const PatientDetails = ({
     patient: initialPatient,
@@ -610,9 +611,21 @@ const PatientDetails = ({
     };
 
     const handleSearch = async (urNumber) => {
+        const query = (urNumber || "").trim();
+        if (!query) {
+            toast({
+                title: "Enter a UR number",
+                description:
+                    "Type a UR number, then click search to find an existing patient.",
+                status: "warning",
+                ...DEFAULT_TOAST_CONFIG,
+            });
+            return;
+        }
+
         setIsSearchLoading(true);
         try {
-            const result = await searchPatient(urNumber, selectedDate);
+            const result = await searchPatient(query, selectedDate);
             if (result) {
                 setSearchResult(result);
                 setIsSearchedPatient(true);
@@ -620,6 +633,13 @@ const PatientDetails = ({
                 console.log(
                     "Setting isSearchedPatient to true - search successful",
                 );
+            } else {
+                toast({
+                    title: "No patient found",
+                    description: `No patient matches UR number "${query}". Fill in their details to create a new record.`,
+                    status: "info",
+                    ...DEFAULT_TOAST_CONFIG,
+                });
             }
         } finally {
             setIsSearchLoading(false);
