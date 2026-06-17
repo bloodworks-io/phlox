@@ -35,9 +35,11 @@ async def complete_job(note_id: int, job_id: int) -> dict:
         # Get the patient record
         get_db().cursor.execute(
             """
-            SELECT id, name, ur_number, encounter_date, jobs_list
-            FROM patients
-            WHERE id = ?
+            SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+                   p.first_name, p.last_name
+            FROM encounters e
+            LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+            WHERE e.id = ?
             """,
             (note_id,),
         )
@@ -48,6 +50,9 @@ async def complete_job(note_id: int, job_id: int) -> dict:
             return {"success": False, "error": f"No patient record found with ID: {note_id}"}
 
         patient = dict(row)
+        first = patient.get("first_name")
+        last = patient.get("last_name")
+        patient_name = f"{last}, {first}" if (last and first) else (last or first or "")
 
         # Parse jobs list
         jobs_list = []
@@ -90,7 +95,7 @@ async def complete_job(note_id: int, job_id: int) -> dict:
                 "success": True,
                 "already_completed": True,
                 "patient": {
-                    "name": patient["name"],
+                    "name": patient_name,
                     "ur_number": patient["ur_number"],
                     "encounter_date": patient["encounter_date"],
                 },
@@ -105,7 +110,7 @@ async def complete_job(note_id: int, job_id: int) -> dict:
             "success": True,
             "already_completed": False,
             "patient": {
-                "name": patient["name"],
+                "name": patient_name,
                 "ur_number": patient["ur_number"],
                 "encounter_date": patient["encounter_date"],
             },

@@ -147,22 +147,26 @@ async def search_patient_notes(
         if ur_number:
             get_db().cursor.execute(
                 """
-                SELECT id, name, ur_number, dob, encounter_date,
-                       template_data, raw_transcription, encounter_summary, final_letter
-                FROM patients
-                WHERE ur_number = ?
-                ORDER BY encounter_date DESC
+                SELECT e.id, e.ur_number, e.encounter_date,
+                       e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
+                       p.first_name, p.last_name, p.dob
+                FROM encounters e
+                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                WHERE e.ur_number = ?
+                ORDER BY e.encounter_date DESC
                 """,
                 (ur_number,),
             )
         else:
             get_db().cursor.execute(
                 """
-                SELECT id, name, ur_number, dob, encounter_date,
-                       template_data, raw_transcription, encounter_summary, final_letter
-                FROM patients
-                WHERE LOWER(name) LIKE LOWER(?)
-                ORDER BY encounter_date DESC
+                SELECT e.id, e.ur_number, e.encounter_date,
+                       e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
+                       p.first_name, p.last_name, p.dob
+                FROM encounters e
+                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                ORDER BY e.encounter_date DESC
                 """,
                 (f"%{patient_name}%",),
             )
@@ -184,8 +188,10 @@ async def search_patient_notes(
 
             # Store patient info from first (most recent) record
             if patient_info is None:
+                first = record.get("first_name")
+                last = record.get("last_name")
                 patient_info = {
-                    "name": record["name"],
+                    "name": f"{last}, {first}" if (last and first) else (last or first or ""),
                     "ur_number": record["ur_number"],
                     "dob": record["dob"],
                 }

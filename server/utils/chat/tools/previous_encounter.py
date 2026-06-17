@@ -39,7 +39,7 @@ async def get_previous_encounter(
             get_db().cursor.execute(
                 """
                 SELECT id, encounter_date, template_key, template_data, encounter_summary
-                FROM patients
+                FROM encounters
                 WHERE ur_number = ? AND encounter_date < ?
                 ORDER BY encounter_date DESC
                 LIMIT 1
@@ -50,7 +50,7 @@ async def get_previous_encounter(
             get_db().cursor.execute(
                 """
                 SELECT id, encounter_date, template_key, template_data, encounter_summary
-                FROM patients
+                FROM encounters
                 WHERE ur_number = ?
                 ORDER BY encounter_date DESC
                 LIMIT 1
