@@ -42,22 +42,18 @@ def run_database_test(cursor, db):
             ("test_template", "Test Template", json.dumps(template_data)),
         )
 
-        # Insert test patient with template
         template_patient_data = {"presenting_complaint": "Test complaint"}
 
         cursor.execute(
             """
-            INSERT INTO patients (
-                name, dob, ur_number, gender, encounter_date,
+            INSERT INTO encounters (
+                ur_number, encounter_date,
                 template_key, template_data, raw_transcription,
                 transcription_duration, process_duration
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
             (
-                "Test User",
-                "2000-01-01",
                 "UR12345",
-                "M",
                 datetime.now().isoformat(),
                 "test_template",
                 json.dumps(template_patient_data),
@@ -65,6 +61,19 @@ def run_database_test(cursor, db):
                 1.0,
                 1.0,
             ),
+        )
+
+        cursor.execute(
+            """
+            INSERT INTO patient_profiles (ur_number, first_name, last_name, dob, gender)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(ur_number) DO UPDATE SET
+                first_name = excluded.first_name,
+                last_name = excluded.last_name,
+                dob = excluded.dob,
+                gender = excluded.gender
+            """,
+            ("UR12345", "Test", "User", "2000-01-01", "M"),
         )
 
         db.commit()
@@ -85,7 +94,8 @@ def clear_test_database(db, cursor, is_test):
     """
     if is_test:
         tables = [
-            "patients",
+            "encounters",
+            "patient_profiles",
             "clinical_templates",
             "todos",
             "config",

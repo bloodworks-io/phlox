@@ -49,15 +49,21 @@ def get_patients_with_outstanding_jobs():
     """
     try:
         get_db().cursor.execute("""
-            SELECT id, name, ur_number, dob, encounter_date,
-                   encounter_summary, jobs_list, reasoning_output
-            FROM patients
-            WHERE all_jobs_completed = 0
+            SELECT e.id, e.ur_number, e.encounter_date,
+                   e.encounter_summary, e.jobs_list, e.reasoning_output,
+                   p.first_name, p.last_name, p.dob
+            FROM encounters e
+            LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+            WHERE e.all_jobs_completed = 0
             """)
 
         patients = []
         for row in get_db().cursor.fetchall():
             patient = dict(row)
+
+            first = patient.get("first_name")
+            last = patient.get("last_name")
+            patient["name"] = f"{last}, {first}" if (last and first) else (last or first or "")
 
             # Parse jobs list if it exists
             if patient.get("jobs_list"):
@@ -99,7 +105,7 @@ def update_patient_jobs_list(note_id: int, jobs_list: list):
         all_jobs_completed = all(job.get("completed", False) for job in serializable_jobs)
 
         get_db().cursor.execute(
-            "UPDATE patients SET jobs_list = ?, all_jobs_completed = ? WHERE id = ?",
+            "UPDATE encounters SET jobs_list = ?, all_jobs_completed = ? WHERE id = ?",
             (serialized_jobs_list, all_jobs_completed, note_id),
         )
         get_db().commit()
@@ -114,7 +120,7 @@ def count_incomplete_jobs():
     """Counts the number of incomplete jobs across all patients."""
     logging.info("Counting incomplete jobs across all patients")
     try:
-        get_db().cursor.execute("SELECT jobs_list FROM patients WHERE all_jobs_completed = 0")
+        get_db().cursor.execute("SELECT jobs_list FROM encounters WHERE all_jobs_completed = 0")
         rows = get_db().cursor.fetchall()
 
         incomplete_jobs_count = 0

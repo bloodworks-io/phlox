@@ -17,7 +17,7 @@ from server.schemas.patient import Patient
 
 def get_unique_primary_conditions():
     """
-    Retrieve all unique primary conditions from the patients table.
+    Retrieve all unique primary conditions from the encounters table.
 
     Returns:
         list: A list of unique primary condition strings, excluding None values.
@@ -25,7 +25,7 @@ def get_unique_primary_conditions():
     try:
         get_db().cursor.execute("""
             SELECT DISTINCT primary_condition
-            FROM patients
+            FROM encounters
             WHERE primary_condition IS NOT NULL
             AND primary_condition != ''
             ORDER BY primary_condition ASC
@@ -37,12 +37,10 @@ def get_unique_primary_conditions():
         return []
 
 
-def _display_name(patient: Patient) -> str:
-    """Encounter display name: prefer the explicit name, else format first/last."""
-    if patient.name:
-        return patient.name
-    first = (patient.first_name or "").strip()
-    last = (patient.last_name or "").strip()
+def _format_name(first_name: str | None, last_name: str | None) -> str:
+    """Format a display name as 'Last, First'"""
+    first = (first_name or "").strip()
+    last = (last_name or "").strip()
     if last and first:
         return f"{last}, {first}"
     return last or first
@@ -82,6 +80,24 @@ def get_patient_profile(ur_number: str | None) -> dict[str, Any] | None:
     except Exception as e:
         logging.error(f"Error fetching patient profile: {e}")
         return None
+
+
+def _attach_profile_demographics(row: dict[str, Any]) -> dict[str, Any]:
+    """Merge profile-sourced demographics into an encounter row and set the derived 'name'."""
+    profile = get_patient_profile(row.get("ur_number"))
+    if profile:
+        row["first_name"] = profile.get("first_name")
+        row["last_name"] = profile.get("last_name")
+        row["dob"] = profile.get("dob")
+        row["gender"] = profile.get("gender")
+        row["address"] = profile.get("address")
+        row["phone"] = profile.get("phone")
+    else:
+        first, last = _split_name(row.get("name"))
+        row["first_name"] = row.get("first_name") or first
+        row["last_name"] = row.get("last_name") or last
+    row["name"] = _format_name(row.get("first_name"), row.get("last_name"))
+    return row
 
 
 def upsert_patient_profile(
@@ -158,21 +174,18 @@ def save_patient(patient: Patient) -> int:
         )
         get_db().cursor.execute(
             """
-            INSERT INTO patients (
-                name, dob, ur_number, gender, encounter_date,
+            INSERT INTO encounters (
+                ur_number, encounter_date,
                 template_key, template_data, raw_transcription,
                 transcription_duration, process_duration,
                 primary_condition, final_letter, jobs_list,
                 all_jobs_completed, encounter_summary,
                 created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                _display_name(patient),
-                patient.dob,
                 patient.ur_number,
-                patient.gender,
                 patient.encounter_date,
                 patient.template_key,
                 json.dumps(patient.template_data),
@@ -190,6 +203,8 @@ def save_patient(patient: Patient) -> int:
         )
         get_db().commit()
 
+        encounter_id = get_db().cursor.lastrowid
+
         # patient_profiles is the source of truth for demographics.
         if patient.ur_number:
             upsert_patient_profile(
@@ -202,7 +217,7 @@ def save_patient(patient: Patient) -> int:
                 patient.phone,
             )
 
-        return get_db().cursor.lastrowid
+        return encounter_id
     except Exception as e:
         get_db().rollback()
         logging.error(f"Error saving patient: {e}")
@@ -219,7 +234,7 @@ def update_patient(patient: Patient) -> None:
 
     # First get existing patient data
     get_db().cursor.execute(
-        "SELECT template_data, jobs_list FROM patients WHERE id = ?",
+        "SELECT template_data, jobs_list FROM encounters WHERE id = ?",
         (patient.id,),
     )
     row = get_db().cursor.fetchone()
@@ -313,11 +328,8 @@ def update_patient(patient: Patient) -> None:
     # Update the database
     get_db().cursor.execute(
         """
-        UPDATE patients
-        SET name = ?,
-            dob = ?,
-            ur_number = ?,
-            gender = ?,
+        UPDATE encounters
+        SET ur_number = ?,
             encounter_date = ?,
             template_key = ?,
             template_data = ?,
@@ -333,10 +345,7 @@ def update_patient(patient: Patient) -> None:
         WHERE id = ?
         """,
         (
-            _display_name(patient),
-            patient.dob,
             patient.ur_number,
-            patient.gender,
             patient.encounter_date,
             patient.template_key,
             template_data_json,
@@ -378,7 +387,7 @@ def update_patient_reasoning(note_id: int, reasoning_output: dict) -> None:
     try:
         reasoning_output_json = json.dumps(reasoning_output)
         get_db().cursor.execute(
-            "UPDATE patients SET reasoning_output = ? WHERE id = ?",
+            "UPDATE encounters SET reasoning_output = ? WHERE id = ?",
             (reasoning_output_json, note_id),
         )
         get_db().commit()
@@ -404,26 +413,34 @@ def get_patients_by_date(
     """
     try:
         query = """
-            SELECT id, name, ur_number, dob, gender, encounter_date, template_key
+            SELECT e.id, e.ur_number, e.encounter_date, e.template_key,
+                   p.first_name, p.last_name, p.dob, p.gender, p.address, p.phone
             """
 
         # Add additional fields if detailed information is requested
         if include_data:
-            query += ", template_data, jobs_list, encounter_summary, reasoning_output"
+            query += ", e.template_data, e.jobs_list, e.encounter_summary, e.reasoning_output"
 
-        query += " FROM patients WHERE encounter_date = ?"
+        query += """
+            FROM encounters e
+            LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+            WHERE e.encounter_date = ?
+            """
         params = [date]
 
         if template_key:
-            query += " AND template_key = ?"
+            query += " AND e.template_key = ?"
             params.append(template_key)
 
-        query += " ORDER BY name"
+        query += " ORDER BY p.last_name, p.first_name"
 
         get_db().cursor.execute(query, params)
         patients = []
         for row in get_db().cursor.fetchall():
             patient = dict(row)
+
+            # Derive the display name the API/frontend expect ('Last, First')
+            patient["name"] = _format_name(patient.get("first_name"), patient.get("last_name"))
 
             # Process template data if included
             if include_data:
@@ -469,7 +486,7 @@ def get_patient_by_id(note_id: int) -> dict[str, Any] | None:
         Optional[Dict[str, Any]]: Patient data if found.
     """
     try:
-        get_db().cursor.execute("SELECT * FROM patients WHERE id = ?", (note_id,))
+        get_db().cursor.execute("SELECT * FROM encounters WHERE id = ?", (note_id,))
         row = get_db().cursor.fetchone()
         if row:
             patient = dict(row)
@@ -482,15 +499,7 @@ def get_patient_by_id(note_id: int) -> dict[str, Any] | None:
                 except json.JSONDecodeError:
                     patient["reasoning_output"] = None
 
-            profile = get_patient_profile(patient.get("ur_number"))
-            first_name = profile.get("first_name") if profile else None
-            last_name = profile.get("last_name") if profile else None
-            if not (first_name or last_name):
-                first_name, last_name = _split_name(patient.get("name"))
-            patient["first_name"] = first_name
-            patient["last_name"] = last_name
-            patient["address"] = profile.get("address") if profile else None
-            patient["phone"] = profile.get("phone") if profile else None
+            _attach_profile_demographics(patient)
             return patient
         return None
     except Exception as e:
@@ -516,7 +525,7 @@ def get_patient_history(ur_number: str, template_key: str | None = None) -> list
             get_db().cursor.execute(
                 """
                 SELECT id, encounter_date, template_key, template_data
-                FROM patients
+                FROM encounters
                 WHERE ur_number = ? AND template_key LIKE ?
                 ORDER BY encounter_date DESC
                 """,
@@ -526,7 +535,7 @@ def get_patient_history(ur_number: str, template_key: str | None = None) -> list
             get_db().cursor.execute(
                 """
                 SELECT id, encounter_date, template_key, template_data
-                FROM patients
+                FROM encounters
                 WHERE ur_number = ?
                 ORDER BY encounter_date DESC
                 """,
@@ -574,8 +583,8 @@ def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
     try:
         get_db().cursor.execute(
             """
-            SELECT id, name, gender, dob, ur_number, encounter_date, template_key, template_data
-            FROM patients
+            SELECT id, ur_number, encounter_date, template_key, template_data
+            FROM encounters
             WHERE ur_number = ?
             ORDER BY encounter_date DESC
             LIMIT 1
@@ -599,15 +608,13 @@ def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
                 profile = get_patient_profile(row["ur_number"])
                 first_name = profile.get("first_name") if profile else None
                 last_name = profile.get("last_name") if profile else None
-                if not (first_name or last_name):
-                    first_name, last_name = _split_name(row["name"])
 
                 encounters.append(
                     {
                         "id": row["id"],
-                        "name": row["name"],
-                        "gender": row["gender"],
-                        "dob": row["dob"],
+                        "name": _format_name(first_name, last_name),
+                        "gender": profile.get("gender") if profile else None,
+                        "dob": profile.get("dob") if profile else None,
                         "ur_number": row["ur_number"],
                         "first_name": first_name,
                         "last_name": last_name,
@@ -636,7 +643,7 @@ def delete_patient_by_id(note_id: int) -> bool:
         bool: True if deleted successfully.
     """
     try:
-        get_db().cursor.execute("DELETE FROM patients WHERE id = ?", (note_id,))
+        get_db().cursor.execute("DELETE FROM encounters WHERE id = ?", (note_id,))
         get_db().commit()
         return get_db().cursor.rowcount > 0
     except Exception as e:
@@ -661,7 +668,7 @@ def update_patient_summary(
     try:
         get_db().cursor.execute(
             """
-            UPDATE patients
+            UPDATE encounters
             SET encounter_summary = ?,
                 primary_condition = ?,
                 updated_at = ?

@@ -1,4 +1,5 @@
-"""Migration v6: patient_profiles table + job_extraction prompt seed."""
+"""Migration v6: patient_profiles table, rename patients -> encounters, drop
+redundant demographics, + job_extraction prompt seed."""
 
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 
@@ -21,10 +22,8 @@ def _split_name(name):
 
 
 def migrate(cursor, _db):
-    """Add patient_profiles (source-of-truth per-person demographics) and seed
-    the job_extraction prompt.
-
-    patient_profiles holds stable demographics keyed by ur_number.
+    """patient_profiles holds stable demographics keyed by ur_number; encounters keeps
+    only per-visit data.
     """
     cursor.execute(
         """
@@ -63,6 +62,10 @@ def migrate(cursor, _db):
             """,
             (row["ur_number"], first_name, last_name, row["dob"], row["gender"]),
         )
+
+    cursor.execute("ALTER TABLE patients RENAME TO encounters")
+    for column in ("name", "dob", "gender"):
+        cursor.execute(f"ALTER TABLE encounters DROP COLUMN {column}")
 
     cursor.execute(
         """

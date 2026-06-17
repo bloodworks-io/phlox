@@ -14,6 +14,7 @@ from server.database.core.connection import (
 from server.database.core.connection import (
     initialize_database,
 )
+from server.database.entities.patient import _split_name, upsert_patient_profile
 from server.database.entities.templates import save_template
 from server.schemas.templates import ClinicalTemplate, TemplateField
 
@@ -34,7 +35,8 @@ def clear_database():
     """Clear existing database tables."""
     initialize_database()
     print("Clearing existing database...")
-    patient_db().cursor.execute("DELETE FROM patients")
+    patient_db().cursor.execute("DELETE FROM encounters")
+    patient_db().cursor.execute("DELETE FROM patient_profiles")
     patient_db().cursor.execute("DELETE FROM clinical_templates")
     patient_db().commit()
     print("Database cleared.")
@@ -106,20 +108,17 @@ def initialize_fake_patients():
     for patient in fake_patients:
         patient_db().cursor.execute(
             """
-            INSERT INTO patients (
-                name, dob, ur_number, gender, encounter_date,
+            INSERT INTO encounters (
+                ur_number, encounter_date,
                 template_key, template_data, raw_transcription,
                 transcription_duration, process_duration,
                 jobs_list, all_jobs_completed, final_letter,
                 primary_condition, encounter_summary
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                patient["name"],
-                patient["dob"],
                 patient["ur_number"],
-                patient["gender"],
                 patient["encounter_date"],
                 patient["template_key"],
                 patient["template_data"],
@@ -132,6 +131,17 @@ def initialize_fake_patients():
                 patient["primary_condition"],
                 patient["encounter_summary"],
             ),
+        )
+
+        first_name, last_name = _split_name(patient["name"])
+        upsert_patient_profile(
+            patient["ur_number"],
+            first_name,
+            last_name,
+            patient["dob"],
+            patient["gender"],
+            None,
+            None,
         )
 
     patient_db().commit()
