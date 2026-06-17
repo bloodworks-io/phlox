@@ -3,6 +3,7 @@ import React, {
   useReducer,
   useCallback,
   useEffect,
+  useMemo,
 } from "react";
 import { useApiToast } from "../helpers/apiToastContext";
 import { templateApi } from "../api/templateApi";
@@ -333,27 +334,26 @@ export const TemplateProvider = ({ children }) => {
     [toast, refreshTemplates],
   );
 
-  const value = {
-    ...state,
-    loadTemplates,
-    setActiveTemplate,
-    updateDefaultTemplate,
-    loadDefaultTemplate,
-    refreshTemplates,
-    deleteTemplate,
-  };
+  const value = useMemo(
+    () => ({
+      ...state,
+      setActiveTemplate,
+      isLoading: state.visualLoading,
+      refreshTemplates,
+      deleteTemplate,
+      loadDefaultTemplate,
+    }),
+    [
+      state,
+      setActiveTemplate,
+      refreshTemplates,
+      deleteTemplate,
+      loadDefaultTemplate,
+    ],
+  );
 
   return (
-    <TemplateContext.Provider
-      value={{
-        ...state,
-        setActiveTemplate,
-        isLoading: state.visualLoading,
-        refreshTemplates,
-        deleteTemplate,
-        loadDefaultTemplate,
-      }}
-    >
+    <TemplateContext.Provider value={value}>
       {children}
     </TemplateContext.Provider>
   );

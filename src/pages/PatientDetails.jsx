@@ -700,6 +700,9 @@ const PatientDetails = ({
                         latestVersion || defaultTemplate || templates[0];
 
                     if (fallback) {
+                        if (fallback.template_key === patient.template_key)
+                            return;
+
                         console.log(
                             `Upgrading pre-fill template to: ${fallback.template_key}`,
                         );
