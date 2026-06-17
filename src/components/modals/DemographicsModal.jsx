@@ -22,6 +22,7 @@ import { FaUserEdit, FaFileUpload } from "react-icons/fa";
 import { colors } from "../../theme/colors";
 import { transcriptionApi } from "../../utils/api/transcriptionApi";
 import { extractFromFile } from "../../utils/helpers/documentExtraction";
+import { areRequiredDemographicsMet } from "../../utils/helpers/validationHelpers";
 
 const Field = ({ label, required, children }) => (
     <Box flex={1} minW="0">
@@ -45,6 +46,7 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
     const [isExtracting, setIsExtracting] = useState(false);
     const [extractError, setExtractError] = useState(null);
     const fileInputRef = useRef(null);
+    const firstNameRef = useRef(null);
 
     useEffect(() => {
         if (!isOpen || !patient) return;
@@ -109,11 +111,7 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
         if (file) handleFile(file);
     };
 
-    const requiredMet =
-        form.first_name?.trim() &&
-        form.last_name?.trim() &&
-        form.dob?.trim() &&
-        form.ur_number?.trim();
+    const requiredMet = areRequiredDemographicsMet(form);
 
     const handleSave = () => {
         const first = (form.first_name || "").trim();
@@ -139,7 +137,12 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            size="lg"
+            initialFocusRef={firstNameRef}
+        >
             <ModalOverlay />
             <ModalContent className="modal-style">
                 <ModalHeader>
@@ -208,6 +211,7 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
                         <HStack spacing={3} align="flex-start">
                             <Field label="First name" required>
                                 <Input
+                                    ref={firstNameRef}
                                     className="input-style"
                                     size="sm"
                                     placeholder="First name"

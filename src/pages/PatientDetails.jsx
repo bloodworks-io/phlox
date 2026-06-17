@@ -34,6 +34,7 @@ import { useChat } from "../utils/hooks/useChat";
 import { useLetter } from "../utils/hooks/useLetter";
 import { useReasoning } from "../utils/hooks/useReasoning";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
+import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
 import { useToastMessage } from "../utils/hooks/UseToastMessage";
 import { DEFAULT_TOAST_CONFIG } from "../utils/constants";
 
@@ -112,6 +113,8 @@ const PatientDetails = ({
         searchPatient,
         loadPatientDetails,
     } = usePatient(initialPatient, setInitialPatient);
+
+    const requiredDemographicsMet = areRequiredDemographicsMet(patient);
 
     // Scribe hook for recording controls
     const scribeControls = useScribe({
@@ -865,7 +868,10 @@ const PatientDetails = ({
         return (
             <NewNoteStartCard
                 onFind={handleSearch}
-                onNewPatient={() => setStartCardDismissed(true)}
+                onNewPatient={() => {
+                    setStartCardDismissed(true);
+                    onOpenDemographics();
+                }}
                 isSearchLoading={isSearchLoading}
             />
         );
@@ -986,6 +992,8 @@ const PatientDetails = ({
                 isTranscriptionOpen={isTranscriptionPanelOpen}
                 hasRawTranscription={!!patient.raw_transcription}
                 onAudioDrop={scribeControls.handleAudioDrop}
+                canRecord={requiredDemographicsMet}
+                onBlockedRecord={onOpenDemographics}
             />
 
             {/* Floating Action Menu - always expanded on right side */}

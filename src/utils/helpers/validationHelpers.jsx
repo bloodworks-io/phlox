@@ -1,4 +1,13 @@
 // Helper functions for validating data before submission.
+
+export const areRequiredDemographicsMet = (patient) =>
+    Boolean(
+        patient?.first_name?.trim() &&
+        patient?.last_name?.trim() &&
+        patient?.dob?.trim() &&
+        patient?.ur_number?.trim(),
+    );
+
 export const validatePatientData = (patientData) => {
     const requiredFields = ["name", "dob", "ur_number", "gender"];
     const missingFields = requiredFields.filter((field) => !patientData[field]);
