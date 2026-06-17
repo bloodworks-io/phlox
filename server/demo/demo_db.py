@@ -133,13 +133,13 @@ def initialize_fake_patients():
             ),
         )
 
-        first_name, last_name = _split_name(patient["name"])
+        first_name, last_name = _split_name(str(patient["name"]))
         upsert_patient_profile(
-            patient["ur_number"],
+            str(patient["ur_number"]),
             first_name,
             last_name,
-            patient["dob"],
-            patient["gender"],
+            str(patient["dob"]),
+            str(patient["gender"]),
             None,
             None,
         )
