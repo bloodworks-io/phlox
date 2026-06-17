@@ -3,7 +3,7 @@
     {
       "name": "Smith, John",
       "dob": "1975-03-15",
-      "ur_number": "UR123456",
+      "ur_number": "UR00001",
       "gender": "M",
       "primary_history": "# Anaemia\n- Diagnosed with iron-deficiency anaemia 2 years ago\n- On oral iron supplementation\n- Last FBE showed improvement",
       "oahp": "# Hypertension\n# Hyperlipidaemia\n# Type 2 Diabetes",
@@ -16,7 +16,7 @@
     {
       "name": "Johnson, Emily",
       "dob": "1988-11-22",
-      "ur_number": "UR789012",
+      "ur_number": "UR00002",
       "gender": "F",
       "primary_history": "# Thrombocytopenia\n- Incidental finding 6 months ago\n- Asymptomatic\n- Stable platelet count",
       "oahp": "# Asthma\n# Eczema",
@@ -29,7 +29,7 @@
     {
       "name": "Brown, Robert",
       "dob": "1962-07-30",
-      "ur_number": "UR345678",
+      "ur_number": "UR00003",
       "gender": "M",
       "primary_history": "# Polycythaemia Vera\n- Diagnosed 5 years ago\n- On hydroxyurea\n- Regular venesections",
       "oahp": "# Gout\n# Hypertension",
@@ -42,7 +42,7 @@
     {
       "name": "Davis, Sarah",
       "dob": "1990-05-18",
-      "ur_number": "UR901234",
+      "ur_number": "UR00004",
       "gender": "F",
       "primary_history": "# Sickle Cell Trait\n- Discovered during pregnancy screening\n- No history of crises",
       "oahp": "# Migraine\n# Anxiety",
@@ -55,7 +55,7 @@
     {
       "name": "Wilson, Michael",
       "dob": "1955-09-03",
-      "ur_number": "UR567890",
+      "ur_number": "UR00005",
       "gender": "M",
       "primary_history": "# Chronic Lymphocytic Leukaemia\n- Diagnosed 3 years ago\n- Watch and wait approach\n- Stable lymphocyte count",
       "oahp": "# Osteoarthritis\n# Benign Prostatic Hyperplasia",
@@ -68,7 +68,7 @@
     {
       "name": "Taylor, Emma",
       "dob": "1982-12-10",
-      "ur_number": "UR234567",
+      "ur_number": "UR00006",
       "gender": "F",
       "primary_history": "# Iron Deficiency\n- Diagnosed 1 year ago\n- Heavy menstrual bleeding\n- On oral iron therapy",
       "oahp": "# Endometriosis\n# Depression",
@@ -81,7 +81,7 @@
     {
       "name": "Anderson, James",
       "dob": "1970-02-25",
-      "ur_number": "UR678901",
+      "ur_number": "UR00007",
       "gender": "M",
       "primary_history": "# Haemophilia A\n- Diagnosed in childhood\n- On prophylactic factor VIII\n- No recent bleeds",
       "oahp": "# Obesity\n# Obstructive Sleep Apnoea",
@@ -94,7 +94,7 @@
     {
       "name": "Martin, Olivia",
       "dob": "1995-08-07",
-      "ur_number": "UR012345",
+      "ur_number": "UR00008",
       "gender": "F",
       "primary_history": "# Immune Thrombocytopenia\n- Diagnosed 2 years ago\n- Previous treatment with steroids\n- Currently on watch and wait",
       "oahp": "# Hashimoto's Thyroiditis",
@@ -107,7 +107,7 @@
     {
       "name": "Thompson, William",
       "dob": "1948-11-30",
-      "ur_number": "UR456789",
+      "ur_number": "UR00009",
       "gender": "M",
       "primary_history": "# Myelodysplastic Syndrome\n- Diagnosed 1 year ago\n- Low-risk IPSS-R\n- Transfusion dependent",
       "oahp": "# Coronary Artery Disease\n# Type 2 Diabetes",
@@ -120,7 +120,7 @@
     {
       "name": "White, Sophia",
       "dob": "1987-04-12",
-      "ur_number": "UR890123",
+      "ur_number": "UR00010",
       "gender": "F",
       "primary_history": "# Beta Thalassemia Minor\n- Diagnosed in childhood\n- Asymptomatic\n- Regular monitoring",
       "oahp": "# Polycystic Ovary Syndrome",
@@ -133,7 +133,7 @@
     {
       "name": "Clark, Daniel",
       "dob": "1973-06-28",
-      "ur_number": "UR345678",
+      "ur_number": "UR00011",
       "gender": "M",
       "primary_history": "# Hereditary Spherocytosis\n- Diagnosed in young adulthood\n- Splenectomy at age 25\n- Stable haemoglobin",
       "oahp": "# Dyslipidaemia",
@@ -146,7 +146,7 @@
     {
       "name": "Harris, Ava",
       "dob": "1992-01-05",
-      "ur_number": "UR901234",
+      "ur_number": "UR00012",
       "gender": "F",
       "primary_history": "# Von Willebrand Disease Type 1\n- Diagnosed at age 16\n- Mild bleeding symptoms\n- Uses tranexamic acid for heavy periods",
       "oahp": "# Generalised Anxiety Disorder",
@@ -159,7 +159,7 @@
     {
       "name": "Young, Ethan",
       "dob": "1980-09-20",
-      "ur_number": "UR567890",
+      "ur_number": "UR00013",
       "gender": "M",
       "primary_history": "# Paroxysmal Nocturnal Hemoglobinuria\n- Diagnosed 3 years ago\n- On eculizumab therapy\n- History of thrombosis",
       "oahp": "# Deep Vein Thrombosis\n# Chronic Kidney Disease Stage 2",
@@ -172,7 +172,7 @@
     {
       "name": "Lee, Grace",
       "dob": "1968-03-17",
-      "ur_number": "UR234567",
+      "ur_number": "UR00014",
       "gender": "F",
       "primary_history": "# Essential Thrombocythemia\n- JAK2 positive\n- Diagnosed 4 years ago\n- On hydroxyurea",
       "oahp": "# Migraine with Aura\n# Osteoporosis",
@@ -185,7 +185,7 @@
     {
       "name": "Walker, Noah",
       "dob": "1998-12-03",
-      "ur_number": "UR678901",
+      "ur_number": "UR00015",
       "gender": "M",
       "primary_history": "# Severe Haemophilia B\n- Diagnosed in infancy\n- On prophylactic factor IX\n- Target joints: right knee, left ankle",
       "oahp": "# Chronic Hepatitis C (treated)",
@@ -198,7 +198,7 @@
     {
       "name": "Hall, Chloe",
       "dob": "1985-07-09",
-      "ur_number": "UR012345",
+      "ur_number": "UR00016",
       "gender": "F",
       "primary_history": "# Aplastic Anaemia\n- Diagnosed 2 years ago\n- Failed immunosuppressive therapy\n- Post-allogeneic stem cell transplant 6 months ago",
       "oahp": "# Graft-versus-Host Disease (skin)",
@@ -211,7 +211,7 @@
     {
       "name": "Lewis, Thomas",
       "dob": "1957-10-22",
-      "ur_number": "UR456789",
+      "ur_number": "UR00017",
       "gender": "M",
       "primary_history": "# Multiple Myeloma\n- IgG kappa\n- Diagnosed 3 years ago\n- Achieved VGPR with VRD induction\n- On lenalidomide maintenance",
       "oahp": "# Osteoporosis\n# Chronic Kidney Disease Stage 3",
@@ -224,7 +224,7 @@
     {
       "name": "Scott, Mia",
       "dob": "1993-04-30",
-      "ur_number": "UR890123",
+      "ur_number": "UR00018",
       "gender": "F",
       "primary_history": "# Sickle Cell Disease\n- HbSS genotype\n- Frequent pain crises\n- On hydroxyurea",
       "oahp": "# Avascular Necrosis of Hip",
@@ -237,7 +237,7 @@
     {
       "name": "Green, Liam",
       "dob": "1978-08-14",
-      "ur_number": "UR345678",
+      "ur_number": "UR00019",
       "gender": "M",
       "primary_history": "# Chronic Myeloid Leukaemia\n- BCR-ABL positive\n- Diagnosed 5 years ago\n- On second-generation TKI (nilotinib)",
       "oahp": "# Hypercholesterolemia",
@@ -250,7 +250,7 @@
     {
       "name": "Baker, Charlotte",
       "dob": "1989-02-11",
-      "ur_number": "UR901234",
+      "ur_number": "UR00020",
       "gender": "F",
       "primary_history": "# Hodgkin Lymphoma\n- Nodular sclerosis subtype\n- Stage IIB\n- Completed ABVD chemotherapy 1 year ago",
       "oahp": "# Hypothyroidism (post-treatment)",
