@@ -9,10 +9,6 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-    useTemplate,
-    useTemplateSelection,
-} from "../utils/templates/templateContext";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
 import NewNoteStartCard from "../components/patient/NewNoteStartCard";
 import Scribe, { useScribe } from "../components/patient/Scribe";
@@ -26,16 +22,17 @@ import TranscriptionPanel from "../components/panels/transcription/Transcription
 import DocumentPanel from "../components/panels/document/DocumentPanel";
 import PreviousVisitPanel from "../components/panels/previous-visit/PreviousVisitPanel";
 import { usePatient } from "../utils/hooks/usePatient";
+import { usePatientTemplate } from "../utils/hooks/usePatientTemplate";
+import { useDocumentExtraction } from "../utils/hooks/useDocumentExtraction";
 import { patientApi } from "../utils/api/patientApi";
 import WrapUpModal from "../components/modals/WrapUpModal";
 import DemographicsModal from "../components/modals/DemographicsModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useChat } from "../utils/hooks/useChat";
 import { useLetter } from "../utils/hooks/useLetter";
-import { useReasoning } from "../utils/hooks/useReasoning";
+import { useActivePanel } from "../utils/hooks/useActivePanel";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
-import { useToastMessage } from "../utils/hooks/UseToastMessage";
 import { DEFAULT_TOAST_CONFIG } from "../utils/constants";
 
 const PatientDetails = ({
@@ -57,7 +54,6 @@ const PatientDetails = ({
     const [startCardDismissed, setStartCardDismissed] = useState(false);
     const showStartCard =
         isNewPatient && !isSearchedPatient && !startCardDismissed;
-    const hasDefaultTemplateBeenSet = useRef(false);
     const navigate = useNavigate();
     const [saveLoading, setSaveLoading] = useState(false);
     const [wrapUpLoading, setWrapUpLoading] = useState(false);
@@ -70,37 +66,13 @@ const PatientDetails = ({
     const [isLetterModified, setIsLetterModified] = useState(false);
     const [isSummaryModified, setIsSummaryModified] = useState(false);
     const previousTranscriptionRef = useRef(null);
-    const [docFileName, setDocFileName] = useState("");
-
-    const [originalContent, setOriginalContent] = useState({});
-    const [replacedFields, setReplacedFields] = useState({});
-    const [extractedDocData, setExtractedDocData] = useState(null);
 
     const [initialTranscriptionContent, setInitialTranscriptionContent] =
         useState({});
     const [hasTranscriptionOccurred, setHasTranscriptionOccurred] =
         useState(false);
 
-    // Panel states for new FAB actions
-    const [isTranscriptionPanelOpen, setIsTranscriptionPanelOpen] =
-        useState(false);
-    const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
-    const [isPreviousVisitPanelOpen, setIsPreviousVisitPanelOpen] =
-        useState(false);
     const [hasViewedPreviousVisit, setHasViewedPreviousVisit] = useState(false);
-
-    const { showWarningToast } = useToastMessage();
-
-    // Use template context
-    const {
-        currentTemplate,
-        isTemplateChanging,
-        defaultTemplate,
-        templates,
-        status: templateStatus,
-        error: templateError,
-        selectTemplate,
-    } = useTemplateSelection();
 
     // Custom hooks
     const {
@@ -114,7 +86,28 @@ const PatientDetails = ({
         loadPatientDetails,
     } = usePatient(initialPatient, setInitialPatient);
 
+    const { currentTemplate, templates, selectTemplate } = usePatientTemplate({
+        patient,
+        setPatient,
+        isNewPatient,
+        isSearchedPatient,
+        initialPatient,
+        isSearchLoading,
+    });
+
+    const {
+        extractedDocData,
+        replacedFields,
+        docFileName,
+        setDocFileName,
+        handleDocumentComplete,
+        toggleDocumentField,
+        resetDocumentState,
+    } = useDocumentExtraction({ patient, setPatient, setIsModified, toast });
+
     const requiredDemographicsMet = areRequiredDemographicsMet(patient);
+
+    const { open, toggle, close, closeAll, isOpen } = useActivePanel();
 
     // Scribe hook for recording controls
     const scribeControls = useScribe({
@@ -126,72 +119,12 @@ const PatientDetails = ({
         handleTranscriptionComplete: (data) =>
             handleTranscriptionComplete(data),
         setLoading,
-        onSendStart: () => setIsTranscriptionPanelOpen(false),
+        onSendStart: () => close("transcription"),
     });
-
-    const handleChatToggle = (isOpen) => {
-        if (isOpen) {
-            // If chat is opening, close other panels
-            if (!letter.isCollapsed) letter.setIsCollapsed(true);
-            if (reasoning.isReasoningOpen) reasoning.closeReasoning();
-            closeAllFloatingPanels();
-        }
-    };
-
-    const handleLetterToggle = (isOpen) => {
-        if (isOpen) {
-            // If letter is opening, close other panels
-            if (chat.chatExpanded) chat.setChatExpanded(false);
-            if (reasoning.isReasoningOpen) reasoning.closeReasoning();
-            closeAllFloatingPanels();
-        }
-    };
-
-    const handleReasoningToggle = (isOpen) => {
-        if (isOpen) {
-            // If reasoning is opening, close other panels
-            if (chat.chatExpanded) chat.setChatExpanded(false);
-            if (!letter.isCollapsed) letter.setIsCollapsed(true);
-            closeAllFloatingPanels();
-        }
-        if (isOpen) {
-            reasoning.openReasoning();
-        } else {
-            reasoning.closeReasoning();
-        }
-    };
-
-    // Close all floating panels (transcription, document, previous visit)
-    const closeAllFloatingPanels = () => {
-        setIsTranscriptionPanelOpen(false);
-        setIsDocumentPanelOpen(false);
-        setIsPreviousVisitPanelOpen(false);
-    };
 
     const summary = useCollapse(false);
     const letterHook = useLetter(setIsModified);
-    const letter = useCollapse(true);
     const chat = useChat();
-    const reasoning = useReasoning();
-    const { refreshTemplates } = useTemplate();
-
-    // Refresh templates for new patients
-    useEffect(() => {
-        refreshTemplates();
-    }, [refreshTemplates]);
-
-    // Handle template errors
-    useEffect(() => {
-        if (templateError) {
-            toast({
-                title: "Template Error",
-                description: templateError,
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            });
-        }
-    }, [templateError, toast]);
 
     // Effect to handle search results
     useEffect(() => {
@@ -234,95 +167,6 @@ const PatientDetails = ({
         }
     }, [isNewPatient, patient?.id]);
 
-    // Handle template consistency for already saved (historical) encounters
-    useEffect(() => {
-        if (!currentTemplate || !patient || isTemplateChanging) return;
-
-        const shouldLockTemplate = !isNewPatient && !patient.isNewEncounter;
-
-        if (
-            shouldLockTemplate &&
-            currentTemplate.template_key !== patient.template_key
-        ) {
-            selectTemplate(
-                patient.template_key,
-                "Maintaining historical template",
-            );
-        }
-    }, [
-        currentTemplate,
-        patient,
-        isNewPatient,
-        selectTemplate,
-        isTemplateChanging,
-    ]);
-
-    // Set default template for new patients
-    useEffect(() => {
-        const initializeNewPatient = async () => {
-            if (isNewPatient && defaultTemplate && !patient?.template_key) {
-                if (
-                    !hasDefaultTemplateBeenSet.current &&
-                    !patient?.template_key
-                ) {
-                    hasDefaultTemplateBeenSet.current = true;
-                    try {
-                        await selectTemplate(defaultTemplate.template_key);
-                        setPatient((prev) => ({
-                            ...prev,
-                            template_key: defaultTemplate.template_key,
-                        }));
-                    } catch (error) {
-                        console.error("Failed to set default template:", error);
-                        toast({
-                            title: "Error",
-                            description: "Failed to set default template",
-                            status: "error",
-                            duration: 3000,
-                            isClosable: true,
-                        });
-                    }
-                }
-            }
-        };
-        initializeNewPatient();
-    }, [
-        isNewPatient,
-        defaultTemplate,
-        patient,
-        selectTemplate,
-        setPatient,
-        toast,
-    ]);
-
-    // Handle template data for historical patients
-    useEffect(() => {
-        if (
-            !isNewPatient &&
-            initialPatient &&
-            currentTemplate &&
-            !isSearchLoading
-        ) {
-            const newTemplateData = {};
-            currentTemplate.fields.forEach((field) => {
-                newTemplateData[field.field_key] =
-                    initialPatient.template_data?.[field.field_key] || "";
-            });
-
-            setPatient((prev) => ({
-                ...prev,
-                template_data: newTemplateData,
-                isHistorical: true,
-            }));
-        }
-    }, [
-        isNewPatient,
-        initialPatient,
-        currentTemplate,
-        setPatient,
-        isSearchLoading,
-    ]);
-
     const textToCopy =
         patient && currentTemplate?.fields
             ? currentTemplate.fields
@@ -343,9 +187,7 @@ const PatientDetails = ({
     useEffect(() => {
         // Reset component states when patient changes
         summary.setIsCollapsed(false);
-        letter.setIsCollapsed(true);
-        chat.setChatExpanded(false);
-        closeAllFloatingPanels();
+        closeAll();
         chat.clearChat();
         resetDocumentState();
     }, [patient?.id, currentTemplate, isNewPatient]);
@@ -426,87 +268,10 @@ const PatientDetails = ({
         });
     };
 
-    const handleDocumentComplete = (data) => {
-        if (!data.fieldByField) {
-            if (!extractedDocData) {
-                setOriginalContent({ ...patient.template_data });
-            }
-
-            setExtractedDocData(data);
-
-            toast({
-                title: "Document processed",
-                description: "Use the toggle buttons to update fields",
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-            });
-        } else {
-            const fieldKey = Object.keys(data.fields)[0];
-
-            setReplacedFields((prev) => ({
-                ...prev,
-                [fieldKey]: !prev[fieldKey],
-            }));
-
-            setPatient((prev) => ({
-                ...prev,
-                template_data: {
-                    ...prev.template_data,
-                    ...data.fields,
-                },
-            }));
-
-            setIsModified(true);
-        }
-    };
-
-    const toggleDocumentField = (fieldKey) => {
-        if (!extractedDocData) return;
-
-        const hasExtractedContent = Boolean(
-            extractedDocData.fields[fieldKey]?.trim(),
-        );
-        if (!hasExtractedContent) {
-            toast({
-                title: "No content available",
-                description:
-                    "This field doesn't have any content in the uploaded document",
-                status: "info",
-                duration: 2000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        const isCurrentlyReplaced = replacedFields[fieldKey];
-
-        let fieldContent;
-        if (isCurrentlyReplaced) {
-            fieldContent = originalContent[fieldKey] || "";
-        } else {
-            fieldContent = extractedDocData.fields[fieldKey] || "";
-        }
-
-        handleDocumentComplete({
-            fields: { [fieldKey]: fieldContent },
-            fieldByField: true,
-        });
-    };
-
-    const resetDocumentState = () => {
-        setExtractedDocData(null);
-        setReplacedFields({});
-        setOriginalContent({});
-        setDocFileName("");
-    };
-
     const handleGenerateLetterClick = async (additionalInstructions) => {
         if (!patient) return;
 
-        letter.setIsCollapsed(false);
-        chat.setChatExpanded(false);
-        closeAllFloatingPanels();
+        open("letter");
 
         await letterHook.generateLetter(
             patient,
@@ -668,168 +433,17 @@ const PatientDetails = ({
         setParentIsModified(false);
     }, [initialPatient?.id, setParentIsModified]);
 
-    useEffect(() => {
-        const handleHistoricalTemplate = async () => {
-            if (!isNewPatient && !isSearchedPatient) {
-                console.log(
-                    "Viewing historical encounter - keeping original template",
-                );
-                return;
-            }
-
-            if (
-                patient?.template_key &&
-                defaultTemplate?.template_key &&
-                patient?.template_key !== defaultTemplate?.template_key &&
-                templates?.length > 0 &&
-                (isNewPatient || isSearchedPatient)
-            ) {
-                const activeTemplate = templates.find(
-                    (t) => t.template_key === patient.template_key,
-                );
-
-                if (!activeTemplate) {
-                    console.warn(
-                        "Pre-fill template is not active. Finding fallback...",
-                    );
-                    const baseKey = patient.template_key.split("_")[0];
-                    const latestVersion = templates
-                        .filter((t) => t.template_key.startsWith(baseKey))
-                        .sort((a, b) =>
-                            b.template_key.localeCompare(a.template_key),
-                        )[0];
-
-                    const fallback =
-                        latestVersion || defaultTemplate || templates[0];
-
-                    if (fallback) {
-                        if (fallback.template_key === patient.template_key)
-                            return;
-
-                        console.log(
-                            `Upgrading pre-fill template to: ${fallback.template_key}`,
-                        );
-
-                        setPatient((prev) => ({
-                            ...prev,
-                            template_key: fallback.template_key,
-                            template_data: {
-                                ...prev.template_data,
-                            },
-                        }));
-
-                        await selectTemplate(fallback.template_key);
-
-                        if (
-                            fallback.template_key !== patient.template_key &&
-                            isSearchedPatient
-                        ) {
-                            showWarningToast(
-                                `Using ${fallback.template_name} template for this new encounter.`,
-                            );
-                        }
-                    }
-                }
-            }
-        };
-
-        handleHistoricalTemplate();
-    }, [
-        isNewPatient,
-        isSearchedPatient,
-        patient?.template_key,
-        defaultTemplate?.template_key,
-        templates,
-        defaultTemplate,
-        selectTemplate,
-        setPatient,
-        showWarningToast,
-    ]);
-
     // Functions for the Floating Action Menu
-    const handleOpenLetter = () => {
-        if (!letter.isCollapsed) {
-            // Letter is open, close it
-            letter.setIsCollapsed(true);
-        } else {
-            // Letter is closed, open it and close others
-            closeAllFloatingPanels();
-            letter.setIsCollapsed(false);
-            chat.setChatExpanded(false);
-            reasoning.closeReasoning();
-        }
-    };
-
-    const handleOpenChat = () => {
-        if (chat.chatExpanded) {
-            // Chat is open, close it
-            chat.setChatExpanded(false);
-        } else {
-            // Chat is closed, open it and close others
-            closeAllFloatingPanels();
-            chat.setChatExpanded(true);
-            letter.setIsCollapsed(true);
-            reasoning.closeReasoning();
-        }
-    };
-
-    const handleOpenReasoning = () => {
-        if (reasoning.isReasoningOpen) {
-            // Reasoning is open, close it
-            reasoning.closeReasoning();
-        } else {
-            // Reasoning is closed, open it and close others
-            closeAllFloatingPanels();
-            reasoning.openReasoning();
-            chat.setChatExpanded(false);
-            letter.setIsCollapsed(true);
-        }
-    };
-
-    const handleOpenTranscription = () => {
-        if (isTranscriptionPanelOpen) {
-            // Transcription is open, close it
-            setIsTranscriptionPanelOpen(false);
-        } else {
-            // Transcription is closed, open it and close others
-            setIsTranscriptionPanelOpen(true);
-            setIsDocumentPanelOpen(false);
-            setIsPreviousVisitPanelOpen(false);
-            letter.setIsCollapsed(true);
-            chat.setChatExpanded(false);
-            reasoning.closeReasoning();
-        }
-    };
-
-    const handleOpenDocument = () => {
-        if (isDocumentPanelOpen) {
-            // Document is open, close it
-            setIsDocumentPanelOpen(false);
-        } else {
-            // Document is closed, open it and close others
-            setIsTranscriptionPanelOpen(false);
-            setIsDocumentPanelOpen(true);
-            setIsPreviousVisitPanelOpen(false);
-            letter.setIsCollapsed(true);
-            chat.setChatExpanded(false);
-            reasoning.closeReasoning();
-        }
-    };
-
+    const handleOpenLetter = () => toggle("letter");
+    const handleOpenChat = () => toggle("chat");
+    const handleOpenReasoning = () => toggle("reasoning");
+    const handleOpenTranscription = () => toggle("transcription");
+    const handleOpenDocument = () => toggle("document");
     const handleOpenPreviousVisit = () => {
-        if (isPreviousVisitPanelOpen) {
-            // Previous Visit is open, close it
-            setIsPreviousVisitPanelOpen(false);
-        } else {
-            // Previous Visit is closed, open it and close others
-            setIsTranscriptionPanelOpen(false);
-            setIsDocumentPanelOpen(false);
-            setIsPreviousVisitPanelOpen(true);
+        if (!isOpen("previous-visit")) {
             setHasViewedPreviousVisit(true);
-            letter.setIsCollapsed(true);
-            chat.setChatExpanded(false);
-            reasoning.closeReasoning();
         }
+        toggle("previous-visit");
     };
 
     // Handle when reasoning is generated - update patient state for red dot indicator
@@ -920,9 +534,8 @@ const PatientDetails = ({
                 />
 
                 <Letter
-                    isOpen={!letter.isCollapsed}
-                    onClose={() => letter.setIsCollapsed(true)}
-                    toggleLetterCollapse={letter.toggle}
+                    isOpen={isOpen("letter")}
+                    onClose={() => close("letter")}
                     finalCorrespondence={letterHook.finalCorrespondence}
                     handleSaveLetter={handleLetterSave}
                     setFinalCorrespondence={(value) => {
@@ -938,37 +551,35 @@ const PatientDetails = ({
                     toast={toast}
                     patient={patient}
                     setLoading={setLoading}
-                    onLetterToggle={handleLetterToggle}
                 />
 
                 <Chat
-                    isOpen={chat.chatExpanded}
-                    setChatExpanded={chat.setChatExpanded}
-                    onClose={() => chat.setChatExpanded(false)}
+                    isOpen={isOpen("chat")}
+                    onClose={() => close("chat")}
                     chatLoading={chat.loading}
                     messages={chat.messages}
                     setMessages={chat.setMessages}
                     userInput={chat.userInput}
                     setUserInput={chat.setUserInput}
-                    handleChat={(userInput) =>
-                        chat.sendMessage(
+                    handleChat={(userInput) => {
+                        open("chat");
+                        return chat.sendMessage(
                             userInput,
                             patient,
                             currentTemplate,
                             patient.raw_transcription,
-                        )
-                    }
+                        );
+                    }}
                     showSuggestions={chat.showSuggestions}
                     setShowSuggestions={chat.setShowSuggestions}
                     rawTranscription={patient.raw_transcription}
                     currentTemplate={currentTemplate}
                     patientData={patient}
-                    onChatToggle={handleChatToggle}
                 />
 
                 <ReasoningPanel
-                    isOpen={reasoning.isReasoningOpen}
-                    onClose={reasoning.closeReasoning}
+                    isOpen={isOpen("reasoning")}
+                    onClose={() => close("reasoning")}
                     noteId={patient?.id}
                     initialReasoning={patient?.reasoning_output}
                     onReasoningGenerated={handleReasoningGenerated}
@@ -989,7 +600,7 @@ const PatientDetails = ({
                 isAmbient={scribeControls.isAmbient}
                 onModeToggle={scribeControls.toggleAmbientMode}
                 onOpenTranscription={handleOpenTranscription}
-                isTranscriptionOpen={isTranscriptionPanelOpen}
+                isTranscriptionOpen={isOpen("transcription")}
                 hasRawTranscription={!!patient.raw_transcription}
                 onAudioDrop={scribeControls.handleAudioDrop}
                 canRecord={requiredDemographicsMet}
@@ -1003,11 +614,11 @@ const PatientDetails = ({
                 onOpenReasoning={handleOpenReasoning}
                 onOpenDocument={handleOpenDocument}
                 onOpenPreviousVisit={handleOpenPreviousVisit}
-                isChatOpen={chat.chatExpanded}
-                isLetterOpen={!letter.isCollapsed}
-                isReasoningOpen={reasoning.isReasoningOpen}
-                isDocumentOpen={isDocumentPanelOpen}
-                isPreviousVisitOpen={isPreviousVisitPanelOpen}
+                isChatOpen={isOpen("chat")}
+                isLetterOpen={isOpen("letter")}
+                isReasoningOpen={isOpen("reasoning")}
+                isDocumentOpen={isOpen("document")}
+                isPreviousVisitOpen={isOpen("previous-visit")}
                 hasCriticalReasoning={hasCriticalReasoning}
                 hasPreviousVisitSummary={Boolean(
                     patient?.previous_visit_summary,
@@ -1018,8 +629,8 @@ const PatientDetails = ({
 
             {/* Transcription Panel */}
             <TranscriptionPanel
-                isOpen={isTranscriptionPanelOpen}
-                onClose={() => setIsTranscriptionPanelOpen(false)}
+                isOpen={isOpen("transcription")}
+                onClose={() => close("transcription")}
                 rawTranscription={patient.raw_transcription}
                 transcriptionDuration={patient.transcription_duration}
                 processDuration={patient.process_duration}
@@ -1035,8 +646,8 @@ const PatientDetails = ({
 
             {/* Document Panel */}
             <DocumentPanel
-                isOpen={isDocumentPanelOpen}
-                onClose={() => setIsDocumentPanelOpen(false)}
+                isOpen={isOpen("document")}
+                onClose={() => close("document")}
                 handleDocumentComplete={handleDocumentComplete}
                 toggleDocumentField={toggleDocumentField}
                 replacedFields={replacedFields}
@@ -1053,8 +664,8 @@ const PatientDetails = ({
 
             {/* Previous Visit Panel */}
             <PreviousVisitPanel
-                isOpen={isPreviousVisitPanelOpen}
-                onClose={() => setIsPreviousVisitPanelOpen(false)}
+                isOpen={isOpen("previous-visit")}
+                onClose={() => close("previous-visit")}
                 previousVisitSummary={patient.previous_visit_summary}
                 previousVisitTemplateData={patient.previous_visit_template_data}
                 previousVisitTemplateKey={patient.previous_visit_template_key}
