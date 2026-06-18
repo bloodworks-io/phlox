@@ -371,6 +371,8 @@ const PatientDetails = ({
             setHasTranscriptionOccurred(false);
             setIsWrapUpOpen(false);
             await createNewPatient();
+            setIsSearchedPatient(false);
+            setStartCardDismissed(false);
             navigate("/new-note");
         } catch (error) {
             console.error("Error during wrap up:", error);
