@@ -17,6 +17,7 @@ import {
     Icon,
     Spinner,
     useColorMode,
+    useToast,
 } from "@chakra-ui/react";
 import { FaUserEdit, FaFileUpload } from "react-icons/fa";
 import { colors } from "../../theme/colors";
@@ -38,13 +39,21 @@ const Field = ({ label, required, children }) => (
     </Box>
 );
 
-const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
+const DemographicsModal = ({
+    isOpen,
+    onClose,
+    patient,
+    setPatient,
+    onSave,
+}) => {
     const { colorMode } = useColorMode();
     const c = colors[colorMode];
+    const toast = useToast();
     const [form, setForm] = useState({});
     const [isDragOver, setIsDragOver] = useState(false);
     const [isExtracting, setIsExtracting] = useState(false);
     const [extractError, setExtractError] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = useRef(null);
     const firstNameRef = useRef(null);
 
@@ -113,12 +122,12 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
 
     const requiredMet = areRequiredDemographicsMet(form);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const first = (form.first_name || "").trim();
         const last = (form.last_name || "").trim();
         const name = last && first ? `${last}, ${first}` : last || first;
-        setPatient((prev) => ({
-            ...prev,
+        const updated = {
+            ...patient,
             first_name: first,
             last_name: last,
             name,
@@ -127,7 +136,25 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
             ur_number: form.ur_number || "",
             address: form.address || "",
             phone: form.phone || "",
-        }));
+        };
+        setPatient(updated);
+        if (onSave) {
+            setIsSaving(true);
+            try {
+                await onSave(updated);
+            } catch (e) {
+                toast({
+                    title: "Couldn't save demographics",
+                    description: "Please try again.",
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+                setIsSaving(false);
+                return;
+            }
+            setIsSaving(false);
+        }
         onClose();
     };
 
@@ -304,6 +331,7 @@ const DemographicsModal = ({ isOpen, onClose, patient, setPatient }) => {
                         <Button
                             onClick={handleSave}
                             isDisabled={!requiredMet}
+                            isLoading={isSaving}
                             size="md"
                             borderRadius="2xl !important"
                             className="switch-mode"

@@ -393,6 +393,16 @@ const PatientDetails = ({
         setIsLetterModified(false);
     };
 
+    const handleDemographicsSave = async (updatedPatient) => {
+        setInitialPatient(updatedPatient);
+        if (!updatedPatient.id) return;
+        await patientApi.savePatientData(
+            { patientData: updatedPatient },
+            toast,
+            refreshSidebar,
+        );
+    };
+
     const handleSearch = async (urNumber) => {
         const query = (urNumber || "").trim();
         if (!query) {
@@ -533,6 +543,7 @@ const PatientDetails = ({
                     onClose={onCloseDemographics}
                     patient={patient}
                     setPatient={setPatient}
+                    onSave={handleDemographicsSave}
                 />
 
                 <Letter
