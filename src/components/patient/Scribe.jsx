@@ -15,6 +15,7 @@ export const useScribe = ({
     onSendStart,
 }) => {
     const [isAmbient, setIsAmbient] = useState(true);
+    const [requireConsent, setRequireConsent] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [timer, setTimer] = useState(0);
@@ -45,6 +46,9 @@ export const useScribe = ({
                     if (data && typeof data.scribe_is_ambient === "boolean") {
                         setIsAmbient(data.scribe_is_ambient);
                     }
+                    setRequireConsent(
+                        Boolean(data?.advanced_options?.require_scribe_consent),
+                    );
                 });
             } catch (error) {
                 console.error("Error fetching user settings:", error);
@@ -274,6 +278,7 @@ export const useScribe = ({
     return {
         // State
         isAmbient,
+        requireConsent,
         isRecording,
         isPaused,
         timer,

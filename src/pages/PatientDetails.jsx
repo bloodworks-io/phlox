@@ -27,6 +27,7 @@ import { useDocumentExtraction } from "../utils/hooks/useDocumentExtraction";
 import { patientApi } from "../utils/api/patientApi";
 import WrapUpModal from "../components/modals/WrapUpModal";
 import DemographicsModal from "../components/modals/DemographicsModal";
+import ScribeConsentModal from "../components/modals/ScribeConsentModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useChat } from "../utils/hooks/useChat";
 import { useLetter } from "../utils/hooks/useLetter";
@@ -64,6 +65,15 @@ const PatientDetails = ({
         onOpen: onOpenDemographics,
         onClose: onCloseDemographics,
     } = useDisclosure();
+    const {
+        isOpen: isConsentOpen,
+        onOpen: onOpenConsent,
+        onClose: onCloseConsent,
+    } = useDisclosure();
+    const [scribeConsent, setScribeConsent] = useState({
+        scribe_consent_at: null,
+        scribe_consent_declined_at: null,
+    });
     const [isLetterModified, setIsLetterModified] = useState(false);
     const [isSummaryModified, setIsSummaryModified] = useState(false);
     const previousTranscriptionRef = useRef(null);
@@ -121,6 +131,84 @@ const PatientDetails = ({
         setLoading,
         onSendStart: () => close("transcription"),
     });
+
+    const hasConsented = Boolean(scribeConsent?.scribe_consent_at);
+    const hasDeclined =
+        Boolean(scribeConsent?.scribe_consent_declined_at) && !hasConsented;
+    const requireConsent =
+        scribeControls.isAmbient && scribeControls.requireConsent;
+    const canRecord =
+        requiredDemographicsMet && !(requireConsent && !hasConsented);
+
+    useEffect(() => {
+        const ur = patient?.ur_number;
+        if (!ur) {
+            setScribeConsent({
+                scribe_consent_at: null,
+                scribe_consent_declined_at: null,
+            });
+            return;
+        }
+        let active = true;
+        setScribeConsent({
+            scribe_consent_at: null,
+            scribe_consent_declined_at: null,
+        });
+        patientApi
+            .fetchScribeConsent(ur)
+            .then((data) => {
+                if (active) setScribeConsent(data);
+            })
+            .catch((error) =>
+                console.error("Error fetching scribe consent:", error),
+            );
+        return () => {
+            active = false;
+        };
+    }, [patient?.ur_number]);
+
+    const handleBlockedRecord = () => {
+        if (!requiredDemographicsMet) {
+            onOpenDemographics();
+            return;
+        }
+        onOpenConsent();
+    };
+
+    const handleConsentGranted = async () => {
+        const ur = patient?.ur_number;
+        if (!ur) return;
+        try {
+            const data = await patientApi.saveScribeConsent(ur, true);
+            setScribeConsent(data);
+            onCloseConsent();
+            await scribeControls.startRecording();
+        } catch (error) {
+            toast({
+                title: "Could not record consent",
+                description: error.message,
+                status: "error",
+                ...DEFAULT_TOAST_CONFIG,
+            });
+        }
+    };
+
+    const handleConsentDeclined = async () => {
+        const ur = patient?.ur_number;
+        if (!ur) return;
+        try {
+            const data = await patientApi.saveScribeConsent(ur, false);
+            setScribeConsent(data);
+            onCloseConsent();
+        } catch (error) {
+            toast({
+                title: "Could not record decision",
+                description: error.message,
+                status: "error",
+                ...DEFAULT_TOAST_CONFIG,
+            });
+        }
+    };
 
     const summary = useCollapse(false);
     const letterHook = useLetter(setIsModified);
@@ -546,6 +634,16 @@ const PatientDetails = ({
                     onSave={handleDemographicsSave}
                 />
 
+                <ScribeConsentModal
+                    isOpen={isConsentOpen}
+                    onClose={onCloseConsent}
+                    onConsent={handleConsentGranted}
+                    onDecline={handleConsentDeclined}
+                    hasDeclined={hasDeclined}
+                    declinedDate={scribeConsent?.scribe_consent_declined_at}
+                    patientName={patient?.name}
+                />
+
                 <Letter
                     isOpen={isOpen("letter")}
                     onClose={() => close("letter")}
@@ -615,8 +713,8 @@ const PatientDetails = ({
                 isTranscriptionOpen={isOpen("transcription")}
                 hasRawTranscription={!!patient.raw_transcription}
                 onAudioDrop={scribeControls.handleAudioDrop}
-                canRecord={requiredDemographicsMet}
-                onBlockedRecord={onOpenDemographics}
+                canRecord={canRecord}
+                onBlockedRecord={handleBlockedRecord}
                 sendError={scribeControls.sendError}
                 onRetry={scribeControls.retrySend}
                 onDownload={scribeControls.downloadLastRecording}

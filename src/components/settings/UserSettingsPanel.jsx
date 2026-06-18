@@ -30,6 +30,14 @@ const ADVANCED_OPTIONS_SCHEMA = [
     type: "boolean",
     defaultValue: false,
   },
+  {
+    key: "require_scribe_consent",
+    label: "Require patient consent for ambient scribing",
+    description:
+      "Prompt each patient for consent before ambient (transcription) recording. Dictation is unaffected; consent is remembered per patient.",
+    type: "boolean",
+    defaultValue: false,
+  },
 ];
 
 const UserSettingsPanel = ({

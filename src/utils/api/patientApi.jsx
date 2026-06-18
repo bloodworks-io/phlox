@@ -190,4 +190,27 @@ export const patientApi = {
     if (!response.ok) throw new Error("Failed to fetch patient history");
     return response.json();
   },
+
+  fetchScribeConsent: async (urNumber) => {
+    const url = await buildApiUrl(
+      `/api/note/consent?ur_number=${encodeURIComponent(urNumber)}`,
+    );
+    const response = await universalFetch(url);
+    if (!response.ok) throw new Error("Failed to fetch scribe consent");
+    return response.json();
+  },
+
+  saveScribeConsent: async (urNumber, consented) => {
+    const url = await buildApiUrl(`/api/note/consent`);
+    const response = await universalFetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ur_number: urNumber, consented }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to save scribe consent");
+    }
+    return response.json();
+  },
 };
