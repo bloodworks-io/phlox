@@ -42,6 +42,7 @@ const PatientDetails = ({
     refreshSidebar,
     setIsModified: setParentIsModified,
     onResetLetter,
+    onStartNewNote,
 }) => {
     const location = useLocation();
     const isNewPatient = location.pathname === "/new-note";
@@ -81,7 +82,6 @@ const PatientDetails = ({
         setIsModified,
         savePatient,
         savePatientCore,
-        createNewPatient,
         searchPatient,
         loadPatientDetails,
     } = usePatient(initialPatient, setInitialPatient);
@@ -370,9 +370,9 @@ const PatientDetails = ({
             setInitialTranscriptionContent({});
             setHasTranscriptionOccurred(false);
             setIsWrapUpOpen(false);
-            await createNewPatient();
             setIsSearchedPatient(false);
             setStartCardDismissed(false);
+            await onStartNewNote();
             navigate("/new-note");
         } catch (error) {
             console.error("Error during wrap up:", error);

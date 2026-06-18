@@ -128,13 +128,17 @@ function AppContent({ setIsInitializing }) {
         }
     }, [location, fetchPatientDetailsWrapper]);
 
+    const startNewNote = useCallback(async () => {
+        await createNewPatient();
+        setNewNoteKey((k) => k + 1);
+        if (resetLetter) {
+            resetLetter();
+        }
+    }, [createNewPatient, resetLetter]);
+
     const handleNewPatient = async () => {
         try {
-            await createNewPatient();
-            setNewNoteKey((k) => k + 1);
-            if (resetLetter) {
-                resetLetter(); // Clear the letter when creating new patient
-            }
+            await startNewNote();
             handleNavigation("/new-note");
         } catch (error) {
             console.error("Error creating new patient:", error);
@@ -540,6 +544,7 @@ function AppContent({ setIsInitializing }) {
                                     templateKey={templateKey}
                                     setTemplateKey={setTemplateKey}
                                     onResetLetter={setResetLetter}
+                                    onStartNewNote={startNewNote}
                                 />
                             }
                         />
@@ -558,6 +563,7 @@ function AppContent({ setIsInitializing }) {
                                     }
                                     templateKey={templateKey}
                                     setTemplateKey={setTemplateKey}
+                                    onStartNewNote={startNewNote}
                                 />
                             }
                         />

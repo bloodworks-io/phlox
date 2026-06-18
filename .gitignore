@@ -62,3 +62,6 @@ __pycache__/
 package-lock.old
 package-lock.old
 QWEN.md
+
+# Local notes
+/docs/backlog.md
