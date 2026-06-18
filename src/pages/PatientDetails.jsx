@@ -603,7 +603,6 @@ const PatientDetails = ({
             <ScribePillBox
                 isRecording={scribeControls.isRecording}
                 isPaused={scribeControls.isPaused}
-                timer={scribeControls.timer}
                 onStart={scribeControls.startRecording}
                 onPause={scribeControls.pauseRecording}
                 onResume={scribeControls.resumeRecording}
@@ -618,6 +617,10 @@ const PatientDetails = ({
                 onAudioDrop={scribeControls.handleAudioDrop}
                 canRecord={requiredDemographicsMet}
                 onBlockedRecord={onOpenDemographics}
+                sendError={scribeControls.sendError}
+                onRetry={scribeControls.retrySend}
+                onDownload={scribeControls.downloadLastRecording}
+                onDismiss={scribeControls.dismissSendError}
             />
 
             {/* Floating Action Menu - always expanded on right side */}
