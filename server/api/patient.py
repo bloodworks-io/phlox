@@ -19,8 +19,10 @@ from server.database.entities.patient import (
     get_patient_by_id,
     get_patient_history,
     get_patients_by_date,
+    get_scribe_consent,
     save_patient,
     search_patient_by_ur_number,
+    set_scribe_consent,
     update_patient,
     update_patient_reasoning,
     update_patient_summary,
@@ -34,6 +36,7 @@ from server.schemas.patient import (
     JobsListUpdate,
     Patient,
     SavePatientRequest,
+    ScribeConsentRequest,
 )
 from server.utils.nlp_tools.adaptive_refinement import (
     generate_adaptive_refinement_suggestions,
@@ -47,6 +50,30 @@ router = APIRouter()
 # Lock to prevent concurrent adaptive refinement operations
 _adaptive_refinement_lock = asyncio.Lock()
 _adaptive_refinement_running = False
+
+
+@router.get("/consent")
+async def get_consent(ur_number: str):
+    """Return the ambient-scribe consent state for a patient (keyed by ur_number)."""
+    try:
+        consent = get_scribe_consent(ur_number)
+        if consent is None:
+            return {"scribe_consent_at": None, "scribe_consent_declined_at": None}
+        return JSONResponse(content=consent)
+    except Exception as e:
+        logging.error(f"Error fetching scribe consent: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/consent")
+async def set_consent(request: ScribeConsentRequest):
+    """Record a patient's ambient-scribe consent decision and return the new state."""
+    try:
+        consent = set_scribe_consent(request.ur_number, request.consented)
+        return JSONResponse(content=consent)
+    except Exception as e:
+        logging.error(f"Error setting scribe consent: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/save")

@@ -35,6 +35,8 @@ def migrate(cursor, _db):
             gender TEXT,
             address TEXT,
             phone TEXT,
+            scribe_consent_at TIMESTAMP,
+            scribe_consent_declined_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )

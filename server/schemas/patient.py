@@ -169,3 +169,12 @@ class TemplateData(BaseModel):
 
     field_key: str
     content: Any
+
+
+class ScribeConsentRequest(BaseModel):
+    """
+    Request body for recording a patient's ambient-scribe consent decision.
+    """
+
+    ur_number: str
+    consented: bool
