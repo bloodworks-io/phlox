@@ -26,6 +26,7 @@ import Rag from "./pages/Rag";
 import ClinicSummary from "./pages/ClinicSummary";
 import OutstandingJobs from "./pages/OutstandingJobs";
 import ConfirmLeaveModal from "./components/modals/ConfirmLeaveModal";
+import NewNoteModal from "./components/modals/NewNoteModal";
 import { handleError } from "./utils/helpers/errorHandlers";
 import {
     handleLoadPatientDetails,
@@ -84,6 +85,11 @@ function AppContent({ setIsInitializing }) {
     }, [isInitializing, setIsInitializing]);
 
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const {
+        isOpen: isNewNoteOpen,
+        onOpen: onOpenNewNote,
+        onClose: onCloseNewNote,
+    } = useDisclosure();
     const [pendingNavigation, setPendingNavigation] = useState(null);
     const navigate = useNavigate();
     const toast = useToast();
@@ -101,6 +107,7 @@ function AppContent({ setIsInitializing }) {
         finalCorrespondence,
         setFinalCorrespondence,
         createNewPatient,
+        searchPatient,
         templateKey,
         setTemplateKey,
     } = usePatient();
@@ -136,20 +143,21 @@ function AppContent({ setIsInitializing }) {
         }
     }, [createNewPatient, resetLetter]);
 
-    const handleNewPatient = async () => {
-        try {
-            await startNewNote();
-            handleNavigation("/new-note");
-        } catch (error) {
-            console.error("Error creating new patient:", error);
-            toast({
-                title: "Error",
-                description: "Failed to create new patient",
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-            });
+    const handleNewPatient = () => {
+        toast.closeAll();
+        onOpenNewNote();
+    };
+
+    const completeNewNote = ({ cameFromSearch } = {}) => {
+        setNewNoteKey((k) => k + 1);
+        if (resetLetter) {
+            resetLetter();
         }
+        onCloseNewNote();
+        handleNavigation("/new-note", {
+            viaModal: true,
+            cameFromSearch: Boolean(cameFromSearch),
+        });
     };
 
     const handleSelectPatient = (
@@ -158,7 +166,7 @@ function AppContent({ setIsInitializing }) {
     ) => {
         setIsFromOutstandingJobs(fromOutstandingJobs);
         if (isModified) {
-            setPendingNavigation(`/note/${selectedPatient.id}`);
+            setPendingNavigation({ path: `/note/${selectedPatient.id}` });
             onOpen();
         } else {
             navigate(`/note/${selectedPatient.id}`);
@@ -196,22 +204,23 @@ function AppContent({ setIsInitializing }) {
         </svg>
     );
 
-    const handleNavigation = (path) => {
+    const handleNavigation = (path, state) => {
         toast.closeAll();
         if (isModified) {
-            setPendingNavigation(path);
+            setPendingNavigation({ path, state });
             onOpen();
         } else {
             setIsModified(false);
-            navigate(path);
+            navigate(path, state ? { state } : undefined);
         }
     };
 
     const confirmNavigation = () => {
         onClose();
         if (pendingNavigation) {
+            const { path, state } = pendingNavigation;
             setIsModified(false);
-            navigate(pendingNavigation);
+            navigate(path, state ? { state } : undefined);
             setPendingNavigation(null);
         }
     };
@@ -594,6 +603,16 @@ function AppContent({ setIsInitializing }) {
                     </Routes>
                 </Box>
             </Box>
+            <NewNoteModal
+                isOpen={isNewNoteOpen}
+                onClose={onCloseNewNote}
+                patient={patient}
+                setPatient={setPatient}
+                createNewPatient={createNewPatient}
+                searchPatient={searchPatient}
+                selectedDate={selectedDate}
+                onComplete={completeNewNote}
+            />
             <ConfirmLeaveModal
                 isOpen={isOpen}
                 onClose={cancelNavigation}

@@ -47,13 +47,18 @@ const PatientDetails = ({
 }) => {
     const location = useLocation();
     const isNewPatient = location.pathname === "/new-note";
+    const { viaModal, cameFromSearch } = location.state || {};
     const toast = useToast();
     const summaryRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
-    const [isSearchedPatient, setIsSearchedPatient] = useState(false);
+    const [isSearchedPatient, setIsSearchedPatient] = useState(
+        Boolean(cameFromSearch),
+    );
     const [searchResult, setSearchResult] = useState(null);
-    const [startCardDismissed, setStartCardDismissed] = useState(false);
+    const [startCardDismissed, setStartCardDismissed] = useState(
+        Boolean(viaModal),
+    );
     const showStartCard =
         isNewPatient && !isSearchedPatient && !startCardDismissed;
     const navigate = useNavigate();
@@ -213,6 +218,11 @@ const PatientDetails = ({
     const summary = useCollapse(false);
     const letterHook = useLetter(setIsModified);
     const chat = useChat();
+
+    useEffect(() => {
+        if (cameFromSearch) summary.setIsCollapsed(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Effect to handle search results
     useEffect(() => {

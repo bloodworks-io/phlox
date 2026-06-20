@@ -15,7 +15,7 @@ import UrSearchField from "./UrSearchField";
 
 const MotionBox = motion(Box);
 
-const PathHalf = ({ icon, title, subtitle, accent, c, tileBg, onClick }) => (
+export const PathHalf = ({ icon, title, subtitle, accent, c, tileBg, onClick }) => (
     <Flex
         as="button"
         flex="1"
