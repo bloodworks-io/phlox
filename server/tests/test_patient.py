@@ -170,19 +170,23 @@ def test_scribe_consent_roundtrip_and_clearing_db():
     ur = "URCONSENT_RT"
     # Grant consent
     result = set_scribe_consent(ur, True)
+    assert result is not None
     assert result["scribe_consent_at"] is not None
     assert result["scribe_consent_declined_at"] is None
     fetched = get_scribe_consent(ur)
+    assert fetched is not None
     assert fetched["scribe_consent_at"] is not None
     assert fetched["scribe_consent_declined_at"] is None
 
     # Declining clears consent and records the refusal
     result = set_scribe_consent(ur, False)
+    assert result is not None
     assert result["scribe_consent_at"] is None
     assert result["scribe_consent_declined_at"] is not None
 
     # Re-consenting clears the refusal and records consent again
     result = set_scribe_consent(ur, True)
+    assert result is not None
     assert result["scribe_consent_at"] is not None
     assert result["scribe_consent_declined_at"] is None
 
@@ -201,8 +205,10 @@ def test_scribe_consent_targeted_upsert_preserves_demographics_db():
 
     # Demographics must survive the targeted consent upsert.
     profile = get_patient_profile(ur)
+    assert profile is not None
     assert profile["first_name"] == "Jane"
     assert profile["last_name"] == "Doe"
     assert profile["dob"] == "1980-01-01"
     consent = get_scribe_consent(ur)
+    assert consent is not None
     assert consent["scribe_consent_at"] is not None
