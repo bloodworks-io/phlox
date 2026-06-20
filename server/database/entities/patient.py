@@ -620,66 +620,85 @@ def get_patient_history(ur_number: str, template_key: str | None = None) -> list
         raise
 
 
-def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
-    """
-    Search for patients by UR number, returning data in the same format as get_patient_history.
+def _encounter_row_to_candidate(row) -> dict[str, Any] | None:
+    """Build a search-candidate dict from a joined patient_profiles + encounters row"""
+    template_key = row["template_key"]
+    if not get_template_by_key(template_key):
+        return None
 
-    Args:
-        ur_number (str): The UR number to search for.
+    persistent_fields = get_persistent_fields(template_key)
+    template_data = json.loads(row["template_data"]) if row["template_data"] else {}
+    persistent_data = {
+        field.field_key: template_data.get(field.field_key) for field in persistent_fields
+    }
 
-    Returns:
-        List[Dict[str, Any]]: Matching patient records in history format.
+    first_name = row["first_name"]
+    last_name = row["last_name"]
+
+    return {
+        "id": row["id"],
+        "name": _format_name(first_name, last_name),
+        "gender": row["gender"],
+        "dob": row["dob"],
+        "ur_number": row["ur_number"],
+        "first_name": first_name,
+        "last_name": last_name,
+        "address": row["address"],
+        "phone": row["phone"],
+        "encounter_date": row["encounter_date"],
+        "template_key": template_key,
+        "template_data": persistent_data,
+    }
+
+
+def search_patients(query: str) -> list[dict[str, Any]]:
     """
+    Search patients by UR number (exact) OR name (substring match on
+    first_name / last_name).
+    """
+    if not query:
+        return []
+    like = f"%{query}%"
     try:
         get_db().cursor.execute(
             """
-            SELECT id, ur_number, encounter_date, template_key, template_data
-            FROM encounters
-            WHERE ur_number = ?
-            ORDER BY encounter_date DESC
-            LIMIT 1
+            SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender,
+                   p.address, p.phone,
+                   e.id, e.encounter_date, e.template_key, e.template_data
+            FROM patient_profiles p
+            JOIN encounters e ON e.id = (
+                SELECT id FROM encounters
+                WHERE ur_number = p.ur_number
+                ORDER BY encounter_date DESC, id DESC
+                LIMIT 1
+            )
+            WHERE p.ur_number = ?
+               OR p.first_name LIKE ?
+               OR p.last_name LIKE ?
+            ORDER BY (p.last_name LIKE ?) DESC, p.last_name, p.first_name
+            LIMIT 20
             """,
-            (ur_number,),
+            (query, like, like, like),
         )
 
-        encounters = []
-        row = get_db().cursor.fetchone()
-        if row:
-            template = get_template_by_key(row["template_key"])
-            if template:
-                persistent_fields = get_persistent_fields(row["template_key"])
-                template_data = json.loads(row["template_data"]) if row["template_data"] else {}
-
-                persistent_data = {
-                    field.field_key: template_data.get(field.field_key)
-                    for field in persistent_fields
-                }
-
-                profile = get_patient_profile(row["ur_number"])
-                first_name = profile.get("first_name") if profile else None
-                last_name = profile.get("last_name") if profile else None
-
-                encounters.append(
-                    {
-                        "id": row["id"],
-                        "name": _format_name(first_name, last_name),
-                        "gender": profile.get("gender") if profile else None,
-                        "dob": profile.get("dob") if profile else None,
-                        "ur_number": row["ur_number"],
-                        "first_name": first_name,
-                        "last_name": last_name,
-                        "address": profile.get("address") if profile else None,
-                        "phone": profile.get("phone") if profile else None,
-                        "encounter_date": row["encounter_date"],
-                        "template_key": row["template_key"],
-                        "template_data": persistent_data,
-                    }
-                )
-
-        return encounters
+        rows = get_db().cursor.fetchall()
+        candidates = []
+        for row in rows:
+            candidate = _encounter_row_to_candidate(row)
+            if candidate is not None:
+                candidates.append(candidate)
+        return candidates
     except Exception as e:
         logging.error(f"Error searching patients: {e}")
         raise
+
+
+def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
+    """
+    Search for patients by UR number, delegates to
+    search_patients.
+    """
+    return search_patients(ur_number)
 
 
 def delete_patient_by_id(note_id: int) -> bool:

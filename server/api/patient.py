@@ -21,7 +21,7 @@ from server.database.entities.patient import (
     get_patients_by_date,
     get_scribe_consent,
     save_patient,
-    search_patient_by_ur_number,
+    search_patients,
     set_scribe_consent,
     update_patient,
     update_patient_reasoning,
@@ -322,11 +322,14 @@ async def get_patient_history_endpoint(id: int):
 
 
 @router.get("/search")
-async def search_patient(ur_number: str):
-    """Search for patients by UR number."""
+async def search_patient(q: str | None = None, ur_number: str | None = None):
+    """Search patients by UR number (exact) or name (substring). Accepts a
+    generic `q` (UR or name) or, for backward compatibility, `ur_number`."""
+    query = q if q is not None else ur_number
+    if not query:
+        raise HTTPException(status_code=400, detail="q or ur_number is required")
     try:
-        patients = search_patient_by_ur_number(ur_number)
-
+        patients = search_patients(query)
         return JSONResponse(content=patients)
     except Exception as e:
         logging.error(f"Error searching patients: {e}")
