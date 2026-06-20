@@ -8,10 +8,11 @@ const UrSearchField = ({
     isLoading = false,
     size = "sm",
     autoFocus = false,
+    placeholder = "UR Number",
 }) => (
     <>
         <Input
-            placeholder="UR Number"
+            placeholder={placeholder}
             size={size}
             value={value || ""}
             onChange={onChange}

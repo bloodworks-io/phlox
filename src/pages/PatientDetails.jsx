@@ -248,6 +248,7 @@ const PatientDetails = ({
     }, [searchResult, setPatient, selectTemplate]);
 
     useEffect(() => {
+        if (viaModal) return;
         if (!isNewPatient) {
             setIsSearchedPatient(false);
             console.log(
@@ -258,6 +259,7 @@ const PatientDetails = ({
     }, [location.pathname]);
 
     useEffect(() => {
+        if (viaModal) return;
         if (isNewPatient && !patient?.id) {
             setIsSearchedPatient(false);
             setStartCardDismissed(false);

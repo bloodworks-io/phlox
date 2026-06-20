@@ -150,7 +150,7 @@ const DemographicsForm = ({
             }
             setIsSaving(false);
         }
-        if (onSaved) onSaved();
+        if (onSaved) onSaved(updated);
     };
 
     const btnSx = {
