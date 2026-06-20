@@ -50,6 +50,7 @@ const PatientTable = ({
   refreshSidebar,
   title,
   groupByDate = false,
+  summaryOnly = false,
 }) => {
   const { colorMode } = useColorMode();
   const theme = useTheme();
@@ -172,27 +173,76 @@ const PatientTable = ({
   };
 
   const renderPatientRow = (patient, index) => (
-    <Tr key={patient.id} backgroundColor={getRowBackgroundColor(index)}>
-      <Td width="25%">
-        <VStack align="stretch" spacing={2}>
-          <Tooltip
-            label={`${patient.name}, DOB: ${patient.dob}, UR Number: ${patient.ur_number}`}
-            aria-label="Patient Details"
-          >
-            <PatientDetails patient={patient} />
-          </Tooltip>
-          <Button
-            className="grey-button"
-            size="sm"
-            onClick={() => handleSelectPatient(patient)}
-            maxW="150px"
-          >
-            Go to Encounter
-          </Button>
-        </VStack>
+    <Tr
+      key={patient.id}
+      backgroundColor={getRowBackgroundColor(index)}
+      opacity={
+        summaryOnly &&
+        (patient.jobs_list?.length || 0) > 0 &&
+        patient.jobs_list.every((j) => j.completed)
+          ? 0.5
+          : 1
+      }
+    >
+      <Td width="25%" verticalAlign="top">
+        {summaryOnly ? (
+          <Box>
+            <HStack spacing="2">
+              <Icon as={FaUser} />
+              <Text fontWeight="bold">{formatName(patient.name)}</Text>
+              <Tooltip label="Go to Encounter" placement="right" hasArrow>
+                <IconButton
+                  icon={<Icon as={FaArrowRight} />}
+                  size="xs"
+                  variant="ghost"
+                  aria-label="Go to Encounter"
+                  onClick={() => handleSelectPatient(patient)}
+                />
+              </Tooltip>
+            </HStack>
+            <HStack spacing="2">
+              <Icon as={FaCalendarAlt} />
+              <Text>{patient.dob}</Text>
+            </HStack>
+            <HStack spacing="2">
+              <Icon as={FaIdBadge} />
+              <Text>{patient.ur_number}</Text>
+            </HStack>
+          </Box>
+        ) : (
+          <VStack align="stretch" spacing={2}>
+            <Tooltip
+              label={`${patient.name}, DOB: ${patient.dob}, UR Number: ${patient.ur_number}`}
+              aria-label="Patient Details"
+            >
+              <PatientDetails patient={patient} />
+            </Tooltip>
+            <Button
+              className="grey-button"
+              size="sm"
+              onClick={() => handleSelectPatient(patient)}
+              maxW="150px"
+            >
+              Go to Encounter
+            </Button>
+          </VStack>
+        )}
       </Td>
 
-      <Td width="45%" position="relative">
+      <Td width="45%" position="relative" verticalAlign="top">
+        {summaryOnly ? (
+          <Box
+            p={2}
+            borderRadius="md"
+            bg={
+              colorMode === "light" ? colors.light.crust : colors.dark.crust
+            }
+          >
+            <Text fontSize="sm">
+              {patient.reasoning?.summary ?? patient.encounter_summary}
+            </Text>
+          </Box>
+        ) : (
         <Box>
           <Grid templateColumns="40px 1fr" gap={0} h="120px">
             <VStack align="flex-start" spacing={0} w="30px">
@@ -318,6 +368,7 @@ const PatientTable = ({
             </Box>
           </Grid>
         </Box>
+        )}
       </Td>
 
       <Td width="30%" verticalAlign="top">
@@ -339,7 +390,8 @@ const PatientTable = ({
             />
           </Tooltip>
           <VStack align="start" spacing={1}>
-            {patient.jobs_list?.map((item, index) => (
+            {patient.jobs_list?.length ? (
+              patient.jobs_list.map((item, index) => (
               <Checkbox
                 key={index}
                 className="checkbox task-checkbox"
@@ -385,6 +437,9 @@ const PatientTable = ({
                     display: "block",
                     whiteSpace: "normal",
                     paddingTop: 0,
+                    ...(item.completed
+                      ? { textDecoration: "line-through", opacity: 0.5 }
+                      : {}),
                   },
                   ".chakra-checkbox__control": {
                     marginTop: "3px",
@@ -393,7 +448,12 @@ const PatientTable = ({
               >
                 {item.job}
               </Checkbox>
-            ))}
+            ))
+            ) : (
+              <Text fontSize="sm" fontStyle="italic" opacity={0.6}>
+                No tasks
+              </Text>
+            )}
           </VStack>
         </HStack>
       </Td>
@@ -419,8 +479,19 @@ const PatientTable = ({
                 {new Date(date).toLocaleDateString()}
               </Text>
               <Box overflowX="auto">
-                <Table variant="simple">
-                  <Thead>
+                <Table
+                  variant="simple"
+                  borderRadius="lg"
+                  overflow="hidden"
+                  sx={{ borderCollapse: "separate", borderSpacing: 0 }}
+                >
+                  <Thead
+                    bg={
+                      colorMode === "light"
+                        ? colors.light.surface
+                        : colors.dark.surface
+                    }
+                  >
                     <Tr>
                       <Th width="25%">Patient Details</Th>
                       <Th width="45%">Reasoning / Encounter Summary</Th>
@@ -440,8 +511,19 @@ const PatientTable = ({
           ))
       ) : (
         <Box overflowX="auto">
-          <Table variant="simple">
-            <Thead>
+          <Table
+            variant="simple"
+            borderRadius="lg"
+            overflow="hidden"
+            sx={{ borderCollapse: "separate", borderSpacing: 0 }}
+          >
+            <Thead
+              bg={
+                colorMode === "light"
+                  ? colors.light.surface
+                  : colors.dark.surface
+              }
+            >
               <Tr>
                 <Th width="25%">Patient Details</Th>
                 <Th width="45%">Reasoning / Encounter Summary</Th>

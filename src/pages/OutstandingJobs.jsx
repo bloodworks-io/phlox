@@ -39,6 +39,7 @@ const OutstandingJobs = ({ handleSelectPatient, refreshSidebar }) => {
       refreshSidebar={refreshSidebar}
       title="Outstanding Jobs"
       groupByDate={true}
+      summaryOnly={true}
     />
   );
 };
