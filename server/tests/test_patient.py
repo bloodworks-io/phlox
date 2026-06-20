@@ -118,6 +118,7 @@ def test_delete_patient(monkeypatch):
     assert "message" in data
     assert "deleted" in data["message"].lower()
 
+
 def test_get_consent(monkeypatch):
     monkeypatch.setattr(
         "server.api.patient.get_scribe_consent",
@@ -156,9 +157,7 @@ def test_set_consent(monkeypatch):
         }
 
     monkeypatch.setattr("server.api.patient.set_scribe_consent", fake_set)
-    response = client.post(
-        "/api/note/consent", json={"ur_number": "UR123", "consented": True}
-    )
+    response = client.post("/api/note/consent", json={"ur_number": "UR123", "consented": True})
     assert response.status_code == 200
     assert captured == {"ur": "UR123", "consented": True}
     assert response.json()["scribe_consent_at"] is not None

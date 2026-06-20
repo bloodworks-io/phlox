@@ -146,8 +146,7 @@ def upsert_patient_profile(
 
 
 def get_scribe_consent(ur_number: str | None) -> dict[str, Any] | None:
-    """Fetch the ambient-scribe consent state for a person (keyed by ur_number).
-    """
+    """Fetch the ambient-scribe consent state for a person (keyed by ur_number)."""
     if not ur_number:
         return None
     try:
@@ -166,8 +165,7 @@ def get_scribe_consent(ur_number: str | None) -> dict[str, Any] | None:
 
 
 def set_scribe_consent(ur_number: str | None, consented: bool) -> dict[str, Any] | None:
-    """Record ambient-scribe consent or refusal for a person (keyed by ur_number).
-    """
+    """Record ambient-scribe consent or refusal for a person (keyed by ur_number)."""
     if not ur_number:
         return None
     now = datetime.now().isoformat()

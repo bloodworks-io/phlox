@@ -29,13 +29,13 @@ const PathHalf = ({ icon, title, subtitle, accent, c, tileBg, onClick }) => (
         role="group"
         transition="all 0.2s"
         bg={tileBg}
-        borderRadius="lg"
+        borderRadius="xl"
         _hover={{ bg: "rgba(184, 192, 224, 0.12)" }}
         onClick={onClick}
     >
         <Icon
             as={icon}
-            boxSize={9}
+            boxSize={12}
             color={accent}
             mb={4}
             transition="transform 0.2s"
@@ -74,6 +74,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
                 className="panels-bg"
+                sx={{ borderRadius: "2xl !important" }}
                 p={{ base: 6, md: 8 }}
                 w={{ base: "100%", sm: "90%", md: "520px" }}
                 maxW="520px"
@@ -147,11 +148,16 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                             </Flex>
                             <Button
                                 type="button"
-                                variant="ghost"
-                                size="sm"
+                                variant="outline"
+                                size="md"
                                 mt={3}
+                                borderRadius="2xl !important"
                                 leftIcon={<FaArrowLeft />}
-                                color={c.textSecondary}
+                                className="switch-mode"
+                                sx={{
+                                    fontFamily: '"Space Grotesk", sans-serif',
+                                    fontWeight: "600",
+                                }}
                                 onClick={() => setView("choose")}
                             >
                                 Back
