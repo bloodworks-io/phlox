@@ -263,77 +263,78 @@ export const usePatient = (initialPatient = null) => {
         return refinementData;
     };
 
+    const findPatients = async (query) => {
+        const q = (query || "").trim();
+        if (!q) return [];
+        const response = await universalFetch(
+            `/api/note/search?q=${encodeURIComponent(q)}`,
+        );
+        if (!response.ok) throw new Error("Search failed");
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+    };
+
+    const loadSelectedPatient = async (candidate, selectedDate) => {
+        let fullTemplateData = candidate.template_data || {};
+        try {
+            const fullPatientResponse = await universalFetch(
+                `/api/note/id/${candidate.id}`,
+            );
+            if (fullPatientResponse.ok) {
+                const fullPatient = await fullPatientResponse.json();
+                fullTemplateData = fullPatient.template_data || {};
+            }
+        } catch (error) {
+            console.error("Error fetching full patient data:", error);
+        }
+
+        // Create a new patient object with the passed selectedDate
+        const newPatient = {
+            ...candidate,
+            id: null,
+            encounter_date: selectedDate, // Use the passed selectedDate
+            template_data: {
+                ...candidate.template_data, // Use persistent data for pre-fill
+            },
+            isNewEncounter: true,
+            // Preserve full previous visit data for the panel
+            previous_visit_template_data: fullTemplateData,
+            previous_visit_template_key: candidate.template_key,
+            previous_visit_encounter_date: candidate.encounter_date,
+        };
+
+        // Fetch the previous visit summary
+        try {
+            const summaryResponse = await universalFetch(
+                `/api/note/summary/${candidate.id}`,
+            );
+            if (summaryResponse.ok) {
+                const summaryData = await summaryResponse.json();
+                newPatient.previous_visit_summary = summaryData.summary;
+            }
+        } catch (error) {
+            console.error("Error fetching previous visit summary:", error);
+        }
+
+        setPatient(newPatient);
+        return newPatient;
+    };
+
     const searchPatient = async (urNumber, selectedDate) => {
         try {
-            const response = await universalFetch(
-                `/api/note/search?ur_number=${urNumber}`,
-            );
-            if (!response.ok) throw new Error("Search failed");
-
-            const data = await response.json();
-            if (data.length > 0) {
-                const latestEncounter = data[0];
-
-                // Fetch full patient data to get all template_data fields (not just persistent ones)
-                let fullTemplateData = latestEncounter.template_data || {};
-                try {
-                    const fullPatientResponse = await universalFetch(
-                        `/api/note/id/${latestEncounter.id}`,
-                    );
-                    if (fullPatientResponse.ok) {
-                        const fullPatient = await fullPatientResponse.json();
-                        fullTemplateData = fullPatient.template_data || {};
-                    }
-                } catch (error) {
-                    console.error("Error fetching full patient data:", error);
-                }
-
-                // Create a new patient object with the passed selectedDate
-                const newPatient = {
-                    ...latestEncounter,
-                    id: null,
-                    encounter_date: selectedDate, // Use the passed selectedDate
-                    template_data: {
-                        ...latestEncounter.template_data, // Use persistent data for pre-fill
-                    },
-                    isNewEncounter: true,
-                    // Preserve full previous visit data for the panel
-                    previous_visit_template_data: fullTemplateData,
-                    previous_visit_template_key: latestEncounter.template_key,
-                    previous_visit_encounter_date:
-                        latestEncounter.encounter_date,
-                };
-
-                // Fetch the previous visit summary
-                try {
-                    const summaryResponse = await universalFetch(
-                        `/api/note/summary/${latestEncounter.id}`,
-                    );
-                    if (summaryResponse.ok) {
-                        const summaryData = await summaryResponse.json();
-                        newPatient.previous_visit_summary = summaryData.summary;
-                    }
-                } catch (error) {
-                    console.error(
-                        "Error fetching previous visit summary:",
-                        error,
-                    );
-                }
-
-                setPatient(newPatient);
-
-                toast({
-                    title: "Patient Found",
-                    description:
-                        "Patient data pre-filled from the latest encounter.",
-                    status: "success",
-                    duration: 3000,
-                    isClosable: true,
-                });
-
-                return newPatient;
-            }
-            return null;
+            const list = await findPatients(urNumber);
+            const hit = list[0];
+            if (!hit) return null;
+            const loaded = await loadSelectedPatient(hit, selectedDate);
+            toast({
+                title: "Patient Found",
+                description:
+                    "Patient data pre-filled from the latest encounter.",
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+            });
+            return loaded;
         } catch (error) {
             console.error("Error searching patient:", error);
             toast({
@@ -383,6 +384,8 @@ export const usePatient = (initialPatient = null) => {
         savePatient,
         savePatientCore,
         searchPatient,
+        findPatients,
+        loadSelectedPatient,
         generateLetter,
     };
 };

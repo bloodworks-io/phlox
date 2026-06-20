@@ -107,7 +107,8 @@ function AppContent({ setIsInitializing }) {
         finalCorrespondence,
         setFinalCorrespondence,
         createNewPatient,
-        searchPatient,
+        findPatients,
+        loadSelectedPatient,
         templateKey,
         setTemplateKey,
     } = usePatient();
@@ -609,7 +610,8 @@ function AppContent({ setIsInitializing }) {
                 patient={patient}
                 setPatient={setPatient}
                 createNewPatient={createNewPatient}
-                searchPatient={searchPatient}
+                findPatients={findPatients}
+                loadSelectedPatient={loadSelectedPatient}
                 selectedDate={selectedDate}
                 onComplete={completeNewNote}
             />
