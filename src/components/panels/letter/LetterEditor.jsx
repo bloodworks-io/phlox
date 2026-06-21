@@ -1,4 +1,3 @@
-import React, { useEffect, useRef } from "react";
 import {
   Box,
   Flex,
@@ -16,11 +15,9 @@ const LetterEditor = ({
   loading,
   isRefining,
   textareaRef,
-  // autoResizeTextarea, // Removed prop
   refinementPanel,
   dictationWidget,
 }) => {
-  // Removed useEffect related to autoResizeTextarea
 
   return (
     // This outer Box needs height="100%" if its parent relies on it
@@ -64,7 +61,6 @@ const LetterEditor = ({
           value={finalCorrespondence || "No letter attached to encounter"}
           onChange={(e) => {
             onLetterChange(e.target.value);
-            // autoResizeTextarea(); // Removed call
           }}
           // Make Textarea the flexible item, taking up remaining space
           flex="1"

@@ -39,7 +39,6 @@ const LetterPanel = ({
   isRefining,
   setIsRefining,
   textareaRef,
-  // autoResizeTextarea, // We won't need this prop anymore
   recentlyCopied,
   saveState,
   handleCopy,
