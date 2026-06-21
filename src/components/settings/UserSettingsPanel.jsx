@@ -18,7 +18,7 @@ import {
   FormControl,
   FormLabel,
 } from "@chakra-ui/react";
-import { ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
 import { FaUser, FaCog } from "react-icons/fa";
 
 const ADVANCED_OPTIONS_SCHEMA = [

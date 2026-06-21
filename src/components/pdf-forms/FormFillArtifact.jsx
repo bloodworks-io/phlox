@@ -8,7 +8,7 @@ import {
     useColorModeValue,
     useToast,
 } from "@chakra-ui/react";
-import { DownloadIcon } from "@chakra-ui/icons";
+import { DownloadIcon } from "../common/icons";
 import { FaFilePdf } from "react-icons/fa";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";

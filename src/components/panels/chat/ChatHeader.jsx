@@ -1,5 +1,5 @@
 import { Flex, Text, IconButton } from "@chakra-ui/react";
-import { ChatIcon, CloseIcon } from "@chakra-ui/icons";
+import { ChatIcon, CloseIcon } from "../../common/icons";
 
 const ChatHeader = ({ title = "Chat With Phlox", onClose }) => {
     return (

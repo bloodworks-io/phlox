@@ -8,7 +8,7 @@ import {
     Collapse,
     Spinner,
 } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon } from "./icons";
 import {
     getToolName,
     getToolPresentation,

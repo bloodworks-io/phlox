@@ -1,6 +1,6 @@
 import React from "react";
 import { IconButton, Tooltip, useColorMode, Box } from "@chakra-ui/react";
-import { ChatIcon } from "@chakra-ui/icons";
+import { ChatIcon } from "./icons";
 import { FaEnvelope, FaAtom, FaFileUpload, FaClock } from "react-icons/fa";
 import PillBox from "./PillBox";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";

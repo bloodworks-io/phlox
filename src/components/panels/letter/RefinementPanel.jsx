@@ -8,7 +8,7 @@ import {
     Button,
     Spinner,
 } from "@chakra-ui/react";
-import { EditIcon, CloseIcon } from "@chakra-ui/icons";
+import { EditIcon, CloseIcon } from "../../common/icons";
 
 const RefinementPanel = ({
     refinementInput,

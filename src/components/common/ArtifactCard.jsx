@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, HStack, Text, Button, Link } from "@chakra-ui/react";
-import { ExternalLinkIcon, DownloadIcon } from "@chakra-ui/icons";
+import { ExternalLinkIcon, DownloadIcon } from "./icons";
 import { FaFilePdf, FaFileImage, FaFile } from "react-icons/fa";
 
 const formatFileSize = (bytes) => {

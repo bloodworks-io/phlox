@@ -11,7 +11,7 @@ import {
     Image,
     useColorMode,
 } from "@chakra-ui/react";
-import { AttachmentIcon } from "@chakra-ui/icons";
+import { AttachmentIcon } from "../common/icons";
 import { FaFilePdf, FaFileImage } from "react-icons/fa";
 import MarkdownRenderer from "../common/MarkdownRenderer";
 import ArtifactCard from "../common/ArtifactCard";

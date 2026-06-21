@@ -10,7 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { FaClinicMedical, FaTasks } from "react-icons/fa";
 import { GiBrain } from "react-icons/gi";
-import { SettingsIcon } from "@chakra-ui/icons";
+import { SettingsIcon } from "../common/icons";
 import { colors } from "../../theme/colors";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
 import { SectionHeader } from "./SidebarHelpers";

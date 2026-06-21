@@ -9,7 +9,7 @@ import {
     Spinner,
     useColorModeValue,
 } from "@chakra-ui/react";
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
 import { FIELD_COLORS } from "./FieldEditor";

@@ -12,7 +12,7 @@ import {
   useColorModeValue,
   useToast,
 } from "@chakra-ui/react";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { DeleteIcon } from "../common/icons";
 import { FiFileText } from "react-icons/fi";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 

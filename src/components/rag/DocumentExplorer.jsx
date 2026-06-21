@@ -19,7 +19,7 @@ import {
     EditIcon,
     DeleteIcon,
     DownloadIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
 import { MdOutlineFolderCopy } from "react-icons/md";
 import { ragApi } from "../../utils/api/ragApi";

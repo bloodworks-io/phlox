@@ -9,7 +9,7 @@ import {
   Flex,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon } from "../common/icons";
 import { FaPencilAlt, FaMagic, FaSave } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import FormTemplateList from "./FormTemplateList";

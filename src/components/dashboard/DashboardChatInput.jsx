@@ -13,7 +13,7 @@ import {
     Input,
     Icon,
 } from "@chakra-ui/react";
-import { ArrowUpIcon, AttachmentIcon, CloseIcon } from "@chakra-ui/icons";
+import { ArrowUpIcon, AttachmentIcon, CloseIcon } from "../common/icons";
 import { FaFilePdf } from "react-icons/fa";
 
 const VALID_IMAGE_TYPES = [

@@ -18,7 +18,7 @@ import {
     TabPanel,
     useToast,
 } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronRightIcon, AddIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronRightIcon, AddIcon } from "../common/icons";
 import { MdFileUpload } from "react-icons/md";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { ragApi } from "../../utils/api/ragApi";

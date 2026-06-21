@@ -28,7 +28,7 @@ import {
     FaServer,
     FaLock,
 } from "react-icons/fa";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { DeleteIcon } from "../common/icons";
 import { useState, useEffect } from "react";
 
 import { toolsApi } from "../../utils/api/toolsApi";

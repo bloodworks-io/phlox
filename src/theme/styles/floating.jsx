@@ -1,5 +1,5 @@
 // Styles for the chat interface.
-import { MinusIcon } from "@chakra-ui/icons";
+import { MinusIcon } from "../../components/common/icons";
 import { colors } from "../colors";
 import { WiDayThunderstorm } from "react-icons/wi";
 

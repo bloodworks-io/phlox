@@ -1,6 +1,6 @@
 // Reusable button components with predefined styles for different actions.
 import { Button, IconButton } from "@chakra-ui/react";
-import { RepeatIcon } from "@chakra-ui/icons";
+import { RepeatIcon } from "./icons";
 
 // Primary Action Buttons
 export const GreenButton = ({ children, ...props }) => (

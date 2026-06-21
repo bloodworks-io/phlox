@@ -16,7 +16,7 @@ import {
   IconButton,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { DeleteIcon } from "../common/icons";
 
 const FIELD_COLORS = {
   text: "blue.400",

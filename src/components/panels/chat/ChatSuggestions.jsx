@@ -1,6 +1,6 @@
 import React from "react";
 import { Flex, Button } from "@chakra-ui/react";
-import { QuestionIcon } from "@chakra-ui/icons";
+import { QuestionIcon } from "../../common/icons";
 
 const ChatSuggestions = ({ handleSendMessage, userSettings }) => {
   if (!userSettings) return null;

@@ -6,7 +6,7 @@ import {
     Box,
     useColorModeValue,
 } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon } from "../common/icons";
 import { colors } from "../../theme/colors";
 
 export const getAvatarColor = (name) => {

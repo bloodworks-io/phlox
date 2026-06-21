@@ -7,7 +7,7 @@ import {
   Tooltip,
   Spinner,
 } from "@chakra-ui/react";
-import { EditIcon } from "@chakra-ui/icons";
+import { EditIcon } from "../../common/icons";
 
 const LetterEditor = ({
   finalCorrespondence,

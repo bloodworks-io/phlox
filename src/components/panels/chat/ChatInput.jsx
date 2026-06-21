@@ -6,7 +6,7 @@ import {
     IconButton,
     useColorMode,
 } from "@chakra-ui/react";
-import { ArrowUpIcon } from "@chakra-ui/icons";
+import { ArrowUpIcon } from "../../common/icons";
 
 const MIN_HEIGHT = 32;
 const MAX_HEIGHT = 72; // ~3 lines, then scroll

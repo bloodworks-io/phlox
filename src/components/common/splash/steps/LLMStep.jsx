@@ -20,9 +20,9 @@ import {
     Progress,
     useToast,
 } from "@chakra-ui/react";
-import { InfoIcon } from "@chakra-ui/icons";
+import { InfoIcon } from "../../icons";
 import { FaDesktop, FaCloud } from "react-icons/fa";
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "../../icons";
 import { motion } from "framer-motion";
 import { stepVariants } from "../constants";
 import { useLLMStep } from "../../../../utils/hooks/splash/useLLMStep";

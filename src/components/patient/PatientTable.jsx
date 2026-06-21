@@ -31,7 +31,7 @@ import {
   FaBrain,
   FaArrowRight,
 } from "react-icons/fa";
-import { RepeatIcon } from "@chakra-ui/icons";
+import { RepeatIcon } from "../common/icons";
 import {
   toggleJobsItem,
   resetJobsItems,

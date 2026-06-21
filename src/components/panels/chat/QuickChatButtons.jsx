@@ -1,6 +1,6 @@
 import React from "react";
 import { Tooltip, Button, Box } from "@chakra-ui/react";
-import { QuestionIcon } from "@chakra-ui/icons";
+import { QuestionIcon } from "../../common/icons";
 import { emergeFromButton, AnimatedHStack } from "../../../theme/animations";
 
 const QuickChatButtons = ({ userSettings, handleSendMessage }) => {

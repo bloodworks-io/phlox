@@ -19,7 +19,7 @@ import {
     CloseIcon,
     CheckIcon,
     WarningIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 import { FaFilePdf, FaCloudUploadAlt } from "react-icons/fa";
 import { ragApi } from "../../utils/api/ragApi";
 import { extractPdfMetadata } from "../../utils/helpers/pdfExtractHelpers";

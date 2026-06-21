@@ -34,7 +34,7 @@ import {
     ChevronRightIcon,
     ChevronDownIcon,
     CheckCircleIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 import {
     FaCog,
     FaDesktop,

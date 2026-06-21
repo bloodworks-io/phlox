@@ -23,7 +23,7 @@ import {
   CopyIcon,
   CheckIcon,
   AttachmentIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";

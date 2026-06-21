@@ -10,7 +10,7 @@ import {
     VStack,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { DeleteIcon } from "../common/icons";
 import { SectionHeader, getInitials, getAvatarColor } from "./SidebarHelpers";
 import { colors } from "../../theme/colors";
 

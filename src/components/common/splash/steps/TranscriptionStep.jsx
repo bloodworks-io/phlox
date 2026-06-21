@@ -12,8 +12,8 @@ import {
   Button,
   Badge,
 } from "@chakra-ui/react";
-import { InfoIcon } from "@chakra-ui/icons";
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { InfoIcon } from "../../icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "../../icons";
 import { motion } from "framer-motion";
 import { stepVariants } from "../constants";
 import { useTranscriptionStep } from "../../../../utils/hooks/splash/useTranscriptionStep";
