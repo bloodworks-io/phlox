@@ -284,34 +284,6 @@ def soft_delete_template(template_key: str) -> bool:
         raise
 
 
-def restore_template(template_key: str) -> bool:
-    """
-    Restore a soft-deleted template.
-
-    Args:
-        template_key (str): The key of the template to restore.
-
-    Returns:
-        bool: True if restored successfully.
-    """
-    try:
-        now = datetime.now().isoformat()
-        get_db().cursor.execute(
-            """
-            UPDATE clinical_templates
-            SET deleted = FALSE,
-                updated_at = ?
-            WHERE template_key = ?
-            """,
-            (now, template_key),
-        )
-        get_db().commit()
-        return get_db().cursor.rowcount > 0
-    except Exception as e:
-        logging.error(f"Error restoring template: {e}")
-        raise
-
-
 def template_exists(template_key: str, include_deleted: bool = False) -> bool:
     """
     Check if a template exists.
@@ -380,59 +352,6 @@ def get_persistent_fields(template_key: str) -> list[TemplateField]:
         return [field for field in fields if field.persistent]
     except Exception as e:
         logging.error(f"Error getting persistent fields: {e}")
-        raise
-
-
-def get_template_field(template_key: str, field_key: str) -> TemplateField | None:
-    """
-    Get a specific field from a template.
-
-    Args:
-        template_key (str): The key of the template.
-        field_key (str): The key of the field.
-
-    Returns:
-        Optional[TemplateField]: The field if found.
-    """
-    try:
-        fields = get_template_fields(template_key)
-        for field in fields:
-            if field.field_key == field_key:
-                return field
-        return None
-    except Exception as e:
-        logging.error(f"Error getting template field: {e}")
-        raise
-
-
-def validate_template_data(template_key: str, template_data: dict[str, Any]) -> bool:
-    """
-    Validate template data against template fields.
-    Ensures plan is properly formatted.
-    """
-    try:
-        fields = get_template_fields(template_key)
-
-        # Check required fields
-        for field in fields:
-            if field.required and field.field_key not in template_data:
-                raise ValueError(f"Required field {field.field_key} is missing")
-
-            # Special validation for plan field
-            if field.field_key == "plan":
-                plan_text = template_data.get("plan", "")
-                if not plan_text:
-                    raise ValueError("Plan is required")
-
-                # Check if plan items are numbered
-                lines = [line.strip() for line in plan_text.split("\n") if line.strip()]
-                for line in lines:
-                    if not line[0].isdigit() or "." not in line:
-                        raise ValueError("Plan items must be numbered (e.g., '1. Action item')")
-
-        return True
-    except Exception as e:
-        logging.error(f"Error validating template data: {e}")
         raise
 
 
@@ -591,3 +510,4 @@ def update_field_adaptive_instructions(
         # Attempt to rollback in case of partial transaction failure if applicable, though simple UPDATEs are often atomic.
         # db.rollback() # db object does not seem to have rollback based on PatientDatabase structure
         return False
+
