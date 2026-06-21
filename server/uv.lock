@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-06-01T10:31:13.107979624Z"
+exclude-newer = "2026-06-14T03:23:23.15276877Z"
 exclude-newer-span = "P7D"
 
 [[package]]
@@ -805,15 +805,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "bandit" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "ty" },
-]
 docker = [
     { name = "mcp" },
     { name = "numpy" },
@@ -848,7 +839,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "apscheduler", specifier = "==3.11.2" },
-    { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = "==1.9.4" },
     { name = "fastapi", specifier = "==0.128.0" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "json-repair", specifier = "==0.55.0" },
@@ -858,23 +848,17 @@ requires-dist = [
     { name = "phlox-server", extras = ["rag"], marker = "extra == 'docker'" },
     { name = "pillow", marker = "extra == 'rag'", specifier = "==12.2.0" },
     { name = "platformdirs", specifier = "==4.5.1" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.5.1" },
     { name = "pydantic", specifier = "==2.12.5" },
-    { name = "pypdf", marker = "extra == 'rag'", specifier = "==6.10.2" },
+    { name = "pypdf", marker = "extra == 'rag'", specifier = "==6.13.2" },
     { name = "pytesseract", marker = "extra == 'rag'", specifier = "==0.3.13" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==9.0.3" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==1.3.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.0.0" },
-    { name = "python-multipart", specifier = "==0.0.27" },
+    { name = "python-multipart", specifier = "==0.0.32" },
     { name = "rapidfuzz", specifier = "==3.14.3" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.15.4" },
     { name = "sqlcipher3", specifier = "==0.6.2" },
     { name = "sqlite-vec", marker = "extra == 'rag'", specifier = "==0.1.9" },
     { name = "tiktoken", marker = "extra == 'rag'", specifier = "==0.12.0" },
-    { name = "ty", marker = "extra == 'dev'", specifier = "==0.0.39" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.41.0" },
 ]
-provides-extras = ["rag", "docker", "dev"]
+provides-extras = ["rag", "docker"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1125,11 +1109,11 @@ crypto = [
 
 [[package]]
 name = "pypdf"
-version = "6.10.2"
+version = "6.13.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7b/3f/9f2167401c2e94833ca3b69535bad89e533b5de75fefe4197a2c224baec2/pypdf-6.10.2.tar.gz", hash = "sha256:7d09ce108eff6bf67465d461b6ef352dcb8d84f7a91befc02f904455c6eea11d", size = 5315679, upload-time = "2026-04-15T16:37:36.978Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/99/0a/48fe05c6bb3aa4bb4d2a4079a383d33c0dfec1edf613a642f07d8b8b5c2e/pypdf-6.13.2.tar.gz", hash = "sha256:5a96a17dbdfbf9c2ab24c0a13fa0aba182be22ba6f283098712c16fc242f509f", size = 6479250, upload-time = "2026-06-10T16:42:34.5Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/d6/1d5c60cc17bbdf37c1552d9c03862fc6d32c5836732a0415b2d637edc2d0/pypdf-6.10.2-py3-none-any.whl", hash = "sha256:aa53be9826655b51c96741e5d7983ca224d898ac0a77896e64636810517624aa", size = 336308, upload-time = "2026-04-15T16:37:34.851Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/17/378943705992f74e451a06de3401ce68e3213763c81e44d0614559c45599/pypdf-6.13.2-py3-none-any.whl", hash = "sha256:6eeb9e57693f29d41bd01255d02660cbbb41fd7fc818a982677389a35e4f2083", size = 346555, upload-time = "2026-06-10T16:42:32.37Z" },
 ]
 
 [[package]]
@@ -1212,11 +1196,11 @@ wheels = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.27"
+version = "0.0.32"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/69/9b/f23807317a113dc36e74e75eb265a02dd1a4d9082abc3c1064acd22997c4/python_multipart-0.0.27.tar.gz", hash = "sha256:9870a6a8c5a20a5bf4f07c017bd1489006ff8836cff097b6933355ee2b49b602", size = 44043, upload-time = "2026-04-27T10:51:26.649Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5b/42/55c32bb9b12693c092ad250a0e82edb5b31ddeda6eb772de5f308b3804ad/python_multipart-0.0.32.tar.gz", hash = "sha256:be54b7f3fa167bb83e4fcd936b887b708f4e57fe75911c02aebf53efaf8d938e", size = 46881, upload-time = "2026-06-04T16:18:58.647Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/78/4126abcbdbd3c559d43e0db7f7b9173fc6befe45d39a2856cc0b8ec2a5a6/python_multipart-0.0.27-py3-none-any.whl", hash = "sha256:6fccfad17a27334bd0193681b369f476eda3409f17381a2d65aa7df3f7275645", size = 29254, upload-time = "2026-04-27T10:51:24.997Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/04/e8135ebd1ad02c56ec633277529b2602ff99ff634be76cdba5744cf554fd/python_multipart-0.0.32-py3-none-any.whl", hash = "sha256:ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23", size = 30042, upload-time = "2026-06-04T16:18:57.319Z" },
 ]
 
 [[package]]
