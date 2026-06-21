@@ -17,8 +17,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-GET_PATIENT_JOBS_TOOL_NAME = "get_patient_jobs"
-
 
 async def get_patient_jobs(
     ur_number: str | None = None,
@@ -203,3 +201,4 @@ async def execute(
             result_content = f"Error retrieving patient jobs: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

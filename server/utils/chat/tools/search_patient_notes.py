@@ -20,7 +20,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-SEARCH_PATIENT_NOTES_TOOL_NAME = "search_patient_notes"
 
 # Fields to search within each patient record
 SEARCH_FIELDS = [
@@ -350,3 +349,4 @@ async def execute(
             result_content = f"Error searching patient notes: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

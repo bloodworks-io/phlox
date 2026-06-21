@@ -22,8 +22,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-TODO_LIST_TOOL_NAME = "todo_list"
-
 
 def format_todos_list(todos: list[dict]) -> str:
     """Format todos list for display.
@@ -143,3 +141,4 @@ async def execute(
         result_content = f"Error managing todo list: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

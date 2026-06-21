@@ -21,7 +21,6 @@ from server.utils.chat.tools.sanitization import sanitize_pubmed_query
 logger = logging.getLogger(__name__)
 
 PUBMED_API_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
-PUBMED_TOOL_NAME = "pubmed_search"
 
 
 def parse_pubmed_article(article_elem: ET.Element, pmid: str) -> dict:
@@ -247,3 +246,4 @@ async def execute(
             result_content = f"Error searching PubMed: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

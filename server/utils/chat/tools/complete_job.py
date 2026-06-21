@@ -18,8 +18,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-COMPLETE_JOB_TOOL_NAME = "complete_job"
-
 
 async def complete_job(note_id: int, job_id: int) -> dict:
     """Mark a job as completed for a patient.
@@ -211,3 +209,4 @@ async def execute(
             result_content = f"Error completing job: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

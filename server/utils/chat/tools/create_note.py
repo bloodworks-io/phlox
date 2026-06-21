@@ -25,8 +25,6 @@ from server.utils.chat.tools.patient_utils import find_ur_by_name
 
 logger = logging.getLogger(__name__)
 
-CREATE_NOTE_TOOL_NAME = "create_note"
-
 
 def format_patient_name(name: str) -> str:
     """
@@ -301,3 +299,4 @@ async def execute(
             result_content = f"Error creating note: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

@@ -20,8 +20,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-SEARCH_PATIENT_TOOL_NAME = "search_patient"
-
 
 async def search_patients(
     name: str | None = None,
@@ -224,3 +222,4 @@ async def execute(
             yield chunk
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

@@ -18,8 +18,6 @@ from server.utils.chat.tools.patient_utils import find_ur_by_name
 
 logger = logging.getLogger(__name__)
 
-PREVIOUS_ENCOUNTER_TOOL_NAME = "get_previous_encounter"
-
 
 async def get_previous_encounter(
     ur_number: str, current_encounter_date: str | None = None
@@ -183,3 +181,4 @@ async def execute(
             result_content = f"Error retrieving previous encounter: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+
