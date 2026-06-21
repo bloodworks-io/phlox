@@ -21,7 +21,7 @@ import FloatingActionMenu from "../components/common/FloatingActionMenu";
 import TranscriptionPanel from "../components/panels/transcription/TranscriptionPanel";
 import DocumentPanel from "../components/panels/document/DocumentPanel";
 import PreviousVisitPanel from "../components/panels/previous-visit/PreviousVisitPanel";
-import { usePatient } from "../utils/hooks/usePatient";
+import { usePatientEditor } from "../utils/hooks/usePatientEditor";
 import { usePatientTemplate } from "../utils/hooks/usePatientTemplate";
 import { useDocumentExtraction } from "../utils/hooks/useDocumentExtraction";
 import { patientApi } from "../utils/api/patientApi";
@@ -98,8 +98,7 @@ const PatientDetails = ({
         savePatient,
         savePatientCore,
         searchPatient,
-        loadPatientDetails,
-    } = usePatient(initialPatient, setInitialPatient);
+    } = usePatientEditor(initialPatient);
 
     const { currentTemplate, templates, selectTemplate } = usePatientTemplate({
         patient,
