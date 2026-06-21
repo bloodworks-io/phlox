@@ -45,11 +45,6 @@ class LocalModelManager:
 
         return sorted(models, key=lambda m: m["size"])
 
-    async def is_model_available(self, filename: str) -> bool:
-        """Check if a model file exists."""
-        model_path = self.models_dir / filename
-        return model_path.exists()
-
     def get_model_path(self, _repo_id: str, filename: str) -> str | None:
         """Get the full path to a model file."""
         # repo_id is ignored for GGUF files, we use the flat structure
@@ -77,3 +72,4 @@ class LocalModelManager:
                     selection_file.unlink()
             return True
         return False
+

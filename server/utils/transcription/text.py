@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import random
-import re
 import time
 from typing import Any
 
@@ -214,18 +213,6 @@ def _capitalize_first_char(text: str) -> str:
     return text[0].upper() + text[1:] if text else text
 
 
-# Helps to clean up double spaces
-def clean_list_spacing(text: str) -> str:
-    """Clean up extra spaces in list items and at line start."""
-    # Fix numbered list items (e.g., "1.  text" -> "1. text")
-    text = re.sub(r"(\d+\.)  +", r"\1 ", text)
-    # Fix bullet points/dashes (e.g., "-  text" -> "- text")
-    text = re.sub(r"([-•*])  +", r"\1 ", text)
-    # Fix any double spaces at the start of lines
-    text = re.sub(r"^\s{2,}", " ", text)
-    return text.strip()
-
-
 def _build_patient_context(context: dict[str, str | None]) -> str:
     """
     Build patient context string from dictionary.
@@ -247,3 +234,4 @@ def _build_patient_context(context: dict[str, str | None]) -> str:
         context_parts.append(f"DOB: {context['dob']}")
 
     return " ".join(context_parts)
+

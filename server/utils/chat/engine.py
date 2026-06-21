@@ -54,8 +54,6 @@ class ChatEngine:
             self.vector_store_manager = None
             self.logger.warning("RAG dependencies not available. Literature search disabled.")
 
-        self.last_successful_collection = "misc"
-
     async def get_streaming_response(
         self,
         conversation_history: list,

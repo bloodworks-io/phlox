@@ -204,18 +204,6 @@ def get_mcp_tools_sync() -> list[dict[str, Any]]:
     return _mcp_tools_cache.copy()
 
 
-def get_mcp_server_info_sync(server_id: int) -> dict[str, Any] | None:
-    """Get cached server info for a specific MCP server.
-
-    Args:
-        server_id: The ID of the MCP server
-
-    Returns:
-        Dict with 'name' and 'version' keys, or None if not cached
-    """
-    return _mcp_server_info_cache.get(server_id)
-
-
 async def refresh_mcp_tools_cache() -> None:
     """Refresh the global MCP tools cache."""
     await get_mcp_tools()
@@ -246,3 +234,4 @@ async def call_mcp_tool(server_id: int, tool_name: str, arguments: dict[str, Any
         return await client.call_tool(tool_name, arguments)
     finally:
         await client.disconnect()
+
