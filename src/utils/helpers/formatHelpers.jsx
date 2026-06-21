@@ -5,13 +5,6 @@ export const formatCollectionName = (name) => {
         .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-export const formatPatientName = (name) => {
-    const nameParts = name.split(", ");
-    const firstNameInitial = nameParts[1] ? nameParts[1][0] : "";
-    const lastName = nameParts[0];
-    return `${firstNameInitial}. ${lastName}`;
-};
-
 export const formatDate = (date) => {
     if (!date) return "";
     return new Date(date).toLocaleDateString("en-US", {
