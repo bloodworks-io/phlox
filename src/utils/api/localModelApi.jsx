@@ -121,29 +121,6 @@ export const localModelApi = {
       errorMessage: "Failed to restart LLM server",
     }),
 
-  // HuggingFace search for custom models
-  searchModels: async (query) =>
-    handleApiRequest({
-      apiCall: async () => {
-        const url = await buildApiUrl(
-          `/api/config/local/search?query=${encodeURIComponent(query)}`,
-        );
-        return universalFetch(url);
-      },
-      errorMessage: "Failed to search models",
-    }),
-
-  getRepoFiles: async (repoId) =>
-    handleApiRequest({
-      apiCall: async () => {
-        const url = await buildApiUrl(
-          `/api/config/local/models/repo/${repoId}`,
-        );
-        return universalFetch(url);
-      },
-      errorMessage: "Failed to fetch repository files",
-    }),
-
   getSelectedModel: async () =>
     handleApiRequest({
       apiCall: async () => {
