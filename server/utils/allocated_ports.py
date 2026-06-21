@@ -23,7 +23,3 @@ def get_llama_port() -> int:
     """Get the Llama server port."""
     return LLAMA_PORT
 
-
-def get_server_port() -> int:
-    """Get the server port."""
-    return SERVER_PORT
