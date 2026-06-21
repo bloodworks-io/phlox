@@ -7,7 +7,6 @@
 *.sqlite-wal
 *.sqlite-shm
 data/
-public/CHANGELOG.md
 
 # Logs
 logs/
