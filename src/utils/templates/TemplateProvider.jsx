@@ -8,7 +8,7 @@ import React, {
 import { useApiToast } from "../helpers/apiToastContext";
 import { templateApi } from "../api/templateApi";
 import { templateService } from "./templateService";
-import { useAppInit } from "../../App";
+import { useAppInit } from "../context/appInit";
 
 // Create context
 const TemplateContext = createContext(null);
