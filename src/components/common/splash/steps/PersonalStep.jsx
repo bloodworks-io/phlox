@@ -11,7 +11,7 @@ import {
 import { InfoIcon } from "../../icons";
 import { motion } from "framer-motion";
 import { stepVariants } from "../constants";
-import { SPECIALTIES } from "../../../../utils/constants/index.jsx";
+import { SPECIALTIES } from "../../../../utils/constants";
 import { validatePersonalStep } from "../../../../utils/splash/validators";
 
 const MotionVStack = motion(VStack);

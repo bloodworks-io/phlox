@@ -4,7 +4,7 @@ import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTranscriptionStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
 import { localModelApi } from "../../api/localModelApi";
-import { downloadWhisperModel as downloadWhisperService } from "../../services/localModelService.jsx";
+import { downloadWhisperModel as downloadWhisperService } from "../../services/localModelService";
 import { useDebounce } from "../useDebounce";
 
 export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {

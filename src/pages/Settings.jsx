@@ -14,7 +14,7 @@ import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
 import LetterTemplatesPanel from "../components/settings/LetterTemplatesPanel";
 import SettingsActions from "../components/settings/SettingsActions";
-import { SPECIALTIES } from "../utils/constants/index.jsx";
+import { SPECIALTIES } from "../utils/constants";
 import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel";
 import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
 import { isChatEnabled } from "../utils/helpers/featureFlags";
