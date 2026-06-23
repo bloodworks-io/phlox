@@ -1,6 +1,6 @@
 import { keyframes } from "@emotion/react";
 import styled from "@emotion/styled";
-import { HStack } from "@chakra-ui/react";
+import { Steps, HStack } from "@chakra-ui/react";
 
 export const emergeFromButton = keyframes`
   from {

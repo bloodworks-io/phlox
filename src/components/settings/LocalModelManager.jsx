@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import {
+  Steps,
   Box,
   VStack,
   HStack,
@@ -13,35 +14,27 @@ import {
   Th,
   Td,
   IconButton,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
   useDisclosure,
   Spinner,
   Badge,
-  Tooltip,
   Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Flex,
   Spacer,
   Progress,
   SimpleGrid,
   Icon,
-  Divider,
   Center,
   Tabs,
   TabList,
   Tab,
   TabPanels,
   TabPanel,
-  Collapse,
+  Collapsible,
+  Separator,
+  Dialog,
+  Portal,
 } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import {
   FaExclamationTriangle,
   FaMicrochip,
@@ -93,12 +86,12 @@ const LocalModelManager = ({ className }) => {
   const [showOtherModels, setShowOtherModels] = useState(false);
 
   const {
-    isOpen: isDeleteOpen,
+    open: isDeleteOpen,
     onOpen: onDeleteOpen,
     onClose: onDeleteClose,
   } = useDisclosure();
   const {
-    isOpen: isWhisperDeleteOpen,
+    open: isWhisperDeleteOpen,
     onOpen: onWhisperDeleteOpen,
     onClose: onWhisperDeleteClose,
   } = useDisclosure();
@@ -211,21 +204,20 @@ const LocalModelManager = ({ className }) => {
         borderColor={badge?.color === "purple" ? "purple.200" : "gray.200"}
         position="relative"
       >
-        <HStack position="absolute" top="-2" right="2" spacing={1}>
+        <HStack position="absolute" top="-2" right="2" gap={1}>
           {badge && (
-            <Badge colorScheme={badge.color} fontSize="xs">
+            <Badge colorPalette={badge.color} fontSize="xs">
               {badge.text}
             </Badge>
           )}
           {performanceTag && (
-            <Badge colorScheme="gray" fontSize="xs" variant="outline">
+            <Badge colorPalette="gray" fontSize="xs" variant="outline">
               {performanceTag}
             </Badge>
           )}
         </HStack>
-
-        <VStack align="stretch" spacing={3}>
-          <VStack align="start" spacing={1}>
+        <VStack align="stretch" gap={3}>
+          <VStack align="start" gap={1}>
             <Text fontSize="md" fontWeight="bold">
               {model.simple_name || model.id}
             </Text>
@@ -243,13 +235,13 @@ const LocalModelManager = ({ className }) => {
                     )}GB)`
                   : `${model.size_mb}MB • Works on your system`}
               </Text>
-              <Progress
+              <Progress.Root
                 value={Math.min(
                   (model.recommended_ram_gb / systemSpecs.total_memory_gb) *
                     100,
                   100,
                 )}
-                colorScheme={
+                colorPalette={
                   Math.min(
                     (model.recommended_ram_gb / systemSpecs.total_memory_gb) *
                       100,
@@ -265,8 +257,11 @@ const LocalModelManager = ({ className }) => {
                       ? "yellow"
                       : "green"
                 }
-                size="sm"
-              />
+                size="sm">
+                <Progress.Track>
+                  <Progress.Range />
+                </Progress.Track>
+              </Progress.Root>
             </Box>
           )}
 
@@ -280,13 +275,10 @@ const LocalModelManager = ({ className }) => {
             <Button
               size="sm"
               onClick={() => downloadLlmModel(model.id)}
-              isLoading={isDownloadingLlm && !llmProgress}
+              loading={isDownloadingLlm && !llmProgress}
               loadingText="Downloading..."
-              className="nav-button"
-              leftIcon={<DownloadIcon />}
-            >
-              Download {model.size_mb}MB
-            </Button>
+              className="nav-button"><DownloadIcon />Download {model.size_mb}MB
+                          </Button>
           )}
         </VStack>
       </Box>
@@ -298,7 +290,7 @@ const LocalModelManager = ({ className }) => {
   if (!localStatus) {
     return (
       <Center>
-        <Spinner size="sm" speed="0.65s" />
+        <Spinner size="sm" animationDuration="0.65s" />
         <Text ml={2}>Loading...</Text>
       </Center>
     );
@@ -306,20 +298,20 @@ const LocalModelManager = ({ className }) => {
 
   if (!localStatus.available && !localStatus.llama_server_running) {
     return (
-      <Alert status="warning" borderRadius="md">
-        <AlertIcon as={FaExclamationTriangle} />
+      <Alert.Root status="warning" borderRadius="md">
+        <Alert.Indicator asChild><FaExclamationTriangle /></Alert.Indicator>
         <Box>
-          <AlertTitle fontSize="sm">Local Models Not Available</AlertTitle>
-          <AlertDescription fontSize="xs">
+          <Alert.Title fontSize="sm">Local Models Not Available</Alert.Title>
+          <Alert.Description fontSize="xs">
             Local models are only available in Tauri builds.
-          </AlertDescription>
+          </Alert.Description>
         </Box>
-      </Alert>
+      </Alert.Root>
     );
   }
 
   return (
-    <VStack spacing={4} align="stretch" className={className}>
+    <VStack gap={4} align="stretch" className={className}>
       {/* System Information */}
       {systemSpecs && (
         <HStack
@@ -329,51 +321,50 @@ const LocalModelManager = ({ className }) => {
           justify="space-between"
         >
           <HStack>
-            <Icon as={FaMemory} className="blue-icon" />
+            <Icon className="blue-icon" asChild><FaMemory /></Icon>
             <Text fontSize="sm">
               {systemSpecs.total_memory_gb.toFixed(1)}GB RAM
             </Text>
           </HStack>
           <HStack>
-            <Icon as={FaMicrochip} className="blue-icon" />
+            <Icon className="blue-icon" asChild><FaMicrochip /></Icon>
             <Text fontSize="sm">{systemSpecs.cpu_count} cores</Text>
           </HStack>
         </HStack>
       )}
-
       {/* Tabs for LLM and Whisper models */}
-      <Tabs variant="enclosed">
-        <TabList>
+      <Tabs.Root variant='enclosed'>
+        <Tabs.List>
           <Tab>
             <HStack>
-              <Icon as={FaMicrochip} />
+              <Icon asChild><FaMicrochip /></Icon>
               <Text>LLM Models</Text>
             </HStack>
           </Tab>
           <Tab>
             <HStack>
-              <Icon as={FaMicrophone} />
+              <Icon asChild><FaMicrophone /></Icon>
               <Text>Whisper Models</Text>
             </HStack>
           </Tab>
-        </TabList>
+        </Tabs.List>
 
         <TabPanels>
           {/* LLM Models Tab */}
           <TabPanel>
-            <VStack spacing={4} align="stretch">
+            <VStack gap={4} align="stretch">
               {!localStatus.available && !localStatus?.llama_server_running && (
-                <Alert status="warning" borderRadius="md">
-                  <AlertIcon as={FaExclamationTriangle} />
+                <Alert.Root status="warning" borderRadius="md">
+                  <Alert.Indicator asChild><FaExclamationTriangle /></Alert.Indicator>
                   <Box>
-                    <AlertTitle fontSize="sm">
+                    <Alert.Title fontSize="sm">
                       Local Models Not Available
-                    </AlertTitle>
-                    <AlertDescription fontSize="xs">
+                    </Alert.Title>
+                    <Alert.Description fontSize="xs">
                       Local models are only available in Tauri builds.
-                    </AlertDescription>
+                    </Alert.Description>
                   </Box>
-                </Alert>
+                </Alert.Root>
               )}
 
               {/* Smart Recommendations */}
@@ -389,7 +380,7 @@ const LocalModelManager = ({ className }) => {
                     one.
                   </Text>
 
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
                     {smartRecommendations.map((model) => (
                       <SmartRecommendationCard key={model.id} model={model} />
                     ))}
@@ -410,24 +401,26 @@ const LocalModelManager = ({ className }) => {
                     {showOtherModels ? "▼" : "▶"} Show {otherModels.length} more
                     options
                   </Button>
-                  <Collapse in={showOtherModels} animateOpacity>
-                    <Box mt="3">
-                      <Text fontSize="xs" className="pill-box-icons" mb="3">
-                        These models need more memory or may be slower:
-                      </Text>
-                      <SimpleGrid
-                        columns={{ base: 1, md: 2, lg: 3 }}
-                        spacing={4}
-                      >
-                        {otherModels.map((model) => (
-                          <SmartRecommendationCard
-                            key={model.id}
-                            model={model}
-                          />
-                        ))}
-                      </SimpleGrid>
-                    </Box>
-                  </Collapse>
+                  <Collapsible.Root open={showOtherModels}>
+                    <Collapsible.Content>
+                      <Box mt="3">
+                        <Text fontSize="xs" className="pill-box-icons" mb="3">
+                          These models need more memory or may be slower:
+                        </Text>
+                        <SimpleGrid
+                          columns={{ base: 1, md: 2, lg: 3 }}
+                          gap={4}
+                        >
+                          {otherModels.map((model) => (
+                            <SmartRecommendationCard
+                              key={model.id}
+                              model={model}
+                            />
+                          ))}
+                        </SimpleGrid>
+                      </Box>
+                    </Collapsible.Content>
+                  </Collapsible.Root>
                 </Box>
               )}
 
@@ -453,53 +446,51 @@ const LocalModelManager = ({ className }) => {
                     overflowY="auto"
                     className="custom-scrollbar"
                   >
-                    <Table size="sm">
-                      <Thead>
-                        <Tr>
-                          <Th fontSize="xs">Model</Th>
-                          <Th fontSize="xs">Size</Th>
-                          <Th fontSize="xs">Actions</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
+                    <Table.Root size="sm">
+                      <Table.Header>
+                        <Table.Row>
+                          <Table.ColumnHeader fontSize="xs">Model</Table.ColumnHeader>
+                          <Table.ColumnHeader fontSize="xs">Size</Table.ColumnHeader>
+                          <Table.ColumnHeader fontSize="xs">Actions</Table.ColumnHeader>
+                        </Table.Row>
+                      </Table.Header>
+                      <Table.Body>
                         {models.map((model) => (
-                          <Tr key={model.filename}>
-                            <Td>
-                              <VStack align="start" spacing={0}>
+                          <Table.Row key={model.filename}>
+                            <Table.Cell>
+                              <VStack align="start" gap={0}>
                                 <Text fontSize="xs" fontWeight="bold">
                                   {model.filename}
                                 </Text>
                                 {model.is_selected && (
-                                  <Badge colorScheme="green" size="xs">
+                                  <Badge colorPalette="green" size="xs">
                                     Active
                                   </Badge>
                                 )}
                               </VStack>
-                            </Td>
-                            <Td>
-                              <Badge colorScheme="purple" size="sm">
+                            </Table.Cell>
+                            <Table.Cell>
+                              <Badge colorPalette="purple" size="sm">
                                 {model.size_mb
                                   ? `${model.size_mb} MB`
                                   : "Unknown"}
                               </Badge>
-                            </Td>
-                            <Td>
-                              <Tooltip label="Delete model">
+                            </Table.Cell>
+                            <Table.Cell>
+                              <Tooltip content="Delete model">
                                 <IconButton
                                   size="xs"
-                                  icon={<DeleteIcon />}
                                   onClick={() =>
                                     handleDeleteClick(model.filename)
                                   }
                                   className="red-button"
-                                  variant="outline"
-                                />
+                                  variant="outline"><DeleteIcon /></IconButton>
                               </Tooltip>
-                            </Td>
-                          </Tr>
+                            </Table.Cell>
+                          </Table.Row>
                         ))}
-                      </Tbody>
-                    </Table>
+                      </Table.Body>
+                    </Table.Root>
                   </Box>
                 )}
               </Box>
@@ -508,7 +499,7 @@ const LocalModelManager = ({ className }) => {
 
           {/* Whisper Models Tab */}
           <TabPanel>
-            <VStack spacing={4} align="stretch">
+            <VStack gap={4} align="stretch">
               <Box>
                 <Text fontSize="sm" fontWeight="semibold" mb="2">
                   Whisper Speech-to-Text Models
@@ -529,7 +520,7 @@ const LocalModelManager = ({ className }) => {
                   <Text fontSize="xs" className="pill-box-icons" mb="4">
                     Only one model can be installed at a time.
                   </Text>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
                     {whisperRecommendations.map((model) => {
                       const isDownloaded = isWhisperModelDownloaded(model.id);
                       const isDownloadingWhisper =
@@ -555,7 +546,7 @@ const LocalModelManager = ({ className }) => {
                         >
                           {model.badge && (
                             <Badge
-                              colorScheme={model.badge_color}
+                              colorPalette={model.badge_color}
                               fontSize="xs"
                               position="absolute"
                               top="-2"
@@ -564,9 +555,8 @@ const LocalModelManager = ({ className }) => {
                               {model.badge}
                             </Badge>
                           )}
-
-                          <VStack align="stretch" spacing={3}>
-                            <VStack align="start" spacing={1}>
+                          <VStack align="stretch" gap={3}>
+                            <VStack align="start" gap={1}>
                               <Text fontSize="md" fontWeight="bold">
                                 {model.simple_name}
                               </Text>
@@ -594,15 +584,12 @@ const LocalModelManager = ({ className }) => {
                               <Button
                                 size="sm"
                                 onClick={() => handleWhisperDownload(model.id)}
-                                isLoading={
+                                loading={
                                   isDownloadingWhisper && !whisperProgress
                                 }
                                 loadingText="Downloading..."
-                                className="nav-button"
-                                leftIcon={<DownloadIcon />}
-                              >
-                                Download {model.size}
-                              </Button>
+                                className="nav-button"><DownloadIcon />
+                                Download {model.size}</Button>
                             )}
                           </VStack>
                         </Box>
@@ -612,7 +599,7 @@ const LocalModelManager = ({ className }) => {
                 </Box>
               )}
 
-              <Divider />
+              <Separator />
 
               {/* Downloaded Whisper Model */}
               <Box>
@@ -633,19 +620,19 @@ const LocalModelManager = ({ className }) => {
                   </Text>
                 ) : (
                   <HStack
-                    spacing={4}
+                    gap={4}
                     p="3"
                     borderWidth="1px"
                     borderRadius="md"
                     borderColor="green.200"
                   >
                     <CheckIcon color="green.500" boxSize={5} />
-                    <VStack align="start" spacing={1}>
+                    <VStack align="start" gap={1}>
                       <HStack>
                         <Text fontSize="sm" fontWeight="bold">
                           {whisperModels[0].name || whisperModels[0].id}
                         </Text>
-                        <Badge colorScheme="green" size="sm">
+                        <Badge colorPalette="green" size="sm">
                           Active
                         </Badge>
                       </HStack>
@@ -660,16 +647,14 @@ const LocalModelManager = ({ className }) => {
                       </Text>
                     </VStack>
                     <Spacer />
-                    <Tooltip label="Delete model">
+                    <Tooltip content="Delete model">
                       <IconButton
                         size="xs"
-                        icon={<DeleteIcon />}
                         onClick={() =>
                           handleWhisperDeleteClick(whisperModels[0].id)
                         }
                         className="red-button"
-                        variant="outline"
-                      />
+                        variant="outline"><DeleteIcon /></IconButton>
                     </Tooltip>
                   </HStack>
                 )}
@@ -677,51 +662,69 @@ const LocalModelManager = ({ className }) => {
             </VStack>
           </TabPanel>
         </TabPanels>
-      </Tabs>
-
+      </Tabs.Root>
       {/* Delete Confirmation Modal for LLM models */}
-      <Modal isOpen={isDeleteOpen} onClose={onDeleteClose}>
-        <ModalOverlay />
-        <ModalContent className="modal-style">
-          <ModalHeader>Confirm Delete</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            Are you sure you want to delete{" "}
-            <Text as="span" fontWeight="bold">
-              {modelToDelete?.filename}
-            </Text>
-            ? This action cannot be undone.
-          </ModalBody>
-          <ModalFooter>
-            <RedButton mr={3} onClick={confirmDelete}>
-              Delete
-            </RedButton>
-            <GreenButton onClick={onDeleteClose}>Cancel</GreenButton>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <Dialog.Root open={isDeleteOpen} onOpenChange={e => {
+        if (!e.open) {
+          onDeleteClose();
+        }
+      }}>
+        <Portal>
 
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content className="modal-style">
+              <Dialog.Header>Confirm Delete</Dialog.Header>
+              <Dialog.CloseTrigger />
+              <Dialog.Body>
+                Are you sure you want to delete{" "}
+                <Text as="span" fontWeight="bold">
+                  {modelToDelete?.filename}
+                </Text>
+                ? This action cannot be undone.
+              </Dialog.Body>
+              <Dialog.Footer>
+                <RedButton mr={3} onClick={confirmDelete}>
+                  Delete
+                </RedButton>
+                <GreenButton onClick={onDeleteClose}>Cancel</GreenButton>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+
+        </Portal>
+      </Dialog.Root>
       {/* Delete Confirmation Modal for Whisper models */}
-      <Modal isOpen={isWhisperDeleteOpen} onClose={onWhisperDeleteClose}>
-        <ModalOverlay />
-        <ModalContent className="modal-style">
-          <ModalHeader>Confirm Delete</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            Are you sure you want to delete the Whisper model{" "}
-            <Text as="span" fontWeight="bold">
-              {whisperModelToDelete?.modelId}
-            </Text>
-            ? This action cannot be undone.
-          </ModalBody>
-          <ModalFooter>
-            <RedButton mr={3} onClick={confirmWhisperDelete}>
-              Delete
-            </RedButton>
-            <GreenButton onClick={onWhisperDeleteClose}>Cancel</GreenButton>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <Dialog.Root open={isWhisperDeleteOpen} onOpenChange={e => {
+        if (!e.open) {
+          onWhisperDeleteClose();
+        }
+      }}>
+        <Portal>
+
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content className="modal-style">
+              <Dialog.Header>Confirm Delete</Dialog.Header>
+              <Dialog.CloseTrigger />
+              <Dialog.Body>
+                Are you sure you want to delete the Whisper model{" "}
+                <Text as="span" fontWeight="bold">
+                  {whisperModelToDelete?.modelId}
+                </Text>
+                ? This action cannot be undone.
+              </Dialog.Body>
+              <Dialog.Footer>
+                <RedButton mr={3} onClick={confirmWhisperDelete}>
+                  Delete
+                </RedButton>
+                <GreenButton onClick={onWhisperDeleteClose}>Cancel</GreenButton>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+
+        </Portal>
+      </Dialog.Root>
     </VStack>
   );
 };

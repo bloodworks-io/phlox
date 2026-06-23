@@ -1,13 +1,5 @@
-import {
-    Box,
-    Tooltip,
-    VStack,
-    Flex,
-    Icon,
-    Text,
-    Badge,
-    Collapse,
-} from "@chakra-ui/react";
+import { Steps, Box, VStack, Flex, Icon, Text, Badge, Collapsible } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaClinicMedical, FaTasks } from "react-icons/fa";
 import { GiBrain } from "react-icons/gi";
 import { SettingsIcon } from "../common/icons";
@@ -39,7 +31,7 @@ const NavButton = ({
         >
             {isCollapsed && badge ? (
                 // For collapsed mode with badge, show the badge instead of the icon
-                <Badge
+                (<Badge
                     bg="red.500"
                     color="white"
                     borderRadius="full"
@@ -48,17 +40,16 @@ const NavButton = ({
                     fontSize="xs"
                 >
                     {badge}
-                </Badge>
+                </Badge>)
             ) : (
                 // Show the regular icon if no badge or not collapsed
-                <Icon
+                (<Icon
                     as={icon}
                     color={color}
                     boxSize={isCollapsed ? 4 : 5}
                     mr={isCollapsed ? 0 : 3}
-                />
+                />)
             )}
-
             {!isCollapsed && (
                 <Flex align="center">
                     <Text fontWeight="medium" color={colors.dark.textPrimary}>
@@ -102,99 +93,108 @@ const SidebarNavigation = ({
                     onToggle={() => setIsNavCollapsed(!isNavCollapsed)}
                 />
             )}
-
             {/* Navigation Items */}
-            <Collapse in={isCollapsed || !isNavCollapsed} animateOpacity>
-                <VStack
-                    spacing={isCollapsed ? 0 : 1}
-                    align="stretch"
-                    w="100%"
-                    py={isCollapsed ? 1 : 2}
-                >
-                    {/* Day Summary button */}
-                    <Tooltip
-                        label="Day Summary"
-                        placement={isCollapsed ? "right" : "top"}
-                        isDisabled={!isCollapsed}
+            <Collapsible.Root open={isCollapsed || !isNavCollapsed}>
+                <Collapsible.Content>
+                    <VStack
+                        gap={isCollapsed ? 0 : 1}
+                        align="stretch"
+                        w="100%"
+                        py={isCollapsed ? 1 : 2}
                     >
-                        <Box>
-                            <NavButton
-                                icon={FaClinicMedical}
-                                color={colors.dark.primaryButton}
-                                label="Day Summary"
-                                onClick={() =>
-                                    handleNavigation("/clinic-summary")
-                                }
-                                isCollapsed={isCollapsed}
-                            />
-                        </Box>
-                    </Tooltip>
-
-                    {/* All Jobs button */}
-                    <Tooltip
-                        label={
-                            isCollapsed && incompleteJobsCount > 0
-                                ? `All Jobs (${incompleteJobsCount})`
-                                : "All Jobs"
-                        }
-                        placement={isCollapsed ? "right" : "top"}
-                        isDisabled={!isCollapsed}
-                    >
-                        <Box>
-                            <NavButton
-                                icon={FaTasks}
-                                color={colors.dark.neutralButton}
-                                label="All Jobs"
-                                onClick={() =>
-                                    handleNavigation("/outstanding-jobs")
-                                }
-                                isCollapsed={isCollapsed}
-                                badge={
-                                    incompleteJobsCount > 0
-                                        ? incompleteJobsCount
-                                        : null
-                                }
-                            />
-                        </Box>
-                    </Tooltip>
-
-                    {/* Documents button */}
-                    {isRagEnabled() && (
+                        {/* Day Summary button */}
                         <Tooltip
-                            label="Documents"
-                            placement={isCollapsed ? "right" : "top"}
-                            isDisabled={!isCollapsed}
+                            content="Day Summary"
+                            disabled={!isCollapsed}
+                            positioning={{
+                                placement: isCollapsed ? "right" : "top"
+                            }}
                         >
                             <Box>
                                 <NavButton
-                                    icon={GiBrain}
-                                    color={colors.dark.chatIcon}
-                                    label="Documents"
-                                    onClick={() => handleNavigation("/rag")}
+                                    icon={FaClinicMedical}
+                                    color={colors.dark.primaryButton}
+                                    label="Day Summary"
+                                    onClick={() =>
+                                        handleNavigation("/clinic-summary")
+                                    }
                                     isCollapsed={isCollapsed}
                                 />
                             </Box>
                         </Tooltip>
-                    )}
 
-                    {/* Settings button */}
-                    <Tooltip
-                        label="Settings"
-                        placement={isCollapsed ? "right" : "top"}
-                        isDisabled={!isCollapsed}
-                    >
-                        <Box>
-                            <NavButton
-                                icon={SettingsIcon}
-                                color={colors.dark.extraButton}
-                                label="Settings"
-                                onClick={() => handleNavigation("/settings")}
-                                isCollapsed={isCollapsed}
-                            />
-                        </Box>
-                    </Tooltip>
-                </VStack>
-            </Collapse>
+                        {/* All Jobs button */}
+                        <Tooltip
+                            content={
+                                isCollapsed && incompleteJobsCount > 0
+                                    ? `All Jobs (${incompleteJobsCount})`
+                                    : "All Jobs"
+                            }
+                            disabled={!isCollapsed}
+                            positioning={{
+                                placement: isCollapsed ? "right" : "top"
+                            }}
+                        >
+                            <Box>
+                                <NavButton
+                                    icon={FaTasks}
+                                    color={colors.dark.neutralButton}
+                                    label="All Jobs"
+                                    onClick={() =>
+                                        handleNavigation("/outstanding-jobs")
+                                    }
+                                    isCollapsed={isCollapsed}
+                                    badge={
+                                        incompleteJobsCount > 0
+                                            ? incompleteJobsCount
+                                            : null
+                                    }
+                                />
+                            </Box>
+                        </Tooltip>
+
+                        {/* Documents button */}
+                        {isRagEnabled() && (
+                            <Tooltip
+                                content="Documents"
+                                disabled={!isCollapsed}
+                                positioning={{
+                                    placement: isCollapsed ? "right" : "top"
+                                }}
+                            >
+                                <Box>
+                                    <NavButton
+                                        icon={GiBrain}
+                                        color={colors.dark.chatIcon}
+                                        label="Documents"
+                                        onClick={() => handleNavigation("/rag")}
+                                        isCollapsed={isCollapsed}
+                                    />
+                                </Box>
+                            </Tooltip>
+                        )}
+
+                        {/* Settings button */}
+                        <Tooltip
+                            content="Settings"
+                            disabled={!isCollapsed}
+                            positioning={{
+                                placement: isCollapsed ? "right" : "top"
+                            }}
+                        >
+                            <Box>
+                                <NavButton
+                                    icon={SettingsIcon}
+                                    color={colors.dark.extraButton}
+                                    label="Settings"
+                                    onClick={() => handleNavigation("/settings")}
+                                    isCollapsed={isCollapsed}
+                                />
+                            </Box>
+                        </Tooltip>
+                    </VStack>
+                </Collapsible.Content>
+            </Collapsible.Root>
         </Box>
     );
 };

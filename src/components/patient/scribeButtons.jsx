@@ -1,5 +1,7 @@
 import React from "react";
-import { Box, Flex, Tooltip, Text, useColorMode } from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { Steps, Box, Flex, Text } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaMicrophone,
     FaPause,
@@ -95,9 +97,10 @@ export const RecordButton = ({
     };
 
     return (
-        <Tooltip label={getLabel()} hasArrow placement="top">
+        <Tooltip content={getLabel()} showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 position="relative"
                 display="flex"
                 alignItems="center"
@@ -112,40 +115,37 @@ export const RecordButton = ({
                 overflow="hidden"
                 boxShadow="xl"
                 {...styles}
-                onClick={handleClick}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                {/* Idle state: lava blobs (muted when recording is locked) */}
-                {!isRecording && !isPaused && (
+                asChild><button
+                    onClick={handleClick}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}>
+                    {/* Idle state: lava blobs (muted when recording is locked) */}
+                    {!isRecording && !isPaused && (
+                        <Box
+                            opacity={canStart ? 1 : 0.4}
+                            filter={canStart ? "none" : "grayscale(1)"}
+                        >
+                            <LavaBlobs />
+                        </Box>
+                    )}
+                    {/* Recording state: internal pulsing glow */}
+                    {isRecording && !isPaused && <InternalGlow />}
+                    {/* Inner highlight border */}
                     <Box
-                        opacity={canStart ? 1 : 0.4}
-                        filter={canStart ? "none" : "grayscale(1)"}
-                    >
-                        <LavaBlobs />
+                        position="absolute"
+                        top="2px"
+                        left="2px"
+                        right="2px"
+                        bottom="2px"
+                        borderRadius="full"
+                        border="1px solid rgba(255,255,255,0.3)"
+                        pointerEvents="none"
+                    />
+                    {/* Icon */}
+                    <Box position="relative" zIndex={1}>
+                        {getIcon()}
                     </Box>
-                )}
-
-                {/* Recording state: internal pulsing glow */}
-                {isRecording && !isPaused && <InternalGlow />}
-
-                {/* Inner highlight border */}
-                <Box
-                    position="absolute"
-                    top="2px"
-                    left="2px"
-                    right="2px"
-                    bottom="2px"
-                    borderRadius="full"
-                    border="1px solid rgba(255,255,255,0.3)"
-                    pointerEvents="none"
-                />
-
-                {/* Icon */}
-                <Box position="relative" zIndex={1}>
-                    {getIcon()}
-                </Box>
-            </Box>
+                </button></Box>
         </Tooltip>
     );
 };
@@ -163,9 +163,10 @@ export const ModeResetButton = ({
     if (isRecording) {
         // Reset button state
         return (
-            <Tooltip label="Reset" hasArrow placement="top">
+            <Tooltip content="Reset" showArrow positioning={{
+                placement: "top"
+            }}>
                 <Box
-                    as="button"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -182,12 +183,12 @@ export const ModeResetButton = ({
                     _hover={{
                         transform: "scale(1.05)",
                     }}
-                    onClick={onReset}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                >
-                    <FaTimes size={16} />
-                </Box>
+                    asChild><button
+                        onClick={onReset}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}>
+                        <FaTimes size={16} />
+                    </button></Box>
             </Tooltip>
         );
     }
@@ -199,9 +200,10 @@ export const ModeResetButton = ({
         : "Dictate mode - click for Ambient";
 
     return (
-        <Tooltip label={label} hasArrow placement="top">
+        <Tooltip content={label} showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -220,10 +222,9 @@ export const ModeResetButton = ({
                     bg: colors.dark.surface,
                     transform: "scale(1.05)",
                 }}
-                onClick={onModeToggle}
-            >
-                <Icon size={16} />
-            </Box>
+                asChild><button onClick={onModeToggle}>
+                    <Icon size={16} />
+                </button></Box>
         </Tooltip>
     );
 };
@@ -242,9 +243,10 @@ export const TranscriptSendButton = ({
     if (isRecording) {
         // Send button state
         return (
-            <Tooltip label="Stop and send" hasArrow placement="top">
+            <Tooltip content="Stop and send" showArrow positioning={{
+                placement: "top"
+            }}>
                 <Box
-                    as="button"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -261,12 +263,12 @@ export const TranscriptSendButton = ({
                     _hover={{
                         transform: "scale(1.05)",
                     }}
-                    onClick={onSend}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                >
-                    <FaPaperPlane size={14} />
-                </Box>
+                    asChild><button
+                        onClick={onSend}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}>
+                        <FaPaperPlane size={14} />
+                    </button></Box>
             </Tooltip>
         );
     }
@@ -276,9 +278,10 @@ export const TranscriptSendButton = ({
     const label = isDisabled ? "No transcript available" : "Transcript";
 
     return (
-        <Tooltip label={label} hasArrow placement="top">
+        <Tooltip content={label} showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -298,10 +301,9 @@ export const TranscriptSendButton = ({
                         : { bg: colors.dark.surface, transform: "scale(1.05)" }
                 }
                 pointerEvents={isDisabled ? "none" : "auto"}
-                onClick={onOpenTranscription}
-            >
-                <FaFileAlt size={14} />
-            </Box>
+                asChild><button onClick={onOpenTranscription}>
+                    <FaFileAlt size={14} />
+                </button></Box>
         </Tooltip>
     );
 };
@@ -322,9 +324,11 @@ export const TranscriptionFailurePill = ({
         gap={2}
     >
         <Tooltip
-            label={sendError?.message || "Transcription failed"}
-            hasArrow
-            placement="top"
+            content={sendError?.message || "Transcription failed"}
+            showArrow
+            positioning={{
+                placement: "top"
+            }}
         >
             <Flex align="center" gap={2} color="#E53E3E" pr={1}>
                 <FaExclamationTriangle size={15} />
@@ -333,9 +337,10 @@ export const TranscriptionFailurePill = ({
                 </Text>
             </Flex>
         </Tooltip>
-        <Tooltip label="Retry sending" hasArrow placement="top">
+        <Tooltip content="Retry sending" showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -353,14 +358,14 @@ export const TranscriptionFailurePill = ({
                     color: "white",
                     transform: "scale(1.05)",
                 }}
-                onClick={onRetry}
-            >
-                <FaRedoAlt size={13} />
-            </Box>
+                asChild><button onClick={onRetry}>
+                    <FaRedoAlt size={13} />
+                </button></Box>
         </Tooltip>
-        <Tooltip label="Download audio to retry later" hasArrow placement="top">
+        <Tooltip content="Download audio to retry later" showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -378,18 +383,18 @@ export const TranscriptionFailurePill = ({
                     color: "white",
                     transform: "scale(1.05)",
                 }}
-                onClick={onDownload}
-            >
-                <FaDownload size={13} />
-            </Box>
+                asChild><button onClick={onDownload}>
+                    <FaDownload size={13} />
+                </button></Box>
         </Tooltip>
         <Tooltip
-            label="Dismiss — download first to keep the audio"
-            hasArrow
-            placement="top"
+            content="Dismiss — download first to keep the audio"
+            showArrow
+            positioning={{
+                placement: "top"
+            }}
         >
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -404,10 +409,9 @@ export const TranscriptionFailurePill = ({
                 className="pill-box-icons"
                 transition="all 0.2s ease"
                 _hover={{ color: "#E53E3E", transform: "scale(1.05)" }}
-                onClick={onDismiss}
-            >
-                <FaTimes size={13} />
-            </Box>
+                asChild><button onClick={onDismiss}>
+                    <FaTimes size={13} />
+                </button></Box>
         </Tooltip>
     </PillBox>
 );

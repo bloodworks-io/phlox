@@ -1,5 +1,6 @@
 import React from "react";
-import { Box, Text, VStack, HStack, Tooltip } from "@chakra-ui/react";
+import { Steps, Box, Text, VStack, HStack } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaWikipediaW,
     FaBookMedical,
@@ -54,7 +55,7 @@ export const CitationList = ({ citations, colorMode, inline = false }) => {
             </Text>
             <VStack
                 align="stretch"
-                spacing={2}
+                gap={2}
             >
                 {unique.map(
                     (citation, i) => {
@@ -64,7 +65,7 @@ export const CitationList = ({ citations, colorMode, inline = false }) => {
                         return (
                             <HStack
                                 key={i}
-                                spacing={2}
+                                gap={2}
                                 align="start"
                             >
                                 <Icon
@@ -72,13 +73,15 @@ export const CitationList = ({ citations, colorMode, inline = false }) => {
                                     mt="2px"
                                 />
                                 <Tooltip
-                                    label={
+                                    content={
                                         citation
                                     }
-                                    placement="top"
-                                    hasArrow
+                                    showArrow
                                     fontSize="xs"
                                     maxWidth="400px"
+                                    positioning={{
+                                        placement: "top"
+                                    }}
                                 >
                                     <Text
                                         as="span"
@@ -88,7 +91,7 @@ export const CitationList = ({ citations, colorMode, inline = false }) => {
                                             color: "gray.400",
                                         }}
                                         cursor="pointer"
-                                        noOfLines={2}
+                                        lineClamp={2}
                                         title={
                                             citation
                                         }

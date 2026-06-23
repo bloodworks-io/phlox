@@ -1,15 +1,15 @@
 import { useState } from "react";
 import {
+    Steps,
     Box,
     Flex,
     IconButton,
     Text,
-    Collapse,
+    Collapsible,
     Input,
     Textarea,
     VStack,
-    FormControl,
-    FormLabel,
+    Field,
 } from "@chakra-ui/react";
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
 import { FaComments } from "react-icons/fa";
@@ -36,273 +36,256 @@ const ChatSettingsPanel = ({
             <Flex align="center" justify="space-between">
                 <Flex align="center">
                     <IconButton
-                        icon={
-                            isCollapsed ? (
-                                <ChevronRightIcon />
-                            ) : (
-                                <ChevronDownIcon />
-                            )
-                        }
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         aria-label="Toggle collapse"
                         variant="outline"
                         size="sm"
                         mr="2"
-                        className="collapse-toggle"
-                    />
+                        className="collapse-toggle">{isCollapsed ? (
+                            <ChevronRightIcon />
+                        ) : (
+                            <ChevronDownIcon />
+                        )}</IconButton>
                     <FaComments size="1.2em" style={{ marginRight: "5px" }} />
                     <Text as="h3">Quick Chat Settings</Text>
                 </Flex>
             </Flex>
-            <Collapse in={!isCollapsed} animateOpacity>
-                <VStack spacing={6} align="stretch" mt={4}>
-                    <Box>
-                        <Text fontSize="md" fontWeight="bold" mb={3}>
-                            Quick Chat Buttons
-                        </Text>
-                        <Text fontSize="sm" mb={3}>
-                            Configure the quick chat buttons that appear in the
-                            chat interface.
-                        </Text>
+            <Collapsible.Root open={!isCollapsed}>
+                <Collapsible.Content>
+                    <VStack gap={6} align="stretch" mt={4}>
+                        <Box>
+                            <Text fontSize="md" fontWeight="bold" mb={3}>
+                                Quick Chat Buttons
+                            </Text>
+                            <Text fontSize="sm" mb={3}>
+                                Configure the quick chat buttons that appear in the
+                                chat interface.
+                            </Text>
 
-                        <VStack spacing={4} align="stretch">
-                            <Box mt="4">
-                                <IconButton
-                                    icon={
-                                        isQuickChat1Collapsed ? (
+                            <VStack gap={4} align="stretch">
+                                <Box mt="4">
+                                    <IconButton
+                                        onClick={() =>
+                                            setIsQuickChat1Collapsed(
+                                                !isQuickChat1Collapsed,
+                                            )
+                                        }
+                                        aria-label="Toggle Quick Chat 1"
+                                        variant="outline"
+                                        size="10"
+                                        mr="2"
+                                        className="collapse-toggle">{isQuickChat1Collapsed ? (
                                             <ChevronRightIcon />
                                         ) : (
                                             <ChevronDownIcon />
-                                        )
-                                    }
-                                    onClick={() =>
-                                        setIsQuickChat1Collapsed(
-                                            !isQuickChat1Collapsed,
-                                        )
-                                    }
-                                    aria-label="Toggle Quick Chat 1"
-                                    variant="outline"
-                                    size="10"
-                                    mr="2"
-                                    className="collapse-toggle"
-                                />
-                                <Text
-                                    fontSize="sm"
-                                    mb="1"
-                                    mt="4"
-                                    display="inline"
-                                >
-                                    Quick Chat Button 1
-                                </Text>
-                                <Collapse
-                                    in={!isQuickChat1Collapsed}
-                                    animateOpacity
-                                >
-                                    <Box mt="4">
-                                        <FormControl mb={3}>
-                                            <FormLabel fontSize="sm">
-                                                Button Text
-                                            </FormLabel>
-                                            <Input
-                                                size="sm"
-                                                value={
-                                                    userSettings.quick_chat_1_title ||
-                                                    ""
-                                                }
-                                                onChange={(e) =>
-                                                    handleQuickChatChange(
-                                                        "quick_chat_1_title",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="input-style"
-                                                placeholder="Button text"
-                                            />
-                                        </FormControl>
-                                        <FormControl>
-                                            <FormLabel fontSize="sm">
-                                                Prompt
-                                            </FormLabel>
-                                            <Textarea
-                                                size="sm"
-                                                value={
-                                                    userSettings.quick_chat_1_prompt ||
-                                                    ""
-                                                }
-                                                onChange={(e) =>
-                                                    handleQuickChatChange(
-                                                        "quick_chat_1_prompt",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="input-style"
-                                                placeholder="Prompt sent to AI"
-                                                rows={4}
-                                            />
-                                        </FormControl>
-                                    </Box>
-                                </Collapse>
-                            </Box>
+                                        )}</IconButton>
+                                    <Text
+                                        fontSize="sm"
+                                        mb="1"
+                                        mt="4"
+                                        display="inline"
+                                    >
+                                        Quick Chat Button 1
+                                    </Text>
+                                    <Collapsible.Root open={!isQuickChat1Collapsed}>
+                                        <Collapsible.Content>
+                                            <Box mt="4">
+                                                <Field.Root mb={3}>
+                                                    <Field.Label fontSize="sm">
+                                                        Button Text
+                                                    </Field.Label>
+                                                    <Input
+                                                        size="sm"
+                                                        value={
+                                                            userSettings.quick_chat_1_title ||
+                                                            ""
+                                                        }
+                                                        onValueChange={(e) =>
+                                                            handleQuickChatChange(
+                                                                "quick_chat_1_title",
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="input-style"
+                                                        placeholder="Button text"
+                                                    />
+                                                </Field.Root>
+                                                <Field.Root>
+                                                    <Field.Label fontSize="sm">
+                                                        Prompt
+                                                    </Field.Label>
+                                                    <Textarea
+                                                        size="sm"
+                                                        value={
+                                                            userSettings.quick_chat_1_prompt ||
+                                                            ""
+                                                        }
+                                                        onValueChange={(e) =>
+                                                            handleQuickChatChange(
+                                                                "quick_chat_1_prompt",
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="input-style"
+                                                        placeholder="Prompt sent to AI"
+                                                        rows={4}
+                                                    />
+                                                </Field.Root>
+                                            </Box>
+                                        </Collapsible.Content>
+                                    </Collapsible.Root>
+                                </Box>
 
-                            <Box mt="4">
-                                <IconButton
-                                    icon={
-                                        isQuickChat2Collapsed ? (
+                                <Box mt="4">
+                                    <IconButton
+                                        onClick={() =>
+                                            setIsQuickChat2Collapsed(
+                                                !isQuickChat2Collapsed,
+                                            )
+                                        }
+                                        aria-label="Toggle Quick Chat 2"
+                                        variant="outline"
+                                        size="10"
+                                        mr="2"
+                                        className="collapse-toggle">{isQuickChat2Collapsed ? (
                                             <ChevronRightIcon />
                                         ) : (
                                             <ChevronDownIcon />
-                                        )
-                                    }
-                                    onClick={() =>
-                                        setIsQuickChat2Collapsed(
-                                            !isQuickChat2Collapsed,
-                                        )
-                                    }
-                                    aria-label="Toggle Quick Chat 2"
-                                    variant="outline"
-                                    size="10"
-                                    mr="2"
-                                    className="collapse-toggle"
-                                />
-                                <Text
-                                    fontSize="sm"
-                                    mb="1"
-                                    mt="4"
-                                    display="inline"
-                                >
-                                    Quick Chat Button 2
-                                </Text>
-                                <Collapse
-                                    in={!isQuickChat2Collapsed}
-                                    animateOpacity
-                                >
-                                    <Box mt="4">
-                                        <FormControl mb={3}>
-                                            <FormLabel fontSize="sm">
-                                                Button Text
-                                            </FormLabel>
-                                            <Input
-                                                size="sm"
-                                                value={
-                                                    userSettings.quick_chat_2_title ||
-                                                    ""
-                                                }
-                                                onChange={(e) =>
-                                                    handleQuickChatChange(
-                                                        "quick_chat_2_title",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="input-style"
-                                                placeholder="Button text"
-                                            />
-                                        </FormControl>
-                                        <FormControl>
-                                            <FormLabel fontSize="sm">
-                                                Prompt
-                                            </FormLabel>
-                                            <Textarea
-                                                size="sm"
-                                                value={
-                                                    userSettings.quick_chat_2_prompt ||
-                                                    ""
-                                                }
-                                                onChange={(e) =>
-                                                    handleQuickChatChange(
-                                                        "quick_chat_2_prompt",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="input-style"
-                                                placeholder="Prompt sent to AI"
-                                                rows={4}
-                                            />
-                                        </FormControl>
-                                    </Box>
-                                </Collapse>
-                            </Box>
+                                        )}</IconButton>
+                                    <Text
+                                        fontSize="sm"
+                                        mb="1"
+                                        mt="4"
+                                        display="inline"
+                                    >
+                                        Quick Chat Button 2
+                                    </Text>
+                                    <Collapsible.Root open={!isQuickChat2Collapsed}>
+                                        <Collapsible.Content>
+                                            <Box mt="4">
+                                                <Field.Root mb={3}>
+                                                    <Field.Label fontSize="sm">
+                                                        Button Text
+                                                    </Field.Label>
+                                                    <Input
+                                                        size="sm"
+                                                        value={
+                                                            userSettings.quick_chat_2_title ||
+                                                            ""
+                                                        }
+                                                        onValueChange={(e) =>
+                                                            handleQuickChatChange(
+                                                                "quick_chat_2_title",
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="input-style"
+                                                        placeholder="Button text"
+                                                    />
+                                                </Field.Root>
+                                                <Field.Root>
+                                                    <Field.Label fontSize="sm">
+                                                        Prompt
+                                                    </Field.Label>
+                                                    <Textarea
+                                                        size="sm"
+                                                        value={
+                                                            userSettings.quick_chat_2_prompt ||
+                                                            ""
+                                                        }
+                                                        onValueChange={(e) =>
+                                                            handleQuickChatChange(
+                                                                "quick_chat_2_prompt",
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="input-style"
+                                                        placeholder="Prompt sent to AI"
+                                                        rows={4}
+                                                    />
+                                                </Field.Root>
+                                            </Box>
+                                        </Collapsible.Content>
+                                    </Collapsible.Root>
+                                </Box>
 
-                            <Box mt="4">
-                                <IconButton
-                                    icon={
-                                        isQuickChat3Collapsed ? (
+                                <Box mt="4">
+                                    <IconButton
+                                        onClick={() =>
+                                            setIsQuickChat3Collapsed(
+                                                !isQuickChat3Collapsed,
+                                            )
+                                        }
+                                        aria-label="Toggle Quick Chat 3"
+                                        variant="outline"
+                                        size="10"
+                                        mr="2"
+                                        className="collapse-toggle">{isQuickChat3Collapsed ? (
                                             <ChevronRightIcon />
                                         ) : (
                                             <ChevronDownIcon />
-                                        )
-                                    }
-                                    onClick={() =>
-                                        setIsQuickChat3Collapsed(
-                                            !isQuickChat3Collapsed,
-                                        )
-                                    }
-                                    aria-label="Toggle Quick Chat 3"
-                                    variant="outline"
-                                    size="10"
-                                    mr="2"
-                                    className="collapse-toggle"
-                                />
-                                <Text
-                                    fontSize="sm"
-                                    mb="1"
-                                    mt="4"
-                                    display="inline"
-                                >
-                                    Quick Chat Button 3
-                                </Text>
-                                <Collapse
-                                    in={!isQuickChat3Collapsed}
-                                    animateOpacity
-                                >
-                                    <Box mt="4">
-                                        <FormControl mb={3}>
-                                            <FormLabel fontSize="sm">
-                                                Button Text
-                                            </FormLabel>
-                                            <Input
-                                                size="sm"
-                                                value={
-                                                    userSettings.quick_chat_3_title ||
-                                                    ""
-                                                }
-                                                onChange={(e) =>
-                                                    handleQuickChatChange(
-                                                        "quick_chat_3_title",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="input-style"
-                                                placeholder="Button text"
-                                            />
-                                        </FormControl>
-                                        <FormControl>
-                                            <FormLabel fontSize="sm">
-                                                Prompt
-                                            </FormLabel>
-                                            <Textarea
-                                                size="sm"
-                                                value={
-                                                    userSettings.quick_chat_3_prompt ||
-                                                    ""
-                                                }
-                                                onChange={(e) =>
-                                                    handleQuickChatChange(
-                                                        "quick_chat_3_prompt",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="input-style"
-                                                placeholder="Prompt sent to AI"
-                                                rows={4}
-                                            />
-                                        </FormControl>
-                                    </Box>
-                                </Collapse>
-                            </Box>
-                        </VStack>
-                    </Box>
-                </VStack>
-            </Collapse>
+                                        )}</IconButton>
+                                    <Text
+                                        fontSize="sm"
+                                        mb="1"
+                                        mt="4"
+                                        display="inline"
+                                    >
+                                        Quick Chat Button 3
+                                    </Text>
+                                    <Collapsible.Root open={!isQuickChat3Collapsed}>
+                                        <Collapsible.Content>
+                                            <Box mt="4">
+                                                <Field.Root mb={3}>
+                                                    <Field.Label fontSize="sm">
+                                                        Button Text
+                                                    </Field.Label>
+                                                    <Input
+                                                        size="sm"
+                                                        value={
+                                                            userSettings.quick_chat_3_title ||
+                                                            ""
+                                                        }
+                                                        onValueChange={(e) =>
+                                                            handleQuickChatChange(
+                                                                "quick_chat_3_title",
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="input-style"
+                                                        placeholder="Button text"
+                                                    />
+                                                </Field.Root>
+                                                <Field.Root>
+                                                    <Field.Label fontSize="sm">
+                                                        Prompt
+                                                    </Field.Label>
+                                                    <Textarea
+                                                        size="sm"
+                                                        value={
+                                                            userSettings.quick_chat_3_prompt ||
+                                                            ""
+                                                        }
+                                                        onValueChange={(e) =>
+                                                            handleQuickChatChange(
+                                                                "quick_chat_3_prompt",
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="input-style"
+                                                        placeholder="Prompt sent to AI"
+                                                        rows={4}
+                                                    />
+                                                </Field.Root>
+                                            </Box>
+                                        </Collapsible.Content>
+                                    </Collapsible.Root>
+                                </Box>
+                            </VStack>
+                        </Box>
+                    </VStack>
+                </Collapsible.Content>
+            </Collapsible.Root>
         </Box>
     );
 };

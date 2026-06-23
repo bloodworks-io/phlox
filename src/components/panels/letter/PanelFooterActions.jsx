@@ -1,5 +1,5 @@
 import React from "react";
-import { Flex, Button, Spinner } from "@chakra-ui/react";
+import { Steps, Flex, Button, Spinner } from "@chakra-ui/react";
 import { RepeatIcon, CopyIcon, CheckIcon } from "../../common/icons";
 import { FaSave } from "react-icons/fa";
 
@@ -37,25 +37,18 @@ const PanelFooterActions = ({
             <Button
                 onClick={() => handleGenerateLetter(additionalInstructions)}
                 className="red-button"
-                leftIcon={<RepeatIcon />}
-                isDisabled={letterLoading || saveState !== "idle"}
-            >
-                Regenerate Letter
-            </Button>
+                disabled={letterLoading || saveState !== "idle"}><RepeatIcon />Regenerate Letter
+                            </Button>
             <Flex>
                 <Button
                     onClick={handleCopy}
                     className="grey-button"
-                    leftIcon={recentlyCopied ? <CheckIcon /> : <CopyIcon />}
                     mr="2"
-                    isDisabled={letterLoading}
-                >
-                    {recentlyCopied ? "Copied!" : "Copy Letter"}
-                </Button>
+                    disabled={letterLoading}>{recentlyCopied ? <CheckIcon /> : <CopyIcon />}{recentlyCopied ? "Copied!" : "Copy Letter"}</Button>
                 <Button
                     onClick={handleSave}
                     className="green-button"
-                    isDisabled={letterLoading || saveState !== "idle"}
+                    disabled={letterLoading || saveState !== "idle"}
                     {...getSaveButtonProps()}
                 />
             </Flex>

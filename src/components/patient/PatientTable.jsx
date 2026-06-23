@@ -1,27 +1,15 @@
-import {
-  Box,
-  Text,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  HStack,
-  Icon,
-  Tooltip,
-  Button,
-  IconButton,
-  Checkbox,
-  VStack,
-  useColorMode,
-  useTheme,
-  Grid,
-  Wrap,
-  WrapItem,
-  useToast,
-  Spinner,
-} from "@chakra-ui/react";
+/*
+ MIGRATION NOTE: The following Chakra UI hooks have been removed.
+ Please replace them with the suggested alternatives:
+
+//   - useTheme: Use Import from system or use useChakraContext
+
+ See: https://chakra-ui.com/docs/get-started/migration#hooks
+*/
+import { Steps, Box, Text, Table, Thead, Tbody, Tr, Th, Td, HStack, Icon, Button, IconButton, Checkbox, VStack, Grid, Wrap, WrapItem, Spinner } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
+import { Tooltip } from '@/components/ui/tooltip';
+import { useColorMode } from "../ui/color-mode";
 import { useState, useRef, useEffect } from "react";
 import { FaUser, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
 import {
@@ -76,25 +64,25 @@ const PatientTable = ({
   const getRowBackgroundColor = (index) => {
     return colorMode === "light"
       ? index % 2 === 0
-        ? theme.colors.light.secondary
-        : theme.colors.light.tertiary
+        ? theme.token('colors.light.secondary')
+        : theme.token('colors.light.tertiary')
       : index % 2 === 0
-        ? theme.colors.dark.secondary
-        : theme.colors.dark.tertiary;
+        ? theme.token('colors.dark.secondary')
+        : theme.token('colors.dark.tertiary');
   };
 
   const PatientDetails = ({ patient }) => (
     <Box>
-      <HStack spacing="2">
-        <Icon as={FaUser} />
+      <HStack gap="2">
+        <Icon asChild><FaUser /></Icon>
         <Text fontWeight="bold">{formatName(patient.name)}</Text>
       </HStack>
-      <HStack spacing="2">
-        <Icon as={FaCalendarAlt} />
+      <HStack gap="2">
+        <Icon asChild><FaCalendarAlt /></Icon>
         <Text>{patient.dob}</Text>
       </HStack>
-      <HStack spacing="2">
-        <Icon as={FaIdBadge} />
+      <HStack gap="2">
+        <Icon asChild><FaIdBadge /></Icon>
         <Text>{patient.ur_number}</Text>
       </HStack>
     </Box>
@@ -173,7 +161,7 @@ const PatientTable = ({
   };
 
   const renderPatientRow = (patient, index) => (
-    <Tr
+    <Table.Row
       key={patient.id}
       backgroundColor={getRowBackgroundColor(index)}
       opacity={
@@ -184,35 +172,35 @@ const PatientTable = ({
           : 1
       }
     >
-      <Td width="25%" verticalAlign="top">
+      <Table.Cell width="25%" verticalAlign="top">
         {summaryOnly ? (
           <Box>
-            <HStack spacing="2">
-              <Icon as={FaUser} />
+            <HStack gap="2">
+              <Icon asChild><FaUser /></Icon>
               <Text fontWeight="bold">{formatName(patient.name)}</Text>
-              <Tooltip label="Go to Encounter" placement="right" hasArrow>
+              <Tooltip content="Go to Encounter" showArrow positioning={{
+                placement: "right"
+              }}>
                 <IconButton
-                  icon={<Icon as={FaArrowRight} />}
                   size="xs"
                   variant="ghost"
                   aria-label="Go to Encounter"
-                  onClick={() => handleSelectPatient(patient)}
-                />
+                  onClick={() => handleSelectPatient(patient)}><Icon asChild><FaArrowRight /></Icon></IconButton>
               </Tooltip>
             </HStack>
-            <HStack spacing="2">
-              <Icon as={FaCalendarAlt} />
+            <HStack gap="2">
+              <Icon asChild><FaCalendarAlt /></Icon>
               <Text>{patient.dob}</Text>
             </HStack>
-            <HStack spacing="2">
-              <Icon as={FaIdBadge} />
+            <HStack gap="2">
+              <Icon asChild><FaIdBadge /></Icon>
               <Text>{patient.ur_number}</Text>
             </HStack>
           </Box>
         ) : (
-          <VStack align="stretch" spacing={2}>
+          <VStack align="stretch" gap={2}>
             <Tooltip
-              label={`${patient.name}, DOB: ${patient.dob}, UR Number: ${patient.ur_number}`}
+              content={`${patient.name}, DOB: ${patient.dob}, UR Number: ${patient.ur_number}`}
               aria-label="Patient Details"
             >
               <PatientDetails patient={patient} />
@@ -227,9 +215,9 @@ const PatientTable = ({
             </Button>
           </VStack>
         )}
-      </Td>
+      </Table.Cell>
 
-      <Td width="45%" position="relative" verticalAlign="top">
+      <Table.Cell width="45%" position="relative" verticalAlign="top">
         {summaryOnly ? (
           <Box
             p={2}
@@ -245,7 +233,7 @@ const PatientTable = ({
         ) : (
         <Box>
           <Grid templateColumns="40px 1fr" gap={0} h="120px">
-            <VStack align="flex-start" spacing={0} w="30px">
+            <VStack align="flex-start" gap={0} w="30px">
               {[
                 {
                   section: "summary",
@@ -270,9 +258,11 @@ const PatientTable = ({
               ].map(({ section, icon, tooltip }) => (
                 <Tooltip
                   key={section}
-                  label={tooltip}
-                  placement="right"
-                  hasArrow
+                  content={tooltip}
+                  showArrow
+                  positioning={{
+                    placement: "right"
+                  }}
                 >
                   <Button
                     key={section}
@@ -299,13 +289,11 @@ const PatientTable = ({
                     width="100%"
                     height="28px"
                     fontSize="xs"
-                    isDisabled={!patient.reasoning && section !== "summary"}
+                    disabled={!patient.reasoning && section !== "summary"}
                     opacity={
                       !patient.reasoning && section !== "summary" ? 0.5 : 1
                     }
-                    leftIcon={<Icon as={icon} />}
-                    p={1}
-                  />
+                    p={1} />
                 </Tooltip>
               ))}
             </VStack>
@@ -337,7 +325,7 @@ const PatientTable = ({
                       {(patient.activeSection === "differentials" ||
                         patient.activeSection === "investigations" ||
                         patient.activeSection === "considerations") && (
-                        <Wrap spacing={1}>
+                        <Wrap gap={1}>
                           {patient.reasoning[
                             patient.activeSection === "considerations"
                               ? "clinical_considerations"
@@ -369,13 +357,12 @@ const PatientTable = ({
           </Grid>
         </Box>
         )}
-      </Td>
+      </Table.Cell>
 
-      <Td width="30%" verticalAlign="top">
-        <HStack spacing={2} alignItems="flex-start">
-          <Tooltip label="Reset jobs" aria-label="Reset jobs">
+      <Table.Cell width="30%" verticalAlign="top">
+        <HStack gap={2} alignItems="flex-start">
+          <Tooltip content="Reset jobs" aria-label="Reset jobs">
             <IconButton
-              icon={<RepeatIcon />}
               size="sm"
               variant="ghost"
               onClick={() => {
@@ -386,17 +373,15 @@ const PatientTable = ({
                   setPatients,
                   refreshSidebar,
                 );
-              }}
-            />
+              }}><RepeatIcon /></IconButton>
           </Tooltip>
-          <VStack align="start" spacing={1}>
+          <VStack align="start" gap={1}>
             {patient.jobs_list?.length ? (
               patient.jobs_list.map((item, index) => (
-              <Checkbox
+              <Checkbox.Root
                 key={index}
                 className="checkbox task-checkbox"
-                isChecked={item.completed}
-                onChange={(e) => {
+                onCheckedChange={(e) => {
                   const nextChecked = e.target.checked;
 
                   if (nextChecked) {
@@ -432,8 +417,8 @@ const PatientTable = ({
                   debouncedUpdateJobsList(patient.id, updatedJobsList, refreshSidebar);
                 }}
                 alignItems="flex-start"
-                sx={{
-                  ".chakra-checkbox__label": {
+                css={{
+                  '& .chakra-checkbox__label': {
                     display: "block",
                     whiteSpace: "normal",
                     paddingTop: 0,
@@ -441,13 +426,15 @@ const PatientTable = ({
                       ? { textDecoration: "line-through", opacity: 0.5 }
                       : {}),
                   },
-                  ".chakra-checkbox__control": {
+
+                  '& .chakra-checkbox__control': {
                     marginTop: "3px",
-                  },
+                  }
                 }}
-              >
+                checked={item.completed}
+              ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
                 {item.job}
-              </Checkbox>
+              </Checkbox.Label></Checkbox.Root>
             ))
             ) : (
               <Text fontSize="sm" fontStyle="italic" opacity={0.6}>
@@ -456,8 +443,8 @@ const PatientTable = ({
             )}
           </VStack>
         </HStack>
-      </Td>
-    </Tr>
+      </Table.Cell>
+    </Table.Row>
   );
 
   return (
@@ -479,64 +466,70 @@ const PatientTable = ({
                 {new Date(date).toLocaleDateString()}
               </Text>
               <Box overflowX="auto">
-                <Table
+                <Table.Root
                   variant="simple"
                   borderRadius="lg"
                   overflow="hidden"
-                  sx={{ borderCollapse: "separate", borderSpacing: 0 }}
+                  css={{
+                    borderCollapse: "separate",
+                    borderSpacing: 0
+                  }}
                 >
-                  <Thead
+                  <Table.Header
                     bg={
                       colorMode === "light"
                         ? colors.light.surface
                         : colors.dark.surface
                     }
                   >
-                    <Tr>
-                      <Th width="25%">Patient Details</Th>
-                      <Th width="45%">Reasoning / Encounter Summary</Th>
-                      <Th width="30%">Jobs</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
+                    <Table.Row>
+                      <Table.ColumnHeader width="25%">Patient Details</Table.ColumnHeader>
+                      <Table.ColumnHeader width="45%">Reasoning / Encounter Summary</Table.ColumnHeader>
+                      <Table.ColumnHeader width="30%">Jobs</Table.ColumnHeader>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
                     {patients
                       .sort((a, b) => a.id - b.id)
                       .map((patient, index) =>
                         renderPatientRow(patient, index),
                       )}
-                  </Tbody>
-                </Table>
+                  </Table.Body>
+                </Table.Root>
               </Box>
             </Box>
           ))
       ) : (
         <Box overflowX="auto">
-          <Table
+          <Table.Root
             variant="simple"
             borderRadius="lg"
             overflow="hidden"
-            sx={{ borderCollapse: "separate", borderSpacing: 0 }}
+            css={{
+              borderCollapse: "separate",
+              borderSpacing: 0
+            }}
           >
-            <Thead
+            <Table.Header
               bg={
                 colorMode === "light"
                   ? colors.light.surface
                   : colors.dark.surface
               }
             >
-              <Tr>
-                <Th width="25%">Patient Details</Th>
-                <Th width="45%">Reasoning / Encounter Summary</Th>
-                <Th width="30%">Jobs</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
+              <Table.Row>
+                <Table.ColumnHeader width="25%">Patient Details</Table.ColumnHeader>
+                <Table.ColumnHeader width="45%">Reasoning / Encounter Summary</Table.ColumnHeader>
+                <Table.ColumnHeader width="30%">Jobs</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {patients
                 .slice()
                 .sort((a, b) => a.id - b.id)
                 .map((patient, index) => renderPatientRow(patient, index))}
-            </Tbody>
-          </Table>
+            </Table.Body>
+          </Table.Root>
         </Box>
       )}
     </Box>

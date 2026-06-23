@@ -1,19 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
-import {
-  Box,
-  Button,
-  Heading,
-  VStack,
-  useToast,
-  Text,
-  Flex,
-  Image,
-  useColorMode,
-  HStack,
-  Icon,
-  Progress,
-  Badge,
-} from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { Steps, Box, Button, Heading, VStack, Text, Flex, Image, HStack, Icon, Progress, Badge } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { motion } from "framer-motion";
 import { FaArrowRight, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
 import { colors } from "../../theme/colors";
@@ -298,7 +286,6 @@ const SplashScreen = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-
       <MotionBox
         variants={containerVariants}
         initial="hidden"
@@ -327,7 +314,7 @@ const SplashScreen = ({ onComplete }) => {
         />
 
         <MotionVStack
-          spacing={6}
+          gap={6}
           align="stretch"
           position="relative"
           zIndex="1"
@@ -343,13 +330,13 @@ const SplashScreen = ({ onComplete }) => {
               as="h1"
               textAlign="center"
               color={currentColors.textPrimary}
-              sx={{
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
                 fontWeight: "700",
                 lineHeight: "1.2",
                 marginBottom: "0.5rem",
-                letterSpacing: "-0.02em",
+                letterSpacing: "-0.02em"
               }}
             >
               Welcome to Phlox
@@ -360,25 +347,32 @@ const SplashScreen = ({ onComplete }) => {
               color={currentColors.textSecondary}
               maxW="400px"
               lineHeight="1.6"
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
+              css={{
+                fontFamily: '"Roboto", sans-serif'
+              }}
             >
               Let's set up your AI-powered medical assistant
             </MotionText>
           </MotionFlex>
 
           <MotionBox variants={itemVariants}>
-            <Progress
+            <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
-              colorScheme="blue"
+              colorPalette="blue"
               borderRadius="full"
               size="sm"
-              mb={2}
-            />
+              mb={2}>
+              <Progress.Track>
+                <Progress.Range />
+              </Progress.Track>
+            </Progress.Root>
             <Text
               fontSize="xs"
               color={currentColors.textSecondary}
               textAlign="center"
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
+              css={{
+                fontFamily: '"Roboto", sans-serif'
+              }}
             >
               Step {currentStepIndex + 1} of {totalSteps}
             </Text>
@@ -394,17 +388,17 @@ const SplashScreen = ({ onComplete }) => {
               <Heading
                 as="h2"
                 color={currentColors.textPrimary}
-                sx={{
+                css={{
                   fontFamily: '"Space Grotesk", sans-serif',
                   fontSize: ["1.25rem", "1.5rem"],
                   fontWeight: "600",
-                  lineHeight: "1.2",
+                  lineHeight: "1.2"
                 }}
               >
                 {STEP_TITLES[currentStep]}
               </Heading>
               {completedSteps.has(currentStep) && (
-                <Badge colorScheme="green" variant="solid">
+                <Badge colorPalette="green" variant="solid">
                   <Icon as={FaCheckCircle} mr={1} />
                   Complete
                 </Badge>
@@ -415,7 +409,9 @@ const SplashScreen = ({ onComplete }) => {
               fontSize="sm"
               color={currentColors.textSecondary}
               mb={6}
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
+              css={{
+                fontFamily: '"Roboto", sans-serif'
+              }}
             >
               {STEP_DESCRIPTIONS[currentStep]}
             </Text>
@@ -430,41 +426,34 @@ const SplashScreen = ({ onComplete }) => {
             mt={6}
           >
             <Button
-              leftIcon={<FaArrowLeft />}
               onClick={handlePrevious}
-              isDisabled={currentStepIndex === 0}
+              disabled={currentStepIndex === 0}
               variant="outline"
               size="md"
               borderRadius="2xl !important"
-              className="switch-mode"
-            >
-              Previous
-            </Button>
+              className="switch-mode"><FaArrowLeft />Previous
+                          </Button>
 
             <Button
-              rightIcon={
-                currentStepIndex === totalSteps - 1 ? undefined : (
-                  <FaArrowRight />
-                )
-              }
               onClick={handleNext}
-              isLoading={isLoading}
+              loading={isLoading}
               loadingText={
                 currentStepIndex === totalSteps - 1
                   ? "Completing setup..."
                   : "Processing..."
               }
-              isDisabled={!canProceedToNext()}
+              disabled={!canProceedToNext()}
               size="md"
               borderRadius="2xl !important"
               className="switch-mode"
-              sx={{
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
-                fontWeight: "600",
-              }}
-            >
-              {currentStepIndex === totalSteps - 1 ? "Complete Setup" : "Next"}
-            </Button>
+                fontWeight: "600"
+              }}>{currentStepIndex === totalSteps - 1 ? "Complete Setup" : "Next"}{
+                currentStepIndex === totalSteps - 1 ? undefined : (
+                  <FaArrowRight />
+                )
+              }</Button>
           </MotionFlex>
         </MotionVStack>
       </MotionBox>

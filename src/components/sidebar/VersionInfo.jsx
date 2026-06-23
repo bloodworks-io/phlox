@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-    Box,
-    Text,
-    useDisclosure,
-    Badge,
-    Tooltip,
-    Link,
-    VStack,
-    HStack,
-    Center,
-} from "@chakra-ui/react";
+import { Steps, Box, Text, useDisclosure, Badge, Link, VStack, HStack, Center } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaGithub, FaMoon, FaSun } from "react-icons/fa";
 import { TbVersions } from "react-icons/tb";
 import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
@@ -21,7 +12,7 @@ import { APP_VERSION } from "../../utils/constants/version";
 import changelogContent from "../../../CHANGELOG.md?raw";
 
 const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { open, onOpen, onClose } = useDisclosure();
     const [serverStatus, setServerStatus] = useState({
         whisper: false,
         llm: false,
@@ -62,15 +53,17 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
 
         return (
             <Tooltip
-                label={
+                content={
                     allServicesUp
                         ? "All services connected"
                         : `Services: ${serverStatus.llm ? "✓" : "✗"} LLM, ${serverStatus.whisper ? "✓" : "✗"} Whisper`
                 }
-                placement={isCollapsed ? "right" : "top"}
+                positioning={{
+                    placement: isCollapsed ? "right" : "top"
+                }}
             >
                 <Badge
-                    colorScheme={allServicesUp ? "green" : "orange"}
+                    colorPalette={allServicesUp ? "green" : "orange"}
                     borderRadius="full"
                     variant="subtle"
                     p={1}
@@ -89,8 +82,10 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
     if (isCollapsed) {
         return (
             <Box position="relative" width="100%">
-                <VStack spacing={2} align="center" width="100%">
-                    <Tooltip label="View Version Info" placement="right">
+                <VStack gap={2} align="center" width="100%">
+                    <Tooltip content="View Version Info" positioning={{
+                        placement: "right"
+                    }}>
                         <Box
                             onClick={onOpen}
                             cursor="pointer"
@@ -102,7 +97,9 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                         </Box>
                     </Tooltip>
 
-                    <Tooltip label="GitHub Repository" placement="right">
+                    <Tooltip content="GitHub Repository" positioning={{
+                        placement: "right"
+                    }}>
                         <Link
                             href="https://github.com/bloodworks-io/phlox"
                             target="_blank"
@@ -116,12 +113,14 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                     </Tooltip>
 
                     <Tooltip
-                        label={
+                        content={
                             colorMode === "light"
                                 ? "Switch to Dark Mode"
                                 : "Switch to Light Mode"
                         }
-                        placement="right"
+                        positioning={{
+                            placement: "right"
+                        }}
                     >
                         <Box
                             onClick={toggleColorMode}
@@ -136,7 +135,6 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
 
                     <StatusIcon />
                 </VStack>
-
                 <ChangelogModal
                     isOpen={isOpen}
                     onClose={onClose}
@@ -152,8 +150,8 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
         <Box width="100%">
             {/* Center the version, GitHub icon, and status icon */}
             <Center width="100%">
-                <HStack spacing={4}>
-                    <Tooltip label="View Changelog">
+                <HStack gap={4}>
+                    <Tooltip content="View Changelog">
                         <Text
                             fontSize="md"
                             onClick={onOpen}
@@ -168,7 +166,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                         </Text>
                     </Tooltip>
 
-                    <Tooltip label="GitHub Repository">
+                    <Tooltip content="GitHub Repository">
                         <Link
                             href="https://github.com/bloodworks-io/phlox"
                             target="_blank"
@@ -182,7 +180,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                     </Tooltip>
 
                     <Tooltip
-                        label={
+                        content={
                             colorMode === "light"
                                 ? "Switch to Dark Mode"
                                 : "Switch to Light Mode"
@@ -202,7 +200,6 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                     <StatusIcon />
                 </HStack>
             </Center>
-
             <ChangelogModal
                 isOpen={isOpen}
                 onClose={onClose}

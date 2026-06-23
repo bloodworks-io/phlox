@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
+import { Steps, Box, Spinner, Text, VStack } from "@chakra-ui/react";
 import { isTauri } from "../../utils/helpers/apiConfig";
 
 export const ServerConnectionCheck = ({ children }) => {
@@ -43,7 +43,7 @@ export const ServerConnectionCheck = ({ children }) => {
         justifyContent="center"
         bg="gray.50"
       >
-        <VStack spacing={4}>
+        <VStack gap={4}>
           <Spinner size="xl" color="blue.500" />
           <Text fontSize="lg" fontWeight="medium">
             Initializing...

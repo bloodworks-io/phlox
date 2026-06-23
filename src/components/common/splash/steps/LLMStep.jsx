@@ -1,25 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-    VStack,
-    Box,
-    HStack,
-    Button,
-    Badge,
-    Grid,
-    IconButton,
-} from "@chakra-ui/react";
-import {
-    FormControl,
-    FormLabel,
-    Input,
-    Select,
-    Tooltip,
-    Flex,
-    Spinner,
-    Text,
-    Progress,
-    useToast,
-} from "@chakra-ui/react";
+import { VStack, Box, HStack, Button, Badge, Grid, IconButton, Field, Input, Tooltip, Flex, Spinner, Text, Progress, NativeSelect } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { InfoIcon } from "../../icons";
 import { FaDesktop, FaCloud } from "react-icons/fa";
 import { ChevronLeftIcon, ChevronRightIcon } from "../../icons";
@@ -99,7 +80,7 @@ const LocalModelCard = ({
             flexDirection="column"
             justifyContent="space-between"
         >
-            <HStack position="absolute" top="-2" right="2" spacing={1}>
+            <HStack position="absolute" top="-2" right="2" gap={1}>
                 {badge && (
                     <Tooltip
                         label={badge.tooltip || badge.text}
@@ -115,8 +96,7 @@ const LocalModelCard = ({
                     </Tooltip>
                 )}
             </HStack>
-
-            <VStack align="start" spacing={2} flex={1}>
+            <VStack align="start" gap={2} flex={1}>
                 <Text fontSize="md" fontWeight="bold">
                     {model.simple_name || model.id}
                 </Text>
@@ -132,7 +112,6 @@ const LocalModelCard = ({
                           : ""}
                 </Text>
             </VStack>
-
             {isDownloading && (
                 <Box mt={2}>
                     <Flex justify="space-between" mb={1}>
@@ -152,7 +131,6 @@ const LocalModelCard = ({
                     />
                 </Box>
             )}
-
             {!isDownloading && isDownloaded && (
                 <Button
                     size="sm"
@@ -172,7 +150,6 @@ const LocalModelCard = ({
                     {isSelected ? "Selected" : "Select"}
                 </Button>
             )}
-
             {!isDownloading && !isDownloaded && (
                 <Button
                     size="sm"
@@ -320,7 +297,7 @@ export const LLMStep = ({
             spacing={6}
             w="100%"
         >
-            <VStack spacing={4} w="100%">
+            <VStack gap={4} w="100%">
                 {/* Local/Remote Toggle - Desktop Only */}
                 {showToggle && (
                     <Flex
@@ -342,18 +319,12 @@ export const LLMStep = ({
                         <Flex width="full" position="relative" zIndex={1}>
                             <Button
                                 className={`mode-selector-button ${inferenceMode === "local" ? "active" : ""}`}
-                                leftIcon={<FaDesktop />}
-                                onClick={() => setInferenceMode("local")}
-                            >
-                                Local (Recommended)
-                            </Button>
+                                onClick={() => setInferenceMode("local")}><FaDesktop />Local (Recommended)
+                                                            </Button>
                             <Button
                                 className={`mode-selector-button ${inferenceMode === "remote" ? "active" : ""}`}
-                                leftIcon={<FaCloud />}
-                                onClick={() => setInferenceMode("remote")}
-                            >
-                                Remote (Advanced)
-                            </Button>
+                                onClick={() => setInferenceMode("remote")}><FaCloud />Remote (Advanced)
+                                                            </Button>
                         </Flex>
                     </Flex>
                 )}
@@ -480,9 +451,9 @@ export const LLMStep = ({
                 {/* Remote Mode UI */}
                 {inferenceMode === "remote" && (
                     <>
-                        <FormControl>
+                        <Field.Root>
                             <HStack>
-                                <FormLabel
+                                <Field.Label
                                     color={currentColors.textSecondary}
                                     sx={{
                                         fontFamily: '"Roboto", sans-serif',
@@ -491,7 +462,7 @@ export const LLMStep = ({
                                     }}
                                 >
                                     OpenAI/Ollama API Base URL
-                                </FormLabel>
+                                </Field.Label>
                                 <Tooltip
                                     label="The API endpoint for your OpenAI/Ollama-compatible service (usually http://localhost:11434 for local Ollama)"
                                     placement="top"
@@ -515,11 +486,11 @@ export const LLMStep = ({
                                 className="input-style"
                                 size="md"
                             />
-                        </FormControl>
+                        </Field.Root>
 
-                        <FormControl isRequired={availableModels.length > 0}>
+                        <Field.Root required={availableModels.length > 0}>
                             <HStack>
-                                <FormLabel
+                                <Field.Label
                                     color={currentColors.textSecondary}
                                     sx={{
                                         fontFamily: '"Roboto", sans-serif',
@@ -528,7 +499,7 @@ export const LLMStep = ({
                                     }}
                                 >
                                     Primary Model
-                                </FormLabel>
+                                </Field.Label>
                                 <Tooltip
                                     label="The main AI model that will handle your medical queries. We recommend models like llama3.1:8b or gpt-4 for medical use."
                                     placement="top"
@@ -543,30 +514,33 @@ export const LLMStep = ({
                                     />
                                 </Tooltip>
                             </HStack>
-                            <Select
-                                placeholder={
-                                    availableModels.length === 0 &&
-                                    !isFetchingLLMModels
-                                        ? "No models found - check URL and server status"
-                                        : "Select primary model"
-                                }
-                                value={primaryModel}
-                                onChange={(e) =>
-                                    setPrimaryModel(e.target.value)
-                                }
-                                isDisabled={
-                                    isFetchingLLMModels ||
-                                    availableModels.length === 0
-                                }
-                                className="input-style"
-                                size="md"
-                            >
-                                {availableModels.map((model) => (
-                                    <option key={model} value={model}>
-                                        {model}
-                                    </option>
-                                ))}
-                            </Select>
+                            <NativeSelect.Root>
+                                <NativeSelect.Field
+                                    placeholder={
+                                        availableModels.length === 0 &&
+                                        !isFetchingLLMModels
+                                            ? "No models found - check URL and server status"
+                                            : "Select primary model"
+                                    }
+                                    value={primaryModel}
+                                    onChange={(e) =>
+                                        setPrimaryModel(e.target.value)
+                                    }
+                                    disabled={
+                                        isFetchingLLMModels ||
+                                        availableModels.length === 0
+                                    }
+                                    className="input-style"
+                                    size="md"
+                                >
+                                    {availableModels.map((model) => (
+                                        <option key={model} value={model}>
+                                            {model}
+                                        </option>
+                                    ))}
+                                </NativeSelect.Field>
+                                <NativeSelect.Indicator />
+                            </NativeSelect.Root>
                             {isFetchingLLMModels && (
                                 <Flex align="center" mt={2}>
                                     <Spinner
@@ -600,7 +574,7 @@ export const LLMStep = ({
                                         and ensure your server is running.
                                     </Text>
                                 )}
-                        </FormControl>
+                        </Field.Root>
                     </>
                 )}
             </VStack>

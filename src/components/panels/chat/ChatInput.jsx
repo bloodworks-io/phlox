@@ -1,11 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import {
-    Box,
-    Flex,
-    Textarea,
-    IconButton,
-    useColorMode,
-} from "@chakra-ui/react";
+import { useColorMode } from "../../ui/color-mode";
+import { Steps, Box, Flex, Textarea, IconButton } from "@chakra-ui/react";
 import { ArrowUpIcon } from "../../common/icons";
 
 const MIN_HEIGHT = 32;
@@ -58,7 +53,7 @@ const ChatInput = ({
                 <Textarea
                     ref={textareaRef}
                     value={userInput}
-                    onChange={handleChange}
+                    onValueChange={handleChange}
                     onKeyDown={handleKeyDown}
                     placeholder="Message Phlox..."
                     rows={1}
@@ -80,14 +75,13 @@ const ChatInput = ({
                     _focusVisible={{
                         boxShadow: "none",
                     }}
-                    isDisabled={chatLoading}
+                    disabled={chatLoading}
                 />
 
                 <IconButton
-                    icon={<ArrowUpIcon />}
                     onClick={() => handleSendMessage(userInput)}
-                    isDisabled={!canSend}
-                    isLoading={chatLoading}
+                    disabled={!canSend}
+                    loading={chatLoading}
                     aria-label="Send message"
                     size="sm"
                     alignSelf="center"
@@ -120,8 +114,7 @@ const ChatInput = ({
                               : "rgba(255, 255, 255, 0.3)",
                         transform: "scale(1.05)",
                     }}
-                    transition="all 0.2s ease"
-                />
+                    transition="all 0.2s ease"><ArrowUpIcon /></IconButton>
             </Flex>
         </Box>
     );

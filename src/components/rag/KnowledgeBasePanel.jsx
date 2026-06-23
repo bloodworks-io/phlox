@@ -1,6 +1,6 @@
 // Panel component for the Knowledge Base tab — document explorer and uploader.
 import React from "react";
-import { VStack } from "@chakra-ui/react";
+import { Steps, VStack } from "@chakra-ui/react";
 import DocumentExplorer from "./DocumentExplorer";
 import Uploader from "./Uploader";
 
@@ -12,7 +12,7 @@ const KnowledgeBasePanel = ({
   loading,
   setItemToDelete,
 }) => (
-  <VStack spacing="5" align="stretch">
+  <VStack gap="5" align="stretch">
     <DocumentExplorer
       isCollapsed={collapseExplorer.isCollapsed}
       setIsCollapsed={collapseExplorer.toggle}

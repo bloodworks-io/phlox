@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, Flex, VStack, Text, Button } from "@chakra-ui/react";
+import { Steps, Box, Flex, VStack, Text, Button } from "@chakra-ui/react";
 import { InfoIcon, SearchIcon, QuestionIcon } from "../common/icons";
 import { useChat } from "../../utils/hooks/useChat";
 import DashboardChatInput from "./DashboardChatInput";
@@ -370,9 +370,9 @@ const DashboardChat = () => {
                     isIntroFading && !isProcessingImage ? "none" : "auto"
                 }
             >
-                <VStack spacing={8} w="100%" maxW="800px">
+                <VStack gap={8} w="100%" maxW="800px">
                     {/* Greeting */}
-                    <VStack spacing={2}>
+                    <VStack gap={2}>
                         <Text
                             fontSize="2xl"
                             fontWeight="bold"
@@ -391,7 +391,11 @@ const DashboardChat = () => {
                             {ragSuggestions.map((suggestion, index) => (
                                 <Button
                                     key={index}
-                                    leftIcon={
+                                    onClick={() =>
+                                        handleSendMessage(suggestion)
+                                    }
+                                    className="dashboard-chat-suggestions"
+                                    size="sm">{
                                         index === 0 ? (
                                             <InfoIcon />
                                         ) : index === 1 ? (
@@ -399,15 +403,7 @@ const DashboardChat = () => {
                                         ) : (
                                             <QuestionIcon />
                                         )
-                                    }
-                                    onClick={() =>
-                                        handleSendMessage(suggestion)
-                                    }
-                                    className="dashboard-chat-suggestions"
-                                    size="sm"
-                                >
-                                    {suggestion}
-                                </Button>
+                                    }{suggestion}</Button>
                             ))}
                         </Flex>
                     )}

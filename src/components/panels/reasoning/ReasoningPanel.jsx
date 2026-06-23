@@ -1,5 +1,7 @@
 import React, { forwardRef } from "react";
-import { Box, Flex, Text, Button, useColorMode, Tooltip } from "@chakra-ui/react";
+import { useColorMode } from "../../ui/color-mode";
+import { Steps, Box, Flex, Text, Button } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaAtom, FaSync } from "react-icons/fa";
 
 import FloatingPanel from "../../common/FloatingPanel";
@@ -60,16 +62,13 @@ const ReasoningPanel = forwardRef(
                             <Text fontWeight="bold">Clinical Reasoning</Text>
                         </Flex>
                         {reasoning && (
-                            <Tooltip label="Regenerate reasoning">
+                            <Tooltip content="Regenerate reasoning">
                                 <Button
-                                    leftIcon={<FaSync size="10px" />}
                                     onClick={handleGenerateReasoning}
-                                    isLoading={loading}
+                                    loading={loading}
                                     size="xs"
-                                    className="orange-button"
-                                >
-                                    Regenerate
-                                </Button>
+                                    className="orange-button"><FaSync size="10px" />Regenerate
+                                                                    </Button>
                             </Tooltip>
                         )}
                     </Flex>

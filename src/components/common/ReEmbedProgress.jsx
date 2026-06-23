@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, Progress } from "@chakra-ui/react";
+import { Steps, Box, Text, Progress } from "@chakra-ui/react";
 
 export const ReEmbedProgress = ({ progress }) => {
     if (!progress) return null;
@@ -19,13 +19,11 @@ export const ReEmbedProgress = ({ progress }) => {
                 Collection {collection_index + 1} of {total_collections}
                 {collection_name ? `: ${collection_name}` : ""}
             </Text>
-            <Progress
-                value={percentage}
-                colorScheme="blue"
-                size="sm"
-                hasStripe
-                isAnimated
-            />
+            <Progress.Root value={percentage} colorPalette="blue" size="sm" striped animated>
+                <Progress.Track>
+                    <Progress.Range />
+                </Progress.Track>
+            </Progress.Root>
             <Text fontSize="xs" color="gray.500" mt={1}>
                 {chunks_embedded} of {total_chunks_in_collection} chunks
                 embedded

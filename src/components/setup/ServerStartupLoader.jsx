@@ -1,15 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Box,
-  Button,
-  Heading,
-  VStack,
-  Text,
-  Flex,
-  Spinner,
-  Icon,
-  useColorMode,
-} from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { Steps, Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
 import { FaServer } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
@@ -153,7 +144,6 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             zIndex="1000"
           />
         )}
-
         <MotionBox
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -167,15 +157,15 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           maxW="450px"
           textAlign="center"
         >
-          <VStack spacing={6}>
-            <Icon as={FaServer} boxSize={12} color="red.500" />
+          <VStack gap={6}>
+            <Icon boxSize={12} color="red.500" asChild><FaServer /></Icon>
             <Heading
               as="h1"
               color={currentColors.textPrimary}
-              sx={{
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: "1.5rem",
-                fontWeight: "700",
+                fontWeight: "700"
               }}
             >
               Server Taking Too Long
@@ -191,9 +181,9 @@ const ServerStartupLoader = ({ onReady, onError }) => {
               onClick={handleRetry}
               size="lg"
               className="switch-mode"
-              sx={{
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
-                fontWeight: "600",
+                fontWeight: "600"
               }}
             >
               Try Again
@@ -226,7 +216,6 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           zIndex="1000"
         />
       )}
-
       <MotionBox
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -240,20 +229,20 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         maxW="450px"
         textAlign="center"
       >
-        <VStack spacing={6}>
+        <VStack gap={6}>
           <Spinner
             size="xl"
             color={currentColors.accent}
-            thickness="4px"
-            speed="0.8s"
+            borderWidth="4px"
+            animationDuration="0.8s"
           />
           <Heading
             as="h1"
             color={currentColors.textPrimary}
-            sx={{
+            css={{
               fontFamily: '"Space Grotesk", sans-serif',
               fontSize: "1.5rem",
-              fontWeight: "700",
+              fontWeight: "700"
             }}
           >
             Starting Server

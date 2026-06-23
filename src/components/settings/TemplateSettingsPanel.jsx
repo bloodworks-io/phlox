@@ -1,15 +1,6 @@
-import {
-  Box,
-  Flex,
-  IconButton,
-  Text,
-  Collapse,
-  Button,
-  VStack,
-  HStack,
-  useColorMode,
-  useToast,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
+import { useColorMode } from "../ui/color-mode";
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -177,91 +168,83 @@ const TemplateSettingsPanel = ({
       <Flex align="center" justify="space-between">
         <Flex align="center">
           <IconButton
-            icon={isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
             onClick={() => setIsCollapsed(!isCollapsed)}
             aria-label="Toggle collapse"
             variant="outline"
             size="sm"
             mr="2"
-            className="collapse-toggle"
-          />
+            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
           <FaFileAlt size="1.2em" style={{ marginRight: "5px" }} />
           <Text as="h3">Note Templates</Text>
         </Flex>
-        <Button
-          leftIcon={<AddIcon />}
-          onClick={() => setIsNewTemplateModalOpen(true)}
-          className="grey-button"
-        >
-          New Template
-        </Button>
+        <Button onClick={() => setIsNewTemplateModalOpen(true)} className="grey-button"><AddIcon />New Template
+                  </Button>
       </Flex>
-      <Collapse in={!isCollapsed} animateOpacity>
-        <VStack spacing={4} align="stretch" mt={4}>
-          {Array.isArray(templates) ? (
-            // Sort templates: default templates first, custom templates last
-            templates
-              .sort((a, b) => {
-                const isDefaultA = DefaultTemplates.isDefaultTemplate(
-                  a.template_key,
-                );
-                const isDefaultB = DefaultTemplates.isDefaultTemplate(
-                  b.template_key,
-                );
+      <Collapsible.Root open={!isCollapsed}>
+        <Collapsible.Content>
+          <VStack gap={4} align="stretch" mt={4}>
+            {Array.isArray(templates) ? (
+              // Sort templates: default templates first, custom templates last
+              (templates
+                .sort((a, b) => {
+                  const isDefaultA = DefaultTemplates.isDefaultTemplate(
+                    a.template_key,
+                  );
+                  const isDefaultB = DefaultTemplates.isDefaultTemplate(
+                    b.template_key,
+                  );
 
-                if (isDefaultA && !isDefaultB) return -1;
-                if (!isDefaultA && isDefaultB) return 1;
-                return 0;
-              })
-              .map((template) => (
-                <Box
-                  key={template.template_key}
-                  p={4}
-                  border="1px"
-                  borderColor={colorMode === "light" ? "gray.200" : "gray.600"}
-                  borderRadius="sm"
-                >
-                  <Flex align="center" justify="space-between">
-                    <Text fontSize="lg" fontWeight="bold">
-                      {template.template_name}
-                    </Text>
-                    <HStack spacing={2}>
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          handleEditTemplate(template.template_key)
-                        }
-                        className="summary-buttons"
-                      >
-                        Edit Template
-                      </Button>
-                      {!DefaultTemplates.isDefaultTemplate(
-                        template.template_key,
-                      ) && (
-                        <IconButton
+                  if (isDefaultA && !isDefaultB) return -1;
+                  if (!isDefaultA && isDefaultB) return 1;
+                  return 0;
+                })
+                .map((template) => (
+                  <Box
+                    key={template.template_key}
+                    p={4}
+                    border="1px"
+                    borderColor={colorMode === "light" ? "gray.200" : "gray.600"}
+                    borderRadius="sm"
+                  >
+                    <Flex align="center" justify="space-between">
+                      <Text fontSize="lg" fontWeight="bold">
+                        {template.template_name}
+                      </Text>
+                      <HStack gap={2}>
+                        <Button
                           size="sm"
-                          icon={<DeleteIcon />}
-                          onClick={() => {
-                            setTemplateToDelete({
-                              key: template.template_key,
-                              name: template.template_name,
-                            });
-                            setIsDeleteModalOpen(true);
-                          }}
-                          colorScheme="red"
-                          aria-label="Delete template"
-                        />
-                      )}
-                    </HStack>
-                  </Flex>
-                </Box>
-              ))
-          ) : (
-            <Text>No templates available</Text>
-          )}
-        </VStack>
-      </Collapse>
-
+                          onClick={() =>
+                            handleEditTemplate(template.template_key)
+                          }
+                          className="summary-buttons"
+                        >
+                          Edit Template
+                        </Button>
+                        {!DefaultTemplates.isDefaultTemplate(
+                          template.template_key,
+                        ) && (
+                          <IconButton
+                            size="sm"
+                            onClick={() => {
+                              setTemplateToDelete({
+                                key: template.template_key,
+                                name: template.template_name,
+                              });
+                              setIsDeleteModalOpen(true);
+                            }}
+                            colorPalette="red"
+                            aria-label="Delete template"><DeleteIcon /></IconButton>
+                        )}
+                      </HStack>
+                    </Flex>
+                  </Box>
+                )))
+            ) : (
+              <Text>No templates available</Text>
+            )}
+          </VStack>
+        </Collapsible.Content>
+      </Collapsible.Root>
       <TemplateEditor
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -270,7 +253,6 @@ const TemplateSettingsPanel = ({
         onSave={handleSaveTemplate}
         isNewTemplate={isNewTemplate}
       />
-
       {/* New Template from Example Modal */}
       <NewTemplateFromExampleModal
         isOpen={isNewTemplateModalOpen}
@@ -280,7 +262,6 @@ const TemplateSettingsPanel = ({
         setExampleNote={setExampleNote}
         isLoading={isGeneratingTemplate}
       />
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@chakra-ui/react";
+import { Steps } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLettersStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";

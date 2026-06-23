@@ -1,4 +1,5 @@
-import { IconButton, Input, Tooltip } from "@chakra-ui/react";
+import { Steps, IconButton, Input } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { SearchIcon } from "../common/icons";
 
 const UrSearchField = ({
@@ -15,26 +16,26 @@ const UrSearchField = ({
             placeholder={placeholder}
             size={size}
             value={value || ""}
-            onChange={onChange}
+            onValueChange={onChange}
             autoFocus={autoFocus}
             className="input-style"
-            sx={{
+            css={{
                 borderTopLeftRadius: "md !important",
                 borderBottomLeftRadius: "md !important",
                 borderTopRightRadius: "0 !important",
-                borderBottomRightRadius: "0 !important",
+                borderBottomRightRadius: "0 !important"
             }}
         />
-        <Tooltip label="Find existing patient by UR number" placement="top">
+        <Tooltip content="Find existing patient by UR number" positioning={{
+            placement: "top"
+        }}>
             <IconButton
                 type="button"
-                icon={<SearchIcon />}
                 aria-label="Find existing patient by UR number"
                 size={size}
-                isLoading={isLoading}
+                loading={isLoading}
                 onClick={onSearch}
-                className="search-button"
-            />
+                className="search-button"><SearchIcon /></IconButton>
         </Tooltip>
     </>
 );

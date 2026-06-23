@@ -1,14 +1,7 @@
 // Panel component for the Form Templates tab — sidebar, builder canvas, and field editor.
 import React from "react";
-import {
-  Box,
-  Text,
-  VStack,
-  HStack,
-  Select,
-  Flex,
-  useColorModeValue,
-} from "@chakra-ui/react";
+import { useColorModeValue } from "../ui/color-mode";
+import { Steps, Box, Text, VStack, HStack, NativeSelect, Flex } from "@chakra-ui/react";
 import { AddIcon } from "../common/icons";
 import { FaPencilAlt, FaMagic, FaSave } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
@@ -44,7 +37,7 @@ const FormTemplatesPanel = ({
   const mutedColor = useColorModeValue("gray.400", "gray.500");
 
   return (
-    <HStack spacing="4" align="start">
+    <HStack gap="4" align="start">
       {/* Forms sidebar */}
       <Box
         w="240px"
@@ -69,7 +62,6 @@ const FormTemplatesPanel = ({
           onDelete={onDeleteTemplate}
         />
       </Box>
-
       {/* Form builder canvas */}
       <Box flex="1" minW="0">
         {selectedTemplate ? (
@@ -99,7 +91,6 @@ const FormTemplatesPanel = ({
           </Box>
         )}
       </Box>
-
       {/* Field editor sidebar */}
       <Box
         w="240px"
@@ -117,24 +108,26 @@ const FormTemplatesPanel = ({
             borderColor={borderColor}
           >
             {isDrawingMode ? (
-              <VStack spacing="2" align="stretch">
-                <HStack spacing="1">
-                  <Box as={FaPencilAlt} color="blue.400" fontSize="0.7em" />
+              <VStack gap="2" align="stretch">
+                <HStack gap="1">
+                  <Box color="blue.400" fontSize="0.7em" asChild><FaPencilAlt /></Box>
                   <Text fontSize="xs" fontWeight="bold">
                     Drawing mode
                   </Text>
                 </HStack>
-                <Select
-                  size="xs"
-                  value={activeFieldType}
-                  onChange={(e) => onSetFieldType(e.target.value)}
-                  className="input-style"
-                >
-                  <option value="text">Text</option>
-                  <option value="checkbox">Checkbox</option>
-                  <option value="date">Date</option>
-                  <option value="number">Number</option>
-                </Select>
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    size="xs"
+                    value={activeFieldType}
+                    onValueChange={(e) => onSetFieldType(e.target.value)}
+                    className="input-style">
+                    <option value="text">Text</option>
+                    <option value="checkbox">Checkbox</option>
+                    <option value="date">Date</option>
+                    <option value="number">Number</option>
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
                 <GreyButton
                   size="xs"
                   width="100%"
@@ -144,7 +137,7 @@ const FormTemplatesPanel = ({
                 </GreyButton>
               </VStack>
             ) : (
-              <VStack spacing="2" align="stretch">
+              <VStack gap="2" align="stretch">
                 <GreyButton
                   size="xs"
                   width="100%"

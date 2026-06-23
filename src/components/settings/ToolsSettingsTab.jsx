@@ -1,26 +1,7 @@
-import {
-    Alert,
-    AlertDescription,
-    AlertIcon,
-    Badge,
-    Box,
-    Button,
-    Checkbox,
-    Flex,
-    FormControl,
-    FormErrorMessage,
-    FormLabel,
-    HStack,
-    IconButton,
-    Input,
-    Spacer,
-    Switch,
-    Text,
-    Tooltip,
-    VStack,
-    useColorModeValue,
-    useToast,
-} from "@chakra-ui/react";
+import { Steps, Alert, Badge, Box, Button, Checkbox, Flex, HStack, IconButton, Input, Spacer, Switch, Text, VStack, Field } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
+import { Tooltip } from '@/components/ui/tooltip';
+import { useColorModeValue } from "../ui/color-mode";
 import {
     FaPuzzlePiece,
     FaPlus,
@@ -366,17 +347,16 @@ const ToolsSettingsTab = ({ className }) => {
     const isToolEnabled = (toolName) => !disabledTools.includes(toolName);
 
     return (
-        <VStack spacing={4} align="stretch" className={className}>
+        <VStack gap={4} align="stretch" className={className}>
             {/* Warning Banner */}
-            <Alert status="warning" borderRadius="md">
-                <AlertIcon color={warningIconColor} />
-                <AlertDescription fontSize="sm">
+            <Alert.Root status="warning" borderRadius="md">
+                <Alert.Indicator color={warningIconColor} />
+                <Alert.Description fontSize="sm">
                     Tool servers may receive sensitive patient information
                     (PHI). Only add servers you trust that comply with your
                     privacy requirements.
-                </AlertDescription>
-            </Alert>
-
+                </Alert.Description>
+            </Alert.Root>
             {/* Built-in Tools Section */}
             <Box>
                 <Flex align="center" mb={2}>
@@ -394,7 +374,7 @@ const ToolsSettingsTab = ({ className }) => {
                     privacy.
                 </Text>
 
-                <VStack spacing={1} align="stretch">
+                <VStack gap={1} align="stretch">
                     {BUILT_IN_TOOLS.map((tool) => (
                         <Box
                             key={tool.name}
@@ -403,7 +383,7 @@ const ToolsSettingsTab = ({ className }) => {
                             className="floating-main"
                         >
                             <Flex justify="space-between" align="center">
-                                <HStack spacing={2} flex="1">
+                                <HStack gap={2} flex="1">
                                     <Box flex="1">
                                         <HStack>
                                             <Text
@@ -413,7 +393,7 @@ const ToolsSettingsTab = ({ className }) => {
                                                 {tool.label}
                                             </Text>
                                             {tool.external && (
-                                                <Tooltip label="External API - may expose PHI">
+                                                <Tooltip content="External API - may expose PHI">
                                                     <Box>
                                                         <FaLock
                                                             style={{
@@ -435,8 +415,8 @@ const ToolsSettingsTab = ({ className }) => {
                                 </HStack>
 
                                 <Switch
-                                    isChecked={isToolEnabled(tool.name)}
-                                    onChange={(e) =>
+                                    checked={isToolEnabled(tool.name)}
+                                    onValueChange={(e) =>
                                         handleToggleBuiltInTool(
                                             tool.name,
                                             e.target.checked,
@@ -449,7 +429,6 @@ const ToolsSettingsTab = ({ className }) => {
                     ))}
                 </VStack>
             </Box>
-
             {/* Tool Servers Header */}
             <Flex align="center">
                 <HStack>
@@ -459,72 +438,66 @@ const ToolsSettingsTab = ({ className }) => {
                     </Text>
                 </HStack>
                 <Spacer />
-                <Badge colorScheme="purple" fontSize="xs">
+                <Badge colorPalette="purple" fontSize="xs">
                     Streamable HTTP
                 </Badge>
             </Flex>
-
             <Text fontSize="xs" className="pill-box-icons">
                 External tool servers provide additional tools for chat and
                 clinical reasoning. Servers must implement the Streamable HTTP
                 transport.
             </Text>
-
             {/* Add Server Button */}
             <Button
-                leftIcon={<FaPlus />}
                 onClick={() => setShowAddForm(!showAddForm)}
                 variant="outline"
                 size="sm"
                 className="nav-button"
-                alignSelf="flex-start"
-            >
-                Add Server
-            </Button>
-
+                alignSelf="flex-start"><FaPlus />Add Server
+                            </Button>
             {/* Add Server Form */}
             {showAddForm && (
                 <Box p={4} borderRadius="md" className="floating-main">
-                    <VStack spacing={3}>
-                        <FormControl isInvalid={!!nameError}>
-                            <FormLabel fontSize="xs">Server Name</FormLabel>
+                    <VStack gap={3}>
+                        <Field.Root invalid={!!nameError}>
+                            <Field.Label fontSize="xs">Server Name</Field.Label>
                             <Input
                                 value={serverName}
-                                onChange={(e) => setServerName(e.target.value)}
+                                onValueChange={(e) => setServerName(e.target.value)}
                                 placeholder="My MCP Server"
                                 size="sm"
                                 className="input-style"
                             />
-                            <FormErrorMessage fontSize="xs">
+                            <Field.ErrorText fontSize="xs">
                                 {nameError}
-                            </FormErrorMessage>
-                        </FormControl>
+                            </Field.ErrorText>
+                        </Field.Root>
 
-                        <FormControl isInvalid={!!urlError}>
-                            <FormLabel fontSize="xs">Server URL</FormLabel>
+                        <Field.Root invalid={!!urlError}>
+                            <Field.Label fontSize="xs">Server URL</Field.Label>
                             <Input
                                 value={serverUrl}
-                                onChange={(e) => setServerUrl(e.target.value)}
+                                onValueChange={(e) => setServerUrl(e.target.value)}
                                 placeholder="http://localhost:3000/tools"
                                 size="sm"
                                 className="input-style"
                             />
-                            <FormErrorMessage fontSize="xs">
+                            <Field.ErrorText fontSize="xs">
                                 {urlError}
-                            </FormErrorMessage>
-                        </FormControl>
+                            </Field.ErrorText>
+                        </Field.Root>
 
-                        <FormControl>
-                            <HStack spacing={2}>
-                                <Checkbox
-                                    isChecked={allowSensitiveData}
-                                    onChange={(e) => setAllowSensitiveData(e.target.checked)}
-                                    colorScheme="red"
+                        <Field.Root>
+                            <HStack gap={2}>
+                                <Checkbox.Root
+                                    onCheckedChange={(e) => setAllowSensitiveData(e.target.checked)}
+                                    colorPalette="red"
                                     size="sm"
-                                >
+                                    checked={allowSensitiveData}
+                                ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
                                     <Text fontSize="xs">Allow sensitive data (PHI)</Text>
-                                </Checkbox>
-                                <Tooltip label="When enabled, patient data will be sent to this server without sanitization. Only enable for fully trusted servers.">
+                                </Checkbox.Label></Checkbox.Root>
+                                <Tooltip content="When enabled, patient data will be sent to this server without sanitization. Only enable for fully trusted servers.">
                                     <Box>
                                         <FaLock style={{ opacity: 0.6, color: warningIconColor }} />
                                     </Box>
@@ -533,7 +506,7 @@ const ToolsSettingsTab = ({ className }) => {
                             <Text fontSize="xs" className="pill-box-icons" mt={1}>
                                 Default: sanitized. Enable only for trusted servers.
                             </Text>
-                        </FormControl>
+                        </Field.Root>
 
                         <HStack justify="flex-end" w="100%">
                             <Button
@@ -545,8 +518,8 @@ const ToolsSettingsTab = ({ className }) => {
                             </Button>
                             <Button
                                 onClick={handleAddServer}
-                                isLoading={isLoading}
-                                colorScheme="green"
+                                loading={isLoading}
+                                colorPalette="green"
                                 size="sm"
                             >
                                 Add Server
@@ -555,7 +528,6 @@ const ToolsSettingsTab = ({ className }) => {
                     </VStack>
                 </Box>
             )}
-
             {/* Server List */}
             {toolServers.length === 0 ? (
                 <Box p={6} textAlign="center" className="floating-main">
@@ -571,7 +543,7 @@ const ToolsSettingsTab = ({ className }) => {
                     </Text>
                 </Box>
             ) : (
-                <VStack spacing={2} align="stretch">
+                <VStack gap={2} align="stretch">
                     {toolServers.map((server) => (
                         <Box
                             key={server.id}
@@ -580,7 +552,7 @@ const ToolsSettingsTab = ({ className }) => {
                             className="floating-main"
                         >
                             <Flex justify="space-between" align="center">
-                                <HStack spacing={3} flex="1">
+                                <HStack gap={3} flex="1">
                                     <FaServer style={{ opacity: 0.5 }} />
                                     <Box flex="1">
                                         <HStack>
@@ -592,7 +564,7 @@ const ToolsSettingsTab = ({ className }) => {
                                             </Text>
                                             <Badge
                                                 size="sm"
-                                                colorScheme={
+                                                colorPalette={
                                                     server.enabled
                                                         ? "green"
                                                         : "gray"
@@ -604,10 +576,10 @@ const ToolsSettingsTab = ({ className }) => {
                                                     : "Disabled"}
                                             </Badge>
                                             {server.allow_sensitive_data && (
-                                                <Tooltip label="PHI allowed - data sent without sanitization">
+                                                <Tooltip content="PHI allowed - data sent without sanitization">
                                                     <Badge
                                                         size="sm"
-                                                        colorScheme="red"
+                                                        colorPalette="red"
                                                         fontSize="xs"
                                                     >
                                                         PHI
@@ -634,24 +606,22 @@ const ToolsSettingsTab = ({ className }) => {
                                     </Box>
                                 </HStack>
 
-                                <HStack spacing={1}>
-                                    <Tooltip label="Test connection">
+                                <HStack gap={1}>
+                                    <Tooltip content="Test connection">
                                         <IconButton
                                             size="sm"
                                             variant="ghost"
-                                            icon={<FaCheck />}
                                             onClick={() =>
                                                 handleTestServer(server.id)
                                             }
-                                            isLoading={
+                                            loading={
                                                 testingServerId === server.id
                                             }
-                                            aria-label="Test connection"
-                                        />
+                                            aria-label="Test connection"><FaCheck /></IconButton>
                                     </Tooltip>
 
                                     <Tooltip
-                                        label={
+                                        content={
                                             server.allow_sensitive_data
                                                 ? "PHI allowed - click to sanitize"
                                                 : "PHI sanitized - click to allow"
@@ -660,8 +630,7 @@ const ToolsSettingsTab = ({ className }) => {
                                         <IconButton
                                             size="sm"
                                             variant="ghost"
-                                            icon={<FaLock />}
-                                            colorScheme={server.allow_sensitive_data ? "red" : "gray"}
+                                            colorPalette={server.allow_sensitive_data ? "red" : "gray"}
                                             opacity={server.allow_sensitive_data ? 1 : 0.4}
                                             onClick={() =>
                                                 handleToggleSensitiveData(
@@ -669,20 +638,19 @@ const ToolsSettingsTab = ({ className }) => {
                                                     !server.allow_sensitive_data,
                                                 )
                                             }
-                                            aria-label="Toggle PHI sanitization"
-                                        />
+                                            aria-label="Toggle PHI sanitization"><FaLock /></IconButton>
                                     </Tooltip>
 
                                     <Tooltip
-                                        label={
+                                        content={
                                             server.enabled
                                                 ? "Disable"
                                                 : "Enable"
                                         }
                                     >
                                         <Switch
-                                            isChecked={server.enabled}
-                                            onChange={(e) =>
+                                            checked={server.enabled}
+                                            onValueChange={(e) =>
                                                 handleToggleServer(
                                                     server.id,
                                                     e.target.checked,
@@ -692,17 +660,15 @@ const ToolsSettingsTab = ({ className }) => {
                                         />
                                     </Tooltip>
 
-                                    <Tooltip label="Delete">
+                                    <Tooltip content="Delete">
                                         <IconButton
                                             size="sm"
-                                            icon={<DeleteIcon />}
-                                            colorScheme="red"
+                                            colorPalette="red"
                                             variant="ghost"
                                             onClick={() =>
                                                 handleDeleteServer(server.id)
                                             }
-                                            aria-label="Delete server"
-                                        />
+                                            aria-label="Delete server"><DeleteIcon /></IconButton>
                                     </Tooltip>
                                 </HStack>
                             </Flex>

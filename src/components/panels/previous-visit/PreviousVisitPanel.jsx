@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import {
+  Steps,
   Box,
   Flex,
   Text,
@@ -10,8 +11,8 @@ import {
   Tab,
   HStack,
   VStack,
-  Tooltip,
 } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
 import FloatingPanel from "../../common/FloatingPanel";
 
@@ -112,16 +113,16 @@ const PreviousVisitPanel = ({
 
         {/* Content with Tabs */}
         <Box flex="1" overflow="hidden" display="flex" flexDirection="column">
-          <Tabs
-            variant="enclosed"
-            index={tabIndex}
-            onChange={(index) => setTabIndex(index)}
+          <Tabs.Root
+            variant='enclosed'
+            value={tabIndex}
+            onValueChange={(index) => setTabIndex(index)}
             display="flex"
             flexDirection="column"
             height="100%"
           >
-            <TabList flexShrink={0}>
-              <Tooltip label="AI-generated summary of the previous visit">
+            <Tabs.List flexShrink={0}>
+              <Tooltip content="AI-generated summary of the previous visit">
                 <Tab className="tab-style">
                   <HStack>
                     <FaList />
@@ -129,7 +130,7 @@ const PreviousVisitPanel = ({
                   </HStack>
                 </Tab>
               </Tooltip>
-              <Tooltip label="Full note content from the previous encounter">
+              <Tooltip content="Full note content from the previous encounter">
                 <Tab className="tab-style">
                   <HStack>
                     <FaFileAlt />
@@ -137,7 +138,7 @@ const PreviousVisitPanel = ({
                   </HStack>
                 </Tab>
               </Tooltip>
-            </TabList>
+            </Tabs.List>
 
             <TabPanels flex="1" overflow="hidden" display="flex" width="100%">
               {/* Summary Tab */}
@@ -183,7 +184,7 @@ const PreviousVisitPanel = ({
                   p={4}
                 >
                   {previousVisitTemplate && previousVisitTemplateData ? (
-                    <VStack spacing={4} align="stretch" width="100%">
+                    <VStack gap={4} align="stretch" width="100%">
                       {/* Encounter Date */}
                       {previousVisitEncounterDate && (
                         <Box p="2" width="100%">
@@ -195,7 +196,7 @@ const PreviousVisitPanel = ({
                       )}
 
                       {/* Template Fields */}
-                      <VStack spacing="0" align="stretch" width="100%">
+                      <VStack gap="0" align="stretch" width="100%">
                         {previousVisitTemplate.fields?.map(renderFieldReadOnly)}
                       </VStack>
                     </VStack>
@@ -207,7 +208,7 @@ const PreviousVisitPanel = ({
                 </Box>
               </TabPanel>
             </TabPanels>
-          </Tabs>
+          </Tabs.Root>
         </Box>
 
         {/* Resize Handle */}

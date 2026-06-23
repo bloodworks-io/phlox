@@ -1,11 +1,6 @@
 import React, { useState } from "react";
-import {
-  Box,
-  Flex,
-  Text,
-  Select,
-  Tooltip,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, Text, NativeSelect } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaEnvelope, FaMicrophone, FaMagic } from "react-icons/fa";
 
 import LetterEditor from "./LetterEditor";
@@ -73,7 +68,7 @@ const LetterPanel = ({
           </Flex>
 
           <Tooltip
-            label={
+            content={
               isDictateMode
                 ? "Dictate: speak your letter and we'll turn it into a polished letter."
                 : "Draft: choose a template and have AI draft the letter for you."
@@ -93,16 +88,18 @@ const LetterPanel = ({
                     className="pill-box-icons"
                   />
                 )}
-                <Select
-                  value={letterMode}
-                  onChange={(e) => setLetterMode(e.target.value)}
-                  size="sm"
-                  width={["110px", "140px", "160px"]}
-                  className="input-style"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="dictate">Dictate</option>
-                </Select>
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    value={letterMode}
+                    onValueChange={(e) => setLetterMode(e.target.value)}
+                    size="sm"
+                    width={["110px", "140px", "160px"]}
+                    className="input-style">
+                    <option value="draft">Draft</option>
+                    <option value="dictate">Dictate</option>
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
               </Flex>
             </Box>
           </Tooltip>
@@ -178,7 +175,6 @@ const LetterPanel = ({
           />
         </Box>
       </Box>
-
       {/* Resizer */}
       <Box
         ref={resizerRef}

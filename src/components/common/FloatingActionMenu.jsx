@@ -1,5 +1,7 @@
 import React from "react";
-import { IconButton, Tooltip, useColorMode, Box } from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { Steps, IconButton, Box } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { ChatIcon } from "./icons";
 import { FaEnvelope, FaAtom, FaFileUpload, FaClock } from "react-icons/fa";
 import PillBox from "./PillBox";
@@ -41,10 +43,11 @@ const FloatingActionMenu = ({
     >
       {/* Document Upload button */}
       {isChatEnabled() && (
-        <Tooltip label="Upload Document" placement="left">
+        <Tooltip content="Upload Document" positioning={{
+          placement: "left"
+        }}>
           <IconButton
             id="fab-document"
-            icon={<FaFileUpload />}
             onClick={onOpenDocument}
             aria-label="Open Document Upload"
             size="sm"
@@ -53,24 +56,23 @@ const FloatingActionMenu = ({
             m={0}
             bg={getButtonBg(isDocumentOpen)}
             _hover={{ bg: surfaceBg }}
-            className="pill-box-icons"
-          />
+            className="pill-box-icons"><FaFileUpload /></IconButton>
         </Tooltip>
       )}
-
       {/* Previous Visit button */}
       <Box position="relative" display="inline-block">
         <Tooltip
-          label={
+          content={
             hasPreviousVisitSummary
               ? "Previous Visit"
               : "No previous visit available"
           }
-          placement="left"
+          positioning={{
+            placement: "left"
+          }}
         >
           <IconButton
             id="fab-previous-visit"
-            icon={<FaClock />}
             onClick={onOpenPreviousVisit}
             aria-label="Open Previous Visit"
             size="sm"
@@ -80,10 +82,9 @@ const FloatingActionMenu = ({
             bg={getButtonBg(isPreviousVisitOpen)}
             _hover={{ bg: surfaceBg }}
             className="pill-box-icons"
-            isDisabled={!hasPreviousVisitSummary}
+            disabled={!hasPreviousVisitSummary}
             opacity={!hasPreviousVisitSummary ? 0.4 : 1}
-            cursor={!hasPreviousVisitSummary ? "not-allowed" : "pointer"}
-          />
+            cursor={!hasPreviousVisitSummary ? "not-allowed" : "pointer"}><FaClock /></IconButton>
         </Tooltip>
         {showPreviousVisitDot && hasPreviousVisitSummary && (
           <Box
@@ -99,13 +100,13 @@ const FloatingActionMenu = ({
           />
         )}
       </Box>
-
       {/* Chat button */}
       {isChatEnabled() && (
-        <Tooltip label="Chat with Phlox" placement="left">
+        <Tooltip content="Chat with Phlox" positioning={{
+          placement: "left"
+        }}>
           <IconButton
             id="fab-chat"
-            icon={<ChatIcon />}
             onClick={onOpenChat}
             aria-label="Open Chat"
             size="sm"
@@ -114,25 +115,24 @@ const FloatingActionMenu = ({
             variant="ghost"
             bg={getButtonBg(isChatOpen)}
             _hover={{ bg: surfaceBg }}
-            className="pill-box-icons"
-          />
+            className="pill-box-icons"><ChatIcon /></IconButton>
         </Tooltip>
       )}
-
       {/* Clinical Reasoning button */}
       {isChatEnabled() && onOpenReasoning && (
         <Box position="relative" display="inline-block">
           <Tooltip
-            label={
+            content={
               isEncounterSaved
                 ? "Clinical Reasoning"
                 : "Save encounter to access Clinical Reasoning"
             }
-            placement="left"
+            positioning={{
+              placement: "left"
+            }}
           >
             <IconButton
               id="fab-reasoning"
-              icon={<FaAtom />}
               onClick={onOpenReasoning}
               aria-label="Open Reasoning"
               size="sm"
@@ -142,10 +142,9 @@ const FloatingActionMenu = ({
               bg={getButtonBg(isReasoningOpen)}
               _hover={{ bg: surfaceBg }}
               className="pill-box-icons"
-              isDisabled={!isEncounterSaved}
+              disabled={!isEncounterSaved}
               opacity={!isEncounterSaved ? 0.4 : 1}
-              cursor={!isEncounterSaved ? "not-allowed" : "pointer"}
-            />
+              cursor={!isEncounterSaved ? "not-allowed" : "pointer"}><FaAtom /></IconButton>
           </Tooltip>
           {hasCriticalReasoning && isEncounterSaved && (
             <Box
@@ -162,19 +161,19 @@ const FloatingActionMenu = ({
           )}
         </Box>
       )}
-
       {/* Letter button */}
       <Tooltip
-        label={
+        content={
           isEncounterSaved
             ? "Patient Letter"
             : "Save encounter to access Letter"
         }
-        placement="left"
+        positioning={{
+          placement: "left"
+        }}
       >
         <IconButton
           id="fab-letter"
-          icon={<FaEnvelope />}
           onClick={onOpenLetter}
           aria-label="Open Letter"
           size="sm"
@@ -184,10 +183,9 @@ const FloatingActionMenu = ({
           bg={getButtonBg(isLetterOpen)}
           _hover={{ bg: surfaceBg }}
           className="pill-box-icons"
-          isDisabled={!isEncounterSaved}
+          disabled={!isEncounterSaved}
           opacity={!isEncounterSaved ? 0.4 : 1}
-          cursor={!isEncounterSaved ? "not-allowed" : "pointer"}
-        />
+          cursor={!isEncounterSaved ? "not-allowed" : "pointer"}><FaEnvelope /></IconButton>
       </Tooltip>
     </PillBox>
   );

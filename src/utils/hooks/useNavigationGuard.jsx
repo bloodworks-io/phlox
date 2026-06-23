@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDisclosure, useToast } from "@chakra-ui/react";
+import { Steps, useDisclosure } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 
 // Guards navigation when there are unsaved changes (isModified).
 export const useNavigationGuard = (isModified, setIsModified) => {
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { open, onOpen, onClose } = useDisclosure();
     const [pendingNavigation, setPendingNavigation] = useState(null);
     const navigate = useNavigate();
     const toast = useToast();

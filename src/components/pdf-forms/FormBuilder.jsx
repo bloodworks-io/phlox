@@ -1,14 +1,7 @@
 // Canvas-based PDF form field builder.
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-    Box,
-    Flex,
-    HStack,
-    IconButton,
-    Text,
-    Spinner,
-    useColorModeValue,
-} from "@chakra-ui/react";
+import { useColorModeValue } from "../ui/color-mode";
+import { Steps, Box, Flex, HStack, IconButton, Text, Spinner } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
@@ -477,23 +470,20 @@ const FormBuilder = ({
     return (
         <Box>
             {/* Toolbar — just page navigation */}
-            <HStack spacing="2" mb="2" justify="flex-end">
-                <HStack spacing="1">
+            <HStack gap="2" mb="2" justify="flex-end">
+                <HStack gap="1">
                     <IconButton
-                        icon={<ChevronLeftIcon />}
                         size="sm"
                         variant="ghost"
                         onClick={() =>
                             setCurrentPage((p) => Math.max(1, p - 1))
                         }
-                        isDisabled={currentPage <= 1}
-                        aria-label="Previous page"
-                    />
+                        disabled={currentPage <= 1}
+                        aria-label="Previous page"><ChevronLeftIcon /></IconButton>
                     <Text fontSize="sm">
                         {currentPage} / {template?.page_count || 1}
                     </Text>
                     <IconButton
-                        icon={<ChevronRightIcon />}
                         size="sm"
                         variant="ghost"
                         onClick={() =>
@@ -501,12 +491,10 @@ const FormBuilder = ({
                                 Math.min(template?.page_count || 1, p + 1),
                             )
                         }
-                        isDisabled={currentPage >= (template?.page_count || 1)}
-                        aria-label="Next page"
-                    />
+                        disabled={currentPage >= (template?.page_count || 1)}
+                        aria-label="Next page"><ChevronRightIcon /></IconButton>
                 </HStack>
             </HStack>
-
             {/* Canvas area */}
             <Flex justify="center">
                 <Box

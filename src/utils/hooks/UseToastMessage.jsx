@@ -1,6 +1,7 @@
 // Custom hook for managing toast notifications.
 import { useCallback, useMemo } from "react";
-import { useToast } from "@chakra-ui/react";
+import { Steps } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { DEFAULT_TOAST_CONFIG } from "../constants";
 
 export const useToastMessage = () => {

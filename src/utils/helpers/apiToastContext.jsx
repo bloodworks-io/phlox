@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useRef } from "react";
-import { useToast } from "@chakra-ui/react";
+import { Steps } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { useAppInit } from "../context/appInit";
 
 // Store the current isInitializing state in a module-level ref

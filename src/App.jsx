@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { useColorMode } from "./components/ui/color-mode";
 import { useLocation } from "react-router-dom";
-import { useColorMode, useToast } from "@chakra-ui/react";
+import { Steps } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 
 import { TemplateProvider } from "./utils/templates/templateContext";
 import { ApiToastProvider } from "./utils/helpers/apiToastContext";

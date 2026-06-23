@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Box } from "@chakra-ui/react";
+import { Steps, Box } from "@chakra-ui/react";
 import PillBox from "../common/PillBox";
 import { LoadingOrb } from "./scribeVisuals";
 import {

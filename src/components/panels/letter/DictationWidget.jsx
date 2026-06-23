@@ -1,15 +1,16 @@
+/*
+ MIGRATION NOTE: The following Chakra UI hooks have been removed.
+ Please replace them with the suggested alternatives:
+
+//   - useTheme: Use Import from system or use useChakraContext
+
+ See: https://chakra-ui.com/docs/get-started/migration#hooks
+*/
 import React, { useState, useRef, useEffect } from "react";
-import {
-  IconButton,
-  Box,
-  Tooltip,
-  useToast,
-  Flex,
-  Text,
-  useTheme,
-  useColorMode,
-  Spinner,
-} from "@chakra-ui/react";
+import { useColorMode } from "../../ui/color-mode";
+import { Steps, IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaMicrophone, FaStop } from "react-icons/fa";
 import { universalFetch } from "../../../utils/helpers/apiHelpers";
 import { buildApiUrl } from "../../../utils/helpers/apiConfig";
@@ -59,7 +60,7 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
           mx="1.5px"
           borderRadius="full"
           bg={
-            theme.colors[colorMode === "light" ? "light" : "dark"].primaryButton
+            theme.token('colors.primaryButton')
           }
           opacity={isPaused ? "0.5" : "1"}
           animation={
@@ -67,11 +68,11 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
               ? `barAnimation ${bar.frequency}s infinite ease-in-out`
               : "none"
           }
-          sx={{
-            "@keyframes barAnimation": {
+          css={{
+            '& @keyframes barAnimation': {
               "0%, 100%": { height: "8px" },
               "50%": { height: "24px" },
-            },
+            }
           }}
           style={{
             animationDelay: `${bar.delay}s`,
@@ -81,13 +82,12 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
           }}
         />
       ))}
-
       <Text
         ml={3}
         fontSize="md"
         fontWeight="bold"
         color={
-          theme.colors[colorMode === "light" ? "light" : "dark"].primaryButton
+          theme.token('colors.primaryButton')
         }
       >
         {formattedTime}
@@ -270,40 +270,40 @@ const DictationWidget = ({
         timer={timer}
       />
       <Tooltip
-        label={isRecording ? "Stop Dictation" : "Start Dictation"}
-        placement="left"
-        isDisabled={isDisabled || isProcessing}
+        content={isRecording ? "Stop Dictation" : "Start Dictation"}
+        disabled={isDisabled || isProcessing}
+        positioning={{
+          placement: "left"
+        }}
       >
         <IconButton
-          icon={
-            isProcessing ? (
-              <Spinner size="sm" />
-            ) : isRecording ? (
-              <FaStop />
-            ) : (
-              <FaMicrophone />
-            )
-          }
           onClick={isRecording ? stopRecording : startRecording}
-          isDisabled={isDisabled || isProcessing}
-          colorScheme={isRecording ? "red" : "gray"}
+          disabled={isDisabled || isProcessing}
+          colorPalette={isRecording ? "red" : "gray"}
           aria-label="Dictate"
           position="absolute"
           bottom={4}
-          right="60px" // Positioned to the left of the refinement button (which is at right: 4 = 16px)
+          // Positioned to the left of the refinement button (which is at right: 4 = 16px)
+          right="60px"
           width="40px"
           height="40px"
           borderRadius="full"
           zIndex={2}
           className="dictation-fab"
-          sx={{
+          css={{
             transition: "transform 0.2s",
+
             "&:hover": !isDisabled &&
               !isProcessing && {
                 transform: "scale(1.1)",
-              },
-          }}
-        />
+              }
+          }}>{isProcessing ? (
+            <Spinner size="sm" />
+          ) : isRecording ? (
+            <FaStop />
+          ) : (
+            <FaMicrophone />
+          )}</IconButton>
       </Tooltip>
     </>
   );

@@ -1,17 +1,5 @@
 import { useState } from "react";
-import {
-  VStack,
-  Box,
-  Text,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-} from "@chakra-ui/react";
+import { Steps, VStack, Box, Text, Input, Textarea, Alert, Field } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { stepVariants } from "../constants";
 import { validateQuickChatStep } from "../../../../utils/splash/validators";
@@ -90,52 +78,52 @@ export const QuickChatStep = ({
     initial="hidden"
     animate="visible"
     exit="exit"
-    spacing={6}
+    gap={6}
     w="100%"
   >
-    <Alert status="info" borderRadius="md">
-      <AlertIcon />
+    <Alert.Root status="info" borderRadius="md">
+      <Alert.Indicator />
       <Box>
-        <AlertTitle>Customize Quick Chat Buttons</AlertTitle>
-        <AlertDescription>
+        <Alert.Title>Customize Quick Chat Buttons</Alert.Title>
+        <Alert.Description>
           Set up three quick chat buttons for common queries. These will
           appear in your chat interface for easy access. You can change these
           anytime in Settings.
-        </AlertDescription>
+        </Alert.Description>
       </Box>
-    </Alert>
+    </Alert.Root>
 
-    <VStack spacing={6} w="100%">
+    <VStack gap={6} w="100%">
       <Box w="100%" p={4} borderRadius="md" className="floating-main">
         <Text fontWeight="medium" mb={3} color={currentColors.textPrimary}>
           Quick Chat Button 1
         </Text>
-        <VStack spacing={3}>
-          <FormControl isRequired>
-            <FormLabel fontSize="sm" color={currentColors.textSecondary}>
+        <VStack gap={3}>
+          <Field.Root required>
+            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
               Button Title
-            </FormLabel>
+            </Field.Label>
             <Input
               placeholder="e.g., Critique my plan"
               value={quickChat1Title}
-              onChange={(e) => setQuickChat1Title(e.target.value)}
+              onValueChange={(e) => setQuickChat1Title(e.target.value)}
               className="input-style"
               size="sm"
             />
-          </FormControl>
-          <FormControl isRequired>
-            <FormLabel fontSize="sm" color={currentColors.textSecondary}>
+          </Field.Root>
+          <Field.Root required>
+            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
               Prompt
-            </FormLabel>
+            </Field.Label>
             <Textarea
               placeholder="e.g., Please critique my management plan and suggest any improvements"
               value={quickChat1Prompt}
-              onChange={(e) => setQuickChat1Prompt(e.target.value)}
+              onValueChange={(e) => setQuickChat1Prompt(e.target.value)}
               className="input-style"
               size="sm"
               rows={2}
             />
-          </FormControl>
+          </Field.Root>
         </VStack>
       </Box>
 
@@ -143,32 +131,32 @@ export const QuickChatStep = ({
         <Text fontWeight="medium" mb={3} color={currentColors.textPrimary}>
           Quick Chat Button 2
         </Text>
-        <VStack spacing={3}>
-          <FormControl isRequired>
-            <FormLabel fontSize="sm" color={currentColors.textSecondary}>
+        <VStack gap={3}>
+          <Field.Root required>
+            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
               Button Title
-            </FormLabel>
+            </Field.Label>
             <Input
               placeholder="e.g., Additional investigations"
               value={quickChat2Title}
-              onChange={(e) => setQuickChat2Title(e.target.value)}
+              onValueChange={(e) => setQuickChat2Title(e.target.value)}
               className="input-style"
               size="sm"
             />
-          </FormControl>
-          <FormControl isRequired>
-            <FormLabel fontSize="sm" color={currentColors.textSecondary}>
+          </Field.Root>
+          <Field.Root required>
+            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
               Prompt
-            </FormLabel>
+            </Field.Label>
             <Textarea
               placeholder="e.g., What additional investigations should I consider for this patient?"
               value={quickChat2Prompt}
-              onChange={(e) => setQuickChat2Prompt(e.target.value)}
+              onValueChange={(e) => setQuickChat2Prompt(e.target.value)}
               className="input-style"
               size="sm"
               rows={2}
             />
-          </FormControl>
+          </Field.Root>
         </VStack>
       </Box>
 
@@ -176,32 +164,32 @@ export const QuickChatStep = ({
         <Text fontWeight="medium" mb={3} color={currentColors.textPrimary}>
           Quick Chat Button 3
         </Text>
-        <VStack spacing={3}>
-          <FormControl isRequired>
-            <FormLabel fontSize="sm" color={currentColors.textSecondary}>
+        <VStack gap={3}>
+          <Field.Root required>
+            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
               Button Title
-            </FormLabel>
+            </Field.Label>
             <Input
               placeholder="e.g., Differential diagnoses"
               value={quickChat3Title}
-              onChange={(e) => setQuickChat3Title(e.target.value)}
+              onValueChange={(e) => setQuickChat3Title(e.target.value)}
               className="input-style"
               size="sm"
             />
-          </FormControl>
-          <FormControl isRequired>
-            <FormLabel fontSize="sm" color={currentColors.textSecondary}>
+          </Field.Root>
+          <Field.Root required>
+            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
               Prompt
-            </FormLabel>
+            </Field.Label>
             <Textarea
               placeholder="e.g., What other differential diagnoses should I consider for this presentation?"
               value={quickChat3Prompt}
-              onChange={(e) => setQuickChat3Prompt(e.target.value)}
+              onValueChange={(e) => setQuickChat3Prompt(e.target.value)}
               className="input-style"
               size="sm"
               rows={2}
             />
-          </FormControl>
+          </Field.Root>
         </VStack>
       </Box>
     </VStack>

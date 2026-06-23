@@ -1,11 +1,6 @@
-import {
-    Box,
-    Flex,
-    Text,
-    Tooltip,
-    IconButton,
-    useColorMode,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, Text, IconButton } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
+import { useColorMode } from "../ui/color-mode";
 import { FaEdit } from "react-icons/fa";
 import { colors } from "../../theme/colors";
 import { getAvatarColor, getInitials } from "../sidebar/SidebarHelpers";
@@ -42,7 +37,9 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                     fontSize="sm"
                     fontWeight="700"
                     flexShrink={0}
-                    sx={{ fontFamily: '"Space Grotesk", sans-serif' }}
+                    css={{
+                        fontFamily: '"Space Grotesk", sans-serif'
+                    }}
                 >
                     {(patient.name && getInitials(patient.name)) || "?"}
                 </Flex>
@@ -52,16 +49,20 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                         fontSize="lg"
                         fontWeight="700"
                         color={c.textPrimary}
-                        noOfLines={1}
-                        sx={{ fontFamily: '"Space Grotesk", sans-serif' }}
+                        lineClamp={1}
+                        css={{
+                            fontFamily: '"Space Grotesk", sans-serif'
+                        }}
                     >
                         {name}
                     </Text>
                     <Text
                         fontSize="sm"
                         color={c.textSecondary}
-                        noOfLines={1}
-                        sx={{ fontFamily: '"Roboto", sans-serif' }}
+                        lineClamp={1}
+                        css={{
+                            fontFamily: '"Roboto", sans-serif'
+                        }}
                     >
                         {meta.length
                             ? meta.join("  ·  ")
@@ -69,16 +70,14 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                     </Text>
                 </Box>
 
-                <Tooltip label="Edit patient details">
+                <Tooltip content="Edit patient details">
                     <IconButton
-                        icon={<FaEdit />}
                         aria-label="Edit patient details"
                         size="sm"
                         variant="ghost"
                         color={c.textSecondary}
                         onClick={onEdit}
-                        flexShrink={0}
-                    />
+                        flexShrink={0}><FaEdit /></IconButton>
                 </Tooltip>
             </Flex>
         </Flex>

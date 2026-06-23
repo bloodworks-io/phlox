@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, Progress } from "@chakra-ui/react";
+import { Steps, Box, Text, Progress } from "@chakra-ui/react";
 
 export const ModelDownloadProgress = ({ progress }) => {
   if (!progress) return null;
@@ -11,13 +11,11 @@ export const ModelDownloadProgress = ({ progress }) => {
       <Text fontSize="xs" color="gray.600" mb={1}>
         {Math.round(percentage)}%
       </Text>
-      <Progress
-        value={percentage}
-        colorScheme="blue"
-        size="sm"
-        hasStripe
-        isAnimated
-      />
+      <Progress.Root value={percentage} colorPalette="blue" size="sm" striped animated>
+        <Progress.Track>
+          <Progress.Range />
+        </Progress.Track>
+      </Progress.Root>
     </Box>
   );
 };

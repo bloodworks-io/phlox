@@ -1,13 +1,6 @@
 import { useState } from "react";
-import {
-  VStack,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
-  HStack,
-  Tooltip,
-} from "@chakra-ui/react";
+import { Steps, VStack, Input, NativeSelect, HStack, Field } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { InfoIcon } from "../../icons";
 import { motion } from "framer-motion";
 import { stepVariants } from "../constants";
@@ -43,29 +36,31 @@ export const PersonalStep = ({
     initial="hidden"
     animate="visible"
     exit="exit"
-    spacing={6}
+    gap={6}
     w="100%"
   >
-    <VStack spacing={4} w="100%">
-      <FormControl isRequired>
+    <VStack gap={4} w="100%">
+      <Field.Root required>
         <HStack>
-          <FormLabel
+          <Field.Label
             color={currentColors.textSecondary}
-            sx={{
+            css={{
               fontFamily: '"Roboto", sans-serif',
               fontSize: "sm",
-              fontWeight: "500",
+              fontWeight: "500"
             }}
           >
             Your Name
-          </FormLabel>
+          </Field.Label>
           <Tooltip
-            label="This will be used to personalize your experience and in generated documents"
-            placement="top"
-            hasArrow
+            content="This will be used to personalize your experience and in generated documents"
+            showArrow
             fontSize="xs"
             bg="gray.700"
             color="white"
+            positioning={{
+              placement: "top"
+            }}
           >
             <InfoIcon boxSize={3} color={currentColors.textSecondary} />
           </Tooltip>
@@ -73,49 +68,53 @@ export const PersonalStep = ({
         <Input
           placeholder="Ada Lovelace"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onValueChange={(e) => setName(e.target.value)}
           className="input-style"
           size="md"
         />
-      </FormControl>
+      </Field.Root>
 
-      <FormControl isRequired>
+      <Field.Root required>
         <HStack>
-          <FormLabel
+          <Field.Label
             color={currentColors.textSecondary}
-            sx={{
+            css={{
               fontFamily: '"Roboto", sans-serif',
               fontSize: "sm",
-              fontWeight: "500",
+              fontWeight: "500"
             }}
           >
             Your Specialty
-          </FormLabel>
+          </Field.Label>
           <Tooltip
-            label="Your medical specialty helps Phlox provide more relevant assistance and suggestions"
-            placement="top"
-            hasArrow
+            content="Your medical specialty helps Phlox provide more relevant assistance and suggestions"
+            showArrow
             fontSize="xs"
             bg="gray.700"
             color="white"
+            positioning={{
+              placement: "top"
+            }}
           >
             <InfoIcon boxSize={3} color={currentColors.textSecondary} />
           </Tooltip>
         </HStack>
-        <Select
-          placeholder="Select your specialty"
-          value={specialty}
-          onChange={(e) => setSpecialty(e.target.value)}
-          className="input-style"
-          size="md"
-        >
-          {SPECIALTIES.map((spec) => (
-            <option key={spec} value={spec}>
-              {spec}
-            </option>
-          ))}
-        </Select>
-      </FormControl>
+        <NativeSelect.Root>
+          <NativeSelect.Field
+            placeholder="Select your specialty"
+            value={specialty}
+            onValueChange={(e) => setSpecialty(e.target.value)}
+            className="input-style"
+            size="md">
+            {SPECIALTIES.map((spec) => (
+              <option key={spec} value={spec}>
+                {spec}
+              </option>
+            ))}
+          </NativeSelect.Field>
+          <NativeSelect.Indicator />
+        </NativeSelect.Root>
+      </Field.Root>
     </VStack>
   </MotionVStack>
 );

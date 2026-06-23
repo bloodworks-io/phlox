@@ -1,13 +1,14 @@
 // Component for configuring user-specific settings.
 import {
+  Steps,
   Box,
   Flex,
   HStack,
   IconButton,
   Text,
-  Collapse,
+  Collapsible,
   Input,
-  Select,
+  NativeSelect,
   Switch,
   Tabs,
   TabList,
@@ -15,8 +16,7 @@ import {
   TabPanels,
   TabPanel,
   VStack,
-  FormControl,
-  FormLabel,
+  Field,
 } from "@chakra-ui/react";
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
 import { FaUser, FaCog } from "react-icons/fa";
@@ -76,154 +76,160 @@ const UserSettingsPanel = ({
       <Flex align="center" justify="space-between">
         <Flex align="center">
           <IconButton
-            icon={isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
             onClick={() => setIsCollapsed(!isCollapsed)}
             aria-label="Toggle collapse"
             variant="outline"
             size="sm"
             mr="2"
-            className="collapse-toggle"
-          />
+            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
           <FaUser size="1.2em" style={{ marginRight: "5px" }} />
           <Text as="h3">User Settings</Text>
         </Flex>
       </Flex>
-      <Collapse in={!isCollapsed} animateOpacity>
-        <Tabs variant="enclosed" mt={4}>
-          <TabList>
-            <Tab className="tab-style">
-              <HStack>
-                <FaUser />
-                <Text>General</Text>
-              </HStack>
-            </Tab>
-            <Tab className="tab-style">
-              <HStack>
-                <FaCog />
-                <Text>Advanced</Text>
-              </HStack>
-            </Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel className="floating-main">
-              <VStack spacing={4} align="stretch">
-                <Box>
-                  <Text fontSize="sm" mb="1">
-                    Name
-                  </Text>
-                  <Input
-                    size="sm"
-                    value={userSettings.name || ""}
-                    onChange={(e) =>
-                      setUserSettings((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
-                    }
-                    className="input-style"
-                    placeholder="Enter your name"
-                  />
-                </Box>
-                <Box>
-                  <Text fontSize="sm" mb="1">
-                    Specialty
-                  </Text>
-                  <Select
-                    size="sm"
-                    value={userSettings.specialty || ""}
-                    onChange={(e) =>
-                      setUserSettings((prev) => ({
-                        ...prev,
-                        specialty: e.target.value,
-                      }))
-                    }
-                    className="input-style"
-                    placeholder="Select your specialty"
-                  >
-                    {specialties.map((specialty) => (
-                      <option key={specialty} value={specialty}>
-                        {specialty}
-                      </option>
-                    ))}
-                  </Select>
-                </Box>
-                <FormControl>
-                  <FormLabel fontSize="sm" fontWeight={"bold"}>
-                    Default Template
-                  </FormLabel>
-                  <Select
-                    size="sm"
-                    value={userSettings.default_template || ""}
-                    onChange={(e) => handleDefaultTemplateChange(e.target.value)}
-                    className="input-style"
-                    placeholder="Select default template"
-                  >
-                    {/* Change this part to map over templates array correctly */}
-                    {templates.map((template) => (
-                      <option
-                        key={template.template_key}
-                        value={template.template_key}
-                      >
-                        {template.template_name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl>
-                  <FormLabel fontSize="sm" fontWeight={"bold"}>
-                    Default Letter Template
-                  </FormLabel>
-                  <Select
-                    size="sm"
-                    value={userSettings.default_letter_template_id || ""}
-                    onChange={(e) =>
-                      handleDefaultLetterTemplateChange(e.target.value)
-                    }
-                    className="input-style"
-                    placeholder="Select default letter template"
-                  >
-                    {letterTemplates.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </VStack>
-            </TabPanel>
-            <TabPanel className="floating-main">
-              <Text fontSize="sm" mb={4} className="pill-box-icons">
-                These options are intended for advanced users. Changing them may
-                affect storage or performance.
-              </Text>
-              <VStack spacing={3} align="stretch">
-                {ADVANCED_OPTIONS_SCHEMA.map((option) => (
-                  <Flex key={option.key} justify="space-between" align="center">
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium">
-                        {option.label}
-                      </Text>
-                      <Text fontSize="xs" className="pill-box-icons">
-                        {option.description}
-                      </Text>
-                    </Box>
-                    <Switch
+      <Collapsible.Root open={!isCollapsed}>
+        <Collapsible.Content>
+          <Tabs.Root variant='enclosed' mt={4}>
+            <Tabs.List>
+              <Tab className="tab-style">
+                <HStack>
+                  <FaUser />
+                  <Text>General</Text>
+                </HStack>
+              </Tab>
+              <Tab className="tab-style">
+                <HStack>
+                  <FaCog />
+                  <Text>Advanced</Text>
+                </HStack>
+              </Tab>
+            </Tabs.List>
+            <TabPanels>
+              <TabPanel className="floating-main">
+                <VStack gap={4} align="stretch">
+                  <Box>
+                    <Text fontSize="sm" mb="1">
+                      Name
+                    </Text>
+                    <Input
                       size="sm"
-                      isChecked={
-                        userSettings.advanced_options?.[option.key] ??
-                        option.defaultValue
+                      value={userSettings.name || ""}
+                      onValueChange={(e) =>
+                        setUserSettings((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
                       }
-                      onChange={(e) =>
-                        handleAdvancedOptionChange(option.key, e.target.checked)
-                      }
+                      className="input-style"
+                      placeholder="Enter your name"
                     />
-                  </Flex>
-                ))}
-              </VStack>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Collapse>
+                  </Box>
+                  <Box>
+                    <Text fontSize="sm" mb="1">
+                      Specialty
+                    </Text>
+                    <NativeSelect.Root>
+                      <NativeSelect.Field
+                        size="sm"
+                        value={userSettings.specialty || ""}
+                        onValueChange={(e) =>
+                          setUserSettings((prev) => ({
+                            ...prev,
+                            specialty: e.target.value,
+                          }))
+                        }
+                        className="input-style"
+                        placeholder="Select your specialty">
+                        {specialties.map((specialty) => (
+                          <option key={specialty} value={specialty}>
+                            {specialty}
+                          </option>
+                        ))}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                  </Box>
+                  <Field.Root>
+                    <Field.Label fontSize="sm" fontWeight={"bold"}>
+                      Default Template
+                    </Field.Label>
+                    <NativeSelect.Root>
+                      <NativeSelect.Field
+                        size="sm"
+                        value={userSettings.default_template || ""}
+                        onValueChange={(e) => handleDefaultTemplateChange(e.target.value)}
+                        className="input-style"
+                        placeholder="Select default template">
+                        {/* Change this part to map over templates array correctly */}
+                        {templates.map((template) => (
+                          <option
+                            key={template.template_key}
+                            value={template.template_key}
+                          >
+                            {template.template_name}
+                          </option>
+                        ))}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                  </Field.Root>
+                  <Field.Root>
+                    <Field.Label fontSize="sm" fontWeight={"bold"}>
+                      Default Letter Template
+                    </Field.Label>
+                    <NativeSelect.Root>
+                      <NativeSelect.Field
+                        size="sm"
+                        value={userSettings.default_letter_template_id || ""}
+                        onValueChange={(e) =>
+                          handleDefaultLetterTemplateChange(e.target.value)
+                        }
+                        className="input-style"
+                        placeholder="Select default letter template">
+                        {letterTemplates.map((template) => (
+                          <option key={template.id} value={template.id}>
+                            {template.name}
+                          </option>
+                        ))}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                  </Field.Root>
+                </VStack>
+              </TabPanel>
+              <TabPanel className="floating-main">
+                <Text fontSize="sm" mb={4} className="pill-box-icons">
+                  These options are intended for advanced users. Changing them may
+                  affect storage or performance.
+                </Text>
+                <VStack gap={3} align="stretch">
+                  {ADVANCED_OPTIONS_SCHEMA.map((option) => (
+                    <Flex key={option.key} justify="space-between" align="center">
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium">
+                          {option.label}
+                        </Text>
+                        <Text fontSize="xs" className="pill-box-icons">
+                          {option.description}
+                        </Text>
+                      </Box>
+                      <Switch
+                        size="sm"
+                        checked={
+                          userSettings.advanced_options?.[option.key] ??
+                          option.defaultValue
+                        }
+                        onValueChange={(e) =>
+                          handleAdvancedOptionChange(option.key, e.target.checked)
+                        }
+                      />
+                    </Flex>
+                  ))}
+                </VStack>
+              </TabPanel>
+            </TabPanels>
+          </Tabs.Root>
+        </Collapsible.Content>
+      </Collapsible.Root>
     </Box>
   );
 };

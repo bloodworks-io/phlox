@@ -1,17 +1,8 @@
 // Template list panel for PDF form templates.
 import React from "react";
-import {
-  Box,
-  Text,
-  List,
-  ListItem,
-  IconButton,
-  Spinner,
-  HStack,
-  Flex,
-  useColorModeValue,
-  useToast,
-} from "@chakra-ui/react";
+import { useColorModeValue } from "../ui/color-mode";
+import { Steps, Box, Text, List, IconButton, Spinner, HStack, Flex } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { DeleteIcon } from "../common/icons";
 import { FiFileText } from "react-icons/fi";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
@@ -63,9 +54,9 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
   }
 
   return (
-    <List spacing="1">
+    <List.Root gap="1">
       {templates.map((tmpl) => (
-        <ListItem
+        <List.Item
           key={tmpl.id}
           p="2"
           borderRadius="sm"
@@ -74,10 +65,10 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
           onClick={() => onSelect(tmpl.id)}
         >
           <HStack justify="space-between">
-            <HStack spacing="2" overflow="hidden">
-              <Box as={FiFileText} color="blue.400" flexShrink={0} />
+            <HStack gap="2" overflow="hidden">
+              <Box color="blue.400" flexShrink={0} asChild><FiFileText /></Box>
               <Box overflow="hidden">
-                <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+                <Text fontSize="sm" fontWeight="medium" lineClamp={1}>
                   {tmpl.name}
                 </Text>
                 <Text fontSize="xs" color={mutedColor}>
@@ -88,17 +79,15 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
               </Box>
             </HStack>
             <IconButton
-              icon={<DeleteIcon />}
               variant="ghost"
               size="sm"
-              colorScheme="red"
+              colorPalette="red"
               aria-label="Delete template"
-              onClick={(e) => handleDelete(e, tmpl.id, tmpl.name)}
-            />
+              onClick={(e) => handleDelete(e, tmpl.id, tmpl.name)}><DeleteIcon /></IconButton>
           </HStack>
-        </ListItem>
+        </List.Item>
       ))}
-    </List>
+    </List.Root>
   );
 };
 

@@ -1,15 +1,6 @@
 // Page component for document management (upload, explore, and PDF form templates).
 import React from "react";
-import {
-  Box,
-  Text,
-  HStack,
-  Tabs,
-  TabList,
-  TabPanels,
-  TabPanel,
-  Tab,
-} from "@chakra-ui/react";
+import { Steps, Box, Text, HStack, Tabs, TabList, TabPanels, TabPanel, Tab } from "@chakra-ui/react";
 import { FaBook, FaFileAlt } from "react-icons/fa";
 import { isRagEnabled, isPdfFormsEnabled } from "../utils/helpers/featureFlags";
 import { useRagDocuments } from "../utils/hooks/useRagDocuments";
@@ -71,21 +62,21 @@ const Rag = () => {
 
         <Box p={[2, 3, 4]} borderRadius="sm" className="panels-bg">
           {showTabs ? (
-            <Tabs variant="enclosed">
-              <TabList>
+            <Tabs.Root variant='enclosed'>
+              <Tabs.List>
                 <Tab className="tab-style">
-                  <HStack spacing="1">
+                  <HStack gap="1">
                     <FaBook size="0.85em" />
                     <Text>Knowledge Base</Text>
                   </HStack>
                 </Tab>
                 <Tab className="tab-style">
-                  <HStack spacing="1">
+                  <HStack gap="1">
                     <FaFileAlt size="0.85em" />
                     <Text>Form Templates</Text>
                   </HStack>
                 </Tab>
-              </TabList>
+              </Tabs.List>
               <TabPanels>
                 <TabPanel className="floating-main" px="4" py="3">
                   <KnowledgeBasePanel {...knowledgeBaseProps} />
@@ -94,7 +85,7 @@ const Rag = () => {
                   <FormTemplatesPanel {...formTemplatesProps} />
                 </TabPanel>
               </TabPanels>
-            </Tabs>
+            </Tabs.Root>
           ) : formsEnabled ? (
             <FormTemplatesPanel {...formTemplatesProps} />
           ) : ragEnabled ? (
@@ -102,7 +93,6 @@ const Rag = () => {
           ) : null}
         </Box>
       </Box>
-
       {ragEnabled && (
         <DeleteModal
           isOpen={!!rag.itemToDelete}

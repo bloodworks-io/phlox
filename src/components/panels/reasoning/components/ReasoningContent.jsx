@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+    Steps,
     Text,
     Tabs,
     TabList,
@@ -34,7 +35,7 @@ const renderItems = (section, reasoning, colorMode) => {
     }
 
     return (
-        <VStack align="stretch" spacing={2}>
+        <VStack align="stretch" gap={2}>
             {items.map((item, i) => (
                 <ReasoningItem
                     key={i}
@@ -165,14 +166,12 @@ const ThinkingCard = ({ step, index, colorMode }) => {
             borderLeftColor={getCardAccent(step.type)}
             bg={colorMode === "dark" ? "whiteAlpha.100" : "gray.50"}
         >
-            <Badge mb={2} colorScheme="gray" variant="subtle">
+            <Badge mb={2} colorPalette="gray" variant="subtle">
                 {getCardBadge(step.type)}
             </Badge>
-
             <Text fontSize="sm" whiteSpace="pre-wrap">
                 {displayedContent}
             </Text>
-
             {isResultCard && (
                 <Button
                     mt={3}
@@ -199,7 +198,7 @@ const renderThinkingCards = (thinking, colorMode) => {
     }
 
     return (
-        <VStack align="stretch" spacing={3}>
+        <VStack align="stretch" gap={3}>
             {steps.map((step, i) => (
                 <ThinkingCard
                     key={`${step.type}-${i}`}
@@ -219,22 +218,21 @@ export const ReasoningContent = ({
     colorMode,
 }) => {
     return (
-        <Tabs
-            variant="enclosed"
-            index={tabIndex}
-            onChange={(index) => setTabIndex(index)}
+        <Tabs.Root
+            variant='enclosed'
+            value={tabIndex}
+            onValueChange={(index) => setTabIndex(index)}
             display="flex"
             flexDirection="column"
             height="100%"
         >
-            <TabList>
+            <Tabs.List>
                 <Tab className="tab-style">Summary</Tab>
                 <Tab className="tab-style">Differentials</Tab>
                 <Tab className="tab-style">Investigations</Tab>
                 <Tab className="tab-style">Considerations</Tab>
                 <Tab className="tab-style">Thinking</Tab>
-            </TabList>
-
+            </Tabs.List>
             <TabPanels flex="1" overflow="hidden" minHeight="0">
                 {/* Summary Tab */}
                 <TabPanel
@@ -292,6 +290,6 @@ export const ReasoningContent = ({
                     />
                 </TabPanel>
             </TabPanels>
-        </Tabs>
+        </Tabs.Root>
     );
 };

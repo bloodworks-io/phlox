@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, Badge, HStack, VStack } from "@chakra-ui/react";
+import { Steps, Box, Text, Badge, HStack, VStack } from "@chakra-ui/react";
 import { colors } from "../../../../theme/colors";
 
 export const ReasoningItem = ({ item, section, colorMode }) => {
@@ -43,7 +43,7 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
                 <Text fontSize="sm">{item}</Text>
             ) : (
                 <>
-                    <HStack spacing={2} align="start">
+                    <HStack gap={2} align="start">
                         <Text
                             fontWeight="medium"
                             fontSize="sm"
@@ -53,7 +53,7 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
                         </Text>
                         {isCritical && (
                             <Badge
-                                colorScheme="red"
+                                colorPalette="red"
                                 fontSize="xs"
                                 textTransform="uppercase"
                             >
@@ -65,7 +65,7 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
                         item.rationale.length > 0 && (
                             <VStack
                                 align="stretch"
-                                spacing={0}
+                                gap={0}
                                 mt={1}
                             >
                                 {item.rationale.map(

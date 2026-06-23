@@ -1,23 +1,7 @@
-import {
-  Box,
-  Button,
-  Flex,
-  Input,
-  Spinner,
-  Text,
-  VStack,
-  useToast,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  ButtonGroup,
-  Divider,
-  Badge,
-  Tooltip,
-  SimpleGrid,
-  useColorMode,
-} from "@chakra-ui/react";
+import { Steps, Box, Button, Flex, Input, Spinner, Text, VStack, Alert, ButtonGroup, Badge, SimpleGrid, Separator } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
+import { Tooltip } from '@/components/ui/tooltip';
+import { useColorMode } from "../../ui/color-mode";
 import {
   FaFileUpload,
   FaRedo,
@@ -215,7 +199,6 @@ const DocumentPanel = ({
           </Text>
         </Flex>
       )}
-
       {/* Header */}
       <Flex
         align="center"
@@ -229,7 +212,6 @@ const DocumentPanel = ({
           <Text fontWeight="bold">Document Upload</Text>
         </Flex>
       </Flex>
-
       {/* Content */}
       <Box
         p={4}
@@ -241,7 +223,7 @@ const DocumentPanel = ({
       >
         {/* Processing error state */}
         {processingError ? (
-          <Alert
+          <Alert.Root
             status="error"
             variant="subtle"
             flexDirection="column"
@@ -251,33 +233,24 @@ const DocumentPanel = ({
             borderRadius="sm"
           >
             <Flex mb={2}>
-              <AlertIcon as={FaExclamationTriangle} mr={2} />
-              <AlertTitle>Processing Error</AlertTitle>
+              <Alert.Indicator mr={2} asChild><FaExclamationTriangle /></Alert.Indicator>
+              <Alert.Title>Processing Error</Alert.Title>
             </Flex>
-            <AlertDescription maxWidth="lg">
+            <Alert.Description maxWidth="lg">
               {processingError.message}
-            </AlertDescription>
-            <ButtonGroup mt={4} spacing={3}>
+            </Alert.Description>
+            <ButtonGroup mt={4} gap={3}>
               <Button
-                leftIcon={<FaRedoAlt />}
                 onClick={retryProcessing}
                 className="green-button"
-                isDisabled={isProcessing}
-                size="sm"
-              >
-                {isProcessing ? <Spinner size="sm" mr={2} /> : null}
+                disabled={isProcessing}
+                size="sm"><FaRedoAlt />{isProcessing ? <Spinner size="sm" mr={2} /> : null}
                 Resend
               </Button>
-              <Button
-                leftIcon={<FaRedo />}
-                onClick={startNewUpload}
-                className="orange-button"
-                size="sm"
-              >
-                New Document
-              </Button>
+              <Button onClick={startNewUpload} className="orange-button" size="sm"><FaRedo />New Document
+                              </Button>
             </ButtonGroup>
-          </Alert>
+          </Alert.Root>
         ) : isProcessing || isTranscribing ? (
           <Flex justify="center" align="center" py={8} direction="column">
             <Spinner size="xl" mb={4} />
@@ -285,14 +258,14 @@ const DocumentPanel = ({
           </Flex>
         ) : !extractedDocData ? (
           // Upload UI
-          <VStack spacing={4} width="full" align="stretch">
+          (<VStack gap={4} width="full" align="stretch">
             <Text textAlign="center" fontSize="sm">
               Upload a referral letter or other document to extract information.
             </Text>
             <VStack width="full" align="center">
               <Input
                 type="file"
-                onChange={handleFileChange}
+                onValueChange={handleFileChange}
                 display="none"
                 id="doc-file-upload"
                 accept=".pdf,.doc,.docx,.txt"
@@ -313,7 +286,7 @@ const DocumentPanel = ({
               <Flex justifyContent="center">
                 <Button
                   onClick={handleUpload}
-                  isDisabled={!file}
+                  disabled={!file}
                   className="green-button"
                   size="sm"
                 >
@@ -321,28 +294,22 @@ const DocumentPanel = ({
                 </Button>
               </Flex>
             )}
-          </VStack>
+          </VStack>)
         ) : (
           // Document processed UI with toggle buttons
-          <>
+          (<>
             <Flex justify="space-between" align="center" mb={3}>
               <Text fontWeight="bold" fontSize="sm">
                 {docFileName}
               </Text>
-              <Button
-                leftIcon={<FaFileUpload />}
-                onClick={startNewUpload}
-                size="xs"
-                className="orange-button"
-              >
-                New
-              </Button>
+              <Button onClick={startNewUpload} size="xs" className="orange-button"><FaFileUpload />New
+                              </Button>
             </Flex>
-            <Divider my={2} />
+            <Separator my={2} />
             <Text fontStyle="italic" fontSize="xs" mb={2}>
               Click buttons to toggle document content
             </Text>
-            <SimpleGrid columns={[1, 2]} spacing={2}>
+            <SimpleGrid columns={[1, 2]} gap={2}>
               {template?.fields?.map((field) => {
                 const fieldKey = field.field_key;
                 const hasContent = Boolean(
@@ -371,34 +338,30 @@ const DocumentPanel = ({
                         {field.field_name}
                       </Text>
                       {!hasContent ? (
-                        <Badge colorScheme="yellow" fontSize="xs">
+                        <Badge colorPalette="yellow" fontSize="xs">
                           Empty
                         </Badge>
                       ) : (
                         <Button
                           size="xs"
                           onClick={() => toggleDocumentField(fieldKey)}
-                          isDisabled={!hasContent}
+                          disabled={!hasContent}
                           className={
                             isReplaced ? "green-button" : "grey-button"
                           }
                           variant={isReplaced ? "solid" : "outline"}
-                          leftIcon={
-                            isReplaced ? <CheckIcon boxSize="2" /> : null
-                          }
                           height="20px !important"
                           minWidth="70px"
-                          fontSize="xs"
-                        >
-                          {isReplaced ? "Using" : "Use"}
-                        </Button>
+                          fontSize="xs">{
+                            isReplaced ? <CheckIcon boxSize="2" /> : null
+                          }{isReplaced ? "Using" : "Use"}</Button>
                       )}
                     </Flex>
                   </Box>
                 );
               })}
             </SimpleGrid>
-          </>
+          </>)
         )}
       </Box>
     </FloatingPanel>

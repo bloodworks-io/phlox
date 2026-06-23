@@ -1,15 +1,4 @@
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  Button,
-  HStack,
-  Text,
-} from "@chakra-ui/react";
+import { Steps, Button, HStack, Text, Dialog, Portal } from "@chakra-ui/react";
 
 const DeleteConfirmationModal = ({
   isOpen,
@@ -19,29 +8,39 @@ const DeleteConfirmationModal = ({
   title = "Delete",
 }) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <ModalOverlay />
-      <ModalContent className="modal-style">
-        <ModalHeader>{title}</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Text>
-            Are you sure you want to delete "{itemName}"? This action cannot be
-            undone.
-          </Text>
-        </ModalBody>
-        <ModalFooter>
-          <HStack justify="flex-end" width="100%">
-            <Button className="red-button" mr={3} onClick={onClose}>
-              Cancel
-            </Button>
-            <Button className="green-button" onClick={onConfirm}>
-              Delete
-            </Button>
-          </HStack>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+    <Dialog.Root open={isOpen} size='md' onOpenChange={e => {
+      if (!e.open) {
+        onClose();
+      }
+    }}>
+      <Portal>
+
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content className="modal-style">
+            <Dialog.Header>{title}</Dialog.Header>
+            <Dialog.CloseTrigger />
+            <Dialog.Body>
+              <Text>
+                Are you sure you want to delete "{itemName}"? This action cannot be
+                undone.
+              </Text>
+            </Dialog.Body>
+            <Dialog.Footer>
+              <HStack justify="flex-end" width="100%">
+                <Button className="red-button" mr={3} onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button className="green-button" onClick={onConfirm}>
+                  Delete
+                </Button>
+              </HStack>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+
+      </Portal>
+    </Dialog.Root>
   );
 };
 

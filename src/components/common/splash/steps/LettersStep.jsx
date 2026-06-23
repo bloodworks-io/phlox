@@ -1,9 +1,8 @@
 import {
+  Steps,
   VStack,
   SimpleGrid,
   Card,
-  CardBody,
-  CardHeader,
   Heading,
   Text,
   HStack,
@@ -11,9 +10,6 @@ import {
   Flex,
   Spinner,
   Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Box,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
@@ -38,19 +34,19 @@ export const LettersStep = ({
     initial="hidden"
     animate="visible"
     exit="exit"
-    spacing={6}
+    gap={6}
     w="100%"
   >
-    <Alert status="info" borderRadius="md">
-      <AlertIcon />
+    <Alert.Root status="info" borderRadius="md">
+      <Alert.Indicator />
       <Box>
-        <AlertTitle>Choose Default Letter Template</AlertTitle>
-        <AlertDescription>
+        <Alert.Title>Choose Default Letter Template</Alert.Title>
+        <Alert.Description>
           Select your preferred letter template for generating correspondence.
           You can create custom letter templates and change this setting later.
-        </AlertDescription>
+        </Alert.Description>
       </Box>
-    </Alert>
+    </Alert.Root>
 
     {isFetchingLetterTemplates ? (
       <Flex align="center" justify="center" py={8}>
@@ -60,9 +56,9 @@ export const LettersStep = ({
         </Text>
       </Flex>
     ) : (
-      <SimpleGrid columns={1} spacing={4} w="100%">
+      <SimpleGrid columns={1} gap={4} w="100%">
         {availableLetterTemplates.map((template) => (
-          <Card
+          <Card.Root
             key={template.id}
             cursor="pointer"
             onClick={() => setSelectedLetterTemplate(template.id.toString())}
@@ -83,27 +79,27 @@ export const LettersStep = ({
             }}
             transition="all 0.2s"
           >
-            <CardHeader pb={2}>
+            <Card.Header pb={2}>
               <HStack justify="space-between">
                 <Heading size="md" color={currentColors.textPrimary}>
                   {template.name}
                 </Heading>
                 {selectedLetterTemplate === template.id.toString() && (
-                  <Icon as={FaCheckCircle} color="green.500" />
+                  <Icon color="green.500" asChild><FaCheckCircle /></Icon>
                 )}
               </HStack>
-            </CardHeader>
-            <CardBody pt={0}>
+            </Card.Header>
+            <Card.Body pt={0}>
               <Text
                 fontSize="sm"
                 color={currentColors.textSecondary}
-                noOfLines={2}
+                lineClamp={2}
               >
                 {template.content ||
                   "A template for generating professional correspondence."}
               </Text>
-            </CardBody>
-          </Card>
+            </Card.Body>
+          </Card.Root>
         ))}
       </SimpleGrid>
     )}

@@ -1,35 +1,7 @@
-import {
-    Box,
-    Flex,
-    IconButton,
-    Text,
-    Collapse,
-    Input,
-    Select,
-    VStack,
-    Tooltip,
-    InputGroup,
-    InputRightElement,
-    Tabs,
-    TabList,
-    TabPanels,
-    TabPanel,
-    Tab,
-    HStack,
-    Badge,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalFooter,
-    ModalBody,
-    Button,
-    Alert,
-    AlertIcon,
-    Spinner,
-    useColorModeValue,
-    useToast,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, IconButton, Text, Collapsible, Input, NativeSelect, VStack, InputGroup, InputRightElement, Tabs, TabList, TabPanels, TabPanel, Tab, HStack, Badge, Button, Alert, Spinner, Dialog, Portal } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
+import { Tooltip } from '@/components/ui/tooltip';
+import { useColorModeValue } from "../ui/color-mode";
 import {
     ChevronRightIcon,
     ChevronDownIcon,
@@ -305,912 +277,927 @@ const ModelSettingsPanel = ({
                 <Flex align="center" justify="space-between">
                     <Flex align="center">
                         <IconButton
-                            icon={
-                                isCollapsed ? (
-                                    <ChevronRightIcon />
-                                ) : (
-                                    <ChevronDownIcon />
-                                )
-                            }
                             onClick={() => setIsCollapsed(!isCollapsed)}
                             aria-label="Toggle collapse"
                             variant="outline"
                             size="sm"
                             mr="2"
-                            className="collapse-toggle"
-                        />
+                            className="collapse-toggle">{isCollapsed ? (
+                                <ChevronRightIcon />
+                            ) : (
+                                <ChevronDownIcon />
+                            )}</IconButton>
                         <FaCog size="1.2em" style={{ marginRight: "5px" }} />
                         <Text as="h3">Model Settings</Text>
                     </Flex>
                 </Flex>
-                <Collapse in={!isCollapsed} animateOpacity>
-                    <VStack spacing={4} align="stretch" mt={4}>
-                        {/* Inference Type Selection - Desktop (Tauri) only and not in Docker */}
-                        {isTauri() && !isDocker && (
-                            <Box>
-                                <Tooltip label="Choose between running models locally on your machine or connecting to remote API services">
-                                    <Text
-                                        fontSize="md"
-                                        fontWeight="bold"
-                                        mb="3"
-                                    >
-                                        Inference Type
-                                    </Text>
-                                </Tooltip>
-                                <Flex
-                                    className="mode-selector"
-                                    alignItems="center"
-                                    p={1}
-                                    width="100%"
-                                >
-                                    <Box
-                                        className="mode-selector-indicator"
-                                        left={
-                                            isLocalInference
-                                                ? "2px"
-                                                : "calc(50% - 2px)"
-                                        }
-                                    />
+                <Collapsible.Root open={!isCollapsed}>
+                    <Collapsible.Content>
+                        <VStack gap={4} align="stretch" mt={4}>
+                            {/* Inference Type Selection - Desktop (Tauri) only and not in Docker */}
+                            {isTauri() && !isDocker && (
+                                <Box>
+                                    <Tooltip content="Choose between running models locally on your machine or connecting to remote API services">
+                                        <Text
+                                            fontSize="md"
+                                            fontWeight="bold"
+                                            mb="3"
+                                        >
+                                            Inference Type
+                                        </Text>
+                                    </Tooltip>
                                     <Flex
-                                        width="full"
-                                        position="relative"
-                                        zIndex={1}
+                                        className="mode-selector"
+                                        alignItems="center"
+                                        p={1}
+                                        width="100%"
                                     >
-                                        <Tooltip label="Run models directly on your machine using bundled inference engines">
-                                            <Button
-                                                className={`mode-selector-button ${isLocalInference ? "active" : ""}`}
-                                                leftIcon={<FaDesktop />}
-                                                onClick={() =>
-                                                    handleInferenceTypeChange(
-                                                        true,
-                                                    )
-                                                }
-                                                isDisabled={
-                                                    !isTauri() &&
-                                                    !localStatus?.available
-                                                }
-                                            >
-                                                Local
-                                            </Button>
-                                        </Tooltip>
-                                        <Tooltip label="Connect to external OpenAI/Ollama-compatible APIs">
-                                            <Button
-                                                className={`mode-selector-button ${!isLocalInference ? "active" : ""}`}
-                                                leftIcon={<FaCloud />}
-                                                onClick={() =>
-                                                    handleInferenceTypeChange(
-                                                        false,
-                                                    )
-                                                }
-                                            >
-                                                Remote
-                                            </Button>
-                                        </Tooltip>
-                                    </Flex>
-                                </Flex>
-                            </Box>
-                        )}
-
-                        {/* Inference Settings - Using tabs for organization */}
-                        {isLocalInference ? (
-                            <Tabs
-                                variant="enclosed"
-                                index={tabIndex}
-                                onChange={(index) => setTabIndex(index)}
-                            >
-                                <TabList>
-                                    <Tooltip label="Manage local LLM and Whisper models">
-                                        <Tab className="tab-style">
-                                            <HStack>
-                                                <FaDesktop />
-                                                <Text>Models</Text>
-                                            </HStack>
-                                        </Tab>
-                                    </Tooltip>
-                                    <Tooltip label="Configure external tool servers">
-                                        <Tab className="tab-style">
-                                            <HStack>
-                                                <FaPuzzlePiece />
-                                                <Text>Tools</Text>
-                                            </HStack>
-                                        </Tab>
-                                    </Tooltip>
-                                </TabList>
-                                <TabPanels>
-                                    {/* Models Tab */}
-                                    <TabPanel className="floating-main">
-                                        <VStack spacing={4} align="stretch">
-                                            <Box>
-                                                <HStack mb="2">
-                                                    <FaDesktop />
-                                                    <Text fontSize="md" fontWeight="bold">
-                                                        Local Inference Settings
-                                                    </Text>
-                                                    <Badge colorScheme="green">Local</Badge>
-                                                </HStack>
-                                                <Text fontSize="sm" color="gray.600" mb="4">
-                                                    Models run directly on your machine.
-                                                    Both LLM and Whisper will use local
-                                                    inference.
-                                                </Text>
-                                            </Box>
-
-                                            {/* Primary Model Selection for Local */}
-                                            <Box>
-                                                <Tooltip label="Primary model for local inference - manage through Model Manager below">
-                                                    <Text fontSize="sm" mb="2">
-                                                        Primary Model (Local)
-                                                    </Text>
-                                                </Tooltip>
-                                                <Select
-                                                    size="sm"
-                                                    value={selectedLocalModel || config?.PRIMARY_MODEL || ""}
-                                                    isDisabled={true}
-                                                    placeholder="Select downloaded model"
-                                                    className="input-style"
-                                                    cursor="not-allowed"
-                                                    opacity={0.7}
-                                                >
-                                                    {modelOptions.map((model) => (
-                                                        <option key={model} value={model}>
-                                                            {model}
-                                                        </option>
-                                                    ))}
-                                                </Select>
-                                            </Box>
-
-                                            {/* Local Whisper Model Selection */}
-                                            <Box>
-                                                <Tooltip label="Whisper model for local transcription - manage through Model Manager below">
-                                                    <Text fontSize="sm" mb="2">
-                                                        Whisper Model (Local)
-                                                    </Text>
-                                                </Tooltip>
-                                                <Select
-                                                    size="sm"
-                                                    value={
-                                                        downloadedWhisperModel ||
-                                                        config?.WHISPER_MODEL ||
-                                                        "base"
+                                        <Box
+                                            className="mode-selector-indicator"
+                                            left={
+                                                isLocalInference
+                                                    ? "2px"
+                                                    : "calc(50% - 2px)"
+                                            }
+                                        />
+                                        <Flex
+                                            width="full"
+                                            position="relative"
+                                            zIndex={1}
+                                        >
+                                            <Tooltip content="Run models directly on your machine using bundled inference engines">
+                                                <Button
+                                                    className={`mode-selector-button ${isLocalInference ? "active" : ""}`}
+                                                    onClick={() =>
+                                                        handleInferenceTypeChange(
+                                                            true,
+                                                        )
                                                     }
-                                                    isDisabled={true}
-                                                    className="input-style"
-                                                    cursor="not-allowed"
-                                                    opacity={0.7}
-                                                >
-                                                    <option value="tiny">
-                                                        tiny (39MB) - Fastest
-                                                    </option>
-                                                    <option value="tiny.en">
-                                                        tiny.en (39MB) - English-only
-                                                    </option>
-                                                    <option value="base">
-                                                        base (74MB) - Multilingual
-                                                    </option>
-                                                    <option value="base.en">
-                                                        base.en (74MB) - English-only,
-                                                        Recommended
-                                                    </option>
-                                                    <option value="small">
-                                                        small (244MB) - Better accuracy
-                                                    </option>
-                                                    <option value="small.en">
-                                                        small.en (244MB) - English-only
-                                                    </option>
-                                                    <option value="medium">
-                                                        medium (769MB) - High accuracy
-                                                    </option>
-                                                    <option value="medium.en">
-                                                        medium.en (769MB) - English-only
-                                                    </option>
-                                                    <option value="large-v1">
-                                                        large-v1 (1.5GB) - Best accuracy V1
-                                                    </option>
-                                                    <option value="large-v2">
-                                                        large-v2 (1.5GB) - Best accuracy V2
-                                                    </option>
-                                                    <option value="large-v3">
-                                                        large-v3 (1.5GB) - Best accuracy V3
-                                                    </option>
-                                                </Select>
-                                            </Box>
+                                                    disabled={
+                                                        !isTauri() &&
+                                                        !localStatus?.available
+                                                    }><FaDesktop />Local
+                                                                                                </Button>
+                                            </Tooltip>
+                                            <Tooltip content="Connect to external OpenAI/Ollama-compatible APIs">
+                                                <Button
+                                                    className={`mode-selector-button ${!isLocalInference ? "active" : ""}`}
+                                                    onClick={() =>
+                                                        handleInferenceTypeChange(
+                                                            false,
+                                                        )
+                                                    }><FaCloud />Remote
+                                                                                                </Button>
+                                            </Tooltip>
+                                        </Flex>
+                                    </Flex>
+                                </Box>
+                            )}
 
-                                            {/* Local Model Manager Trigger */}
-                                            {showLocalManagerButton &&
-                                                typeof onOpenLocalModelManager ===
-                                                    "function" && (
-                                                    <Button
-                                                        onClick={onOpenLocalModelManager}
-                                                        variant="outline"
-                                                        size="sm"
-                                                        alignSelf="flex-start"
-                                                        className="nav-button"
-                                                    >
-                                                        Manage Local Models
-                                                    </Button>
-                                                )}
-                                        </VStack>
-                                    </TabPanel>
-
-                                    {/* Tools Tab */}
-                                    <TabPanel className="floating-main">
-                                        <ToolsSettingsTab />
-                                    </TabPanel>
-                                </TabPanels>
-                            </Tabs>
-                        ) : (
-                            <Tabs
-                                variant="enclosed"
-                                index={tabIndex}
-                                onChange={(index) => setTabIndex(index)}
-                            >
-                                <TabList>
-                                    <Tooltip label="Configure speech-to-text service settings">
-                                        <Tab className="tab-style">
-                                            <HStack>
-                                                <FaMicrophone />
-                                                <Text>Whisper</Text>
-                                            </HStack>
-                                        </Tab>
-                                    </Tooltip>
-                                    <Tooltip label="Configure large language model provider settings">
-                                        <Tab className="tab-style">
-                                            <HStack>
-                                                <FaBrain />
-                                                <Text>LLM</Text>
-                                            </HStack>
-                                        </Tab>
-                                    </Tooltip>
-                                    {isRagEnabled() && (
-                                        <Tooltip label="Configure knowledge base embedding model">
+                            {/* Inference Settings - Using tabs for organization */}
+                            {isLocalInference ? (
+                                <Tabs.Root
+                                    variant='enclosed'
+                                    value={tabIndex}
+                                    onValueChange={(index) => setTabIndex(index)}
+                                >
+                                    <Tabs.List>
+                                        <Tooltip content="Manage local LLM and Whisper models">
                                             <Tab className="tab-style">
                                                 <HStack>
-                                                    <FaDatabase />
-                                                    <Text>RAG</Text>
+                                                    <FaDesktop />
+                                                    <Text>Models</Text>
                                                 </HStack>
                                             </Tab>
                                         </Tooltip>
-                                    )}
-                                    <Tooltip label="Configure external tool servers">
-                                        <Tab className="tab-style">
-                                            <HStack>
-                                                <FaPuzzlePiece />
-                                                <Text>Tools</Text>
-                                            </HStack>
-                                        </Tab>
-                                    </Tooltip>
-                                </TabList>
-                                <TabPanels>
-                                    {/* Whisper Tab */}
-                                    <TabPanel className="floating-main">
-                                        <VStack spacing={4} align="stretch">
-                                            <Box>
-                                                <Text
-                                                    fontSize="md"
-                                                    fontWeight="bold"
-                                                >
-                                                    Whisper (Speech-to-Text)
-                                                </Text>
-                                                <Text
-                                                    fontSize="sm"
-                                                    color="gray.500"
-                                                >
-                                                    Configure the speech-to-text
-                                                    service for transcribing
-                                                    audio recordings
-                                                </Text>
-                                            </Box>
-
-                                            <VStack spacing={3} align="stretch">
+                                        <Tooltip content="Configure external tool servers">
+                                            <Tab className="tab-style">
+                                                <HStack>
+                                                    <FaPuzzlePiece />
+                                                    <Text>Tools</Text>
+                                                </HStack>
+                                            </Tab>
+                                        </Tooltip>
+                                    </Tabs.List>
+                                    <TabPanels>
+                                        {/* Models Tab */}
+                                        <TabPanel className="floating-main">
+                                            <VStack gap={4} align="stretch">
                                                 <Box>
-                                                    <Tooltip label="Base URL for the Whisper API (e.g., https://api.openai.com)">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            API Base URL
+                                                    <HStack mb="2">
+                                                        <FaDesktop />
+                                                        <Text fontSize="md" fontWeight="bold">
+                                                            Local Inference Settings
                                                         </Text>
-                                                    </Tooltip>
-                                                    <InputGroup size="sm">
-                                                        <Input
-                                                            value={
-                                                                config?.WHISPER_BASE_URL ||
-                                                                ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleConfigChange(
-                                                                    "WHISPER_BASE_URL",
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="https://api.openai.com"
-                                                            className="input-style"
-                                                        />
-                                                        {urlStatus.whisper && (
-                                                            <InputRightElement>
-                                                                <Tooltip label="Connection successful">
-                                                                    <CheckCircleIcon color="green.500" />
-                                                                </Tooltip>
-                                                            </InputRightElement>
-                                                        )}
-                                                    </InputGroup>
-                                                </Box>
-
-                                                <Box>
-                                                    <Tooltip label="Model to use for Whisper transcription (e.g., whisper-1)">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            Model
-                                                        </Text>
-                                                    </Tooltip>
-
-                                                    {whisperModelsLoading ? (
-                                                        <HStack spacing="2">
-                                                            <Spinner size="sm" />
-                                                            <Text fontSize="sm" color="gray.500">
-                                                                Loading models...
-                                                            </Text>
-                                                        </HStack>
-                                                    ) : whisperModelListAvailable &&
-                                                    whisperModelOptions.length >
-                                                        0 ? (
-                                                        <Select
-                                                            size="sm"
-                                                            value={
-                                                                config?.WHISPER_MODEL ||
-                                                                ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleConfigChange(
-                                                                    "WHISPER_MODEL",
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Select Whisper model"
-                                                            className="input-style"
-                                                        >
-                                                            {whisperModelOptions.map(
-                                                                (model) => (
-                                                                    <option
-                                                                        key={
-                                                                            model
-                                                                        }
-                                                                        value={
-                                                                            model
-                                                                        }
-                                                                    >
-                                                                        {model}
-                                                                    </option>
-                                                                ),
-                                                            )}
-                                                        </Select>
-                                                    ) : (
-                                                        <Input
-                                                            size="sm"
-                                                            placeholder="Enter model name (e.g., whisper-1)"
-                                                            value={
-                                                                config?.WHISPER_MODEL ||
-                                                                ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleConfigChange(
-                                                                    "WHISPER_MODEL",
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            className="input-style"
-                                                        />
-                                                    )}
-                                                </Box>
-
-                                                <Box>
-                                                    <Tooltip label="API key for authenticating with the Whisper service">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            API Key
-                                                        </Text>
-                                                    </Tooltip>
-                                                    <Input
-                                                        size="sm"
-                                                        type="password"
-                                                        value={
-                                                            config?.WHISPER_KEY ||
-                                                            ""
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleConfigChange(
-                                                                "WHISPER_KEY",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="sk-..."
-                                                        className="input-style"
-                                                    />
-                                                </Box>
-                                            </VStack>
-                                        </VStack>
-                                    </TabPanel>
-
-                                    {/* LLM Tab */}
-                                    <TabPanel className="floating-main">
-                                        <VStack spacing={4} align="stretch">
-                                            <Box>
-                                                <Text
-                                                    fontSize="md"
-                                                    fontWeight="bold"
-                                                >
-                                                    Large Language Model (LLM)
-                                                </Text>
-                                                <Text
-                                                    fontSize="sm"
-                                                    color="gray.500"
-                                                >
-                                                    Configure the language model
-                                                    provider for generating
-                                                    responses
-                                                </Text>
-                                            </Box>
-
-                                            <VStack spacing={3} align="stretch">
-                                                <Box>
-                                                    <Tooltip label="Base URL for your OpenAI/Ollama-compatible LLM API endpoint">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            OpenAI/Ollama API
-                                                            Base URL
-                                                        </Text>
-                                                    </Tooltip>
-                                                    <InputGroup size="sm">
-                                                        <Input
-                                                            value={
-                                                                config?.LLM_BASE_URL ||
-                                                                ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleConfigChange(
-                                                                    "LLM_BASE_URL",
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder={
-                                                                "http://localhost:11434"
-                                                            }
-                                                            className="input-style"
-                                                        />
-                                                        {urlStatus.llm && (
-                                                            <InputRightElement>
-                                                                <Tooltip label="Connection successful">
-                                                                    <CheckCircleIcon color="green.500" />
-                                                                </Tooltip>
-                                                            </InputRightElement>
-                                                        )}
-                                                    </InputGroup>
-                                                </Box>
-
-                                                <Box>
-                                                    <Tooltip label="API key for authenticating with the OpenAI/Ollama-compatible service">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            API Key
-                                                        </Text>
-                                                    </Tooltip>
-                                                    <Input
-                                                        size="sm"
-                                                        type="password"
-                                                        value={
-                                                            config?.LLM_API_KEY ||
-                                                            ""
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleConfigChange(
-                                                                "LLM_API_KEY",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="sk-..."
-                                                        className="input-style"
-                                                    />
-                                                </Box>
-
-                                                <Box>
-                                                    <Tooltip label="Primary model for generating responses and clinical notes">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            Primary Model
-                                                        </Text>
-                                                    </Tooltip>
-                                                    {llmModelsLoading ? (
-                                                        <HStack spacing="2">
-                                                            <Spinner size="sm" />
-                                                            <Text fontSize="sm" color="gray.500">
-                                                                Loading models...
-                                                            </Text>
-                                                        </HStack>
-                                                    ) : (
-                                                    <Select
-                                                        size="sm"
-                                                        value={
-                                                            config?.PRIMARY_MODEL ||
-                                                            ""
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleConfigChange(
-                                                                "PRIMARY_MODEL",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Select model"
-                                                        className="input-style"
-                                                    >
-                                                        {modelOptions.map(
-                                                            (model) => (
-                                                                <option
-                                                                    key={model}
-                                                                    value={
-                                                                        model
-                                                                    }
-                                                                >
-                                                                    {model}
-                                                                </option>
-                                                            ),
-                                                        )}
-                                                    </Select>
-                                                    )}
-                                                </Box>
-
-                                                <Box>
-                                                    <Tooltip label="Secondary model for tasks requiring different capabilities or for comparison">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            Secondary Model
-                                                        </Text>
-                                                    </Tooltip>
-                                                    {llmModelsLoading ? (
-                                                        <HStack spacing="2">
-                                                            <Spinner size="sm" />
-                                                            <Text fontSize="sm" color="gray.500">
-                                                                Loading models...
-                                                            </Text>
-                                                        </HStack>
-                                                    ) : (
-                                                    <Select
-                                                        size="sm"
-                                                        value={
-                                                            config?.SECONDARY_MODEL ||
-                                                            ""
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleConfigChange(
-                                                                "SECONDARY_MODEL",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Select model"
-                                                        className="input-style"
-                                                    >
-                                                        {modelOptions.map(
-                                                            (model) => (
-                                                                <option
-                                                                    key={model}
-                                                                    value={
-                                                                        model
-                                                                    }
-                                                                >
-                                                                    {model}
-                                                                </option>
-                                                            ),
-                                                        )}
-                                                    </Select>
-                                                    )}
-                                                </Box>
-
-                                                <Box>
-                                                    <Tooltip label="Choose how PDFs/images are handled: visual LLM, OCR fallback, or automatic selection">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            Document/Image
-                                                            Processing Mode
-                                                        </Text>
-                                                    </Tooltip>
-                                                    <Select
-                                                        size="sm"
-                                                        value={
-                                                            config?.DOCUMENT_IMAGE_PROCESSING_MODE ||
-                                                            "auto"
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleConfigChange(
-                                                                "DOCUMENT_IMAGE_PROCESSING_MODE",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="input-style"
-                                                    >
-                                                        <option value="auto">
-                                                            Auto (prefer visual
-                                                            if available)
-                                                        </option>
-                                                        <option value="vision">
-                                                            Vision only
-                                                        </option>
-                                                        <option value="ocr">
-                                                            OCR only
-                                                        </option>
-                                                    </Select>
-                                                    <Text
-                                                        fontSize="xs"
-                                                        color="gray.500"
-                                                        mt="1"
-                                                    >
-                                                        Auto uses visual
-                                                        processing when vision
-                                                        capability is detected;
-                                                        otherwise it falls back
-                                                        to OCR-compatible
-                                                        endpoints.
+                                                        <Badge colorPalette="green">Local</Badge>
+                                                    </HStack>
+                                                    <Text fontSize="sm" color="gray.600" mb="4">
+                                                        Models run directly on your machine.
+                                                        Both LLM and Whisper will use local
+                                                        inference.
                                                     </Text>
                                                 </Box>
 
+                                                {/* Primary Model Selection for Local */}
                                                 <Box>
-                                                    <Tooltip label="Send a tiny test image to check whether the selected endpoint/model accepts image inputs">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="1"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            Vision Capability
-                                                            Probe
+                                                    <Tooltip content="Primary model for local inference - manage through Model Manager below">
+                                                        <Text fontSize="sm" mb="2">
+                                                            Primary Model (Local)
                                                         </Text>
                                                     </Tooltip>
-
-                                                    <HStack spacing={3} mb={2}>
-                                                        <Button
+                                                    <NativeSelect.Root>
+                                                        <NativeSelect.Field
                                                             size="sm"
-                                                            variant="outline"
-                                                            onClick={
-                                                                handleProbeVisionCapability
-                                                            }
-                                                            isLoading={
-                                                                isProbingVision
-                                                            }
-                                                        >
-                                                            Test Vision Support
-                                                        </Button>
-                                                        <Badge
-                                                            colorScheme={
-                                                                currentVisionCapability?.vision_capable
-                                                                    ? "green"
-                                                                    : currentVisionCapability
-                                                                      ? "red"
-                                                                      : "gray"
-                                                            }
-                                                        >
-                                                            {currentVisionCapability
-                                                                ? currentVisionCapability.vision_capable
-                                                                    ? "Vision capable"
-                                                                    : "Not vision-capable"
-                                                                : "Unknown"}
-                                                        </Badge>
-                                                    </HStack>
-                                                    {currentVisionCapability ? (
-                                                        <Text
-                                                            fontSize="xs"
-                                                            color="gray.500"
-                                                            mb={2}
-                                                        >
-                                                            Source:{" "}
-                                                            {currentVisionCapability.source ||
-                                                                "cache"}
-                                                            {currentVisionCapability.probed_at
-                                                                ? ` • Probed: ${currentVisionCapability.probed_at}`
-                                                                : ""}
-                                                        </Text>
-                                                    ) : null}
-
-                                                    {visionProbeDetail ? (
-                                                        <Alert
-                                                            status={
-                                                                visionProbeStatus
-                                                            }
-                                                            borderRadius="sm"
-                                                            py={2}
-                                                        >
-                                                            <AlertIcon />
-                                                            <Text
-                                                                fontSize="xs"
-                                                                whiteSpace="pre-wrap"
-                                                            >
-                                                                {
-                                                                    visionProbeDetail
-                                                                }
-                                                            </Text>
-                                                        </Alert>
-                                                    ) : null}
+                                                            value={selectedLocalModel || config?.PRIMARY_MODEL || ""}
+                                                            disabled={true}
+                                                            placeholder="Select downloaded model"
+                                                            className="input-style"
+                                                            cursor="not-allowed"
+                                                            opacity={0.7}>
+                                                            {modelOptions.map((model) => (
+                                                                <option key={model} value={model}>
+                                                                    {model}
+                                                                </option>
+                                                            ))}
+                                                        </NativeSelect.Field>
+                                                        <NativeSelect.Indicator />
+                                                    </NativeSelect.Root>
                                                 </Box>
-                                            </VStack>
-                                        </VStack>
-                                    </TabPanel>
 
-                                    {/* RAG Tab */}
-                                    {isRagEnabled() && (
+                                                {/* Local Whisper Model Selection */}
+                                                <Box>
+                                                    <Tooltip content="Whisper model for local transcription - manage through Model Manager below">
+                                                        <Text fontSize="sm" mb="2">
+                                                            Whisper Model (Local)
+                                                        </Text>
+                                                    </Tooltip>
+                                                    <NativeSelect.Root>
+                                                        <NativeSelect.Field
+                                                            size="sm"
+                                                            value={
+                                                                downloadedWhisperModel ||
+                                                                config?.WHISPER_MODEL ||
+                                                                "base"
+                                                            }
+                                                            disabled={true}
+                                                            className="input-style"
+                                                            cursor="not-allowed"
+                                                            opacity={0.7}>
+                                                            <option value="tiny">
+                                                                tiny (39MB) - Fastest
+                                                            </option>
+                                                            <option value="tiny.en">
+                                                                tiny.en (39MB) - English-only
+                                                            </option>
+                                                            <option value="base">
+                                                                base (74MB) - Multilingual
+                                                            </option>
+                                                            <option value="base.en">
+                                                                base.en (74MB) - English-only,
+                                                                Recommended
+                                                            </option>
+                                                            <option value="small">
+                                                                small (244MB) - Better accuracy
+                                                            </option>
+                                                            <option value="small.en">
+                                                                small.en (244MB) - English-only
+                                                            </option>
+                                                            <option value="medium">
+                                                                medium (769MB) - High accuracy
+                                                            </option>
+                                                            <option value="medium.en">
+                                                                medium.en (769MB) - English-only
+                                                            </option>
+                                                            <option value="large-v1">
+                                                                large-v1 (1.5GB) - Best accuracy V1
+                                                            </option>
+                                                            <option value="large-v2">
+                                                                large-v2 (1.5GB) - Best accuracy V2
+                                                            </option>
+                                                            <option value="large-v3">
+                                                                large-v3 (1.5GB) - Best accuracy V3
+                                                            </option>
+                                                        </NativeSelect.Field>
+                                                        <NativeSelect.Indicator />
+                                                    </NativeSelect.Root>
+                                                </Box>
+
+                                                {/* Local Model Manager Trigger */}
+                                                {showLocalManagerButton &&
+                                                    typeof onOpenLocalModelManager ===
+                                                        "function" && (
+                                                        <Button
+                                                            onClick={onOpenLocalModelManager}
+                                                            variant="outline"
+                                                            size="sm"
+                                                            alignSelf="flex-start"
+                                                            className="nav-button"
+                                                        >
+                                                            Manage Local Models
+                                                        </Button>
+                                                    )}
+                                            </VStack>
+                                        </TabPanel>
+
+                                        {/* Tools Tab */}
                                         <TabPanel className="floating-main">
-                                            <VStack spacing={4} align="stretch">
+                                            <ToolsSettingsTab />
+                                        </TabPanel>
+                                    </TabPanels>
+                                </Tabs.Root>
+                            ) : (
+                                <Tabs.Root
+                                    variant='enclosed'
+                                    value={tabIndex}
+                                    onValueChange={(index) => setTabIndex(index)}
+                                >
+                                    <Tabs.List>
+                                        <Tooltip content="Configure speech-to-text service settings">
+                                            <Tab className="tab-style">
+                                                <HStack>
+                                                    <FaMicrophone />
+                                                    <Text>Whisper</Text>
+                                                </HStack>
+                                            </Tab>
+                                        </Tooltip>
+                                        <Tooltip content="Configure large language model provider settings">
+                                            <Tab className="tab-style">
+                                                <HStack>
+                                                    <FaBrain />
+                                                    <Text>LLM</Text>
+                                                </HStack>
+                                            </Tab>
+                                        </Tooltip>
+                                        {isRagEnabled() && (
+                                            <Tooltip content="Configure knowledge base embedding model">
+                                                <Tab className="tab-style">
+                                                    <HStack>
+                                                        <FaDatabase />
+                                                        <Text>RAG</Text>
+                                                    </HStack>
+                                                </Tab>
+                                            </Tooltip>
+                                        )}
+                                        <Tooltip content="Configure external tool servers">
+                                            <Tab className="tab-style">
+                                                <HStack>
+                                                    <FaPuzzlePiece />
+                                                    <Text>Tools</Text>
+                                                </HStack>
+                                            </Tab>
+                                        </Tooltip>
+                                    </Tabs.List>
+                                    <TabPanels>
+                                        {/* Whisper Tab */}
+                                        <TabPanel className="floating-main">
+                                            <VStack gap={4} align="stretch">
                                                 <Box>
                                                     <Text
                                                         fontSize="md"
                                                         fontWeight="bold"
                                                     >
-                                                        Knowledge Base (RAG)
+                                                        Whisper (Speech-to-Text)
                                                     </Text>
                                                     <Text
                                                         fontSize="sm"
                                                         color="gray.500"
                                                     >
-                                                        Configure the embedding
-                                                        model used for knowledge
-                                                        base searches
+                                                        Configure the speech-to-text
+                                                        service for transcribing
+                                                        audio recordings
                                                     </Text>
                                                 </Box>
 
-                                                <Box>
-                                                    <Tooltip label="Model used for generating embeddings for RAG - changing this will re-embed all documents">
-                                                        <Text
-                                                            fontSize="sm"
-                                                            mb="2"
-                                                            fontWeight={"bold"}
-                                                        >
-                                                            Embedding Model
-                                                        </Text>
-                                                    </Tooltip>
-                                                    {llmModelsLoading ? (
-                                                        <HStack spacing="2">
-                                                            <Spinner size="sm" />
-                                                            <Text fontSize="sm" color="gray.500">
-                                                                Loading models...
+                                                <VStack gap={3} align="stretch">
+                                                    <Box>
+                                                        <Tooltip content="Base URL for the Whisper API (e.g., https://api.openai.com)">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                API Base URL
                                                             </Text>
-                                                        </HStack>
-                                                    ) : (
-                                                    <Select
-                                                        size="sm"
-                                                        value={
-                                                            config?.EMBEDDING_MODEL ||
-                                                            ""
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleEmbeddingModelChange(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Select embedding model"
-                                                        className="input-style"
-                                                    >
-                                                        {embeddingModelOptions.map(
-                                                            (model) => (
-                                                                <option
-                                                                    key={model}
+                                                        </Tooltip>
+                                                        <InputGroup size="sm">
+                                                            <Input
+                                                                value={
+                                                                    config?.WHISPER_BASE_URL ||
+                                                                    ""
+                                                                }
+                                                                onValueChange={(e) =>
+                                                                    handleConfigChange(
+                                                                        "WHISPER_BASE_URL",
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                placeholder="https://api.openai.com"
+                                                                className="input-style"
+                                                            />
+                                                            {urlStatus.whisper && (
+                                                                <InputRightElement>
+                                                                    <Tooltip content="Connection successful">
+                                                                        <CheckCircleIcon color="green.500" />
+                                                                    </Tooltip>
+                                                                </InputRightElement>
+                                                            )}
+                                                        </InputGroup>
+                                                    </Box>
+
+                                                    <Box>
+                                                        <Tooltip content="Model to use for Whisper transcription (e.g., whisper-1)">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                Model
+                                                            </Text>
+                                                        </Tooltip>
+
+                                                        {whisperModelsLoading ? (
+                                                            <HStack gap="2">
+                                                                <Spinner size="sm" />
+                                                                <Text fontSize="sm" color="gray.500">
+                                                                    Loading models...
+                                                                </Text>
+                                                            </HStack>
+                                                        ) : whisperModelListAvailable &&
+                                                        whisperModelOptions.length >
+                                                            0 ? (
+                                                            <NativeSelect.Root>
+                                                                <NativeSelect.Field
+                                                                    size="sm"
                                                                     value={
-                                                                        model
+                                                                        config?.WHISPER_MODEL ||
+                                                                        ""
                                                                     }
-                                                                >
-                                                                    {model}
-                                                                </option>
-                                                            ),
+                                                                    onValueChange={(e) =>
+                                                                        handleConfigChange(
+                                                                            "WHISPER_MODEL",
+                                                                            e.target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder="Select Whisper model"
+                                                                    className="input-style">
+                                                                    {whisperModelOptions.map(
+                                                                        (model) => (
+                                                                            <option
+                                                                                key={
+                                                                                    model
+                                                                                }
+                                                                                value={
+                                                                                    model
+                                                                                }
+                                                                            >
+                                                                                {model}
+                                                                            </option>
+                                                                        ),
+                                                                    )}
+                                                                </NativeSelect.Field>
+                                                                <NativeSelect.Indicator />
+                                                            </NativeSelect.Root>
+                                                        ) : (
+                                                            <Input
+                                                                size="sm"
+                                                                placeholder="Enter model name (e.g., whisper-1)"
+                                                                value={
+                                                                    config?.WHISPER_MODEL ||
+                                                                    ""
+                                                                }
+                                                                onValueChange={(e) =>
+                                                                    handleConfigChange(
+                                                                        "WHISPER_MODEL",
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                className="input-style"
+                                                            />
                                                         )}
-                                                    </Select>
-                                                    )}
-                                                    <Text
-                                                        fontSize="xs"
-                                                        color="gray.500"
-                                                        mt="1"
-                                                    >
-                                                        Available embedding
-                                                        models depend on the LLM
-                                                        endpoint configured in
-                                                        the LLM tab
-                                                    </Text>
-                                                    <Text
-                                                        fontSize="xs"
-                                                        color={warningBg}
-                                                        mt="2"
-                                                        fontWeight="medium"
-                                                    >
-                                                        ⚠️ Changing the embedding
-                                                        model will re-embed all
-                                                        documents automatically
-                                                    </Text>
-                                                </Box>
+                                                    </Box>
+
+                                                    <Box>
+                                                        <Tooltip content="API key for authenticating with the Whisper service">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                API Key
+                                                            </Text>
+                                                        </Tooltip>
+                                                        <Input
+                                                            size="sm"
+                                                            type="password"
+                                                            value={
+                                                                config?.WHISPER_KEY ||
+                                                                ""
+                                                            }
+                                                            onValueChange={(e) =>
+                                                                handleConfigChange(
+                                                                    "WHISPER_KEY",
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            placeholder="sk-..."
+                                                            className="input-style"
+                                                        />
+                                                    </Box>
+                                                </VStack>
                                             </VStack>
                                         </TabPanel>
-                                    )}
 
-                                    {/* Tools Tab */}
-                                    <TabPanel className="floating-main">
-                                        <ToolsSettingsTab />
-                                    </TabPanel>
-                                </TabPanels>
-                            </Tabs>
-                        )}
-                    </VStack>
-                </Collapse>
+                                        {/* LLM Tab */}
+                                        <TabPanel className="floating-main">
+                                            <VStack gap={4} align="stretch">
+                                                <Box>
+                                                    <Text
+                                                        fontSize="md"
+                                                        fontWeight="bold"
+                                                    >
+                                                        Large Language Model (LLM)
+                                                    </Text>
+                                                    <Text
+                                                        fontSize="sm"
+                                                        color="gray.500"
+                                                    >
+                                                        Configure the language model
+                                                        provider for generating
+                                                        responses
+                                                    </Text>
+                                                </Box>
+
+                                                <VStack gap={3} align="stretch">
+                                                    <Box>
+                                                        <Tooltip content="Base URL for your OpenAI/Ollama-compatible LLM API endpoint">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                OpenAI/Ollama API
+                                                                Base URL
+                                                            </Text>
+                                                        </Tooltip>
+                                                        <InputGroup size="sm">
+                                                            <Input
+                                                                value={
+                                                                    config?.LLM_BASE_URL ||
+                                                                    ""
+                                                                }
+                                                                onValueChange={(e) =>
+                                                                    handleConfigChange(
+                                                                        "LLM_BASE_URL",
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                placeholder={
+                                                                    "http://localhost:11434"
+                                                                }
+                                                                className="input-style"
+                                                            />
+                                                            {urlStatus.llm && (
+                                                                <InputRightElement>
+                                                                    <Tooltip content="Connection successful">
+                                                                        <CheckCircleIcon color="green.500" />
+                                                                    </Tooltip>
+                                                                </InputRightElement>
+                                                            )}
+                                                        </InputGroup>
+                                                    </Box>
+
+                                                    <Box>
+                                                        <Tooltip content="API key for authenticating with the OpenAI/Ollama-compatible service">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                API Key
+                                                            </Text>
+                                                        </Tooltip>
+                                                        <Input
+                                                            size="sm"
+                                                            type="password"
+                                                            value={
+                                                                config?.LLM_API_KEY ||
+                                                                ""
+                                                            }
+                                                            onValueChange={(e) =>
+                                                                handleConfigChange(
+                                                                    "LLM_API_KEY",
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            placeholder="sk-..."
+                                                            className="input-style"
+                                                        />
+                                                    </Box>
+
+                                                    <Box>
+                                                        <Tooltip content="Primary model for generating responses and clinical notes">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                Primary Model
+                                                            </Text>
+                                                        </Tooltip>
+                                                        {llmModelsLoading ? (
+                                                            <HStack gap="2">
+                                                                <Spinner size="sm" />
+                                                                <Text fontSize="sm" color="gray.500">
+                                                                    Loading models...
+                                                                </Text>
+                                                            </HStack>
+                                                        ) : (
+                                                        <NativeSelect.Root>
+                                                            <NativeSelect.Field
+                                                                size="sm"
+                                                                value={
+                                                                    config?.PRIMARY_MODEL ||
+                                                                    ""
+                                                                }
+                                                                onValueChange={(e) =>
+                                                                    handleConfigChange(
+                                                                        "PRIMARY_MODEL",
+                                                                        e.target.value,
+                                                                    )
+                                                                }
+                                                                placeholder="Select model"
+                                                                className="input-style">
+                                                                {modelOptions.map(
+                                                                    (model) => (
+                                                                        <option
+                                                                            key={model}
+                                                                            value={
+                                                                                model
+                                                                            }
+                                                                        >
+                                                                            {model}
+                                                                        </option>
+                                                                    ),
+                                                                )}
+                                                            </NativeSelect.Field>
+                                                            <NativeSelect.Indicator />
+                                                        </NativeSelect.Root>
+                                                        )}
+                                                    </Box>
+
+                                                    <Box>
+                                                        <Tooltip content="Secondary model for tasks requiring different capabilities or for comparison">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                Secondary Model
+                                                            </Text>
+                                                        </Tooltip>
+                                                        {llmModelsLoading ? (
+                                                            <HStack gap="2">
+                                                                <Spinner size="sm" />
+                                                                <Text fontSize="sm" color="gray.500">
+                                                                    Loading models...
+                                                                </Text>
+                                                            </HStack>
+                                                        ) : (
+                                                        <NativeSelect.Root>
+                                                            <NativeSelect.Field
+                                                                size="sm"
+                                                                value={
+                                                                    config?.SECONDARY_MODEL ||
+                                                                    ""
+                                                                }
+                                                                onValueChange={(e) =>
+                                                                    handleConfigChange(
+                                                                        "SECONDARY_MODEL",
+                                                                        e.target.value,
+                                                                    )
+                                                                }
+                                                                placeholder="Select model"
+                                                                className="input-style">
+                                                                {modelOptions.map(
+                                                                    (model) => (
+                                                                        <option
+                                                                            key={model}
+                                                                            value={
+                                                                                model
+                                                                            }
+                                                                        >
+                                                                            {model}
+                                                                        </option>
+                                                                    ),
+                                                                )}
+                                                            </NativeSelect.Field>
+                                                            <NativeSelect.Indicator />
+                                                        </NativeSelect.Root>
+                                                        )}
+                                                    </Box>
+
+                                                    <Box>
+                                                        <Tooltip content="Choose how PDFs/images are handled: visual LLM, OCR fallback, or automatic selection">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                Document/Image
+                                                                Processing Mode
+                                                            </Text>
+                                                        </Tooltip>
+                                                        <NativeSelect.Root>
+                                                            <NativeSelect.Field
+                                                                size="sm"
+                                                                value={
+                                                                    config?.DOCUMENT_IMAGE_PROCESSING_MODE ||
+                                                                    "auto"
+                                                                }
+                                                                onValueChange={(e) =>
+                                                                    handleConfigChange(
+                                                                        "DOCUMENT_IMAGE_PROCESSING_MODE",
+                                                                        e.target.value,
+                                                                    )
+                                                                }
+                                                                className="input-style">
+                                                                <option value="auto">
+                                                                    Auto (prefer visual
+                                                                    if available)
+                                                                </option>
+                                                                <option value="vision">
+                                                                    Vision only
+                                                                </option>
+                                                                <option value="ocr">
+                                                                    OCR only
+                                                                </option>
+                                                            </NativeSelect.Field>
+                                                            <NativeSelect.Indicator />
+                                                        </NativeSelect.Root>
+                                                        <Text
+                                                            fontSize="xs"
+                                                            color="gray.500"
+                                                            mt="1"
+                                                        >
+                                                            Auto uses visual
+                                                            processing when vision
+                                                            capability is detected;
+                                                            otherwise it falls back
+                                                            to OCR-compatible
+                                                            endpoints.
+                                                        </Text>
+                                                    </Box>
+
+                                                    <Box>
+                                                        <Tooltip content="Send a tiny test image to check whether the selected endpoint/model accepts image inputs">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="1"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                Vision Capability
+                                                                Probe
+                                                            </Text>
+                                                        </Tooltip>
+
+                                                        <HStack gap={3} mb={2}>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={
+                                                                    handleProbeVisionCapability
+                                                                }
+                                                                loading={
+                                                                    isProbingVision
+                                                                }
+                                                            >
+                                                                Test Vision Support
+                                                            </Button>
+                                                            <Badge
+                                                                colorPalette={
+                                                                    currentVisionCapability?.vision_capable
+                                                                        ? "green"
+                                                                        : currentVisionCapability
+                                                                          ? "red"
+                                                                          : "gray"
+                                                                }
+                                                            >
+                                                                {currentVisionCapability
+                                                                    ? currentVisionCapability.vision_capable
+                                                                        ? "Vision capable"
+                                                                        : "Not vision-capable"
+                                                                    : "Unknown"}
+                                                            </Badge>
+                                                        </HStack>
+                                                        {currentVisionCapability ? (
+                                                            <Text
+                                                                fontSize="xs"
+                                                                color="gray.500"
+                                                                mb={2}
+                                                            >
+                                                                Source:{" "}
+                                                                {currentVisionCapability.source ||
+                                                                    "cache"}
+                                                                {currentVisionCapability.probed_at
+                                                                    ? ` • Probed: ${currentVisionCapability.probed_at}`
+                                                                    : ""}
+                                                            </Text>
+                                                        ) : null}
+
+                                                        {visionProbeDetail ? (
+                                                            <Alert.Root
+                                                                status={
+                                                                    visionProbeStatus
+                                                                }
+                                                                borderRadius="sm"
+                                                                py={2}
+                                                            >
+                                                                <Alert.Indicator />
+                                                                <Text
+                                                                    fontSize="xs"
+                                                                    whiteSpace="pre-wrap"
+                                                                >
+                                                                    {
+                                                                        visionProbeDetail
+                                                                    }
+                                                                </Text>
+                                                            </Alert.Root>
+                                                        ) : null}
+                                                    </Box>
+                                                </VStack>
+                                            </VStack>
+                                        </TabPanel>
+
+                                        {/* RAG Tab */}
+                                        {isRagEnabled() && (
+                                            <TabPanel className="floating-main">
+                                                <VStack gap={4} align="stretch">
+                                                    <Box>
+                                                        <Text
+                                                            fontSize="md"
+                                                            fontWeight="bold"
+                                                        >
+                                                            Knowledge Base (RAG)
+                                                        </Text>
+                                                        <Text
+                                                            fontSize="sm"
+                                                            color="gray.500"
+                                                        >
+                                                            Configure the embedding
+                                                            model used for knowledge
+                                                            base searches
+                                                        </Text>
+                                                    </Box>
+
+                                                    <Box>
+                                                        <Tooltip content="Model used for generating embeddings for RAG - changing this will re-embed all documents">
+                                                            <Text
+                                                                fontSize="sm"
+                                                                mb="2"
+                                                                fontWeight={"bold"}
+                                                            >
+                                                                Embedding Model
+                                                            </Text>
+                                                        </Tooltip>
+                                                        {llmModelsLoading ? (
+                                                            <HStack gap="2">
+                                                                <Spinner size="sm" />
+                                                                <Text fontSize="sm" color="gray.500">
+                                                                    Loading models...
+                                                                </Text>
+                                                            </HStack>
+                                                        ) : (
+                                                        <NativeSelect.Root>
+                                                            <NativeSelect.Field
+                                                                size="sm"
+                                                                value={
+                                                                    config?.EMBEDDING_MODEL ||
+                                                                    ""
+                                                                }
+                                                                onValueChange={(e) =>
+                                                                    handleEmbeddingModelChange(
+                                                                        e.target.value,
+                                                                    )
+                                                                }
+                                                                placeholder="Select embedding model"
+                                                                className="input-style">
+                                                                {embeddingModelOptions.map(
+                                                                    (model) => (
+                                                                        <option
+                                                                            key={model}
+                                                                            value={
+                                                                                model
+                                                                            }
+                                                                        >
+                                                                            {model}
+                                                                        </option>
+                                                                    ),
+                                                                )}
+                                                            </NativeSelect.Field>
+                                                            <NativeSelect.Indicator />
+                                                        </NativeSelect.Root>
+                                                        )}
+                                                        <Text
+                                                            fontSize="xs"
+                                                            color="gray.500"
+                                                            mt="1"
+                                                        >
+                                                            Available embedding
+                                                            models depend on the LLM
+                                                            endpoint configured in
+                                                            the LLM tab
+                                                        </Text>
+                                                        <Text
+                                                            fontSize="xs"
+                                                            color={warningBg}
+                                                            mt="2"
+                                                            fontWeight="medium"
+                                                        >
+                                                            ⚠️ Changing the embedding
+                                                            model will re-embed all
+                                                            documents automatically
+                                                        </Text>
+                                                    </Box>
+                                                </VStack>
+                                            </TabPanel>
+                                        )}
+
+                                        {/* Tools Tab */}
+                                        <TabPanel className="floating-main">
+                                            <ToolsSettingsTab />
+                                        </TabPanel>
+                                    </TabPanels>
+                                </Tabs.Root>
+                            )}
+                        </VStack>
+                    </Collapsible.Content>
+                </Collapsible.Root>
             </Box>
-
             {/* Warning Modal for RAG Embedding Model Change */}
-            <Modal
-                isOpen={isEmbeddingModelModalOpen}
-                onClose={isReEmbedding ? undefined : handleCancelEmbeddingChange}
-                closeOnOverlayClick={!isReEmbedding}
-                closeOnEsc={!isReEmbedding}
-                size="md"
+            <Dialog.Root
+                open={isEmbeddingModelModalOpen}
+                closeOnInteractOutside={!isReEmbedding}
+                closeOnEscape={!isReEmbedding}
+                size='md'
+                onOpenChange={e => {
+                    if (!e.open) {
+                        (isReEmbedding ? undefined : handleCancelEmbeddingChange)();
+                    }
+                }}
             >
-                <ModalOverlay />
-                <ModalContent className="modal-style">
-                    <ModalHeader>Re-embed Documents</ModalHeader>
-                    <ModalBody>
-                        {isReEmbedding ? (
-                            <VStack spacing={4} align="stretch">
-                                <Text>
-                                    Re-embedding documents with the new model…
-                                </Text>
-                                <ReEmbedProgress progress={reEmbedProgress} />
-                            </VStack>
-                        ) : (
-                            <>
-                                <Text>
-                                    Changing the embedding model will re-embed all
-                                    existing document collections with the new model.
-                                    Your documents and collections will be preserved.
-                                </Text>
-                                <Text mt={4} fontWeight="bold">
-                                    Are you sure you want to proceed?
-                                </Text>
-                            </>
-                        )}
-                    </ModalBody>
-                    {!isReEmbedding && (
-                        <ModalFooter>
-                            <Button
-                                className="red-button"
-                                mr={3}
-                                onClick={handleCancelEmbeddingChange}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="green-button"
-                                onClick={handleConfirmEmbeddingChange}
-                            >
-                                Confirm Change
-                            </Button>
-                        </ModalFooter>
-                    )}
-                </ModalContent>
-            </Modal>
+                <Portal>
+
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                        <Dialog.Content className="modal-style">
+                            <Dialog.Header>Re-embed Documents</Dialog.Header>
+                            <Dialog.Body>
+                                {isReEmbedding ? (
+                                    <VStack gap={4} align="stretch">
+                                        <Text>
+                                            Re-embedding documents with the new model…
+                                        </Text>
+                                        <ReEmbedProgress progress={reEmbedProgress} />
+                                    </VStack>
+                                ) : (
+                                    <>
+                                        <Text>
+                                            Changing the embedding model will re-embed all
+                                            existing document collections with the new model.
+                                            Your documents and collections will be preserved.
+                                        </Text>
+                                        <Text mt={4} fontWeight="bold">
+                                            Are you sure you want to proceed?
+                                        </Text>
+                                    </>
+                                )}
+                            </Dialog.Body>
+                            {!isReEmbedding && (
+                                <Dialog.Footer>
+                                    <Button
+                                        className="red-button"
+                                        mr={3}
+                                        onClick={handleCancelEmbeddingChange}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        className="green-button"
+                                        onClick={handleConfirmEmbeddingChange}
+                                    >
+                                        Confirm Change
+                                    </Button>
+                                </Dialog.Footer>
+                            )}
+                        </Dialog.Content>
+                    </Dialog.Positioner>
+
+                </Portal>
+            </Dialog.Root>
         </>
     );
 };

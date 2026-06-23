@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useColorMode, useColorModeValue } from "../ui/color-mode";
 import {
+    Steps,
     Box,
     Flex,
     Textarea,
     IconButton,
     Text,
-    useColorMode,
-    useColorModeValue,
     Image,
     HStack,
     Spinner,
@@ -160,7 +160,6 @@ const DashboardChatInput = ({
                     </Text>
                 </Flex>
             )}
-
             <Box
                 className="dashboard-chat-input-container"
                 w="100%"
@@ -172,7 +171,7 @@ const DashboardChatInput = ({
             >
                 {pendingImage && (
                     <HStack
-                        spacing={2}
+                        gap={2}
                         mb={2}
                         px={2}
                         py={1.5}
@@ -191,11 +190,10 @@ const DashboardChatInput = ({
                             />
                         ) : (
                             <Icon
-                                as={FaFilePdf}
                                 boxSize={3.5}
                                 color={useColorModeValue("red.500", "red.300")}
                                 flexShrink={0}
-                            />
+                                asChild><FaFilePdf /></Icon>
                         )}
                         <Text fontSize="xs" flex="1" isTruncated>
                             {pendingImage.name}
@@ -204,24 +202,22 @@ const DashboardChatInput = ({
                             <Spinner size="xs" flexShrink={0} />
                         )}
                         <IconButton
-                            icon={<CloseIcon />}
                             size="xs"
                             variant="ghost"
                             aria-label="Remove file"
                             onClick={onImageRemove}
-                            isDisabled={isProcessingImage}
+                            disabled={isProcessingImage}
                             flexShrink={0}
                             minW="auto"
                             h="auto"
-                            p={0.5}
-                        />
+                            p={0.5}><CloseIcon /></IconButton>
                     </HStack>
                 )}
 
                 <Textarea
                     ref={textareaRef}
                     value={inputValue}
-                    onChange={handleTextChange}
+                    onValueChange={handleTextChange}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
                     rows={1}
@@ -240,16 +236,15 @@ const DashboardChatInput = ({
                             : "rgba(255, 255, 255, 0.6)",
                     }}
                     fontSize="md"
-                    isDisabled={isLoading || isProcessingImage}
+                    disabled={isLoading || isProcessingImage}
                     _focusVisible={{ boxShadow: "none" }}
                 />
 
                 <Flex align="center" justify="space-between" mt={1}>
-                    <HStack spacing={1}>
+                    <HStack gap={1}>
                         <IconButton
-                            icon={<AttachmentIcon />}
                             onClick={() => fileInputRef.current?.click()}
-                            isDisabled={isLoading || isProcessingImage}
+                            disabled={isLoading || isProcessingImage}
                             aria-label="Attach image or PDF"
                             size="sm"
                             variant="ghost"
@@ -262,22 +257,20 @@ const DashboardChatInput = ({
                                 bg: isLight
                                     ? "gray.100"
                                     : "rgba(255, 255, 255, 0.1)",
-                            }}
-                        />
+                            }}><AttachmentIcon /></IconButton>
                         <Input
                             type="file"
                             ref={fileInputRef}
-                            onChange={handleFileSelect}
+                            onValueChange={handleFileSelect}
                             display="none"
                             accept="image/png,image/jpeg,image/jpg,image/gif,.png,.jpg,.jpeg,.gif,.pdf"
                         />
                     </HStack>
 
                     <IconButton
-                        icon={<ArrowUpIcon />}
                         onClick={onSend}
-                        isDisabled={!canSend}
-                        isLoading={isLoading}
+                        disabled={!canSend}
+                        loading={isLoading}
                         aria-label="Send message"
                         size="sm"
                         alignSelf="center"
@@ -310,11 +303,9 @@ const DashboardChatInput = ({
                                   : "rgba(255, 255, 255, 0.3)",
                             transform: "scale(1.05)",
                         }}
-                        transition="all 0.2s ease"
-                    />
+                        transition="all 0.2s ease"><ArrowUpIcon /></IconButton>
                 </Flex>
             </Box>
-
             {showDisclaimer && (
                 <Text
                     textAlign="center"

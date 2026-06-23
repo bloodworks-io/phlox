@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Box, useColorMode } from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { Steps, Box } from "@chakra-ui/react";
 import styled from "@emotion/styled";
 import { emergeFromButton } from "../../theme/animations";
 import { colors } from "../../theme/colors";
@@ -162,7 +163,6 @@ const FloatingPanel = ({
                 {/* Isthmus / Arrow */}
                 {showArrow && position === "left-of-fab" && (
                     <Box
-                        as="svg"
                         position="absolute"
                         right="-12px"
                         top={arrowTop}
@@ -171,30 +171,30 @@ const FloatingPanel = ({
                         height="24px"
                         viewBox="0 0 14 24"
                         zIndex="1"
-                    >
-                        <path
-                            d="M 0 0.5 Q 7 8 14 0.5 L 14 23.5 Q 7 16 0 23.5 Z"
-                            fill={bgColor}
-                        />
-                        <path
-                            d="M 0 0.5 Q 7 8 14 0.5"
-                            fill="none"
-                            stroke={borderColor}
-                            strokeWidth="1"
-                        />
-                        <path
-                            d="M 0 23.5 Q 7 16 14 23.5"
-                            fill="none"
-                            stroke={borderColor}
-                            strokeWidth="1"
-                        />
-                    </Box>
+                        asChild
+                    ><svg>
+                            <path
+                                d="M 0 0.5 Q 7 8 14 0.5 L 14 23.5 Q 7 16 0 23.5 Z"
+                                fill={bgColor}
+                            />
+                            <path
+                                d="M 0 0.5 Q 7 8 14 0.5"
+                                fill="none"
+                                stroke={borderColor}
+                                strokeWidth="1"
+                            />
+                            <path
+                                d="M 0 23.5 Q 7 16 14 23.5"
+                                fill="none"
+                                stroke={borderColor}
+                                strokeWidth="1"
+                            />
+                        </svg></Box>
                 )}
                 {showArrow &&
                     (position === "bottom-center" ||
                         position === "above-transcript-button") && (
                         <Box
-                            as="svg"
                             position="absolute"
                             bottom="-15px"
                             left={arrowLeft}
@@ -203,24 +203,25 @@ const FloatingPanel = ({
                             height="16px"
                             viewBox="0 0 24 16"
                             zIndex="1"
-                        >
-                            <path
-                                d="M 0.5 0 Q 8 8 0.5 16 L 23.5 16 Q 16 8 23.5 0 Z"
-                                fill={bgColor}
-                            />
-                            <path
-                                d="M 0.5 0 Q 8 8 0.5 16"
-                                fill="none"
-                                stroke={borderColor}
-                                strokeWidth="1"
-                            />
-                            <path
-                                d="M 23.5 0 Q 16 8 23.5 16"
-                                fill="none"
-                                stroke={borderColor}
-                                strokeWidth="1"
-                            />
-                        </Box>
+                            asChild
+                        ><svg>
+                                <path
+                                    d="M 0.5 0 Q 8 8 0.5 16 L 23.5 16 Q 16 8 23.5 0 Z"
+                                    fill={bgColor}
+                                />
+                                <path
+                                    d="M 0.5 0 Q 8 8 0.5 16"
+                                    fill="none"
+                                    stroke={borderColor}
+                                    strokeWidth="1"
+                                />
+                                <path
+                                    d="M 23.5 0 Q 16 8 23.5 16"
+                                    fill="none"
+                                    stroke={borderColor}
+                                    strokeWidth="1"
+                                />
+                            </svg></Box>
                     )}
             </AnimatedBox>
         </Box>
