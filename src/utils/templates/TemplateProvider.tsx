@@ -11,7 +11,7 @@ import { templateService } from "./templateService";
 import { useAppInit } from "../context/appInit";
 
 // Create context
-const TemplateContext = createContext(null);
+const TemplateContext = createContext<any>(null);
 
 // Initial state
 const initialState = {

@@ -31,10 +31,7 @@ export const settingsService = {
         // Added check for setter
         setter(userData); // Call the setter with fetched data
       } else {
-        // This case should ideally not happen if components pass setters.
-        // For safety, or if direct data return is still needed elsewhere (unlikely for this specific function based on Settings.js)
-        // console.warn("fetchUserSettings called without a setter. Returning data directly.");
-        return userData; // Or throw an error if setter is always mandatory
+        return userData;
       }
     } catch (error) {
       console.error("Error in fetchUserSettings:", error);
@@ -49,7 +46,6 @@ export const settingsService = {
       .then((data) => setOptions(settingsHelpers.processOptionsData(data)));
   },
 
-  // New consolidated method to fetch LLM models - works for Ollama, OpenAI-compatible, and Local
   fetchLLMModels: async (config, setModelOptions) => {
     try {
       const providerType = config.LLM_PROVIDER || "ollama";
@@ -91,17 +87,6 @@ export const settingsService = {
       console.error(`Error fetching ${config.LLM_PROVIDER} models:`, error);
       setModelOptions([]);
     }
-  },
-
-  // Keep the old method for backward compatibility, but use the new one internally
-  fetchOllamaModels: (ollamaBaseUrl, setModelOptions) => {
-    return settingsApi
-      .fetchOllamaModels(ollamaBaseUrl)
-      .then((data) => setModelOptions(data.models.map((model) => model.name)))
-      .catch((error) => {
-        console.error("Error fetching Ollama models:", error);
-        setModelOptions([]);
-      });
   },
 
   fetchWhisperModels: async (
