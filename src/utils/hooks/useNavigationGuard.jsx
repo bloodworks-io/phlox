@@ -57,6 +57,6 @@ export const useNavigationGuard = (isModified, setIsModified) => {
         guardedNavigate,
         confirmNavigation,
         cancelNavigation,
-        isLeaveOpen: isOpen,
+        isLeaveOpen: open,
     };
 };

@@ -1,6 +1,6 @@
 // Component for uploading and vectorizing documents into the RAG database.
 import React, { useState } from "react";
-import { Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
+import { Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Tabs } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { ChevronDownIcon, ChevronRightIcon, AddIcon } from "../common/icons";
 import { MdFileUpload } from "react-icons/md";
@@ -150,23 +150,22 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
             </Flex>
             <Collapsible.Root open={!isCollapsed}>
                 <Collapsible.Content>
-                    <Tabs.Root variant='enclosed' mt={4}>
+                    <Tabs.Root variant='enclosed' mt={4} defaultValue="0">
                         <Tabs.List>
-                            <Tab className="tab-style">
+                            <Tabs.Trigger className="tab-style" value="0">
                                 <HStack>
                                     <MdFileUpload />
                                     <Text>Single Upload</Text>
                                 </HStack>
-                            </Tab>
-                            <Tab className="tab-style">
+                            </Tabs.Trigger>
+                            <Tabs.Trigger className="tab-style" value="1">
                                 <HStack>
                                     <FaCloudUploadAlt />
                                     <Text>Bulk Upload</Text>
                                 </HStack>
-                            </Tab>
+                            </Tabs.Trigger>
                         </Tabs.List>
-                        <TabPanels>
-                            <TabPanel className="floating-main">
+                        <Tabs.Content className="floating-main" value="0">
                                 <VStack gap={4} align="stretch">
                                     <Input
                                         id="pdf-upload"
@@ -194,7 +193,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                                 placeholder="Custom Collection Name"
                                                 className="input-style"
                                                 value={customCollectionName}
-                                                onValueChange={(e) =>
+                                                onChange={(e) =>
                                                     setCustomCollectionName(e.target.value)
                                                 }
                                             />
@@ -206,7 +205,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                                 placeholder="Document Source"
                                                 className="input-style"
                                                 value={documentSource}
-                                                onValueChange={(e) =>
+                                                onChange={(e) =>
                                                     setDocumentSource(e.target.value)
                                                 }
                                             />
@@ -218,7 +217,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                                 placeholder="Focus Area"
                                                 className="input-style"
                                                 value={focusArea}
-                                                onValueChange={(e) => setFocusArea(e.target.value)}
+                                                onChange={(e) => setFocusArea(e.target.value)}
                                             />
                                             <Button
                                                 onClick={handleCommitToDatabase}
@@ -231,11 +230,10 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                         </VStack>
                                     )}
                                 </VStack>
-                            </TabPanel>
-                            <TabPanel className="floating-main">
+                            </Tabs.Content>
+                            <Tabs.Content className="floating-main" value="1">
                                 <BulkUploader setCollections={setCollections} />
-                            </TabPanel>
-                        </TabPanels>
+                            </Tabs.Content>
                     </Tabs.Root>
                 </Collapsible.Content>
             </Collapsible.Root>

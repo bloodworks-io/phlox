@@ -16,7 +16,6 @@ import {
     Input,
     Image,
     Flex,
-    Divider,
 } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { useColorModeValue } from "../ui/color-mode";
@@ -96,14 +95,25 @@ const Sidebar = ({
     const sidebarRef = useRef(null);
 
     // Close sidebar when clicking outside on small screens
-    useOutsideClick({
-        ref: sidebarRef,
-        handler: () => {
-            if (isSmallScreen && !isCollapsed) {
+    // Close sidebar when clicking outside on small screens (replaces v2 useOutsideClick)
+    useEffect(() => {
+        const handler = (event) => {
+            if (
+                sidebarRef.current &&
+                !sidebarRef.current.contains(event.target) &&
+                isSmallScreen &&
+                !isCollapsed
+            ) {
                 toggleSidebar();
             }
-        },
-    });
+        };
+        document.addEventListener("mousedown", handler);
+        document.addEventListener("touchstart", handler);
+        return () => {
+            document.removeEventListener("mousedown", handler);
+            document.removeEventListener("touchstart", handler);
+        };
+    }, [isSmallScreen, isCollapsed, toggleSidebar]);
 
     // Function definitions remain the same
     const fetchPatients = async (date) => {
@@ -338,7 +348,7 @@ const Sidebar = ({
                             <Input
                                 type="date"
                                 value={selectedDate || ""}
-                                onValueChange={(e) =>
+                                onChange={(e) =>
                                     setSelectedDate(e.target.value)
                                 }
                                 size="sm"
@@ -418,7 +428,7 @@ const Sidebar = ({
             </Box>
             {/* Delete confirmation modal */}
             <DeleteConfirmationModal
-                isOpen={isOpen}
+                isOpen={open}
                 onClose={onClose}
                 onDelete={confirmDelete}
                 patientName={patientToDelete?.name}

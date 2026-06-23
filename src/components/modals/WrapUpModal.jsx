@@ -204,7 +204,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                     checked={item.checked}><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Root>
                                                 <Input
                                                     value={item.text}
-                                                    onValueChange={(e) =>
+                                                    onChange={(e) =>
                                                         editItemText(
                                                             idx,
                                                             e.target.value,
@@ -233,7 +233,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                         <Input
                                             placeholder="Add a task..."
                                             value={newTaskText}
-                                            onValueChange={(e) =>
+                                            onChange={(e) =>
                                                 setNewTaskText(e.target.value)
                                             }
                                             onKeyDown={(e) => {

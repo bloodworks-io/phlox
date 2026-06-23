@@ -7,6 +7,7 @@
  See: https://chakra-ui.com/docs/get-started/migration#hooks
 */
 import { Steps, Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
+import { useClipboard } from "../utils/hooks/useClipboard";
 import { useToast } from "@/utils/useToastShim";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";

@@ -119,7 +119,7 @@ const FormTemplatesPanel = ({
                   <NativeSelect.Field
                     size="xs"
                     value={activeFieldType}
-                    onValueChange={(e) => onSetFieldType(e.target.value)}
+                    onChange={(e) => onSetFieldType(e.target.value)}
                     className="input-style">
                     <option value="text">Text</option>
                     <option value="checkbox">Checkbox</option>

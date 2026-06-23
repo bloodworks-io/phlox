@@ -100,7 +100,7 @@ const ChatSettingsPanel = ({
                                                             userSettings.quick_chat_1_title ||
                                                             ""
                                                         }
-                                                        onValueChange={(e) =>
+                                                        onChange={(e) =>
                                                             handleQuickChatChange(
                                                                 "quick_chat_1_title",
                                                                 e.target.value,
@@ -120,7 +120,7 @@ const ChatSettingsPanel = ({
                                                             userSettings.quick_chat_1_prompt ||
                                                             ""
                                                         }
-                                                        onValueChange={(e) =>
+                                                        onChange={(e) =>
                                                             handleQuickChatChange(
                                                                 "quick_chat_1_prompt",
                                                                 e.target.value,
@@ -173,7 +173,7 @@ const ChatSettingsPanel = ({
                                                             userSettings.quick_chat_2_title ||
                                                             ""
                                                         }
-                                                        onValueChange={(e) =>
+                                                        onChange={(e) =>
                                                             handleQuickChatChange(
                                                                 "quick_chat_2_title",
                                                                 e.target.value,
@@ -193,7 +193,7 @@ const ChatSettingsPanel = ({
                                                             userSettings.quick_chat_2_prompt ||
                                                             ""
                                                         }
-                                                        onValueChange={(e) =>
+                                                        onChange={(e) =>
                                                             handleQuickChatChange(
                                                                 "quick_chat_2_prompt",
                                                                 e.target.value,
@@ -246,7 +246,7 @@ const ChatSettingsPanel = ({
                                                             userSettings.quick_chat_3_title ||
                                                             ""
                                                         }
-                                                        onValueChange={(e) =>
+                                                        onChange={(e) =>
                                                             handleQuickChatChange(
                                                                 "quick_chat_3_title",
                                                                 e.target.value,
@@ -266,7 +266,7 @@ const ChatSettingsPanel = ({
                                                             userSettings.quick_chat_3_prompt ||
                                                             ""
                                                         }
-                                                        onValueChange={(e) =>
+                                                        onChange={(e) =>
                                                             handleQuickChatChange(
                                                                 "quick_chat_3_prompt",
                                                                 e.target.value,

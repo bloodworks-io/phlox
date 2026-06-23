@@ -449,7 +449,7 @@ const BulkUploader = ({ setCollections }) => {
                                                         entry.metadata
                                                             .disease_name
                                                     }
-                                                    onValueChange={(e) =>
+                                                    onChange={(e) =>
                                                         updateMetadata(
                                                             entry.id,
                                                             "disease_name",
@@ -470,7 +470,7 @@ const BulkUploader = ({ setCollections }) => {
                                                         entry.metadata
                                                             .document_source
                                                     }
-                                                    onValueChange={(e) =>
+                                                    onChange={(e) =>
                                                         updateMetadata(
                                                             entry.id,
                                                             "document_source",
@@ -491,7 +491,7 @@ const BulkUploader = ({ setCollections }) => {
                                                         entry.metadata
                                                             .focus_area
                                                     }
-                                                    onValueChange={(e) =>
+                                                    onChange={(e) =>
                                                         updateMetadata(
                                                             entry.id,
                                                             "focus_area",

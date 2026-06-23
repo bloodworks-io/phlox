@@ -6,7 +6,7 @@
 
  See: https://chakra-ui.com/docs/get-started/migration#hooks
 */
-import { Steps, Box, Text, Table, Thead, Tbody, Tr, Th, Td, HStack, Icon, Button, IconButton, Checkbox, VStack, Grid, Wrap, WrapItem, Spinner } from "@chakra-ui/react";
+import { Steps, Box, Text, Table, HStack, Icon, Button, IconButton, Checkbox, VStack, Grid, Wrap, WrapItem, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
 import { useColorMode } from "../ui/color-mode";
@@ -41,7 +41,6 @@ const PatientTable = ({
   summaryOnly = false,
 }) => {
   const { colorMode } = useColorMode();
-  const theme = useTheme();
   const toast = useToast();
   const [loadingStates, setLoadingStates] = useState({});
   const pendingJobsUpdates = useRef(new Map());
@@ -64,11 +63,11 @@ const PatientTable = ({
   const getRowBackgroundColor = (index) => {
     return colorMode === "light"
       ? index % 2 === 0
-        ? theme.token('colors.light.secondary')
-        : theme.token('colors.light.tertiary')
+        ? colors.light.secondary
+        : colors.light.tertiary
       : index % 2 === 0
-        ? theme.token('colors.dark.secondary')
-        : theme.token('colors.dark.tertiary');
+        ? colors.dark.secondary
+        : colors.dark.tertiary;
   };
 
   const PatientDetails = ({ patient }) => (

@@ -111,7 +111,7 @@ const FieldEditor = ({
                             <Input
                                 placeholder="Unnamed Field"
                                 value={field.field_name || ""}
-                                onValueChange={(e) =>
+                                onChange={(e) =>
                                     updateField(
                                         idx,
                                         "field_name",
@@ -264,7 +264,7 @@ const FieldEditor = ({
                         value={field.system_prompt || ""}
                         size="sm"
                         rows={3}
-                        onValueChange={(e) =>
+                        onChange={(e) =>
                             updateField(idx, "system_prompt", e.target.value)
                         }
                         className="input-style"
@@ -308,7 +308,7 @@ const FieldEditor = ({
                                                 value={
                                                     field.format_schema?.type || "none"
                                                 }
-                                                onValueChange={(e) => {
+                                                onChange={(e) => {
                                                     const value = e.target.value;
                                                     if (value === "none") {
                                                         updateField(
@@ -359,7 +359,7 @@ const FieldEditor = ({
                                                         field.format_schema
                                                             ?.bullet_char || "•"
                                                     }
-                                                    onValueChange={(e) => {
+                                                    onChange={(e) => {
                                                         updateField(
                                                             idx,
                                                             "format_schema",
@@ -390,7 +390,7 @@ const FieldEditor = ({
                                     <Textarea
                                         size="sm"
                                         value={field.style_example || ""}
-                                        onValueChange={(e) => {
+                                        onChange={(e) => {
                                             updateField(
                                                 idx,
                                                 "style_example",
@@ -533,7 +533,7 @@ const TemplateEditor = ({
                                         <Input
                                             placeholder="Template Name"
                                             value={editedTemplate.template_name || ""}
-                                            onValueChange={(e) =>
+                                            onChange={(e) =>
                                                 updateTemplateName(e.target.value)
                                             }
                                             variant="unstyled"

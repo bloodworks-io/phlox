@@ -1,17 +1,5 @@
 import { useState, useRef } from "react";
-import {
-  Steps,
-  Box,
-  Flex,
-  Text,
-  Tabs,
-  TabList,
-  TabPanels,
-  TabPanel,
-  Tab,
-  HStack,
-  VStack,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, Text, Tabs, HStack, VStack } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
 import FloatingPanel from "../../common/FloatingPanel";
@@ -123,26 +111,26 @@ const PreviousVisitPanel = ({
           >
             <Tabs.List flexShrink={0}>
               <Tooltip content="AI-generated summary of the previous visit">
-                <Tab className="tab-style">
+                <Tabs.Trigger className="tab-style" value="0">
                   <HStack>
                     <FaList />
                     <Text>Summary</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
               <Tooltip content="Full note content from the previous encounter">
-                <Tab className="tab-style">
+                <Tabs.Trigger className="tab-style" value="1">
                   <HStack>
                     <FaFileAlt />
                     <Text>Full Note</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
             </Tabs.List>
 
-            <TabPanels flex="1" overflow="hidden" display="flex" width="100%">
+            
               {/* Summary Tab */}
-              <TabPanel
+              <Tabs.Content value="0"
                 className="floating-main"
                 p={0}
                 width="100%"
@@ -166,10 +154,10 @@ const PreviousVisitPanel = ({
                     </Text>
                   )}
                 </Box>
-              </TabPanel>
+              </Tabs.Content>
 
               {/* Full Note Tab */}
-              <TabPanel
+              <Tabs.Content value="1"
                 className="floating-main"
                 p={0}
                 width="100%"
@@ -206,8 +194,8 @@ const PreviousVisitPanel = ({
                     </Text>
                   )}
                 </Box>
-              </TabPanel>
-            </TabPanels>
+              </Tabs.Content>
+            
           </Tabs.Root>
         </Box>
 

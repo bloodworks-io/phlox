@@ -1,6 +1,6 @@
 // Page component for document management (upload, explore, and PDF form templates).
 import React from "react";
-import { Steps, Box, Text, HStack, Tabs, TabList, TabPanels, TabPanel, Tab } from "@chakra-ui/react";
+import { Steps, Box, Text, HStack, Tabs } from "@chakra-ui/react";
 import { FaBook, FaFileAlt } from "react-icons/fa";
 import { isRagEnabled, isPdfFormsEnabled } from "../utils/helpers/featureFlags";
 import { useRagDocuments } from "../utils/hooks/useRagDocuments";
@@ -62,29 +62,27 @@ const Rag = () => {
 
         <Box p={[2, 3, 4]} borderRadius="sm" className="panels-bg">
           {showTabs ? (
-            <Tabs.Root variant='enclosed'>
+            <Tabs.Root variant='enclosed' defaultValue="0">
               <Tabs.List>
-                <Tab className="tab-style">
+                <Tabs.Trigger className="tab-style" value="0">
                   <HStack gap="1">
                     <FaBook size="0.85em" />
                     <Text>Knowledge Base</Text>
                   </HStack>
-                </Tab>
-                <Tab className="tab-style">
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="1">
                   <HStack gap="1">
                     <FaFileAlt size="0.85em" />
                     <Text>Form Templates</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tabs.List>
-              <TabPanels>
-                <TabPanel className="floating-main" px="4" py="3">
-                  <KnowledgeBasePanel {...knowledgeBaseProps} />
-                </TabPanel>
-                <TabPanel className="floating-main" px="4" py="3">
-                  <FormTemplatesPanel {...formTemplatesProps} />
-                </TabPanel>
-              </TabPanels>
+              <Tabs.Content className="floating-main" px="4" py="3" value="0">
+                <KnowledgeBasePanel {...knowledgeBaseProps} />
+              </Tabs.Content>
+              <Tabs.Content className="floating-main" px="4" py="3" value="1">
+                <FormTemplatesPanel {...formTemplatesProps} />
+              </Tabs.Content>
             </Tabs.Root>
           ) : formsEnabled ? (
             <FormTemplatesPanel {...formTemplatesProps} />

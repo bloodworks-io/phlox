@@ -328,7 +328,7 @@ const EncryptionSetup = ({ onComplete }) => {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter a secure passphrase (min 12 characters)"
                   value={passphrase}
-                  onValueChange={(e) => setPassphrase(e.target.value)}
+                  onChange={(e) => setPassphrase(e.target.value)}
                   size="md"
                   bg={currentColors.surface}
                   border={`1px solid ${currentColors.border}`}
@@ -390,7 +390,7 @@ const EncryptionSetup = ({ onComplete }) => {
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm your passphrase"
                   value={confirmPassphrase}
-                  onValueChange={(e) => setConfirmPassphrase(e.target.value)}
+                  onChange={(e) => setConfirmPassphrase(e.target.value)}
                   size="md"
                   bg={currentColors.surface}
                   border={`1px solid ${currentColors.border}`}

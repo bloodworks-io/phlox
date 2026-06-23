@@ -104,7 +104,7 @@ const NewTemplateFromExampleModal = ({
         Assessment: Likely diagnosis of...
         Plan: 1. Prescribe medication 2. Follow up in 2 weeks`}
                                     value={exampleNote}
-                                    onValueChange={(e) => setExampleNote(e.target.value)}
+                                    onChange={(e) => setExampleNote(e.target.value)}
                                     className="input-style"
                                     minH="200px"
                                     resize="vertical"

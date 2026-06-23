@@ -53,7 +53,7 @@ const LetterEditor = ({
         <Textarea
           placeholder="Write your letter here..."
           value={finalCorrespondence || "No letter attached to encounter"}
-          onValueChange={(e) => {
+          onChange={(e) => {
             onLetterChange(e.target.value);
           }}
           // Make Textarea the flexible item, taking up remaining space

@@ -3,10 +3,6 @@ import {
     Steps,
     Text,
     Tabs,
-    TabList,
-    TabPanels,
-    TabPanel,
-    Tab,
     VStack,
     Box,
     Badge,
@@ -227,69 +223,40 @@ export const ReasoningContent = ({
             height="100%"
         >
             <Tabs.List>
-                <Tab className="tab-style">Summary</Tab>
-                <Tab className="tab-style">Differentials</Tab>
-                <Tab className="tab-style">Investigations</Tab>
-                <Tab className="tab-style">Considerations</Tab>
-                <Tab className="tab-style">Thinking</Tab>
+                <Tabs.Trigger className="tab-style" value="0">Summary</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="1">Differentials</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="2">Investigations</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="3">Considerations</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="4">Thinking</Tabs.Trigger>
             </Tabs.List>
-            <TabPanels flex="1" overflow="hidden" minHeight="0">
-                {/* Summary Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                    display="flex"
-                    flexDirection="column"
-                >
-                    <Text fontSize="sm">{reasoning.summary}</Text>
-                </TabPanel>
+            {/* Summary Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" display="flex" flexDirection="column" value="0">
+                <Text fontSize="sm">{reasoning.summary}</Text>
+            </Tabs.Content>
 
-                {/* Differentials Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("differentials", reasoning, colorMode)}
-                </TabPanel>
+            {/* Differentials Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="1">
+                {renderItems("differentials", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Investigations Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("investigations", reasoning, colorMode)}
-                </TabPanel>
+            {/* Investigations Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="2">
+                {renderItems("investigations", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Considerations Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("considerations", reasoning, colorMode)}
-                </TabPanel>
+            {/* Considerations Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="3">
+                {renderItems("considerations", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Thinking Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderThinkingCards(reasoning?.thinking, colorMode)}
-                    <CitationList
-                        citations={reasoning?.citations}
-                        colorMode={colorMode}
-                    />
-                </TabPanel>
-            </TabPanels>
+            {/* Thinking Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="4">
+                {renderThinkingCards(reasoning?.thinking, colorMode)}
+                <CitationList
+                    citations={reasoning?.citations}
+                    colorMode={colorMode}
+                />
+            </Tabs.Content>
         </Tabs.Root>
     );
 };

@@ -89,7 +89,7 @@ const DashboardTodoPanel = ({
                             <HStack gap={1}>
                                 <Input
                                     value={newTodo}
-                                    onValueChange={(e) => setNewTodo?.(e.target.value)}
+                                    onChange={(e) => setNewTodo?.(e.target.value)}
                                     onKeyDown={handleTodoKeyDown}
                                     placeholder="Add a task..."
                                     size="sm"

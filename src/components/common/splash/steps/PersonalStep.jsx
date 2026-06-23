@@ -68,7 +68,7 @@ export const PersonalStep = ({
         <Input
           placeholder="Ada Lovelace"
           value={name}
-          onValueChange={(e) => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           className="input-style"
           size="md"
         />
@@ -103,7 +103,7 @@ export const PersonalStep = ({
           <NativeSelect.Field
             placeholder="Select your specialty"
             value={specialty}
-            onValueChange={(e) => setSpecialty(e.target.value)}
+            onChange={(e) => setSpecialty(e.target.value)}
             className="input-style"
             size="md">
             {SPECIALTIES.map((spec) => (

@@ -1,39 +1,5 @@
 import React, { useState, useMemo } from "react";
-import {
-  Steps,
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Button,
-  Input,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  IconButton,
-  useDisclosure,
-  Spinner,
-  Badge,
-  Alert,
-  Flex,
-  Spacer,
-  Progress,
-  SimpleGrid,
-  Icon,
-  Center,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-  Collapsible,
-  Separator,
-  Dialog,
-  Portal,
-} from "@chakra-ui/react";
+import { Steps, Box, VStack, HStack, Text, Button, Input, Table, IconButton, useDisclosure, Spinner, Badge, Alert, Flex, Spacer, Progress, SimpleGrid, Icon, Center, Tabs, Collapsible, Separator, Dialog, Portal } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
   FaExclamationTriangle,
@@ -335,23 +301,23 @@ const LocalModelManager = ({ className }) => {
       {/* Tabs for LLM and Whisper models */}
       <Tabs.Root variant='enclosed'>
         <Tabs.List>
-          <Tab>
+          <Tabs.Trigger value="0">
             <HStack>
               <Icon asChild><FaMicrochip /></Icon>
               <Text>LLM Models</Text>
             </HStack>
-          </Tab>
-          <Tab>
+          </Tabs.Trigger>
+          <Tabs.Trigger value="1">
             <HStack>
               <Icon asChild><FaMicrophone /></Icon>
               <Text>Whisper Models</Text>
             </HStack>
-          </Tab>
+          </Tabs.Trigger>
         </Tabs.List>
 
-        <TabPanels>
+        
           {/* LLM Models Tab */}
-          <TabPanel>
+          <Tabs.Content value="0">
             <VStack gap={4} align="stretch">
               {!localStatus.available && !localStatus?.llama_server_running && (
                 <Alert.Root status="warning" borderRadius="md">
@@ -495,10 +461,10 @@ const LocalModelManager = ({ className }) => {
                 )}
               </Box>
             </VStack>
-          </TabPanel>
+          </Tabs.Content>
 
           {/* Whisper Models Tab */}
-          <TabPanel>
+          <Tabs.Content value="1">
             <VStack gap={4} align="stretch">
               <Box>
                 <Text fontSize="sm" fontWeight="semibold" mb="2">
@@ -660,8 +626,8 @@ const LocalModelManager = ({ className }) => {
                 )}
               </Box>
             </VStack>
-          </TabPanel>
-        </TabPanels>
+          </Tabs.Content>
+        
       </Tabs.Root>
       {/* Delete Confirmation Modal for LLM models */}
       <Dialog.Root open={isDeleteOpen} onOpenChange={e => {

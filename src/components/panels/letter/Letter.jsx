@@ -7,6 +7,7 @@
  See: https://chakra-ui.com/docs/get-started/migration#hooks
 */
 import { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import { useClipboard } from "../../../utils/hooks/useClipboard";
 
 import LetterPanel from "./LetterPanel";
 import { useLetterTemplates } from "../../../utils/hooks/useLetterTemplates";

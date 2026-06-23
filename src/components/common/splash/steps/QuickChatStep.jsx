@@ -106,7 +106,7 @@ export const QuickChatStep = ({
             <Input
               placeholder="e.g., Critique my plan"
               value={quickChat1Title}
-              onValueChange={(e) => setQuickChat1Title(e.target.value)}
+              onChange={(e) => setQuickChat1Title(e.target.value)}
               className="input-style"
               size="sm"
             />
@@ -118,7 +118,7 @@ export const QuickChatStep = ({
             <Textarea
               placeholder="e.g., Please critique my management plan and suggest any improvements"
               value={quickChat1Prompt}
-              onValueChange={(e) => setQuickChat1Prompt(e.target.value)}
+              onChange={(e) => setQuickChat1Prompt(e.target.value)}
               className="input-style"
               size="sm"
               rows={2}
@@ -139,7 +139,7 @@ export const QuickChatStep = ({
             <Input
               placeholder="e.g., Additional investigations"
               value={quickChat2Title}
-              onValueChange={(e) => setQuickChat2Title(e.target.value)}
+              onChange={(e) => setQuickChat2Title(e.target.value)}
               className="input-style"
               size="sm"
             />
@@ -151,7 +151,7 @@ export const QuickChatStep = ({
             <Textarea
               placeholder="e.g., What additional investigations should I consider for this patient?"
               value={quickChat2Prompt}
-              onValueChange={(e) => setQuickChat2Prompt(e.target.value)}
+              onChange={(e) => setQuickChat2Prompt(e.target.value)}
               className="input-style"
               size="sm"
               rows={2}
@@ -172,7 +172,7 @@ export const QuickChatStep = ({
             <Input
               placeholder="e.g., Differential diagnoses"
               value={quickChat3Title}
-              onValueChange={(e) => setQuickChat3Title(e.target.value)}
+              onChange={(e) => setQuickChat3Title(e.target.value)}
               className="input-style"
               size="sm"
             />
@@ -184,7 +184,7 @@ export const QuickChatStep = ({
             <Textarea
               placeholder="e.g., What other differential diagnoses should I consider for this presentation?"
               value={quickChat3Prompt}
-              onValueChange={(e) => setQuickChat3Prompt(e.target.value)}
+              onChange={(e) => setQuickChat3Prompt(e.target.value)}
               className="input-style"
               size="sm"
               rows={2}

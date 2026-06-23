@@ -201,7 +201,7 @@ const DemographicsForm = ({
                         placeholder="First name"
                         autoFocus
                         value={form.first_name || ""}
-                        onValueChange={(e) => set("first_name", e.target.value)}
+                        onChange={(e) => set("first_name", e.target.value)}
                     />
                 </Field>
                 <Field label="Last name" required>
@@ -210,7 +210,7 @@ const DemographicsForm = ({
                         size="sm"
                         placeholder="Last name"
                         value={form.last_name || ""}
-                        onValueChange={(e) => set("last_name", e.target.value)}
+                        onChange={(e) => set("last_name", e.target.value)}
                     />
                 </Field>
             </HStack>
@@ -221,7 +221,7 @@ const DemographicsForm = ({
                         className="input-style"
                         size="sm"
                         value={form.dob || ""}
-                        onValueChange={(e) => set("dob", e.target.value)}
+                        onChange={(e) => set("dob", e.target.value)}
                     />
                 </Field>
                 <Field label="Gender">
@@ -230,7 +230,7 @@ const DemographicsForm = ({
                             className="input-style"
                             size="sm"
                             value={form.gender || ""}
-                            onValueChange={(e) => set("gender", e.target.value)}>
+                            onChange={(e) => set("gender", e.target.value)}>
                             <option value="">M/F</option>
                             <option value="M">M</option>
                             <option value="F">F</option>
@@ -245,7 +245,7 @@ const DemographicsForm = ({
                     size="sm"
                     placeholder="UR number"
                     value={form.ur_number || ""}
-                    onValueChange={(e) => set("ur_number", e.target.value)}
+                    onChange={(e) => set("ur_number", e.target.value)}
                 />
             </Field>
             <Field label="Address">
@@ -254,7 +254,7 @@ const DemographicsForm = ({
                     size="sm"
                     placeholder="Address"
                     value={form.address || ""}
-                    onValueChange={(e) => set("address", e.target.value)}
+                    onChange={(e) => set("address", e.target.value)}
                 />
             </Field>
             <Field label="Phone">
@@ -263,7 +263,7 @@ const DemographicsForm = ({
                     size="sm"
                     placeholder="Phone"
                     value={form.phone || ""}
-                    onValueChange={(e) => set("phone", e.target.value)}
+                    onChange={(e) => set("phone", e.target.value)}
                 />
             </Field>
             <HStack justify="space-between" width="100%" mt={2}>

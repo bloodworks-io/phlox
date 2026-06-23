@@ -122,13 +122,17 @@ const LocalModelCard = ({
                             {downloadProgress.toFixed(0)}%
                         </Text>
                     </Flex>
-                    <Progress
+                    <Progress.Root
                         value={downloadProgress}
-                        colorScheme="blue"
+                        colorPalette="blue"
                         size="sm"
-                        hasStripe
-                        isAnimated
-                    />
+                        striped
+                        animated
+                    >
+                        <Progress.Track>
+                            <Progress.Range />
+                        </Progress.Track>
+                    </Progress.Root>
                 </Box>
             )}
             {!isDownloading && isDownloaded && (

@@ -9,7 +9,6 @@ import {
   Input,
   NativeSelect,
   NumberInput,
-  NumberInputField,
   Checkbox,
   Textarea,
   HStack,
@@ -57,7 +56,7 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
         <Input
           size="sm"
           value={field.name}
-          onValueChange={(e) => onChange({ ...field, name: e.target.value })}
+          onChange={(e) => onChange({ ...field, name: e.target.value })}
           placeholder="field_name"
           className="input-style"
         />
@@ -70,7 +69,7 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
           <NativeSelect.Field
             size="sm"
             value={field.field_type}
-            onValueChange={(e) => onChange({ ...field, field_type: e.target.value })}
+            onChange={(e) => onChange({ ...field, field_type: e.target.value })}
             className="input-style">
             <option value="text">Text</option>
             <option value="checkbox">Checkbox</option>
@@ -87,7 +86,7 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
         <Textarea
           size="sm"
           value={field.description || ""}
-          onValueChange={(e) => onChange({ ...field, description: e.target.value })}
+          onChange={(e) => onChange({ ...field, description: e.target.value })}
           placeholder="Optional description"
           rows={2}
           className="input-style"
@@ -125,7 +124,7 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
       </HStack>
       <Checkbox.Root
         size="sm"
-        onCheckedChange={(e) => onChange({ ...field, required: e.target.checked })}
+        onCheckedChange={({ checked }) => onChange({ ...field, required: checked })}
         checked={field.required}
       ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>Required field
                 </Checkbox.Label></Checkbox.Root>

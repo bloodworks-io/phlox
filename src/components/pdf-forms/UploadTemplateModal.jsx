@@ -110,7 +110,7 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
                   <Input
                     placeholder="e.g. Referral Form"
                     value={name}
-                    onValueChange={(e) => setName(e.target.value)}
+                    onChange={(e) => setName(e.target.value)}
                     className="input-style"
                   />
                 </Box>

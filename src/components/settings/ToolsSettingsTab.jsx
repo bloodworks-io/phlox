@@ -414,16 +414,18 @@ const ToolsSettingsTab = ({ className }) => {
                                     </Box>
                                 </HStack>
 
-                                <Switch
+                                <Switch.Root
                                     checked={isToolEnabled(tool.name)}
-                                    onValueChange={(e) =>
-                                        handleToggleBuiltInTool(
-                                            tool.name,
-                                            e.target.checked,
-                                        )
+                                    onCheckedChange={({ checked }) =>
+                                        handleToggleBuiltInTool(tool.name, checked)
                                     }
                                     size="sm"
-                                />
+                                >
+                                    <Switch.HiddenInput />
+                                    <Switch.Control>
+                                        <Switch.Thumb />
+                                    </Switch.Control>
+                                </Switch.Root>
                             </Flex>
                         </Box>
                     ))}
@@ -463,7 +465,7 @@ const ToolsSettingsTab = ({ className }) => {
                             <Field.Label fontSize="xs">Server Name</Field.Label>
                             <Input
                                 value={serverName}
-                                onValueChange={(e) => setServerName(e.target.value)}
+                                onChange={(e) => setServerName(e.target.value)}
                                 placeholder="My MCP Server"
                                 size="sm"
                                 className="input-style"
@@ -477,7 +479,7 @@ const ToolsSettingsTab = ({ className }) => {
                             <Field.Label fontSize="xs">Server URL</Field.Label>
                             <Input
                                 value={serverUrl}
-                                onValueChange={(e) => setServerUrl(e.target.value)}
+                                onChange={(e) => setServerUrl(e.target.value)}
                                 placeholder="http://localhost:3000/tools"
                                 size="sm"
                                 className="input-style"
@@ -490,7 +492,7 @@ const ToolsSettingsTab = ({ className }) => {
                         <Field.Root>
                             <HStack gap={2}>
                                 <Checkbox.Root
-                                    onCheckedChange={(e) => setAllowSensitiveData(e.target.checked)}
+                                    onCheckedChange={({ checked }) => setAllowSensitiveData(checked)}
                                     colorPalette="red"
                                     size="sm"
                                     checked={allowSensitiveData}
@@ -648,16 +650,18 @@ const ToolsSettingsTab = ({ className }) => {
                                                 : "Enable"
                                         }
                                     >
-                                        <Switch
+                                        <Switch.Root
                                             checked={server.enabled}
-                                            onValueChange={(e) =>
-                                                handleToggleServer(
-                                                    server.id,
-                                                    e.target.checked,
-                                                )
+                                            onCheckedChange={({ checked }) =>
+                                                handleToggleServer(server.id, checked)
                                             }
                                             size="sm"
-                                        />
+                                        >
+                                            <Switch.HiddenInput />
+                                            <Switch.Control>
+                                                <Switch.Thumb />
+                                            </Switch.Control>
+                                        </Switch.Root>
                                     </Tooltip>
 
                                     <Tooltip content="Delete">

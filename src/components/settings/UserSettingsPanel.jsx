@@ -1,23 +1,5 @@
 // Component for configuring user-specific settings.
-import {
-  Steps,
-  Box,
-  Flex,
-  HStack,
-  IconButton,
-  Text,
-  Collapsible,
-  Input,
-  NativeSelect,
-  Switch,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-  VStack,
-  Field,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, Switch, Tabs, VStack, Field } from "@chakra-ui/react";
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
 import { FaUser, FaCog } from "react-icons/fa";
 
@@ -90,21 +72,21 @@ const UserSettingsPanel = ({
         <Collapsible.Content>
           <Tabs.Root variant='enclosed' mt={4}>
             <Tabs.List>
-              <Tab className="tab-style">
+              <Tabs.Trigger className="tab-style" value="0">
                 <HStack>
                   <FaUser />
                   <Text>General</Text>
                 </HStack>
-              </Tab>
-              <Tab className="tab-style">
+              </Tabs.Trigger>
+              <Tabs.Trigger className="tab-style" value="1">
                 <HStack>
                   <FaCog />
                   <Text>Advanced</Text>
                 </HStack>
-              </Tab>
+              </Tabs.Trigger>
             </Tabs.List>
-            <TabPanels>
-              <TabPanel className="floating-main">
+            
+              <Tabs.Content value="0" className="floating-main">
                 <VStack gap={4} align="stretch">
                   <Box>
                     <Text fontSize="sm" mb="1">
@@ -113,7 +95,7 @@ const UserSettingsPanel = ({
                     <Input
                       size="sm"
                       value={userSettings.name || ""}
-                      onValueChange={(e) =>
+                      onChange={(e) =>
                         setUserSettings((prev) => ({
                           ...prev,
                           name: e.target.value,
@@ -131,7 +113,7 @@ const UserSettingsPanel = ({
                       <NativeSelect.Field
                         size="sm"
                         value={userSettings.specialty || ""}
-                        onValueChange={(e) =>
+                        onChange={(e) =>
                           setUserSettings((prev) => ({
                             ...prev,
                             specialty: e.target.value,
@@ -156,7 +138,7 @@ const UserSettingsPanel = ({
                       <NativeSelect.Field
                         size="sm"
                         value={userSettings.default_template || ""}
-                        onValueChange={(e) => handleDefaultTemplateChange(e.target.value)}
+                        onChange={(e) => handleDefaultTemplateChange(e.target.value)}
                         className="input-style"
                         placeholder="Select default template">
                         {/* Change this part to map over templates array correctly */}
@@ -180,7 +162,7 @@ const UserSettingsPanel = ({
                       <NativeSelect.Field
                         size="sm"
                         value={userSettings.default_letter_template_id || ""}
-                        onValueChange={(e) =>
+                        onChange={(e) =>
                           handleDefaultLetterTemplateChange(e.target.value)
                         }
                         className="input-style"
@@ -195,8 +177,8 @@ const UserSettingsPanel = ({
                     </NativeSelect.Root>
                   </Field.Root>
                 </VStack>
-              </TabPanel>
-              <TabPanel className="floating-main">
+              </Tabs.Content>
+              <Tabs.Content value="1" className="floating-main">
                 <Text fontSize="sm" mb={4} className="pill-box-icons">
                   These options are intended for advanced users. Changing them may
                   affect storage or performance.
@@ -212,21 +194,26 @@ const UserSettingsPanel = ({
                           {option.description}
                         </Text>
                       </Box>
-                      <Switch
+                      <Switch.Root
                         size="sm"
                         checked={
                           userSettings.advanced_options?.[option.key] ??
                           option.defaultValue
                         }
-                        onValueChange={(e) =>
-                          handleAdvancedOptionChange(option.key, e.target.checked)
+                        onCheckedChange={({ checked }) =>
+                          handleAdvancedOptionChange(option.key, checked)
                         }
-                      />
+                      >
+                        <Switch.HiddenInput />
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                      </Switch.Root>
                     </Flex>
                   ))}
                 </VStack>
-              </TabPanel>
-            </TabPanels>
+              </Tabs.Content>
+            
           </Tabs.Root>
         </Collapsible.Content>
       </Collapsible.Root>

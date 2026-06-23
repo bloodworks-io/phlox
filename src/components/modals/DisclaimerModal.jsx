@@ -165,7 +165,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                             <VStack w="100%" align="stretch" gap={3}>
                                 <Checkbox.Root
                                     className="checkbox task-checkbox"
-                                    onCheckedChange={(e) => setAgreed(e.target.checked)}
+                                    onCheckedChange={({ checked }) => setAgreed(checked)}
                                     checked={agreed}
                                 ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
                                     <Text

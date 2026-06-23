@@ -136,7 +136,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                     <StatusIcon />
                 </VStack>
                 <ChangelogModal
-                    isOpen={isOpen}
+                    isOpen={open}
                     onClose={onClose}
                     version={version}
                     changelog={changelog}
@@ -201,7 +201,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                 </HStack>
             </Center>
             <ChangelogModal
-                isOpen={isOpen}
+                isOpen={open}
                 onClose={onClose}
                 version={version}
                 changelog={changelog}

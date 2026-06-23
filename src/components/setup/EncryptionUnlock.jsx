@@ -208,7 +208,7 @@ const EncryptionUnlock = ({ onComplete }) => {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your passphrase"
                   value={passphrase}
-                  onValueChange={(e) => setPassphrase(e.target.value)}
+                  onChange={(e) => setPassphrase(e.target.value)}
                   onKeyPress={handleKeyPress}
                   size="md"
                   autoFocus

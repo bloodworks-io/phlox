@@ -1,4 +1,4 @@
-import { Steps, Box, Flex, IconButton, Text, Collapsible, Input, NativeSelect, VStack, InputGroup, InputRightElement, Tabs, TabList, TabPanels, TabPanel, Tab, HStack, Badge, Button, Alert, Spinner, Dialog, Portal } from "@chakra-ui/react";
+import { Steps, Box, Flex, IconButton, Text, Collapsible, Input, NativeSelect, VStack, InputGroup, Tabs, HStack, Badge, Button, Alert, Spinner, Dialog, Portal } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
 import { useColorModeValue } from "../ui/color-mode";
@@ -363,25 +363,24 @@ const ModelSettingsPanel = ({
                                 >
                                     <Tabs.List>
                                         <Tooltip content="Manage local LLM and Whisper models">
-                                            <Tab className="tab-style">
+                                            <Tabs.Trigger className="tab-style" value="0">
                                                 <HStack>
                                                     <FaDesktop />
                                                     <Text>Models</Text>
                                                 </HStack>
-                                            </Tab>
+                                            </Tabs.Trigger>
                                         </Tooltip>
                                         <Tooltip content="Configure external tool servers">
-                                            <Tab className="tab-style">
+                                            <Tabs.Trigger className="tab-style" value="1">
                                                 <HStack>
                                                     <FaPuzzlePiece />
                                                     <Text>Tools</Text>
                                                 </HStack>
-                                            </Tab>
+                                            </Tabs.Trigger>
                                         </Tooltip>
                                     </Tabs.List>
-                                    <TabPanels>
                                         {/* Models Tab */}
-                                        <TabPanel className="floating-main">
+                                        <Tabs.Content className="floating-main" value="0">
                                             <VStack gap={4} align="stretch">
                                                 <Box>
                                                     <HStack mb="2">
@@ -497,13 +496,12 @@ const ModelSettingsPanel = ({
                                                         </Button>
                                                     )}
                                             </VStack>
-                                        </TabPanel>
+                                        </Tabs.Content>
 
                                         {/* Tools Tab */}
-                                        <TabPanel className="floating-main">
+                                        <Tabs.Content className="floating-main" value="1">
                                             <ToolsSettingsTab />
-                                        </TabPanel>
-                                    </TabPanels>
+                                        </Tabs.Content>
                                 </Tabs.Root>
                             ) : (
                                 <Tabs.Root
@@ -513,43 +511,42 @@ const ModelSettingsPanel = ({
                                 >
                                     <Tabs.List>
                                         <Tooltip content="Configure speech-to-text service settings">
-                                            <Tab className="tab-style">
+                                            <Tabs.Trigger className="tab-style" value="0">
                                                 <HStack>
                                                     <FaMicrophone />
                                                     <Text>Whisper</Text>
                                                 </HStack>
-                                            </Tab>
+                                            </Tabs.Trigger>
                                         </Tooltip>
                                         <Tooltip content="Configure large language model provider settings">
-                                            <Tab className="tab-style">
+                                            <Tabs.Trigger className="tab-style" value="1">
                                                 <HStack>
                                                     <FaBrain />
                                                     <Text>LLM</Text>
                                                 </HStack>
-                                            </Tab>
+                                            </Tabs.Trigger>
                                         </Tooltip>
                                         {isRagEnabled() && (
                                             <Tooltip content="Configure knowledge base embedding model">
-                                                <Tab className="tab-style">
+                                                <Tabs.Trigger className="tab-style" value="2">
                                                     <HStack>
                                                         <FaDatabase />
                                                         <Text>RAG</Text>
                                                     </HStack>
-                                                </Tab>
+                                                </Tabs.Trigger>
                                             </Tooltip>
                                         )}
                                         <Tooltip content="Configure external tool servers">
-                                            <Tab className="tab-style">
+                                            <Tabs.Trigger className="tab-style" value="3">
                                                 <HStack>
                                                     <FaPuzzlePiece />
                                                     <Text>Tools</Text>
                                                 </HStack>
-                                            </Tab>
+                                            </Tabs.Trigger>
                                         </Tooltip>
                                     </Tabs.List>
-                                    <TabPanels>
                                         {/* Whisper Tab */}
-                                        <TabPanel className="floating-main">
+                                        <Tabs.Content className="floating-main" value="0">
                                             <VStack gap={4} align="stretch">
                                                 <Box>
                                                     <Text
@@ -579,7 +576,11 @@ const ModelSettingsPanel = ({
                                                                 API Base URL
                                                             </Text>
                                                         </Tooltip>
-                                                        <InputGroup size="sm">
+                                                        <InputGroup size="sm" endElement={urlStatus.whisper ? (
+                                                            <Tooltip content="Connection successful">
+                                                                <CheckCircleIcon color="green.500" />
+                                                            </Tooltip>
+                                                        ) : undefined}>
                                                             <Input
                                                                 value={
                                                                     config?.WHISPER_BASE_URL ||
@@ -595,13 +596,6 @@ const ModelSettingsPanel = ({
                                                                 placeholder="https://api.openai.com"
                                                                 className="input-style"
                                                             />
-                                                            {urlStatus.whisper && (
-                                                                <InputRightElement>
-                                                                    <Tooltip content="Connection successful">
-                                                                        <CheckCircleIcon color="green.500" />
-                                                                    </Tooltip>
-                                                                </InputRightElement>
-                                                            )}
                                                         </InputGroup>
                                                     </Box>
 
@@ -696,7 +690,7 @@ const ModelSettingsPanel = ({
                                                                 config?.WHISPER_KEY ||
                                                                 ""
                                                             }
-                                                            onValueChange={(e) =>
+                                                            onChange={(e) =>
                                                                 handleConfigChange(
                                                                     "WHISPER_KEY",
                                                                     e.target.value,
@@ -708,10 +702,10 @@ const ModelSettingsPanel = ({
                                                     </Box>
                                                 </VStack>
                                             </VStack>
-                                        </TabPanel>
+                                        </Tabs.Content>
 
                                         {/* LLM Tab */}
-                                        <TabPanel className="floating-main">
+                                        <Tabs.Content className="floating-main" value="1">
                                             <VStack gap={4} align="stretch">
                                                 <Box>
                                                     <Text
@@ -742,7 +736,11 @@ const ModelSettingsPanel = ({
                                                                 Base URL
                                                             </Text>
                                                         </Tooltip>
-                                                        <InputGroup size="sm">
+                                                        <InputGroup size="sm" endElement={urlStatus.llm ? (
+                                                            <Tooltip content="Connection successful">
+                                                                <CheckCircleIcon color="green.500" />
+                                                            </Tooltip>
+                                                        ) : undefined}>
                                                             <Input
                                                                 value={
                                                                     config?.LLM_BASE_URL ||
@@ -760,13 +758,6 @@ const ModelSettingsPanel = ({
                                                                 }
                                                                 className="input-style"
                                                             />
-                                                            {urlStatus.llm && (
-                                                                <InputRightElement>
-                                                                    <Tooltip content="Connection successful">
-                                                                        <CheckCircleIcon color="green.500" />
-                                                                    </Tooltip>
-                                                                </InputRightElement>
-                                                            )}
                                                         </InputGroup>
                                                     </Box>
 
@@ -787,7 +778,7 @@ const ModelSettingsPanel = ({
                                                                 config?.LLM_API_KEY ||
                                                                 ""
                                                             }
-                                                            onValueChange={(e) =>
+                                                            onChange={(e) =>
                                                                 handleConfigChange(
                                                                     "LLM_API_KEY",
                                                                     e.target.value,
@@ -823,7 +814,7 @@ const ModelSettingsPanel = ({
                                                                     config?.PRIMARY_MODEL ||
                                                                     ""
                                                                 }
-                                                                onValueChange={(e) =>
+                                                                onChange={(e) =>
                                                                     handleConfigChange(
                                                                         "PRIMARY_MODEL",
                                                                         e.target.value,
@@ -874,7 +865,7 @@ const ModelSettingsPanel = ({
                                                                     config?.SECONDARY_MODEL ||
                                                                     ""
                                                                 }
-                                                                onValueChange={(e) =>
+                                                                onChange={(e) =>
                                                                     handleConfigChange(
                                                                         "SECONDARY_MODEL",
                                                                         e.target.value,
@@ -918,7 +909,7 @@ const ModelSettingsPanel = ({
                                                                     config?.DOCUMENT_IMAGE_PROCESSING_MODE ||
                                                                     "auto"
                                                                 }
-                                                                onValueChange={(e) =>
+                                                                onChange={(e) =>
                                                                     handleConfigChange(
                                                                         "DOCUMENT_IMAGE_PROCESSING_MODE",
                                                                         e.target.value,
@@ -1030,11 +1021,11 @@ const ModelSettingsPanel = ({
                                                     </Box>
                                                 </VStack>
                                             </VStack>
-                                        </TabPanel>
+                                        </Tabs.Content>
 
                                         {/* RAG Tab */}
                                         {isRagEnabled() && (
-                                            <TabPanel className="floating-main">
+                                            <Tabs.Content className="floating-main" value="2">
                                                 <VStack gap={4} align="stretch">
                                                     <Box>
                                                         <Text
@@ -1078,7 +1069,7 @@ const ModelSettingsPanel = ({
                                                                     config?.EMBEDDING_MODEL ||
                                                                     ""
                                                                 }
-                                                                onValueChange={(e) =>
+                                                                onChange={(e) =>
                                                                     handleEmbeddingModelChange(
                                                                         e.target.value,
                                                                     )
@@ -1123,14 +1114,13 @@ const ModelSettingsPanel = ({
                                                         </Text>
                                                     </Box>
                                                 </VStack>
-                                            </TabPanel>
+                                            </Tabs.Content>
                                         )}
 
                                         {/* Tools Tab */}
-                                        <TabPanel className="floating-main">
+                                        <Tabs.Content className="floating-main" value="3">
                                             <ToolsSettingsTab />
-                                        </TabPanel>
-                                    </TabPanels>
+                                        </Tabs.Content>
                                 </Tabs.Root>
                             )}
                         </VStack>

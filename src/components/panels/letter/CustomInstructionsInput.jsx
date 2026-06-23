@@ -15,7 +15,7 @@ const CustomInstructionsInput = ({
                 size="sm"
                 rows={2}
                 value={additionalInstructions}
-                onValueChange={(e) => setAdditionalInstructions(e.target.value)}
+                onChange={(e) => setAdditionalInstructions(e.target.value)}
                 className="chat-input"
                 css={{
                     paddingY: "2",

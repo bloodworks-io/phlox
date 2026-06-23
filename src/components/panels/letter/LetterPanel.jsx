@@ -91,7 +91,7 @@ const LetterPanel = ({
                 <NativeSelect.Root>
                   <NativeSelect.Field
                     value={letterMode}
-                    onValueChange={(e) => setLetterMode(e.target.value)}
+                    onChange={(e) => setLetterMode(e.target.value)}
                     size="sm"
                     width={["110px", "140px", "160px"]}
                     className="input-style">

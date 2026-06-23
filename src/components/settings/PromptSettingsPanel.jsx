@@ -1,26 +1,7 @@
 // Component for managing and editing prompts for LLMs.
 import { useState } from "react";
 import { useColorModeValue } from "../ui/color-mode";
-import {
-  Steps,
-  Box,
-  Flex,
-  IconButton,
-  Text,
-  Collapsible,
-  Textarea,
-  Button,
-  Tabs,
-  TabList,
-  TabPanels,
-  TabPanel,
-  Tab,
-  NumberInput,
-  NumberInputField,
-  HStack,
-  VStack,
-  Alert,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, IconButton, Text, Collapsible, Textarea, Button, Tabs, NumberInput, HStack, VStack, Alert } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
 import {
@@ -92,48 +73,48 @@ const PromptSettingsPanel = ({
           >
             <Tabs.List>
               <Tooltip content="System prompt used for refining the generated outputs">
-                <Tab className="tab-style">
+                <Tabs.Trigger className="tab-style" value="0">
                   <HStack>
                     <FaPencilAlt />
                     <Text>Refinement</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
               <Tooltip content="System prompt used for generating summaries">
-                <Tab className="tab-style">
+                <Tabs.Trigger className="tab-style" value="1">
                   <HStack>
                     <FaFileAlt />
                     <Text>Summary</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
               <Tooltip content="System prompt used for chat interactions">
-                <Tab className="tab-style">
+                <Tabs.Trigger className="tab-style" value="2">
                   <HStack>
                     <FaComments />
                     <Text>Chat</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
               <Tooltip content="System prompt used for generating letters">
-                <Tab className="tab-style">
+                <Tabs.Trigger className="tab-style" value="3">
                   <HStack>
                     <FaEnvelope />
                     <Text>Letter</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
               <Tooltip content="Technical settings for model configuration">
-                <Tab className="tab-style">
+                <Tabs.Trigger className="tab-style" value="4">
                   <HStack>
                     <FaCog />
                     <Text>Advanced</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
             </Tabs.List>
-            <TabPanels>
-              <TabPanel className="floating-main">
+            
+              <Tabs.Content value="0" className="floating-main">
                 <VStack gap={4} align="stretch">
                   <Flex justify="space-between" align="center">
                     <Box>
@@ -152,16 +133,16 @@ const PromptSettingsPanel = ({
                   </Flex>
                   <Textarea
                     value={prompts?.refinement?.system || ""}
-                    onValueChange={(e) =>
+                    onChange={(e) =>
                       handlePromptChange("refinement", "system", e.target.value)
                     }
                     rows={10}
                     className="textarea-style"
                   />
                 </VStack>
-              </TabPanel>
+              </Tabs.Content>
 
-              <TabPanel className="floating-main">
+              <Tabs.Content value="1" className="floating-main">
                 <VStack gap={4} align="stretch">
                   <Flex justify="space-between" align="center">
                     <Box>
@@ -180,16 +161,16 @@ const PromptSettingsPanel = ({
                   </Flex>
                   <Textarea
                     value={prompts?.summary?.system || ""}
-                    onValueChange={(e) =>
+                    onChange={(e) =>
                       handlePromptChange("summary", "system", e.target.value)
                     }
                     rows={10}
                     className="textarea-style"
                   />
                 </VStack>
-              </TabPanel>
+              </Tabs.Content>
 
-              <TabPanel className="floating-main">
+              <Tabs.Content value="2" className="floating-main">
                 <VStack gap={4} align="stretch">
                   <Flex justify="space-between" align="center">
                     <Box>
@@ -208,16 +189,16 @@ const PromptSettingsPanel = ({
                   </Flex>
                   <Textarea
                     value={prompts?.chat?.system || ""}
-                    onValueChange={(e) =>
+                    onChange={(e) =>
                       handlePromptChange("chat", "system", e.target.value)
                     }
                     rows={10}
                     className="textarea-style"
                   />
                 </VStack>
-              </TabPanel>
+              </Tabs.Content>
 
-              <TabPanel className="floating-main">
+              <Tabs.Content value="3" className="floating-main">
                 <VStack gap={4} align="stretch">
                   <Flex justify="space-between" align="center">
                     <Box>
@@ -236,16 +217,16 @@ const PromptSettingsPanel = ({
                   </Flex>
                   <Textarea
                     value={prompts?.letter?.system || ""}
-                    onValueChange={(e) =>
+                    onChange={(e) =>
                       handlePromptChange("letter", "system", e.target.value)
                     }
                     rows={10}
                     className="textarea-style"
                   />
                 </VStack>
-              </TabPanel>
+              </Tabs.Content>
 
-              <TabPanel className="floating-main">
+              <Tabs.Content value="4" className="floating-main">
                 <VStack gap={6} align="stretch">
                   <Text fontSize="md" fontWeight="bold">
                     Model Configuration
@@ -314,8 +295,8 @@ const PromptSettingsPanel = ({
                     </HStack>
                   </Box>
                 </VStack>
-              </TabPanel>
-            </TabPanels>
+              </Tabs.Content>
+            
           </Tabs.Root>
         </Collapsible.Content>
       </Collapsible.Root>

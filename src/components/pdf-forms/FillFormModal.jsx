@@ -118,7 +118,7 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
                                 : "text"
                           }
                           value={values[field.name] || ""}
-                          onValueChange={(e) => handleChange(field.name, e.target.value)}
+                          onChange={(e) => handleChange(field.name, e.target.value)}
                           placeholder={field.description || field.field_type}
                           className="input-style"
                         />

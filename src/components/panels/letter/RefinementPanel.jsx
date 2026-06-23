@@ -74,7 +74,7 @@ const RefinementPanel = ({
             <Textarea
                 placeholder="How would you like to improve the letter?"
                 value={refinementInput}
-                onValueChange={(e) => setRefinementInput(e.target.value)}
+                onChange={(e) => setRefinementInput(e.target.value)}
                 size="sm"
                 rows={3}
                 mb="3"

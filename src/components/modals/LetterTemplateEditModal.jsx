@@ -38,14 +38,14 @@ const LetterTemplateEditModal = ({
                 <Input
                   placeholder="Template Name"
                   value={template?.name || ""}
-                  onValueChange={(e) => handleChange("name", e.target.value)}
+                  onChange={(e) => handleChange("name", e.target.value)}
                   disabled={template?.name === "Dictation"}
                   className="input-style"
                 />
                 <Textarea
                   placeholder="Instructions for letter generation..."
                   value={template?.instructions || ""}
-                  onValueChange={(e) => handleChange("instructions", e.target.value)}
+                  onChange={(e) => handleChange("instructions", e.target.value)}
                   className="input-style"
                 />
               </VStack>
