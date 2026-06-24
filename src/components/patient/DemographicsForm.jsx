@@ -170,7 +170,7 @@ const DemographicsForm = ({
                     type="file"
                     ref={fileInputRef}
                     accept=".pdf,.txt,image/*"
-                    onValueChange={(e) => handleFile(e.target.files?.[0])}
+                    onChange={(e) => handleFile(e.target.files?.[0])}
                     display="none"
                 />
                 <HStack

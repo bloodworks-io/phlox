@@ -1,6 +1,6 @@
 // Component for uploading and vectorizing documents into the RAG database.
 import React, { useState } from "react";
-import { Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Tabs } from "@chakra-ui/react";
+import { Field, Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Tabs } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { ChevronDownIcon, ChevronRightIcon, AddIcon } from "../common/icons";
 import { MdFileUpload } from "react-icons/md";
@@ -171,7 +171,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                         id="pdf-upload"
                                         type="file"
                                         accept=".pdf"
-                                        onValueChange={handlePdfUpload}
+                                        onChange={handlePdfUpload}
                                         className="input-style"
                                     />
                                     <Button
@@ -185,6 +185,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                     {pdfData && (
                                         <VStack gap={3} align="stretch" mt={2}>
                                             <Text fontWeight="bold">Extracted Information</Text>
+                                            <Field.Root>
                                             <Field.Label htmlFor="custom-collection">
                                                 Collection Name:
                                             </Field.Label>
@@ -197,6 +198,8 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                                     setCustomCollectionName(e.target.value)
                                                 }
                                             />
+                                            </Field.Root>
+                                            <Field.Root>
                                             <Field.Label htmlFor="document-source">
                                                 Document Source:
                                             </Field.Label>
@@ -209,6 +212,8 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                                     setDocumentSource(e.target.value)
                                                 }
                                             />
+                                            </Field.Root>
+                                            <Field.Root>
                                             <Field.Label htmlFor="focus-area">
                                                 Focus Area:
                                             </Field.Label>
@@ -219,6 +224,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                                 value={focusArea}
                                                 onChange={(e) => setFocusArea(e.target.value)}
                                             />
+                                            </Field.Root>
                                             <Button
                                                 onClick={handleCommitToDatabase}
                                                 loading={isCommitting}

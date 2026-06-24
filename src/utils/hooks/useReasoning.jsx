@@ -11,7 +11,7 @@ export const useReasoning = (options = {}) => {
     const [loading, setLoading] = useState(false);
     const [reasoning, setReasoning] = useState(initialReasoning ?? null);
     const [status, setStatus] = useState(null);
-    const [tabIndex, setTabIndex] = useState(0);
+    const [tabIndex, setTabIndex] = useState("0");
     const [dimensions, setDimensions] = useState({
         width: 500,
         height: 420,

@@ -217,7 +217,7 @@ const Summary = forwardRef(
                         patient?.template_key ||
                         ""
                       }
-                      onValueChange={handleTemplateChange}
+                      onChange={handleTemplateChange}
                       size="sm"
                       width={["100px", "150px", "200px"]}
                       className="input-style"

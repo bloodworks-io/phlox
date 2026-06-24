@@ -47,7 +47,7 @@ const ModelSettingsPanel = ({
     const [localStatus, setLocalStatus] = useState(null);
     const [isDocker, setIsDocker] = useState(false);
     const [downloadedWhisperModel, setDownloadedWhisperModel] = useState(null);
-    const [tabIndex, setTabIndex] = useState(0);
+    const [tabIndex, setTabIndex] = useState("0");
     const [isEmbeddingModelModalOpen, setIsEmbeddingModelModalOpen] =
         useState(false);
     const [pendingEmbeddingModel, setPendingEmbeddingModel] = useState(null);
@@ -359,7 +359,7 @@ const ModelSettingsPanel = ({
                                 <Tabs.Root
                                     variant='enclosed'
                                     value={tabIndex}
-                                    onValueChange={(index) => setTabIndex(index)}
+                                    onValueChange={({ value }) => setTabIndex(value)}
                                 >
                                     <Tabs.List>
                                         <Tooltip content="Manage local LLM and Whisper models">
@@ -507,7 +507,7 @@ const ModelSettingsPanel = ({
                                 <Tabs.Root
                                     variant='enclosed'
                                     value={tabIndex}
-                                    onValueChange={(index) => setTabIndex(index)}
+                                    onValueChange={({ value }) => setTabIndex(value)}
                                 >
                                     <Tabs.List>
                                         <Tooltip content="Configure speech-to-text service settings">
@@ -586,7 +586,7 @@ const ModelSettingsPanel = ({
                                                                     config?.WHISPER_BASE_URL ||
                                                                     ""
                                                                 }
-                                                                onValueChange={(e) =>
+                                                                onChange={(e) =>
                                                                     handleConfigChange(
                                                                         "WHISPER_BASE_URL",
                                                                         e.target
@@ -627,7 +627,7 @@ const ModelSettingsPanel = ({
                                                                         config?.WHISPER_MODEL ||
                                                                         ""
                                                                     }
-                                                                    onValueChange={(e) =>
+                                                                    onChange={(e) =>
                                                                         handleConfigChange(
                                                                             "WHISPER_MODEL",
                                                                             e.target
@@ -661,7 +661,7 @@ const ModelSettingsPanel = ({
                                                                     config?.WHISPER_MODEL ||
                                                                     ""
                                                                 }
-                                                                onValueChange={(e) =>
+                                                                onChange={(e) =>
                                                                     handleConfigChange(
                                                                         "WHISPER_MODEL",
                                                                         e.target
@@ -746,7 +746,7 @@ const ModelSettingsPanel = ({
                                                                     config?.LLM_BASE_URL ||
                                                                     ""
                                                                 }
-                                                                onValueChange={(e) =>
+                                                                onChange={(e) =>
                                                                     handleConfigChange(
                                                                         "LLM_BASE_URL",
                                                                         e.target

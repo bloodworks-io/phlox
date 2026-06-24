@@ -217,7 +217,7 @@ export const ReasoningContent = ({
         <Tabs.Root
             variant='enclosed'
             value={tabIndex}
-            onValueChange={(index) => setTabIndex(index)}
+            onValueChange={({ value }) => setTabIndex(value)}
             display="flex"
             flexDirection="column"
             height="100%"

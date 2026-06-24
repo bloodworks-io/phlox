@@ -13,7 +13,7 @@ const PreviousVisitPanel = ({
   previousVisitEncounterDate,
   templates = [],
 }) => {
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState("0");
   const [dimensions, setDimensions] = useState({ width: 550, height: 450 });
   const resizerRef = useRef(null);
 
@@ -104,7 +104,7 @@ const PreviousVisitPanel = ({
           <Tabs.Root
             variant='enclosed'
             value={tabIndex}
-            onValueChange={(index) => setTabIndex(index)}
+            onValueChange={({ value }) => setTabIndex(value)}
             display="flex"
             flexDirection="column"
             height="100%"

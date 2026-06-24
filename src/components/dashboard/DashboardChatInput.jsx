@@ -217,7 +217,7 @@ const DashboardChatInput = ({
                 <Textarea
                     ref={textareaRef}
                     value={inputValue}
-                    onValueChange={handleTextChange}
+                    onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
                     rows={1}
@@ -261,7 +261,7 @@ const DashboardChatInput = ({
                         <Input
                             type="file"
                             ref={fileInputRef}
-                            onValueChange={handleFileSelect}
+                            onChange={handleFileSelect}
                             display="none"
                             accept="image/png,image/jpeg,image/jpg,image/gif,.png,.jpg,.jpeg,.gif,.pdf"
                         />

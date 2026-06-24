@@ -93,7 +93,9 @@ const SidebarPatientList = ({
                                                                 ? "sm"
                                                                 : "sm"
                                                         }
-                                                        mr={isCollapsed ? "0" : "3"}>// TODO: Handle getInitials function manually<Avatar.Fallback name={patient.name} /></Avatar.Root>
+                                                        mr={isCollapsed ? "0" : "3"}>
+                                                        <Avatar.Fallback>{initials}</Avatar.Fallback>
+                                                    </Avatar.Root>
 
                                                     {!isCollapsed && (
                                                         <Box>

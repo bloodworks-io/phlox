@@ -381,7 +381,7 @@ const PatientTable = ({
                 key={index}
                 className="checkbox task-checkbox"
                 onCheckedChange={(e) => {
-                  const nextChecked = e.target.checked;
+                  const nextChecked = e.checked;
 
                   if (nextChecked) {
                     play(SFX.tick); // Always play tick on check

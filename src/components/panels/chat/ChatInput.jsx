@@ -53,7 +53,7 @@ const ChatInput = ({
                 <Textarea
                     ref={textareaRef}
                     value={userInput}
-                    onValueChange={handleChange}
+                    onChange={handleChange}
                     onKeyDown={handleKeyDown}
                     placeholder="Message Phlox..."
                     rows={1}

@@ -1,6 +1,6 @@
 // Component for bulk uploading and vectorizing multiple PDF documents.
 import React, { useState, useRef } from "react";
-import { Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
+import { Field, Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import {
     ChevronDownIcon,
@@ -351,7 +351,7 @@ const BulkUploader = ({ setCollections }) => {
                             type="file"
                             multiple
                             accept=".pdf"
-                            onValueChange={handleFileSelect}
+                            onChange={handleFileSelect}
                             display="none"
                         />
                     </Box>
@@ -436,6 +436,7 @@ const BulkUploader = ({ setCollections }) => {
                                                 py="2"
                                                 className="filelist-style"
                                             >
+                                                <Field.Root>
                                                 <Field.Label
                                                     fontSize="xs"
                                                     mb="0"
@@ -457,6 +458,8 @@ const BulkUploader = ({ setCollections }) => {
                                                         )
                                                     }
                                                 />
+                                                </Field.Root>
+                                                <Field.Root>
                                                 <Field.Label
                                                     fontSize="xs"
                                                     mb="0"
@@ -478,6 +481,8 @@ const BulkUploader = ({ setCollections }) => {
                                                         )
                                                     }
                                                 />
+                                                </Field.Root>
+                                                <Field.Root>
                                                 <Field.Label
                                                     fontSize="xs"
                                                     mb="0"
@@ -499,6 +504,7 @@ const BulkUploader = ({ setCollections }) => {
                                                         )
                                                     }
                                                 />
+                                                </Field.Root>
                                             </VStack>
                                         </Collapsible.Content>
                                     </Collapsible.Root>

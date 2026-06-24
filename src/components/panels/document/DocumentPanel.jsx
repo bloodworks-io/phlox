@@ -265,7 +265,7 @@ const DocumentPanel = ({
             <VStack width="full" align="center">
               <Input
                 type="file"
-                onValueChange={handleFileChange}
+                onChange={handleFileChange}
                 display="none"
                 id="doc-file-upload"
                 accept=".pdf,.doc,.docx,.txt"

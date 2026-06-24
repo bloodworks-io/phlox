@@ -37,7 +37,7 @@ const PromptSettingsPanel = ({
   handleOptionChange,
   config,
 }) => {
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState("0");
 
   const warningIconColor = useColorModeValue("#df8e1d", "#eed49f");
 
@@ -69,7 +69,7 @@ const PromptSettingsPanel = ({
             variant='enclosed'
             mt={4}
             value={tabIndex}
-            onValueChange={(index) => setTabIndex(index)}
+            onValueChange={({ value }) => setTabIndex(value)}
           >
             <Tabs.List>
               <Tooltip content="System prompt used for refining the generated outputs">
