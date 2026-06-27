@@ -35,6 +35,7 @@ const EncryptionUnlock = ({ onComplete }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [lastWasPassphrase, setLastWasPassphrase] = useState(false);
 
   const handleSubmit = useCallback(async () => {
     if (passphrase.length < 1) {
@@ -53,6 +54,16 @@ const EncryptionUnlock = ({ onComplete }) => {
       // Unlock and get hex passphrase
       const hexPassphrase = await encryptionApi.unlock(passphrase);
 
+      // Ensure the server is warmed up / still alive before sending; pm is idempotent
+      try {
+        await invoke("start_server_command");
+      } catch (warmError) {
+        console.warn(
+          "start_server_command failed (will surface via send_passphrase):",
+          warmError,
+        );
+      }
+
       // Send passphrase to the waiting server
       await invoke("send_passphrase_command", { passphraseHex: hexPassphrase });
       // Reset cached port so we get the new server port
@@ -63,13 +74,19 @@ const EncryptionUnlock = ({ onComplete }) => {
       try {
         await invoke("start_llama_service");
       } catch (llamaError) {
-        console.warn("Llama service did not start (no model downloaded yet):", llamaError);
+        console.warn(
+          "Llama service did not start (no model downloaded yet):",
+          llamaError,
+        );
       }
 
       try {
         await invoke("start_whisper_service");
       } catch (whisperError) {
-        console.warn("Whisper service did not start (no model downloaded yet):", whisperError);
+        console.warn(
+          "Whisper service did not start (no model downloaded yet):",
+          whisperError,
+        );
       }
 
       toast({
@@ -84,22 +101,26 @@ const EncryptionUnlock = ({ onComplete }) => {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
 
-      // Determine if it's a passphrase error or server start error
-      const isPassphraseError = error.toString().includes("Failed to unlock") ||
-        error.toString().includes("incorrect") ||
-        error.toString().includes("Passphrase") ||
-        error.toString().includes("wrong key");
+      const errStr = error?.toString() || "";
+      const isPassphraseError =
+        /wrong key|wrong encryption key|cannot decrypt database/i.test(errStr);
+      setLastWasPassphrase(isPassphraseError);
 
       toast({
-        title: isPassphraseError ? "Incorrect Passphrase" : "Server Failed to Start",
+        title: isPassphraseError
+          ? "Incorrect Passphrase"
+          : "Server Failed to Start",
         description: isPassphraseError
           ? "The passphrase you entered is incorrect. Please try again."
-          : "The server could not start. This may be due to an incorrect passphrase.",
+          : "The server couldn't start (this isn't a passphrase problem). Click Unlock to retry — it will re-launch the server.",
         status: "error",
-        duration: 3000,
+        duration: 6000,
         isClosable: true,
       });
-      setPassphrase("");
+
+      if (isPassphraseError) {
+        setPassphrase("");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -197,7 +218,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             </Text>
           </MotionFlex>
 
-          {attempts > 0 && (
+          {attempts > 0 && lastWasPassphrase && (
             <Alert status="warning" borderRadius="md" fontSize="sm">
               <AlertIcon />
               <Text fontSize="xs">
