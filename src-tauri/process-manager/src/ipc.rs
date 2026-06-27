@@ -107,9 +107,20 @@ fn handle_client(
             }
         }
         "start_server" => {
-            if state.server.is_some() {
-                Response::error("Server is already running")
+            let already_alive = state
+                .server
+                .as_mut()
+                .map(|p| matches!(p.child.try_wait(), Ok(None)))
+                .unwrap_or(false);
+            if already_alive {
+                Response::ok_waiting_for_passphrase()
             } else {
+                // Drop any dead/stale handle so we can spawn a fresh one.
+                if let Some(mut proc) = state.server.take() {
+                    let _ = proc.child.kill();
+                    let _ = proc.child.wait();
+                    crate::process::remove_pid_file("server");
+                }
                 match start_server() {
                     Ok(mut proc) => {
                         // Check if process exited immediately
@@ -142,29 +153,28 @@ fn handle_client(
                     return Ok(());
                 }
             };
-            if let Some(ref mut proc) = state.server {
-                match send_passphrase_and_wait_for_ports(proc, &passphrase) {
-                    Ok(ports) => {
-                        // Store allocated ports and token
-                        state.request_token = Some(ports.request_token.clone());
-                        state.allocated_ports = Some(ports.clone());
-                        Response::ok_started(
-                            proc.child.id(),
-                            ports.server,
-                            ports.llama,
-                            ports.whisper,
-                        )
-                    }
-                    Err(e) => {
-                        error!("Failed to send passphrase: {}", e);
-                        // Remove the failed server process
-                        state.server = None;
-                        crate::process::remove_pid_file("server");
-                        Response::error(e)
+            match state.server.take() {
+                Some(mut proc) => {
+                    let pid = proc.child.id();
+                    match send_passphrase_and_wait_for_ports(&mut proc, &passphrase) {
+                        Ok(ports) => {
+                            // Store allocated ports and token
+                            state.request_token = Some(ports.request_token.clone());
+                            state.allocated_ports = Some(ports.clone());
+                            state.server = Some(proc);
+                            Response::ok_started(pid, ports.server, ports.llama, ports.whisper)
+                        }
+                        Err(e) => {
+                            error!("Failed to send passphrase: {}", e);
+                            stop_drain_threads(&mut proc);
+                            let _ = proc.child.kill();
+                            let _ = proc.child.wait();
+                            crate::process::remove_pid_file("server");
+                            Response::error(e)
+                        }
                     }
                 }
-            } else {
-                Response::error("Server is not running. Call start_server first.")
+                None => Response::error("Server is not running. Call start_server first."),
             }
         }
         "stop" => {
