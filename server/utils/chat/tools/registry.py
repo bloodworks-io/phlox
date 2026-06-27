@@ -372,6 +372,13 @@ def get_tools_definition(
     if disabled_tools:
         logger.info(f"Filtered out disabled tools: {disabled_tools}")
 
+    # Hide the literature/RAG tool when the knowledge base has no collections.
+    if not collection_names:
+        enabled_tools = [
+            tool for tool in enabled_tools if tool["function"]["name"] != "get_relevant_literature"
+        ]
+        logger.info("Knowledge base empty; hid 'get_relevant_literature' tool.")
+
     # Filter out chat-only tools if requested
     if exclude_chat_only:
         enabled_tools = [
