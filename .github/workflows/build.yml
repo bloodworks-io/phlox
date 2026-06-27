@@ -134,7 +134,7 @@ jobs:
             - name: Set up Python venv with uv
               run: |
                   cd server
-                  uv sync
+                  uv sync --extra rag
                   uv pip install nuitka
 
             - name: Install dependencies

@@ -20,14 +20,18 @@ dependencies = [
 rag = [
     "mcp==1.26.0",
     "numpy==2.4.2",
-    "Pillow==12.2.0",
     "pypdf==6.13.2",
-    "pytesseract==0.3.13",
     "sqlite-vec==0.1.9",
     "tiktoken==0.12.0",
 ]
-docker = [
+
+ocr = [
     "phlox-server[rag]",
+    "Pillow==12.2.0",
+    "pytesseract==0.3.13",
+]
+docker = [
+    "phlox-server[rag,ocr]",
 ]
 
 [dependency-groups]

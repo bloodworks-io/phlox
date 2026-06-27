@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-06-14T03:23:23.15276877Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P7D"
 
 [[package]]
@@ -814,12 +814,19 @@ docker = [
     { name = "sqlite-vec" },
     { name = "tiktoken" },
 ]
-rag = [
+ocr = [
     { name = "mcp" },
     { name = "numpy" },
     { name = "pillow" },
     { name = "pypdf" },
     { name = "pytesseract" },
+    { name = "sqlite-vec" },
+    { name = "tiktoken" },
+]
+rag = [
+    { name = "mcp" },
+    { name = "numpy" },
+    { name = "pypdf" },
     { name = "sqlite-vec" },
     { name = "tiktoken" },
 ]
@@ -845,12 +852,13 @@ requires-dist = [
     { name = "mcp", marker = "extra == 'rag'", specifier = "==1.26.0" },
     { name = "numpy", marker = "extra == 'rag'", specifier = "==2.4.2" },
     { name = "openai", specifier = "==2.14.0" },
-    { name = "phlox-server", extras = ["rag"], marker = "extra == 'docker'" },
-    { name = "pillow", marker = "extra == 'rag'", specifier = "==12.2.0" },
+    { name = "phlox-server", extras = ["rag"], marker = "extra == 'ocr'" },
+    { name = "phlox-server", extras = ["rag", "ocr"], marker = "extra == 'docker'" },
+    { name = "pillow", marker = "extra == 'ocr'", specifier = "==12.2.0" },
     { name = "platformdirs", specifier = "==4.5.1" },
     { name = "pydantic", specifier = "==2.12.5" },
     { name = "pypdf", marker = "extra == 'rag'", specifier = "==6.13.2" },
-    { name = "pytesseract", marker = "extra == 'rag'", specifier = "==0.3.13" },
+    { name = "pytesseract", marker = "extra == 'ocr'", specifier = "==0.3.13" },
     { name = "python-multipart", specifier = "==0.0.32" },
     { name = "rapidfuzz", specifier = "==3.14.3" },
     { name = "sqlcipher3", specifier = "==0.6.2" },
@@ -858,7 +866,7 @@ requires-dist = [
     { name = "tiktoken", marker = "extra == 'rag'", specifier = "==0.12.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.41.0" },
 ]
-provides-extras = ["rag", "docker"]
+provides-extras = ["rag", "ocr", "docker"]
 
 [package.metadata.requires-dev]
 dev = [
