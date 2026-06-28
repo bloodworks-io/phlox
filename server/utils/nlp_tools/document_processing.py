@@ -1,8 +1,9 @@
 import asyncio
 import io
-import json
 import logging
 from typing import Any
+
+from pydantic import BaseModel
 
 # Optional PDF text-layer dependency (preferred path for PDFs)
 try:
@@ -13,9 +14,8 @@ except ImportError:
     PDF_TEXT_AVAILABLE = False
     PdfReader = None
 
-# Optional OCR dependencies (fallback path)
+# Optional OCR dependencies (for image documents)
 try:
-    import fitz  # PyMuPDF for PDF rasterization
     import pytesseract
     from PIL import Image
 
@@ -23,117 +23,20 @@ try:
 except ImportError:
     OCR_AVAILABLE = False
     Image = None
-    fitz = None
     pytesseract = None
 
 from server.database.config.manager import config_manager
-from server.schemas.grammars import FieldResponse, MultiFieldResponse
-from server.schemas.templates import TemplateResponse
+from server.schemas.grammars import MultiFieldResponse
+from server.schemas.patient import DemographicsExtraction
 from server.utils.helpers import calculate_age
 from server.utils.llm_client.client import get_llm_client
 from server.utils.llm_client.utils import repair_json
 from server.utils.transcription.refinement import refine_field_content
+from server.utils.transcription.text import process_all_fields_concurrently
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-async def process_document_content(
-    document_buffer: bytes,
-    content_type: str,
-    name: str | None = None,
-    dob: str | None = None,
-    gender: str | None = None,
-) -> tuple[str, str, str]:
-    """
-    Process document content and return legacy section outputs.
-
-    This function now extracts document text first, then reuses the shared
-    extracted-text processing path.
-    """
-    extracted_text = await extract_text_from_document(document_buffer, content_type)
-    return await _process_extracted_text_sections(
-        extracted_text, _name=name, _dob=dob, _gender=gender
-    )
-
-
-async def _process_extracted_text_sections(
-    extracted_text: str,
-    _name: str | None = None,
-    _dob: str | None = None,
-    _gender: str | None = None,
-) -> tuple[str, str, str]:
-    """
-    Process already-extracted document text and return legacy section outputs.
-    """
-    config = config_manager.get_config()
-    prompts = config_manager.get_prompts_and_options()
-    options = prompts["options"]["general"].copy()
-    del options["stop"]
-
-    async def process_section(section_type: str, system_prompt: str) -> str:
-        """
-        Process a specific section of the medical document using LLM.
-        """
-        client = get_llm_client()
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": f"Please analyze this medical document text and provide the {section_type} summary:\n\n{extracted_text}",
-            },
-            {
-                "role": "assistant",
-                "content": f"{section_type}:\n",
-            },
-        ]
-
-        logger.debug(f"Processing {section_type} with LLM")
-        response = await client.chat(
-            model=config["PRIMARY_MODEL"],
-            messages=messages,
-            options=options,
-        )
-        return response["message"]["content"]
-
-    # Define prompts for each section
-    prompts = {
-        "Primary History": """You are a medical documentation assistant. Review this medical document text and extract the 'Primary History' defined as the main reason the patient has been referred to the specialist with relevant details. Format as:
-        # [Condition that has been referred]
-        - [Key detail]
-        - [Key detail]""",
-        "Additional History": """Extract any additional medical conditions not covered in the primary history. Format as:
-        # [Condition]
-        - [Key detail]""",
-        "Medications": """Extract all medications mentioned in the document. Format as:
-        - [Medication name, dose, frequency]""",
-        "Social History": """Extract all social history details; include relevant family medical history, alcohol, and smoking status. Format as:
-        - [Social history detail]""",
-        "Investigations": """Extract any test results or investigations mentioned; focusing on the items most relevant to the primary condition in the referral. Format as:
-        - [Investigation/test result]""",
-    }
-
-    try:
-        logger.info("Starting concurrent processing of document sections")
-        results = await asyncio.gather(
-            *[process_section(section, prompt) for section, prompt in prompts.items()]
-        )
-
-        primary_history = "# " + results[0].split("#", 1)[-1].strip()
-
-        additional_history = "# " + results[1].split("#", 1)[-1].strip() + "\n\n"
-        additional_history += "Medications:\n" + results[2].strip() + "\n\n"
-        additional_history += "Social History:\n" + results[3].strip()
-
-        investigations = "- " + results[4].split("-", 1)[-1].strip()
-
-        logger.info("Successfully processed all document sections")
-        return primary_history, additional_history, investigations
-
-    except Exception as e:
-        logger.error(f"Error processing document sections: {str(e)}")
-        raise
 
 
 async def extract_text_from_document(document_buffer: bytes, content_type: str) -> str:
@@ -171,25 +74,21 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
             logger.info("Using extracted PDF text layer content")
             return text_from_layer
 
-        logger.info("PDF text layer unavailable/insufficient; attempting OCR fallback")
-        if OCR_AVAILABLE:
-            logger.info("Backend OCR fallback invoked for PDF")
-            return _extract_pdf_text_with_ocr(document_buffer)
-
         if text_from_layer.strip():
             logger.warning(
-                "Returning partial PDF text layer output because OCR dependencies are unavailable"
+                "Returning partial PDF text layer output because it's the best available"
             )
             return text_from_layer
 
         raise RuntimeError(
-            "No usable PDF text found and OCR dependencies are unavailable. "
-            "Install pypdf for text-layer extraction and/or PyMuPDF + Pillow + pytesseract for OCR fallback."
+            "No usable PDF text found. "
+            "Frontend PDF text extraction (pdfjs-dist) is the primary path. "
+            "Install pypdf for backend fallback text-layer extraction."
         )
 
     # Non-PDF binary documents are treated as images and require OCR
     if not OCR_AVAILABLE:
-        raise RuntimeError("Image document processing requires PyMuPDF, Pillow and pytesseract.")
+        raise RuntimeError("Image document processing requires Pillow and pytesseract.")
 
     logger.debug("Processing image document with Tesseract OCR")
     img = Image.open(io.BytesIO(document_buffer))  # ty: ignore
@@ -217,25 +116,6 @@ def _extract_pdf_text_layer(document_buffer: bytes) -> str:
         return ""
 
 
-def _extract_pdf_text_with_ocr(document_buffer: bytes) -> str:
-    """
-    OCR fallback for PDFs: rasterize pages with PyMuPDF then OCR with pytesseract.
-    """
-    logger.info("Backend PDF OCR component called: PyMuPDF rasterization + pytesseract")
-    extracted_texts = []
-    pdf_document = fitz.open(stream=document_buffer, filetype="pdf")  # ty: ignore
-
-    for page_num in range(pdf_document.page_count):
-        page = pdf_document[page_num]
-        pix = page.get_pixmap()
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)  # ty: ignore
-        text = pytesseract.image_to_string(img)  # ty: ignore
-        extracted_texts.append(text)
-        logger.debug(f"Extracted text from PDF page {page_num + 1}/{pdf_document.page_count}")
-
-    return "\n\n".join(extracted_texts).strip()
-
-
 def _is_extracted_text_usable(text: str) -> bool:
     """
     Heuristic check for whether extracted text is likely usable.
@@ -246,6 +126,82 @@ def _is_extracted_text_usable(text: str) -> bool:
 
     alnum_count = sum(1 for ch in normalized if ch.isalnum())
     return alnum_count >= 80
+
+
+# Free-text fields the LLM sometimes returns in ALL CAPS; title-cased after
+# extraction (kept out of the prompt — simple post-processing only).
+_DEMOGRAPHICS_TITLE_CASE_FIELDS = ("first_name", "last_name", "address")
+
+
+def _normalize_extracted_demographics(data: dict[str, Any]) -> dict[str, Any]:
+    """Title-case name/address fields; leave identifiers and dates untouched."""
+    for key in _DEMOGRAPHICS_TITLE_CASE_FIELDS:
+        value = data.get(key)
+        if isinstance(value, str) and value:
+            data[key] = value.title()
+    return data
+
+
+async def extract_demographics_from_document(
+    document_buffer: bytes, content_type: str
+) -> dict[str, Any]:
+    """Extract patient demographics from an uploaded document."""
+    extracted_text = await extract_text_from_document(document_buffer, content_type)
+    return await _extract_demographics_from_text(extracted_text)
+
+
+async def _extract_demographics_from_text(text: str) -> dict[str, Any]:
+    """One LLM call to pull patient demographics out of document text.
+
+    Returns only fields the model could determine (others omitted, not null),
+    so the caller can merge without blanking existing values.
+    """
+    config = config_manager.get_config()
+    options = config_manager.get_prompts_and_options()["options"]["general"].copy()
+    options["temperature"] = 0
+    options.pop("stop", None)
+
+    response_format = DemographicsExtraction.model_json_schema()
+
+    system_content = (
+        "Extract the patient's demographic details from the provided document text. "
+        "Return ONLY valid JSON with these keys: "
+        "first_name, last_name, dob (ISO YYYY-MM-DD when determinable), "
+        "gender (single letter 'M' or 'F' when stated), ur_number, address, phone. "
+        "Use null for any field not present in the document. Do not guess or infer."
+    )
+
+    request_body = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": text or "(no text)"},
+    ]
+
+    client = get_llm_client(timeout=120)
+    max_retries = 2
+
+    for attempt in range(max_retries + 1):
+        try:
+            response = await client.chat(
+                model=config["PRIMARY_MODEL"],
+                messages=request_body,
+                format=response_format,
+                options=options,
+            )
+            repaired = repair_json(response["message"]["content"])
+            data = DemographicsExtraction.model_validate_json(repaired)
+            # Keep only populated fields so merges don't clobber existing values.
+            result = {k: v for k, v in data.model_dump().items() if v}
+            return _normalize_extracted_demographics(result)
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(
+                    f"Demographics extraction attempt {attempt + 1} failed: {e}. Retrying..."
+                )
+                continue
+            logger.error(f"Demographics extraction failed after {max_retries + 1} attempts: {e}")
+            raise
+
+    raise RuntimeError("Unreachable: demographics extraction exhausted retries")
 
 
 async def process_document_with_template(
@@ -295,40 +251,20 @@ async def _process_extracted_text_with_template(
     patient_context: dict[str, Any],
 ) -> dict[str, Any]:
     """
-    Shared template processing logic that operates on extracted text.
+    Template processing logic that operates on extracted document text.
     """
-    # If there are no template fields, use the legacy section-style extraction
-    if not template_fields:
-        logger.info("No template fields provided, using legacy processing method")
-        (
-            primary_history,
-            additional_history,
-            investigations,
-        ) = await _process_extracted_text_sections(
-            extracted_text,
-            patient_context.get("name"),
-            patient_context.get("dob"),
-            patient_context.get("gender"),
-        )
-
-        return {
-            "primary_history": primary_history,
-            "additional_history": additional_history,
-            "investigations": investigations,
-        }
-
     try:
-        raw_results = await asyncio.gather(
-            *[
-                process_document_field(extracted_text, field, patient_context)
-                for field in template_fields
-            ]
+        raw_results_dict = await process_all_fields_concurrently(
+            transcript_text=extracted_text,
+            fields=template_fields,
+            patient_context=patient_context,
+            intro_override="Extract relevant information for each field from the provided medical document.",
         )
 
         refined_results = await asyncio.gather(
             *[
-                refine_field_content(result.content, field)
-                for result, field in zip(raw_results, template_fields, strict=True)
+                refine_field_content(raw_results_dict[field.field_key], field)
+                for field in template_fields
             ]
         )
 
@@ -345,23 +281,18 @@ async def _process_extracted_text_with_template(
         raise
 
 
-async def process_visual_document_with_template(
+async def _run_vision_extraction(
+    system_content: str,
+    response_model: type[BaseModel],
     visual_pages: list[dict[str, Any]],
-    template_fields: list[Any],
-    patient_context: dict[str, Any],
-) -> dict[str, Any]:
-    """
-    Process visual document pages with a multimodal model to fill template fields.
-
-    Uses a single LLM call with all images and all field instructions combined
-    (same pattern as process_all_fields_concurrently in text.py), then refines
-    each field through the existing refinement pipeline.
+):
+    """Shared vision-LLM core: filter pages, call the model with retries, and
+    validate the JSON response against ``response_model`` (a pydantic class).
+    Returns the validated pydantic instance. Used by demographics visual
+    extraction; the template visual path can adopt it as a follow-up.
     """
     if not visual_pages:
         raise ValueError("No visual pages were provided")
-
-    if not template_fields:
-        raise ValueError("Template fields are required for visual document processing")
 
     # Keep only valid image data URLs and cap page count defensively
     valid_pages = [
@@ -380,7 +311,83 @@ async def process_visual_document_with_template(
     options["temperature"] = 0
     options.pop("stop", None)
 
-    response_format = MultiFieldResponse.model_json_schema()
+    response_format = response_model.model_json_schema()
+
+    user_content: list[dict[str, Any]] = [
+        {"type": "text", "text": "Please extract the fields from these document images."}
+    ]
+    for page in valid_pages:
+        user_content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": page["data_url"]},
+            }
+        )
+
+    request_body = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": user_content},
+    ]
+
+    client = get_llm_client(timeout=180)
+    max_retries = 2
+
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(
+                f"Vision extraction with {len(valid_pages)} pages "
+                f"(attempt {attempt + 1}/{max_retries + 1})..."
+            )
+            response = await client.chat(
+                model=config["PRIMARY_MODEL"],
+                messages=request_body,
+                format=response_format,
+                options=options,
+            )
+            repaired_content = repair_json(response["message"]["content"])
+            return response_model.model_validate_json(repaired_content)
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(
+                    f"Vision extraction attempt {attempt + 1}/{max_retries + 1} failed: {e}. Retrying..."
+                )
+                continue
+            logger.error(f"Vision extraction failed after {max_retries + 1} attempts: {e}")
+            raise
+
+    raise RuntimeError("Unreachable: vision extraction exhausted retries")
+
+
+async def extract_demographics_from_visual_pages(
+    visual_pages: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Extract patient demographics from rendered document page images."""
+    system_content = (
+        "Extract the patient's demographic details from the provided document images. "
+        "Return ONLY valid JSON with these keys: "
+        "first_name, last_name, dob (ISO YYYY-MM-DD when determinable), "
+        "gender (single letter 'M' or 'F' when stated), ur_number, address, phone. "
+        "Use null for any field not present in the document. Do not guess or infer."
+    )
+    data = await _run_vision_extraction(system_content, DemographicsExtraction, visual_pages)
+    result = {k: v for k, v in data.model_dump().items() if v}
+    return _normalize_extracted_demographics(result)
+
+
+async def process_visual_document_with_template(
+    visual_pages: list[dict[str, Any]],
+    template_fields: list[Any],
+    patient_context: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Process visual document pages with a multimodal model to fill template fields.
+
+    Builds the template field instructions, delegates the vision call to the
+    shared ``_run_vision_extraction`` core, then bullet-formats and refines each
+    field through the existing refinement pipeline.
+    """
+    if not template_fields:
+        raise ValueError("Template fields are required for visual document processing")
 
     # Build patient context
     context_str = ""
@@ -410,179 +417,28 @@ async def process_visual_document_with_template(
         '"field_summaries" (object mapping field_key to array of strings).'
     )
 
-    # Build user content: instruction text + all page images
-    user_content: list[dict[str, Any]] = [
-        {"type": "text", "text": "Please extract the fields from these document images."}
-    ]
-    for page in valid_pages:
-        user_content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": page["data_url"]},
-            }
-        )
+    multi_field_response = await _run_vision_extraction(
+        system_content, MultiFieldResponse, visual_pages
+    )
 
-    request_body = [
-        {"role": "system", "content": system_content},
-        {"role": "user", "content": user_content},
-    ]
+    # Convert to dict of formatted strings (with bullet points)
+    raw_results: dict[str, str] = {}
+    for field in template_fields:
+        key_points = multi_field_response.field_summaries.get(field.field_key, [])
+        formatted_content = "\n".join(f"• {point.strip()}" for point in key_points)
+        raw_results[field.field_key] = formatted_content
 
-    # Single LLM call with retries (same pattern as text.py)
-    max_retries = 2
+    logger.info(f"Successfully extracted {len(template_fields)} fields from visual document")
 
-    client = get_llm_client(timeout=180)
+    # Refine all fields concurrently (fast text-only calls)
+    refined_results = await asyncio.gather(
+        *[refine_field_content(raw_results[field.field_key], field) for field in template_fields]
+    )
 
-    for attempt in range(max_retries + 1):
-        try:
-            logger.info(
-                f"Processing {len(template_fields)} visual fields in one call "
-                f"with {len(valid_pages)} pages (attempt {attempt + 1}/{max_retries + 1})..."
-            )
-
-            response = await client.chat(
-                model=config["PRIMARY_MODEL"],
-                messages=request_body,
-                format=response_format,
-                options=options,
-            )
-
-            # Repair and validate JSON
-            content = response["message"]["content"]
-            repaired_content = repair_json(content)
-            multi_field_response = MultiFieldResponse.model_validate_json(repaired_content)
-
-            # Convert to dict of formatted strings (with bullet points)
-            raw_results: dict[str, str] = {}
-            for field in template_fields:
-                key_points = multi_field_response.field_summaries.get(field.field_key, [])
-                formatted_content = "\n".join(f"• {point.strip()}" for point in key_points)
-                raw_results[field.field_key] = formatted_content
-
-            logger.info(
-                f"Successfully extracted {len(template_fields)} fields from visual document"
-            )
-
-            # Refine all fields concurrently (fast text-only calls)
-            refined_results = await asyncio.gather(
-                *[
-                    refine_field_content(raw_results[field.field_key], field)
-                    for field in template_fields
-                ]
-            )
-
-            return {
-                field.field_key: refined
-                for field, refined in zip(template_fields, refined_results, strict=True)
-            }
-
-        except Exception as e:
-            if attempt < max_retries:
-                logger.warning(
-                    f"Visual document processing attempt {attempt + 1}/{max_retries + 1} failed: {e}. Retrying..."
-                )
-                continue
-            else:
-                logger.error(
-                    f"Visual document processing failed after {max_retries + 1} attempts: {e}"
-                )
-                raise
-
-    raise RuntimeError("Unreachable: process_visual_document_with_template exhausted retries")
-
-
-async def process_document_field(
-    document_text: str, field: Any, patient_context: dict[str, Any]
-) -> TemplateResponse:
-    """Process a single document field by extracting key points from the document text.
-
-    Args:
-        document_text (str): The extracted text from the document to be analyzed.
-        field (Any): The template field configuration containing prompts.
-        patient_context (Dict[str, Any]): Patient context details.
-
-    Returns:
-        TemplateResponse: An object containing the field key and the formatted key points.
-    """
-    try:
-        config = config_manager.get_config()
-        client = get_llm_client()
-        options = config_manager.get_prompts_and_options()["options"]["general"].copy()
-
-        # Use FieldResponse for structured output
-        response_format = FieldResponse.model_json_schema()
-
-        # Get the field name and system prompt
-        field_name = field.field_name
-        system_prompt = getattr(field, "system_prompt", "") or ""
-
-        # If no system prompt is provided, create a default one
-        if not system_prompt:
-            system_prompt = f"You are a medical documentation assistant. Extract the {field_name} from the provided medical document."
-
-        if hasattr(field, "style_example") and field.style_example:
-            system_prompt += f"\n\nOutput style example:\n{field.style_example}"
-
-        json_schema_instruction = (
-            "Output MUST be ONLY valid JSON with top-level key "
-            '"key_points" (array of strings). Example: ' + json.dumps({"key_points": ["..."]})
-        )
-
-        # Build patient context for the prompt
-        context_str = ""
-        if patient_context:
-            # Convert dictionary to format expected by _build_patient_context
-            context_str = _build_patient_context(
-                patient_context.get("name"),
-                patient_context.get("dob"),
-                patient_context.get("gender"),
-            )
-
-        # Build a single system message so strict chat templates don't reject
-        # requests with additional system messages later in the list.
-        system_content = f"{system_prompt}\n\n{json_schema_instruction}"
-        if context_str:
-            system_content += f"\n\nPatient context: {context_str}"
-
-        # Create the request messages
-        request_body = [
-            {
-                "role": "system",
-                "content": system_content,
-            },
-            {
-                "role": "user",
-                "content": f"Please extract the {field_name} from this medical document:\n\n{document_text}",
-            },
-        ]
-
-        logger.info(f"Processing document field: {field_name}")
-
-        # Set temperature to 0 for deterministic output
-        options["temperature"] = 0
-
-        # Make the API call
-        response = await client.chat(
-            model=config["PRIMARY_MODEL"],
-            messages=request_body,
-            format=response_format,
-            options=options,
-        )
-
-        # Parse the response
-        field_response = FieldResponse.model_validate_json(response["message"]["content"])
-
-        # Convert key points into a formatted string
-        formatted_content = "\n".join(f"• {point.strip()}" for point in field_response.key_points)
-
-        return TemplateResponse(field_key=field.field_key, content=formatted_content)
-
-    except Exception as e:
-        logger.error(f"Error processing document field {field.field_key}: {e}")
-        # Return empty result on error
-        return TemplateResponse(
-            field_key=field.field_key,
-            content=f"Error extracting {field.field_name}: {str(e)}",
-        )
+    return {
+        field.field_key: refined
+        for field, refined in zip(template_fields, refined_results, strict=True)
+    }
 
 
 def _build_patient_context(name: str | None, dob: str | None, gender: str | None) -> str:
@@ -606,36 +462,3 @@ def _build_patient_context(name: str | None, dob: str | None, gender: str | None
     if gender:
         context_parts.append(f"Gender: {'Male' if gender == 'M' else 'Female'}")
     return " | ".join(context_parts)
-
-
-def _parse_model_output(output: str) -> tuple[str, str, str]:
-    """
-    Parse the model output into separate sections.
-
-    Args:
-        output: Raw output from the LLM
-
-    Returns:
-        Tuple containing (primary_history, additional_history, investigations)
-    """
-    # Prepend the section headers that were removed
-    full_output = f"Primary History:\n#{output}"
-
-    sections = full_output.split("\n\n")
-    primary_history = ""
-    additional_history = ""
-    investigations = ""
-
-    _current_section = None
-    for section in sections:
-        if section.startswith("Primary History:"):
-            _current_section = "primary"
-            primary_history = section.replace("Primary History:", "").strip()
-        elif section.startswith("Additional History:"):
-            _current_section = "additional"
-            additional_history = section.replace("Additional History:", "").strip()
-        elif section.startswith("Investigations:"):
-            _current_section = "investigations"
-            investigations = section.replace("Investigations:", "").strip()
-
-    return primary_history, additional_history, investigations

@@ -9,16 +9,12 @@ from dataclasses import dataclass
 from typing import (
     Any,
     Literal,
-    TypeVar,
     Union,
 )
 
 from .chunking_utils import BaseChunker
 
 logger = logging.getLogger(__name__)
-
-TS = TypeVar("TS", bound="TextSplitter")
-
 
 class TextSplitter(BaseChunker, ABC):
     """Interface for splitting text into chunks."""
@@ -106,72 +102,6 @@ class TextSplitter(BaseChunker, ABC):
         if doc is not None:
             docs.append(doc)
         return docs
-
-    # @classmethod
-    # def from_huggingface_tokenizer(cls, tokenizer: Any, **kwargs: Any) -> TextSplitter:
-    #     """Text splitter that uses HuggingFace tokenizer to count length."""
-    #     try:
-    #         from transformers import PreTrainedTokenizerBase
-
-    #         if not isinstance(tokenizer, PreTrainedTokenizerBase):
-    #             raise ValueError(
-    #                 "Tokenizer received was not an instance of PreTrainedTokenizerBase"
-    #             )
-
-    #         def _huggingface_tokenizer_length(text: str) -> int:
-    #             return len(tokenizer.encode(text))
-
-    #     except ImportError:
-    #         raise ValueError(
-    #             "Could not import transformers python package. "
-    #             "Please install it with `pip install transformers`."
-    #         )
-    #     return cls(length_function=_huggingface_tokenizer_length, **kwargs)
-
-    @classmethod
-    def from_tiktoken_encoder(
-        cls: type[TS],
-        encoding_name: str = "gpt2",
-        model_name: str | None = None,
-        allowed_special: Union[Literal["all"], Set[str]] = set(),
-        disallowed_special: Union[Literal["all"], Collection[str]] = "all",
-        **kwargs: Any,
-    ) -> TS:
-        """Text splitter that uses tiktoken encoder to count length."""
-        try:
-            import tiktoken
-        except ImportError:
-            raise ImportError(
-                "Could not import tiktoken python package. "
-                "This is needed in order to calculate max_tokens_for_prompt. "
-                "Please install it with `pip install tiktoken`."
-            ) from None
-
-        if model_name is not None:
-            enc = tiktoken.encoding_for_model(model_name)
-        else:
-            enc = tiktoken.get_encoding(encoding_name)
-
-        def _tiktoken_encoder(text: str) -> int:
-            return len(
-                enc.encode(
-                    text,
-                    allowed_special=allowed_special,
-                    disallowed_special=disallowed_special,
-                )
-            )
-
-        if issubclass(cls, FixedTokenChunker):
-            extra_kwargs = {
-                "encoding_name": encoding_name,
-                "model_name": model_name,
-                "allowed_special": allowed_special,
-                "disallowed_special": disallowed_special,
-            }
-            kwargs = {**kwargs, **extra_kwargs}
-
-        return cls(length_function=_tiktoken_encoder, **kwargs)  # ty: ignore
-
 
 class FixedTokenChunker(TextSplitter):
     """Splitting text to tokens using model tokenizer."""

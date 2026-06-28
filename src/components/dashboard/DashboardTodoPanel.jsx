@@ -17,7 +17,7 @@ import {
     DeleteIcon,
     ChevronDownIcon,
     ChevronUpIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 
 const DashboardTodoPanel = ({
     todos = [],

@@ -1,7 +1,6 @@
 """Utility functions for LLM client operations."""
 
 import logging
-import platform
 import re
 
 from json_repair import repair_json as library_repair_json
@@ -36,11 +35,6 @@ def repair_json(json_str: str) -> str:
     return library_repair_json(json_str)
 
 
-def is_arm_mac() -> bool:
-    """Check if we're running on an ARM Mac."""
-    return platform.system() == "Darwin" and platform.machine() == "arm64"
-
-
 def ensure_system_messages_first(messages: list) -> list:
     """
     Ensure all system messages are at the beginning of the messages list.
@@ -70,3 +64,4 @@ def ensure_system_messages_first(messages: list) -> list:
             other_msgs.append(msg)
 
     return system_msgs + other_msgs
+

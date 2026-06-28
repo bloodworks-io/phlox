@@ -192,10 +192,6 @@ class WhisperModelManager:
             return model_file
         return None
 
-    def is_model_downloaded(self, model_id: str) -> bool:
-        """Check if a model is downloaded."""
-        return self.get_model_path(model_id) is not None
-
     def _get_coreml_model_path(self, model_id: str) -> Path | None:
         """Get the directory path for a Core ML model."""
         coreml_dir = self.models_dir / f"ggml-{model_id}-encoder.mlmodelc"
@@ -459,3 +455,4 @@ class WhisperModelManager:
 
 # Singleton instance
 whisper_model_manager = WhisperModelManager()
+

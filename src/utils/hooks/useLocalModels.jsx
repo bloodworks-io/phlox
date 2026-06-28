@@ -7,11 +7,7 @@ import { downloadLlmModel as downloadLlmService, downloadWhisperModel as downloa
 export const useLocalModels = () => {
   const [models, setModels] = useState([]);
   const [availableModels, setAvailableModels] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRepo, setSelectedRepo] = useState("");
-  const [repoFiles, setRepoFiles] = useState({});
   const [localStatus, setLocalStatus] = useState(null);
   const [systemSpecs, setSystemSpecs] = useState(null);
 
@@ -96,48 +92,6 @@ export const useLocalModels = () => {
       console.error("Error checking local status:", error);
       setLocalStatus(null);
       return null;
-    }
-  }, []);
-
-  // Search models on HuggingFace
-  const searchModels = useCallback(async (query) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return [];
-    }
-
-    setLoading(true);
-    try {
-      const response = await localModelApi.searchModels(query);
-      setSearchResults(response.models || []);
-      return response.models || [];
-    } catch (error) {
-      console.error("Error searching models:", error);
-      setSearchResults([]);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Get repository files
-  const fetchRepoFiles = useCallback(async (repoId) => {
-    if (!repoId) {
-      setRepoFiles({});
-      return {};
-    }
-
-    setLoading(true);
-    try {
-      const response = await localModelApi.getRepoFiles(repoId);
-      setRepoFiles(response.quantizations || {});
-      return response;
-    } catch (error) {
-      console.error("Error fetching repo files:", error);
-      setRepoFiles({});
-      return {};
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -371,13 +325,7 @@ export const useLocalModels = () => {
     // State
     models,
     availableModels,
-    searchResults,
     loading,
-    searchQuery,
-    setSearchQuery,
-    selectedRepo,
-    setSelectedRepo,
-    repoFiles,
     localStatus,
     systemSpecs,
     modelRecommendations: availableModels,
@@ -391,8 +339,6 @@ export const useLocalModels = () => {
     whisperStatus,
 
     // Actions
-    searchModels,
-    fetchRepoFiles,
     downloadLlmModel,
     deleteLlmModel,
     refreshData,

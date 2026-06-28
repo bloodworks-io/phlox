@@ -19,7 +19,7 @@ async def execute_tool_streaming(
     config: dict[str, Any],
     message_list: list,
     context_question_options: dict[str, Any],
-    chroma_manager=None,
+    vector_store_manager=None,
     conversation_history: list | None = None,
     raw_transcription: str | None = None,
 ) -> AsyncGenerator[dict[str, Any], None]:
@@ -34,7 +34,7 @@ async def execute_tool_streaming(
         config: The configuration dictionary
         message_list: The current message list
         context_question_options: The context question options
-        chroma_manager: Optional ChromaManager for literature search
+        vector_store_manager: Optional VectorStoreManager for literature search
         conversation_history: The conversation history (for transcript search)
         raw_transcription: The raw transcription (for transcript search)
 
@@ -138,13 +138,29 @@ async def execute_tool_streaming(
         ):
             yield result
 
+    elif function_name == "list_pdf_form_templates":
+        from .pdf_forms import list_templates as execute_list
+
+        async for result in execute_list(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
+    elif function_name == "fill_pdf_form":
+        from .pdf_forms import fill_form as execute_fill
+
+        async for result in execute_fill(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
     elif function_name == "get_relevant_literature":
         from .direct_response import execute as execute_direct
         from .literature_search import execute as execute_literature
 
-        if chroma_manager is None:
+        if vector_store_manager is None:
             logger.warning(
-                "Literature search requested but chroma_manager not available. "
+                "Literature search requested but vector_store_manager not available. "
                 "Falling back to direct response."
             )
             async for result in execute_direct(
@@ -156,7 +172,7 @@ async def execute_tool_streaming(
                 tool_call,
                 llm_client,
                 config,
-                chroma_manager,
+                vector_store_manager,
                 message_list,
                 context_question_options,
             ):
@@ -181,7 +197,7 @@ async def execute_tool_streaming(
 async def execute_tool_non_streaming(
     tool_call: dict[str, Any],
     config: dict[str, Any],
-    chroma_manager=None,
+    vector_store_manager=None,
 ) -> tuple[str, list[str] | None]:
     """Execute a tool without streaming.
 
@@ -192,7 +208,7 @@ async def execute_tool_non_streaming(
     Args:
         tool_call: The tool call to execute
         config: The configuration dictionary
-        chroma_manager: Optional ChromaManager for literature search
+        vector_store_manager: Optional VectorStoreManager for literature search
 
     Returns:
         Tuple of (result_string, citations_list) where citations_list
@@ -210,7 +226,7 @@ async def execute_tool_non_streaming(
         config=config,
         message_list=[],
         context_question_options={},
-        chroma_manager=chroma_manager,
+        vector_store_manager=vector_store_manager,
     )
 
     # Consume the stream and return accumulated result

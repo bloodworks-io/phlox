@@ -24,7 +24,7 @@ import {
   FaExclamationTriangle,
   FaRedoAlt,
 } from "react-icons/fa";
-import { CheckIcon } from "@chakra-ui/icons";
+import { CheckIcon } from "../../common/icons";
 import { GreyButton } from "../../common/Buttons";
 import { useState } from "react";
 import { useTranscription } from "../../../utils/hooks/useTranscription";

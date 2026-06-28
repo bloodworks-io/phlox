@@ -35,7 +35,12 @@ async def find_ur_by_name(patient_name: str, threshold: int = 70) -> PatientMatc
     try:
         # Get all patients with their names and UR numbers
         get_db().cursor.execute(
-            "SELECT DISTINCT ur_number, name FROM patients WHERE ur_number IS NOT NULL AND ur_number != ''"
+            """
+            SELECT DISTINCT e.ur_number, p.first_name, p.last_name
+            FROM encounters e
+            LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+            WHERE e.ur_number IS NOT NULL AND e.ur_number != ''
+            """
         )
         rows = get_db().cursor.fetchall()
 
@@ -47,13 +52,14 @@ async def find_ur_by_name(patient_name: str, threshold: int = 70) -> PatientMatc
         best_score = 0
 
         for row in rows:
+            first = row["first_name"]
+            last = row["last_name"]
+            name = f"{last}, {first}" if (last and first) else (last or first or "")
             # Use token_set_ratio for better matching with partial names
-            score = fuzz.token_set_ratio(patient_name.lower(), row["name"].lower())
+            score = fuzz.token_set_ratio(patient_name.lower(), name.lower())
             if score > best_score and score >= threshold:
                 best_score = score
-                best_match = PatientMatch(
-                    ur_number=row["ur_number"], name=row["name"], score=int(score)
-                )
+                best_match = PatientMatch(ur_number=row["ur_number"], name=name, score=int(score))
 
         if best_match:
             logger.info(
@@ -69,40 +75,3 @@ async def find_ur_by_name(patient_name: str, threshold: int = 70) -> PatientMatc
         logger.error(f"Error finding patient by name: {e}")
         return None
 
-
-async def find_multiple_patients_by_name(
-    patient_name: str, threshold: int = 70, limit: int = 5
-) -> list[PatientMatch]:
-    """Find multiple patients matching a name using fuzzy matching.
-
-    Args:
-        patient_name: The patient name to search for
-        threshold: Minimum fuzzy match score (0-100) to accept
-        limit: Maximum number of matches to return
-
-    Returns:
-        List of PatientMatch objects, sorted by score descending
-    """
-    try:
-        get_db().cursor.execute(
-            "SELECT DISTINCT ur_number, name FROM patients WHERE ur_number IS NOT NULL AND ur_number != ''"
-        )
-        rows = get_db().cursor.fetchall()
-
-        if not rows:
-            return []
-
-        matches = []
-        for row in rows:
-            score = fuzz.token_set_ratio(patient_name.lower(), row["name"].lower())
-            if score >= threshold:
-                matches.append(
-                    PatientMatch(ur_number=row["ur_number"], name=row["name"], score=int(score))
-                )
-
-        # Sort by score descending and limit
-        matches.sort(key=lambda x: x.score, reverse=True)
-        return matches[:limit]
-    except Exception as e:
-        logger.error(f"Error finding patients by name: {e}")
-        return []

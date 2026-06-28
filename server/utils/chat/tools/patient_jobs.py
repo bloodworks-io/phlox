@@ -17,8 +17,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-GET_PATIENT_JOBS_TOOL_NAME = "get_patient_jobs"
-
 
 async def get_patient_jobs(
     ur_number: str | None = None,
@@ -38,10 +36,12 @@ async def get_patient_jobs(
             # Search by UR number
             get_db().cursor.execute(
                 """
-                SELECT id, name, ur_number, dob, encounter_date, jobs_list
-                FROM patients
-                WHERE ur_number = ?
-                ORDER BY encounter_date DESC
+                SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+                       p.first_name, p.last_name, p.dob
+                FROM encounters e
+                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                WHERE e.ur_number = ?
+                ORDER BY e.encounter_date DESC
                 LIMIT 1
                 """,
                 (ur_number,),
@@ -50,10 +50,12 @@ async def get_patient_jobs(
             # Search by name (case-insensitive partial match)
             get_db().cursor.execute(
                 """
-                SELECT id, name, ur_number, dob, encounter_date, jobs_list
-                FROM patients
-                WHERE LOWER(name) LIKE LOWER(?)
-                ORDER BY encounter_date DESC
+                SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+                       p.first_name, p.last_name, p.dob
+                FROM encounters e
+                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                ORDER BY e.encounter_date DESC
                 LIMIT 1
                 """,
                 (f"%{patient_name}%",),
@@ -85,11 +87,15 @@ async def get_patient_jobs(
         # Filter to incomplete jobs
         incomplete_jobs = [job for job in jobs_list if not job.get("completed", False)]
 
+        first = patient.get("first_name")
+        last = patient.get("last_name")
+        name = f"{last}, {first}" if (last and first) else (last or first or "")
+
         return {
             "success": True,
             "patient": {
                 "id": patient["id"],
-                "name": patient["name"],
+                "name": name,
                 "ur_number": patient["ur_number"],
                 "dob": patient["dob"],
                 "encounter_date": patient["encounter_date"],
@@ -195,3 +201,4 @@ async def execute(
             result_content = f"Error retrieving patient jobs: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

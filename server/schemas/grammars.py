@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -164,3 +166,31 @@ class ConsolidatedInstructions(BaseModel):
         description="Description of changes made (e.g., 'Merged instructions 3 and 5', 'Removed contradiction')"
     )
     reason: str = Field(description="Brief explanation of the consolidation approach and rationale")
+
+
+class ProposedJob(BaseModel):
+    """
+    A single item extracted from an encounter plan, classified as either an actionable task or a non-task reminder/context line.
+    """
+
+    text: str = Field(
+        description="A clean, self-contained, imperative task string, e.g. 'Repeat FBE in 3 months'. No leading numbers or patient name."
+    )
+    category: Literal["action", "follow_up"] = Field(
+        description="'action' = a discrete task to order/prescribe/refer/schedule/perform/communicate; 'follow_up' = a review/monitoring reminder or context that is not itself a task"
+    )
+    rationale: str | None = Field(
+        default=None,
+        description="One short clause justifying the classification.",
+    )
+
+
+class JobExtractionResult(BaseModel):
+    """Structured result of extracting curated jobs from a plan."""
+
+    action_items: list[ProposedJob] = Field(
+        description="Actionable tasks that should become jobs/checkboxes"
+    )
+    excluded: list[ProposedJob] = Field(
+        description="Review/follow-up/monitoring items intentionally NOT treated as tasks, shown to the clinician as promotable"
+    )

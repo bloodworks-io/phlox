@@ -1,6 +1,6 @@
 import React from "react";
 import { Flex, Button, Spinner } from "@chakra-ui/react";
-import { RepeatIcon, CopyIcon, CheckIcon } from "@chakra-ui/icons";
+import { RepeatIcon, CopyIcon, CheckIcon } from "../../common/icons";
 import { FaSave } from "react-icons/fa";
 
 const PanelFooterActions = ({

@@ -1,0 +1,358 @@
+import { useEffect, useState } from "react";
+import {
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalCloseButton,
+    Box,
+    Flex,
+    HStack,
+    VStack,
+    Heading,
+    Text,
+    Button,
+    Avatar,
+    useColorMode,
+    useToast,
+} from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
+import { colors } from "../../theme/colors";
+import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
+import { formatDate } from "../../utils/helpers/formatHelpers";
+import { PathHalf } from "../patient/NewNoteStartCard";
+import UrSearchField from "../patient/UrSearchField";
+import DemographicsForm from "../patient/DemographicsForm";
+
+const MotionBox = motion(Box);
+
+const btnSx = {
+    fontFamily: '"Space Grotesk", sans-serif',
+    fontWeight: "600",
+};
+
+const candidateMeta = (cand) =>
+    [cand.gender, cand.dob, cand.ur_number && `UR ${cand.ur_number}`]
+        .filter(Boolean)
+        .join("  ·  ");
+
+const NewNoteModal = ({
+    isOpen,
+    onClose,
+    patient,
+    setPatient,
+    createNewPatient,
+    findPatients,
+    loadSelectedPatient,
+    selectedDate,
+    onComplete,
+}) => {
+    const { colorMode } = useColorMode();
+    const c = colors[colorMode];
+    const tileBg = colorMode === "light" ? c.base : c.crust;
+    const toast = useToast();
+
+    const [view, setView] = useState("choose");
+    const [query, setQuery] = useState("");
+    const [results, setResults] = useState([]);
+    const [isSearchLoading, setIsSearchLoading] = useState(false);
+    const [confirmingId, setConfirmingId] = useState(null);
+    const [draftPatient, setDraftPatient] = useState({});
+
+    // Reset to the chooser whenever the modal is reopened.
+    useEffect(() => {
+        if (isOpen) {
+            setView("choose");
+            setQuery("");
+            setResults([]);
+        }
+    }, [isOpen]);
+
+    const handleFind = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        const q = (query || "").trim();
+        if (!q) {
+            toast({
+                title: "Enter a UR number or name",
+                description:
+                    "Type a UR number or patient name, then click search.",
+                status: "warning",
+                ...DEFAULT_TOAST_CONFIG,
+            });
+            return;
+        }
+        setIsSearchLoading(true);
+        findPatients(q)
+            .then((list) => {
+                if (list && list.length > 0) {
+                    setResults(list);
+                    setView("results");
+                } else {
+                    toast({
+                        title: "No patient found",
+                        description: `No patient matches "${q}". Fill in their details to create a new record.`,
+                        status: "info",
+                        ...DEFAULT_TOAST_CONFIG,
+                    });
+                }
+            })
+            .catch(() => {
+                toast({
+                    title: "Search failed",
+                    description: "Couldn't search patients. Please try again.",
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            })
+            .finally(() => setIsSearchLoading(false));
+    };
+
+    const handleConfirm = (candidate) => {
+        setConfirmingId(candidate.ur_number || candidate.id);
+        loadSelectedPatient(candidate, selectedDate)
+            .then(() => onComplete({ cameFromSearch: true }))
+            .catch(() => {
+                toast({
+                    title: "Couldn't load patient",
+                    description: "Please try again.",
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            })
+            .finally(() => setConfirmingId(null));
+    };
+
+    const handleNewPatient = () => {
+        setDraftPatient({});
+        setView("new-patient");
+    };
+
+    const commitNewPatient = (updated) => {
+        createNewPatient()
+            .then((base) => {
+                setPatient({ ...base, ...updated, isNewEncounter: true });
+                onComplete({ cameFromSearch: false });
+            })
+            .catch(() => {
+                toast({
+                    title: "Couldn't start new patient",
+                    description: "Please try again.",
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            });
+    };
+
+    const subtitle =
+        view === "search"
+            ? "Enter a UR number or name to find an existing patient."
+            : view === "results"
+              ? "Confirm the patient to start a new visit."
+              : view === "new-patient"
+                ? "Enter the patient's details to create a new record."
+                : "Find an existing patient to start a new visit, or create a new patient record.";
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} size="lg">
+            <ModalOverlay />
+            <ModalContent className="modal-style">
+                <ModalHeader>
+                    <Heading
+                        as="h2"
+                        size="md"
+                        color={c.textPrimary}
+                        sx={{ fontFamily: '"Space Grotesk", sans-serif' }}
+                    >
+                        New encounter
+                    </Heading>
+                </ModalHeader>
+                <ModalCloseButton />
+                <ModalBody
+                    maxH="70vh"
+                    overflowY="auto"
+                    className="custom-scrollbar"
+                >
+                    <Text
+                        fontSize="sm"
+                        color={c.textSecondary}
+                        mb={4}
+                        lineHeight={1.5}
+                    >
+                        {subtitle}
+                    </Text>
+
+                    <MotionBox
+                        key={view}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {view === "choose" ? (
+                            <Flex gap={3} mb={2}>
+                                <PathHalf
+                                    icon={FaUserPlus}
+                                    title="New patient"
+                                    subtitle="Create a new record"
+                                    accent={c.primaryButton}
+                                    c={c}
+                                    tileBg={tileBg}
+                                    onClick={handleNewPatient}
+                                />
+                                <PathHalf
+                                    icon={FaSearch}
+                                    title="Search"
+                                    subtitle="Existing patient"
+                                    accent={c.secondaryButton}
+                                    c={c}
+                                    tileBg={tileBg}
+                                    onClick={() => setView("search")}
+                                />
+                            </Flex>
+                        ) : view === "search" ? (
+                            <Box>
+                                <Flex
+                                    as="form"
+                                    onSubmit={handleFind}
+                                    alignItems="center"
+                                >
+                                    <UrSearchField
+                                        value={query}
+                                        onChange={(e) =>
+                                            setQuery(e.target.value)
+                                        }
+                                        onSearch={handleFind}
+                                        isLoading={isSearchLoading}
+                                        autoFocus
+                                        placeholder="UR number or name"
+                                    />
+                                </Flex>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="md"
+                                    mt={3}
+                                    borderRadius="2xl !important"
+                                    leftIcon={<FaArrowLeft />}
+                                    className="switch-mode"
+                                    sx={btnSx}
+                                    onClick={() => setView("choose")}
+                                >
+                                    Back
+                                </Button>
+                            </Box>
+                        ) : view === "results" ? (
+                            <Box>
+                                <VStack spacing={3} align="stretch">
+                                    {results.map((cand) => (
+                                        <Flex
+                                            key={cand.ur_number || cand.id}
+                                            align="center"
+                                            justify="space-between"
+                                            p={3}
+                                            borderRadius="lg"
+                                            bg={tileBg}
+                                        >
+                                            <HStack spacing={3} minW="0">
+                                                <Avatar
+                                                    name={
+                                                        cand.first_name ||
+                                                        cand.last_name
+                                                            ? `${cand.first_name || ""} ${
+                                                                  cand.last_name ||
+                                                                  ""
+                                                              }`.trim()
+                                                            : undefined
+                                                    }
+                                                    size="sm"
+                                                    bg={c.surface}
+                                                    color={c.textPrimary}
+                                                />
+                                                <Box minW="0">
+                                                    <Text
+                                                        fontWeight="600"
+                                                        color={c.textPrimary}
+                                                        noOfLines={1}
+                                                    >
+                                                        {cand.name ||
+                                                            "Unnamed patient"}
+                                                    </Text>
+                                                    <Text
+                                                        fontSize="xs"
+                                                        color={c.textSecondary}
+                                                        noOfLines={1}
+                                                    >
+                                                        {candidateMeta(cand) ||
+                                                            "No demographics on file"}
+                                                    </Text>
+                                                    {cand.encounter_date && (
+                                                        <Text
+                                                            fontSize="xs"
+                                                            color={
+                                                                c.textSecondary
+                                                            }
+                                                        >
+                                                            Last seen{" "}
+                                                            {formatDate(
+                                                                cand.encounter_date,
+                                                            )}
+                                                        </Text>
+                                                    )}
+                                                </Box>
+                                            </HStack>
+                                            <Button
+                                                size="sm"
+                                                isLoading={
+                                                    confirmingId ===
+                                                    (cand.ur_number || cand.id)
+                                                }
+                                                isDisabled={
+                                                    confirmingId !== null
+                                                }
+                                                className="green-button"
+                                                sx={btnSx}
+                                                onClick={() =>
+                                                    handleConfirm(cand)
+                                                }
+                                            >
+                                                Start visit
+                                            </Button>
+                                        </Flex>
+                                    ))}
+                                </VStack>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="md"
+                                    mt={3}
+                                    borderRadius="2xl !important"
+                                    leftIcon={<FaArrowLeft />}
+                                    className="switch-mode"
+                                    sx={btnSx}
+                                    onClick={() => setView("search")}
+                                >
+                                    Back
+                                </Button>
+                            </Box>
+                        ) : (
+                            <DemographicsForm
+                                patient={draftPatient}
+                                setPatient={setDraftPatient}
+                                onSaved={commitNewPatient}
+                                onCancel={() => setView("choose")}
+                                cancelLabel="Back"
+                                cancelIcon={<FaArrowLeft />}
+                            />
+                        )}
+                    </MotionBox>
+                </ModalBody>
+            </ModalContent>
+        </Modal>
+    );
+};
+
+export default NewNoteModal;

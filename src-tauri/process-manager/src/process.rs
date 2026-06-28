@@ -314,6 +314,34 @@ pub enum ServerSignal {
     Ports(AllocatedPorts),
 }
 
+fn with_stderr(msg: &str, stderr_buffer: &[u8]) -> String {
+    let stderr = String::from_utf8_lossy(stderr_buffer).trim().to_string();
+    if stderr.is_empty() {
+        msg.to_string()
+    } else {
+        format!("{}\n{}", msg, stderr)
+    }
+}
+
+#[cfg(unix)]
+fn set_nonblocking(fd: std::os::unix::io::RawFd, nonblocking: bool) -> std::io::Result<()> {
+    unsafe {
+        let flags = libc::fcntl(fd, libc::F_GETFL);
+        if flags == -1 {
+            return Err(std::io::Error::last_os_error());
+        }
+        let new_flags = if nonblocking {
+            flags | libc::O_NONBLOCK
+        } else {
+            flags & !libc::O_NONBLOCK
+        };
+        if libc::fcntl(fd, libc::F_SETFL, new_flags) == -1 {
+            return Err(std::io::Error::last_os_error());
+        }
+    }
+    Ok(())
+}
+
 /// Wait for the server to output a signal via stdout
 /// Also monitors stderr for specific error messages like "wrong key"
 pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String> {
@@ -321,6 +349,14 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
 
     let stdout = child.stdout.as_mut().ok_or("Failed to capture stdout")?;
     let stderr = child.stderr.as_mut().ok_or("Failed to capture stderr")?;
+
+    // Non-blocking reads
+    #[cfg(unix)]
+    {
+        use std::os::unix::io::AsRawFd;
+        let _ = set_nonblocking(stdout.as_raw_fd(), true);
+        let _ = set_nonblocking(stderr.as_raw_fd(), true);
+    }
 
     let mut stdout_reader = std::io::BufReader::new(stdout);
     let mut stderr_reader = std::io::BufReader::new(stderr);
@@ -344,7 +380,10 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                 "Stderr content: {}",
                 String::from_utf8_lossy(&stderr_buffer)
             );
-            return Err("Timeout waiting for server to start".to_string());
+            return Err(with_stderr(
+                "Timeout waiting for server to start",
+                &stderr_buffer,
+            ));
         }
 
         // Check stderr for "wrong key" error message
@@ -399,7 +438,10 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                     "Stderr content: {}",
                     String::from_utf8_lossy(&stderr_buffer)
                 );
-                return Err("Server exited before sending signal".to_string());
+                return Err(with_stderr(
+                    "Server exited before sending signal",
+                    &stderr_buffer,
+                ));
             }
             Ok(_) => {
                 stdout_buffer.push(stdout_byte[0]);
@@ -419,7 +461,8 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                     // Check for PORTS line with token
                     if line.trim().starts_with("PORTS:") {
                         let trimmed = line.trim();
-                        let ports_part = trimmed.strip_prefix("PORTS:").ok_or("Invalid PORTS line")?;
+                        let ports_part =
+                            trimmed.strip_prefix("PORTS:").ok_or("Invalid PORTS line")?;
 
                         // Split by | to separate ports from token
                         let parts: Vec<&str> = ports_part.split('|').collect();
@@ -430,7 +473,10 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                         // Parse ports
                         let ports: Vec<&str> = parts[0].split(',').collect();
                         if ports.len() != 3 {
-                            return Err(format!("PORTS line has wrong number of ports: {:?}", ports));
+                            return Err(format!(
+                                "PORTS line has wrong number of ports: {:?}",
+                                ports
+                            ));
                         }
 
                         let server = ports[0]
@@ -511,14 +557,24 @@ pub fn wait_for_allocated_ports(child: &mut Child) -> Result<AllocatedPorts, Str
 
 /// Spawn background threads to continuously drain stdout and stderr from the server process.
 /// This prevents the pipe buffer (~64KB) from filling up and blocking the child process.
-pub fn spawn_drain_threads(
-    child: &mut Child,
-) -> (JoinHandle<()>, JoinHandle<()>, Arc<AtomicBool>) {
+pub fn spawn_drain_threads(child: &mut Child) -> (JoinHandle<()>, JoinHandle<()>, Arc<AtomicBool>) {
     let shutdown = Arc::new(AtomicBool::new(false));
 
     // Take stdout and stderr from the child process
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
+
+    // Restore blocking mode for line-oriented reading
+    #[cfg(unix)]
+    {
+        use std::os::unix::io::AsRawFd;
+        if let Some(s) = stdout.as_ref() {
+            let _ = set_nonblocking(s.as_raw_fd(), false);
+        }
+        if let Some(s) = stderr.as_ref() {
+            let _ = set_nonblocking(s.as_raw_fd(), false);
+        }
+    }
 
     let shutdown_stdout = Arc::clone(&shutdown);
     let stdout_handle = thread::spawn(move || {
@@ -647,12 +703,8 @@ pub fn stop_drain_threads(process: &mut ManagedProcess) {
         let timeout = Duration::from_millis(500);
 
         // Use spawn to implement timeout for join
-        let stdout_joined = thread::spawn(move || stdout_handle.join())
-            .thread()
-            .id();
-        let stderr_joined = thread::spawn(move || stderr_handle.join())
-            .thread()
-            .id();
+        let stdout_joined = thread::spawn(move || stdout_handle.join()).thread().id();
+        let stderr_joined = thread::spawn(move || stderr_handle.join()).thread().id();
 
         // Brief sleep to allow threads to exit
         thread::sleep(timeout);

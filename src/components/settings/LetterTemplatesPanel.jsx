@@ -15,7 +15,7 @@ import {
   AddIcon,
   DeleteIcon,
   EditIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 import { FaEnvelopeOpenText } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { settingsService } from "../../utils/settings/settingsUtils";

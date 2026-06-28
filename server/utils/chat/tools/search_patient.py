@@ -20,8 +20,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-SEARCH_PATIENT_TOOL_NAME = "search_patient"
-
 
 async def search_patients(
     name: str | None = None,
@@ -44,31 +42,32 @@ async def search_patients(
     """
     try:
         query = """
-            SELECT DISTINCT ur_number, name, dob, gender,
-                   MAX(encounter_date) as last_encounter,
+            SELECT e.ur_number, p.first_name, p.last_name, p.dob, p.gender,
+                   MAX(e.encounter_date) as last_encounter,
                    COUNT(*) as encounter_count
-            FROM patients
+            FROM encounters e
+            LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
             WHERE 1=1
         """
         params = []
 
         if name:
-            query += " AND LOWER(name) LIKE LOWER(?)"
+            query += " AND LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)"
             params.append(f"%{name}%")
 
         if ur_number:
-            query += " AND ur_number LIKE ?"
+            query += " AND e.ur_number LIKE ?"
             params.append(f"%{ur_number}%")
 
         if dob:
-            query += " AND dob = ?"
+            query += " AND p.dob = ?"
             params.append(dob)
 
         if encounter_date:
-            query += " AND encounter_date = ?"
+            query += " AND e.encounter_date = ?"
             params.append(encounter_date)
 
-        query += " GROUP BY ur_number, name, dob, gender"
+        query += " GROUP BY e.ur_number, p.first_name, p.last_name, p.dob, p.gender"
         query += " ORDER BY last_encounter DESC"
         query += f" LIMIT {limit}"
 
@@ -77,10 +76,13 @@ async def search_patients(
 
         patients = []
         for row in rows:
+            first = row["first_name"]
+            last = row["last_name"]
+            name = f"{last}, {first}" if (last and first) else (last or first or "")
             patients.append(
                 {
                     "ur_number": row["ur_number"],
-                    "name": row["name"],
+                    "name": name,
                     "dob": row["dob"],
                     "gender": row["gender"],
                     "last_encounter": row["last_encounter"],
@@ -220,3 +222,4 @@ async def execute(
             yield chunk
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

@@ -1,4 +1,4 @@
-import { buildApiUrl, isTauri, getRequestToken } from "./apiConfig";
+import { isTauri, getRequestToken } from "./apiConfig";
 
 export const universalFetch = async (url, options = {}) => {
   // Get the request token if in Tauri mode
@@ -128,54 +128,4 @@ export const handleApiRequest = async ({
     if (setLoading) setLoading(false);
     if (finallyCallback) finallyCallback();
   }
-};
-
-// Enhanced API request helper that handles URL construction
-export const handleApiRequestWithUrl = async (options) => {
-  const { endpoint, ...otherOptions } = options;
-
-  // Build the full URL
-  const fullUrl = await buildApiUrl(endpoint);
-
-  // Create the API call with the full URL
-  const apiCall = () => {
-    const { method = "GET", body, headers } = options;
-    const fetchOptions = {
-      method,
-      headers: headers || {},
-    };
-
-    if (body) {
-      fetchOptions.body = body;
-    }
-
-    return universalFetch(fullUrl, fetchOptions);
-  };
-
-  return handleApiRequest({
-    ...otherOptions,
-    apiCall,
-  });
-};
-
-// Utility function for handling form data
-export const createFormData = (data) => {
-  const formData = new FormData();
-  Object.entries(data).forEach(([key, value]) => {
-    if (value !== null && value !== undefined) {
-      formData.append(key, value);
-    }
-  });
-  return formData;
-};
-
-// Utility function for handling query parameters
-export const createQueryString = (params) => {
-  return Object.entries(params)
-    .filter(([_, value]) => value !== null && value !== undefined)
-    .map(
-      ([key, value]) =>
-        `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
-    )
-    .join("&");
 };

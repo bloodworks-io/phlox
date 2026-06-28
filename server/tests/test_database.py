@@ -34,7 +34,8 @@ def test_database_initialization(test_db):
 
 def test_create_tables(test_db):
     tables = [
-        "patients",
+        "encounters",
+        "patient_profiles",
         "clinical_templates",
         "todos",
         "config",
@@ -55,27 +56,45 @@ def test_create_tables(test_db):
 def test_insert_and_retrieve_patient(test_db):
     test_db.cursor.execute(
         """
-        INSERT INTO patients (name, dob, ur_number, gender, encounter_date)
+        INSERT INTO encounters (ur_number, encounter_date)
+        VALUES (?, ?)
+        """,
+        ("UR12345", "2023-06-15"),
+    )
+    test_db.cursor.execute(
+        """
+        INSERT INTO patient_profiles (ur_number, first_name, last_name, dob, gender)
         VALUES (?, ?, ?, ?, ?)
         """,
-        ("John Doe", "1990-01-01", "UR12345", "M", "2023-06-15"),
+        ("UR12345", "John", "Doe", "1990-01-01", "M"),
     )
     test_db.db.commit()
-    test_db.cursor.execute("SELECT * FROM patients WHERE name = ?", ("John Doe",))
+
+    test_db.cursor.execute("SELECT * FROM encounters WHERE ur_number = ?", ("UR12345",))
     patient = test_db.cursor.fetchone()
     assert patient is not None
-    assert patient["name"] == "John Doe"
     assert patient["ur_number"] == "UR12345"
+
+    test_db.cursor.execute(
+        "SELECT first_name, last_name, dob FROM patient_profiles WHERE ur_number = ?",
+        ("UR12345",),
+    )
+    profile = test_db.cursor.fetchone()
+    assert profile is not None
+    assert profile["first_name"] == "John"
+    assert profile["last_name"] == "Doe"
+    assert profile["dob"] == "1990-01-01"
 
 
 def test_clear_test_database(test_db):
     # Insert dummy data into a couple of tables
-    test_db.cursor.execute("INSERT INTO patients (name) VALUES (?)", ("Test Patient",))
+    test_db.cursor.execute("INSERT INTO encounters (ur_number) VALUES (?)", ("Test Patient",))
     test_db.db.commit()
     # Now clear the database
     test_db.clear_test_database()
     tables = [
-        "patients",
+        "encounters",
+        "patient_profiles",
         "clinical_templates",
         "todos",
         "config",
@@ -90,15 +109,15 @@ def test_clear_test_database(test_db):
 
 def test_commit_and_rollback(test_db):
     # Test commit
-    test_db.cursor.execute("INSERT INTO patients (name) VALUES (?)", ("Commit Test",))
+    test_db.cursor.execute("INSERT INTO encounters (ur_number) VALUES (?)", ("UR_COMMIT",))
     test_db.commit()
-    test_db.cursor.execute("SELECT * FROM patients WHERE name = ?", ("Commit Test",))
+    test_db.cursor.execute("SELECT * FROM encounters WHERE ur_number = ?", ("UR_COMMIT",))
     assert test_db.cursor.fetchone() is not None
 
     # Test rollback by intentionally inserting and not committing
-    test_db.cursor.execute("INSERT INTO patients (name) VALUES (?)", ("Rollback Test",))
+    test_db.cursor.execute("INSERT INTO encounters (ur_number) VALUES (?)", ("UR_ROLLBACK",))
     test_db.db.rollback()
-    test_db.cursor.execute("SELECT * FROM patients WHERE name = ?", ("Rollback Test",))
+    test_db.cursor.execute("SELECT * FROM encounters WHERE ur_number = ?", ("UR_ROLLBACK",))
     assert test_db.cursor.fetchone() is None
 
 

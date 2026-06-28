@@ -20,12 +20,12 @@ async def update_config(data: dict = Body(...)):
     config_manager.update_config(data)
 
     try:
-        from server.utils.rag.chroma import get_chroma_manager
+        from server.utils.rag.vector_store import get_vector_store_manager
 
-        chroma_mgr = get_chroma_manager()
-        if chroma_mgr is not None:
-            chroma_mgr._reload_embedding_function()
+        vector_store_mgr = get_vector_store_manager()
+        if vector_store_mgr is not None:
+            vector_store_mgr._reload_embedding_function()
     except Exception:
-        logging.debug("ChromaDB reload skipped during config update")
+        logging.debug("Vector store reload skipped during config update")
 
     return {"message": "config.js updated successfully"}

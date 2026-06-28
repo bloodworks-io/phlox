@@ -12,7 +12,7 @@ import {
   InfoIcon,
   WarningIcon,
   WarningTwoIcon,
-} from "@chakra-ui/icons";
+} from "./icons";
 
 export function CustomToast(props) {
   const {

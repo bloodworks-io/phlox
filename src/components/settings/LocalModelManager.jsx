@@ -53,7 +53,7 @@ import {
   DownloadIcon,
   CheckIcon,
   WarningIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 import {
   GreenButton,
   GreyButton,

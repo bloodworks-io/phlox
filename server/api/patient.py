@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from server.database.entities.analysis import generate_previous_visit_summary
 from server.database.entities.jobs import (
     count_incomplete_jobs,
+    generate_jobs_list_from_plan,
     get_patients_with_outstanding_jobs,
     update_patient_jobs_list,
 )
@@ -18,8 +19,10 @@ from server.database.entities.patient import (
     get_patient_by_id,
     get_patient_history,
     get_patients_by_date,
+    get_scribe_consent,
     save_patient,
-    search_patient_by_ur_number,
+    search_patients,
+    set_scribe_consent,
     update_patient,
     update_patient_reasoning,
     update_patient_summary,
@@ -29,13 +32,16 @@ from server.database.entities.templates import (
     update_field_adaptive_instructions,
 )
 from server.schemas.patient import (
+    JobExtractionRequest,
     JobsListUpdate,
     Patient,
     SavePatientRequest,
+    ScribeConsentRequest,
 )
 from server.utils.nlp_tools.adaptive_refinement import (
     generate_adaptive_refinement_suggestions,
 )
+from server.utils.nlp_tools.jobs import extract_jobs_from_plan
 from server.utils.nlp_tools.summarisation import summarise_encounter
 from server.utils.nlp_tools.summarization_manager import summarization_manager
 
@@ -44,6 +50,30 @@ router = APIRouter()
 # Lock to prevent concurrent adaptive refinement operations
 _adaptive_refinement_lock = asyncio.Lock()
 _adaptive_refinement_running = False
+
+
+@router.get("/consent")
+async def get_consent(ur_number: str):
+    """Return the ambient-scribe consent state for a patient (keyed by ur_number)."""
+    try:
+        consent = get_scribe_consent(ur_number)
+        if consent is None:
+            return {"scribe_consent_at": None, "scribe_consent_declined_at": None}
+        return JSONResponse(content=consent)
+    except Exception as e:
+        logging.error(f"Error fetching scribe consent: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/consent")
+async def set_consent(request: ScribeConsentRequest):
+    """Record a patient's ambient-scribe consent decision and return the new state."""
+    try:
+        consent = set_scribe_consent(request.ur_number, request.consented)
+        return JSONResponse(content=consent)
+    except Exception as e:
+        logging.error(f"Error setting scribe consent: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/save")
@@ -292,11 +322,14 @@ async def get_patient_history_endpoint(id: int):
 
 
 @router.get("/search")
-async def search_patient(ur_number: str):
-    """Search for patients by UR number."""
+async def search_patient(q: str | None = None, ur_number: str | None = None):
+    """Search patients by UR number (exact) or name (substring). Accepts a
+    generic `q` (UR or name) or, for backward compatibility, `ur_number`."""
+    query = q if q is not None else ur_number
+    if not query:
+        raise HTTPException(status_code=400, detail="q or ur_number is required")
     try:
-        patients = search_patient_by_ur_number(ur_number)
-
+        patients = search_patients(query)
         return JSONResponse(content=patients)
     except Exception as e:
         logging.error(f"Error searching patients: {e}")
@@ -354,6 +387,44 @@ async def update_jobs_list(update: JobsListUpdate):
     except Exception as e:
         logging.error(f"Error processing to-do list update: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/extract-jobs")
+async def extract_jobs(request: JobExtractionRequest):
+    """Extract curated, actionable jobs from a plan string (Wrap Up modal)."""
+    plan = (request.plan or "").strip()
+    if not plan:
+        return {"action_items": [], "excluded": [], "fallback": "empty"}
+
+    try:
+        result = await extract_jobs_from_plan(plan)
+
+        # Model failure / nothing usable -> fall back to the basic splitter
+        if not result.action_items and not result.excluded:
+            dumb = json.loads(generate_jobs_list_from_plan(plan))
+            return {
+                "action_items": [
+                    {"text": j["job"], "category": "action", "rationale": None} for j in dumb
+                ],
+                "excluded": [],
+                "fallback": "heuristic",
+            }
+
+        return {
+            "action_items": [item.model_dump() for item in result.action_items],
+            "excluded": [item.model_dump() for item in result.excluded],
+            "fallback": None,
+        }
+    except Exception as e:
+        logging.error(f"Error extracting jobs: {e}")
+        dumb = json.loads(generate_jobs_list_from_plan(plan))
+        return {
+            "action_items": [
+                {"text": j["job"], "category": "action", "rationale": None} for j in dumb
+            ],
+            "excluded": [],
+            "fallback": "heuristic",
+        }
 
 
 @router.post("/update-jobs")

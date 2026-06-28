@@ -42,27 +42,6 @@ export const handleSavePatient = async (
     }
 };
 
-export const handleSearchPatient = async (
-    urNumber,
-    setters,
-    toast,
-    summaryRef,
-    setIsSummaryCollapsed,
-) => {
-    try {
-        const result = await patientApi.searchPatient(urNumber, setters);
-        if (result?.length > 0) {
-            const latestEncounter = result[0];
-            setIsSummaryCollapsed(false);
-            return latestEncounter;
-        }
-        return null;
-    } catch (error) {
-        console.error("Error searching patient:", error);
-        throw error;
-    }
-};
-
 export const handleLoadPatientDetails = async (noteId, setters) => {
     try {
         const patientData = await patientApi.fetchPatientDetails(
@@ -80,43 +59,6 @@ export const handleFetchPatientLetter = async (noteId) => {
     const response = await letterApi.fetchLetter(noteId);
 
     return response;
-};
-
-export const handleSavePatientLetter = async (noteId, letter, toast) => {
-    try {
-        await letterApi.savePatientLetter(noteId, letter);
-        toast({
-            title: "Success",
-            description: "Letter saved successfully",
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-        });
-    } catch (error) {
-        console.error("Error saving letter:", error);
-        throw error;
-    }
-};
-
-export const handleUpdateJobsList = async (
-    noteId,
-    jobsList,
-    patients,
-    setPatients,
-    refreshSidebar,
-) => {
-    try {
-        await patientApi.updateJobsList(noteId, jobsList);
-        setPatients((prevPatients) =>
-            prevPatients.map((p) =>
-                p.id === noteId ? { ...p, jobs_list: jobsList } : p,
-            ),
-        );
-        refreshSidebar();
-    } catch (error) {
-        console.error("Error updating jobs list:", error);
-        throw error;
-    }
 };
 
 export const resetJobsItems = async (

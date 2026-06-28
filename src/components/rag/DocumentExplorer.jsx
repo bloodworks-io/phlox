@@ -10,6 +10,7 @@ import {
     Collapse,
     IconButton,
     Spinner,
+    Tooltip,
     useToast,
 } from "@chakra-ui/react";
 import {
@@ -17,7 +18,8 @@ import {
     ChevronRightIcon,
     EditIcon,
     DeleteIcon,
-} from "@chakra-ui/icons";
+    DownloadIcon,
+} from "../common/icons";
 import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
 import { MdOutlineFolderCopy } from "react-icons/md";
 import { ragApi } from "../../utils/api/ragApi";
@@ -111,6 +113,29 @@ const DocumentExplorer = ({
                 });
         }
     };
+
+    const handleDownloadPdf = async (collectionName, filename) => {
+        try {
+            const blob = await ragApi.downloadPdf(collectionName, filename);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error downloading PDF:", error);
+            toast({
+                title: "Error",
+                description: "Failed to download PDF",
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+    };
     return (
         <Box className="panels-bg" p="4" borderRadius="sm">
             <Flex align="center" justify="space-between">
@@ -153,6 +178,7 @@ const DocumentExplorer = ({
                                         className="documentExplorer-style"
                                         _hover={{ bg: "gray.100" }}
                                     >
+                                        <Tooltip label="Toggle collection" hasArrow>
                                         <IconButton
                                             icon={
                                                 expandedCollections[
@@ -174,6 +200,7 @@ const DocumentExplorer = ({
                                             mr="2"
                                             className="documentExplorer-button"
                                         />
+                                        </Tooltip>
                                         <Box
                                             as={
                                                 expandedCollections[
@@ -191,6 +218,7 @@ const DocumentExplorer = ({
                                             )}
                                         </Text>
                                         <Flex ml="auto">
+                                            <Tooltip label="Rename collection" hasArrow>
                                             <IconButton
                                                 icon={<EditIcon />}
                                                 aria-label="Rename collection"
@@ -208,6 +236,8 @@ const DocumentExplorer = ({
                                                 variant="ghost"
                                                 colorScheme="blue"
                                             />
+                                            </Tooltip>
+                                            <Tooltip label="Delete collection" hasArrow>
                                             <IconButton
                                                 icon={<DeleteIcon />}
                                                 aria-label="Delete collection"
@@ -222,6 +252,7 @@ const DocumentExplorer = ({
                                                 variant="ghost"
                                                 colorScheme="red"
                                             />
+                                            </Tooltip>
                                         </Flex>
                                     </Flex>
                                     <Collapse
@@ -242,7 +273,10 @@ const DocumentExplorer = ({
                                                 </ListItem>
                                             ) : collection.files.length > 0 ? (
                                                 collection.files.map(
-                                                    (file, index) => (
+                                                    (file, index) => {
+                                                        const fileName = typeof file === "string" ? file : file.filename;
+                                                        const hasPdf = typeof file === "object" ? file.has_pdf : false;
+                                                        return (
                                                         <ListItem
                                                             key={index}
                                                             display="flex"
@@ -255,30 +289,48 @@ const DocumentExplorer = ({
                                                                 color="blue.500"
                                                             />
                                                             <Text fontSize="sm">
-                                                                {file}
+                                                                {fileName}
                                                             </Text>
-                                                            <IconButton
-                                                                icon={
-                                                                    <DeleteIcon />
-                                                                }
-                                                                aria-label="Delete file"
-                                                                onClick={() =>
-                                                                    setItemToDelete(
-                                                                        {
-                                                                            type: "file",
-                                                                            name: file,
-                                                                            collection:
-                                                                                collection.name,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                size="xs"
-                                                                variant="ghost"
-                                                                colorScheme="red"
-                                                                ml="auto"
-                                                            />
+                                                            <Flex ml="auto">
+                                                                {hasPdf && (
+                                                                    <Tooltip label="Download PDF" hasArrow>
+                                                                    <IconButton
+                                                                        icon={<DownloadIcon />}
+                                                                        aria-label="Download PDF"
+                                                                        onClick={() =>
+                                                                            handleDownloadPdf(collection.name, fileName)
+                                                                        }
+                                                                        size="xs"
+                                                                        variant="ghost"
+                                                                        colorScheme="blue"
+                                                                        mr="1"
+                                                                    />
+                                                                    </Tooltip>
+                                                                )}
+                                                                <Tooltip label="Delete file" hasArrow>
+                                                                <IconButton
+                                                                    icon={
+                                                                        <DeleteIcon />
+                                                                    }
+                                                                    aria-label="Delete file"
+                                                                    onClick={() =>
+                                                                        setItemToDelete(
+                                                                            {
+                                                                                type: "file",
+                                                                                name: fileName,
+                                                                                collection:
+                                                                                    collection.name,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                    size="xs"
+                                                                    variant="ghost"
+                                                                    colorScheme="red"
+                                                                />
+                                                                </Tooltip>
+                                                            </Flex>
                                                         </ListItem>
-                                                    ),
+                                                    )},
                                                 )
                                             ) : (
                                                 <ListItem

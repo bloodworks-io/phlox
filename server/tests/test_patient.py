@@ -117,3 +117,98 @@ def test_delete_patient(monkeypatch):
     data = response.json()
     assert "message" in data
     assert "deleted" in data["message"].lower()
+
+
+def test_get_consent(monkeypatch):
+    monkeypatch.setattr(
+        "server.api.patient.get_scribe_consent",
+        lambda _ur: {
+            "scribe_consent_at": "2026-01-01T00:00:00",
+            "scribe_consent_declined_at": None,
+        },
+    )
+    response = client.get("/api/note/consent?ur_number=UR123")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["scribe_consent_at"] == "2026-01-01T00:00:00"
+    assert data["scribe_consent_declined_at"] is None
+
+
+def test_get_consent_no_profile_returns_nulls(monkeypatch):
+    # A ur_number with no profile row should yield nulls, not an error.
+    monkeypatch.setattr("server.api.patient.get_scribe_consent", lambda _ur: None)
+    response = client.get("/api/note/consent?ur_number=UR999")
+    assert response.status_code == 200
+    assert response.json() == {
+        "scribe_consent_at": None,
+        "scribe_consent_declined_at": None,
+    }
+
+
+def test_set_consent(monkeypatch):
+    captured = {}
+
+    def fake_set(ur, consented):
+        captured["ur"] = ur
+        captured["consented"] = consented
+        return {
+            "scribe_consent_at": "2026-01-01T00:00:00" if consented else None,
+            "scribe_consent_declined_at": None if consented else "2026-01-01T00:00:00",
+        }
+
+    monkeypatch.setattr("server.api.patient.set_scribe_consent", fake_set)
+    response = client.post("/api/note/consent", json={"ur_number": "UR123", "consented": True})
+    assert response.status_code == 200
+    assert captured == {"ur": "UR123", "consented": True}
+    assert response.json()["scribe_consent_at"] is not None
+    assert response.json()["scribe_consent_declined_at"] is None
+
+
+def test_scribe_consent_roundtrip_and_clearing_db():
+    from server.database.entities.patient import get_scribe_consent, set_scribe_consent
+
+    ur = "URCONSENT_RT"
+    # Grant consent
+    result = set_scribe_consent(ur, True)
+    assert result is not None
+    assert result["scribe_consent_at"] is not None
+    assert result["scribe_consent_declined_at"] is None
+    fetched = get_scribe_consent(ur)
+    assert fetched is not None
+    assert fetched["scribe_consent_at"] is not None
+    assert fetched["scribe_consent_declined_at"] is None
+
+    # Declining clears consent and records the refusal
+    result = set_scribe_consent(ur, False)
+    assert result is not None
+    assert result["scribe_consent_at"] is None
+    assert result["scribe_consent_declined_at"] is not None
+
+    # Re-consenting clears the refusal and records consent again
+    result = set_scribe_consent(ur, True)
+    assert result is not None
+    assert result["scribe_consent_at"] is not None
+    assert result["scribe_consent_declined_at"] is None
+
+
+def test_scribe_consent_targeted_upsert_preserves_demographics_db():
+    from server.database.entities.patient import (
+        get_patient_profile,
+        get_scribe_consent,
+        set_scribe_consent,
+        upsert_patient_profile,
+    )
+
+    ur = "URCONSENT_DEMO"
+    upsert_patient_profile(ur, "Jane", "Doe", "1980-01-01", "F", "123 St", "555-1234")
+    set_scribe_consent(ur, True)
+
+    # Demographics must survive the targeted consent upsert.
+    profile = get_patient_profile(ur)
+    assert profile is not None
+    assert profile["first_name"] == "Jane"
+    assert profile["last_name"] == "Doe"
+    assert profile["dob"] == "1980-01-01"
+    consent = get_scribe_consent(ur)
+    assert consent is not None
+    assert consent["scribe_consent_at"] is not None

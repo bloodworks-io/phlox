@@ -23,7 +23,7 @@ import {
   AlertDescription,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
 import {
   FaPencilAlt,
   FaFileAlt,

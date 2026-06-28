@@ -8,10 +8,13 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from server.schemas.patient import TranscribeResponse
 from server.utils.nlp_tools.document_processing import (
+    _extract_demographics_from_text,
+    extract_demographics_from_document,
+    extract_demographics_from_visual_pages,
     process_document_text_with_template,
     process_document_with_template,
     process_visual_document_with_template,
@@ -27,7 +30,7 @@ class ProcessDocumentFromTextRequest(BaseModel):
     name: str | None = None
     gender: str | None = None
     dob: str | None = None
-    templateKey: str | None = None
+    templateKey: str = Field(..., description="Template key is required for document processing")
 
 
 class VisualDocumentPage(BaseModel):
@@ -45,7 +48,15 @@ class ProcessVisualDocumentRequest(BaseModel):
     name: str | None = None
     gender: str | None = None
     dob: str | None = None
-    templateKey: str | None = None
+    templateKey: str = Field(..., description="Template key is required for document processing")
+
+
+class ExtractDemographicsFromTextRequest(BaseModel):
+    extracted_text: str
+
+
+class ExtractDemographicsVisualRequest(BaseModel):
+    pages: list[VisualDocumentPage]
 
 
 @router.post("/audio", response_model=TranscribeResponse)
@@ -207,7 +218,7 @@ async def process_document(
     name: str | None = Form(None),
     gender: str | None = Form(None),
     dob: str | None = Form(None),
-    templateKey: str | None = Form(None),
+    templateKey: str = Form(..., description="Template key is required for document processing"),
 ):
     """Processes a document to extract information and fill template fields."""
     try:
@@ -225,12 +236,9 @@ async def process_document(
             first_name = name_parts[1].strip()
             formatted_name = f"{first_name} {last_name}"
 
-        # Get template fields if template key is provided
-        template_fields = []
-        if templateKey:
-            from server.database.entities.templates import get_template_fields
+        from server.database.entities.templates import get_template_fields
 
-            template_fields = get_template_fields(templateKey)
+        template_fields = get_template_fields(templateKey)
 
         # Create patient context
         patient_context = {"name": formatted_name, "dob": dob, "gender": gender}
@@ -255,6 +263,48 @@ async def process_document(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@router.post("/extract-demographics")
+async def extract_demographics(file: UploadFile = File(...)):
+    """Extract patient demographics from an uploaded document (referral, ID, etc.)."""
+    try:
+        document_buffer = await file.read()
+        result = await extract_demographics_from_document(document_buffer, file.content_type or "")
+        return result
+    except Exception as e:
+        logging.error(f"Error extracting demographics: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/extract-demographics-from-text")
+async def extract_demographics_from_text(payload: ExtractDemographicsFromTextRequest):
+    """Extract patient demographics from already-extracted document text."""
+    try:
+        extracted_text = (payload.extracted_text or "").strip()
+        if not extracted_text:
+            raise HTTPException(status_code=400, detail="No extracted_text provided")
+        return await _extract_demographics_from_text(extracted_text)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error extracting demographics from text: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/extract-demographics-visual")
+async def extract_demographics_visual(payload: ExtractDemographicsVisualRequest):
+    """Extract patient demographics from rendered document page images."""
+    try:
+        if not payload.pages:
+            raise HTTPException(status_code=400, detail="No visual pages provided")
+        visual_pages = [page.model_dump() for page in payload.pages]
+        return await extract_demographics_from_visual_pages(visual_pages)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error extracting demographics from visual: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @router.post("/process-document-visual", response_model=TranscribeResponse)
 async def process_document_visual(payload: ProcessVisualDocumentRequest):
     """Processes visual document pages directly with multimodal field extraction."""
@@ -270,12 +320,9 @@ async def process_document_visual(payload: ProcessVisualDocumentRequest):
             first_name = name_parts[1].strip() if len(name_parts) > 1 else ""
             formatted_name = f"{first_name} {last_name}".strip()
 
-        # Get template fields if template key is provided
-        template_fields = []
-        if payload.templateKey:
-            from server.database.entities.templates import get_template_fields
+        from server.database.entities.templates import get_template_fields
 
-            template_fields = get_template_fields(payload.templateKey)
+        template_fields = get_template_fields(payload.templateKey)
 
         # Create patient context
         patient_context = {
@@ -325,12 +372,9 @@ async def process_document_from_text(payload: ProcessDocumentFromTextRequest):
             first_name = name_parts[1].strip() if len(name_parts) > 1 else ""
             formatted_name = f"{first_name} {last_name}".strip()
 
-        # Get template fields if template key is provided
-        template_fields = []
-        if payload.templateKey:
-            from server.database.entities.templates import get_template_fields
+        from server.database.entities.templates import get_template_fields
 
-            template_fields = get_template_fields(payload.templateKey)
+        template_fields = get_template_fields(payload.templateKey)
 
         # Create patient context
         patient_context = {

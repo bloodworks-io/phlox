@@ -10,9 +10,13 @@ class Patient(BaseModel):
 
     id: int | None = None
     name: str
+    first_name: str | None = None
+    last_name: str | None = None
     dob: str | None = None
     ur_number: str | None = None
     gender: str | None = None
+    address: str | None = None
+    phone: str | None = None
     encounter_date: str
     template_key: str | None = None
     template_data: dict[str, Any] | None = None
@@ -25,6 +29,18 @@ class Patient(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+
+class DemographicsExtraction(BaseModel):
+    """Demographics extracted from an uploaded document (all fields optional)."""
+
+    first_name: str | None = None
+    last_name: str | None = None
+    dob: str | None = None
+    gender: str | None = None
+    ur_number: str | None = None
+    address: str | None = None
+    phone: str | None = None
 
 
 class AdaptiveRefinementData(BaseModel):
@@ -99,6 +115,14 @@ class JobsListUpdate(BaseModel):
     jobsList: list[Job]
 
 
+class JobExtractionRequest(BaseModel):
+    """
+    Request body for extracting curated jobs from a plan string.
+    """
+
+    plan: str
+
+
 class DocumentProcessResponse(BaseModel):
     """
     Represents the response from document processing.
@@ -145,3 +169,12 @@ class TemplateData(BaseModel):
 
     field_key: str
     content: Any
+
+
+class ScribeConsentRequest(BaseModel):
+    """
+    Request body for recording a patient's ambient-scribe consent decision.
+    """
+
+    ur_number: str
+    consented: bool

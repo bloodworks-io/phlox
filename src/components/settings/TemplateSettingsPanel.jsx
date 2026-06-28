@@ -15,7 +15,7 @@ import {
   ChevronDownIcon,
   AddIcon,
   DeleteIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 import { FaFileAlt } from "react-icons/fa";
 import { useState } from "react";
 import TemplateEditor from "../modals/TemplateEditor";

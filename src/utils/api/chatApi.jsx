@@ -133,30 +133,48 @@ export const chatApi = {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = "";
 
         while (true) {
             const { value, done } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split("\n\n");
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n\n");
 
-            for (const line of lines) {
+            // Keep the last part in the buffer — it may be incomplete
+            buffer = parts.pop() || "";
+
+            for (const line of parts) {
                 if (line.trim() && line.startsWith("data: ")) {
                     try {
                         const data = JSON.parse(line.slice(6));
                         if (data.type === "end" && data.function_response) {
                             // Handle function response at the end of stream
-                            yield {
-                                type: "context",
-                                content: data.function_response.reduce(
-                                    (acc, item, index) => {
-                                        acc[index + 1] = item;
-                                        return acc;
-                                    },
-                                    {},
-                                ),
-                            };
+
+                            const fr = data.function_response;
+                            let citations;
+                            if (Array.isArray(fr)) {
+                                citations = fr;
+                            } else if (
+                                fr &&
+                                typeof fr === "object" &&
+                                Array.isArray(fr.citations)
+                            ) {
+                                citations = fr.citations;
+                            }
+
+                            if (citations && citations.length > 0) {
+                                yield {
+                                    type: "context",
+                                    content: Object.fromEntries(
+                                        citations.map((item, index) => [
+                                            index + 1,
+                                            item,
+                                        ]),
+                                    ),
+                                };
+                            }
                         } else {
                             yield data;
                         }
@@ -165,6 +183,16 @@ export const chatApi = {
                         console.error("Error parsing chunk:", error);
                     }
                 }
+            }
+        }
+
+        // Process any remaining data in the buffer
+        if (buffer.trim() && buffer.startsWith("data: ")) {
+            try {
+                const data = JSON.parse(buffer.slice(6));
+                yield data;
+            } catch (error) {
+                console.error("Error parsing final chunk:", error);
             }
         }
     },

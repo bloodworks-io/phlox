@@ -20,7 +20,6 @@ from server.utils.chat.tools.sanitization import sanitize_query_for_external_sea
 logger = logging.getLogger(__name__)
 
 WIKIPEDIA_API_BASE = "https://en.wikipedia.org/w/api.php"
-WEB_SEARCH_TOOL_NAME = "web_search"
 
 
 async def search_wikipedia(query: str, max_results: int = 3) -> list[dict]:
@@ -169,3 +168,4 @@ async def execute(
             result_content = f"Error searching Wikipedia: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

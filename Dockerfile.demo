@@ -29,8 +29,6 @@ WORKDIR /usr/src/app
 ENV DOCKER_CONTAINER=true
 
 RUN apt-get update && apt-get install -y \
-    gcc \
-    build-essential \
     tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 

@@ -82,17 +82,3 @@ class ToolResultAccumulator:
 
         return (self.content, self.citations)
 
-
-async def collect_tool_result(
-    stream: AsyncGenerator[dict[str, Any], None],
-) -> tuple[str, list[str] | None]:
-    """Convenience function to collect streaming result.
-
-    Args:
-        stream: Async generator yielding streaming message chunks
-
-    Returns:
-        Tuple of (content_string, citations_list)
-    """
-    accumulator = ToolResultAccumulator()
-    return await accumulator.consume_stream(stream)

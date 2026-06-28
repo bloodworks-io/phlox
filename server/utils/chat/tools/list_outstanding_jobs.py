@@ -17,8 +17,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-LIST_OUTSTANDING_JOBS_TOOL_NAME = "list_outstanding_jobs"
-
 
 def format_jobs_list(jobs_list: list) -> list[dict]:
     """Format jobs list for display.
@@ -171,3 +169,4 @@ async def execute(
         result_content = f"Error retrieving outstanding jobs: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

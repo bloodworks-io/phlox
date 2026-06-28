@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { letterApi } from "../api/letterApi";
 import { validateLetterData } from "../helpers/validationHelpers";
 import { useToastMessage } from "./UseToastMessage";
@@ -184,11 +184,11 @@ export const useLetter = (setIsModified) => {
         }
     }
 
-    function resetLetter() {
+    const resetLetter = useCallback(() => {
         setFinalCorrespondence("");
         setLetterContext([]);
         setIsModified(false);
-    }
+    }, [setIsModified]);
 
     return {
         loading,

@@ -26,11 +26,17 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "transcript_search",
-                "description": "Use this tool if the user asks about something from the transcript, interview, or conversation with the patient. This will search the transcript for relevant information.",
+                "description": "Search the patient transcript for specific terms or topics using fuzzy matching. Returns matching transcript segments with relevance scores and surrounding context. Use when the user asks about something mentioned in the patient conversation. Provide multiple terms for broad topics (e.g. ['smoking', 'alcohol', 'living situation'] for social history).",
                 "parameters": {
                     "type": "object",
-                    "properties": {},
-                    "required": [],
+                    "properties": {
+                        "search_term": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Word or phrase(s) to search for in the transcript. Use a single term for specific queries or multiple terms for broad topics (e.g. ['smoking', 'alcohol', 'living situation', 'occupation'] for social history).",
+                        },
+                    },
+                    "required": ["search_term"],
                     "additionalProperties": False,
                 },
                 "strict": True,
@@ -296,6 +302,44 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
                 "strict": True,
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "list_pdf_form_templates",
+                "description": "List available PDF form templates and their fields. Use this when the user asks about available forms or wants to fill out a PDF form.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "fill_pdf_form",
+                "description": "Fill a PDF form template with the provided field values. Call list_pdf_form_templates first to see available templates and their fields. Returns a downloadable filled PDF.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "template_id": {
+                            "type": "string",
+                            "description": "The ID of the PDF form template to fill (from list_pdf_form_templates)",
+                        },
+                        "field_values": {
+                            "type": "object",
+                            "additionalProperties": {"type": "string"},
+                            "description": "Field name to value mapping. Checkbox fields accept 'true', 'yes', or '1' to check.",
+                        },
+                    },
+                    "required": ["template_id", "field_values"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
     ]
 
 
@@ -327,6 +371,13 @@ def get_tools_definition(
 
     if disabled_tools:
         logger.info(f"Filtered out disabled tools: {disabled_tools}")
+
+    # Hide the literature/RAG tool when the knowledge base has no collections.
+    if not collection_names:
+        enabled_tools = [
+            tool for tool in enabled_tools if tool["function"]["name"] != "get_relevant_literature"
+        ]
+        logger.info("Knowledge base empty; hid 'get_relevant_literature' tool.")
 
     # Filter out chat-only tools if requested
     if exclude_chat_only:

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Box, Flex, VStack, Text, Button } from "@chakra-ui/react";
-import { InfoIcon, SearchIcon, QuestionIcon } from "@chakra-ui/icons";
+import { InfoIcon, SearchIcon, QuestionIcon } from "../common/icons";
 import { useChat } from "../../utils/hooks/useChat";
 import DashboardChatInput from "./DashboardChatInput";
 import DashboardTodoPanel from "./DashboardTodoPanel";
@@ -36,6 +36,8 @@ const DashboardChat = () => {
     } = useChat({ mode: "rag" });
 
     const messagesEndRef = useRef(null);
+    const scrollContainerRef = useRef(null);
+    const userIsNearBottomRef = useRef(true);
     const [ragSuggestions, setRagSuggestions] = useState([]);
     const [pendingImage, setPendingImage] = useState(null);
     const [isProcessingImage, setIsProcessingImage] = useState(false);
@@ -71,9 +73,9 @@ const DashboardChat = () => {
     // Determine if chat has started
     const hasMessages = visibleMessages.length > 0;
 
-    // Scroll to bottom when messages change
+    // Scroll to bottom when messages change (only if user is near bottom)
     useEffect(() => {
-        if (messagesEndRef.current && hasMessages) {
+        if (messagesEndRef.current && hasMessages && userIsNearBottomRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
     }, [messages, hasMessages]);
@@ -472,10 +474,18 @@ const DashboardChat = () => {
         >
             {/* Messages Area - scrollable middle */}
             <Box
+                ref={scrollContainerRef}
                 className="dashboard-chat-messages"
                 flex="1"
                 overflowY="auto"
                 px="0"
+                onScroll={() => {
+                    const el = scrollContainerRef.current;
+                    if (el) {
+                        userIsNearBottomRef.current =
+                            el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+                    }
+                }}
             >
                 <DashboardMessageList
                     visibleMessages={visibleMessages}

@@ -2,17 +2,15 @@ import {
     Box,
     VStack,
     useClipboard,
+    useDisclosure,
     useToast,
     Spinner,
     Center,
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-    useTemplate,
-    useTemplateSelection,
-} from "../utils/templates/templateContext";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
+import NewNoteStartCard from "../components/patient/NewNoteStartCard";
 import Scribe, { useScribe } from "../components/patient/Scribe";
 import Summary from "../components/patient/Summary";
 import Chat from "../components/panels/chat/Chat";
@@ -23,13 +21,20 @@ import FloatingActionMenu from "../components/common/FloatingActionMenu";
 import TranscriptionPanel from "../components/panels/transcription/TranscriptionPanel";
 import DocumentPanel from "../components/panels/document/DocumentPanel";
 import PreviousVisitPanel from "../components/panels/previous-visit/PreviousVisitPanel";
-import { usePatient } from "../utils/hooks/usePatient";
+import { usePatientEditor } from "../utils/hooks/usePatientEditor";
+import { usePatientTemplate } from "../utils/hooks/usePatientTemplate";
+import { useDocumentExtraction } from "../utils/hooks/useDocumentExtraction";
+import { patientApi } from "../utils/api/patientApi";
+import WrapUpModal from "../components/modals/WrapUpModal";
+import DemographicsModal from "../components/modals/DemographicsModal";
+import ScribeConsentModal from "../components/modals/ScribeConsentModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useChat } from "../utils/hooks/useChat";
 import { useLetter } from "../utils/hooks/useLetter";
-import { useReasoning } from "../utils/hooks/useReasoning";
+import { useActivePanel } from "../utils/hooks/useActivePanel";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
-import { useToastMessage } from "../utils/hooks/UseToastMessage";
+import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
+import { DEFAULT_TOAST_CONFIG } from "../utils/constants";
 
 const PatientDetails = ({
     patient: initialPatient,
@@ -38,52 +43,52 @@ const PatientDetails = ({
     refreshSidebar,
     setIsModified: setParentIsModified,
     onResetLetter,
+    onStartNewNote,
 }) => {
     const location = useLocation();
     const isNewPatient = location.pathname === "/new-note";
+    const { viaModal, cameFromSearch } = location.state || {};
     const toast = useToast();
     const summaryRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
-    const [isSearchedPatient, setIsSearchedPatient] = useState(false);
+    const [isSearchedPatient, setIsSearchedPatient] = useState(
+        Boolean(cameFromSearch),
+    );
     const [searchResult, setSearchResult] = useState(null);
-    const hasDefaultTemplateBeenSet = useRef(false);
+    const [startCardDismissed, setStartCardDismissed] = useState(
+        Boolean(viaModal),
+    );
+    const showStartCard =
+        isNewPatient && !isSearchedPatient && !startCardDismissed;
     const navigate = useNavigate();
     const [saveLoading, setSaveLoading] = useState(false);
+    const [wrapUpLoading, setWrapUpLoading] = useState(false);
+    const [isWrapUpOpen, setIsWrapUpOpen] = useState(false);
+    const {
+        isOpen: isDemographicsOpen,
+        onOpen: onOpenDemographics,
+        onClose: onCloseDemographics,
+    } = useDisclosure();
+    const {
+        isOpen: isConsentOpen,
+        onOpen: onOpenConsent,
+        onClose: onCloseConsent,
+    } = useDisclosure();
+    const [scribeConsent, setScribeConsent] = useState({
+        scribe_consent_at: null,
+        scribe_consent_declined_at: null,
+    });
     const [isLetterModified, setIsLetterModified] = useState(false);
     const [isSummaryModified, setIsSummaryModified] = useState(false);
     const previousTranscriptionRef = useRef(null);
-    const [docFileName, setDocFileName] = useState("");
-
-    const [originalContent, setOriginalContent] = useState({});
-    const [replacedFields, setReplacedFields] = useState({});
-    const [extractedDocData, setExtractedDocData] = useState(null);
 
     const [initialTranscriptionContent, setInitialTranscriptionContent] =
         useState({});
     const [hasTranscriptionOccurred, setHasTranscriptionOccurred] =
         useState(false);
 
-    // Panel states for new FAB actions
-    const [isTranscriptionPanelOpen, setIsTranscriptionPanelOpen] =
-        useState(false);
-    const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
-    const [isPreviousVisitPanelOpen, setIsPreviousVisitPanelOpen] =
-        useState(false);
     const [hasViewedPreviousVisit, setHasViewedPreviousVisit] = useState(false);
-
-    const { showWarningToast } = useToastMessage();
-
-    // Use template context
-    const {
-        currentTemplate,
-        isTemplateChanging,
-        defaultTemplate,
-        templates,
-        status: templateStatus,
-        error: templateError,
-        selectTemplate,
-    } = useTemplateSelection();
 
     // Custom hooks
     const {
@@ -91,9 +96,32 @@ const PatientDetails = ({
         setPatient,
         setIsModified,
         savePatient,
+        savePatientCore,
         searchPatient,
-        loadPatientDetails,
-    } = usePatient(initialPatient, setInitialPatient);
+    } = usePatientEditor(initialPatient);
+
+    const { currentTemplate, templates, selectTemplate } = usePatientTemplate({
+        patient,
+        setPatient,
+        isNewPatient,
+        isSearchedPatient,
+        initialPatient,
+        isSearchLoading,
+    });
+
+    const {
+        extractedDocData,
+        replacedFields,
+        docFileName,
+        setDocFileName,
+        handleDocumentComplete,
+        toggleDocumentField,
+        resetDocumentState,
+    } = useDocumentExtraction({ patient, setPatient, setIsModified, toast });
+
+    const requiredDemographicsMet = areRequiredDemographicsMet(patient);
+
+    const { open, toggle, close, closeAll, isOpen } = useActivePanel();
 
     // Scribe hook for recording controls
     const scribeControls = useScribe({
@@ -105,72 +133,95 @@ const PatientDetails = ({
         handleTranscriptionComplete: (data) =>
             handleTranscriptionComplete(data),
         setLoading,
-        onSendStart: () => setIsTranscriptionPanelOpen(false),
+        onSendStart: () => close("transcription"),
     });
 
-    const handleChatToggle = (isOpen) => {
-        if (isOpen) {
-            // If chat is opening, close other panels
-            if (!letter.isCollapsed) letter.setIsCollapsed(true);
-            if (reasoning.isReasoningOpen) reasoning.closeReasoning();
-            closeAllFloatingPanels();
+    const hasConsented = Boolean(scribeConsent?.scribe_consent_at);
+    const hasDeclined =
+        Boolean(scribeConsent?.scribe_consent_declined_at) && !hasConsented;
+    const requireConsent =
+        scribeControls.isAmbient && scribeControls.requireConsent;
+    const canRecord =
+        requiredDemographicsMet && !(requireConsent && !hasConsented);
+
+    useEffect(() => {
+        const ur = patient?.ur_number;
+        if (!ur) {
+            setScribeConsent({
+                scribe_consent_at: null,
+                scribe_consent_declined_at: null,
+            });
+            return;
+        }
+        let active = true;
+        setScribeConsent({
+            scribe_consent_at: null,
+            scribe_consent_declined_at: null,
+        });
+        patientApi
+            .fetchScribeConsent(ur)
+            .then((data) => {
+                if (active) setScribeConsent(data);
+            })
+            .catch((error) =>
+                console.error("Error fetching scribe consent:", error),
+            );
+        return () => {
+            active = false;
+        };
+    }, [patient?.ur_number]);
+
+    const handleBlockedRecord = () => {
+        if (!requiredDemographicsMet) {
+            onOpenDemographics();
+            return;
+        }
+        onOpenConsent();
+    };
+
+    const handleConsentGranted = async () => {
+        const ur = patient?.ur_number;
+        if (!ur) return;
+        try {
+            const data = await patientApi.saveScribeConsent(ur, true);
+            setScribeConsent(data);
+            onCloseConsent();
+            await scribeControls.startRecording();
+        } catch (error) {
+            toast({
+                title: "Could not record consent",
+                description: error.message,
+                status: "error",
+                ...DEFAULT_TOAST_CONFIG,
+            });
         }
     };
 
-    const handleLetterToggle = (isOpen) => {
-        if (isOpen) {
-            // If letter is opening, close other panels
-            if (chat.chatExpanded) chat.setChatExpanded(false);
-            if (reasoning.isReasoningOpen) reasoning.closeReasoning();
-            closeAllFloatingPanels();
+    const handleConsentDeclined = async () => {
+        const ur = patient?.ur_number;
+        if (!ur) return;
+        try {
+            const data = await patientApi.saveScribeConsent(ur, false);
+            setScribeConsent(data);
+            onCloseConsent();
+        } catch (error) {
+            toast({
+                title: "Could not record decision",
+                description: error.message,
+                status: "error",
+                ...DEFAULT_TOAST_CONFIG,
+            });
         }
-    };
-
-    const handleReasoningToggle = (isOpen) => {
-        if (isOpen) {
-            // If reasoning is opening, close other panels
-            if (chat.chatExpanded) chat.setChatExpanded(false);
-            if (!letter.isCollapsed) letter.setIsCollapsed(true);
-            closeAllFloatingPanels();
-        }
-        if (isOpen) {
-            reasoning.openReasoning();
-        } else {
-            reasoning.closeReasoning();
-        }
-    };
-
-    // Close all floating panels (transcription, document, previous visit)
-    const closeAllFloatingPanels = () => {
-        setIsTranscriptionPanelOpen(false);
-        setIsDocumentPanelOpen(false);
-        setIsPreviousVisitPanelOpen(false);
     };
 
     const summary = useCollapse(false);
     const letterHook = useLetter(setIsModified);
-    const letter = useCollapse(true);
     const chat = useChat();
-    const reasoning = useReasoning();
-    const { refreshTemplates } = useTemplate();
 
-    // Refresh templates for new patients
     useEffect(() => {
-        refreshTemplates();
-    }, [refreshTemplates]);
-
-    // Handle template errors
-    useEffect(() => {
-        if (templateError) {
-            toast({
-                title: "Template Error",
-                description: templateError,
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            });
-        }
-    }, [templateError, toast]);
+        if (cameFromSearch) summary.setIsCollapsed(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Effect to handle search results
     useEffect(() => {
@@ -196,109 +247,24 @@ const PatientDetails = ({
     }, [searchResult, setPatient, selectTemplate]);
 
     useEffect(() => {
+        if (viaModal) return;
         if (!isNewPatient) {
             setIsSearchedPatient(false);
             console.log(
                 "Resetting isSearchedPatient - viewing historical patient",
             );
         }
+        setStartCardDismissed(false);
     }, [location.pathname]);
 
     useEffect(() => {
+        if (viaModal) return;
         if (isNewPatient && !patient?.id) {
             setIsSearchedPatient(false);
+            setStartCardDismissed(false);
             console.log("Resetting isSearchedPatient - new patient");
         }
     }, [isNewPatient, patient?.id]);
-
-    // Handle template consistency for already saved (historical) encounters
-    useEffect(() => {
-        if (!currentTemplate || !patient || isTemplateChanging) return;
-
-        const shouldLockTemplate = !isNewPatient && !patient.isNewEncounter;
-
-        if (
-            shouldLockTemplate &&
-            currentTemplate.template_key !== patient.template_key
-        ) {
-            selectTemplate(
-                patient.template_key,
-                "Maintaining historical template",
-            );
-        }
-    }, [
-        currentTemplate,
-        patient,
-        isNewPatient,
-        selectTemplate,
-        isTemplateChanging,
-    ]);
-
-    // Set default template for new patients
-    useEffect(() => {
-        const initializeNewPatient = async () => {
-            if (isNewPatient && defaultTemplate && !patient?.template_key) {
-                if (
-                    !hasDefaultTemplateBeenSet.current &&
-                    !patient?.template_key
-                ) {
-                    hasDefaultTemplateBeenSet.current = true;
-                    try {
-                        await selectTemplate(defaultTemplate.template_key);
-                        setPatient((prev) => ({
-                            ...prev,
-                            template_key: defaultTemplate.template_key,
-                        }));
-                    } catch (error) {
-                        console.error("Failed to set default template:", error);
-                        toast({
-                            title: "Error",
-                            description: "Failed to set default template",
-                            status: "error",
-                            duration: 3000,
-                            isClosable: true,
-                        });
-                    }
-                }
-            }
-        };
-        initializeNewPatient();
-    }, [
-        isNewPatient,
-        defaultTemplate,
-        patient,
-        selectTemplate,
-        setPatient,
-        toast,
-    ]);
-
-    // Handle template data for historical patients
-    useEffect(() => {
-        if (
-            !isNewPatient &&
-            initialPatient &&
-            currentTemplate &&
-            !isSearchLoading
-        ) {
-            const newTemplateData = {};
-            currentTemplate.fields.forEach((field) => {
-                newTemplateData[field.field_key] =
-                    initialPatient.template_data?.[field.field_key] || "";
-            });
-
-            setPatient((prev) => ({
-                ...prev,
-                template_data: newTemplateData,
-                isHistorical: true,
-            }));
-        }
-    }, [
-        isNewPatient,
-        initialPatient,
-        currentTemplate,
-        setPatient,
-        isSearchLoading,
-    ]);
 
     const textToCopy =
         patient && currentTemplate?.fields
@@ -320,9 +286,7 @@ const PatientDetails = ({
     useEffect(() => {
         // Reset component states when patient changes
         summary.setIsCollapsed(false);
-        letter.setIsCollapsed(true);
-        chat.setChatExpanded(false);
-        closeAllFloatingPanels();
+        closeAll();
         chat.clearChat();
         resetDocumentState();
     }, [patient?.id, currentTemplate, isNewPatient]);
@@ -403,87 +367,10 @@ const PatientDetails = ({
         });
     };
 
-    const handleDocumentComplete = (data) => {
-        if (!data.fieldByField) {
-            if (!extractedDocData) {
-                setOriginalContent({ ...patient.template_data });
-            }
-
-            setExtractedDocData(data);
-
-            toast({
-                title: "Document processed",
-                description: "Use the toggle buttons to update fields",
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-            });
-        } else {
-            const fieldKey = Object.keys(data.fields)[0];
-
-            setReplacedFields((prev) => ({
-                ...prev,
-                [fieldKey]: !prev[fieldKey],
-            }));
-
-            setPatient((prev) => ({
-                ...prev,
-                template_data: {
-                    ...prev.template_data,
-                    ...data.fields,
-                },
-            }));
-
-            setIsModified(true);
-        }
-    };
-
-    const toggleDocumentField = (fieldKey) => {
-        if (!extractedDocData) return;
-
-        const hasExtractedContent = Boolean(
-            extractedDocData.fields[fieldKey]?.trim(),
-        );
-        if (!hasExtractedContent) {
-            toast({
-                title: "No content available",
-                description:
-                    "This field doesn't have any content in the uploaded document",
-                status: "info",
-                duration: 2000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        const isCurrentlyReplaced = replacedFields[fieldKey];
-
-        let fieldContent;
-        if (isCurrentlyReplaced) {
-            fieldContent = originalContent[fieldKey] || "";
-        } else {
-            fieldContent = extractedDocData.fields[fieldKey] || "";
-        }
-
-        handleDocumentComplete({
-            fields: { [fieldKey]: fieldContent },
-            fieldByField: true,
-        });
-    };
-
-    const resetDocumentState = () => {
-        setExtractedDocData(null);
-        setReplacedFields({});
-        setOriginalContent({});
-        setDocFileName("");
-    };
-
     const handleGenerateLetterClick = async (additionalInstructions) => {
         if (!patient) return;
 
-        letter.setIsCollapsed(false);
-        chat.setChatExpanded(false);
-        closeAllFloatingPanels();
+        open("letter");
 
         await letterHook.generateLetter(
             patient,
@@ -530,6 +417,70 @@ const PatientDetails = ({
         }
     };
 
+    const handleOpenWrapUp = () => {
+        const missingFields = [];
+        if (!patient?.name) missingFields.push("Name");
+        if (!patient?.dob) missingFields.push("Date of Birth");
+        if (!patient?.ur_number) missingFields.push("UR Number");
+        if (!patient?.gender) missingFields.push("Gender");
+
+        if (missingFields.length > 0) {
+            toast({
+                title: "Missing Required Fields",
+                description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+        setIsWrapUpOpen(true);
+    };
+
+    const handleWrapUpConfirm = async (curatedJobs) => {
+        setWrapUpLoading(true);
+        try {
+            const saved = await savePatientCore(
+                refreshSidebar,
+                selectedDate,
+                toast,
+                hasTranscriptionOccurred ? initialTranscriptionContent : null,
+            );
+            if (!saved) {
+                return;
+            }
+            const noteId = saved.id ?? patient.id;
+
+            try {
+                await patientApi.updateJobsList(noteId, curatedJobs);
+            } catch (jobsErr) {
+                console.error("Failed to write curated jobs:", jobsErr);
+                toast({
+                    title: "Jobs not saved",
+                    description:
+                        "The note was saved, but the curated jobs couldn't be written. Please try again.",
+                    status: "warning",
+                    duration: 5000,
+                    isClosable: true,
+                });
+                return;
+            }
+            setIsSummaryModified(false);
+            setInitialTranscriptionContent({});
+            setHasTranscriptionOccurred(false);
+            setIsWrapUpOpen(false);
+            setIsSearchedPatient(false);
+            setStartCardDismissed(false);
+            await onStartNewNote();
+            navigate("/new-note");
+        } catch (error) {
+            console.error("Error during wrap up:", error);
+            // savePatientCore surfaces its own toast on save failure; keep modal open.
+        } finally {
+            setWrapUpLoading(false);
+        }
+    };
+
     const handleLetterChange = (newValue) => {
         letterHook.setFinalCorrespondence(newValue);
         setIsModified(true);
@@ -541,10 +492,32 @@ const PatientDetails = ({
         setIsLetterModified(false);
     };
 
+    const handleDemographicsSave = async (updatedPatient) => {
+        setInitialPatient(updatedPatient);
+        if (!updatedPatient.id) return;
+        await patientApi.savePatientData(
+            { patientData: updatedPatient },
+            toast,
+            refreshSidebar,
+        );
+    };
+
     const handleSearch = async (urNumber) => {
+        const query = (urNumber || "").trim();
+        if (!query) {
+            toast({
+                title: "Enter a UR number",
+                description:
+                    "Type a UR number, then click search to find an existing patient.",
+                status: "warning",
+                ...DEFAULT_TOAST_CONFIG,
+            });
+            return;
+        }
+
         setIsSearchLoading(true);
         try {
-            const result = await searchPatient(urNumber, selectedDate);
+            const result = await searchPatient(query, selectedDate);
             if (result) {
                 setSearchResult(result);
                 setIsSearchedPatient(true);
@@ -552,6 +525,13 @@ const PatientDetails = ({
                 console.log(
                     "Setting isSearchedPatient to true - search successful",
                 );
+            } else {
+                toast({
+                    title: "No patient found",
+                    description: `No patient matches UR number "${query}". Fill in their details to create a new record.`,
+                    status: "info",
+                    ...DEFAULT_TOAST_CONFIG,
+                });
             }
         } finally {
             setIsSearchLoading(false);
@@ -564,165 +544,17 @@ const PatientDetails = ({
         setParentIsModified(false);
     }, [initialPatient?.id, setParentIsModified]);
 
-    useEffect(() => {
-        const handleHistoricalTemplate = async () => {
-            if (!isNewPatient && !isSearchedPatient) {
-                console.log(
-                    "Viewing historical encounter - keeping original template",
-                );
-                return;
-            }
-
-            if (
-                patient?.template_key &&
-                defaultTemplate?.template_key &&
-                patient?.template_key !== defaultTemplate?.template_key &&
-                templates?.length > 0 &&
-                (isNewPatient || isSearchedPatient)
-            ) {
-                const activeTemplate = templates.find(
-                    (t) => t.template_key === patient.template_key,
-                );
-
-                if (!activeTemplate) {
-                    console.warn(
-                        "Pre-fill template is not active. Finding fallback...",
-                    );
-                    const baseKey = patient.template_key.split("_")[0];
-                    const latestVersion = templates
-                        .filter((t) => t.template_key.startsWith(baseKey))
-                        .sort((a, b) =>
-                            b.template_key.localeCompare(a.template_key),
-                        )[0];
-
-                    const fallback =
-                        latestVersion || defaultTemplate || templates[0];
-
-                    if (fallback) {
-                        console.log(
-                            `Upgrading pre-fill template to: ${fallback.template_key}`,
-                        );
-
-                        setPatient((prev) => ({
-                            ...prev,
-                            template_key: fallback.template_key,
-                            template_data: {
-                                ...prev.template_data,
-                            },
-                        }));
-
-                        await selectTemplate(fallback.template_key);
-
-                        if (
-                            fallback.template_key !== patient.template_key &&
-                            isSearchedPatient
-                        ) {
-                            showWarningToast(
-                                `Using ${fallback.template_name} template for this new encounter.`,
-                            );
-                        }
-                    }
-                }
-            }
-        };
-
-        handleHistoricalTemplate();
-    }, [
-        isNewPatient,
-        isSearchedPatient,
-        patient?.template_key,
-        defaultTemplate?.template_key,
-        templates,
-        defaultTemplate,
-        selectTemplate,
-        setPatient,
-        showWarningToast,
-    ]);
-
     // Functions for the Floating Action Menu
-    const handleOpenLetter = () => {
-        if (!letter.isCollapsed) {
-            // Letter is open, close it
-            letter.setIsCollapsed(true);
-        } else {
-            // Letter is closed, open it and close others
-            closeAllFloatingPanels();
-            letter.setIsCollapsed(false);
-            chat.setChatExpanded(false);
-            reasoning.closeReasoning();
-        }
-    };
-
-    const handleOpenChat = () => {
-        if (chat.chatExpanded) {
-            // Chat is open, close it
-            chat.setChatExpanded(false);
-        } else {
-            // Chat is closed, open it and close others
-            closeAllFloatingPanels();
-            chat.setChatExpanded(true);
-            letter.setIsCollapsed(true);
-            reasoning.closeReasoning();
-        }
-    };
-
-    const handleOpenReasoning = () => {
-        if (reasoning.isReasoningOpen) {
-            // Reasoning is open, close it
-            reasoning.closeReasoning();
-        } else {
-            // Reasoning is closed, open it and close others
-            closeAllFloatingPanels();
-            reasoning.openReasoning();
-            chat.setChatExpanded(false);
-            letter.setIsCollapsed(true);
-        }
-    };
-
-    const handleOpenTranscription = () => {
-        if (isTranscriptionPanelOpen) {
-            // Transcription is open, close it
-            setIsTranscriptionPanelOpen(false);
-        } else {
-            // Transcription is closed, open it and close others
-            setIsTranscriptionPanelOpen(true);
-            setIsDocumentPanelOpen(false);
-            setIsPreviousVisitPanelOpen(false);
-            letter.setIsCollapsed(true);
-            chat.setChatExpanded(false);
-            reasoning.closeReasoning();
-        }
-    };
-
-    const handleOpenDocument = () => {
-        if (isDocumentPanelOpen) {
-            // Document is open, close it
-            setIsDocumentPanelOpen(false);
-        } else {
-            // Document is closed, open it and close others
-            setIsTranscriptionPanelOpen(false);
-            setIsDocumentPanelOpen(true);
-            setIsPreviousVisitPanelOpen(false);
-            letter.setIsCollapsed(true);
-            chat.setChatExpanded(false);
-            reasoning.closeReasoning();
-        }
-    };
-
+    const handleOpenLetter = () => toggle("letter");
+    const handleOpenChat = () => toggle("chat");
+    const handleOpenReasoning = () => toggle("reasoning");
+    const handleOpenTranscription = () => toggle("transcription");
+    const handleOpenDocument = () => toggle("document");
     const handleOpenPreviousVisit = () => {
-        if (isPreviousVisitPanelOpen) {
-            // Previous Visit is open, close it
-            setIsPreviousVisitPanelOpen(false);
-        } else {
-            // Previous Visit is closed, open it and close others
-            setIsTranscriptionPanelOpen(false);
-            setIsDocumentPanelOpen(false);
-            setIsPreviousVisitPanelOpen(true);
+        if (!isOpen("previous-visit")) {
             setHasViewedPreviousVisit(true);
-            letter.setIsCollapsed(true);
-            chat.setChatExpanded(false);
-            reasoning.closeReasoning();
         }
+        toggle("previous-visit");
     };
 
     // Handle when reasoning is generated - update patient state for red dot indicator
@@ -757,18 +589,23 @@ const PatientDetails = ({
         );
     }
 
+    if (showStartCard) {
+        return (
+            <NewNoteStartCard
+                onFind={handleSearch}
+                onNewPatient={() => {
+                    setStartCardDismissed(true);
+                    onOpenDemographics();
+                }}
+                isSearchLoading={isSearchLoading}
+            />
+        );
+    }
+
     return (
         <Box p={[2, 4, 5]} borderRadius="sm" w="100%" pb="100px">
             <VStack spacing={[3, 4, 5]} align="stretch">
-                <PatientInfoBar
-                    patient={patient}
-                    setPatient={setPatient}
-                    handleSearch={handleSearch}
-                    template={currentTemplate}
-                    templates={templates}
-                    isNewPatient={isNewPatient}
-                    isSearchedPatient={isSearchedPatient}
-                />
+                <PatientInfoBar patient={patient} onEdit={onOpenDemographics} />
 
                 <Summary
                     ref={summaryRef}
@@ -778,7 +615,9 @@ const PatientDetails = ({
                     setPatient={setPatient}
                     handleGenerateLetterClick={handleGenerateLetterClick}
                     handleSavePatientData={handleSavePatientData}
+                    onWrapUp={handleOpenWrapUp}
                     saveLoading={saveLoading}
+                    wrapUpLoading={wrapUpLoading}
                     setIsModified={setIsSummaryModified}
                     setParentIsModified={setIsSummaryModified}
                     template={currentTemplate}
@@ -790,10 +629,35 @@ const PatientDetails = ({
                     isEncounterSaved={Boolean(patient?.id)}
                 />
 
+                <WrapUpModal
+                    isOpen={isWrapUpOpen}
+                    onClose={() => setIsWrapUpOpen(false)}
+                    onConfirm={handleWrapUpConfirm}
+                    planText={patient?.template_data?.plan || ""}
+                    submitting={wrapUpLoading}
+                />
+
+                <DemographicsModal
+                    isOpen={isDemographicsOpen}
+                    onClose={onCloseDemographics}
+                    patient={patient}
+                    setPatient={setPatient}
+                    onSave={handleDemographicsSave}
+                />
+
+                <ScribeConsentModal
+                    isOpen={isConsentOpen}
+                    onClose={onCloseConsent}
+                    onConsent={handleConsentGranted}
+                    onDecline={handleConsentDeclined}
+                    hasDeclined={hasDeclined}
+                    declinedDate={scribeConsent?.scribe_consent_declined_at}
+                    patientName={patient?.name}
+                />
+
                 <Letter
-                    isOpen={!letter.isCollapsed}
-                    onClose={() => letter.setIsCollapsed(true)}
-                    toggleLetterCollapse={letter.toggle}
+                    isOpen={isOpen("letter")}
+                    onClose={() => close("letter")}
                     finalCorrespondence={letterHook.finalCorrespondence}
                     handleSaveLetter={handleLetterSave}
                     setFinalCorrespondence={(value) => {
@@ -809,37 +673,35 @@ const PatientDetails = ({
                     toast={toast}
                     patient={patient}
                     setLoading={setLoading}
-                    onLetterToggle={handleLetterToggle}
                 />
 
                 <Chat
-                    isOpen={chat.chatExpanded}
-                    setChatExpanded={chat.setChatExpanded}
-                    onClose={() => chat.setChatExpanded(false)}
+                    isOpen={isOpen("chat")}
+                    onClose={() => close("chat")}
                     chatLoading={chat.loading}
                     messages={chat.messages}
                     setMessages={chat.setMessages}
                     userInput={chat.userInput}
                     setUserInput={chat.setUserInput}
-                    handleChat={(userInput) =>
-                        chat.sendMessage(
+                    handleChat={(userInput) => {
+                        open("chat");
+                        return chat.sendMessage(
                             userInput,
                             patient,
                             currentTemplate,
                             patient.raw_transcription,
-                        )
-                    }
+                        );
+                    }}
                     showSuggestions={chat.showSuggestions}
                     setShowSuggestions={chat.setShowSuggestions}
                     rawTranscription={patient.raw_transcription}
                     currentTemplate={currentTemplate}
                     patientData={patient}
-                    onChatToggle={handleChatToggle}
                 />
 
                 <ReasoningPanel
-                    isOpen={reasoning.isReasoningOpen}
-                    onClose={reasoning.closeReasoning}
+                    isOpen={isOpen("reasoning")}
+                    onClose={() => close("reasoning")}
                     noteId={patient?.id}
                     initialReasoning={patient?.reasoning_output}
                     onReasoningGenerated={handleReasoningGenerated}
@@ -850,7 +712,6 @@ const PatientDetails = ({
             <ScribePillBox
                 isRecording={scribeControls.isRecording}
                 isPaused={scribeControls.isPaused}
-                timer={scribeControls.timer}
                 onStart={scribeControls.startRecording}
                 onPause={scribeControls.pauseRecording}
                 onResume={scribeControls.resumeRecording}
@@ -860,9 +721,15 @@ const PatientDetails = ({
                 isAmbient={scribeControls.isAmbient}
                 onModeToggle={scribeControls.toggleAmbientMode}
                 onOpenTranscription={handleOpenTranscription}
-                isTranscriptionOpen={isTranscriptionPanelOpen}
+                isTranscriptionOpen={isOpen("transcription")}
                 hasRawTranscription={!!patient.raw_transcription}
                 onAudioDrop={scribeControls.handleAudioDrop}
+                canRecord={canRecord}
+                onBlockedRecord={handleBlockedRecord}
+                sendError={scribeControls.sendError}
+                onRetry={scribeControls.retrySend}
+                onDownload={scribeControls.downloadLastRecording}
+                onDismiss={scribeControls.dismissSendError}
             />
 
             {/* Floating Action Menu - always expanded on right side */}
@@ -872,11 +739,11 @@ const PatientDetails = ({
                 onOpenReasoning={handleOpenReasoning}
                 onOpenDocument={handleOpenDocument}
                 onOpenPreviousVisit={handleOpenPreviousVisit}
-                isChatOpen={chat.chatExpanded}
-                isLetterOpen={!letter.isCollapsed}
-                isReasoningOpen={reasoning.isReasoningOpen}
-                isDocumentOpen={isDocumentPanelOpen}
-                isPreviousVisitOpen={isPreviousVisitPanelOpen}
+                isChatOpen={isOpen("chat")}
+                isLetterOpen={isOpen("letter")}
+                isReasoningOpen={isOpen("reasoning")}
+                isDocumentOpen={isOpen("document")}
+                isPreviousVisitOpen={isOpen("previous-visit")}
                 hasCriticalReasoning={hasCriticalReasoning}
                 hasPreviousVisitSummary={Boolean(
                     patient?.previous_visit_summary,
@@ -887,8 +754,8 @@ const PatientDetails = ({
 
             {/* Transcription Panel */}
             <TranscriptionPanel
-                isOpen={isTranscriptionPanelOpen}
-                onClose={() => setIsTranscriptionPanelOpen(false)}
+                isOpen={isOpen("transcription")}
+                onClose={() => close("transcription")}
                 rawTranscription={patient.raw_transcription}
                 transcriptionDuration={patient.transcription_duration}
                 processDuration={patient.process_duration}
@@ -904,8 +771,8 @@ const PatientDetails = ({
 
             {/* Document Panel */}
             <DocumentPanel
-                isOpen={isDocumentPanelOpen}
-                onClose={() => setIsDocumentPanelOpen(false)}
+                isOpen={isOpen("document")}
+                onClose={() => close("document")}
                 handleDocumentComplete={handleDocumentComplete}
                 toggleDocumentField={toggleDocumentField}
                 replacedFields={replacedFields}
@@ -922,8 +789,8 @@ const PatientDetails = ({
 
             {/* Previous Visit Panel */}
             <PreviousVisitPanel
-                isOpen={isPreviousVisitPanelOpen}
-                onClose={() => setIsPreviousVisitPanelOpen(false)}
+                isOpen={isOpen("previous-visit")}
+                onClose={() => close("previous-visit")}
                 previousVisitSummary={patient.previous_visit_summary}
                 previousVisitTemplateData={patient.previous_visit_template_data}
                 previousVisitTemplateKey={patient.previous_visit_template_key}

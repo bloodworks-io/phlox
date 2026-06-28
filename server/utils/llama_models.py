@@ -209,10 +209,6 @@ class LlamaModelManager:
             return model_file
         return None
 
-    def is_model_downloaded(self, filename: str) -> bool:
-        """Check if a model is downloaded."""
-        return self.get_model_path(filename) is not None
-
     def _delete_all_models(self) -> None:
         """Delete all existing model files to ensure only one model exists."""
         for model_file in self.models_dir.glob("*.gguf"):
@@ -373,10 +369,6 @@ class LlamaModelManager:
             except Exception as e:
                 logger.warning(f"Failed to delete model selection file: {e}")
 
-    def get_default_model_filename(self) -> str:
-        """Get the filename for the default model (qwen3.5-4b)."""
-        return str(PRECONFIGURED_MODELS["qwen3.5-4b"]["filename"])
-
     def get_selected_model_id(self) -> str | None:
         """Get the model_id of the currently selected model.
 
@@ -404,3 +396,4 @@ class LlamaModelManager:
 
 # Singleton instance
 llama_model_manager = LlamaModelManager()
+

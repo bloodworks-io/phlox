@@ -17,7 +17,7 @@ def update_patient_letter(note_id: int, letter: str) -> None:
     try:
         get_db().cursor.execute(
             """
-            UPDATE patients
+            UPDATE encounters
             SET final_letter = ?,
                 updated_at = ?
             WHERE id = ?
@@ -41,7 +41,7 @@ async def fetch_patient_letter(note_id: int) -> str | None:
         Optional[str]: The letter content if found.
     """
     try:
-        get_db().cursor.execute("SELECT final_letter FROM patients WHERE id = ?", (note_id,))
+        get_db().cursor.execute("SELECT final_letter FROM encounters WHERE id = ?", (note_id,))
         row = get_db().cursor.fetchone()
         return row["final_letter"] if row else None
     except Exception as e:

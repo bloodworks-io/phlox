@@ -26,7 +26,7 @@ import {
     ChevronDownIcon,
     DeleteIcon,
     EditIcon,
-} from "@chakra-ui/icons";
+} from "../common/icons";
 import { FaThumbtack } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { typography } from "../../theme/typography";

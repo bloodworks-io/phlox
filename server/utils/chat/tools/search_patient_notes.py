@@ -20,7 +20,6 @@ from server.utils.chat.streaming.response import (
 
 logger = logging.getLogger(__name__)
 
-SEARCH_PATIENT_NOTES_TOOL_NAME = "search_patient_notes"
 
 # Fields to search within each patient record
 SEARCH_FIELDS = [
@@ -79,7 +78,11 @@ def extract_text_from_record(record: dict) -> dict[str, str]:
 
 
 def find_matches_in_text(
-    text: str, search_term: str, threshold: int = FUZZY_THRESHOLD
+    text: str,
+    search_term: str,
+    threshold: int = FUZZY_THRESHOLD,
+    context_window: int = 0,
+    max_context_chars: int = 500,
 ) -> list[dict]:
     """Find fuzzy matches for search term in text.
 
@@ -87,6 +90,8 @@ def find_matches_in_text(
         text: The text to search
         search_term: The term to search for
         threshold: Minimum fuzzy match score (0-100)
+        context_window: Number of surrounding segments to include before/after each match
+        max_context_chars: Maximum characters for the context string
 
     Returns:
         List of match dicts with score and context
@@ -95,18 +100,21 @@ def find_matches_in_text(
     search_lower = search_term.lower()
 
     # Split text into sentences/segments for better context
-    segments = text.replace("\n", " ").split(". ")
+    segments = [s.strip() for s in text.replace("\n", " ").split(". ") if s.strip()]
 
-    for segment in segments:
-        segment = segment.strip()
-        if not segment:
-            continue
-
+    for i, segment in enumerate(segments):
         # Check for fuzzy match
         score = fuzz.partial_ratio(search_lower, segment.lower())
         if score >= threshold:
-            # Truncate long segments for context
-            context = segment[:300] + "..." if len(segment) > 300 else segment
+            # Include surrounding segments if context_window > 0
+            if context_window > 0:
+                start = max(0, i - context_window)
+                end = min(len(segments), i + context_window + 1)
+                context = ". ".join(segments[start:end])
+                if len(context) > max_context_chars:
+                    context = context[:max_context_chars] + "..."
+            else:
+                context = segment[:300] + "..." if len(segment) > 300 else segment
             matches.append({"score": score, "context": context})
 
     return matches
@@ -138,22 +146,26 @@ async def search_patient_notes(
         if ur_number:
             get_db().cursor.execute(
                 """
-                SELECT id, name, ur_number, dob, encounter_date,
-                       template_data, raw_transcription, encounter_summary, final_letter
-                FROM patients
-                WHERE ur_number = ?
-                ORDER BY encounter_date DESC
+                SELECT e.id, e.ur_number, e.encounter_date,
+                       e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
+                       p.first_name, p.last_name, p.dob
+                FROM encounters e
+                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                WHERE e.ur_number = ?
+                ORDER BY e.encounter_date DESC
                 """,
                 (ur_number,),
             )
         else:
             get_db().cursor.execute(
                 """
-                SELECT id, name, ur_number, dob, encounter_date,
-                       template_data, raw_transcription, encounter_summary, final_letter
-                FROM patients
-                WHERE LOWER(name) LIKE LOWER(?)
-                ORDER BY encounter_date DESC
+                SELECT e.id, e.ur_number, e.encounter_date,
+                       e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
+                       p.first_name, p.last_name, p.dob
+                FROM encounters e
+                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                ORDER BY e.encounter_date DESC
                 """,
                 (f"%{patient_name}%",),
             )
@@ -175,8 +187,10 @@ async def search_patient_notes(
 
             # Store patient info from first (most recent) record
             if patient_info is None:
+                first = record.get("first_name")
+                last = record.get("last_name")
                 patient_info = {
-                    "name": record["name"],
+                    "name": f"{last}, {first}" if (last and first) else (last or first or ""),
                     "ur_number": record["ur_number"],
                     "dob": record["dob"],
                 }
@@ -187,7 +201,7 @@ async def search_patient_notes(
             # Search for matches in each field
             encounter_matches = []
             for field_name, text in texts.items():
-                matches = find_matches_in_text(text, search_term)
+                matches = find_matches_in_text(text, search_term, context_window=1)
                 for match in matches:
                     encounter_matches.append(
                         {
@@ -335,3 +349,4 @@ async def execute(
             result_content = f"Error searching patient notes: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
+

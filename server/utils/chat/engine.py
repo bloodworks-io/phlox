@@ -2,7 +2,7 @@
 ChatEngine - Main orchestrator for chat interactions.
 
 This module provides the ChatEngine class which coordinates between
-the LLM client, ChromaManager, and tool execution.
+the LLM client, VectorStoreManager, and tool execution.
 """
 
 import json
@@ -21,7 +21,7 @@ from server.utils.chat.streaming.response import (
 from server.utils.chat.tools import execute_tool_streaming, get_tools_definition
 from server.utils.helpers import clean_think_tags
 from server.utils.llm_client.client import get_llm_client
-from server.utils.rag.chroma import CHROMADB_AVAILABLE, ChromaManager
+from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE, VectorStoreManager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -47,14 +47,12 @@ class ChatEngine:
         # Get the unified LLM client
         self.llm_client = get_llm_client()
 
-        # Initialize ChromaManager if RAG dependencies are available
-        if CHROMADB_AVAILABLE:
-            self.chroma_manager = ChromaManager()
+        # Initialize VectorStoreManager if RAG dependencies are available
+        if VECTOR_STORE_AVAILABLE:
+            self.vector_store_manager = VectorStoreManager()
         else:
-            self.chroma_manager = None
+            self.vector_store_manager = None
             self.logger.warning("RAG dependencies not available. Literature search disabled.")
-
-        self.last_successful_collection = "misc"
 
     async def get_streaming_response(
         self,
@@ -73,7 +71,9 @@ class ChatEngine:
         """
         prompts = config_manager.get_prompts_and_options()
         collection_names = (
-            self.chroma_manager.list_collections() if self.chroma_manager is not None else []
+            self.vector_store_manager.list_collections()
+            if self.vector_store_manager is not None
+            else []
         )
 
         context_question_options = prompts["options"]["general"]
@@ -365,7 +365,7 @@ class ChatEngine:
             config=self.config,
             message_list=message_list,
             context_question_options=context_question_options,
-            chroma_manager=self.chroma_manager,
+            vector_store_manager=self.vector_store_manager,
             conversation_history=conversation_history,
             raw_transcription=raw_transcription,
         ):

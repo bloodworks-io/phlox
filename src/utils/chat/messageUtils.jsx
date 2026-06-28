@@ -1,8 +1,4 @@
-// Utility functions for formatting, validating, and truncating chat messages according to token count.
-import { encodingForModel } from "js-tiktoken";
-
-const enc = encodingForModel("gpt-4o");
-
+// Utility functions for formatting and validating chat messages.
 export const validateInput = (userInput) => {
     return userInput.trim() !== "";
 };
@@ -41,6 +37,9 @@ export const formatPatientContext = (template, patientData) => {
         name: patientData.name,
         dob: patientData.dob,
         ur_number: patientData.ur_number,
+        gender: patientData.gender,
+        address: patientData.address,
+        phone: patientData.phone,
         encounter_date: patientData.encounter_date,
         template_data: template_data,
         template_fields: template.fields.map((field) => ({
@@ -48,25 +47,4 @@ export const formatPatientContext = (template, patientData) => {
             field_name: field.field_name,
         })),
     };
-};
-
-export const truncateConversationHistory = (messages) => {
-    let conversationHistoryStr = messages
-        .map((msg) => `${msg.role}: ${msg.content}`)
-        .join(" ");
-    let conversationHistoryTokenCount = enc.encode(
-        conversationHistoryStr,
-    ).length;
-
-    while (conversationHistoryTokenCount > 5000 && messages.length > 2) {
-        messages.splice(1, 2);
-        conversationHistoryStr = messages
-            .map((msg) => `${msg.role}: ${msg.content}`)
-            .join(" ");
-        conversationHistoryTokenCount = enc.encode(
-            conversationHistoryStr,
-        ).length;
-    }
-
-    return messages;
 };

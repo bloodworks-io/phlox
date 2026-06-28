@@ -8,7 +8,7 @@ import {
   HStack,
   Tooltip,
 } from "@chakra-ui/react";
-import { InfoIcon } from "@chakra-ui/icons";
+import { InfoIcon } from "../../icons";
 import { motion } from "framer-motion";
 import { stepVariants } from "../constants";
 import { SPECIALTIES } from "../../../../utils/constants/index.jsx";

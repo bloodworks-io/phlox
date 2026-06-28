@@ -90,31 +90,3 @@ def _rotate_backups(backup_dir: Path, db_name: str) -> None:
     except Exception as e:
         logging.warning(f"Failed to rotate backups: {e}")
 
-
-def list_backups(db_dir: Path) -> list:
-    """
-    List all available backups.
-
-    Args:
-        db_dir: Parent directory of the database
-
-    Returns:
-        List of backup file info dicts
-    """
-    backup_dir = db_dir / BACKUP_SUBDIR
-    if not backup_dir.exists():
-        return []
-
-    backups = []
-    for backup_file in sorted(backup_dir.glob("*.bak"), reverse=True):
-        stat = backup_file.stat()
-        backups.append(
-            {
-                "path": str(backup_file),
-                "name": backup_file.name,
-                "size": stat.st_size,
-                "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            }
-        )
-
-    return backups
