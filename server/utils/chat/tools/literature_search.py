@@ -61,25 +61,17 @@ def _get_relevant_literature(vector_store_manager, disease_name: str, question: 
         return "No relevant literature available"
 
     output_strings = []
-    distance_threshold = 0.4
-    logger.info(f"Filtering results with distance threshold: {distance_threshold}")
 
     for i, doc_list in enumerate(context["documents"]):
         for j, doc in enumerate(doc_list):
             distance = context["distances"][i][j]
-            logger.info(f"Document {j + 1}: distance={distance}")
-            if distance < distance_threshold:
-                source = context["metadatas"][i][j]["source"]
-                formatted_source = source.replace("_", " ").title()
-                cleaned_doc = doc.strip().replace("\n", " ")
-                logger.info(
-                    f"Adding document from source: {formatted_source} (distance: {distance})"
-                )
-                output_strings.append(
-                    f'According to {formatted_source}:\n\n"...{cleaned_doc}..."\n'
-                )
-            else:
-                logger.info(f"Skipping document with distance {distance} (above threshold)")
+            source = context["metadatas"][i][j]["source"]
+            formatted_source = source.replace("_", " ").title()
+            cleaned_doc = doc.strip().replace("\n", " ")
+            logger.info(f"Adding document from source: {formatted_source} (distance: {distance})")
+            output_strings.append(
+                f'According to {formatted_source}:\n\n"...{cleaned_doc}..."\n'
+            )
 
     if not output_strings:
         logger.info("No relevant literature matching query found.")
