@@ -1,5 +1,68 @@
 # Changelog
 
+## [2.0.0](https://github.com/bloodworks-io/phlox/compare/v1.0.5...v2.0.0) (2026-06-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove ChromaManager. Existing RAG data will be lost.
+
+### Features
+
+* add PDF forms feature flag and expose PdfJs utility ([8465ecb](https://github.com/bloodworks-io/phlox/commit/8465ecbd0b6b3e03250dc457df8a8d3cebef3b54))
+* add pluggable vector store backend with sqlite-vec implementation ([a495938](https://github.com/bloodworks-io/phlox/commit/a495938ad22a4f134b364ed5e966719bc2f51a5b))
+* add SSE streaming for re-embedding progress ([f303531](https://github.com/bloodworks-io/phlox/commit/f303531e69dd1ca295695a527a2123733b09d7a6))
+* add VectorStoreManager ([2fab8eb](https://github.com/bloodworks-io/phlox/commit/2fab8ebb4e58f66e7a4bd3a196aaf9ca4690db53))
+* **api:** add job extraction endpoint for Wrap Up ([58817b0](https://github.com/bloodworks-io/phlox/commit/58817b06a46694717c1dc303bfde7982c5f97478))
+* **api:** search patients by name as well as UR number ([c3b1d0e](https://github.com/bloodworks-io/phlox/commit/c3b1d0ef0a47cb0db98c65452eab0e59809f9cb5))
+* bulk upload for reference documents ([24c677b](https://github.com/bloodworks-io/phlox/commit/24c677bd33b464296fb8e53d145c68dfd3df1507))
+* **chat:** hide literature tool when the knowledge base is empty ([66020e2](https://github.com/bloodworks-io/phlox/commit/66020e21810b99ef2e8c77dde6b308b45e9d4d8f))
+* **chat:** include demographics in patient context ([521f208](https://github.com/bloodworks-io/phlox/commit/521f208c56cb64c6b2e9e58af89e3dcfbe33923f))
+* **client:** add pdf-lib dependency and PDF form utilities ([ad320a0](https://github.com/bloodworks-io/phlox/commit/ad320a08482a97f395cb249c0cabe2ed633e0339))
+* **client:** add pdf-lib dependency and PDF form utilities ([57b1029](https://github.com/bloodworks-io/phlox/commit/57b1029d9a183465ad24e795fd9ff8a19af2e53a))
+* **client:** render form-fill artifacts in chat ([e722648](https://github.com/bloodworks-io/phlox/commit/e7226486eae743a51b9e643f52c9036129782328))
+* **consent:** persist ambient-scribe consent in patient_profiles ([d9757ae](https://github.com/bloodworks-io/phlox/commit/d9757ae12d52a1e45f6c4c8506bc411b76910ce4))
+* **consent:** prompt for consent before ambient recording ([e6aa049](https://github.com/bloodworks-io/phlox/commit/e6aa0493143c0049f3216f32ba7946061e95fd96))
+* **db:** add patient_profiles and seed job_extraction prompt ([df94ff5](https://github.com/bloodworks-io/phlox/commit/df94ff5d4df1ea652ea48978340534c1b6a27f57))
+* **db:** store patient demographics in patient_profiles ([1f31a90](https://github.com/bloodworks-io/phlox/commit/1f31a90e722f15cc50fbdb5770ed8309a086457d))
+* extract patient demographics from documents ([9596436](https://github.com/bloodworks-io/phlox/commit/9596436a903803be3c0abac8a2b48738cc97435f))
+* **note:** auto-open demographics and gate recording on required fields ([a81fcdd](https://github.com/bloodworks-io/phlox/commit/a81fcdda3d0d652a55e85dd4e8e712ed58ceff1b))
+* **notes:** add candidate results and confirm flow to modal ([91d57b3](https://github.com/bloodworks-io/phlox/commit/91d57b3123f6edd55183a6c3fe7138a8b6fb7960))
+* remove ChromaManager. Existing RAG data will be lost. ([2b20f69](https://github.com/bloodworks-io/phlox/commit/2b20f691b993f175197c6bf8b38cfa5df2cec504))
+* **scribe:** gate recording, recover failed, refactor scribe ([ed8ba66](https://github.com/bloodworks-io/phlox/commit/ed8ba66481ba1b7f7684049d9273acc688140f1a))
+* **server:** add PDF form template storage, schemas, and API ([660dc3a](https://github.com/bloodworks-io/phlox/commit/660dc3a9566a626569feb2e812b714b54a1da8f2))
+* **server:** integrate PDF form tools into chat ([dbe335c](https://github.com/bloodworks-io/phlox/commit/dbe335cafcc11652bfda1d32f0dff104dc7b4a8d))
+* store original pdf ([6160016](https://github.com/bloodworks-io/phlox/commit/6160016970d49e1adb602b45bc368f5c0bbb07ed))
+* surface binary MCP tool responses as downloadable artifacts in chat UI ([b3acf7c](https://github.com/bloodworks-io/phlox/commit/b3acf7c7a512bf46c6ad1c041c9756a5ba2cd32d))
+* **ui:** add patient demographics modal ([859e555](https://github.com/bloodworks-io/phlox/commit/859e555a2849124d1e63ed51ee41d38b774ffd4c))
+* **ui:** add Wrap Up modal and extract-jobs client ([27c01a9](https://github.com/bloodworks-io/phlox/commit/27c01a9b5fd9120f0d0693d10c20cd74001ac47c))
+* **ui:** auto-fill demographics from a dropped document ([44276a9](https://github.com/bloodworks-io/phlox/commit/44276a97ad5d24d614d416cd43ce023a4d4e684b))
+* **ui:** compact summary-only table view ([3cae57f](https://github.com/bloodworks-io/phlox/commit/3cae57f02f373d75cb2e2a1917f834618555c85a))
+* **ui:** new note splash for clarity ([500f95a](https://github.com/bloodworks-io/phlox/commit/500f95aeccef137a7a5bbeb0a0f51ea6646bfe46))
+* **ui:** wire Wrap Up to save jobs and advance to next not ([3f6cb9b](https://github.com/bloodworks-io/phlox/commit/3f6cb9b9762786cfa57465967b7c2b8c08509e27))
+
+
+### Bug Fixes
+
+* binary data not showing in dashboard chat. ([cf4b375](https://github.com/bloodworks-io/phlox/commit/cf4b375cf0f1d8d17bd9e257ae9fb950f41592d1))
+* bulk upload respects pdf commit setting ([3618023](https://github.com/bloodworks-io/phlox/commit/36180234c158e1395dfd8df548b53a4a9ac9c106))
+* **chat:** drop distance threshold from literature search ([f411b37](https://github.com/bloodworks-io/phlox/commit/f411b37862a6fe612a6ac9006242d4245bfab5cd))
+* citations now displaying in chat ([cccd92b](https://github.com/bloodworks-io/phlox/commit/cccd92b593847c6097f6e153ad8a301d265c4cf5))
+* **demo:** give demo patients unique ur numbers ([9dcb8ba](https://github.com/bloodworks-io/phlox/commit/9dcb8bae3b2b703b0c04a21f8cf8b09020c1f741))
+* **demo:** str for type check ([5b35632](https://github.com/bloodworks-io/phlox/commit/5b356321d4d673db5323211a3ed5aef93bd3cd05))
+* increase timeout for PDF field detection ([f678553](https://github.com/bloodworks-io/phlox/commit/f678553c3967b1f5592f7901199af7e94ec22bee))
+* **note:** clear patient state when starting a new note after wrap-up ([0e623dd](https://github.com/bloodworks-io/phlox/commit/0e623dd479c68f48c34e18a9244dfb870966636f))
+* **note:** show start card after wrap-up on new patient ([aba5c08](https://github.com/bloodworks-io/phlox/commit/aba5c08f6218f8e6a211e12b8cc8d92cd7f3c1f7))
+* **rag:** store source PDF on single-file upload ([26caeca](https://github.com/bloodworks-io/phlox/commit/26caecaaf2d8019d43bd0869a3aa0275dc13cf31))
+* reload embedding function before re-embedding ([4a2f4fd](https://github.com/bloodworks-io/phlox/commit/4a2f4fd3656bc4da96b49ecd6579a2eae635ce07))
+* **server:** bundle sqlite-vec into into tauri; split OCR libs ([b869680](https://github.com/bloodworks-io/phlox/commit/b8696801fd6fb642727e9695c2b91c247cb993a1))
+* **tauri:** make the readiness wait non-blocking; surface stderr on ([21f961b](https://github.com/bloodworks-io/phlox/commit/21f961b6e0dbd2e2d6b159c173d9845afb5b2ac7))
+* **tauri:** reap the server on handshake failure; make start_server ([3499058](https://github.com/bloodworks-io/phlox/commit/3499058f5924a0872f730662ba526134ebdb5277))
+* **ui:** resolve Maximum update depth loop on New Note ([63eae52](https://github.com/bloodworks-io/phlox/commit/63eae527f1758559b309b08f51e07217b21ec7d0))
+* **ui:** save patient demographics ([f98d50f](https://github.com/bloodworks-io/phlox/commit/f98d50fa15b5f2b5ae4049a9d9ddf0594d62e0a0))
+* **ui:** search and toast feedback ([364a4c4](https://github.com/bloodworks-io/phlox/commit/364a4c4a025f28692b9c7f358e971cfc712c6f24))
+* **ui:** stop misreporting server-startup failures; retry re-warms ([2d2249a](https://github.com/bloodworks-io/phlox/commit/2d2249aee5cf1c88ce92fd98b72cbc2a6b099a05))
+
 ## [1.0.5](https://github.com/bloodworks-io/phlox/compare/v1.0.4...v1.0.5) (2026-06-04)
 
 
