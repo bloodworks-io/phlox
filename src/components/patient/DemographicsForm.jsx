@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import {
-    HStack,
-    VStack,
-    Box,
-    Text,
-    Input,
-    Select,
-    Button,
-    Icon,
-    Spinner,
-    useColorMode,
-    useToast,
-} from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { Steps, HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { FaFileUpload } from "react-icons/fa";
 import { colors } from "../../theme/colors";
 import { transcriptionApi } from "../../utils/api/transcriptionApi";
@@ -159,7 +149,7 @@ const DemographicsForm = ({
     };
 
     return (
-        <VStack spacing={4} align="stretch">
+        <VStack gap={4} align="stretch">
             {/* Document drop zone — auto-fills fields from a referral/ID/etc. */}
             <Box
                 position="relative"
@@ -184,12 +174,12 @@ const DemographicsForm = ({
                     display="none"
                 />
                 <HStack
-                    spacing={2}
+                    gap={2}
                     justify="center"
                     color={c.textSecondary}
                     fontSize="sm"
                 >
-                    <Icon as={FaFileUpload} />
+                    <Icon asChild><FaFileUpload /></Icon>
                     <Text>
                         {isExtracting
                             ? "Reading document…"
@@ -203,8 +193,7 @@ const DemographicsForm = ({
                     </Text>
                 )}
             </Box>
-
-            <HStack spacing={3} align="flex-start">
+            <HStack gap={3} align="flex-start">
                 <Field label="First name" required>
                     <Input
                         className="input-style"
@@ -225,7 +214,7 @@ const DemographicsForm = ({
                     />
                 </Field>
             </HStack>
-            <HStack spacing={3} align="flex-start">
+            <HStack gap={3} align="flex-start">
                 <Field label="Date of birth" required>
                     <Input
                         type="date"
@@ -236,16 +225,18 @@ const DemographicsForm = ({
                     />
                 </Field>
                 <Field label="Gender">
-                    <Select
-                        className="input-style"
-                        size="sm"
-                        value={form.gender || ""}
-                        onChange={(e) => set("gender", e.target.value)}
-                    >
-                        <option value="">M/F</option>
-                        <option value="M">M</option>
-                        <option value="F">F</option>
-                    </Select>
+                    <NativeSelect.Root>
+                        <NativeSelect.Field
+                            className="input-style"
+                            size="sm"
+                            value={form.gender || ""}
+                            onChange={(e) => set("gender", e.target.value)}>
+                            <option value="">M/F</option>
+                            <option value="M">M</option>
+                            <option value="F">F</option>
+                        </NativeSelect.Field>
+                        <NativeSelect.Indicator />
+                    </NativeSelect.Root>
                 </Field>
             </HStack>
             <Field label="UR number" required>
@@ -275,26 +266,21 @@ const DemographicsForm = ({
                     onChange={(e) => set("phone", e.target.value)}
                 />
             </Field>
-
             <HStack justify="space-between" width="100%" mt={2}>
                 {onCancel && (
                     <Button
                         onClick={onCancel}
-                        leftIcon={cancelIcon || undefined}
                         size="md"
-                        borderRadius="2xl !important"
+                        borderRadius="2xl"
                         className="switch-mode"
-                        sx={btnSx}
-                    >
-                        {cancelLabel}
-                    </Button>
+                        sx={btnSx}>{cancelIcon || undefined}{cancelLabel}</Button>
                 )}
                 <Button
                     onClick={handleSave}
-                    isDisabled={!requiredMet}
-                    isLoading={isSaving}
+                    disabled={!requiredMet}
+                    loading={isSaving}
                     size="md"
-                    borderRadius="2xl !important"
+                    borderRadius="2xl"
                     className="switch-mode"
                     sx={btnSx}
                 >

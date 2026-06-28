@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import { Box, Text } from "@chakra-ui/react";
+import { Steps, Box, Text } from "@chakra-ui/react";
 import remarkGfm from "remark-gfm";
 
 /**
@@ -46,37 +46,37 @@ const MarkdownRenderer = ({ children, ...props }) => {
                 table: ({ children }) => (
                     <Box overflowX="auto" my={2}>
                         <Box
-                            as="table"
                             width="100%"
                             fontSize="sm"
                             borderWidth="1px"
                             borderCollapse="collapse"
-                        >
-                            {children}
-                        </Box>
+                            asChild
+                        ><table>
+                                {children}
+                            </table></Box>
                     </Box>
                 ),
                 thead: ({ children }) => (
-                    <Box as="thead" bg="gray.50" _dark={{ bg: "gray.700" }}>
-                        {children}
-                    </Box>
+                    <Box bg="gray.50" _dark={{ bg: "gray.700" }} asChild><thead>
+                            {children}
+                        </thead></Box>
                 ),
                 th: ({ children }) => (
                     <Box
-                        as="th"
                         px={2}
                         py={1}
                         textAlign="left"
                         fontWeight="semibold"
                         borderWidth="1px"
-                    >
-                        {children}
-                    </Box>
+                        asChild
+                    ><th>
+                            {children}
+                        </th></Box>
                 ),
                 td: ({ children }) => (
-                    <Box as="td" px={2} py={1} borderWidth="1px">
-                        {children}
-                    </Box>
+                    <Box px={2} py={1} borderWidth="1px" asChild><td>
+                            {children}
+                        </td></Box>
                 ),
             }}
             {...props}

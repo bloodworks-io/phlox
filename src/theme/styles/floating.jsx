@@ -60,7 +60,11 @@ export const floatingStyles = (props) => ({
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textSecondary} !important`,
         fontWeight: "normal",
-        borderRadius: "none !important",
+
+        borderTopLeftRadius: "0 !important",
+        borderTopRightRadius: "md !important",
+        borderBottomLeftRadius: "md !important",
+        borderBottomRightRadius: "md !important",
         fontSize: "0.7rem !important",
     },
     ".chat-suggestions": {
@@ -247,6 +251,10 @@ export const floatingStyles = (props) => ({
                 ? `1px solid ${colors.light.surface} !important`
                 : `1px solid ${colors.dark.surface} !important`,
     },
+    ".floating-action-menu .chakra-button svg": {
+        width: "14px !important",
+        height: "14px !important",
+    },
     // Dashboard chat styles
     ".dashboard-chat-container": {
         height: "calc(100vh - 60px)",
@@ -274,8 +282,8 @@ export const floatingStyles = (props) => ({
     ".dashboard-chat-greeting": {
         color:
             props.colorMode === "light"
-                ? `${colors.light.textPrimary} !important`
-                : `${colors.dark.textPrimary} !important`,
+                ? `${colors.light.textSecondary} !important`
+                : `${colors.dark.textSecondary} !important`,
     },
     ".dashboard-chat-suggestions": {
         backgroundColor:

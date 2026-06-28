@@ -1,34 +1,34 @@
 import React from "react";
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  Button,
-  HStack,
-} from "@chakra-ui/react";
+import { Steps, Button, HStack, Heading, Dialog, Portal } from "@chakra-ui/react";
 import LocalModelManager from "../settings/LocalModelManager";
 
 const LocalModelManagerModal = ({ isOpen, onClose }) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
-      <ModalOverlay />
-      <ModalContent className="modal-style">
-        <ModalHeader>Local Model Manager</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <LocalModelManager className="modal-body-embed" />
-        </ModalBody>
-        <ModalFooter>
-          <HStack justify="flex-end" width="100%">
-            <Button onClick={onClose}>Close</Button>
-          </HStack>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+    <Dialog.Root open={isOpen} size='xl' scrollBehavior="inside" onOpenChange={e => {
+      if (!e.open) {
+        onClose();
+      }
+    }}>
+      <Portal>
+
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content className="modal-style">
+            <Dialog.Header><Heading as="h2" size="md" fontFamily="heading">Local Model Manager</Heading></Dialog.Header>
+            <Dialog.CloseTrigger />
+            <Dialog.Body>
+              <LocalModelManager className="modal-body-embed" />
+            </Dialog.Body>
+            <Dialog.Footer>
+              <HStack justify="flex-end" width="100%">
+                <Button onClick={onClose}>Close</Button>
+              </HStack>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+
+      </Portal>
+    </Dialog.Root>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, Textarea } from "@chakra-ui/react";
+import { Steps, Box, Text, Textarea } from "@chakra-ui/react";
 
 const CustomInstructionsInput = ({
     additionalInstructions,
@@ -17,11 +17,11 @@ const CustomInstructionsInput = ({
                 value={additionalInstructions}
                 onChange={(e) => setAdditionalInstructions(e.target.value)}
                 className="chat-input"
-                sx={{
+                css={{
                     paddingY: "2",
                     paddingX: "4",
                     minHeight: "40px",
-                    resize: "none",
+                    resize: "none"
                 }}
             />
         </Box>

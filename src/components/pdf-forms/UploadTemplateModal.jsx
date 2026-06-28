@@ -1,20 +1,8 @@
 // Modal for uploading a new PDF form template.
 import React, { useState, useRef } from "react";
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Text,
-  VStack,
-  Box,
-  useColorModeValue,
-  useToast,
-} from "@chakra-ui/react";
+import { useColorModeValue } from "../ui/color-mode";
+import { Steps, Button, Input, Text, VStack, Box, Dialog, Portal } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
 import { GreenButton, GreyButton } from "../common/Buttons";
@@ -100,56 +88,66 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="md">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
-          <Text as="h3">New Form Template</Text>
-        </ModalHeader>
-        <ModalBody>
-          <VStack spacing="4">
-            <Box w="100%">
-              <Text fontSize="sm" fontWeight="bold" mb="2">
-                Template Name
-              </Text>
-              <Input
-                placeholder="e.g. Referral Form"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input-style"
-              />
-            </Box>
-            <Box w="100%">
-              <Text fontSize="sm" fontWeight="bold" mb="2">
-                PDF File
-              </Text>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileChange}
-                style={{ display: "block", width: "100%", fontSize: "0.875rem" }}
-              />
-            </Box>
-            <Text fontSize="xs" color={mutedColor}>
-              Page metadata will be extracted automatically by the browser.
-            </Text>
-          </VStack>
-        </ModalBody>
-        <ModalFooter>
-          <GreyButton mr="3" onClick={handleClose}>
-            Cancel
-          </GreyButton>
-          <GreenButton
-            onClick={handleSubmit}
-            isLoading={uploading}
-            isDisabled={!file || !name.trim()}
-          >
-            Upload
-          </GreenButton>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+    <Dialog.Root open={isOpen} size='md' onOpenChange={e => {
+      if (!e.open) {
+        handleClose();
+      }
+    }}>
+      <Portal>
+
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Text as="h3">New Form Template</Text>
+            </Dialog.Header>
+            <Dialog.Body>
+              <VStack gap="4">
+                <Box w="100%">
+                  <Text fontSize="sm" fontWeight="bold" mb="2">
+                    Template Name
+                  </Text>
+                  <Input
+                    placeholder="e.g. Referral Form"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="input-style"
+                  />
+                </Box>
+                <Box w="100%">
+                  <Text fontSize="sm" fontWeight="bold" mb="2">
+                    PDF File
+                  </Text>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    style={{ display: "block", width: "100%", fontSize: "0.875rem" }}
+                  />
+                </Box>
+                <Text fontSize="xs" color={mutedColor}>
+                  Page metadata will be extracted automatically by the browser.
+                </Text>
+              </VStack>
+            </Dialog.Body>
+            <Dialog.Footer>
+              <GreyButton mr="3" onClick={handleClose}>
+                Cancel
+              </GreyButton>
+              <GreenButton
+                onClick={handleSubmit}
+                isLoading={uploading}
+                isDisabled={!file || !name.trim()}
+              >
+                Upload
+              </GreenButton>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+
+      </Portal>
+    </Dialog.Root>
   );
 };
 

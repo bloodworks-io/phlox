@@ -1,11 +1,5 @@
-import {
-    Flex,
-    Avatar,
-    Text,
-    IconButton,
-    Box,
-    useColorModeValue,
-} from "@chakra-ui/react";
+import { Steps, Flex, Avatar, Text, IconButton, Box } from "@chakra-ui/react";
+import { useColorModeValue } from "../ui/color-mode";
 import { ChevronDownIcon, ChevronUpIcon } from "../common/icons";
 import { colors } from "../../theme/colors";
 
@@ -74,15 +68,13 @@ export const SectionHeader = ({ title, count, isCollapsed, onToggle }) => {
                 {title} {count > 0 ? `(${count})` : ""}
             </Text>
             <IconButton
-                icon={isCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
                 variant="ghost"
                 size="xs"
                 color={colors.dark.textPrimary}
                 _hover={{
                     bg: `rgba(184, 192, 224, 0.1)`,
                 }}
-                aria-label={isCollapsed ? "Expand section" : "Collapse section"}
-            />
+                aria-label={isCollapsed ? "Expand section" : "Collapse section"}>{isCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}</IconButton>
         </Flex>
     );
 };
@@ -118,13 +110,11 @@ export const AvatarButton = ({
                 transition="all 0.2s"
             >
                 <Box position="relative">
-                    <Avatar
-                        icon={icon}
+                    <Avatar.Root
                         bg={backgroundColor}
                         color="white"
                         size={isCollapsed ? "sm" : "sm"}
-                        mr={isCollapsed ? "0" : "3"}
-                    />
+                        mr={isCollapsed ? "0" : "3"}><Avatar.Fallback>{icon}</Avatar.Fallback></Avatar.Root>
 
                     {badge && (
                         <Box

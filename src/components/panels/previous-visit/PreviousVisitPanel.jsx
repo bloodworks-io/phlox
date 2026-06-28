@@ -1,17 +1,6 @@
 import { useState, useRef } from "react";
-import {
-  Box,
-  Flex,
-  Text,
-  Tabs,
-  TabList,
-  TabPanels,
-  TabPanel,
-  Tab,
-  HStack,
-  VStack,
-  Tooltip,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, Text, Tabs, HStack, VStack } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
 import FloatingPanel from "../../common/FloatingPanel";
 
@@ -24,7 +13,7 @@ const PreviousVisitPanel = ({
   previousVisitEncounterDate,
   templates = [],
 }) => {
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState("0");
   const [dimensions, setDimensions] = useState({ width: 550, height: 450 });
   const resizerRef = useRef(null);
 
@@ -100,7 +89,7 @@ const PreviousVisitPanel = ({
         <Flex
           align="center"
           justify="space-between"
-          p="4"
+          p="3"
           className="panel-header"
           flexShrink={0}
         >
@@ -112,36 +101,36 @@ const PreviousVisitPanel = ({
 
         {/* Content with Tabs */}
         <Box flex="1" overflow="hidden" display="flex" flexDirection="column">
-          <Tabs
-            variant="enclosed"
-            index={tabIndex}
-            onChange={(index) => setTabIndex(index)}
+          <Tabs.Root
+            variant='enclosed'
+            value={tabIndex}
+            onValueChange={({ value }) => setTabIndex(value)}
             display="flex"
             flexDirection="column"
             height="100%"
           >
-            <TabList flexShrink={0}>
-              <Tooltip label="AI-generated summary of the previous visit">
-                <Tab className="tab-style">
+            <Tabs.List flexShrink={0}>
+              <Tooltip content="AI-generated summary of the previous visit">
+                <Tabs.Trigger className="tab-style" value="0">
                   <HStack>
                     <FaList />
                     <Text>Summary</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
-              <Tooltip label="Full note content from the previous encounter">
-                <Tab className="tab-style">
+              <Tooltip content="Full note content from the previous encounter">
+                <Tabs.Trigger className="tab-style" value="1">
                   <HStack>
                     <FaFileAlt />
                     <Text>Full Note</Text>
                   </HStack>
-                </Tab>
+                </Tabs.Trigger>
               </Tooltip>
-            </TabList>
+            </Tabs.List>
 
-            <TabPanels flex="1" overflow="hidden" display="flex" width="100%">
+            
               {/* Summary Tab */}
-              <TabPanel
+              <Tabs.Content value="0"
                 className="floating-main"
                 p={0}
                 width="100%"
@@ -165,10 +154,10 @@ const PreviousVisitPanel = ({
                     </Text>
                   )}
                 </Box>
-              </TabPanel>
+              </Tabs.Content>
 
               {/* Full Note Tab */}
-              <TabPanel
+              <Tabs.Content value="1"
                 className="floating-main"
                 p={0}
                 width="100%"
@@ -183,7 +172,7 @@ const PreviousVisitPanel = ({
                   p={4}
                 >
                   {previousVisitTemplate && previousVisitTemplateData ? (
-                    <VStack spacing={4} align="stretch" width="100%">
+                    <VStack gap={4} align="stretch" width="100%">
                       {/* Encounter Date */}
                       {previousVisitEncounterDate && (
                         <Box p="2" width="100%">
@@ -195,7 +184,7 @@ const PreviousVisitPanel = ({
                       )}
 
                       {/* Template Fields */}
-                      <VStack spacing="0" align="stretch" width="100%">
+                      <VStack gap="0" align="stretch" width="100%">
                         {previousVisitTemplate.fields?.map(renderFieldReadOnly)}
                       </VStack>
                     </VStack>
@@ -205,9 +194,9 @@ const PreviousVisitPanel = ({
                     </Text>
                   )}
                 </Box>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
+              </Tabs.Content>
+            
+          </Tabs.Root>
         </Box>
 
         {/* Resize Handle */}

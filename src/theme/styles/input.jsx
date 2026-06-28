@@ -180,6 +180,7 @@ export const inputStyles = (props) => ({
         padding: "0 !important",
         fontSize: "1rem !important",
         lineHeight: "1.5 !important",
+        fontWeight: "400 !important",
         width: "100% !important",
         resize: "none !important",
         "&:focus": {

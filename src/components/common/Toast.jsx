@@ -1,12 +1,5 @@
 // Custom toast component for displaying notifications with different statuses.
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
-  Box,
-  CloseButton,
-  Flex,
-} from "@chakra-ui/react";
+import { Steps, Alert, Box, CloseButton, Flex } from "@chakra-ui/react";
 import {
   CheckCircleIcon,
   InfoIcon,
@@ -50,23 +43,21 @@ export function CustomToast(props) {
     : undefined;
 
   return (
-    <Alert
-      addRole={false}
+    <Alert.Root
       status={status}
       variant={variant}
       id={ids?.root}
-      colorScheme={colorScheme}
+      colorPalette={colorScheme}
       marginTop="-5px"
-      marginBottom="10px"
-    >
+      marginBottom="10px">
       <Flex align="center" gap={3}>
         {getStatusIcon(status)}
         <Box flex="1">
-          {title && <AlertTitle id={ids?.title}>{title}</AlertTitle>}
+          {title && <Alert.Title id={ids?.title}>{title}</Alert.Title>}
           {description && (
-            <AlertDescription id={ids?.description}>
+            <Alert.Description id={ids?.description}>
               {description}
-            </AlertDescription>
+            </Alert.Description>
           )}
         </Box>
       </Flex>
@@ -80,6 +71,6 @@ export function CustomToast(props) {
           className="dark-toggle"
         />
       )}
-    </Alert>
+    </Alert.Root>
   );
 }

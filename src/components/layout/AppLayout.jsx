@@ -1,4 +1,4 @@
-import { Box, Flex, IconButton } from "@chakra-ui/react";
+import { Steps, Box, Flex, IconButton } from "@chakra-ui/react";
 import Sidebar from "../sidebar/Sidebar";
 import CollapseIcon from "../common/icons/CollapseIcon";
 import { isTauri } from "../../utils/helpers/apiConfig";
@@ -16,19 +16,15 @@ const AppLayout = ({
             {/* Floating hamburger button for small screens */}
             {isSmallScreen && isCollapsed && (
                 <IconButton
-                    icon={<CollapseIcon />}
                     onClick={toggleSidebar}
                     position="fixed"
                     top="6"
                     left="6"
                     zIndex="101"
                     aria-label="Toggle sidebar"
-                    className="dark-toggle"
-                />
+                    className="dark-toggle"><CollapseIcon /></IconButton>
             )}
-
             <Sidebar {...sidebarProps} />
-
             <Box
                 flex="1"
                 ml={isSmallScreen ? "0" : isCollapsed ? "96px" : "236px"}

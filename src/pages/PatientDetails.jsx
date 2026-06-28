@@ -1,12 +1,14 @@
-import {
-    Box,
-    VStack,
-    useClipboard,
-    useDisclosure,
-    useToast,
-    Spinner,
-    Center,
-} from "@chakra-ui/react";
+/*
+ MIGRATION NOTE: The following Chakra UI hooks have been removed.
+ Please replace them with the suggested alternatives:
+
+//   - useClipboard: Use react-use: useCopyToClipboard
+
+ See: https://chakra-ui.com/docs/get-started/migration#hooks
+*/
+import { Steps, Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
+import { useClipboard } from "../utils/hooks/useClipboard";
+import { useToast } from "@/utils/useToastShim";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
@@ -66,12 +68,12 @@ const PatientDetails = ({
     const [wrapUpLoading, setWrapUpLoading] = useState(false);
     const [isWrapUpOpen, setIsWrapUpOpen] = useState(false);
     const {
-        isOpen: isDemographicsOpen,
+        open: isDemographicsOpen,
         onOpen: onOpenDemographics,
         onClose: onCloseDemographics,
     } = useDisclosure();
     const {
-        isOpen: isConsentOpen,
+        open: isConsentOpen,
         onOpen: onOpenConsent,
         onClose: onCloseConsent,
     } = useDisclosure();
@@ -604,7 +606,7 @@ const PatientDetails = ({
 
     return (
         <Box p={[2, 4, 5]} borderRadius="sm" w="100%" pb="100px">
-            <VStack spacing={[3, 4, 5]} align="stretch">
+            <VStack gap={[3, 4, 5]} align="stretch">
                 <PatientInfoBar patient={patient} onEdit={onOpenDemographics} />
 
                 <Summary
@@ -707,7 +709,6 @@ const PatientDetails = ({
                     onReasoningGenerated={handleReasoningGenerated}
                 />
             </VStack>
-
             {/* Scribe Pill Box - centered at bottom */}
             <ScribePillBox
                 isRecording={scribeControls.isRecording}
@@ -731,7 +732,6 @@ const PatientDetails = ({
                 onDownload={scribeControls.downloadLastRecording}
                 onDismiss={scribeControls.dismissSendError}
             />
-
             {/* Floating Action Menu - always expanded on right side */}
             <FloatingActionMenu
                 onOpenChat={handleOpenChat}
@@ -751,7 +751,6 @@ const PatientDetails = ({
                 showPreviousVisitDot={showPreviousVisitDot}
                 isEncounterSaved={Boolean(patient?.id)}
             />
-
             {/* Transcription Panel */}
             <TranscriptionPanel
                 isOpen={isOpen("transcription")}
@@ -768,7 +767,6 @@ const PatientDetails = ({
                 templateKey={currentTemplate?.template_key}
                 noteId={patient?.id}
             />
-
             {/* Document Panel */}
             <DocumentPanel
                 isOpen={isOpen("document")}
@@ -786,7 +784,6 @@ const PatientDetails = ({
                 docFileName={docFileName}
                 setDocFileName={setDocFileName}
             />
-
             {/* Previous Visit Panel */}
             <PreviousVisitPanel
                 isOpen={isOpen("previous-visit")}

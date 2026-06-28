@@ -1,12 +1,6 @@
 // Page component for configuring application settings.
-import {
-    Box,
-    Text,
-    VStack,
-    useToast,
-    Button,
-    useDisclosure,
-} from "@chakra-ui/react";
+import { Steps, Box, Text, VStack, Button, useDisclosure } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { useState, useEffect, useCallback } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
@@ -14,7 +8,7 @@ import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
 import LetterTemplatesPanel from "../components/settings/LetterTemplatesPanel";
 import SettingsActions from "../components/settings/SettingsActions";
-import { SPECIALTIES } from "../utils/constants/index.jsx";
+import { SPECIALTIES } from "../utils/constants";
 import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel";
 import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
 import { isChatEnabled } from "../utils/helpers/featureFlags";
@@ -371,7 +365,7 @@ const Settings = () => {
             <Text as="h2" mb="4">
                 Settings
             </Text>
-            <VStack spacing="5" align="stretch">
+            <VStack gap="5" align="stretch">
                 <UserSettingsPanel
                     isCollapsed={collapseStates.userSettings}
                     setIsCollapsed={() => toggleCollapse("userSettings")}
@@ -440,9 +434,8 @@ const Settings = () => {
                     onRestoreDefaults={handleRestoreDefaults}
                 />
             </VStack>
-
             <LocalModelManagerModal
-                isOpen={localModelsDisclosure.isOpen}
+                isOpen={localModelsDisclosure.open}
                 onClose={async () => {
                     localModelsDisclosure.onClose();
                     // Refresh model list based on provider

@@ -1,14 +1,6 @@
 import React, { useMemo, useState } from "react";
-import {
-    Flex,
-    Box,
-    Text,
-    HStack,
-    VStack,
-    Spinner,
-    Image,
-    useColorMode,
-} from "@chakra-ui/react";
+import { useColorMode } from "../../ui/color-mode";
+import { Steps, Flex, Box, Text, HStack, VStack, Spinner, Image } from "@chakra-ui/react";
 import { parseMessageContent } from "../../../utils/chat/messageParser";
 import { groupActivityTrace } from "../../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../../common/ActivityTraceBlock";
@@ -99,11 +91,11 @@ const ChatMessages = ({
                             ) : (
                                 <VStack
                                     align="start"
-                                    spacing={0.25}
+                                    gap={0.25}
                                     width="100%"
                                 >
                                     {message.role === "assistant" && (
-                                        <HStack spacing={1.5} mb={0.5}>
+                                        <HStack gap={1.5} mb={0.5}>
                                             <Image
                                                 src="/logo.webp"
                                                 alt="Phlox Assistant"
@@ -185,7 +177,7 @@ const ChatMessages = ({
                                         message.artifacts.length > 0 && (
                                             <VStack
                                                 align="start"
-                                                spacing={1}
+                                                gap={1}
                                                 mt={1}
                                                 width="100%"
                                             >

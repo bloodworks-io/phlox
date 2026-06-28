@@ -1,16 +1,6 @@
 import React, { useState } from "react";
-import {
-    Box,
-    Flex,
-    VStack,
-    HStack,
-    Text,
-    Spinner,
-    Badge,
-    Icon,
-    Image,
-    useColorMode,
-} from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { Steps, Box, Flex, VStack, HStack, Text, Spinner, Badge, Icon, Image } from "@chakra-ui/react";
 import { AttachmentIcon } from "../common/icons";
 import { FaFilePdf, FaFileImage } from "react-icons/fa";
 import MarkdownRenderer from "../common/MarkdownRenderer";
@@ -72,7 +62,7 @@ const DashboardMessageList = ({
 
     return (
         <VStack
-            spacing={2}
+            gap={2}
             align="stretch"
             w="100%"
             maxW="800px"
@@ -110,9 +100,9 @@ const DashboardMessageList = ({
                             {message.loading ? (
                                 <Spinner size="sm" />
                             ) : (
-                                <VStack align="start" spacing={0.5} width="100%">
+                                <VStack align="start" gap={0.5} width="100%">
                                     {message.role === "assistant" && (
-                                        <HStack spacing={2} mb={0.5}>
+                                        <HStack gap={2} mb={0.5}>
                                             <Image
                                                 src="/logo.webp"
                                                 alt="Phlox Logo"
@@ -132,7 +122,7 @@ const DashboardMessageList = ({
 
                                     {message.role === "user" &&
                                         message.attachments?.length > 0 && (
-                                            <HStack spacing={1} mb={1} flexWrap="wrap">
+                                            <HStack gap={1} mb={1} flexWrap="wrap">
                                                 {message.attachments.map((att, i) => {
                                                     const isPdf =
                                                         att.type === "application/pdf";
@@ -144,7 +134,7 @@ const DashboardMessageList = ({
                                                             key={i}
                                                             size="sm"
                                                             variant="subtle"
-                                                            colorScheme={
+                                                            colorPalette={
                                                                 isPdf
                                                                     ? "red"
                                                                     : isImage
@@ -193,7 +183,7 @@ const DashboardMessageList = ({
 
                                         return (
                                             <Box
-                                                fontSize="sm !important"
+                                                fontSize="sm"
                                                 key={`text-${messageIndex}-${blockIndex}`}
                                                 width="100%"
                                             >
@@ -220,7 +210,7 @@ const DashboardMessageList = ({
                                         message.artifacts.length > 0 && (
                                             <VStack
                                                 align="start"
-                                                spacing={1}
+                                                gap={1}
                                                 mt={1}
                                                 width="100%"
                                             >

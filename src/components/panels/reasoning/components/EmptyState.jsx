@@ -1,11 +1,11 @@
 import React from "react";
-import { VStack, Text, Button } from "@chakra-ui/react";
+import { Steps, VStack, Text, Button } from "@chakra-ui/react";
 import { FaAtom } from "react-icons/fa";
 
 // Empty state component shown when no reasoning has been generated yet
 export const EmptyState = ({ loading, status, onGenerate }) => {
     return (
-        <VStack spacing={3} p={4} flex="1" justify="center">
+        <VStack gap={3} p={4} flex="1" justify="center">
             <Text
                 textAlign="center"
                 fontSize="sm"
@@ -15,15 +15,12 @@ export const EmptyState = ({ loading, status, onGenerate }) => {
                 model's reasoning capabilities.
             </Text>
             <Button
-                leftIcon={<FaAtom />}
                 onClick={onGenerate}
-                isLoading={loading}
+                loading={loading}
                 loadingText={status || "Generating"}
                 size="sm"
-                className="green-button"
-            >
-                Generate Clinical Reasoning
-            </Button>
+                className="green-button"><FaAtom />Generate Clinical Reasoning
+                            </Button>
         </VStack>
     );
 };

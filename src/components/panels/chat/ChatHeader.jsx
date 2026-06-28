@@ -1,4 +1,4 @@
-import { Flex, Text, IconButton } from "@chakra-ui/react";
+import { Steps, Flex, Text, IconButton } from "@chakra-ui/react";
 import { ChatIcon, CloseIcon } from "../../common/icons";
 
 const ChatHeader = ({ title = "Chat With Phlox", onClose }) => {
@@ -6,7 +6,7 @@ const ChatHeader = ({ title = "Chat With Phlox", onClose }) => {
         <Flex
             align="center"
             justify="space-between"
-            p="4"
+            p="3"
             borderBottomWidth="1px"
             className="panel-header"
             flexShrink={0}

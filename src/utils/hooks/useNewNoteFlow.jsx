@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
-import { useDisclosure, useToast } from "@chakra-ui/react";
+import { Steps, useDisclosure } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 
 export const useNewNoteFlow = ({ createNewPatient, guardedNavigate }) => {
     const [newNoteKey, setNewNoteKey] = useState(0);
     const {
-        isOpen: isNewNoteOpen,
+        open: isNewNoteOpen,
         onOpen: onOpenNewNote,
         onClose: onCloseNewNote,
     } = useDisclosure();

@@ -1,4 +1,13 @@
+/*
+ MIGRATION NOTE: The following Chakra UI hooks have been removed.
+ Please replace them with the suggested alternatives:
+
+//   - useOutsideClick: Use react-use: useClickAway
+
+ See: https://chakra-ui.com/docs/get-started/migration#hooks
+*/
 import {
+    Steps,
     Box,
     VStack,
     Text,
@@ -7,11 +16,9 @@ import {
     Input,
     Image,
     Flex,
-    Divider,
-    useColorModeValue,
-    Tooltip,
-    useOutsideClick,
 } from "@chakra-ui/react";
+import { Tooltip } from "@/components/ui/tooltip";
+import { useColorModeValue } from "../ui/color-mode";
 import { useApiToast } from "../../utils/helpers/apiToastContext";
 import { useState, useEffect, useRef } from "react";
 import { FaPlus } from "react-icons/fa";
@@ -72,7 +79,7 @@ const Sidebar = ({
 }) => {
     // State declarations remain the same
     const [patients, setPatients] = useState([]);
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { open, onOpen, onClose } = useDisclosure();
     const [patientToDelete, setPatientToDelete] = useState(null);
     const [incompleteJobsCount, setIncompleteJobsCount] = useState(0);
     const toast = useApiToast();
@@ -88,14 +95,25 @@ const Sidebar = ({
     const sidebarRef = useRef(null);
 
     // Close sidebar when clicking outside on small screens
-    useOutsideClick({
-        ref: sidebarRef,
-        handler: () => {
-            if (isSmallScreen && !isCollapsed) {
+    // Close sidebar when clicking outside on small screens (replaces v2 useOutsideClick)
+    useEffect(() => {
+        const handler = (event) => {
+            if (
+                sidebarRef.current &&
+                !sidebarRef.current.contains(event.target) &&
+                isSmallScreen &&
+                !isCollapsed
+            ) {
                 toggleSidebar();
             }
-        },
-    });
+        };
+        document.addEventListener("mousedown", handler);
+        document.addEventListener("touchstart", handler);
+        return () => {
+            document.removeEventListener("mousedown", handler);
+            document.removeEventListener("touchstart", handler);
+        };
+    }, [isSmallScreen, isCollapsed, toggleSidebar]);
 
     // Function definitions remain the same
     const fetchPatients = async (date) => {
@@ -218,11 +236,9 @@ const Sidebar = ({
                     zIndex="10"
                 />
             )}
-
             {/* Small screen close button - only show when expanded */}
             {isSmallScreen && !isCollapsed && (
                 <IconButton
-                    icon={<CollapseIcon boxSize="20px" />}
                     onClick={toggleSidebar}
                     position="absolute"
                     top={isTauri() ? "32px" : "12px"}
@@ -234,14 +250,19 @@ const Sidebar = ({
                     variant="ghost"
                     color={labelColor}
                     _hover={{ bg: hoverColor }}
-                />
+                >
+                    <CollapseIcon boxSize="20px" />
+                </IconButton>
             )}
-
             {/* Regular toggle button - only show when expanded on larger screens */}
             {!isSmallScreen && !isCollapsed && (
-                <Tooltip label="Collapse Sidebar" placement="right">
+                <Tooltip
+                    content="Collapse Sidebar"
+                    positioning={{
+                        placement: "right",
+                    }}
+                >
                     <IconButton
-                        icon={<CollapseIcon boxSize="20px" />}
                         cursor={isCollapsed ? "pointer" : "w-resize"}
                         onClick={toggleSidebar}
                         position="absolute"
@@ -254,16 +275,13 @@ const Sidebar = ({
                         variant="ghost"
                         color={labelColor}
                         _hover={{ bg: hoverColor }}
-                    />
+                    >
+                        <CollapseIcon boxSize="20px" />
+                    </IconButton>
                 </Tooltip>
             )}
-
             {/* Logo Area */}
             <Box
-                as="button"
-                onClick={() =>
-                    isCollapsed ? toggleSidebar() : handleNavigation("/")
-                }
                 cursor={isCollapsed ? "e-resize" : "pointer"}
                 display="flex"
                 justifyContent="center"
@@ -278,40 +296,51 @@ const Sidebar = ({
                           : "5px"
                 }
                 mb={isCollapsed ? "10px" : "15px"}
+                asChild
             >
-                {isCollapsed ? (
-                    <Tooltip label="Expand Sidebar" placement="right">
-                        <Box
-                            position="relative"
-                            width="35px"
-                            height="35px"
-                            role="group"
+                <button
+                    onClick={() =>
+                        isCollapsed ? toggleSidebar() : handleNavigation("/")
+                    }
+                >
+                    {isCollapsed ? (
+                        <Tooltip
+                            content="Expand Sidebar"
+                            positioning={{
+                                placement: "right",
+                            }}
                         >
-                            <Image
-                                src="/logo.webp"
-                                alt="Logo"
-                                width="35px"
-                                position="absolute"
-                                transition="opacity 0.2s"
-                                _groupHover={{ opacity: 0 }}
-                            />
                             <Box
-                                position="absolute"
-                                top="0"
-                                left="0"
-                                opacity="0"
-                                transition="opacity 0.2s"
-                                _groupHover={{ opacity: 1 }}
+                                position="relative"
+                                width="35px"
+                                height="35px"
+                                role="group"
                             >
-                                <CollapseIcon boxSize="35px" />
+                                <Image
+                                    src="/logo.webp"
+                                    alt="Logo"
+                                    width="35px"
+                                    position="absolute"
+                                    transition="opacity 0.2s"
+                                    _groupHover={{ opacity: 0 }}
+                                />
+                                <Box
+                                    position="absolute"
+                                    top="0"
+                                    left="0"
+                                    opacity="0"
+                                    transition="opacity 0.2s"
+                                    _groupHover={{ opacity: 1 }}
+                                >
+                                    <CollapseIcon boxSize="35px" />
+                                </Box>
                             </Box>
-                        </Box>
-                    </Tooltip>
-                ) : (
-                    <Image src="/logo.webp" alt="Logo" width="100px" />
-                )}
+                        </Tooltip>
+                    ) : (
+                        <Image src="/logo.webp" alt="Logo" width="100px" />
+                    )}
+                </button>
             </Box>
-
             {/* Main Content Area - Restructured for better collapsed view */}
             <Flex
                 direction="column"
@@ -347,8 +376,10 @@ const Sidebar = ({
 
                     {/* New Note button - adjusted size for collapsed view */}
                     <Tooltip
-                        label="New Note"
-                        placement={isCollapsed ? "right" : "top"}
+                        content="New Note"
+                        positioning={{
+                            placement: isCollapsed ? "right" : "top",
+                        }}
                     >
                         <Box
                             w="100%"
@@ -403,7 +434,6 @@ const Sidebar = ({
                     />
                 </Box>
             </Flex>
-
             {/* Version info at bottom - adjusted for collapsed view */}
             <Box mt="2" pt="2" pb={isCollapsed ? "2" : "0"}>
                 <VersionInfo
@@ -412,10 +442,9 @@ const Sidebar = ({
                     toggleColorMode={toggleColorMode}
                 />
             </Box>
-
             {/* Delete confirmation modal */}
             <DeleteConfirmationModal
-                isOpen={isOpen}
+                isOpen={open}
                 onClose={onClose}
                 onDelete={confirmDelete}
                 patientName={patientToDelete?.name}

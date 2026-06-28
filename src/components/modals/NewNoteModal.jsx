@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
+import { useColorMode } from "../ui/color-mode";
 import {
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalCloseButton,
+    Steps,
     Box,
     Flex,
     HStack,
@@ -14,9 +10,10 @@ import {
     Text,
     Button,
     Avatar,
-    useColorMode,
-    useToast,
+    Dialog,
+    Portal,
 } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { motion } from "framer-motion";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
 import { colors } from "../../theme/colors";
@@ -158,200 +155,228 @@ const NewNoteModal = ({
                 : "Find an existing patient to start a new visit, or create a new patient record.";
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="lg">
-            <ModalOverlay />
-            <ModalContent className="modal-style">
-                <ModalHeader>
-                    <Heading
-                        as="h2"
-                        size="md"
-                        color={c.textPrimary}
-                        sx={{ fontFamily: '"Space Grotesk", sans-serif' }}
-                    >
-                        New encounter
-                    </Heading>
-                </ModalHeader>
-                <ModalCloseButton />
-                <ModalBody
-                    maxH="70vh"
-                    overflowY="auto"
-                    className="custom-scrollbar"
-                >
-                    <Text
-                        fontSize="sm"
-                        color={c.textSecondary}
-                        mb={4}
-                        lineHeight={1.5}
-                    >
-                        {subtitle}
-                    </Text>
+        <Dialog.Root
+            open={isOpen}
+            size="lg"
+            onOpenChange={(e) => {
+                if (!e.open) {
+                    onClose();
+                }
+            }}
+        >
+            <Portal>
+                <Dialog.Backdrop />
+                <Dialog.Positioner>
+                    <Dialog.Content className="modal-style">
+                        <Dialog.Header>
+                            <Heading
+                                as="h3"
+                                size="xl"
+                                color={c.textPrimary}
+                                css={{
+                                    fontFamily: '"Space Grotesk", sans-serif',
+                                }}
+                            >
+                                New encounter
+                            </Heading>
+                        </Dialog.Header>
+                        <Dialog.CloseTrigger />
+                        <Dialog.Body
+                            maxH="70vh"
+                            overflowY="auto"
+                            className="custom-scrollbar"
+                        >
+                            <Text
+                                fontSize="sm"
+                                color={c.textSecondary}
+                                mb={4}
+                                lineHeight={1.5}
+                            >
+                                {subtitle}
+                            </Text>
 
-                    <MotionBox
-                        key={view}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        {view === "choose" ? (
-                            <Flex gap={3} mb={2}>
-                                <PathHalf
-                                    icon={FaUserPlus}
-                                    title="New patient"
-                                    subtitle="Create a new record"
-                                    accent={c.primaryButton}
-                                    c={c}
-                                    tileBg={tileBg}
-                                    onClick={handleNewPatient}
-                                />
-                                <PathHalf
-                                    icon={FaSearch}
-                                    title="Search"
-                                    subtitle="Existing patient"
-                                    accent={c.secondaryButton}
-                                    c={c}
-                                    tileBg={tileBg}
-                                    onClick={() => setView("search")}
-                                />
-                            </Flex>
-                        ) : view === "search" ? (
-                            <Box>
-                                <Flex
-                                    as="form"
-                                    onSubmit={handleFind}
-                                    alignItems="center"
-                                >
-                                    <UrSearchField
-                                        value={query}
-                                        onChange={(e) =>
-                                            setQuery(e.target.value)
-                                        }
-                                        onSearch={handleFind}
-                                        isLoading={isSearchLoading}
-                                        autoFocus
-                                        placeholder="UR number or name"
-                                    />
-                                </Flex>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="md"
-                                    mt={3}
-                                    borderRadius="2xl !important"
-                                    leftIcon={<FaArrowLeft />}
-                                    className="switch-mode"
-                                    sx={btnSx}
-                                    onClick={() => setView("choose")}
-                                >
-                                    Back
-                                </Button>
-                            </Box>
-                        ) : view === "results" ? (
-                            <Box>
-                                <VStack spacing={3} align="stretch">
-                                    {results.map((cand) => (
-                                        <Flex
-                                            key={cand.ur_number || cand.id}
-                                            align="center"
-                                            justify="space-between"
-                                            p={3}
-                                            borderRadius="lg"
-                                            bg={tileBg}
-                                        >
-                                            <HStack spacing={3} minW="0">
-                                                <Avatar
-                                                    name={
-                                                        cand.first_name ||
-                                                        cand.last_name
-                                                            ? `${cand.first_name || ""} ${
-                                                                  cand.last_name ||
-                                                                  ""
-                                                              }`.trim()
-                                                            : undefined
+                            <MotionBox
+                                key={view}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {view === "choose" ? (
+                                    <Flex gap={3} mb={2}>
+                                        <PathHalf
+                                            icon={FaUserPlus}
+                                            title="New patient"
+                                            subtitle="Create a new record"
+                                            accent={c.primaryButton}
+                                            c={c}
+                                            tileBg={tileBg}
+                                            onClick={handleNewPatient}
+                                        />
+                                        <PathHalf
+                                            icon={FaSearch}
+                                            title="Search"
+                                            subtitle="Existing patient"
+                                            accent={c.secondaryButton}
+                                            c={c}
+                                            tileBg={tileBg}
+                                            onClick={() => setView("search")}
+                                        />
+                                    </Flex>
+                                ) : view === "search" ? (
+                                    <Box>
+                                        <Flex alignItems="center" asChild>
+                                            <form onSubmit={handleFind}>
+                                                <UrSearchField
+                                                    value={query}
+                                                    onChange={(e) =>
+                                                        setQuery(e.target.value)
                                                     }
-                                                    size="sm"
-                                                    bg={c.surface}
-                                                    color={c.textPrimary}
+                                                    onSearch={handleFind}
+                                                    isLoading={isSearchLoading}
+                                                    autoFocus
+                                                    placeholder="UR number or name"
                                                 />
-                                                <Box minW="0">
-                                                    <Text
-                                                        fontWeight="600"
-                                                        color={c.textPrimary}
-                                                        noOfLines={1}
-                                                    >
-                                                        {cand.name ||
-                                                            "Unnamed patient"}
-                                                    </Text>
-                                                    <Text
-                                                        fontSize="xs"
-                                                        color={c.textSecondary}
-                                                        noOfLines={1}
-                                                    >
-                                                        {candidateMeta(cand) ||
-                                                            "No demographics on file"}
-                                                    </Text>
-                                                    {cand.encounter_date && (
-                                                        <Text
-                                                            fontSize="xs"
+                                            </form>
+                                        </Flex>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="md"
+                                            mt={3}
+                                            borderRadius="2xl"
+                                            className="switch-mode"
+                                            sx={btnSx}
+                                            onClick={() => setView("choose")}
+                                        >
+                                            <FaArrowLeft />
+                                            Back
+                                        </Button>
+                                    </Box>
+                                ) : view === "results" ? (
+                                    <Box>
+                                        <VStack gap={3} align="stretch">
+                                            {results.map((cand) => (
+                                                <Flex
+                                                    key={
+                                                        cand.ur_number ||
+                                                        cand.id
+                                                    }
+                                                    align="center"
+                                                    justify="space-between"
+                                                    p={3}
+                                                    borderRadius="lg"
+                                                    bg={tileBg}
+                                                >
+                                                    <HStack gap={3} minW="0">
+                                                        <Avatar.Root
+                                                            size="sm"
+                                                            bg={c.surface}
                                                             color={
-                                                                c.textSecondary
+                                                                c.textPrimary
                                                             }
                                                         >
-                                                            Last seen{" "}
-                                                            {formatDate(
-                                                                cand.encounter_date,
+                                                            <Avatar.Fallback
+                                                                name={
+                                                                    cand.first_name ||
+                                                                    cand.last_name
+                                                                        ? `${cand.first_name || ""} ${
+                                                                              cand.last_name ||
+                                                                              ""
+                                                                          }`.trim()
+                                                                        : undefined
+                                                                }
+                                                            />
+                                                        </Avatar.Root>
+                                                        <Box minW="0">
+                                                            <Text
+                                                                fontWeight="600"
+                                                                color={
+                                                                    c.textPrimary
+                                                                }
+                                                                lineClamp={1}
+                                                            >
+                                                                {cand.name ||
+                                                                    "Unnamed patient"}
+                                                            </Text>
+                                                            <Text
+                                                                fontSize="xs"
+                                                                color={
+                                                                    c.textSecondary
+                                                                }
+                                                                lineClamp={1}
+                                                            >
+                                                                {candidateMeta(
+                                                                    cand,
+                                                                ) ||
+                                                                    "No demographics on file"}
+                                                            </Text>
+                                                            {cand.encounter_date && (
+                                                                <Text
+                                                                    fontSize="xs"
+                                                                    color={
+                                                                        c.textSecondary
+                                                                    }
+                                                                >
+                                                                    Last seen{" "}
+                                                                    {formatDate(
+                                                                        cand.encounter_date,
+                                                                    )}
+                                                                </Text>
                                                             )}
-                                                        </Text>
-                                                    )}
-                                                </Box>
-                                            </HStack>
-                                            <Button
-                                                size="sm"
-                                                isLoading={
-                                                    confirmingId ===
-                                                    (cand.ur_number || cand.id)
-                                                }
-                                                isDisabled={
-                                                    confirmingId !== null
-                                                }
-                                                className="green-button"
-                                                sx={btnSx}
-                                                onClick={() =>
-                                                    handleConfirm(cand)
-                                                }
-                                            >
-                                                Start visit
-                                            </Button>
-                                        </Flex>
-                                    ))}
-                                </VStack>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="md"
-                                    mt={3}
-                                    borderRadius="2xl !important"
-                                    leftIcon={<FaArrowLeft />}
-                                    className="switch-mode"
-                                    sx={btnSx}
-                                    onClick={() => setView("search")}
-                                >
-                                    Back
-                                </Button>
-                            </Box>
-                        ) : (
-                            <DemographicsForm
-                                patient={draftPatient}
-                                setPatient={setDraftPatient}
-                                onSaved={commitNewPatient}
-                                onCancel={() => setView("choose")}
-                                cancelLabel="Back"
-                                cancelIcon={<FaArrowLeft />}
-                            />
-                        )}
-                    </MotionBox>
-                </ModalBody>
-            </ModalContent>
-        </Modal>
+                                                        </Box>
+                                                    </HStack>
+                                                    <Button
+                                                        size="sm"
+                                                        loading={
+                                                            confirmingId ===
+                                                            (cand.ur_number ||
+                                                                cand.id)
+                                                        }
+                                                        disabled={
+                                                            confirmingId !==
+                                                            null
+                                                        }
+                                                        className="green-button"
+                                                        sx={btnSx}
+                                                        onClick={() =>
+                                                            handleConfirm(cand)
+                                                        }
+                                                    >
+                                                        Start visit
+                                                    </Button>
+                                                </Flex>
+                                            ))}
+                                        </VStack>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="md"
+                                            mt={3}
+                                            borderRadius="2xl"
+                                            className="switch-mode"
+                                            sx={btnSx}
+                                            onClick={() => setView("search")}
+                                        >
+                                            <FaArrowLeft />
+                                            Back
+                                        </Button>
+                                    </Box>
+                                ) : (
+                                    <DemographicsForm
+                                        patient={draftPatient}
+                                        setPatient={setDraftPatient}
+                                        onSaved={commitNewPatient}
+                                        onCancel={() => setView("choose")}
+                                        cancelLabel="Back"
+                                        cancelIcon={<FaArrowLeft />}
+                                    />
+                                )}
+                            </MotionBox>
+                        </Dialog.Body>
+                    </Dialog.Content>
+                </Dialog.Positioner>
+            </Portal>
+        </Dialog.Root>
     );
 };
 

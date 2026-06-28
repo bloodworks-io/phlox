@@ -9,6 +9,7 @@ export const baseStyles = (props) => ({
             props.colorMode === "light"
                 ? colors.light.textPrimary
                 : colors.dark.textPrimary,
+        fontFamily: '"Roboto", sans-serif',
     },
     ".headings": {
         color:

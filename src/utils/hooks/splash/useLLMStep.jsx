@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@chakra-ui/react";
+import { Steps } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLLMStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
 import { isTauri } from "../../helpers/apiConfig";
 import { localModelApi } from "../../api/localModelApi";
-import { downloadLlmModel as downloadLlmService } from "../../services/localModelService.jsx";
+import { downloadLlmModel as downloadLlmService } from "../../services/localModelService";
 import { useDebounce } from "../useDebounce";
 
 export const useLLMStep = (currentStep) => {

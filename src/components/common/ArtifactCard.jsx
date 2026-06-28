@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, HStack, Text, Button, Link } from "@chakra-ui/react";
+import { Steps, Box, HStack, Text, Button, Link } from "@chakra-ui/react";
 import { ExternalLinkIcon, DownloadIcon } from "./icons";
 import { FaFilePdf, FaFileImage, FaFile } from "react-icons/fa";
 
@@ -29,40 +29,26 @@ const ArtifactCard = ({ artifact }) => {
             _dark={{ borderColor: "gray.600", bg: "gray.750" }}
             maxW="320px"
         >
-            <HStack spacing={2} mb={1}>
+            <HStack gap={2} mb={1}>
                 <Icon size="1.2em" color="gray.500" />
                 <Text fontSize="xs" fontWeight="semibold" isTruncated flex={1}>
                     {filename}
                 </Text>
             </HStack>
-            <HStack spacing={2} justify="space-between">
+            <HStack gap={2} justify="space-between">
                 <Text fontSize="xs" color="gray.500">
                     {mime_type} · {formatFileSize(size)}
                 </Text>
-                <HStack spacing={1}>
+                <HStack gap={1}>
                     {mime_type === "application/pdf" && (
-                        <Link href={url} isExternal>
-                            <Button
-                                size="xs"
-                                variant="ghost"
-                                colorScheme="blue"
-                                leftIcon={<ExternalLinkIcon />}
-                                aria-label="View file"
-                            >
-                                View
-                            </Button>
+                        <Link href={url} target='_blank' rel='noopener noreferrer'>
+                            <Button size="xs" variant="ghost" colorPalette="blue" aria-label="View file"><ExternalLinkIcon />View
+                                                            </Button>
                         </Link>
                     )}
                     <Link href={url} download>
-                        <Button
-                            size="xs"
-                            variant="ghost"
-                            colorScheme="blue"
-                            leftIcon={<DownloadIcon />}
-                            aria-label="Download file"
-                        >
-                            Save
-                        </Button>
+                        <Button size="xs" variant="ghost" colorPalette="blue" aria-label="Download file"><DownloadIcon />Save
+                                                    </Button>
                     </Link>
                 </HStack>
             </HStack>

@@ -1,7 +1,7 @@
 import {
+  Steps,
   VStack,
   HStack,
-  Tooltip,
   Flex,
   Spinner,
   Text,
@@ -12,6 +12,7 @@ import {
   Button,
   Badge,
 } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { InfoIcon } from "../../icons";
 import { ChevronLeftIcon, ChevronRightIcon } from "../../icons";
 import { motion } from "framer-motion";
@@ -106,15 +107,14 @@ const WhisperModelCard = ({
       flexDirection="column"
       justifyContent="space-between"
     >
-      <HStack position="absolute" top="-2" right="2" spacing={1}>
+      <HStack position="absolute" top="-2" right="2" gap={1}>
         {badge && (
-          <Badge colorScheme={badge.color} fontSize="xs">
+          <Badge colorPalette={badge.color} fontSize="xs">
             {badge.text}
           </Badge>
         )}
       </HStack>
-
-      <VStack align="start" spacing={1} flex={1}>
+      <VStack align="start" gap={1} flex={1}>
         <Text fontSize="sm" fontWeight="bold">
           {model.name}
         </Text>
@@ -125,7 +125,6 @@ const WhisperModelCard = ({
           {model.size_mb}MB
         </Text>
       </VStack>
-
       {isDownloading && (
         <Box mt={2} w="full">
           <Flex justify="space-between" mb={1}>
@@ -136,16 +135,13 @@ const WhisperModelCard = ({
               {downloadProgress.toFixed(0)}%
             </Text>
           </Flex>
-          <Progress
-            value={downloadProgress}
-            colorScheme="blue"
-            size="sm"
-            hasStripe
-            isAnimated
-          />
+          <Progress.Root value={downloadProgress} colorPalette="blue" size="sm" striped animated>
+            <Progress.Track>
+              <Progress.Range />
+            </Progress.Track>
+          </Progress.Root>
         </Box>
       )}
-
       {!isDownloading && isDownloaded && (
         <Button
           size="xs"
@@ -161,7 +157,6 @@ const WhisperModelCard = ({
           {isSelected ? "Selected" : "Select"}
         </Button>
       )}
-
       {!isDownloading && !isDownloaded && (
         <Button
           size="xs"
@@ -169,9 +164,9 @@ const WhisperModelCard = ({
           onClick={onDownload}
           className="switch-mode"
           mt={2}
-          sx={{
+          css={{
             fontFamily: '"Space Grotesk", sans-serif',
-            fontWeight: "600",
+            fontWeight: "600"
           }}
         >
           Download
@@ -215,10 +210,10 @@ export const TranscriptionStep = ({
       initial="hidden"
       animate="visible"
       exit="exit"
-      spacing={6}
+      gap={6}
       w="100%"
     >
-      <VStack spacing={4} w="100%">
+      <VStack gap={4} w="100%">
         <Box w="100%" p={4} borderRadius="md" className="floating-main">
           <Text fontSize="sm" color={currentColors.textSecondary} mb={2}>
             <strong>Note:</strong> Voice transcription is required for
@@ -236,20 +231,22 @@ export const TranscriptionStep = ({
                 <Text
                   fontSize="sm"
                   color={currentColors.textSecondary}
-                  sx={{
+                  css={{
                     fontFamily: '"Roboto", sans-serif',
-                    fontWeight: "500",
+                    fontWeight: "500"
                   }}
                 >
                   Whisper Model
                 </Text>
                 <Tooltip
-                  label="The Whisper model to use for speech-to-text. Base is recommended for most use cases."
-                  placement="top"
-                  hasArrow
+                  content="The Whisper model to use for speech-to-text. Base is recommended for most use cases."
+                  showArrow
                   fontSize="xs"
                   bg="gray.700"
                   color="white"
+                  positioning={{
+                    placement: "top"
+                  }}
                 >
                   <InfoIcon boxSize={3} color={currentColors.textSecondary} />
                 </Tooltip>
@@ -309,20 +306,22 @@ export const TranscriptionStep = ({
               <Text
                 fontSize="sm"
                 color={currentColors.textSecondary}
-                sx={{
+                css={{
                   fontFamily: '"Roboto", sans-serif',
-                  fontWeight: "500",
+                  fontWeight: "500"
                 }}
               >
                 Whisper Base URL
               </Text>
               <Tooltip
-                label="The URL where your Whisper transcription server is running."
-                placement="top"
-                hasArrow
+                content="The URL where your Whisper transcription server is running."
+                showArrow
                 fontSize="xs"
                 bg="gray.700"
                 color="white"
+                positioning={{
+                  placement: "top"
+                }}
               >
                 <InfoIcon boxSize={3} color={currentColors.textSecondary} />
               </Tooltip>
@@ -351,20 +350,22 @@ export const TranscriptionStep = ({
                   <Text
                     fontSize="sm"
                     color={currentColors.textSecondary}
-                    sx={{
+                    css={{
                       fontFamily: '"Roboto", sans-serif',
-                      fontWeight: "500",
+                      fontWeight: "500"
                     }}
                   >
                     Whisper Model
                   </Text>
                   <Tooltip
-                    label="The Whisper model to use for speech-to-text. Common options include whisper-1, base, small, medium, or large."
-                    placement="top"
-                    hasArrow
+                    content="The Whisper model to use for speech-to-text. Common options include whisper-1, base, small, medium, or large."
+                    showArrow
                     fontSize="xs"
                     bg="gray.700"
-                        color="white"
+                    color="white"
+                        positioning={{
+                          placement: "top"
+                        }}
                       >
                     <InfoIcon boxSize={3} color={currentColors.textSecondary} />
                   </Tooltip>
@@ -420,7 +421,9 @@ export const TranscriptionStep = ({
                     <Text
                       fontSize="sm"
                       color={currentColors.textSecondary}
-                      sx={{ fontFamily: '"Roboto", sans-serif' }}
+                      css={{
+                        fontFamily: '"Roboto", sans-serif'
+                      }}
                     >
                       Loading Whisper models...
                     </Text>

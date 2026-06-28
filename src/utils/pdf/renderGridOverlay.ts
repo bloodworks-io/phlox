@@ -13,7 +13,7 @@
  * @param {number} options.pageNumber
  * @returns {string} Base64 data URL of the composite image
  */
-export function renderRulerOverlay(pdfCanvas, options = {}) {
+export function renderRulerOverlay(pdfCanvas, options: Record<string, any> = {}) {
     const {
         step = 10,
         color = "rgba(0, 0, 255, 0.08)",

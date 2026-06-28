@@ -1,14 +1,15 @@
 import {
+    Steps,
     Box,
     Flex,
     Avatar,
     Text,
     IconButton,
-    Tooltip,
-    useColorModeValue,
-    Collapse,
+    Collapsible,
     VStack,
 } from "@chakra-ui/react";
+import { Tooltip } from "@/components/ui/tooltip";
+import { useColorModeValue } from "../ui/color-mode";
 import { useState } from "react";
 import { DeleteIcon } from "../common/icons";
 import { SectionHeader, getInitials, getAvatarColor } from "./SidebarHelpers";
@@ -37,126 +38,148 @@ const SidebarPatientList = ({
                     }
                 />
             )}
-
             {/* Patient List */}
-            <Collapse in={isCollapsed || !isPatientsCollapsed} animateOpacity>
-                <Box w="100%" mt={isCollapsed ? "0" : "1"}>
-                    {patients.length > 0 ? (
-                        <VStack
-                            spacing={isCollapsed ? "3" : "2"}
-                            align="stretch"
-                            w="100%"
-                            py={isCollapsed ? "2" : "0"}
-                        >
-                            {patients.map((patient) => {
-                                const initials = getInitials(patient.name);
-                                const avatarBg = getAvatarColor(patient.name);
-                                const isHovered =
-                                    hoveredPatientId === patient.id;
+            <Collapsible.Root open={isCollapsed || !isPatientsCollapsed}>
+                <Collapsible.Content>
+                    <Box w="100%" mt={isCollapsed ? "0" : "1"}>
+                        {patients.length > 0 ? (
+                            <VStack
+                                gap={isCollapsed ? "3" : "2"}
+                                align="stretch"
+                                w="100%"
+                                py={isCollapsed ? "2" : "0"}
+                            >
+                                {patients.map((patient) => {
+                                    const initials = getInitials(patient.name);
+                                    const avatarBg = getAvatarColor(
+                                        patient.name,
+                                    );
+                                    const isHovered =
+                                        hoveredPatientId === patient.id;
 
-                                return (
-                                    <Tooltip
-                                        key={patient.id}
-                                        label={isCollapsed ? patient.name : ""}
-                                        placement="right"
-                                        isDisabled={!isCollapsed}
-                                    >
-                                        <Flex
-                                            w="100%"
-                                            align="center"
-                                            p="2"
-                                            borderRadius="lg"
-                                            role="group"
-                                            cursor="pointer"
-                                            justifyContent={
-                                                isCollapsed
-                                                    ? "center"
-                                                    : "space-between"
+                                    return (
+                                        <Tooltip
+                                            key={patient.id}
+                                            content={
+                                                isCollapsed ? patient.name : ""
                                             }
-                                            onClick={() =>
-                                                onSelectPatient(patient)
-                                            }
-                                            onMouseEnter={() =>
-                                                setHoveredPatientId(patient.id)
-                                            }
-                                            onMouseLeave={() =>
-                                                setHoveredPatientId(null)
-                                            }
-                                            bg={
-                                                isHovered
-                                                    ? "rgba(184, 192, 224, 0.1)"
-                                                    : "transparent !important"
-                                            }
-                                            transition="all 0.2s"
-                                            className="patient-list-item"
+                                            disabled={!isCollapsed}
+                                            positioning={{
+                                                placement: "right",
+                                            }}
                                         >
-                                            <Flex align="center">
-                                                <Avatar
-                                                    name={patient.name}
-                                                    getInitials={() => initials}
-                                                    bg={avatarBg}
-                                                    color="white"
-                                                    size={
-                                                        isCollapsed
-                                                            ? "sm"
-                                                            : "sm"
-                                                    }
-                                                    mr={isCollapsed ? "0" : "3"}
-                                                />
+                                            <Flex
+                                                w="100%"
+                                                align="center"
+                                                p="2"
+                                                borderRadius="lg"
+                                                role="group"
+                                                cursor="pointer"
+                                                justifyContent={
+                                                    isCollapsed
+                                                        ? "center"
+                                                        : "space-between"
+                                                }
+                                                onClick={() =>
+                                                    onSelectPatient(patient)
+                                                }
+                                                onMouseEnter={() =>
+                                                    setHoveredPatientId(
+                                                        patient.id,
+                                                    )
+                                                }
+                                                onMouseLeave={() =>
+                                                    setHoveredPatientId(null)
+                                                }
+                                                bg={
+                                                    isHovered
+                                                        ? "rgba(184, 192, 224, 0.1)"
+                                                        : "transparent"
+                                                }
+                                                transition="all 0.2s"
+                                                className="patient-list-item"
+                                            >
+                                                <Flex align="center">
+                                                    <Avatar.Root
+                                                        bg={avatarBg}
+                                                        color="white"
+                                                        size={
+                                                            isCollapsed
+                                                                ? "xs"
+                                                                : "xs"
+                                                        }
+                                                        mr={
+                                                            isCollapsed
+                                                                ? "0"
+                                                                : "3"
+                                                        }
+                                                    >
+                                                        <Avatar.Fallback>
+                                                            {initials}
+                                                        </Avatar.Fallback>
+                                                    </Avatar.Root>
 
-                                                {!isCollapsed && (
-                                                    <Box>
-                                                        <Text
-                                                            fontSize="sm"
-                                                            fontWeight="500"
-                                                            noOfLines={1}
-                                                        >
-                                                            {patient.name}
-                                                        </Text>
-                                                        <Text
-                                                            fontSize="xs"
-                                                            color={labelColor}
-                                                        >
-                                                            UR:{" "}
-                                                            {patient.ur_number}
-                                                        </Text>
-                                                    </Box>
+                                                    {!isCollapsed && (
+                                                        <Box>
+                                                            <Text
+                                                                fontSize="sm"
+                                                                fontWeight="500"
+                                                                lineClamp={1}
+                                                            >
+                                                                {patient.name}
+                                                            </Text>
+                                                            <Text
+                                                                fontSize="xs"
+                                                                color={
+                                                                    labelColor
+                                                                }
+                                                            >
+                                                                UR:{" "}
+                                                                {
+                                                                    patient.ur_number
+                                                                }
+                                                            </Text>
+                                                        </Box>
+                                                    )}
+                                                </Flex>
+
+                                                {!isCollapsed && isHovered && (
+                                                    <IconButton
+                                                        size="xs"
+                                                        aria-label="Delete patient"
+                                                        variant="ghost"
+                                                        colorPalette="red"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onDeletePatient(
+                                                                patient,
+                                                            );
+                                                        }}
+                                                    >
+                                                        <DeleteIcon />
+                                                    </IconButton>
                                                 )}
                                             </Flex>
-
-                                            {!isCollapsed && isHovered && (
-                                                <IconButton
-                                                    icon={<DeleteIcon />}
-                                                    size="xs"
-                                                    aria-label="Delete patient"
-                                                    variant="ghost"
-                                                    colorScheme="red"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDeletePatient(
-                                                            patient,
-                                                        );
-                                                    }}
-                                                />
-                                            )}
-                                        </Flex>
-                                    </Tooltip>
-                                );
-                            })}
-                        </VStack>
-                    ) : (
-                        <Text
-                            fontSize="sm"
-                            color={labelColor}
-                            textAlign={isCollapsed ? "center" : "left"}
-                            px="2"
-                            mt={2}
-                        >
-                            {isCollapsed ? "No pts" : "No patients available"}
-                        </Text>
-                    )}
-                </Box>
-            </Collapse>
+                                        </Tooltip>
+                                    );
+                                })}
+                            </VStack>
+                        ) : (
+                            <Text
+                                fontSize="sm"
+                                color={labelColor}
+                                textAlign={isCollapsed ? "center" : "left"}
+                                px="2"
+                                mt={2}
+                            >
+                                {isCollapsed
+                                    ? "No pts"
+                                    : "No patients available"}
+                            </Text>
+                        )}
+                    </Box>
+                </Collapsible.Content>
+            </Collapsible.Root>
         </Box>
     );
 };

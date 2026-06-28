@@ -1,21 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
+import { useColorMode } from "../ui/color-mode";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Box,
-  Button,
-  Heading,
-  HStack,
-  VStack,
-  useToast,
-  useColorMode,
-  Text,
-  Input,
-  Flex,
-  Image,
-  Icon,
-  Alert,
-  AlertIcon,
-} from "@chakra-ui/react";
+import { Steps, Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
@@ -157,13 +144,12 @@ const EncryptionUnlock = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-
       <MotionBox
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl !important"
+        borderRadius="2xl"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
@@ -183,7 +169,7 @@ const EncryptionUnlock = ({ onComplete }) => {
           zIndex="0"
         />
 
-        <VStack spacing={6} align="stretch" position="relative" zIndex="1">
+        <VStack gap={6} align="stretch" position="relative" zIndex="1">
           <MotionFlex
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -197,12 +183,12 @@ const EncryptionUnlock = ({ onComplete }) => {
               as="h1"
               textAlign="center"
               color={currentColors.textPrimary}
-              sx={{
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
                 fontWeight: "700",
                 lineHeight: "1.2",
-                marginBottom: "0.5rem",
+                marginBottom: "0.5rem"
               }}
             >
               Unlock Your Data
@@ -219,16 +205,16 @@ const EncryptionUnlock = ({ onComplete }) => {
           </MotionFlex>
 
           {attempts > 0 && lastWasPassphrase && (
-            <Alert status="warning" borderRadius="md" fontSize="sm">
-              <AlertIcon />
+            <Alert.Root status="warning" borderRadius="md" fontSize="sm">
+              <Alert.Indicator />
               <Text fontSize="xs">
                 Incorrect passphrase. Please try again. ({attempts} attempt
                 {attempts > 1 ? "s" : ""})
               </Text>
-            </Alert>
+            </Alert.Root>
           )}
 
-          <VStack spacing={4} align="stretch">
+          <VStack gap={4} align="stretch">
             <Box>
               <Text
                 mb={1}
@@ -270,15 +256,15 @@ const EncryptionUnlock = ({ onComplete }) => {
 
           <Button
             onClick={handleSubmit}
-            isLoading={isSubmitting}
+            loading={isSubmitting}
             loadingText="Unlocking..."
-            isDisabled={passphrase.length < 1}
-            borderRadius="2xl !important"
+            disabled={passphrase.length < 1}
+            borderRadius="2xl"
             size="lg"
             className="switch-mode"
-            sx={{
+            css={{
               fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: "600",
+              fontWeight: "600"
             }}
             mt={2}
           >

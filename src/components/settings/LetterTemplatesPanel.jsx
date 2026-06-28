@@ -1,14 +1,5 @@
-import {
-  Box,
-  Flex,
-  IconButton,
-  Text,
-  Collapse,
-  Button,
-  VStack,
-  HStack,
-  useToast,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -113,76 +104,67 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
       <Flex align="center" justify="space-between">
         <Flex align="center">
           <IconButton
-            icon={isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
             onClick={() => setIsCollapsed(!isCollapsed)}
             aria-label="Toggle collapse"
             variant="outline"
             size="sm"
             mr="2"
-            className="collapse-toggle"
-          />
+            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
           <FaEnvelopeOpenText size="1.2em" style={{ marginRight: "5px" }} />
           <Text as="h3">Letter Templates</Text>
         </Flex>
         <HStack>
           <Button
-            leftIcon={<AddIcon />}
             onClick={() => {
               setEditTemplate(null);
               setIsEditing(true);
             }}
-            className="grey-button"
-          >
-            New Template
-          </Button>
+            className="grey-button"><AddIcon />New Template
+                      </Button>
           <Button onClick={handleReset} className="red-button">
             Reset to Defaults
           </Button>
         </HStack>
       </Flex>
-
-      <Collapse in={!isCollapsed} animateOpacity>
-        <VStack spacing={4} mt={4}>
-          {letterTemplates.map((template) => (
-            <Box
-              key={template.id}
-              p={4}
-              border="1px"
-              borderColor="gray.200"
-              borderRadius="sm"
-              width="100%"
-            >
-              <Flex justify="space-between" align="center">
-                <Text fontWeight="bold">{template.name}</Text>
-                <HStack>
-                  <IconButton
-                    size="sm"
-                    icon={<EditIcon />}
-                    onClick={() => {
-                      setEditTemplate(template);
-                      setIsEditing(true);
-                    }}
-                    aria-label="Edit"
-                  />
-                  {template.name !== "Dictation" && (
+      <Collapsible.Root open={!isCollapsed}>
+        <Collapsible.Content>
+          <VStack gap={4} mt={4}>
+            {letterTemplates.map((template) => (
+              <Box
+                key={template.id}
+                p={4}
+                border="1px"
+                borderColor="gray.200"
+                borderRadius="sm"
+                width="100%"
+              >
+                <Flex justify="space-between" align="center">
+                  <Text fontWeight="bold">{template.name}</Text>
+                  <HStack>
                     <IconButton
                       size="sm"
-                      icon={<DeleteIcon />}
-                      onClick={() => handleDelete(template.id)}
-                      colorScheme="red"
-                      aria-label="Delete"
-                    />
-                  )}
-                </HStack>
-              </Flex>
-              <Text mt={2} fontSize="sm" color="gray.600">
-                {template.instructions}
-              </Text>
-            </Box>
-          ))}
-        </VStack>
-      </Collapse>
-
+                      onClick={() => {
+                        setEditTemplate(template);
+                        setIsEditing(true);
+                      }}
+                      aria-label="Edit"><EditIcon /></IconButton>
+                    {template.name !== "Dictation" && (
+                      <IconButton
+                        size="sm"
+                        onClick={() => handleDelete(template.id)}
+                        colorPalette="red"
+                        aria-label="Delete"><DeleteIcon /></IconButton>
+                    )}
+                  </HStack>
+                </Flex>
+                <Text mt={2} fontSize="sm" color="gray.600">
+                  {template.instructions}
+                </Text>
+              </Box>
+            ))}
+          </VStack>
+        </Collapsible.Content>
+      </Collapsible.Root>
       {/* Edit/New Template Modal */}
       <LetterTemplateEditModal
         isOpen={isEditing}

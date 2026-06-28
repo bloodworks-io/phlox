@@ -1,13 +1,3 @@
-/**
- * Performance calculation utilities for Apple Silicon LLM models.
- *
- * Baseline: M3 Base with 8B model = ~60s for 10min equivalent workload.
- *
- * Formula accounts for:
- * - M-series generation (M1-M4+): ~20% improvement per generation
- * - Chip tier (Base/Pro/Max/Ultra): Core count multiplier
- * - Model size: 0.75x time for half the parameters
- */
 
 /**
  * Calculate LLM performance estimate for Apple Silicon.
@@ -40,16 +30,10 @@ export function calculateLLMPerformance(
   const tMult = tierMultipliers[tier] || 1.0;
   const baseSpeedFactor = tMult * gMult;
 
-  // Model size scaling: 0.75x time for half the parameters
-  // This means time scales with model size - smaller models are faster
-  // Baseline is 8B = 60s, so we scale time relative to that
   const baselineParams = 8.0;
-  // Use active parameters if available (e.g., qwen3-30b has 3B active)
   const effectiveParams = activeParamsBillions || paramsBillions;
   // Calculate how many times larger/smaller than baseline
   const sizeRatio = effectiveParams / baselineParams;
-  // Apply scaling: each 2x size = 1/0.75 time multiplier (slower)
-  // So modelSizeFactor = (sizeRatio ^ log2(1/0.75)) = sizeRatio ^ 0.415
   const scalingExponent = Math.log2(1 / 0.75);
   const modelSizeFactor = Math.pow(sizeRatio, scalingExponent);
 
@@ -83,22 +67,6 @@ export function parseAppleSilicon(cpuBrand) {
 
 /**
  * Get smart LLM model recommendations based on system specifications.
- *
- * Uses RAM tiers to filter appropriate models:
- * - Tier 1: 8-16GB RAM (base Macs) - smaller models
- * - Tier 2: 16-32GB RAM (mid-high-end Macs) - medium models
- * - Tier 3: 32GB+ RAM (workstations) - larger models
- *
- * All models are shown in size order (smallest to largest).
- * Badges indicate recommendation status:
- * - First 3 recommended models (in tier + fit in RAM) get special badges:
- *   - Smallest → "fastest" (⚡ Fast)
- *   - Middle → "recommended" (⭐ Recommended)
- *   - Largest → "best_quality" (🎯 Best)
- * - Other models get badges based on why they're not recommended:
- *   - Too small for user's tier → "poor_quality"
- *   - Too large for RAM → "slow_performance"
- *   - Unclassified (tier []) → no badge
  *
  * @param {Array} availableModels - Array of available model objects from API
  * @param {Object} systemSpecs - System specifications containing total_memory_gb

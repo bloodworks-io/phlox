@@ -150,7 +150,7 @@ export const settingsApi = {
             errorMessage: "Failed to fetch templates",
         }),
 
-    saveTemplates: async (templates) =>
+    saveTemplates: async (templates: Record<string, any>) =>
         handleApiRequest({
             apiCall: async () => {
                 // Convert templates object to array

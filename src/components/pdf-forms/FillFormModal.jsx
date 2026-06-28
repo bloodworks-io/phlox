@@ -1,22 +1,8 @@
 // Modal for filling a PDF form template and downloading the result.
 import React, { useState } from "react";
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-  Checkbox,
-  VStack,
-  Text,
-  useColorModeValue,
-  useToast,
-} from "@chakra-ui/react";
+import { useColorModeValue } from "../ui/color-mode";
+import { Steps, Button, Input, Checkbox, VStack, Text, Field, Dialog, Portal } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
 import { GreenButton, GreyButton } from "../common/Buttons";
@@ -82,73 +68,83 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="md">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
-          <Text as="h3">Fill: {template?.name}</Text>
-        </ModalHeader>
-        <ModalBody>
-          {fields.length === 0 ? (
-            <Text color={mutedColor} fontSize="sm">
-              This template has no fields defined yet.
-            </Text>
-          ) : (
-            <VStack spacing="3" align="stretch">
-              {fields.map((field) => (
-                <FormControl key={field.id}>
-                  <FormLabel fontSize="sm" mb="1">
-                    {field.name || `Field (${field.field_type})`}
-                    {field.required && (
-                      <Text as="span" color="red.400" ml="1">
-                        *
-                      </Text>
-                    )}
-                  </FormLabel>
-                  {field.field_type === "checkbox" ? (
-                    <Checkbox
-                      isChecked={values[field.name] === "true"}
-                      onChange={(e) =>
-                        handleChange(field.name, e.target.checked ? "true" : "")
-                      }
-                    >
-                      {field.description || "Check to enable"}
-                    </Checkbox>
-                  ) : (
-                    <Input
-                      size="sm"
-                      type={
-                        field.field_type === "date"
-                          ? "date"
-                          : field.field_type === "number"
-                            ? "number"
-                            : "text"
-                      }
-                      value={values[field.name] || ""}
-                      onChange={(e) => handleChange(field.name, e.target.value)}
-                      placeholder={field.description || field.field_type}
-                      className="input-style"
-                    />
-                  )}
-                </FormControl>
-              ))}
-            </VStack>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          <GreyButton mr="3" onClick={handleClose}>
-            Cancel
-          </GreyButton>
-          <GreenButton
-            onClick={handleFill}
-            isLoading={filling}
-            isDisabled={fields.length === 0}
-          >
-            Fill & Download
-          </GreenButton>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+    <Dialog.Root open={isOpen} size='md' onOpenChange={e => {
+      if (!e.open) {
+        handleClose();
+      }
+    }}>
+      <Portal>
+
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Text as="h3">Fill: {template?.name}</Text>
+            </Dialog.Header>
+            <Dialog.Body>
+              {fields.length === 0 ? (
+                <Text color={mutedColor} fontSize="sm">
+                  This template has no fields defined yet.
+                </Text>
+              ) : (
+                <VStack gap="3" align="stretch">
+                  {fields.map((field) => (
+                    <Field.Root key={field.id}>
+                      <Field.Label fontSize="sm" mb="1">
+                        {field.name || `Field (${field.field_type})`}
+                        {field.required && (
+                          <Text as="span" color="red.400" ml="1">
+                            *
+                          </Text>
+                        )}
+                      </Field.Label>
+                      {field.field_type === "checkbox" ? (
+                        <Checkbox.Root
+                          onCheckedChange={(e) =>
+                            handleChange(field.name, e.checked ? "true" : "")
+                          }
+                          checked={values[field.name] === "true"}
+                        ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
+                          {field.description || "Check to enable"}
+                        </Checkbox.Label></Checkbox.Root>
+                      ) : (
+                        <Input
+                          size="sm"
+                          type={
+                            field.field_type === "date"
+                              ? "date"
+                              : field.field_type === "number"
+                                ? "number"
+                                : "text"
+                          }
+                          value={values[field.name] || ""}
+                          onChange={(e) => handleChange(field.name, e.target.value)}
+                          placeholder={field.description || field.field_type}
+                          className="input-style"
+                        />
+                      )}
+                    </Field.Root>
+                  ))}
+                </VStack>
+              )}
+            </Dialog.Body>
+            <Dialog.Footer>
+              <GreyButton mr="3" onClick={handleClose}>
+                Cancel
+              </GreyButton>
+              <GreenButton
+                onClick={handleFill}
+                isLoading={filling}
+                isDisabled={fields.length === 0}
+              >
+                Fill & Download
+              </GreenButton>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+
+      </Portal>
+    </Dialog.Root>
   );
 };
 

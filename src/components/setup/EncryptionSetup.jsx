@@ -1,20 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useColorMode } from "../ui/color-mode";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Box,
-  Button,
-  Heading,
-  VStack,
-  useToast,
-  useColorMode,
-  Text,
-  Input,
-  Flex,
-  Image,
-  Progress,
-  HStack,
-  Icon,
-} from "@chakra-ui/react";
+import { Steps, Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { FaEye, FaEyeSlash, FaExclamationTriangle, FaLock } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
@@ -183,13 +171,12 @@ const EncryptionSetup = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-
       <MotionBox
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl !important"
+        borderRadius="2xl"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
@@ -210,7 +197,7 @@ const EncryptionSetup = ({ onComplete }) => {
         />
 
         <MotionVStack
-          spacing={6}
+          gap={6}
           align="stretch"
           position="relative"
           zIndex="1"
@@ -226,13 +213,13 @@ const EncryptionSetup = ({ onComplete }) => {
               as="h1"
               textAlign="center"
               color={currentColors.textPrimary}
-              sx={{
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
                 fontWeight: "700",
                 lineHeight: "1.2",
                 marginBottom: "0.5rem",
-                letterSpacing: "-0.02em",
+                letterSpacing: "-0.02em"
               }}
             >
               Welcome to Phlox
@@ -243,25 +230,32 @@ const EncryptionSetup = ({ onComplete }) => {
               color={currentColors.textSecondary}
               maxW="400px"
               lineHeight="1.6"
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
+              css={{
+                fontFamily: '"Roboto", sans-serif'
+              }}
             >
               Let's set up your AI-powered medical assistant
             </MotionText>
           </MotionFlex>
 
           <MotionBox variants={itemVariants}>
-            <Progress
+            <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
-              colorScheme="blue"
+              colorPalette="blue"
               borderRadius="full"
               size="sm"
-              mb={2}
-            />
+              mb={2}>
+              <Progress.Track>
+                <Progress.Range />
+              </Progress.Track>
+            </Progress.Root>
             <Text
               fontSize="xs"
               color={currentColors.textSecondary}
               textAlign="center"
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
+              css={{
+                fontFamily: '"Roboto", sans-serif'
+              }}
             >
               Step {currentStepIndex + 1} of {totalSteps}
             </Text>
@@ -277,11 +271,11 @@ const EncryptionSetup = ({ onComplete }) => {
               <Heading
                 as="h2"
                 color={currentColors.textPrimary}
-                sx={{
+                css={{
                   fontFamily: '"Space Grotesk", sans-serif',
                   fontSize: ["1.25rem", "1.5rem"],
                   fontWeight: "600",
-                  lineHeight: "1.2",
+                  lineHeight: "1.2"
                 }}
               >
                 {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
@@ -292,7 +286,9 @@ const EncryptionSetup = ({ onComplete }) => {
               fontSize="sm"
               color={currentColors.textSecondary}
               mb={4}
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
+              css={{
+                fontFamily: '"Roboto", sans-serif'
+              }}
             >
               {STEP_DESCRIPTIONS[SPLASH_STEPS.ENCRYPTION]}
             </Text>
@@ -317,7 +313,7 @@ const EncryptionSetup = ({ onComplete }) => {
             </Box>
           </MotionBox>
 
-          <VStack spacing={4} align="stretch">
+          <VStack gap={4} align="stretch">
             <Box>
               <Text
                 mb={1}
@@ -367,12 +363,15 @@ const EncryptionSetup = ({ onComplete }) => {
                       {strength.strength}
                     </Text>
                   </HStack>
-                  <Progress
+                  <Progress.Root
                     value={getStrengthPercent()}
-                    colorScheme={getStrengthColor()}
+                    colorPalette={getStrengthColor()}
                     size="xs"
-                    borderRadius="full"
-                  />
+                    borderRadius="full">
+                    <Progress.Track>
+                      <Progress.Range />
+                    </Progress.Track>
+                  </Progress.Root>
                 </Box>
               )}
             </Box>
@@ -434,15 +433,15 @@ const EncryptionSetup = ({ onComplete }) => {
           >
             <Button
               onClick={handleSubmit}
-              isLoading={isSubmitting}
+              loading={isSubmitting}
               loadingText="Setting up encryption..."
-              isDisabled={!isValid()}
+              disabled={!isValid()}
               size="md"
-              borderRadius="2xl !important"
+              borderRadius="2xl"
               className="switch-mode"
-              sx={{
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
-                fontWeight: "600",
+                fontWeight: "600"
               }}
             >
               Continue

@@ -1,14 +1,7 @@
 import { useState } from "react";
-import {
-  Box,
-  Flex,
-  IconButton,
-  Text,
-  HStack,
-  Tooltip,
-  Spinner,
-  useColorMode,
-} from "@chakra-ui/react";
+import { useColorMode } from "../../ui/color-mode";
+import { Steps, Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 import FloatingPanel from "../../common/FloatingPanel";
@@ -85,20 +78,15 @@ const TranscriptionPanel = ({
             align="center"
             zIndex={10}
             animation="fadeOut 1.5s ease-out forwards"
-            sx={{
-              "@keyframes fadeOut": {
+            css={{
+              '& @keyframes fadeOut': {
                 "0%": { opacity: 1 },
                 "70%": { opacity: 1 },
                 "100%": { opacity: 0 },
-              },
+              }
             }}
           >
-            <Box
-              as={FaCheck}
-              size="32px"
-              color="#48BB78"
-              opacity={0.8}
-            />
+            <Box size="32px" color="#48BB78" opacity={0.8} asChild><FaCheck /></Box>
           </Flex>
         )}
 
@@ -127,16 +115,20 @@ const TranscriptionPanel = ({
             <Flex justify="space-between" align="center">
               {/* Stats */}
               {transcriptionDuration && (
-                <HStack fontSize="10px" color="gray.500" spacing={2}>
-                  <Tooltip label="Transcription time" hasArrow placement="top">
-                    <HStack spacing={1}>
-                      <Box as={FaClock} size="8px" />
+                <HStack fontSize="10px" color="gray.500" gap={2}>
+                  <Tooltip content="Transcription time" showArrow positioning={{
+                    placement: "top"
+                  }}>
+                    <HStack gap={1}>
+                      <Box size="8px" asChild><FaClock /></Box>
                       <Text>{transcriptionDuration}s</Text>
                     </HStack>
                   </Tooltip>
-                  <Tooltip label="Processing time" hasArrow placement="top">
-                    <HStack spacing={1}>
-                      <Box as={FaCogs} size="8px" />
+                  <Tooltip content="Processing time" showArrow positioning={{
+                    placement: "top"
+                  }}>
+                    <HStack gap={1}>
+                      <Box size="8px" asChild><FaCogs /></Box>
                       <Text>{processDuration}s</Text>
                     </HStack>
                   </Tooltip>
@@ -144,23 +136,21 @@ const TranscriptionPanel = ({
               )}
 
               {/* Reprocess button */}
-              <Tooltip label="Reprocess" hasArrow placement="top">
+              <Tooltip content="Reprocess" showArrow positioning={{
+                placement: "top"
+              }}>
                 <IconButton
-                  icon={
-                    isTranscribing ? (
-                      <Spinner size="xs" />
-                    ) : (
-                      <FaSync size="12px" />
-                    )
-                  }
                   onClick={handleReprocess}
-                  isDisabled={isTranscribing}
+                  disabled={isTranscribing}
                   aria-label="Reprocess"
                   size="xs"
                   variant="ghost"
                   opacity={0.5}
-                  _hover={{ opacity: 1 }}
-                />
+                  _hover={{ opacity: 1 }}>{isTranscribing ? (
+                    <Spinner size="xs" />
+                  ) : (
+                    <FaSync size="12px" />
+                  )}</IconButton>
               </Tooltip>
             </Flex>
           </>

@@ -1,6 +1,6 @@
 // Local icon wrappers.
 
-import { Icon } from "@chakra-ui/react";
+import { Steps, Icon } from "@chakra-ui/react";
 import {
     FiAlertTriangle,
     FiArrowUp,
@@ -28,39 +28,39 @@ import {
 } from "react-icons/fi";
 import { BsExclamationTriangleFill } from "react-icons/bs";
 
-export const AddIcon = (props) => <Icon as={FiPlus} {...props} />;
-export const ArrowUpIcon = (props) => <Icon as={FiArrowUp} {...props} />;
-export const AttachmentIcon = (props) => <Icon as={FiPaperclip} {...props} />;
-export const ChatIcon = (props) => <Icon as={FiMessageSquare} {...props} />;
+export const AddIcon = (props) => <Icon {...props} asChild><FiPlus /></Icon>;
+export const ArrowUpIcon = (props) => <Icon {...props} asChild><FiArrowUp /></Icon>;
+export const AttachmentIcon = (props) => <Icon {...props} asChild><FiPaperclip /></Icon>;
+export const ChatIcon = (props) => <Icon {...props} asChild><FiMessageSquare /></Icon>;
 export const CheckCircleIcon = (props) => (
-    <Icon as={FiCheckCircle} {...props} />
+    <Icon {...props} asChild><FiCheckCircle /></Icon>
 );
-export const CheckIcon = (props) => <Icon as={FiCheck} {...props} />;
+export const CheckIcon = (props) => <Icon {...props} asChild><FiCheck /></Icon>;
 export const ChevronDownIcon = (props) => (
-    <Icon as={FiChevronDown} {...props} />
+    <Icon {...props} asChild><FiChevronDown /></Icon>
 );
 export const ChevronLeftIcon = (props) => (
-    <Icon as={FiChevronLeft} {...props} />
+    <Icon {...props} asChild><FiChevronLeft /></Icon>
 );
 export const ChevronRightIcon = (props) => (
-    <Icon as={FiChevronRight} {...props} />
+    <Icon {...props} asChild><FiChevronRight /></Icon>
 );
-export const ChevronUpIcon = (props) => <Icon as={FiChevronUp} {...props} />;
-export const CloseIcon = (props) => <Icon as={FiX} {...props} />;
-export const CopyIcon = (props) => <Icon as={FiCopy} {...props} />;
-export const DeleteIcon = (props) => <Icon as={FiTrash2} {...props} />;
-export const DownloadIcon = (props) => <Icon as={FiDownload} {...props} />;
-export const EditIcon = (props) => <Icon as={FiEdit2} {...props} />;
+export const ChevronUpIcon = (props) => <Icon {...props} asChild><FiChevronUp /></Icon>;
+export const CloseIcon = (props) => <Icon {...props} asChild><FiX /></Icon>;
+export const CopyIcon = (props) => <Icon {...props} asChild><FiCopy /></Icon>;
+export const DeleteIcon = (props) => <Icon {...props} asChild><FiTrash2 /></Icon>;
+export const DownloadIcon = (props) => <Icon {...props} asChild><FiDownload /></Icon>;
+export const EditIcon = (props) => <Icon {...props} asChild><FiEdit2 /></Icon>;
 export const ExternalLinkIcon = (props) => (
-    <Icon as={FiExternalLink} {...props} />
+    <Icon {...props} asChild><FiExternalLink /></Icon>
 );
-export const InfoIcon = (props) => <Icon as={FiInfo} {...props} />;
-export const MinusIcon = (props) => <Icon as={FiMinus} {...props} />;
-export const QuestionIcon = (props) => <Icon as={FiHelpCircle} {...props} />;
-export const RepeatIcon = (props) => <Icon as={FiRefreshCw} {...props} />;
-export const SearchIcon = (props) => <Icon as={FiSearch} {...props} />;
-export const SettingsIcon = (props) => <Icon as={FiSettings} {...props} />;
-export const WarningIcon = (props) => <Icon as={FiAlertTriangle} {...props} />;
+export const InfoIcon = (props) => <Icon {...props} asChild><FiInfo /></Icon>;
+export const MinusIcon = (props) => <Icon {...props} asChild><FiMinus /></Icon>;
+export const QuestionIcon = (props) => <Icon {...props} asChild><FiHelpCircle /></Icon>;
+export const RepeatIcon = (props) => <Icon {...props} asChild><FiRefreshCw /></Icon>;
+export const SearchIcon = (props) => <Icon {...props} asChild><FiSearch /></Icon>;
+export const SettingsIcon = (props) => <Icon {...props} asChild><FiSettings /></Icon>;
+export const WarningIcon = (props) => <Icon {...props} asChild><FiAlertTriangle /></Icon>;
 export const WarningTwoIcon = (props) => (
-    <Icon as={BsExclamationTriangleFill} {...props} />
+    <Icon {...props} asChild><BsExclamationTriangleFill /></Icon>
 );

@@ -155,12 +155,8 @@ export const sidebarStyles = (props) => ({
     },
     // Patient list items styling - consistent in both modes
     ".patient-list-item": {
-        backgroundColor: `${colors.dark.sidebar.item} !important`,
         color: `${colors.dark.textPrimary} !important`,
         transition: "all 0.2s ease",
-        _hover: {
-            backgroundColor: `${colors.dark.sidebar.hover} !important`,
-        },
     },
 
     // Sidebar section labels

@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, HStack, Button } from "@chakra-ui/react";
+import { Steps, Box, Text, HStack, Button } from "@chakra-ui/react";
 
 const TemplateSelector = ({
   letterTemplates,
@@ -11,7 +11,7 @@ const TemplateSelector = ({
       <Text mb="2" fontSize="sm" fontWeight="bold">
         Letter Template:
       </Text>
-      <HStack spacing="2" overflowX="auto" pb="2">
+      <HStack gap="2" overflowX="auto" pb="2">
         {letterTemplates
           .filter((t) => t.name !== "Dictation")
           .map((template) => (

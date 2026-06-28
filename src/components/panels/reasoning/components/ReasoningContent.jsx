@@ -1,11 +1,8 @@
 import React, { useState } from "react";
 import {
+    Steps,
     Text,
     Tabs,
-    TabList,
-    TabPanels,
-    TabPanel,
-    Tab,
     VStack,
     Box,
     Badge,
@@ -34,7 +31,7 @@ const renderItems = (section, reasoning, colorMode) => {
     }
 
     return (
-        <VStack align="stretch" spacing={2}>
+        <VStack align="stretch" gap={2}>
             {items.map((item, i) => (
                 <ReasoningItem
                     key={i}
@@ -165,14 +162,12 @@ const ThinkingCard = ({ step, index, colorMode }) => {
             borderLeftColor={getCardAccent(step.type)}
             bg={colorMode === "dark" ? "whiteAlpha.100" : "gray.50"}
         >
-            <Badge mb={2} colorScheme="gray" variant="subtle">
+            <Badge mb={2} colorPalette="gray" variant="subtle">
                 {getCardBadge(step.type)}
             </Badge>
-
             <Text fontSize="sm" whiteSpace="pre-wrap">
                 {displayedContent}
             </Text>
-
             {isResultCard && (
                 <Button
                     mt={3}
@@ -199,7 +194,7 @@ const renderThinkingCards = (thinking, colorMode) => {
     }
 
     return (
-        <VStack align="stretch" spacing={3}>
+        <VStack align="stretch" gap={3}>
             {steps.map((step, i) => (
                 <ThinkingCard
                     key={`${step.type}-${i}`}
@@ -219,79 +214,49 @@ export const ReasoningContent = ({
     colorMode,
 }) => {
     return (
-        <Tabs
-            variant="enclosed"
-            index={tabIndex}
-            onChange={(index) => setTabIndex(index)}
+        <Tabs.Root
+            variant='enclosed'
+            value={tabIndex}
+            onValueChange={({ value }) => setTabIndex(value)}
             display="flex"
             flexDirection="column"
             height="100%"
         >
-            <TabList>
-                <Tab className="tab-style">Summary</Tab>
-                <Tab className="tab-style">Differentials</Tab>
-                <Tab className="tab-style">Investigations</Tab>
-                <Tab className="tab-style">Considerations</Tab>
-                <Tab className="tab-style">Thinking</Tab>
-            </TabList>
+            <Tabs.List>
+                <Tabs.Trigger className="tab-style" value="0">Summary</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="1">Differentials</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="2">Investigations</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="3">Considerations</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="4">Thinking</Tabs.Trigger>
+            </Tabs.List>
+            {/* Summary Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" display="flex" flexDirection="column" value="0">
+                <Text fontSize="sm">{reasoning.summary}</Text>
+            </Tabs.Content>
 
-            <TabPanels flex="1" overflow="hidden" minHeight="0">
-                {/* Summary Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                    display="flex"
-                    flexDirection="column"
-                >
-                    <Text fontSize="sm">{reasoning.summary}</Text>
-                </TabPanel>
+            {/* Differentials Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="1">
+                {renderItems("differentials", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Differentials Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("differentials", reasoning, colorMode)}
-                </TabPanel>
+            {/* Investigations Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="2">
+                {renderItems("investigations", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Investigations Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("investigations", reasoning, colorMode)}
-                </TabPanel>
+            {/* Considerations Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="3">
+                {renderItems("considerations", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Considerations Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("considerations", reasoning, colorMode)}
-                </TabPanel>
-
-                {/* Thinking Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderThinkingCards(reasoning?.thinking, colorMode)}
-                    <CitationList
-                        citations={reasoning?.citations}
-                        colorMode={colorMode}
-                    />
-                </TabPanel>
-            </TabPanels>
-        </Tabs>
+            {/* Thinking Tab */}
+            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="4">
+                {renderThinkingCards(reasoning?.thinking, colorMode)}
+                <CitationList
+                    citations={reasoning?.citations}
+                    colorMode={colorMode}
+                />
+            </Tabs.Content>
+        </Tabs.Root>
     );
 };

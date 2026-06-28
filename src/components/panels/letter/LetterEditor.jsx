@@ -1,11 +1,5 @@
-import {
-  Box,
-  Flex,
-  IconButton,
-  Textarea,
-  Tooltip,
-  Spinner,
-} from "@chakra-ui/react";
+import { Steps, Box, Flex, IconButton, Textarea, Spinner } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { EditIcon } from "../../common/icons";
 
 const LetterEditor = ({
@@ -72,33 +66,37 @@ const LetterEditor = ({
           }}
           className="textarea-style letter-editor-textarea"
           ref={textareaRef}
-          isDisabled={loading}
+          disabled={loading}
         />
         {/* Tooltip and IconButton remain largely the same */}
         {/* They are absolutely positioned relative to the floating-main Box */}
-        <Tooltip label="Refine letter" placement="left" isDisabled={loading}>
+        <Tooltip content="Refine letter" disabled={loading} positioning={{
+          placement: "left"
+        }}>
           <IconButton
-            icon={<EditIcon />}
             position="absolute"
             bottom={4}
             width="40px"
             height="40px"
             right={4}
-            sx={{
-              opacity: 1, // Opacity is handled by parent now
+            css={{
+              // Opacity is handled by parent now
+              opacity: 1,
+
               zIndex: 2,
               transition: "transform 0.2s",
               aspectRatio: "1/1",
               pointerEvents: loading ? "none" : "auto",
+
               "&:hover": !loading && {
                 transform: "scale(1.1)",
-              },
+              }
             }}
             className="refinement-fab"
-            onClick={() => !loading && setIsRefining(true)} // Prevent click when loading
+            // Prevent click when loading
+            onClick={() => !loading && setIsRefining(true)}
             aria-label="Refine letter"
-            isDisabled={loading}
-          />
+            disabled={loading}><EditIcon /></IconButton>
         </Tooltip>
         {dictationWidget}
       </Box>

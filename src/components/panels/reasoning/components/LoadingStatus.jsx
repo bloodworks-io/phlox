@@ -1,5 +1,5 @@
 import React from "react";
-import { Flex, Spinner, Text, VStack } from "@chakra-ui/react";
+import { Steps, Flex, Spinner, Text, VStack } from "@chakra-ui/react";
 import { colors } from "../../../../theme/colors";
 import {
     FaWikipediaW,
@@ -45,8 +45,8 @@ export const LoadingStatus = ({ status, colorMode }) => {
             flexDirection="column"
             gap={4}
         >
-            <VStack spacing={4}>
-                <Spinner size="lg" color="orange.500" thickness="3px" />
+            <VStack gap={4}>
+                <Spinner size="lg" color="orange.500" borderWidth="3px" />
                 <Flex align="center" gap={3}>
                     <Icon size="1.2em" color="gray.500" />
                     <Text

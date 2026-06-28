@@ -1,23 +1,7 @@
 // Component for uploading and vectorizing documents into the RAG database.
 import React, { useState } from "react";
-import {
-    Box,
-    Text,
-    Flex,
-    HStack,
-    VStack,
-    Input,
-    Button,
-    FormLabel,
-    IconButton,
-    Collapse,
-    Tabs,
-    TabList,
-    TabPanels,
-    Tab,
-    TabPanel,
-    useToast,
-} from "@chakra-ui/react";
+import { Field, Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Tabs } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import { ChevronDownIcon, ChevronRightIcon, AddIcon } from "../common/icons";
 import { MdFileUpload } from "react-icons/md";
 import { FaCloudUploadAlt } from "react-icons/fa";
@@ -158,129 +142,117 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
             <Flex align="center" justify="space-between">
                 <Flex align="center">
                     <IconButton
-                        icon={
-                            isCollapsed ? (
-                                <ChevronRightIcon />
-                            ) : (
-                                <ChevronDownIcon />
-                            )
-                        }
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         aria-label="Toggle collapse"
                         variant="outline"
                         size="sm"
                         mr="2"
-                        className="collapse-toggle"
-                    />
-                    <HStack spacing={2}>
+                        className="collapse-toggle">{isCollapsed ? (
+                            <ChevronRightIcon />
+                        ) : (
+                            <ChevronDownIcon />
+                        )}</IconButton>
+                    <HStack gap={2}>
                         <MdFileUpload size="1.2em" />
                         <Text as="h3">Upload Documents</Text>
                     </HStack>
                 </Flex>
             </Flex>
-            <Collapse in={!isCollapsed} animateOpacity>
-                <Tabs variant="enclosed" mt={4}>
-                    <TabList>
-                        <Tab className="tab-style">
-                            <HStack>
-                                <MdFileUpload />
-                                <Text>Single Upload</Text>
-                            </HStack>
-                        </Tab>
-                        <Tab className="tab-style">
-                            <HStack>
-                                <FaCloudUploadAlt />
-                                <Text>Bulk Upload</Text>
-                            </HStack>
-                        </Tab>
-                    </TabList>
-                    <TabPanels>
-                        <TabPanel className="floating-main">
-                            <VStack spacing={4} align="stretch">
-                                <Input
-                                    id="pdf-upload"
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={handlePdfUpload}
-                                    className="input-style"
-                                />
-                                <Button
-                                    leftIcon={<AddIcon />}
-                                    onClick={handleExtractPdfInfo}
-                                    width="220px"
-                                    isLoading={isExtracting}
-                                    loadingText="Extracting..."
-                                    className="orange-button"
-                                    alignSelf="flex-start"
-                                >
-                                    Extract PDF Info
-                                </Button>
-                                {pdfData && (
-                                    <VStack spacing={3} align="stretch" mt={2}>
-                                        <Text fontWeight="bold">
-                                            Extracted Information
-                                        </Text>
-                                        <FormLabel htmlFor="custom-collection">
-                                            Collection Name:
-                                        </FormLabel>
-                                        <Input
-                                            id="custom-collection"
-                                            placeholder="Custom Collection Name"
-                                            className="input-style"
-                                            value={customCollectionName}
-                                            onChange={(e) =>
-                                                setCustomCollectionName(
-                                                    e.target.value,
-                                                )
-                                            }
-                                        />
-                                        <FormLabel htmlFor="document-source">
-                                            Document Source:
-                                        </FormLabel>
-                                        <Input
-                                            id="document-source"
-                                            placeholder="Document Source"
-                                            className="input-style"
-                                            value={documentSource}
-                                            onChange={(e) =>
-                                                setDocumentSource(
-                                                    e.target.value,
-                                                )
-                                            }
-                                        />
-                                        <FormLabel htmlFor="focus-area">
-                                            Focus Area:
-                                        </FormLabel>
-                                        <Input
-                                            id="focus-area"
-                                            placeholder="Focus Area"
-                                            className="input-style"
-                                            value={focusArea}
-                                            onChange={(e) =>
-                                                setFocusArea(e.target.value)
-                                            }
-                                        />
-                                        <Button
-                                            leftIcon={<AddIcon />}
-                                            onClick={handleCommitToDatabase}
-                                            isLoading={isCommitting}
-                                            loadingText="Committing..."
-                                            className="green-button"
-                                            width="220px"
-                                            alignSelf="flex-start"
-                                        >
-                                            Commit to Database
-                                        </Button>
-                                    </VStack>
-                                )}
-                            </VStack>
-                        </TabPanel>
-                        <TabPanel className="floating-main">
-                            <BulkUploader setCollections={setCollections} />
-                        </TabPanel>
-                    </TabPanels>
-                </Tabs>
-            </Collapse>
+            <Collapsible.Root open={!isCollapsed}>
+                <Collapsible.Content>
+                    <Tabs.Root variant='enclosed' mt={4} defaultValue="0">
+                        <Tabs.List>
+                            <Tabs.Trigger className="tab-style" value="0">
+                                <HStack>
+                                    <MdFileUpload />
+                                    <Text>Single Upload</Text>
+                                </HStack>
+                            </Tabs.Trigger>
+                            <Tabs.Trigger className="tab-style" value="1">
+                                <HStack>
+                                    <FaCloudUploadAlt />
+                                    <Text>Bulk Upload</Text>
+                                </HStack>
+                            </Tabs.Trigger>
+                        </Tabs.List>
+                        <Tabs.Content className="floating-main" value="0">
+                                <VStack gap={4} align="stretch">
+                                    <Input
+                                        id="pdf-upload"
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={handlePdfUpload}
+                                        className="input-style"
+                                    />
+                                    <Button
+                                        onClick={handleExtractPdfInfo}
+                                        width="220px"
+                                        loading={isExtracting}
+                                        loadingText="Extracting..."
+                                        className="orange-button"
+                                        alignSelf="flex-start"><AddIcon />Extract PDF Info
+                                                                        </Button>
+                                    {pdfData && (
+                                        <VStack gap={3} align="stretch" mt={2}>
+                                            <Text fontWeight="bold">Extracted Information</Text>
+                                            <Field.Root>
+                                            <Field.Label htmlFor="custom-collection">
+                                                Collection Name:
+                                            </Field.Label>
+                                            <Input
+                                                id="custom-collection"
+                                                placeholder="Custom Collection Name"
+                                                className="input-style"
+                                                value={customCollectionName}
+                                                onChange={(e) =>
+                                                    setCustomCollectionName(e.target.value)
+                                                }
+                                            />
+                                            </Field.Root>
+                                            <Field.Root>
+                                            <Field.Label htmlFor="document-source">
+                                                Document Source:
+                                            </Field.Label>
+                                            <Input
+                                                id="document-source"
+                                                placeholder="Document Source"
+                                                className="input-style"
+                                                value={documentSource}
+                                                onChange={(e) =>
+                                                    setDocumentSource(e.target.value)
+                                                }
+                                            />
+                                            </Field.Root>
+                                            <Field.Root>
+                                            <Field.Label htmlFor="focus-area">
+                                                Focus Area:
+                                            </Field.Label>
+                                            <Input
+                                                id="focus-area"
+                                                placeholder="Focus Area"
+                                                className="input-style"
+                                                value={focusArea}
+                                                onChange={(e) => setFocusArea(e.target.value)}
+                                            />
+                                            </Field.Root>
+                                            <Button
+                                                onClick={handleCommitToDatabase}
+                                                loading={isCommitting}
+                                                loadingText="Committing..."
+                                                className="green-button"
+                                                width="220px"
+                                                alignSelf="flex-start"><AddIcon />Commit to Database
+                                                                                        </Button>
+                                        </VStack>
+                                    )}
+                                </VStack>
+                            </Tabs.Content>
+                            <Tabs.Content className="floating-main" value="1">
+                                <BulkUploader setCollections={setCollections} />
+                            </Tabs.Content>
+                    </Tabs.Root>
+                </Collapsible.Content>
+            </Collapsible.Root>
         </Box>
     );
 };

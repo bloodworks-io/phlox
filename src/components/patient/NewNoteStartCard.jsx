@@ -1,12 +1,13 @@
 import { useState } from "react";
+import { useColorMode } from "../ui/color-mode";
 import {
+    Steps,
     Box,
     Button,
     Flex,
     Heading,
     Icon,
     Text,
-    useColorMode,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
@@ -15,9 +16,16 @@ import UrSearchField from "./UrSearchField";
 
 const MotionBox = motion(Box);
 
-export const PathHalf = ({ icon, title, subtitle, accent, c, tileBg, onClick }) => (
+export const PathHalf = ({
+    icon,
+    title,
+    subtitle,
+    accent,
+    c,
+    tileBg,
+    onClick,
+}) => (
     <Flex
-        as="button"
         flex="1"
         direction="column"
         align="center"
@@ -31,22 +39,24 @@ export const PathHalf = ({ icon, title, subtitle, accent, c, tileBg, onClick }) 
         bg={tileBg}
         borderRadius="xl"
         _hover={{ bg: "rgba(184, 192, 224, 0.12)" }}
-        onClick={onClick}
+        asChild
     >
-        <Icon
-            as={icon}
-            boxSize={12}
-            color={accent}
-            mb={4}
-            transition="transform 0.2s"
-            _groupHover={{ transform: "scale(1.12)" }}
-        />
-        <Text fontWeight="600" color={c.textPrimary} fontSize="md">
-            {title}
-        </Text>
-        <Text fontSize="xs" color={c.textSecondary} mt={1}>
-            {subtitle}
-        </Text>
+        <button onClick={onClick}>
+            <Icon
+                as={icon}
+                boxSize={12}
+                color={accent}
+                mb={4}
+                transition="transform 0.2s"
+                _groupHover={{ transform: "scale(1.12)" }}
+            />
+            <Text fontWeight="600" color={c.textPrimary} fontSize="md">
+                {title}
+            </Text>
+            <Text fontSize="xs" color={c.textSecondary} mt={1}>
+                {subtitle}
+            </Text>
+        </button>
     </Flex>
 );
 
@@ -74,7 +84,9 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
                 className="panels-bg"
-                sx={{ borderRadius: "2xl !important" }}
+                css={{
+                    borderRadius: "2xl !important",
+                }}
                 p={{ base: 6, md: 8 }}
                 w={{ base: "100%", sm: "90%", md: "520px" }}
                 maxW="520px"
@@ -89,7 +101,9 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                         as="h1"
                         size="lg"
                         color={c.textPrimary}
-                        sx={{ fontFamily: '"Space Grotesk", sans-serif' }}
+                        css={{
+                            fontFamily: '"Space Grotesk", sans-serif',
+                        }}
                     >
                         New encounter
                     </Heading>
@@ -133,33 +147,33 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                         </Flex>
                     ) : (
                         <Box>
-                            <Flex
-                                as="form"
-                                onSubmit={handleFind}
-                                alignItems="center"
-                            >
-                                <UrSearchField
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    onSearch={handleFind}
-                                    isLoading={isSearchLoading}
-                                    autoFocus
-                                />
+                            <Flex alignItems="center" asChild>
+                                <form onSubmit={handleFind}>
+                                    <UrSearchField
+                                        value={query}
+                                        onChange={(e) =>
+                                            setQuery(e.target.value)
+                                        }
+                                        onSearch={handleFind}
+                                        isLoading={isSearchLoading}
+                                        autoFocus
+                                    />
+                                </form>
                             </Flex>
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="md"
                                 mt={3}
-                                borderRadius="2xl !important"
-                                leftIcon={<FaArrowLeft />}
+                                borderRadius="2xl"
                                 className="switch-mode"
-                                sx={{
+                                css={{
                                     fontFamily: '"Space Grotesk", sans-serif',
                                     fontWeight: "600",
                                 }}
                                 onClick={() => setView("choose")}
                             >
+                                <FaArrowLeft />
                                 Back
                             </Button>
                         </Box>

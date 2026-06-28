@@ -154,13 +154,27 @@ export const buttonStyles = (props) => ({
     color: `${colors.light.invertedText} !important`,
   },
   ".grey-button": {
-    borderRadius: "xl !important",
-    fontWeight: "normal",
+    borderRadius: "12px !important",
     height: "35px !important",
+    padding: "0 16px !important",
     border:
       props.colorMode === "light"
         ? `1px solid ${colors.light.surface} !important`
         : `1px solid ${colors.dark.surface} !important`,
+    backgroundColor:
+      props.colorMode === "light"
+        ? `transparent !important`
+        : `rgba(255, 255, 255, 0.08) !important`,
+    color:
+      props.colorMode === "light"
+        ? `#1A202C !important`
+        : `rgba(255, 255, 255, 0.92) !important`,
+    _hover: {
+      backgroundColor:
+        props.colorMode === "light"
+          ? `${colors.light.crust} !important`
+          : `${colors.dark.surface1} !important`,
+    },
     // Default (outline) state
     "&[variant=outline]": {
       backgroundColor:

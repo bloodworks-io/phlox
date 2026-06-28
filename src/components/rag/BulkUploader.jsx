@@ -1,19 +1,7 @@
 // Component for bulk uploading and vectorizing multiple PDF documents.
 import React, { useState, useRef } from "react";
-import {
-    Box,
-    Text,
-    Flex,
-    HStack,
-    VStack,
-    Input,
-    Button,
-    FormLabel,
-    IconButton,
-    Collapse,
-    Spinner,
-    useToast,
-} from "@chakra-ui/react";
+import { Field, Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
+import { useToast } from "@/utils/useToastShim";
 import {
     ChevronDownIcon,
     CloseIcon,
@@ -333,7 +321,7 @@ const BulkUploader = ({ setCollections }) => {
     };
 
     return (
-        <VStack spacing={4} align="stretch">
+        <VStack gap={4} align="stretch">
             {/* Drop zone */}
             <Box
                         border="2px dashed"
@@ -367,212 +355,203 @@ const BulkUploader = ({ setCollections }) => {
                             display="none"
                         />
                     </Box>
+            {/* File queue */}
+            {fileQueue.length > 0 && (
+                <VStack gap={2} align="stretch">
+                    {fileQueue.map((entry) => (
+                        <Box key={entry.id}>
+                            <Flex
+                                alignItems="center"
+                                p="2"
+                                borderRadius="sm"
+                                className="documentExplorer-style"
+                                _hover={{ bg: "gray.100" }}
+                            >
+                                <Box mr="2" color="red.400" asChild><FaFilePdf /></Box>
+                                <Text
+                                    fontSize="sm"
+                                    fontWeight="medium"
+                                    flex="1"
+                                    isTruncated
+                                >
+                                    {entry.file.name}
+                                </Text>
+                                <StatusIcon status={entry.status} />
+                                <Text
+                                    fontSize="xs"
+                                    color={
+                                        entry.status === STATUS.FAILED
+                                            ? "red.500"
+                                            : "gray.500"
+                                    }
+                                    mr="2"
+                                >
+                                    {statusLabel(entry)}
+                                </Text>
+                                {entry.status === STATUS.EXTRACTED && (
+                                    <IconButton
+                                        aria-label="Edit metadata"
+                                        size="xs"
+                                        variant="ghost"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setExpandedFile(
+                                                expandedFile ===
+                                                    entry.id
+                                                    ? null
+                                                    : entry.id,
+                                            );
+                                        }}
+                                        mr="1"><ChevronDownIcon /></IconButton>
+                                )}
+                                {(entry.status === STATUS.PENDING ||
+                                    entry.status === STATUS.EXTRACTED) &&
+                                    !isProcessing && (
+                                        <IconButton
+                                            aria-label="Remove from queue"
+                                            size="xs"
+                                            variant="ghost"
+                                            colorPalette="red"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeFromQueue(
+                                                    entry.id,
+                                                );
+                                            }}><CloseIcon /></IconButton>
+                                    )}
+                            </Flex>
 
-                    {/* File queue */}
-                    {fileQueue.length > 0 && (
-                        <VStack spacing={2} align="stretch">
-                            {fileQueue.map((entry) => (
-                                <Box key={entry.id}>
-                                    <Flex
-                                        alignItems="center"
-                                        p="2"
-                                        borderRadius="sm"
-                                        className="documentExplorer-style"
-                                        _hover={{ bg: "gray.100" }}
-                                    >
-                                        <Box
-                                            as={FaFilePdf}
-                                            mr="2"
-                                            color="red.400"
-                                        />
-                                        <Text
-                                            fontSize="sm"
-                                            fontWeight="medium"
-                                            flex="1"
-                                            isTruncated
-                                        >
-                                            {entry.file.name}
-                                        </Text>
-                                        <StatusIcon status={entry.status} />
-                                        <Text
-                                            fontSize="xs"
-                                            color={
-                                                entry.status === STATUS.FAILED
-                                                    ? "red.500"
-                                                    : "gray.500"
-                                            }
-                                            mr="2"
-                                        >
-                                            {statusLabel(entry)}
-                                        </Text>
-                                        {entry.status === STATUS.EXTRACTED && (
-                                            <IconButton
-                                                icon={<ChevronDownIcon />}
-                                                aria-label="Edit metadata"
-                                                size="xs"
-                                                variant="ghost"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setExpandedFile(
-                                                        expandedFile ===
-                                                            entry.id
-                                                            ? null
-                                                            : entry.id,
-                                                    );
-                                                }}
-                                                mr="1"
-                                            />
-                                        )}
-                                        {(entry.status === STATUS.PENDING ||
-                                            entry.status === STATUS.EXTRACTED) &&
-                                            !isProcessing && (
-                                                <IconButton
-                                                    icon={<CloseIcon />}
-                                                    aria-label="Remove from queue"
-                                                    size="xs"
-                                                    variant="ghost"
-                                                    colorScheme="red"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        removeFromQueue(
-                                                            entry.id,
-                                                        );
-                                                    }}
-                                                />
-                                            )}
-                                    </Flex>
-
-                                    {/* Metadata editing */}
-                                    {entry.status === STATUS.EXTRACTED &&
-                                        entry.metadata && (
-                                            <Collapse
-                                                in={
-                                                    expandedFile === entry.id
-                                                }
+                            {/* Metadata editing */}
+                            {entry.status === STATUS.EXTRACTED &&
+                                entry.metadata && (
+                                    <Collapsible.Root
+                                        open={
+                                            expandedFile === entry.id
+                                        }>
+                                        <Collapsible.Content>
+                                            <VStack
+                                                gap={2}
+                                                align="stretch"
+                                                pl="8"
+                                                py="2"
+                                                className="filelist-style"
                                             >
-                                                <VStack
-                                                    spacing={2}
-                                                    align="stretch"
-                                                    pl="8"
-                                                    py="2"
-                                                    className="filelist-style"
+                                                <Field.Root>
+                                                <Field.Label
+                                                    fontSize="xs"
+                                                    mb="0"
                                                 >
-                                                    <FormLabel
-                                                        fontSize="xs"
-                                                        mb="0"
-                                                    >
-                                                        Collection Name
-                                                    </FormLabel>
-                                                    <Input
-                                                        size="sm"
-                                                        className="input-style"
-                                                        value={
-                                                            entry.metadata
-                                                                .disease_name
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateMetadata(
-                                                                entry.id,
-                                                                "disease_name",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
-                                                    <FormLabel
-                                                        fontSize="xs"
-                                                        mb="0"
-                                                    >
-                                                        Document Source
-                                                    </FormLabel>
-                                                    <Input
-                                                        size="sm"
-                                                        className="input-style"
-                                                        value={
-                                                            entry.metadata
-                                                                .document_source
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateMetadata(
-                                                                entry.id,
-                                                                "document_source",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
-                                                    <FormLabel
-                                                        fontSize="xs"
-                                                        mb="0"
-                                                    >
-                                                        Focus Area
-                                                    </FormLabel>
-                                                    <Input
-                                                        size="sm"
-                                                        className="input-style"
-                                                        value={
-                                                            entry.metadata
-                                                                .focus_area
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateMetadata(
-                                                                entry.id,
-                                                                "focus_area",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
-                                                </VStack>
-                                            </Collapse>
-                                        )}
-                                </Box>
-                            ))}
-                        </VStack>
-                    )}
-
-                    {/* Action bar */}
-                    {fileQueue.length > 0 && (
-                        <Flex
-                            justify="space-between"
-                            align="center"
-                            wrap="wrap"
-                            gap="2"
-                        >
-                            <Text fontSize="xs" color="gray.500">
-                                {totalPending} pending · {readyToCommit} ready
-                                to commit · {committedCount} committed
-                            </Text>
-                            <HStack>
-                                <Button
-                                    leftIcon={<CheckIcon />}
-                                    onClick={extractAll}
-                                    isDisabled={
-                                        !hasPendingOrFailed || isProcessing
-                                    }
-                                    isLoading={isProcessing && extractedCount === 0}
-                                    loadingText="Extracting..."
-                                    size="sm"
-                                    className="orange-button"
-                                >
-                                    Extract All
-                                </Button>
-                                <Button
-                                    leftIcon={<CheckIcon />}
-                                    onClick={commitAll}
-                                    isDisabled={
-                                        readyToCommit === 0 || isProcessing
-                                    }
-                                    isLoading={
-                                        isProcessing && readyToCommit === 0
-                                    }
-                                    loadingText="Committing..."
-                                    size="sm"
-                                    className="green-button"
-                                >
-                                    Commit All
-                                </Button>
-                            </HStack>
-                        </Flex>
-                    )}
+                                                    Collection Name
+                                                </Field.Label>
+                                                <Input
+                                                    size="sm"
+                                                    className="input-style"
+                                                    value={
+                                                        entry.metadata
+                                                            .disease_name
+                                                    }
+                                                    onChange={(e) =>
+                                                        updateMetadata(
+                                                            entry.id,
+                                                            "disease_name",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                </Field.Root>
+                                                <Field.Root>
+                                                <Field.Label
+                                                    fontSize="xs"
+                                                    mb="0"
+                                                >
+                                                    Document Source
+                                                </Field.Label>
+                                                <Input
+                                                    size="sm"
+                                                    className="input-style"
+                                                    value={
+                                                        entry.metadata
+                                                            .document_source
+                                                    }
+                                                    onChange={(e) =>
+                                                        updateMetadata(
+                                                            entry.id,
+                                                            "document_source",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                </Field.Root>
+                                                <Field.Root>
+                                                <Field.Label
+                                                    fontSize="xs"
+                                                    mb="0"
+                                                >
+                                                    Focus Area
+                                                </Field.Label>
+                                                <Input
+                                                    size="sm"
+                                                    className="input-style"
+                                                    value={
+                                                        entry.metadata
+                                                            .focus_area
+                                                    }
+                                                    onChange={(e) =>
+                                                        updateMetadata(
+                                                            entry.id,
+                                                            "focus_area",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                </Field.Root>
+                                            </VStack>
+                                        </Collapsible.Content>
+                                    </Collapsible.Root>
+                                )}
+                        </Box>
+                    ))}
                 </VStack>
+            )}
+            {/* Action bar */}
+            {fileQueue.length > 0 && (
+                <Flex
+                    justify="space-between"
+                    align="center"
+                    wrap="wrap"
+                    gap="2"
+                >
+                    <Text fontSize="xs" color="gray.500">
+                        {totalPending} pending · {readyToCommit} ready
+                        to commit · {committedCount} committed
+                    </Text>
+                    <HStack>
+                        <Button
+                            onClick={extractAll}
+                            disabled={
+                                !hasPendingOrFailed || isProcessing
+                            }
+                            loading={isProcessing && extractedCount === 0}
+                            loadingText="Extracting..."
+                            size="sm"
+                            className="orange-button"><CheckIcon />Extract All
+                                                    </Button>
+                        <Button
+                            onClick={commitAll}
+                            disabled={
+                                readyToCommit === 0 || isProcessing
+                            }
+                            loading={
+                                isProcessing && readyToCommit === 0
+                            }
+                            loadingText="Committing..."
+                            size="sm"
+                            className="green-button"><CheckIcon />Commit All
+                                                    </Button>
+                    </HStack>
+                </Flex>
+            )}
+        </VStack>
     );
 };
 

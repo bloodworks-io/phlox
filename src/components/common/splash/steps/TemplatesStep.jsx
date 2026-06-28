@@ -1,9 +1,8 @@
 import {
+  Steps,
   VStack,
   SimpleGrid,
   Card,
-  CardBody,
-  CardHeader,
   Heading,
   Text,
   HStack,
@@ -11,9 +10,6 @@ import {
   Flex,
   Spinner,
   Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Box,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
@@ -39,20 +35,20 @@ export const TemplatesStep = ({
     initial="hidden"
     animate="visible"
     exit="exit"
-    spacing={6}
+    gap={6}
     w="100%"
   >
-    <Alert status="info" borderRadius="md">
-      <AlertIcon />
+    <Alert.Root status="info" borderRadius="md">
+      <Alert.Indicator />
       <Box>
-        <AlertTitle>Choose Your Default Template</AlertTitle>
-        <AlertDescription>
+        <Alert.Title>Choose Your Default Template</Alert.Title>
+        <Alert.Description>
           Select a clinical note template that best fits your workflow. You can
           create custom templates and change this setting later in the Settings
           panel.
-        </AlertDescription>
+        </Alert.Description>
       </Box>
-    </Alert>
+    </Alert.Root>
 
     {isFetchingTemplates ? (
       <Flex align="center" justify="center" py={8}>
@@ -62,9 +58,9 @@ export const TemplatesStep = ({
         </Text>
       </Flex>
     ) : (
-      <SimpleGrid columns={1} spacing={4} w="100%">
+      <SimpleGrid columns={1} gap={4} w="100%">
         {availableTemplates.map((template) => (
-          <Card
+          <Card.Root
             key={template.template_key}
             cursor="pointer"
             onClick={() => setSelectedTemplate(template.template_key)}
@@ -85,17 +81,17 @@ export const TemplatesStep = ({
             }}
             transition="all 0.2s"
           >
-            <CardHeader pb={2}>
+            <Card.Header pb={2}>
               <HStack justify="space-between">
                 <Heading size="md" color={currentColors.textPrimary}>
                   {template.template_name}
                 </Heading>
                 {selectedTemplate === template.template_key && (
-                  <Icon as={FaCheckCircle} color="green.500" />
+                  <Icon color="green.500" asChild><FaCheckCircle /></Icon>
                 )}
               </HStack>
-            </CardHeader>
-            <CardBody pt={0}>
+            </Card.Header>
+            <Card.Body pt={0}>
               <Text fontSize="sm" color={currentColors.textSecondary} mb={3}>
                 {TEMPLATE_DESCRIPTIONS[template.template_key] ||
                   "A custom template for clinical documentation."}
@@ -109,8 +105,8 @@ export const TemplatesStep = ({
                 {template.fields?.map((f) => f.field_name).join(", ") ||
                   "Loading..."}
               </Text>
-            </CardBody>
-          </Card>
+            </Card.Body>
+          </Card.Root>
         ))}
       </SimpleGrid>
     )}

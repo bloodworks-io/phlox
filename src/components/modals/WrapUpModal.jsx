@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useColorMode } from "../ui/color-mode";
 import {
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    ModalCloseButton,
+    Steps,
     HStack,
+    Heading,
     VStack,
     Box,
     Text,
@@ -17,10 +13,10 @@ import {
     IconButton,
     Spinner,
     Center,
-    Collapse,
+    Collapsible,
     Alert,
-    AlertIcon,
-    useColorMode,
+    Dialog,
+    Portal,
 } from "@chakra-ui/react";
 import { FaCheckDouble, FaPlus, FaTimes } from "react-icons/fa";
 import { patientApi } from "../../utils/api/patientApi";
@@ -139,217 +135,259 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
     };
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
+        <Dialog.Root
+            open={isOpen}
             size="lg"
-            closeOnOverlayClick={false}
+            closeOnInteractOutside={false}
+            onOpenChange={(e) => {
+                if (!e.open) {
+                    onClose();
+                }
+            }}
         >
-            <ModalOverlay />
-            <ModalContent className="modal-style">
-                <ModalHeader>
-                    <HStack>
-                        <FaCheckDouble />
-                        <Text>Wrap Up</Text>
-                    </HStack>
-                </ModalHeader>
-                <ModalCloseButton />
-                <ModalBody
-                    maxH="55vh"
-                    overflowY="auto"
-                    className="custom-scrollbar"
-                >
-                    <VStack align="stretch" spacing={4}>
-                        <Section title="Jobs to action">
-                            {extracting ? (
-                                <Center py={6}>
-                                    <Spinner size="sm" />
-                                    <Text
-                                        ml={2}
-                                        fontSize="sm"
-                                        color={currentColors.textSecondary}
-                                    >
-                                        Extracting tasks from the plan...
-                                    </Text>
-                                </Center>
-                            ) : actionItems.length === 0 &&
-                              fallback !== "empty" ? (
-                                <Text
-                                    fontSize="sm"
-                                    color={currentColors.textSecondary}
-                                >
-                                    No tasks extracted — add any below.
-                                </Text>
-                            ) : null}
-
-                            <VStack align="stretch" spacing={1}>
-                                {actionItems.map((item, idx) => (
-                                    <HStack
-                                        key={idx}
-                                        align="flex-start"
-                                        spacing={2}
-                                        w="100%"
-                                    >
-                                        <Checkbox
-                                            className="checkbox task-checkbox"
-                                            isChecked={item.checked}
-                                            onChange={() => toggleItem(idx)}
-                                            alignItems="flex-start"
-                                            sx={{
-                                                ".chakra-checkbox__control": {
-                                                    marginTop: "3px",
-                                                },
-                                            }}
-                                        />
-                                        <Input
-                                            value={item.text}
-                                            onChange={(e) =>
-                                                editItemText(
-                                                    idx,
-                                                    e.target.value,
-                                                )
-                                            }
-                                            variant="unstyled"
-                                            size="sm"
-                                            flex="1"
-                                            color={currentColors.textPrimary}
-                                            sx={{
-                                                padding: 0,
-                                                height: "auto",
-                                                lineHeight: "1.4",
-                                            }}
-                                        />
-                                        <IconButton
-                                            aria-label="Remove task"
-                                            icon={<FaTimes />}
-                                            size="xs"
-                                            variant="ghost"
-                                            onClick={() => removeItem(idx)}
-                                        />
-                                    </HStack>
-                                ))}
-                            </VStack>
-
-                            <HStack mt={2}>
-                                <Input
-                                    placeholder="Add a task..."
-                                    value={newTaskText}
-                                    onChange={(e) =>
-                                        setNewTaskText(e.target.value)
-                                    }
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault();
-                                            addTask();
-                                        }
-                                    }}
-                                    size="sm"
-                                    className="input-style"
-                                />
-                                <IconButton
-                                    aria-label="Add task"
-                                    icon={<FaPlus />}
-                                    size="sm"
-                                    onClick={addTask}
-                                />
+            <Portal>
+                <Dialog.Backdrop />
+                <Dialog.Positioner>
+                    <Dialog.Content className="modal-style">
+                        <Dialog.Header>
+                            <HStack>
+                                <FaCheckDouble />
+                                <Heading as="h3" size="xl" fontFamily="heading">
+                                    Wrap Up
+                                </Heading>
                             </HStack>
-                        </Section>
+                        </Dialog.Header>
+                        <Dialog.CloseTrigger />
+                        <Dialog.Body
+                            maxH="55vh"
+                            overflowY="auto"
+                            className="custom-scrollbar"
+                        >
+                            <VStack align="stretch" gap={4}>
+                                <Section title="Jobs to action">
+                                    {extracting ? (
+                                        <Center py={6}>
+                                            <Spinner size="sm" />
+                                            <Text
+                                                ml={2}
+                                                fontSize="sm"
+                                                color={
+                                                    currentColors.textSecondary
+                                                }
+                                            >
+                                                Extracting tasks from the
+                                                plan...
+                                            </Text>
+                                        </Center>
+                                    ) : actionItems.length === 0 &&
+                                      fallback !== "empty" ? (
+                                        <Text
+                                            fontSize="sm"
+                                            color={currentColors.textSecondary}
+                                        >
+                                            No tasks extracted — add any below.
+                                        </Text>
+                                    ) : null}
 
-                        {excluded.length > 0 && (
-                            <Box>
-                                <Text
-                                    fontSize="sm"
-                                    fontWeight="600"
-                                    color={currentColors.textPrimary}
-                                    cursor="pointer"
-                                    userSelect="none"
-                                    onClick={() => setShowExcluded((s) => !s)}
-                                >
-                                    {showExcluded ? "▾" : "▸"} Not tasks
-                                    (review/follow-up) — {excluded.length}
-                                </Text>
-                                <Collapse in={showExcluded} animateOpacity>
-                                    <VStack
-                                        align="stretch"
-                                        spacing={1}
-                                        mt={2}
-                                        pl={2}
-                                    >
-                                        {excluded.map((item, idx) => (
+                                    <VStack align="stretch" gap={1}>
+                                        {actionItems.map((item, idx) => (
                                             <HStack
                                                 key={idx}
-                                                justify="space-between"
+                                                align="flex-start"
+                                                gap={2}
+                                                w="100%"
                                             >
-                                                <Text
-                                                    fontSize="sm"
-                                                    color={
-                                                        currentColors.textSecondary
+                                                <Checkbox.Root
+                                                    className="checkbox task-checkbox"
+                                                    onCheckedChange={() =>
+                                                        toggleItem(idx)
                                                     }
+                                                    alignItems="flex-start"
+                                                    css={{
+                                                        "& .chakra-checkbox__control":
+                                                            {
+                                                                marginTop:
+                                                                    "3px",
+                                                            },
+                                                    }}
+                                                    checked={item.checked}
                                                 >
-                                                    {item.text}
-                                                </Text>
+                                                    <Checkbox.HiddenInput />
+                                                    <Checkbox.Control>
+                                                        <Checkbox.Indicator />
+                                                    </Checkbox.Control>
+                                                </Checkbox.Root>
+                                                <Input
+                                                    value={item.text}
+                                                    onChange={(e) =>
+                                                        editItemText(
+                                                            idx,
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    variant="unstyled"
+                                                    size="sm"
+                                                    flex="1"
+                                                    color={
+                                                        currentColors.textPrimary
+                                                    }
+                                                    css={{
+                                                        padding: 0,
+                                                        height: "auto",
+                                                        lineHeight: "1.4",
+                                                    }}
+                                                />
                                                 <IconButton
-                                                    aria-label="Promote to task"
-                                                    icon={<FaPlus />}
+                                                    aria-label="Remove task"
                                                     size="xs"
                                                     variant="ghost"
                                                     onClick={() =>
-                                                        promoteExcluded(idx)
+                                                        removeItem(idx)
                                                     }
-                                                />
+                                                >
+                                                    <FaTimes />
+                                                </IconButton>
                                             </HStack>
                                         ))}
                                     </VStack>
-                                </Collapse>
-                            </Box>
-                        )}
 
-                        {fallback === "empty" && (
-                            <Alert status="info" borderRadius="md">
-                                <AlertIcon />
-                                No plan text to extract tasks from. Add any
-                                tasks above.
-                            </Alert>
-                        )}
-                        {fallback === "heuristic" && (
-                            <Alert status="warning" borderRadius="md">
-                                <AlertIcon />
-                                Smart extraction unavailable — showing basic
-                                tasks. Edit freely.
-                            </Alert>
-                        )}
+                                    <HStack mt={2}>
+                                        <Input
+                                            placeholder="Add a task..."
+                                            value={newTaskText}
+                                            onChange={(e) =>
+                                                setNewTaskText(e.target.value)
+                                            }
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    addTask();
+                                                }
+                                            }}
+                                            size="sm"
+                                            className="input-style"
+                                        />
+                                        <IconButton
+                                            aria-label="Add task"
+                                            size="sm"
+                                            onClick={addTask}
+                                        >
+                                            <FaPlus />
+                                        </IconButton>
+                                    </HStack>
+                                </Section>
 
-                        {/* TODO: billing suggestions section */}
-                    </VStack>
-                </ModalBody>
-                <ModalFooter>
-                    <HStack justify="flex-end" width="100%">
-                        <Button
-                            onClick={onClose}
-                            size="md"
-                            borderRadius="2xl !important"
-                            className="switch-mode"
-                            sx={{
-                                fontFamily: '"Space Grotesk", sans-serif',
-                                fontWeight: "600",
-                            }}
-                            mr={3}
-                            isDisabled={submitting}
-                        >
-                            Cancel
-                        </Button>
-                        <GreenButton
-                            onClick={handleConfirm}
-                            isLoading={submitting}
-                            loadingText="Saving"
-                            isDisabled={!canConfirm}
-                        >
-                            Confirm &amp; Finish
-                        </GreenButton>
-                    </HStack>
-                </ModalFooter>
-            </ModalContent>
-        </Modal>
+                                {excluded.length > 0 && (
+                                    <Box>
+                                        <Text
+                                            fontSize="sm"
+                                            fontWeight="600"
+                                            color={currentColors.textPrimary}
+                                            cursor="pointer"
+                                            userSelect="none"
+                                            onClick={() =>
+                                                setShowExcluded((s) => !s)
+                                            }
+                                        >
+                                            {showExcluded ? "▾" : "▸"} Not tasks
+                                            (review/follow-up) —{" "}
+                                            {excluded.length}
+                                        </Text>
+                                        <Collapsible.Root open={showExcluded}>
+                                            <Collapsible.Content>
+                                                <VStack
+                                                    align="stretch"
+                                                    gap={1}
+                                                    mt={2}
+                                                    pl={2}
+                                                >
+                                                    {excluded.map(
+                                                        (item, idx) => (
+                                                            <HStack
+                                                                key={idx}
+                                                                justify="space-between"
+                                                            >
+                                                                <Text
+                                                                    fontSize="sm"
+                                                                    color={
+                                                                        currentColors.textSecondary
+                                                                    }
+                                                                >
+                                                                    {item.text}
+                                                                </Text>
+                                                                <IconButton
+                                                                    aria-label="Promote to task"
+                                                                    size="xs"
+                                                                    variant="ghost"
+                                                                    onClick={() =>
+                                                                        promoteExcluded(
+                                                                            idx,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <FaPlus />
+                                                                </IconButton>
+                                                            </HStack>
+                                                        ),
+                                                    )}
+                                                </VStack>
+                                            </Collapsible.Content>
+                                        </Collapsible.Root>
+                                    </Box>
+                                )}
+
+                                {fallback === "empty" && (
+                                    <Alert.Root status="info" borderRadius="md">
+                                        <Alert.Indicator />
+                                        No plan text to extract tasks from. Add
+                                        any tasks above.
+                                    </Alert.Root>
+                                )}
+                                {fallback === "heuristic" && (
+                                    <Alert.Root
+                                        status="warning"
+                                        borderRadius="md"
+                                    >
+                                        <Alert.Indicator />
+                                        Smart extraction unavailable — showing
+                                        basic tasks. Edit freely.
+                                    </Alert.Root>
+                                )}
+
+                                {/* TODO: billing suggestions section */}
+                            </VStack>
+                        </Dialog.Body>
+                        <Dialog.Footer>
+                            <HStack justify="flex-end" width="100%">
+                                <Button
+                                    onClick={onClose}
+                                    size="md"
+                                    borderRadius="2xl"
+                                    className="switch-mode"
+                                    css={{
+                                        fontFamily:
+                                            '"Space Grotesk", sans-serif',
+                                        fontWeight: "600",
+                                    }}
+                                    mr={3}
+                                    disabled={submitting}
+                                >
+                                    Cancel
+                                </Button>
+                                <GreenButton
+                                    onClick={handleConfirm}
+                                    isLoading={submitting}
+                                    loadingText="Saving"
+                                    isDisabled={!canConfirm}
+                                >
+                                    Confirm &amp; Finish
+                                </GreenButton>
+                            </HStack>
+                        </Dialog.Footer>
+                    </Dialog.Content>
+                </Dialog.Positioner>
+            </Portal>
+        </Dialog.Root>
     );
 };
 
