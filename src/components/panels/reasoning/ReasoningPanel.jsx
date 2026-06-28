@@ -35,7 +35,7 @@ const ReasoningPanel = forwardRef(
         return (
             <FloatingPanel
                 isOpen={isOpen}
-                position="left-of-fab"
+                position="left-of-fab-grow-down"
                 showArrow={true}
                 triggerId="fab-reasoning"
                 width={`${dimensions.width}px`}
@@ -53,7 +53,7 @@ const ReasoningPanel = forwardRef(
                     <Flex
                         align="center"
                         justify="space-between"
-                        p="4"
+                        p="3"
                         className="panel-header"
                         flexShrink={0}
                     >

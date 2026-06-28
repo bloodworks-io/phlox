@@ -176,7 +176,7 @@ const EncryptionSetup = ({ onComplete }) => {
         initial="hidden"
         animate="visible"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl !important"
+        borderRadius="2xl"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
@@ -437,7 +437,7 @@ const EncryptionSetup = ({ onComplete }) => {
               loadingText="Setting up encryption..."
               disabled={!isValid()}
               size="md"
-              borderRadius="2xl !important"
+              borderRadius="2xl"
               className="switch-mode"
               css={{
                 fontFamily: '"Space Grotesk", sans-serif',

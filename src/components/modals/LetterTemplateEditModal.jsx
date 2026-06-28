@@ -1,4 +1,4 @@
-import { Steps, Button, VStack, HStack, Input, Textarea, Dialog, Portal } from "@chakra-ui/react";
+import { Steps, Button, VStack, HStack, Heading, Input, Textarea, Dialog, Portal } from "@chakra-ui/react";
 
 const LetterTemplateEditModal = ({
   isOpen,
@@ -30,7 +30,9 @@ const LetterTemplateEditModal = ({
         <Dialog.Positioner>
           <Dialog.Content className="modal-style">
             <Dialog.Header>
-              {template?.id ? "Edit Template" : "New Template"}
+              <Heading as="h2" size="md" fontFamily="heading">
+                {template?.id ? "Edit Template" : "New Template"}
+              </Heading>
             </Dialog.Header>
             <Dialog.CloseTrigger />
             <Dialog.Body maxH="40vh" overflowY="auto" className="custom-scrollbar">

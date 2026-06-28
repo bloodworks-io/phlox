@@ -271,7 +271,7 @@ const DemographicsForm = ({
                     <Button
                         onClick={onCancel}
                         size="md"
-                        borderRadius="2xl !important"
+                        borderRadius="2xl"
                         className="switch-mode"
                         sx={btnSx}>{cancelIcon || undefined}{cancelLabel}</Button>
                 )}
@@ -280,7 +280,7 @@ const DemographicsForm = ({
                     disabled={!requiredMet}
                     loading={isSaving}
                     size="md"
-                    borderRadius="2xl !important"
+                    borderRadius="2xl"
                     className="switch-mode"
                     sx={btnSx}
                 >

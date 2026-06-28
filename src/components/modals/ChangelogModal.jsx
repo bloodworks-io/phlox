@@ -1,7 +1,20 @@
 import React from "react";
 import { useColorMode } from "../ui/color-mode";
 import ReactMarkdown from "react-markdown";
-import { Steps, Box, Text, Image, HStack, VStack, Button, Dialog, Portal } from "@chakra-ui/react";
+import ModalTitle from "../common/ModalTitle";
+
+import {
+    Steps,
+    Box,
+    Heading,
+    Text,
+    Image,
+    HStack,
+    VStack,
+    Button,
+    Dialog,
+    Portal,
+} from "@chakra-ui/react";
 import { colors } from "../../theme/colors";
 
 const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
@@ -14,20 +27,27 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
         .filter((release) => release.trim() !== "");
 
     return (
-        <Dialog.Root open={isOpen} size='lg' onOpenChange={e => {
-            if (!e.open) {
-                onClose();
-            }
-        }}>
+        <Dialog.Root
+            open={isOpen}
+            size="lg"
+            onOpenChange={(e) => {
+                if (!e.open) {
+                    onClose();
+                }
+            }}
+        >
             <Portal>
-
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
                     <Dialog.Content className="modal-style">
                         <Dialog.Header>
                             <HStack>
-                                <Image src="/logo.webp" alt="Phlox Logo" width="30px" />
-                                <Text>Changelog v{version}</Text>
+                                <Image
+                                    src="/logo.webp"
+                                    alt="Phlox Logo"
+                                    width="30px"
+                                />
+                                <ModalTitle>Changelog v{version}</ModalTitle>
                             </HStack>
                         </Dialog.Header>
                         <Dialog.CloseTrigger />
@@ -42,7 +62,9 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                 {releases.length > 0 ? (
                                     releases.map((release, index) => (
                                         <Box key={index} mb={2}>
-                                            <ReactMarkdown>{release}</ReactMarkdown>
+                                            <ReactMarkdown>
+                                                {release}
+                                            </ReactMarkdown>
                                         </Box>
                                     ))
                                 ) : (
@@ -57,11 +79,12 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                 <Button
                                     onClick={onClose}
                                     size="md"
-                                    borderRadius="2xl !important"
+                                    borderRadius="2xl"
                                     className="switch-mode"
                                     css={{
-                                        fontFamily: '"Space Grotesk", sans-serif',
-                                        fontWeight: "600"
+                                        fontFamily:
+                                            '"Space Grotesk", sans-serif',
+                                        fontWeight: "600",
                                     }}
                                 >
                                     Close
@@ -70,7 +93,6 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                         </Dialog.Footer>
                     </Dialog.Content>
                 </Dialog.Positioner>
-
             </Portal>
         </Dialog.Root>
     );

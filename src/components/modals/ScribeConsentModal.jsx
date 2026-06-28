@@ -1,4 +1,4 @@
-import { Steps, Button, HStack, Text, Dialog, Portal } from "@chakra-ui/react";
+import { Steps, Button, HStack, Heading, Text, Dialog, Portal } from "@chakra-ui/react";
 
 const formatDate = (iso) => {
     if (!iso) return "";
@@ -33,9 +33,11 @@ const ScribeConsentModal = ({
                 <Dialog.Positioner>
                     <Dialog.Content className="modal-style">
                         <Dialog.Header>
-                            {hasDeclined
-                                ? "Previously declined"
-                                : "Ambient scribe consent"}
+                            <Heading as="h2" size="md" fontFamily="heading">
+                                {hasDeclined
+                                    ? "Previously declined"
+                                    : "Ambient scribe consent"}
+                            </Heading>
                         </Dialog.Header>
                         <Dialog.CloseTrigger />
                         <Dialog.Body>

@@ -1,5 +1,14 @@
-import { Steps, Box, Flex, Avatar, Text, IconButton, Collapsible, VStack } from "@chakra-ui/react";
-import { Tooltip } from '@/components/ui/tooltip';
+import {
+    Steps,
+    Box,
+    Flex,
+    Avatar,
+    Text,
+    IconButton,
+    Collapsible,
+    VStack,
+} from "@chakra-ui/react";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "../ui/color-mode";
 import { useState } from "react";
 import { DeleteIcon } from "../common/icons";
@@ -42,17 +51,21 @@ const SidebarPatientList = ({
                             >
                                 {patients.map((patient) => {
                                     const initials = getInitials(patient.name);
-                                    const avatarBg = getAvatarColor(patient.name);
+                                    const avatarBg = getAvatarColor(
+                                        patient.name,
+                                    );
                                     const isHovered =
                                         hoveredPatientId === patient.id;
 
                                     return (
                                         <Tooltip
                                             key={patient.id}
-                                            content={isCollapsed ? patient.name : ""}
+                                            content={
+                                                isCollapsed ? patient.name : ""
+                                            }
                                             disabled={!isCollapsed}
                                             positioning={{
-                                                placement: "right"
+                                                placement: "right",
                                             }}
                                         >
                                             <Flex
@@ -71,7 +84,9 @@ const SidebarPatientList = ({
                                                     onSelectPatient(patient)
                                                 }
                                                 onMouseEnter={() =>
-                                                    setHoveredPatientId(patient.id)
+                                                    setHoveredPatientId(
+                                                        patient.id,
+                                                    )
                                                 }
                                                 onMouseLeave={() =>
                                                     setHoveredPatientId(null)
@@ -79,7 +94,7 @@ const SidebarPatientList = ({
                                                 bg={
                                                     isHovered
                                                         ? "rgba(184, 192, 224, 0.1)"
-                                                        : "transparent !important"
+                                                        : "transparent"
                                                 }
                                                 transition="all 0.2s"
                                                 className="patient-list-item"
@@ -90,11 +105,18 @@ const SidebarPatientList = ({
                                                         color="white"
                                                         size={
                                                             isCollapsed
-                                                                ? "sm"
-                                                                : "sm"
+                                                                ? "xs"
+                                                                : "xs"
                                                         }
-                                                        mr={isCollapsed ? "0" : "3"}>
-                                                        <Avatar.Fallback>{initials}</Avatar.Fallback>
+                                                        mr={
+                                                            isCollapsed
+                                                                ? "0"
+                                                                : "3"
+                                                        }
+                                                    >
+                                                        <Avatar.Fallback>
+                                                            {initials}
+                                                        </Avatar.Fallback>
                                                     </Avatar.Root>
 
                                                     {!isCollapsed && (
@@ -108,10 +130,14 @@ const SidebarPatientList = ({
                                                             </Text>
                                                             <Text
                                                                 fontSize="xs"
-                                                                color={labelColor}
+                                                                color={
+                                                                    labelColor
+                                                                }
                                                             >
                                                                 UR:{" "}
-                                                                {patient.ur_number}
+                                                                {
+                                                                    patient.ur_number
+                                                                }
                                                             </Text>
                                                         </Box>
                                                     )}
@@ -128,7 +154,10 @@ const SidebarPatientList = ({
                                                             onDeletePatient(
                                                                 patient,
                                                             );
-                                                        }}><DeleteIcon /></IconButton>
+                                                        }}
+                                                    >
+                                                        <DeleteIcon />
+                                                    </IconButton>
                                                 )}
                                             </Flex>
                                         </Tooltip>
@@ -143,7 +172,9 @@ const SidebarPatientList = ({
                                 px="2"
                                 mt={2}
                             >
-                                {isCollapsed ? "No pts" : "No patients available"}
+                                {isCollapsed
+                                    ? "No pts"
+                                    : "No patients available"}
                             </Text>
                         )}
                     </Box>

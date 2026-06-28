@@ -1,4 +1,4 @@
-import { Steps, Button, HStack, Text, Dialog, Portal } from "@chakra-ui/react";
+import { Steps, Button, HStack, Heading, Text, Dialog, Portal } from "@chakra-ui/react";
 
 const DeleteConfirmationModal = ({
   isOpen,
@@ -18,7 +18,9 @@ const DeleteConfirmationModal = ({
         <Dialog.Backdrop />
         <Dialog.Positioner>
           <Dialog.Content className="modal-style">
-            <Dialog.Header>{title}</Dialog.Header>
+            <Dialog.Header>
+              <Heading as="h2" size="md" fontFamily="heading">{title}</Heading>
+            </Dialog.Header>
             <Dialog.CloseTrigger />
             <Dialog.Body>
               <Text>

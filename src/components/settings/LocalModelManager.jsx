@@ -299,7 +299,7 @@ const LocalModelManager = ({ className }) => {
         </HStack>
       )}
       {/* Tabs for LLM and Whisper models */}
-      <Tabs.Root variant='enclosed'>
+      <Tabs.Root variant='enclosed' defaultValue="0">
         <Tabs.List>
           <Tabs.Trigger value="0">
             <HStack>

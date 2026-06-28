@@ -376,6 +376,7 @@ const DashboardChat = () => {
                         <Text
                             fontSize="2xl"
                             fontWeight="bold"
+                            fontFamily="heading"
                             className="dashboard-chat-greeting"
                         >
                             How can I help you today?

@@ -291,7 +291,7 @@ const SplashScreen = ({ onComplete }) => {
         initial="hidden"
         animate="visible"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl !important"
+        borderRadius="2xl"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
@@ -430,7 +430,7 @@ const SplashScreen = ({ onComplete }) => {
               disabled={currentStepIndex === 0}
               variant="outline"
               size="md"
-              borderRadius="2xl !important"
+              borderRadius="2xl"
               className="switch-mode"><FaArrowLeft />Previous
                           </Button>
 
@@ -444,7 +444,7 @@ const SplashScreen = ({ onComplete }) => {
               }
               disabled={!canProceedToNext()}
               size="md"
-              borderRadius="2xl !important"
+              borderRadius="2xl"
               className="switch-mode"
               css={{
                 fontFamily: '"Space Grotesk", sans-serif',

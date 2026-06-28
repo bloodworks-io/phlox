@@ -89,7 +89,7 @@ const PreviousVisitPanel = ({
         <Flex
           align="center"
           justify="space-between"
-          p="4"
+          p="3"
           className="panel-header"
           flexShrink={0}
         >

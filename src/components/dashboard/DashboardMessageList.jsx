@@ -183,7 +183,7 @@ const DashboardMessageList = ({
 
                                         return (
                                             <Box
-                                                fontSize="sm !important"
+                                                fontSize="sm"
                                                 key={`text-${messageIndex}-${blockIndex}`}
                                                 width="100%"
                                             >

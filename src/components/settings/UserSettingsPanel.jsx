@@ -70,7 +70,7 @@ const UserSettingsPanel = ({
       </Flex>
       <Collapsible.Root open={!isCollapsed}>
         <Collapsible.Content>
-          <Tabs.Root variant='enclosed' mt={4}>
+          <Tabs.Root variant='enclosed' mt={4} defaultValue="0">
             <Tabs.List>
               <Tabs.Trigger className="tab-style" value="0">
                 <HStack>

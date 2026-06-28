@@ -3,6 +3,7 @@ import {
     Button,
     VStack,
     HStack,
+    Heading,
     Input,
     NativeSelect,
     Textarea,
@@ -442,7 +443,7 @@ const TemplateEditor = ({
                     <Dialog.Backdrop />
                     <Dialog.Positioner>
                         <Dialog.Content className="modal-style">
-                            <Dialog.Header>Loading Template...</Dialog.Header>
+                            <Dialog.Header><Heading as="h2" size="md" fontFamily="heading">Loading Template...</Heading></Dialog.Header>
                             <Dialog.CloseTrigger />
                             <Dialog.Body>
                                 <Text>Loading template data...</Text>
@@ -763,7 +764,7 @@ const TemplateEditor = ({
                             <Button
                                 onClick={onClose}
                                 size="md"
-                                borderRadius="2xl !important"
+                                borderRadius="2xl"
                                 className="switch-mode"
                                 css={{
                                     fontFamily: '"Space Grotesk", sans-serif',
@@ -776,7 +777,7 @@ const TemplateEditor = ({
                             <Button
                                 onClick={handleSave}
                                 size="md"
-                                borderRadius="2xl !important"
+                                borderRadius="2xl"
                                 className="switch-mode"
                                 css={{
                                     fontFamily: '"Space Grotesk", sans-serif',

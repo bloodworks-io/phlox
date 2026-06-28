@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, Box, Button, Flex, Heading, Icon, Text } from "@chakra-ui/react";
+import {
+    Steps,
+    Box,
+    Button,
+    Flex,
+    Heading,
+    Icon,
+    Text,
+} from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
 import { colors } from "../../theme/colors";
@@ -8,7 +16,15 @@ import UrSearchField from "./UrSearchField";
 
 const MotionBox = motion(Box);
 
-export const PathHalf = ({ icon, title, subtitle, accent, c, tileBg, onClick }) => (
+export const PathHalf = ({
+    icon,
+    title,
+    subtitle,
+    accent,
+    c,
+    tileBg,
+    onClick,
+}) => (
     <Flex
         flex="1"
         direction="column"
@@ -23,7 +39,9 @@ export const PathHalf = ({ icon, title, subtitle, accent, c, tileBg, onClick }) 
         bg={tileBg}
         borderRadius="xl"
         _hover={{ bg: "rgba(184, 192, 224, 0.12)" }}
-        asChild><button onClick={onClick}>
+        asChild
+    >
+        <button onClick={onClick}>
             <Icon
                 as={icon}
                 boxSize={12}
@@ -38,7 +56,8 @@ export const PathHalf = ({ icon, title, subtitle, accent, c, tileBg, onClick }) 
             <Text fontSize="xs" color={c.textSecondary} mt={1}>
                 {subtitle}
             </Text>
-        </button></Flex>
+        </button>
+    </Flex>
 );
 
 const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
@@ -66,7 +85,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                 transition={{ duration: 0.25 }}
                 className="panels-bg"
                 css={{
-                    borderRadius: "2xl !important"
+                    borderRadius: "2xl !important",
                 }}
                 p={{ base: 6, md: 8 }}
                 w={{ base: "100%", sm: "90%", md: "520px" }}
@@ -83,7 +102,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                         size="lg"
                         color={c.textPrimary}
                         css={{
-                            fontFamily: '"Space Grotesk", sans-serif'
+                            fontFamily: '"Space Grotesk", sans-serif',
                         }}
                     >
                         New encounter
@@ -128,28 +147,35 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                         </Flex>
                     ) : (
                         <Box>
-                            <Flex alignItems="center" asChild><form onSubmit={handleFind}>
+                            <Flex alignItems="center" asChild>
+                                <form onSubmit={handleFind}>
                                     <UrSearchField
                                         value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
+                                        onChange={(e) =>
+                                            setQuery(e.target.value)
+                                        }
                                         onSearch={handleFind}
                                         isLoading={isSearchLoading}
                                         autoFocus
                                     />
-                                </form></Flex>
+                                </form>
+                            </Flex>
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="md"
                                 mt={3}
-                                borderRadius="2xl !important"
+                                borderRadius="2xl"
                                 className="switch-mode"
                                 css={{
                                     fontFamily: '"Space Grotesk", sans-serif',
-                                    fontWeight: "600"
+                                    fontWeight: "600",
                                 }}
-                                onClick={() => setView("choose")}><FaArrowLeft />Back
-                                                            </Button>
+                                onClick={() => setView("choose")}
+                            >
+                                <FaArrowLeft />
+                                Back
+                            </Button>
                         </Box>
                     )}
                 </MotionBox>

@@ -203,7 +203,7 @@ const DocumentPanel = ({
       <Flex
         align="center"
         justify="space-between"
-        p="4"
+        p="3"
         className="panel-header"
         flexShrink={0}
       >
@@ -350,7 +350,7 @@ const DocumentPanel = ({
                             isReplaced ? "green-button" : "grey-button"
                           }
                           variant={isReplaced ? "solid" : "outline"}
-                          height="20px !important"
+                          height="20px"
                           minWidth="70px"
                           fontSize="xs">{
                             isReplaced ? <CheckIcon boxSize="2" /> : null

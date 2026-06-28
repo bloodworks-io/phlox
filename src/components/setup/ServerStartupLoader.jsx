@@ -221,7 +221,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         p={8}
-        borderRadius="2xl !important"
+        borderRadius="2xl"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}

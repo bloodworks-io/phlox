@@ -6,7 +6,7 @@ const ChatHeader = ({ title = "Chat With Phlox", onClose }) => {
         <Flex
             align="center"
             justify="space-between"
-            p="4"
+            p="3"
             borderBottomWidth="1px"
             className="panel-header"
             flexShrink={0}

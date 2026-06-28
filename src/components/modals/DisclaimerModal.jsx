@@ -8,6 +8,7 @@ import {
     Text,
     VStack,
     HStack,
+    Heading,
     Icon,
     Checkbox,
     Image,
@@ -47,7 +48,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                         <Dialog.Header>
                             <HStack>
                                 <Image src="/logo.webp" alt="Phlox Logo" width="30px" />
-                                <Text>Important Notice</Text>
+                                <Heading as="h2" size="md" fontFamily="heading">Important Notice</Heading>
                             </HStack>
                         </Dialog.Header>
                         {/* Warning alert */}
@@ -184,7 +185,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                         onClick={handleContinue}
                                         disabled={!agreed}
                                         size="md"
-                                        borderRadius="2xl !important"
+                                        borderRadius="2xl"
                                         className="switch-mode"
                                         css={{
                                             fontFamily: '"Space Grotesk", sans-serif',

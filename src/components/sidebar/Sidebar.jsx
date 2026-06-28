@@ -17,7 +17,7 @@ import {
     Image,
     Flex,
 } from "@chakra-ui/react";
-import { Tooltip } from '@/components/ui/tooltip';
+import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "../ui/color-mode";
 import { useApiToast } from "../../utils/helpers/apiToastContext";
 import { useState, useEffect, useRef } from "react";
@@ -249,13 +249,19 @@ const Sidebar = ({
                     zIndex="200"
                     variant="ghost"
                     color={labelColor}
-                    _hover={{ bg: hoverColor }}><CollapseIcon boxSize="20px" /></IconButton>
+                    _hover={{ bg: hoverColor }}
+                >
+                    <CollapseIcon boxSize="20px" />
+                </IconButton>
             )}
             {/* Regular toggle button - only show when expanded on larger screens */}
             {!isSmallScreen && !isCollapsed && (
-                <Tooltip content="Collapse Sidebar" positioning={{
-                    placement: "right"
-                }}>
+                <Tooltip
+                    content="Collapse Sidebar"
+                    positioning={{
+                        placement: "right",
+                    }}
+                >
                     <IconButton
                         cursor={isCollapsed ? "pointer" : "w-resize"}
                         onClick={toggleSidebar}
@@ -268,7 +274,10 @@ const Sidebar = ({
                         zIndex="200"
                         variant="ghost"
                         color={labelColor}
-                        _hover={{ bg: hoverColor }}><CollapseIcon boxSize="20px" /></IconButton>
+                        _hover={{ bg: hoverColor }}
+                    >
+                        <CollapseIcon boxSize="20px" />
+                    </IconButton>
                 </Tooltip>
             )}
             {/* Logo Area */}
@@ -287,14 +296,20 @@ const Sidebar = ({
                           : "5px"
                 }
                 mb={isCollapsed ? "10px" : "15px"}
-                asChild><button
+                asChild
+            >
+                <button
                     onClick={() =>
                         isCollapsed ? toggleSidebar() : handleNavigation("/")
-                    }>
+                    }
+                >
                     {isCollapsed ? (
-                        <Tooltip content="Expand Sidebar" positioning={{
-                            placement: "right"
-                        }}>
+                        <Tooltip
+                            content="Expand Sidebar"
+                            positioning={{
+                                placement: "right",
+                            }}
+                        >
                             <Box
                                 position="relative"
                                 width="35px"
@@ -324,7 +339,8 @@ const Sidebar = ({
                     ) : (
                         <Image src="/logo.webp" alt="Logo" width="100px" />
                     )}
-                </button></Box>
+                </button>
+            </Box>
             {/* Main Content Area - Restructured for better collapsed view */}
             <Flex
                 direction="column"
@@ -362,7 +378,7 @@ const Sidebar = ({
                     <Tooltip
                         content="New Note"
                         positioning={{
-                            placement: isCollapsed ? "right" : "top"
+                            placement: isCollapsed ? "right" : "top",
                         }}
                     >
                         <Box

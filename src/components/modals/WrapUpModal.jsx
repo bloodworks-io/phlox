@@ -3,6 +3,7 @@ import { useColorMode } from "../ui/color-mode";
 import {
     Steps,
     HStack,
+    Heading,
     VStack,
     Box,
     Text,
@@ -136,23 +137,24 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
     return (
         <Dialog.Root
             open={isOpen}
-            size='lg'
+            size="lg"
             closeOnInteractOutside={false}
-            onOpenChange={e => {
+            onOpenChange={(e) => {
                 if (!e.open) {
                     onClose();
                 }
             }}
         >
             <Portal>
-
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
                     <Dialog.Content className="modal-style">
                         <Dialog.Header>
                             <HStack>
                                 <FaCheckDouble />
-                                <Text>Wrap Up</Text>
+                                <Heading as="h3" size="xl" fontFamily="heading">
+                                    Wrap Up
+                                </Heading>
                             </HStack>
                         </Dialog.Header>
                         <Dialog.CloseTrigger />
@@ -169,9 +171,12 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                             <Text
                                                 ml={2}
                                                 fontSize="sm"
-                                                color={currentColors.textSecondary}
+                                                color={
+                                                    currentColors.textSecondary
+                                                }
                                             >
-                                                Extracting tasks from the plan...
+                                                Extracting tasks from the
+                                                plan...
                                             </Text>
                                         </Center>
                                     ) : actionItems.length === 0 &&
@@ -194,14 +199,24 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                             >
                                                 <Checkbox.Root
                                                     className="checkbox task-checkbox"
-                                                    onCheckedChange={() => toggleItem(idx)}
+                                                    onCheckedChange={() =>
+                                                        toggleItem(idx)
+                                                    }
                                                     alignItems="flex-start"
                                                     css={{
-                                                        '& .chakra-checkbox__control': {
-                                                            marginTop: "3px",
-                                                        }
+                                                        "& .chakra-checkbox__control":
+                                                            {
+                                                                marginTop:
+                                                                    "3px",
+                                                            },
                                                     }}
-                                                    checked={item.checked}><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Root>
+                                                    checked={item.checked}
+                                                >
+                                                    <Checkbox.HiddenInput />
+                                                    <Checkbox.Control>
+                                                        <Checkbox.Indicator />
+                                                    </Checkbox.Control>
+                                                </Checkbox.Root>
                                                 <Input
                                                     value={item.text}
                                                     onChange={(e) =>
@@ -213,18 +228,25 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                     variant="unstyled"
                                                     size="sm"
                                                     flex="1"
-                                                    color={currentColors.textPrimary}
+                                                    color={
+                                                        currentColors.textPrimary
+                                                    }
                                                     css={{
                                                         padding: 0,
                                                         height: "auto",
-                                                        lineHeight: "1.4"
+                                                        lineHeight: "1.4",
                                                     }}
                                                 />
                                                 <IconButton
                                                     aria-label="Remove task"
                                                     size="xs"
                                                     variant="ghost"
-                                                    onClick={() => removeItem(idx)}><FaTimes /></IconButton>
+                                                    onClick={() =>
+                                                        removeItem(idx)
+                                                    }
+                                                >
+                                                    <FaTimes />
+                                                </IconButton>
                                             </HStack>
                                         ))}
                                     </VStack>
@@ -245,7 +267,13 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                             size="sm"
                                             className="input-style"
                                         />
-                                        <IconButton aria-label="Add task" size="sm" onClick={addTask}><FaPlus /></IconButton>
+                                        <IconButton
+                                            aria-label="Add task"
+                                            size="sm"
+                                            onClick={addTask}
+                                        >
+                                            <FaPlus />
+                                        </IconButton>
                                     </HStack>
                                 </Section>
 
@@ -257,10 +285,13 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                             color={currentColors.textPrimary}
                                             cursor="pointer"
                                             userSelect="none"
-                                            onClick={() => setShowExcluded((s) => !s)}
+                                            onClick={() =>
+                                                setShowExcluded((s) => !s)
+                                            }
                                         >
                                             {showExcluded ? "▾" : "▸"} Not tasks
-                                            (review/follow-up) — {excluded.length}
+                                            (review/follow-up) —{" "}
+                                            {excluded.length}
                                         </Text>
                                         <Collapsible.Root open={showExcluded}>
                                             <Collapsible.Content>
@@ -270,28 +301,35 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                     mt={2}
                                                     pl={2}
                                                 >
-                                                    {excluded.map((item, idx) => (
-                                                        <HStack
-                                                            key={idx}
-                                                            justify="space-between"
-                                                        >
-                                                            <Text
-                                                                fontSize="sm"
-                                                                color={
-                                                                    currentColors.textSecondary
-                                                                }
+                                                    {excluded.map(
+                                                        (item, idx) => (
+                                                            <HStack
+                                                                key={idx}
+                                                                justify="space-between"
                                                             >
-                                                                {item.text}
-                                                            </Text>
-                                                            <IconButton
-                                                                aria-label="Promote to task"
-                                                                size="xs"
-                                                                variant="ghost"
-                                                                onClick={() =>
-                                                                    promoteExcluded(idx)
-                                                                }><FaPlus /></IconButton>
-                                                        </HStack>
-                                                    ))}
+                                                                <Text
+                                                                    fontSize="sm"
+                                                                    color={
+                                                                        currentColors.textSecondary
+                                                                    }
+                                                                >
+                                                                    {item.text}
+                                                                </Text>
+                                                                <IconButton
+                                                                    aria-label="Promote to task"
+                                                                    size="xs"
+                                                                    variant="ghost"
+                                                                    onClick={() =>
+                                                                        promoteExcluded(
+                                                                            idx,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <FaPlus />
+                                                                </IconButton>
+                                                            </HStack>
+                                                        ),
+                                                    )}
                                                 </VStack>
                                             </Collapsible.Content>
                                         </Collapsible.Root>
@@ -301,15 +339,18 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                 {fallback === "empty" && (
                                     <Alert.Root status="info" borderRadius="md">
                                         <Alert.Indicator />
-                                        No plan text to extract tasks from. Add any
-                                        tasks above.
+                                        No plan text to extract tasks from. Add
+                                        any tasks above.
                                     </Alert.Root>
                                 )}
                                 {fallback === "heuristic" && (
-                                    <Alert.Root status="warning" borderRadius="md">
+                                    <Alert.Root
+                                        status="warning"
+                                        borderRadius="md"
+                                    >
                                         <Alert.Indicator />
-                                        Smart extraction unavailable — showing basic
-                                        tasks. Edit freely.
+                                        Smart extraction unavailable — showing
+                                        basic tasks. Edit freely.
                                     </Alert.Root>
                                 )}
 
@@ -321,11 +362,12 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                 <Button
                                     onClick={onClose}
                                     size="md"
-                                    borderRadius="2xl !important"
+                                    borderRadius="2xl"
                                     className="switch-mode"
                                     css={{
-                                        fontFamily: '"Space Grotesk", sans-serif',
-                                        fontWeight: "600"
+                                        fontFamily:
+                                            '"Space Grotesk", sans-serif',
+                                        fontWeight: "600",
                                     }}
                                     mr={3}
                                     disabled={submitting}
@@ -344,7 +386,6 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                         </Dialog.Footer>
                     </Dialog.Content>
                 </Dialog.Positioner>
-
             </Portal>
         </Dialog.Root>
     );

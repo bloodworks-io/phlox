@@ -128,7 +128,7 @@ const EncryptionUnlock = ({ onComplete }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl !important"
+        borderRadius="2xl"
         boxShadow="2xl"
         className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
@@ -238,7 +238,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             loading={isSubmitting}
             loadingText="Unlocking..."
             disabled={passphrase.length < 1}
-            borderRadius="2xl !important"
+            borderRadius="2xl"
             size="lg"
             className="switch-mode"
             css={{

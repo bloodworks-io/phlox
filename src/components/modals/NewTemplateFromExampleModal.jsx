@@ -1,4 +1,4 @@
-import { Steps, Button, HStack, Textarea, Box, Text, VStack, Dialog, Portal } from "@chakra-ui/react";
+import { Steps, Button, HStack, Heading, Textarea, Box, Text, VStack, Dialog, Portal } from "@chakra-ui/react";
 import { useColorMode } from "../ui/color-mode";
 import { colors } from "../../theme/colors";
 
@@ -24,7 +24,7 @@ const NewTemplateFromExampleModal = ({
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
                     <Dialog.Content className="modal-style">
-                        <Dialog.Header>New Template from Example</Dialog.Header>
+                        <Dialog.Header><Heading as="h2" size="md" fontFamily="heading">New Template from Example</Heading></Dialog.Header>
                         <Dialog.CloseTrigger />
                         <Dialog.Body
                             maxH="50vh"
@@ -116,7 +116,7 @@ const NewTemplateFromExampleModal = ({
                                 <Button
                                     onClick={onClose}
                                     size="md"
-                                    borderRadius="2xl !important"
+                                    borderRadius="2xl"
                                     className="switch-mode"
                                     css={{
                                         fontFamily: '"Space Grotesk", sans-serif',
@@ -131,7 +131,7 @@ const NewTemplateFromExampleModal = ({
                                     loading={isLoading}
                                     loadingText="Creating..."
                                     size="md"
-                                    borderRadius="2xl !important"
+                                    borderRadius="2xl"
                                     className="switch-mode"
                                     css={{
                                         fontFamily: '"Space Grotesk", sans-serif',

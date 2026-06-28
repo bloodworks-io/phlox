@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Button, HStack, Dialog, Portal } from "@chakra-ui/react";
+import { Steps, Button, HStack, Heading, Dialog, Portal } from "@chakra-ui/react";
 import LocalModelManager from "../settings/LocalModelManager";
 
 const LocalModelManagerModal = ({ isOpen, onClose }) => {
@@ -14,7 +14,7 @@ const LocalModelManagerModal = ({ isOpen, onClose }) => {
         <Dialog.Backdrop />
         <Dialog.Positioner>
           <Dialog.Content className="modal-style">
-            <Dialog.Header>Local Model Manager</Dialog.Header>
+            <Dialog.Header><Heading as="h2" size="md" fontFamily="heading">Local Model Manager</Heading></Dialog.Header>
             <Dialog.CloseTrigger />
             <Dialog.Body>
               <LocalModelManager className="modal-body-embed" />

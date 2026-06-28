@@ -53,45 +53,42 @@ const FloatingPanel = ({
 
         const updateArrowPosition = () => {
             const triggerEl = document.getElementById(triggerId);
-            if (triggerEl) {
-                const triggerRect = triggerEl.getBoundingClientRect();
+            if (!triggerEl || !panelRef.current) return;
+            const triggerRect = triggerEl.getBoundingClientRect();
+            const panelRect = panelRef.current.getBoundingClientRect();
 
-                if (position === "left-of-fab") {
-                    const menuEl = triggerEl.closest(".floating-action-menu");
-                    if (menuEl) {
-                        const menuRect = menuEl.getBoundingClientRect();
-                        setMinPanelHeight(`${menuRect.height}px`);
-
-                        const offset =
-                            triggerRect.top +
-                            triggerRect.height / 2 -
-                            (menuRect.top + menuRect.height / 2);
-                        setArrowTop(`calc(50% + ${offset}px)`);
-                    }
-                } else if (
-                    position === "bottom-center" ||
-                    position === "above-transcript-button"
-                ) {
-                    const menuEl =
-                        triggerEl.closest(".pill-box-scribe") || triggerEl;
-                    if (menuEl) {
-                        const menuRect = menuEl.getBoundingClientRect();
-                        const offset =
-                            triggerRect.left +
-                            triggerRect.width / 2 -
-                            (menuRect.left + menuRect.width / 2);
-                        setArrowLeft(`calc(50% + ${offset}px)`);
-                    }
+            if (position === "left-of-fab") {
+                const menuEl = triggerEl.closest(".floating-action-menu");
+                if (menuEl) {
+                    setMinPanelHeight(
+                        `${menuEl.getBoundingClientRect().height}px`,
+                    );
                 }
+                setArrowTop(
+                    `${triggerRect.top + triggerRect.height / 2 - panelRect.top}px`,
+                );
+            } else if (
+                position === "bottom-center" ||
+                position === "above-transcript-button"
+            ) {
+                setArrowLeft(
+                    `${triggerRect.left + triggerRect.width / 2 - panelRect.left}px`,
+                );
             }
         };
 
         const frameId = requestAnimationFrame(updateArrowPosition);
         window.addEventListener("resize", updateArrowPosition);
+        let resizeObserver;
+        if (panelRef.current && typeof ResizeObserver !== "undefined") {
+            resizeObserver = new ResizeObserver(() => updateArrowPosition());
+            resizeObserver.observe(panelRef.current);
+        }
 
         return () => {
             cancelAnimationFrame(frameId);
             window.removeEventListener("resize", updateArrowPosition);
+            resizeObserver?.disconnect();
         };
     }, [isOpen, showArrow, triggerId, position, height, width]);
 
@@ -104,6 +101,11 @@ const FloatingPanel = ({
                     right: "110px",
                     top: "50%",
                     transform: "translateY(-50%)",
+                };
+            case "left-of-fab-grow-down":
+                return {
+                    right: "110px",
+                    top: "calc(50% - 110px)",
                 };
             case "above-transcript-button":
                 return {
@@ -169,10 +171,11 @@ const FloatingPanel = ({
                         transform="translateY(-50%)"
                         width="13px"
                         height="24px"
-                        viewBox="0 0 14 24"
+                        viewBox="4 0 6 24"
                         zIndex="1"
                         asChild
-                    ><svg>
+                    >
+                        <svg>
                             <path
                                 d="M 0 0.5 Q 7 8 14 0.5 L 14 23.5 Q 7 16 0 23.5 Z"
                                 fill={bgColor}
@@ -189,7 +192,8 @@ const FloatingPanel = ({
                                 stroke={borderColor}
                                 strokeWidth="1"
                             />
-                        </svg></Box>
+                        </svg>
+                    </Box>
                 )}
                 {showArrow &&
                     (position === "bottom-center" ||
@@ -204,7 +208,8 @@ const FloatingPanel = ({
                             viewBox="0 0 24 16"
                             zIndex="1"
                             asChild
-                        ><svg>
+                        >
+                            <svg>
                                 <path
                                     d="M 0.5 0 Q 8 8 0.5 16 L 23.5 16 Q 16 8 23.5 0 Z"
                                     fill={bgColor}
@@ -221,7 +226,8 @@ const FloatingPanel = ({
                                     stroke={borderColor}
                                     strokeWidth="1"
                                 />
-                            </svg></Box>
+                            </svg>
+                        </Box>
                     )}
             </AnimatedBox>
         </Box>
