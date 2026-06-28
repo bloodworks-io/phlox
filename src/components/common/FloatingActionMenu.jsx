@@ -38,7 +38,7 @@ const FloatingActionMenu = ({
             zIndex="1040"
             flexDirection="column"
             gap={2}
-            px={2}
+            px={1.5}
             py={2}
         >
             {/* Document Upload button */}
