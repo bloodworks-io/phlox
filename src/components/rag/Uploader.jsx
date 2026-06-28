@@ -100,13 +100,23 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
         }
         setIsCommitting(true);
         try {
-            const data = {
-                disease_name: customCollectionName,
-                focus_area: focusArea,
-                document_source: documentSource,
-                filename: filename,
-            };
-            await ragApi.commitToDatabase(data);
+            if (pdfData.extractedText) {
+                await ragApi.commitDirect({
+                    extracted_text: pdfData.extractedText,
+                    disease_name: customCollectionName,
+                    focus_area: focusArea,
+                    document_source: documentSource,
+                    filename: filename,
+                    pdf_base64: pdfData.pdfBase64 || null,
+                });
+            } else {
+                await ragApi.commitToDatabase({
+                    disease_name: customCollectionName,
+                    focus_area: focusArea,
+                    document_source: documentSource,
+                    filename: filename,
+                });
+            }
             const updatedCollections = await ragApi.fetchCollections();
             setCollections(
                 updatedCollections.files.map((name) => ({
@@ -207,7 +217,9 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                 </Button>
                                 {pdfData && (
                                     <VStack spacing={3} align="stretch" mt={2}>
-                                        <Text fontWeight="bold">Extracted Information</Text>
+                                        <Text fontWeight="bold">
+                                            Extracted Information
+                                        </Text>
                                         <FormLabel htmlFor="custom-collection">
                                             Collection Name:
                                         </FormLabel>
@@ -217,7 +229,9 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                             className="input-style"
                                             value={customCollectionName}
                                             onChange={(e) =>
-                                                setCustomCollectionName(e.target.value)
+                                                setCustomCollectionName(
+                                                    e.target.value,
+                                                )
                                             }
                                         />
                                         <FormLabel htmlFor="document-source">
@@ -229,7 +243,9 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                             className="input-style"
                                             value={documentSource}
                                             onChange={(e) =>
-                                                setDocumentSource(e.target.value)
+                                                setDocumentSource(
+                                                    e.target.value,
+                                                )
                                             }
                                         />
                                         <FormLabel htmlFor="focus-area">
@@ -240,7 +256,9 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                             placeholder="Focus Area"
                                             className="input-style"
                                             value={focusArea}
-                                            onChange={(e) => setFocusArea(e.target.value)}
+                                            onChange={(e) =>
+                                                setFocusArea(e.target.value)
+                                            }
                                         />
                                         <Button
                                             leftIcon={<AddIcon />}
