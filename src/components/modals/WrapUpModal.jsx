@@ -375,7 +375,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                 </Button>
                                 <GreenButton
                                     onClick={handleConfirm}
-                                    isLoading={submitting}
+                                    loading={submitting}
                                     loadingText="Saving"
                                     disabled={!canConfirm}
                                 >

@@ -156,7 +156,7 @@ const LocalModelCard = ({
                     onClick={onDownload}
                     className="switch-mode"
                     mt={2}
-                    sx={{
+                    css={{
                         fontFamily: '"Space Grotesk", sans-serif',
                         fontWeight: "600",
                     }}
@@ -337,7 +337,7 @@ export const LLMStep = ({
                             <Text
                                 fontSize="sm"
                                 color={currentColors.textSecondary}
-                                sx={{ fontFamily: '"Roboto", sans-serif' }}
+                                css={{ fontFamily: '"Roboto", sans-serif' }}
                             >
                                 <strong>Local Mode:</strong> AI models run
                                 directly on your computer. Your data never
@@ -451,7 +451,7 @@ export const LLMStep = ({
                             <HStack>
                                 <Field.Label
                                     color={currentColors.textSecondary}
-                                    sx={{
+                                    css={{
                                         fontFamily: '"Roboto", sans-serif',
                                         fontSize: "sm",
                                         fontWeight: "500",
@@ -488,7 +488,7 @@ export const LLMStep = ({
                             <HStack>
                                 <Field.Label
                                     color={currentColors.textSecondary}
-                                    sx={{
+                                    css={{
                                         fontFamily: '"Roboto", sans-serif',
                                         fontSize: "sm",
                                         fontWeight: "500",
@@ -547,7 +547,7 @@ export const LLMStep = ({
                                     <Text
                                         fontSize="sm"
                                         color={currentColors.textSecondary}
-                                        sx={{
+                                        css={{
                                             fontFamily: '"Roboto", sans-serif',
                                         }}
                                     >
@@ -562,7 +562,7 @@ export const LLMStep = ({
                                         fontSize="sm"
                                         color={currentColors.secondaryButton}
                                         mt={2}
-                                        sx={{
+                                        css={{
                                             fontFamily: '"Roboto", sans-serif',
                                         }}
                                     >

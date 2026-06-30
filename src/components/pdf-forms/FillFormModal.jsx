@@ -134,7 +134,7 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
               </GreyButton>
               <GreenButton
                 onClick={handleFill}
-                isLoading={filling}
+                loading={filling}
                 disabled={fields.length === 0}
               >
                 Fill & Download

@@ -152,7 +152,7 @@ const FormTemplatesPanel = ({
                     width="100%"
                     leftIcon={<FaMagic />}
                     onClick={onAutoDetect}
-                    isLoading={detecting}
+                    loading={detecting}
                     loadingText="Detecting..."
                   >
                     Auto-detect
@@ -175,7 +175,7 @@ const FormTemplatesPanel = ({
               size="xs"
               width="100%"
               onClick={onSaveFields}
-              isLoading={saving}
+              loading={saving}
               loadingText="Saving"
               leftIcon={saving ? null : <FaSave />}
             >

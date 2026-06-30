@@ -273,7 +273,7 @@ const DemographicsForm = ({
                         size="md"
                         borderRadius="2xl"
                         className="switch-mode"
-                        sx={btnSx}>{cancelIcon || undefined}{cancelLabel}</Button>
+                        css={btnSx}>{cancelIcon || undefined}{cancelLabel}</Button>
                 )}
                 <Button
                     onClick={handleSave}
@@ -282,7 +282,7 @@ const DemographicsForm = ({
                     size="md"
                     borderRadius="2xl"
                     className="switch-mode"
-                    sx={btnSx}
+                    css={btnSx}
                 >
                     {saveLabel}
                 </Button>

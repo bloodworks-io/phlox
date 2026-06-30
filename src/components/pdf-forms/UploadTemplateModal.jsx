@@ -137,7 +137,7 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
               </GreyButton>
               <GreenButton
                 onClick={handleSubmit}
-                isLoading={uploading}
+                loading={uploading}
                 disabled={!file || !name.trim()}
               >
                 Upload

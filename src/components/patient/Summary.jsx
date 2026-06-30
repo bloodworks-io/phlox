@@ -287,7 +287,7 @@ const Summary = forwardRef(
                   </GreyButton>
                   <GreyButton
                     onClick={handleSavePatientData}
-                    isLoading={saveLoading}
+                    loading={saveLoading}
                     loadingText="Saving"
                     width="190px"
                     leftIcon={saveLoading ? null : <FaSave />}
@@ -303,7 +303,7 @@ const Summary = forwardRef(
                     <Box>
                       <GreenButton
                         onClick={onWrapUp}
-                        isLoading={wrapUpLoading}
+                        loading={wrapUpLoading}
                         loadingText="Wrapping"
                         width="150px"
                         ml="2"

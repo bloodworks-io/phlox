@@ -236,7 +236,7 @@ const NewNoteModal = ({
                                             mt={3}
                                             borderRadius="2xl"
                                             className="switch-mode"
-                                            sx={btnSx}
+                                            css={btnSx}
                                             onClick={() => setView("choose")}
                                         >
                                             <FaArrowLeft />
@@ -328,7 +328,7 @@ const NewNoteModal = ({
                                                             null
                                                         }
                                                         className="green-button"
-                                                        sx={btnSx}
+                                                        css={btnSx}
                                                         onClick={() =>
                                                             handleConfirm(cand)
                                                         }
@@ -345,7 +345,7 @@ const NewNoteModal = ({
                                             mt={3}
                                             borderRadius="2xl"
                                             className="switch-mode"
-                                            sx={btnSx}
+                                            css={btnSx}
                                             onClick={() => setView("search")}
                                         >
                                             <FaArrowLeft />
