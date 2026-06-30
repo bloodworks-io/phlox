@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Steps, Box, Spinner, Text, VStack } from "@chakra-ui/react";
+import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
 import { isTauri } from "../../utils/helpers/apiConfig";
 
 export const ServerConnectionCheck = ({ children }) => {

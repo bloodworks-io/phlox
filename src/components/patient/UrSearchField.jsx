@@ -1,4 +1,4 @@
-import { Steps, IconButton, Input } from "@chakra-ui/react";
+import { IconButton, Input } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { SearchIcon } from "../common/icons";
 

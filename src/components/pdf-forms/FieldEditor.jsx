@@ -2,7 +2,6 @@
 import React from "react";
 import { useColorModeValue } from "../ui/color-mode";
 import {
-  Steps,
   Box,
   Text,
   VStack,

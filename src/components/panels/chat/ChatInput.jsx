@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useColorMode } from "../../ui/color-mode";
-import { Steps, Box, Flex, Textarea, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Textarea, IconButton } from "@chakra-ui/react";
 import { ArrowUpIcon } from "../../common/icons";
 
 const MIN_HEIGHT = 32;

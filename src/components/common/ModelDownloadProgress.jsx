@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Box, Text, Progress } from "@chakra-ui/react";
+import { Box, Text, Progress } from "@chakra-ui/react";
 
 export const ModelDownloadProgress = ({ progress }) => {
   if (!progress) return null;

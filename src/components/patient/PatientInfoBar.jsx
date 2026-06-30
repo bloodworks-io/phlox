@@ -1,4 +1,4 @@
-import { Steps, Box, Flex, Text, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Text, IconButton } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { useColorMode } from "../ui/color-mode";
 import { FaEdit } from "react-icons/fa";

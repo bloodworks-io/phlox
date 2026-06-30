@@ -1,6 +1,6 @@
 // Landing page component - ChatGPT-style chat interface
 import React, { useState, useEffect } from "react";
-import { Steps, Box } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import DashboardChat from "../components/dashboard/DashboardChat";
 import DisclaimerModal from "../components/modals/DisclaimerModal";
 import { useAppInit } from "../utils/context/appInit";

@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useCollapse } from "./useCollapse";
 import { ragApi } from "../api/ragApi";
-import { Steps } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 
 export const useRagDocuments = () => {

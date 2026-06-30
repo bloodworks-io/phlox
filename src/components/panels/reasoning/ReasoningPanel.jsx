@@ -1,6 +1,6 @@
 import React, { forwardRef } from "react";
 import { useColorMode } from "../../ui/color-mode";
-import { Steps, Box, Flex, Text, Button } from "@chakra-ui/react";
+import { Box, Flex, Text, Button } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaAtom, FaSync } from "react-icons/fa";
 

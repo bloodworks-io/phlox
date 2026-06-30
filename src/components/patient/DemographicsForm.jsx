@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
+import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { FaFileUpload } from "react-icons/fa";
 import { colors } from "../../theme/colors";

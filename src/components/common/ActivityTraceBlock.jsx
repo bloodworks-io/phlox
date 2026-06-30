@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Steps, Box, Flex, Text, HStack, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
+import { Box, Flex, Text, HStack, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "./icons";
 import {
     getToolName,

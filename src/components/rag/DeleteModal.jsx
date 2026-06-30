@@ -1,5 +1,5 @@
 // Modal component to confirm delete operations for collections or files.
-import { Steps, Button, Spinner, Text, Dialog, Portal } from "@chakra-ui/react";
+import { Button, Spinner, Text, Dialog, Portal } from "@chakra-ui/react";
 
 const DeleteModal = ({ isOpen, onClose, onDelete, item }) => {
     const isDeleting = isOpen && !item;

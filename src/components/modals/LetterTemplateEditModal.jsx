@@ -1,4 +1,4 @@
-import { Steps, Button, VStack, HStack, Heading, Input, Textarea, Dialog, Portal } from "@chakra-ui/react";
+import { Button, VStack, HStack, Heading, Input, Textarea, Dialog, Portal } from "@chakra-ui/react";
 
 const LetterTemplateEditModal = ({
   isOpen,

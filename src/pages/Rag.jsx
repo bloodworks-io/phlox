@@ -1,6 +1,6 @@
 // Page component for document management (upload, explore, and PDF form templates).
 import React from "react";
-import { Steps, Box, Text, HStack, Tabs } from "@chakra-ui/react";
+import { Box, Text, HStack, Tabs } from "@chakra-ui/react";
 import { FaBook, FaFileAlt } from "react-icons/fa";
 import { isRagEnabled, isPdfFormsEnabled } from "../utils/helpers/featureFlags";
 import { useRagDocuments } from "../utils/hooks/useRagDocuments";

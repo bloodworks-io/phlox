@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Box, Text, VStack, HStack } from "@chakra-ui/react";
+import { Box, Text, VStack, HStack } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaWikipediaW,

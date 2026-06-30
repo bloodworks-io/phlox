@@ -1,7 +1,7 @@
 // Component for managing and editing prompts for LLMs.
 import { useState } from "react";
 import { useColorModeValue } from "../ui/color-mode";
-import { Steps, Box, Flex, IconButton, Text, Collapsible, Textarea, Button, Tabs, NumberInput, HStack, VStack, Alert } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Collapsible, Textarea, Button, Tabs, NumberInput, HStack, VStack, Alert } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
 import {

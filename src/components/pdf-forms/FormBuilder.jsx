@@ -1,11 +1,10 @@
 // Canvas-based PDF form field builder.
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useColorModeValue } from "../ui/color-mode";
-import { Steps, Box, Flex, HStack, IconButton, Text, Spinner } from "@chakra-ui/react";
+import { Box, Flex, HStack, IconButton, Text, Spinner } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
-import { FIELD_COLORS } from "./FieldEditor";
 
 const FIELD_TYPES = ["text", "checkbox", "date", "number"];
 

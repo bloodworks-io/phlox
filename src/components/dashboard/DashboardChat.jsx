@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Steps, Box, Flex, VStack, Text, Button } from "@chakra-ui/react";
+import { Box, Flex, VStack, Text, Button } from "@chakra-ui/react";
 import { InfoIcon, SearchIcon, QuestionIcon } from "../common/icons";
 import { useChat } from "../../utils/hooks/useChat";
 import DashboardChatInput from "./DashboardChatInput";

@@ -1,5 +1,5 @@
 // Page component for configuring application settings.
-import { Steps, Box, Text, VStack, Button, useDisclosure } from "@chakra-ui/react";
+import { Box, Text, VStack, useDisclosure } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { useState, useEffect, useCallback } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";

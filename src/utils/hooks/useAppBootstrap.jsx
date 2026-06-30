@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { Steps } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { invoke } from "@tauri-apps/api/core";
 import SplashScreen from "../../components/common/SplashScreen";

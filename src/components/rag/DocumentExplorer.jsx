@@ -1,6 +1,6 @@
 // Component for navigating and managing document collections.
 import React, { useState } from "react";
-import { Steps, Box, Text, HStack, Flex, List, Collapsible, IconButton, Spinner } from "@chakra-ui/react";
+import { Box, Text, HStack, Flex, List, Collapsible, IconButton, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
 import {

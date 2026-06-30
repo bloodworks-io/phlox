@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Box, Text, HStack, Button } from "@chakra-ui/react";
+import { Box, Text, HStack, Button } from "@chakra-ui/react";
 
 const TemplateSelector = ({
   letterTemplates,

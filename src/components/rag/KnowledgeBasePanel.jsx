@@ -1,6 +1,6 @@
 // Panel component for the Knowledge Base tab — document explorer and uploader.
 import React from "react";
-import { Steps, VStack } from "@chakra-ui/react";
+import { VStack } from "@chakra-ui/react";
 import DocumentExplorer from "./DocumentExplorer";
 import Uploader from "./Uploader";
 

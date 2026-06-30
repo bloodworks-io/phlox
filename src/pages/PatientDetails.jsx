@@ -6,14 +6,14 @@
 
  See: https://chakra-ui.com/docs/get-started/migration#hooks
 */
-import { Steps, Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
+import { Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
 import { useClipboard } from "../utils/hooks/useClipboard";
 import { useToast } from "@/utils/useToastShim";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
 import NewNoteStartCard from "../components/patient/NewNoteStartCard";
-import Scribe, { useScribe } from "../components/patient/Scribe";
+import { useScribe } from "../components/patient/Scribe";
 import Summary from "../components/patient/Summary";
 import Chat from "../components/panels/chat/Chat";
 import Letter from "../components/panels/letter/Letter";

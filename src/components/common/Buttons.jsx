@@ -1,7 +1,7 @@
 // Reusable button components with predefined styles for different actions.
 // v3 note: Button no longer has `leftIcon`/`rightIcon` props — extract leftIcon
 // and render it as the first child so call sites can keep using leftIcon={<X/>}.
-import { Steps, Button } from "@chakra-ui/react";
+import { Button } from "@chakra-ui/react";
 
 // Primary Action Buttons
 export const GreenButton = ({ children, leftIcon, ...props }) => (

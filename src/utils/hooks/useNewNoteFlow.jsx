@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Steps, useDisclosure } from "@chakra-ui/react";
+import { useDisclosure } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 
 export const useNewNoteFlow = ({ createNewPatient, guardedNavigate }) => {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Steps, Box, Flex, Text, NativeSelect } from "@chakra-ui/react";
+import { Box, Flex, Text, NativeSelect } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaEnvelope, FaMicrophone, FaMagic } from "react-icons/fa";
 

@@ -1,5 +1,5 @@
 // Modal component to confirm navigation away from the current page with unsaved changes.
-import { Steps, Button, Heading, Dialog, Portal } from "@chakra-ui/react";
+import { Button, Heading, Dialog, Portal } from "@chakra-ui/react";
 
 const ConfirmLeaveModal = ({ isOpen, onClose, confirmNavigation }) => (
     <Dialog.Root open={isOpen} onOpenChange={e => {

@@ -1,4 +1,4 @@
-import { Steps, Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { useColorMode } from "../ui/color-mode";
 import {
@@ -28,7 +28,7 @@ const TemplateSettingsPanel = ({
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNewTemplate, setIsNewTemplate] = useState(false);
-  // eslint-disable-next-line no-unused-vars
+   
   const [isSaving, setIsSaving] = useState(false);
   const toast = useToast();
 
@@ -55,7 +55,7 @@ const TemplateSettingsPanel = ({
     setIsSaving(true);
     try {
       // Save to backend
-      // eslint-disable-next-line no-unused-vars
+       
       const response = await templateApi.saveTemplates([updatedTemplate]);
 
       // Fetch fresh templates list

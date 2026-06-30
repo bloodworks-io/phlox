@@ -1,7 +1,7 @@
 // Chat artifact renderer for form_fill type.
 import React, { useState } from "react";
 import { useColorModeValue } from "../ui/color-mode";
-import { Steps, Box, HStack, Text, Button } from "@chakra-ui/react";
+import { Box, HStack, Text, Button } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { DownloadIcon } from "../common/icons";
 import { FaFilePdf } from "react-icons/fa";

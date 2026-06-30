@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import { Steps, Box, Text } from "@chakra-ui/react";
+import { Box, Text } from "@chakra-ui/react";
 import remarkGfm from "remark-gfm";
 
 /**

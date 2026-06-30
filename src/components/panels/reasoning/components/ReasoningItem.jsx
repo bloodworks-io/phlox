@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Box, Text, Badge, HStack, VStack } from "@chakra-ui/react";
+import { Box, Text, Badge, HStack, VStack } from "@chakra-ui/react";
 import { colors } from "../../../../theme/colors";
 
 export const ReasoningItem = ({ item, section, colorMode }) => {

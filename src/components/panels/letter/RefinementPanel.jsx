@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Box, Flex, IconButton, Text, Textarea, Button, Spinner } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Textarea, Button, Spinner } from "@chakra-ui/react";
 import { EditIcon, CloseIcon } from "../../common/icons";
 
 const RefinementPanel = ({

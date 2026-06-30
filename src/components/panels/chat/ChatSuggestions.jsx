@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Flex, Button } from "@chakra-ui/react";
+import { Flex, Button } from "@chakra-ui/react";
 import { QuestionIcon } from "../../common/icons";
 
 const ChatSuggestions = ({ handleSendMessage, userSettings }) => {

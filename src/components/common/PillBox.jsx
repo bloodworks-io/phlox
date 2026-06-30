@@ -1,6 +1,6 @@
 import React from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, Box, Flex } from "@chakra-ui/react";
+import { Box, Flex } from "@chakra-ui/react";
 
 /**
  * Shared PillBox container component with consistent styling

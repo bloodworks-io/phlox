@@ -1,4 +1,4 @@
-import { Steps, Box, Flex, IconButton, Textarea, Spinner } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Textarea, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { EditIcon } from "../../common/icons";
 

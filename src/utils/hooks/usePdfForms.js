@@ -1,6 +1,5 @@
 // Hook for managing PDF form templates, fields, and auto-detection.
 import { useState, useEffect } from "react";
-import { Steps } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { pdfFormsApi } from "../api/pdfFormsApi";
 import { chatApi } from "../api/chatApi";

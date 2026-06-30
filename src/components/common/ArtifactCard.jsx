@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Box, HStack, Text, Button, Link } from "@chakra-ui/react";
+import { Box, HStack, Text, Button, Link } from "@chakra-ui/react";
 import { ExternalLinkIcon, DownloadIcon } from "./icons";
 import { FaFilePdf, FaFileImage, FaFile } from "react-icons/fa";
 

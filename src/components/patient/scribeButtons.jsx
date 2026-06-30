@@ -1,6 +1,6 @@
 import React from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaMicrophone,

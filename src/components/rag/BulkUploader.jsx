@@ -1,6 +1,6 @@
 // Component for bulk uploading and vectorizing multiple PDF documents.
 import React, { useState, useRef } from "react";
-import { Field, Steps, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
+import { Field, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import {
     ChevronDownIcon,

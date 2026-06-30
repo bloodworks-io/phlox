@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useColorMode } from "../../ui/color-mode";
-import { Steps, Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";

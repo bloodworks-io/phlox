@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Steps, Box, Text, useDisclosure, Badge, Link, VStack, HStack, Center } from "@chakra-ui/react";
+import { Box, Text, useDisclosure, Badge, Link, VStack, HStack, Center } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaGithub, FaMoon, FaSun } from "react-icons/fa";
 import { TbVersions } from "react-icons/tb";

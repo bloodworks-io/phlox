@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Flex, Button, Spinner } from "@chakra-ui/react";
+import { Flex, Button, Spinner } from "@chakra-ui/react";
 import { RepeatIcon, CopyIcon, CheckIcon } from "../../common/icons";
 import { FaSave } from "react-icons/fa";
 

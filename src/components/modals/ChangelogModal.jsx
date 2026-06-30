@@ -4,9 +4,7 @@ import ReactMarkdown from "react-markdown";
 import ModalTitle from "../common/ModalTitle";
 
 import {
-    Steps,
     Box,
-    Heading,
     Text,
     Image,
     HStack,

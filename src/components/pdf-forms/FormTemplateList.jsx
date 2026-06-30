@@ -1,7 +1,7 @@
 // Template list panel for PDF form templates.
 import React from "react";
 import { useColorModeValue } from "../ui/color-mode";
-import { Steps, Box, Text, List, IconButton, Spinner, HStack, Flex } from "@chakra-ui/react";
+import { Box, Text, List, IconButton, Spinner, HStack, Flex } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { DeleteIcon } from "../common/icons";
 import { FiFileText } from "react-icons/fi";

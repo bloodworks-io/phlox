@@ -1,4 +1,4 @@
-import React, { useContext, useCallback } from "react";
+import { useContext, useCallback } from "react";
 import { TemplateContext } from "../../templates/templateContext";
 
 export const useTemplateSelection = () => {

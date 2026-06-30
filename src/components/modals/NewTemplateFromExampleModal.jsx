@@ -1,4 +1,4 @@
-import { Steps, Button, HStack, Heading, Textarea, Box, Text, VStack, Dialog, Portal } from "@chakra-ui/react";
+import { Button, HStack, Heading, Textarea, Box, Text, VStack, Dialog, Portal } from "@chakra-ui/react";
 import { useColorMode } from "../ui/color-mode";
 import { colors } from "../../theme/colors";
 

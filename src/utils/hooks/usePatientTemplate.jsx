@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { Steps } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import {
     useTemplateSelection,

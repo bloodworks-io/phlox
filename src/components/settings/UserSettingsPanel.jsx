@@ -1,5 +1,5 @@
 // Component for configuring user-specific settings.
-import { Steps, Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, Switch, Tabs, VStack, Field } from "@chakra-ui/react";
+import { Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, Switch, Tabs, VStack, Field } from "@chakra-ui/react";
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
 import { FaUser, FaCog } from "react-icons/fa";
 

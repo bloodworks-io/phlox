@@ -1,4 +1,4 @@
-import { Steps, Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import {
   ChevronRightIcon,

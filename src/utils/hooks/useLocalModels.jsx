@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { Steps } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { localModelApi } from "../api/localModelApi";
 import { invoke } from "@tauri-apps/api/core";

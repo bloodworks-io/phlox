@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useColorMode } from "../ui/color-mode";
 import {
-    Steps,
     Button,
     Box,
     Text,

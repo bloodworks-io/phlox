@@ -9,7 +9,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { colors } from "../../../theme/colors";
 import { useColorMode } from "../../ui/color-mode";
-import { Steps, IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
+import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaMicrophone, FaStop } from "react-icons/fa";

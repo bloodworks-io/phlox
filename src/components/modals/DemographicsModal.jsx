@@ -1,4 +1,4 @@
-import { Steps, HStack, Text, Dialog, Portal } from "@chakra-ui/react";
+import { HStack, Dialog, Portal } from "@chakra-ui/react";
 import ModalTitle from "../common/ModalTitle";
 import { FaUserEdit } from "react-icons/fa";
 import DemographicsForm from "../patient/DemographicsForm";

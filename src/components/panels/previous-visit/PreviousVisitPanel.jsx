@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Steps, Box, Flex, Text, Tabs, HStack, VStack } from "@chakra-ui/react";
+import { Box, Flex, Text, Tabs, HStack, VStack } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
 import FloatingPanel from "../../common/FloatingPanel";

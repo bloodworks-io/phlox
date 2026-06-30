@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useColorMode } from "../../ui/color-mode";
-import { Steps, Flex, Box, Text, HStack, VStack, Spinner, Image } from "@chakra-ui/react";
+import { Flex, Box, Text, HStack, VStack, Spinner, Image } from "@chakra-ui/react";
 import { parseMessageContent } from "../../../utils/chat/messageParser";
 import { groupActivityTrace } from "../../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../../common/ActivityTraceBlock";

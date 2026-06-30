@@ -1,4 +1,4 @@
-import { Steps, Button, HStack, Heading, Text, Dialog, Portal } from "@chakra-ui/react";
+import { Button, HStack, Heading, Text, Dialog, Portal } from "@chakra-ui/react";
 
 const DeleteConfirmationModal = ({
   isOpen,

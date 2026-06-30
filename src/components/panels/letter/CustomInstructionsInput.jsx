@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Box, Text, Textarea } from "@chakra-ui/react";
+import { Box, Text, Textarea } from "@chakra-ui/react";
 
 const CustomInstructionsInput = ({
     additionalInstructions,

@@ -1,7 +1,7 @@
 // Panel component for the Form Templates tab — sidebar, builder canvas, and field editor.
 import React from "react";
 import { useColorModeValue } from "../ui/color-mode";
-import { Steps, Box, Text, VStack, HStack, NativeSelect, Flex } from "@chakra-ui/react";
+import { Box, Text, VStack, HStack, NativeSelect, Flex } from "@chakra-ui/react";
 import { AddIcon } from "../common/icons";
 import { FaPencilAlt, FaMagic, FaSave } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";

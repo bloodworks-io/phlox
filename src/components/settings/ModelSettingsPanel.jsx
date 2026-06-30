@@ -1,4 +1,4 @@
-import { Steps, Box, Flex, IconButton, Text, Collapsible, Input, NativeSelect, VStack, InputGroup, Tabs, HStack, Badge, Button, Alert, Spinner, Dialog, Portal } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Collapsible, Input, NativeSelect, VStack, InputGroup, Tabs, HStack, Badge, Button, Alert, Spinner, Dialog, Portal } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
 import { useColorModeValue } from "../ui/color-mode";

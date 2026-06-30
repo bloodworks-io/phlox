@@ -1,5 +1,5 @@
 // Action buttons for saving and restoring settings.
-import { Steps, HStack, Button } from "@chakra-ui/react";
+import { HStack, Button } from "@chakra-ui/react";
 
 const SettingsActions = ({ onSave, onRestoreDefaults }) => {
     return (

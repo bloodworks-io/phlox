@@ -1,6 +1,6 @@
 import React from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, IconButton, Box } from "@chakra-ui/react";
+import { IconButton, Box } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ChatIcon } from "./icons";
 import { FaEnvelope, FaAtom, FaFileUpload, FaClock } from "react-icons/fa";

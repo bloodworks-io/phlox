@@ -1,6 +1,5 @@
-import { Steps, Box, Button, Flex, Input, Spinner, Text, VStack, Alert, ButtonGroup, Badge, SimpleGrid, Separator } from "@chakra-ui/react";
+import { Box, Button, Flex, Input, Spinner, Text, VStack, Alert, ButtonGroup, Badge, SimpleGrid, Separator } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
-import { Tooltip } from '@/components/ui/tooltip';
 import { useColorMode } from "../../ui/color-mode";
 import {
   FaFileUpload,

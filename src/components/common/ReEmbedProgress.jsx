@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Box, Text, Progress } from "@chakra-ui/react";
+import { Box, Text, Progress } from "@chakra-ui/react";
 
 export const ReEmbedProgress = ({ progress }) => {
     if (!progress) return null;

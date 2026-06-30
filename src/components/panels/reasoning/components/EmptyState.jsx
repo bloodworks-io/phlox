@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, VStack, Text, Button } from "@chakra-ui/react";
+import { VStack, Text, Button } from "@chakra-ui/react";
 import { FaAtom } from "react-icons/fa";
 
 // Empty state component shown when no reasoning has been generated yet

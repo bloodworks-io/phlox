@@ -1,4 +1,4 @@
-import { Steps, Box, VStack, Flex, Icon, Text, Badge, Collapsible } from "@chakra-ui/react";
+import { Box, VStack, Flex, Icon, Text, Badge, Collapsible } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaClinicMedical, FaTasks } from "react-icons/fa";
 import { GiBrain } from "react-icons/gi";

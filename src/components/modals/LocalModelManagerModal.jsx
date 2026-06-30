@@ -1,5 +1,5 @@
 import React from "react";
-import { Steps, Button, HStack, Heading, Dialog, Portal } from "@chakra-ui/react";
+import { Button, HStack, Heading, Dialog, Portal } from "@chakra-ui/react";
 import LocalModelManager from "../settings/LocalModelManager";
 
 const LocalModelManagerModal = ({ isOpen, onClose }) => {

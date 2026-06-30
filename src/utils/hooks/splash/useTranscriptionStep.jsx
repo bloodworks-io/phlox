@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { Steps } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTranscriptionStep } from "../../../utils/splash/validators";
