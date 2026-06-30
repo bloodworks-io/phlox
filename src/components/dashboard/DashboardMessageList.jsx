@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, Box, Flex, VStack, HStack, Text, Spinner, Badge, Icon, Image } from "@chakra-ui/react";
+import { Box, Flex, VStack, HStack, Text, Spinner, Badge, Icon, Image } from "@chakra-ui/react";
 import { AttachmentIcon } from "../common/icons";
 import { FaFilePdf, FaFileImage } from "react-icons/fa";
 import MarkdownRenderer from "../common/MarkdownRenderer";
@@ -32,7 +32,7 @@ const DashboardMessageList = ({
                 if (idx !== messageIndex) return msg;
 
                 const currentMap = msg.thinkingExpandedBlocks || {};
-                const nextExpanded = !Boolean(currentMap[blockIndex]);
+                const nextExpanded = !currentMap[blockIndex];
 
                 return {
                     ...msg,

@@ -7,9 +7,7 @@
  See: https://chakra-ui.com/docs/get-started/migration#hooks
 */
 import {
-    Steps,
     Box,
-    VStack,
     Text,
     IconButton,
     useDisclosure,
@@ -18,7 +16,6 @@ import {
     Flex,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useColorModeValue } from "../ui/color-mode";
 import { useApiToast } from "../../utils/helpers/apiToastContext";
 import { useState, useEffect, useRef } from "react";
 import { FaPlus } from "react-icons/fa";

@@ -1,5 +1,4 @@
-import { createContext, useContext, useMemo, useRef } from "react";
-import { Steps } from "@chakra-ui/react";
+import { createContext, useContext, useMemo } from "react";
 import { useToast } from "@/utils/useToastShim";
 import { useAppInit } from "../context/appInit";
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Steps, Box, Text } from "@chakra-ui/react";
+import { Box, Text } from "@chakra-ui/react";
 import ChatHeader from "./ChatHeader";
 import ChatMessages from "./ChatMessages";
 import ChatInput from "./ChatInput";
@@ -43,7 +43,7 @@ const ChatPanel = ({
                 if (i !== messageIndex) return msg;
 
                 const currentMap = msg.thinkingExpandedBlocks || {};
-                const nextExpanded = !Boolean(currentMap[blockIndex]);
+                const nextExpanded = !currentMap[blockIndex];
 
                 return {
                     ...msg,

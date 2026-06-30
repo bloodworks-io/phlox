@@ -1,5 +1,4 @@
 import {
-    Steps,
     Box,
     Flex,
     Avatar,
@@ -9,7 +8,6 @@ import {
     VStack,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useColorModeValue } from "../ui/color-mode";
 import { useState } from "react";
 import { DeleteIcon } from "../common/icons";
 import { SectionHeader, getInitials, getAvatarColor } from "./SidebarHelpers";

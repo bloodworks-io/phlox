@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import { Steps, useBreakpointValue } from "@chakra-ui/react";
+import { useBreakpointValue } from "@chakra-ui/react";
 import { useCollapse } from "./useCollapse";
 
 export const useSidebarState = () => {

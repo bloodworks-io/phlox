@@ -1,5 +1,4 @@
-import { Steps, Flex, Avatar, Text, IconButton, Box } from "@chakra-ui/react";
-import { useColorModeValue } from "../ui/color-mode";
+import { Flex, Avatar, Text, IconButton, Box } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "../common/icons";
 import { colors } from "../../theme/colors";
 

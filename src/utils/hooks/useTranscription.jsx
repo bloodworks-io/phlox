@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { transcriptionApi } from "../api/transcriptionApi";
-import { handleProcessingComplete } from "../helpers/processingHelpers";
-import { buildApiUrl, isTauri } from "../helpers/apiConfig";
-import { universalFetch } from "../helpers/apiHelpers";
+import { isTauri } from "../helpers/apiConfig";
 import { extractFromFile } from "../helpers/documentExtraction";
 
 export const convertAudioToWav = async (audioBlob) => {

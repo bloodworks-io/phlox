@@ -12,7 +12,7 @@ export const truncateLetterContext = (messages, maxTokens) => {
     let totalTokens = messages.reduce((sum, msg) => sum + countTokens(msg), 0);
 
     // Create a working copy of messages
-    let workingMessages = [...messages];
+    const workingMessages = [...messages];
 
     // Keep removing pairs until we're under the token limit
     while (totalTokens > maxTokens && workingMessages.length > 2) {

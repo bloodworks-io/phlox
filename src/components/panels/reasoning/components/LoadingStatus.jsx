@@ -1,6 +1,5 @@
 import React from "react";
-import { Steps, Flex, Spinner, Text, VStack } from "@chakra-ui/react";
-import { colors } from "../../../../theme/colors";
+import { Flex, Spinner, Text, VStack } from "@chakra-ui/react";
 import {
     FaWikipediaW,
     FaBookMedical,
