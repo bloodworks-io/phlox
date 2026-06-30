@@ -1,5 +1,4 @@
 import {
-  Steps,
   VStack,
   HStack,
   Flex,
@@ -8,18 +7,12 @@ import {
   Box,
   Progress,
   Grid,
-  IconButton,
   Button,
   Badge,
 } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { InfoIcon } from "../../icons";
-import { ChevronLeftIcon, ChevronRightIcon } from "../../icons";
-import { motion } from "framer-motion";
-import { stepVariants } from "../constants";
 import { useTranscriptionStep } from "../../../../utils/hooks/splash/useTranscriptionStep";
-
-const MotionVStack = motion(VStack);
 
 export { useTranscriptionStep };
 
@@ -204,12 +197,9 @@ export const TranscriptionStep = ({
   const whisperModels = WHISPER_MODEL_OPTIONS;
 
   return (
-    <MotionVStack
+    <VStack
       key="transcription"
-      variants={stepVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
+      className="anim-fade-slide-right"
       gap={6}
       w="100%"
     >
@@ -434,6 +424,6 @@ export const TranscriptionStep = ({
           </>
         )}
       </VStack>
-    </MotionVStack>
+    </VStack>
   );
 };

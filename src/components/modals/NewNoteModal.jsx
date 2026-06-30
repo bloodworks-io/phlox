@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useColorMode } from "../ui/color-mode";
 import {
-    Steps,
     Box,
     Flex,
     HStack,
@@ -14,7 +13,6 @@ import {
     Portal,
 } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
-import { motion } from "framer-motion";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
 import { colors } from "../../theme/colors";
 import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
@@ -22,8 +20,6 @@ import { formatDate } from "../../utils/helpers/formatHelpers";
 import { PathHalf } from "../patient/NewNoteStartCard";
 import UrSearchField from "../patient/UrSearchField";
 import DemographicsForm from "../patient/DemographicsForm";
-
-const MotionBox = motion(Box);
 
 const btnSx = {
     fontFamily: '"Space Grotesk", sans-serif',
@@ -195,12 +191,7 @@ const NewNoteModal = ({
                                 {subtitle}
                             </Text>
 
-                            <MotionBox
-                                key={view}
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.2 }}
-                            >
+                            <Box key={view}>
                                 {view === "choose" ? (
                                     <Flex gap={3} mb={2}>
                                         <PathHalf
@@ -371,7 +362,7 @@ const NewNoteModal = ({
                                         cancelIcon={<FaArrowLeft />}
                                     />
                                 )}
-                            </MotionBox>
+                            </Box>
                         </Dialog.Body>
                     </Dialog.Content>
                 </Dialog.Positioner>

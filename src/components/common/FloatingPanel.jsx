@@ -1,15 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, Box } from "@chakra-ui/react";
-import styled from "@emotion/styled";
-import { emergeFromButton } from "../../theme/animations";
+import { Box } from "@chakra-ui/react";
 import { colors } from "../../theme/colors";
-
-// Animation only (no positioning transform)
-const AnimatedBox = styled(Box)`
-    animation: ${emergeFromButton} 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)
-        forwards;
-`;
 
 /**
  * Shared floating panel wrapper with consistent positioning and optional speech bubble arrow.
@@ -145,7 +137,8 @@ const FloatingPanel = ({
             display="flex"
             flexDirection="column"
         >
-            <AnimatedBox
+            <Box
+                className="anim-emerge-spring"
                 width="100%"
                 height="100%"
                 flex="1"
@@ -229,7 +222,7 @@ const FloatingPanel = ({
                             </svg>
                         </Box>
                     )}
-            </AnimatedBox>
+            </Box>
         </Box>
     );
 };

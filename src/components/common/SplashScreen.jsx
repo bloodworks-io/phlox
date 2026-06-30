@@ -1,8 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, Box, Button, Heading, VStack, Text, Flex, Image, HStack, Icon, Progress, Badge } from "@chakra-ui/react";
+import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Icon, Progress, Badge } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
-import { motion } from "framer-motion";
 import { FaArrowRight, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
 import { colors } from "../../theme/colors";
 import { settingsService } from "../../utils/settings/settingsUtils";
@@ -13,8 +12,6 @@ import {
   STEP_TITLES,
   STEP_DESCRIPTIONS,
   getStepIcon,
-  containerVariants,
-  itemVariants,
 } from "./splash/constants";
 import { usePersonalStep, PersonalStep } from "./splash/steps/PersonalStep";
 import { useLLMStep, LLMStep } from "./splash/steps/LLMStep";
@@ -25,12 +22,6 @@ import {
 import { useTemplatesStep, TemplatesStep } from "./splash/steps/TemplatesStep";
 import { useQuickChatStep, QuickChatStep } from "./splash/steps/QuickChatStep";
 import { useLettersStep, LettersStep } from "./splash/steps/LettersStep";
-
-const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
-const MotionFlex = motion(Flex);
-const MotionHeading = motion(Heading);
-const MotionText = motion(Text);
 
 const SplashScreen = ({ onComplete }) => {
   const { colorMode } = useColorMode();
@@ -286,14 +277,11 @@ const SplashScreen = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-      <MotionBox
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+      <Box
+        className="anim-fade-scale panels-bg"
         p={{ base: 6, md: 8 }}
         borderRadius="2xl"
         boxShadow="2xl"
-        className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
         w={{ base: "100%", sm: "90%", md: "700px" }}
         maxW="700px"
@@ -313,20 +301,20 @@ const SplashScreen = ({ onComplete }) => {
           zIndex="0"
         />
 
-        <MotionVStack
+        <VStack
           gap={6}
           align="stretch"
           position="relative"
           zIndex="1"
+          className="anim-stagger"
         >
-          <MotionFlex
-            variants={itemVariants}
+          <Flex
             direction="column"
             align="center"
             mb={4}
           >
             <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
-            <MotionHeading
+            <Heading
               as="h1"
               textAlign="center"
               color={currentColors.textPrimary}
@@ -340,8 +328,8 @@ const SplashScreen = ({ onComplete }) => {
               }}
             >
               Welcome to Phlox
-            </MotionHeading>
-            <MotionText
+            </Heading>
+            <Text
               textAlign="center"
               fontSize="sm"
               color={currentColors.textSecondary}
@@ -352,10 +340,10 @@ const SplashScreen = ({ onComplete }) => {
               }}
             >
               Let's set up your AI-powered medical assistant
-            </MotionText>
-          </MotionFlex>
+            </Text>
+          </Flex>
 
-          <MotionBox variants={itemVariants}>
+          <Box>
             <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
               colorPalette="blue"
@@ -376,9 +364,9 @@ const SplashScreen = ({ onComplete }) => {
             >
               Step {currentStepIndex + 1} of {totalSteps}
             </Text>
-          </MotionBox>
+          </Box>
 
-          <MotionBox variants={itemVariants}>
+          <Box>
             <HStack mb={4} align="center" justify="center">
               <Icon
                 as={getStepIcon(currentStep)}
@@ -415,12 +403,11 @@ const SplashScreen = ({ onComplete }) => {
             >
               {STEP_DESCRIPTIONS[currentStep]}
             </Text>
-          </MotionBox>
+          </Box>
 
           <Box>{renderCurrentStep()}</Box>
 
-          <MotionFlex
-            variants={itemVariants}
+          <Flex
             justify="space-between"
             align="center"
             mt={6}
@@ -454,9 +441,9 @@ const SplashScreen = ({ onComplete }) => {
                   <FaArrowRight />
                 )
               }</Button>
-          </MotionFlex>
-        </MotionVStack>
-      </MotionBox>
+          </Flex>
+        </VStack>
+      </Box>
     </Flex>
   );
 };

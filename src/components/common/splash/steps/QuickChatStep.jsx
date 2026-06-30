@@ -1,10 +1,6 @@
 import { useState } from "react";
-import { Steps, VStack, Box, Text, Input, Textarea, Alert, Field } from "@chakra-ui/react";
-import { motion } from "framer-motion";
-import { stepVariants } from "../constants";
+import { VStack, Box, Text, Input, Textarea, Alert, Field } from "@chakra-ui/react";
 import { validateQuickChatStep } from "../../../../utils/splash/validators";
-
-const MotionVStack = motion(VStack);
 
 export const useQuickChatStep = () => {
   const [quickChat1Title, setQuickChat1Title] = useState("Critique my plan");
@@ -72,12 +68,9 @@ export const QuickChatStep = ({
   setQuickChat3Prompt,
   currentColors,
 }) => (
-  <MotionVStack
+  <VStack
     key="quickchat"
-    variants={stepVariants}
-    initial="hidden"
-    animate="visible"
-    exit="exit"
+    className="anim-fade-slide-right"
     gap={6}
     w="100%"
   >
@@ -193,5 +186,5 @@ export const QuickChatStep = ({
         </VStack>
       </Box>
     </VStack>
-  </MotionVStack>
+  </VStack>
 );

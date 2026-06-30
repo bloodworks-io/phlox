@@ -1,17 +1,12 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useColorMode } from "../ui/color-mode";
 import { invoke } from "@tauri-apps/api/core";
-import { Steps, Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
+import { Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
-
-const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
-const MotionFlex = motion(Flex);
 
 const EncryptionUnlock = ({ onComplete }) => {
   const { colorMode } = useColorMode();
@@ -144,14 +139,11 @@ const EncryptionUnlock = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-      <MotionBox
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <Box
+        className="anim-fade-slide-up panels-bg"
         p={{ base: 6, md: 8 }}
         borderRadius="2xl"
         boxShadow="2xl"
-        className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
         w={{ base: "100%", sm: "90%", md: "450px" }}
         maxW="450px"
@@ -170,10 +162,9 @@ const EncryptionUnlock = ({ onComplete }) => {
         />
 
         <VStack gap={6} align="stretch" position="relative" zIndex="1">
-          <MotionFlex
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <Flex
+            className="anim-fade-slide-up"
+            css={{ animationDelay: "80ms" }}
             direction="column"
             align="center"
             mb={2}
@@ -202,7 +193,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             >
               Enter your passphrase to decrypt and access your patient data.
             </Text>
-          </MotionFlex>
+          </Flex>
 
           {attempts > 0 && lastWasPassphrase && (
             <Alert.Root status="warning" borderRadius="md" fontSize="sm">
@@ -271,7 +262,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             Unlock
           </Button>
         </VStack>
-      </MotionBox>
+      </Box>
     </Flex>
   );
 };

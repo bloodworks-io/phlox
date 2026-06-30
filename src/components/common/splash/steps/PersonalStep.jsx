@@ -1,13 +1,9 @@
 import { useState } from "react";
-import { Steps, VStack, Input, NativeSelect, HStack, Field } from "@chakra-ui/react";
+import { VStack, Input, NativeSelect, HStack, Field } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { InfoIcon } from "../../icons";
-import { motion } from "framer-motion";
-import { stepVariants } from "../constants";
 import { SPECIALTIES } from "../../../../utils/constants";
 import { validatePersonalStep } from "../../../../utils/splash/validators";
-
-const MotionVStack = motion(VStack);
 
 export const usePersonalStep = () => {
   const [name, setName] = useState("");
@@ -30,12 +26,9 @@ export const PersonalStep = ({
   setSpecialty,
   currentColors,
 }) => (
-  <MotionVStack
+  <VStack
     key="personal"
-    variants={stepVariants}
-    initial="hidden"
-    animate="visible"
-    exit="exit"
+    className="anim-fade-slide-right"
     gap={6}
     w="100%"
   >
@@ -116,5 +109,5 @@ export const PersonalStep = ({
         </NativeSelect.Root>
       </Field.Root>
     </VStack>
-  </MotionVStack>
+  </VStack>
 );

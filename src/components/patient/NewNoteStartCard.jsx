@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useColorMode } from "../ui/color-mode";
 import {
-    Steps,
     Box,
     Button,
     Flex,
@@ -9,12 +8,9 @@ import {
     Icon,
     Text,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
 import { colors } from "../../theme/colors";
 import UrSearchField from "./UrSearchField";
-
-const MotionBox = motion(Box);
 
 export const PathHalf = ({
     icon,
@@ -79,11 +75,8 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
 
     return (
         <Flex align="center" justify="center" minH="80vh" px={4} py={8}>
-            <MotionBox
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className="panels-bg"
+            <Box
+                className="anim-fade-slide-up panels-bg"
                 css={{
                     borderRadius: "2xl !important",
                 }}
@@ -118,12 +111,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                     </Text>
                 </Flex>
 
-                <MotionBox
-                    key={view}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                >
+                <Box key={view} className="anim-fade-slide-up">
                     {view === "choose" ? (
                         <Flex gap={3}>
                             <PathHalf
@@ -178,8 +166,8 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                             </Button>
                         </Box>
                     )}
-                </MotionBox>
-            </MotionBox>
+                </Box>
+            </Box>
         </Flex>
     );
 };

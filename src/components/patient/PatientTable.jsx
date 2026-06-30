@@ -7,7 +7,6 @@
  See: https://chakra-ui.com/docs/get-started/migration#hooks
 */
 import {
-    Steps,
     Box,
     Text,
     Table,
@@ -20,7 +19,6 @@ import {
     Grid,
     Wrap,
     WrapItem,
-    Spinner,
 } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -36,14 +34,11 @@ import {
 } from "react-icons/fa";
 import { RepeatIcon } from "../common/icons";
 import {
-    toggleJobsItem,
     resetJobsItems,
     debouncedUpdateJobsList,
     flushPendingJobsUpdate,
 } from "../../utils/patient/patientHandlers";
-import { motion, AnimatePresence } from "framer-motion";
 import { colors } from "../../theme/colors";
-import { FaAtom, FaSync } from "react-icons/fa";
 import { patientApi } from "../../utils/api/patientApi";
 
 const PatientTable = ({
@@ -367,18 +362,15 @@ const PatientTable = ({
                                 h="100%"
                                 position="relative"
                             >
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={
-                                            patient.reasoning
-                                                ? patient.activeSection
-                                                : "summary"
-                                        }
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.15 }}
-                                    >
+                                <Box
+                                    key={
+                                        patient.reasoning
+                                            ? patient.activeSection
+                                            : "summary"
+                                    }
+                                    className="anim-fade-slide-up"
+                                    css={{ animationDuration: "0.15s" }}
+                                >
                                         {patient.reasoning ? (
                                             <>
                                                 {patient.activeSection ===
@@ -428,8 +420,7 @@ const PatientTable = ({
                                                 {patient.encounter_summary}
                                             </Text>
                                         )}
-                                    </motion.div>
-                                </AnimatePresence>
+                                    </Box>
                             </Box>
                         </Grid>
                     </Box>

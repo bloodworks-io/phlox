@@ -1,10 +1,9 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useColorMode } from "../ui/color-mode";
 import { invoke } from "@tauri-apps/api/core";
-import { Steps, Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon } from "@chakra-ui/react";
+import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
-import { FaEye, FaEyeSlash, FaExclamationTriangle, FaLock } from "react-icons/fa";
-import { motion } from "framer-motion";
+import { FaEye, FaEyeSlash, FaExclamationTriangle } from "react-icons/fa";
 import { colors } from "../../theme/colors";
 import {
   encryptionApi,
@@ -17,15 +16,7 @@ import {
   STEP_TITLES,
   STEP_DESCRIPTIONS,
   getStepIcon,
-  containerVariants,
-  itemVariants,
 } from "../common/splash/constants";
-
-const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
-const MotionFlex = motion(Flex);
-const MotionHeading = motion(Heading);
-const MotionText = motion(Text);
 
 const EncryptionSetup = ({ onComplete }) => {
   const { colorMode } = useColorMode();
@@ -171,14 +162,11 @@ const EncryptionSetup = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-      <MotionBox
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+      <Box
+        className="anim-fade-scale panels-bg"
         p={{ base: 6, md: 8 }}
         borderRadius="2xl"
         boxShadow="2xl"
-        className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
         w={{ base: "100%", sm: "90%", md: "500px" }}
         maxW="500px"
@@ -196,20 +184,20 @@ const EncryptionSetup = ({ onComplete }) => {
           zIndex="0"
         />
 
-        <MotionVStack
+        <VStack
           gap={6}
           align="stretch"
           position="relative"
           zIndex="1"
+          className="anim-stagger"
         >
-          <MotionFlex
-            variants={itemVariants}
+          <Flex
             direction="column"
             align="center"
             mb={4}
           >
             <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
-            <MotionHeading
+            <Heading
               as="h1"
               textAlign="center"
               color={currentColors.textPrimary}
@@ -223,8 +211,8 @@ const EncryptionSetup = ({ onComplete }) => {
               }}
             >
               Welcome to Phlox
-            </MotionHeading>
-            <MotionText
+            </Heading>
+            <Text
               textAlign="center"
               fontSize="sm"
               color={currentColors.textSecondary}
@@ -235,10 +223,10 @@ const EncryptionSetup = ({ onComplete }) => {
               }}
             >
               Let's set up your AI-powered medical assistant
-            </MotionText>
-          </MotionFlex>
+            </Text>
+          </Flex>
 
-          <MotionBox variants={itemVariants}>
+          <Box>
             <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
               colorPalette="blue"
@@ -259,9 +247,9 @@ const EncryptionSetup = ({ onComplete }) => {
             >
               Step {currentStepIndex + 1} of {totalSteps}
             </Text>
-          </MotionBox>
+          </Box>
 
-          <MotionBox variants={itemVariants}>
+          <Box>
             <HStack mb={4} align="center" justify="center">
               <Icon
                 as={getStepIcon(SPLASH_STEPS.ENCRYPTION)}
@@ -292,26 +280,24 @@ const EncryptionSetup = ({ onComplete }) => {
             >
               {STEP_DESCRIPTIONS[SPLASH_STEPS.ENCRYPTION]}
             </Text>
-          </MotionBox>
+          </Box>
 
           {/* Warning alert with better legibility */}
-          <MotionBox variants={itemVariants}>
-            <Box
-              bg="orange.100"
-              borderLeft="4px solid"
-              borderColor="orange.400"
-              p={3}
-              borderRadius="md"
-            >
-              <HStack align="start">
-                <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
-                <Text color="gray.700" fontSize="sm" lineHeight="1.5">
-                  <strong>Important:</strong> If you forget your passphrase, your
-                  data cannot be recovered. Store it securely.
-                </Text>
-              </HStack>
-            </Box>
-          </MotionBox>
+          <Box
+            bg="orange.100"
+            borderLeft="4px solid"
+            borderColor="orange.400"
+            p={3}
+            borderRadius="md"
+          >
+            <HStack align="start">
+              <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
+              <Text color="gray.700" fontSize="sm" lineHeight="1.5">
+                <strong>Important:</strong> If you forget your passphrase, your
+                data cannot be recovered. Store it securely.
+              </Text>
+            </HStack>
+          </Box>
 
           <VStack gap={4} align="stretch">
             <Box>
@@ -425,8 +411,7 @@ const EncryptionSetup = ({ onComplete }) => {
             </Box>
           </VStack>
 
-          <MotionFlex
-            variants={itemVariants}
+          <Flex
             justify="flex-end"
             align="center"
             mt={2}
@@ -446,9 +431,9 @@ const EncryptionSetup = ({ onComplete }) => {
             >
               Continue
             </Button>
-          </MotionFlex>
-        </MotionVStack>
-      </MotionBox>
+          </Flex>
+        </VStack>
+      </Box>
     </Flex>
   );
 };

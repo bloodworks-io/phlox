@@ -4,14 +4,9 @@ import { useToast } from "@/utils/useToastShim";
 import { InfoIcon } from "../../icons";
 import { FaDesktop, FaCloud } from "react-icons/fa";
 import { ChevronLeftIcon, ChevronRightIcon } from "../../icons";
-import { motion } from "framer-motion";
-import { stepVariants } from "../constants";
 import { useLLMStep } from "../../../../utils/hooks/splash/useLLMStep";
-import { isTauri } from "../../../../utils/helpers/apiConfig";
 import { getSmartRecommendations } from "../../../../utils/performanceUtils";
 import { invoke } from "@tauri-apps/api/core";
-
-const MotionVStack = motion(VStack);
 
 export { useLLMStep };
 
@@ -90,7 +85,7 @@ const LocalModelCard = ({
                         bg="gray.700"
                         color="white"
                     >
-                        <Badge colorScheme={badge.color} fontSize="xs">
+                        <Badge colorPalette={badge.color} fontSize="xs">
                             {badge.text}
                         </Badge>
                     </Tooltip>
@@ -292,12 +287,9 @@ export const LLMStep = ({
     );
 
     return (
-        <MotionVStack
+        <VStack
             key="llm"
-            variants={stepVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            className="anim-fade-slide-right"
             spacing={6}
             w="100%"
         >
@@ -361,7 +353,7 @@ export const LLMStep = ({
                                 <>
                                     <IconButton
                                         icon={<ChevronLeftIcon />}
-                                        isDisabled={!canGoPrev}
+                                        disabled={!canGoPrev}
                                         onClick={handlePrev}
                                         aria-label="Smaller models"
                                         variant="outline"
@@ -376,7 +368,7 @@ export const LLMStep = ({
                                     />
                                     <IconButton
                                         icon={<ChevronRightIcon />}
-                                        isDisabled={!canGoNext}
+                                        disabled={!canGoNext}
                                         onClick={handleNext}
                                         aria-label="Larger models"
                                         variant="outline"
@@ -582,6 +574,6 @@ export const LLMStep = ({
                     </>
                 )}
             </VStack>
-        </MotionVStack>
+        </VStack>
     );
 };

@@ -1,5 +1,4 @@
 import {
-  Steps,
   VStack,
   SimpleGrid,
   Card,
@@ -12,12 +11,8 @@ import {
   Alert,
   Box,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import { FaCheckCircle } from "react-icons/fa";
-import { stepVariants } from "../constants";
 import { useLettersStep } from "../../../../utils/hooks/splash/useLettersStep";
-
-const MotionVStack = motion(VStack);
 
 export { useLettersStep };
 
@@ -28,12 +23,9 @@ export const LettersStep = ({
   isFetchingLetterTemplates,
   currentColors,
 }) => (
-  <MotionVStack
+  <VStack
     key="letters"
-    variants={stepVariants}
-    initial="hidden"
-    animate="visible"
-    exit="exit"
+    className="anim-fade-slide-right"
     gap={6}
     w="100%"
   >
@@ -103,5 +95,5 @@ export const LettersStep = ({
         ))}
       </SimpleGrid>
     )}
-  </MotionVStack>
+  </VStack>
 );

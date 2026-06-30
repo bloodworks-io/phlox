@@ -1,14 +1,13 @@
 import React from "react";
-import { Steps, Button, Box } from "@chakra-ui/react";
+import { Button, Box, HStack } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { QuestionIcon } from "../../common/icons";
-import { emergeFromButton, AnimatedHStack } from "../../../theme/animations";
 
 const QuickChatButtons = ({ userSettings, handleSendMessage }) => {
     if (!userSettings) return null;
 
     return (
-        <AnimatedHStack spacing="2" mb="2" width="100%">
+        <HStack spacing="2" mb="2" width="100%" className="anim-fade-slide-up">
             {[1, 2, 3].map((n) => {
                 const title = userSettings[`quick_chat_${n}_title`];
                 const prompt = userSettings[`quick_chat_${n}_prompt`];
@@ -44,7 +43,7 @@ const QuickChatButtons = ({ userSettings, handleSendMessage }) => {
                     </Tooltip>
                 );
             })}
-        </AnimatedHStack>
+        </HStack>
     );
 };
 

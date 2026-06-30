@@ -1,5 +1,4 @@
 import {
-  Steps,
   VStack,
   SimpleGrid,
   Card,
@@ -12,13 +11,9 @@ import {
   Alert,
   Box,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import { FaCheckCircle } from "react-icons/fa";
-import { stepVariants } from "../constants";
 import { TEMPLATE_DESCRIPTIONS } from "../constants";
 import { useTemplatesStep } from "../../../../utils/hooks/splash/useTemplatesStep";
-
-const MotionVStack = motion(VStack);
 
 export { useTemplatesStep };
 
@@ -29,12 +24,9 @@ export const TemplatesStep = ({
   isFetchingTemplates,
   currentColors,
 }) => (
-  <MotionVStack
+  <VStack
     key="templates"
-    variants={stepVariants}
-    initial="hidden"
-    animate="visible"
-    exit="exit"
+    className="anim-fade-slide-right"
     gap={6}
     w="100%"
   >
@@ -110,5 +102,5 @@ export const TemplatesStep = ({
         ))}
       </SimpleGrid>
     )}
-  </MotionVStack>
+  </VStack>
 );

@@ -1,13 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useColorMode } from "../ui/color-mode";
-import { Steps, Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
+import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
 import { FaServer } from "react-icons/fa";
-import { motion } from "framer-motion";
 import { colors } from "../../theme/colors";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
-
-const MotionBox = motion(Box);
 
 const LOADING_MESSAGES = [
   "Reticulating splines...",
@@ -144,14 +141,11 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             zIndex="1000"
           />
         )}
-        <MotionBox
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+        <Box
+          className="anim-fade-slide-up panels-bg"
           p={8}
           borderRadius="2xl"
           boxShadow="2xl"
-          className="panels-bg"
           border={`1px solid ${currentColors.surface}`}
           w="100%"
           maxW="450px"
@@ -189,7 +183,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
               Try Again
             </Button>
           </VStack>
-        </MotionBox>
+        </Box>
       </Flex>
     );
   }
@@ -216,14 +210,11 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           zIndex="1000"
         />
       )}
-      <MotionBox
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <Box
+        className="anim-fade-slide-up panels-bg"
         p={8}
         borderRadius="2xl"
         boxShadow="2xl"
-        className="panels-bg"
         border={`1px solid ${currentColors.surface}`}
         w="100%"
         maxW="450px"
@@ -251,8 +242,8 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             {LOADING_MESSAGES[messageIndex]}
           </Text>
         </VStack>
-      </MotionBox>
-    </Flex>
+        </Box>
+      </Flex>
   );
 };
 

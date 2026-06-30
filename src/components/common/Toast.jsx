@@ -1,5 +1,5 @@
 // Custom toast component for displaying notifications with different statuses.
-import { Steps, Alert, Box, CloseButton, Flex } from "@chakra-ui/react";
+import { Alert, Box, CloseButton, Flex } from "@chakra-ui/react";
 import {
   CheckCircleIcon,
   InfoIcon,

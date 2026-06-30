@@ -1,6 +1,6 @@
 // Local icon wrappers.
 
-import { Steps, Icon } from "@chakra-ui/react";
+import { Icon } from "@chakra-ui/react";
 import {
     FiAlertTriangle,
     FiArrowUp,
