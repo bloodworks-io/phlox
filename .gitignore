@@ -29,6 +29,7 @@ server/venv
 .vscode/
 .idea/
 .zed/
+opencode.*
 server/.pytest_cache
 oom
 
@@ -49,6 +50,7 @@ src-tauri/whisper.cpp/
 src-tauri/llama.cpp/
 
 # Coverage
+AGENTS.md
 CLAUDE.md
 .claude
 coverage/
