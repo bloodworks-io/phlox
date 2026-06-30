@@ -1,7 +1,7 @@
 // Modal for uploading a new PDF form template.
 import React, { useState, useRef } from "react";
 import { useColorModeValue } from "../ui/color-mode";
-import { Steps, Button, Input, Text, VStack, Box, Dialog, Portal } from "@chakra-ui/react";
+import { Input, Text, VStack, Box, Dialog, Portal } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
@@ -138,7 +138,7 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
               <GreenButton
                 onClick={handleSubmit}
                 isLoading={uploading}
-                isDisabled={!file || !name.trim()}
+                disabled={!file || !name.trim()}
               >
                 Upload
               </GreenButton>

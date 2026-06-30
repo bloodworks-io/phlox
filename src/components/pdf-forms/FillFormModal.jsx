@@ -1,7 +1,7 @@
 // Modal for filling a PDF form template and downloading the result.
 import React, { useState } from "react";
 import { useColorModeValue } from "../ui/color-mode";
-import { Steps, Button, Input, Checkbox, VStack, Text, Field, Dialog, Portal } from "@chakra-ui/react";
+import { Input, Checkbox, VStack, Text, Field, Dialog, Portal } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
@@ -135,7 +135,7 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
               <GreenButton
                 onClick={handleFill}
                 isLoading={filling}
-                isDisabled={fields.length === 0}
+                disabled={fields.length === 0}
               >
                 Fill & Download
               </GreenButton>

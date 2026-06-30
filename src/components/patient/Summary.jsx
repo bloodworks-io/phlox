@@ -5,14 +5,13 @@ import React, {
   useImperativeHandle,
 } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import { Steps, Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner } from "@chakra-ui/react";
+import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
   EditIcon,
   CopyIcon,
   CheckIcon,
-  AttachmentIcon,
 } from "../common/icons";
 import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
@@ -270,7 +269,7 @@ const Summary = forwardRef(
                         onClick={() => handleGenerateLetterClick(null)}
                         leftIcon={<EditIcon />}
                         mr="2"
-                        isDisabled={saveLoading || !isEncounterSaved}
+                        disabled={saveLoading || !isEncounterSaved}
                       >
                         Generate Letter
                       </GreyButton>
@@ -309,7 +308,7 @@ const Summary = forwardRef(
                         width="150px"
                         ml="2"
                         leftIcon={wrapUpLoading ? null : <FaCheckDouble />}
-                        isDisabled={saveLoading}
+                        disabled={saveLoading}
                       >
                         {wrapUpLoading ? "Wrapping..." : "Wrap Up"}
                       </GreenButton>

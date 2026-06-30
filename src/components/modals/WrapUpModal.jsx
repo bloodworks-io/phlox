@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useColorMode } from "../ui/color-mode";
 import {
-    Steps,
     HStack,
     Heading,
     VStack,
@@ -378,7 +377,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                     onClick={handleConfirm}
                                     isLoading={submitting}
                                     loadingText="Saving"
-                                    isDisabled={!canConfirm}
+                                    disabled={!canConfirm}
                                 >
                                     Confirm &amp; Finish
                                 </GreenButton>

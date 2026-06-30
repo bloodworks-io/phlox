@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Steps, Box, VStack, HStack, Text, Button, Input, Table, IconButton, useDisclosure, Spinner, Badge, Alert, Flex, Spacer, Progress, SimpleGrid, Icon, Center, Tabs, Collapsible, Separator, Dialog, Portal } from "@chakra-ui/react";
+import { Box, VStack, HStack, Text, Button, Table, IconButton, useDisclosure, Spinner, Badge, Alert, Flex, Spacer, Progress, SimpleGrid, Icon, Center, Tabs, Collapsible, Separator, Dialog, Portal } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
   FaExclamationTriangle,
@@ -11,11 +11,9 @@ import {
   DeleteIcon,
   DownloadIcon,
   CheckIcon,
-  WarningIcon,
 } from "../common/icons";
 import {
   GreenButton,
-  GreyButton,
   RedButton,
   SettingsButton,
 } from "../common/Buttons";
@@ -232,7 +230,7 @@ const LocalModelManager = ({ className }) => {
           )}
 
           {isDownloaded ? (
-            <GreenButton size="sm" isDisabled leftIcon={<CheckIcon />}>
+            <GreenButton size="sm" disabled leftIcon={<CheckIcon />}>
               Downloaded
             </GreenButton>
           ) : isDownloadingLlm && llmProgress ? (
@@ -537,7 +535,7 @@ const LocalModelManager = ({ className }) => {
                             {isDownloaded ? (
                               <GreenButton
                                 size="sm"
-                                isDisabled
+                                disabled
                                 leftIcon={<CheckIcon />}
                               >
                                 Downloaded

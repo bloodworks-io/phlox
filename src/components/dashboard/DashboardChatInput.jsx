@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useColorMode, useColorModeValue } from "../ui/color-mode";
 import {
-    Steps,
     Box,
     Flex,
     Textarea,
@@ -42,6 +41,8 @@ const DashboardChatInput = ({
 }) => {
     const { colorMode } = useColorMode();
     const isLight = colorMode === "light";
+    const imageChipBg = useColorModeValue("gray.100", "gray.700");
+    const errorIconColor = useColorModeValue("red.500", "red.300");
     const [isDragOver, setIsDragOver] = useState(false);
 
     const fileInputRef = useRef(null);
@@ -176,7 +177,7 @@ const DashboardChatInput = ({
                         px={2}
                         py={1.5}
                         borderRadius="md"
-                        bg={useColorModeValue("gray.100", "gray.700")}
+                        bg={imageChipBg}
                         maxW="33%"
                     >
                         {pendingImage.type.startsWith("image/") ? (
@@ -191,9 +192,12 @@ const DashboardChatInput = ({
                         ) : (
                             <Icon
                                 boxSize={3.5}
-                                color={useColorModeValue("red.500", "red.300")}
+                                color={errorIconColor}
                                 flexShrink={0}
-                                asChild><FaFilePdf /></Icon>
+                                asChild
+                            >
+                                <FaFilePdf />
+                            </Icon>
                         )}
                         <Text fontSize="xs" flex="1" isTruncated>
                             {pendingImage.name}
@@ -210,7 +214,10 @@ const DashboardChatInput = ({
                             flexShrink={0}
                             minW="auto"
                             h="auto"
-                            p={0.5}><CloseIcon /></IconButton>
+                            p={0.5}
+                        >
+                            <CloseIcon />
+                        </IconButton>
                     </HStack>
                 )}
 
@@ -257,7 +264,10 @@ const DashboardChatInput = ({
                                 bg: isLight
                                     ? "gray.100"
                                     : "rgba(255, 255, 255, 0.1)",
-                            }}><AttachmentIcon /></IconButton>
+                            }}
+                        >
+                            <AttachmentIcon />
+                        </IconButton>
                         <Input
                             type="file"
                             ref={fileInputRef}
@@ -303,7 +313,10 @@ const DashboardChatInput = ({
                                   : "rgba(255, 255, 255, 0.3)",
                             transform: "scale(1.05)",
                         }}
-                        transition="all 0.2s ease"><ArrowUpIcon /></IconButton>
+                        transition="all 0.2s ease"
+                    >
+                        <ArrowUpIcon />
+                    </IconButton>
                 </Flex>
             </Box>
             {showDisclaimer && (
