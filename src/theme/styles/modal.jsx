@@ -20,16 +20,4 @@ export const modalStyles = (props) => ({
         borderRadius: "xl !important",
         marginBlock: "auto !important",
     },
-    ".collapse-toggle": {
-        border: "none !important",
-        borderRadius: "sm !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.crust} !important`
-                : `${colors.dark.base} !important`,
-    },
 });

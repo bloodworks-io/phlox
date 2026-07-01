@@ -36,23 +36,6 @@ export const inputStyles = (props) => ({
     ".letter-editor-textarea": {
         overflow: "auto !important",
     },
-    ".input-style": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `${colors.dark.textTertiary} !important`,
-        padding: "7px 8px !important",
-        borderRadius: "sm !important",
-        fontSize: "0.9rem !important",
-    },
     ".chat-input": {
         backgroundColor:
             props.colorMode === "light"
