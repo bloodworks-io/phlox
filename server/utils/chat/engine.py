@@ -396,17 +396,3 @@ class ChatEngine:
         except Exception as e:
             self.logger.error(f"Error in stream_chat: {e}")
             raise
-
-
-# Usage
-if __name__ == "__main__":
-    chat_engine = ChatEngine()
-    conversation_history = [{"role": "user", "content": "What are the symptoms of diabetes?"}]
-
-    async def _run():  # type: ignore[misc]
-        async for _chunk in chat_engine.stream_chat(conversation_history):
-            pass  # chunks are processed by the caller
-
-    import asyncio
-
-    asyncio.run(_run())
