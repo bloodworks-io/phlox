@@ -3,11 +3,11 @@
 
 import numpy as np
 
-from .chunking_utils import BaseChunker, openai_token_count
+from .chunking_utils import openai_token_count
 from .recursive_token_chunker import RecursiveTokenChunker
 
 
-class ClusterSemanticChunker(BaseChunker):
+class ClusterSemanticChunker:
     def __init__(
         self,
         embedding_function,
@@ -91,7 +91,6 @@ class ClusterSemanticChunker(BaseChunker):
 
     def split_text(self, text: str) -> list[str]:
         sentences = self.splitter.split_text(text)
-        print(self.embedding_function)
         similarity_matrix = self._get_similarity_matrix(self.embedding_function, sentences)
 
         clusters = self._optimal_segmentation(similarity_matrix, max_cluster_size=self.max_cluster)

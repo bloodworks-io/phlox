@@ -12,11 +12,9 @@ from typing import (
     Union,
 )
 
-from .chunking_utils import BaseChunker
-
 logger = logging.getLogger(__name__)
 
-class TextSplitter(BaseChunker, ABC):
+class TextSplitter(ABC):
     """Interface for splitting text into chunks."""
 
     def __init__(
