@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useColorMode } from "../ui/color-mode";
 import {
     Box,
     Flex,
@@ -39,8 +38,6 @@ const DashboardChatInput = ({
     onImageRemove,
     isProcessingImage,
 }) => {
-    const { colorMode } = useColorMode();
-    const isLight = colorMode === "light";
     const [isDragOver, setIsDragOver] = useState(false);
 
     const fileInputRef = useRef(null);
@@ -142,11 +139,7 @@ const DashboardChatInput = ({
                     bottom={0}
                     align="center"
                     justify="center"
-                    bg={
-                        isLight
-                            ? "rgba(49, 130, 206, 0.1)"
-                            : "rgba(99, 179, 237, 0.1)"
-                    }
+                    bg="rgba(99, 179, 237, 0.1)"
                     borderWidth="2px"
                     borderStyle="dashed"
                     borderColor="blue.400"
@@ -234,11 +227,9 @@ const DashboardChatInput = ({
                     py="1.5"
                     px="3"
                     lineHeight="1.35"
-                    color={isLight ? "gray.800" : "white"}
+                    color="sendButtonText"
                     _placeholder={{
-                        color: isLight
-                            ? "gray.500"
-                            : "rgba(255, 255, 255, 0.6)",
+                        color: "sendButtonTextDisabled",
                     }}
                     fontSize="md"
                     disabled={isLoading || isProcessingImage}
@@ -253,15 +244,9 @@ const DashboardChatInput = ({
                             aria-label="Attach image or PDF"
                             size="sm"
                             variant="ghost"
-                            color={
-                                isLight
-                                    ? "gray.500"
-                                    : "rgba(255, 255, 255, 0.6)"
-                            }
+                            color="sendButtonTextDisabled"
                             _hover={{
-                                bg: isLight
-                                    ? "gray.100"
-                                    : "rgba(255, 255, 255, 0.1)",
+                                bg: "hoverOverlay",
                             }}
                         >
                             <AttachmentIcon />
@@ -283,32 +268,12 @@ const DashboardChatInput = ({
                         size="sm"
                         alignSelf="center"
                         borderRadius="full"
-                        bg={
-                            canSend
-                                ? isLight
-                                    ? "gray.700"
-                                    : "white"
-                                : isLight
-                                  ? "gray.200"
-                                  : "rgba(255, 255, 255, 0.2)"
-                        }
-                        color={
-                            canSend
-                                ? isLight
-                                    ? "white"
-                                    : "gray.800"
-                                : isLight
-                                  ? "gray.400"
-                                  : "rgba(255, 255, 255, 0.5)"
-                        }
+                        bg={canSend ? "sendButton" : "sendButtonDisabled"}
+                        color={canSend ? "sendButtonText" : "sendButtonTextDisabled"}
                         _hover={{
                             bg: canSend
-                                ? isLight
-                                    ? "gray.600"
-                                    : "gray.100"
-                                : isLight
-                                  ? "gray.300"
-                                  : "rgba(255, 255, 255, 0.3)",
+                                ? "sendButtonHover"
+                                : "sendButtonHoverDisabled",
                             transform: "scale(1.05)",
                         }}
                         transition="all 0.2s ease"
