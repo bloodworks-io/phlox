@@ -2,7 +2,6 @@ import { useCallback, useState } from "react";
 import { letterApi } from "../api/letterApi";
 import { validateLetterData } from "../helpers/validationHelpers";
 import { useToastMessage } from "./UseToastMessage";
-import { truncateLetterContext } from "../letter/letterUtils";
 
 export const useLetter = (setIsModified) => {
     const [loading, setLoading] = useState(false);
@@ -95,14 +94,9 @@ export const useLetter = (setIsModified) => {
         patient,
         additionalInstructions,
         refinementInput,
-        options,
         onSuccess = () => {},
     }) {
         if (!refinementInput.trim()) return;
-        if (!options?.general?.num_ctx) {
-            console.warn("Context window size not available");
-            return;
-        }
 
         setLoading(true);
         try {
@@ -124,26 +118,19 @@ export const useLetter = (setIsModified) => {
                 content: refinementInput,
             });
 
-            // Determine token limit using the provided options.
-            const maxTokens = options.general.num_ctx;
-            const truncatedContext = truncateLetterContext(
-                updatedContext,
-                maxTokens * 0.9,
-            );
-
-            // Call the generateLetter API with the new context.
+            // Call the generateLetter API; the server truncates the context
             const response = await letterApi.generateLetter({
                 patientName: patient.name,
                 gender: patient.gender,
                 dob: patient.dob,
                 template_data: patient.template_data,
                 additional_instruction: additionalInstructions,
-                context: truncatedContext,
+                context: updatedContext,
             });
 
             // Append the assistant's response.
             const newContext = [
-                ...truncatedContext,
+                ...(response.context || []),
                 {
                     role: "assistant",
                     content: response.letter,

@@ -24,7 +24,7 @@ async def generate_letter(request: LetterRequest):
     """Generates a letter."""
 
     try:
-        letter_content = await generate_letter_content(
+        result = await generate_letter_content(
             request.patientName,
             request.gender,
             request.dob,
@@ -32,7 +32,7 @@ async def generate_letter(request: LetterRequest):
             request.additional_instruction,
             request.context,
         )
-        return JSONResponse(content={"letter": letter_content})
+        return JSONResponse(content=result)
     except HTTPException as he:
         raise he
     except Exception as e:

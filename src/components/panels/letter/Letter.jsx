@@ -52,7 +52,6 @@ const Letter = forwardRef(
       selectedTemplate,
       additionalInstructions,
       setAdditionalInstructions,
-      options,
       selectTemplate,
       getInstructions,
     } = useLetterTemplates(patient?.id);
@@ -112,7 +111,6 @@ const Letter = forwardRef(
         patient,
         additionalInstructions: getInstructions(),
         refinementInput,
-        options,
         onSuccess: () => {
           setRefinementInput("");
           setIsRefining(false);

@@ -9,6 +9,63 @@ from server.utils.llm_client import repair_json
 from server.utils.llm_client.client import get_llm_client
 
 
+def _count_tokens(text: str) -> int:
+    """Token count for budget guards. Lazy-imports tiktoken; falls back to len//4."""
+    try:
+        import tiktoken
+
+        return len(tiktoken.get_encoding("cl100k_base").encode(text, disallowed_special=()))
+    except (ImportError, ValueError):
+        return len(text) // 4
+
+
+def _truncate_context(messages: list[dict], max_tokens: int) -> list[dict]:
+    """Trim a conversation context to fit a token budget.
+
+    Repeatedly drops the oldest assistant turn (and any messages between it and
+    the next assistant message) until the total is under budget. The result is
+    guaranteed to start with an assistant message when one is present.
+    """
+    if not messages:
+        return []
+
+    def _total(msgs: list[dict]) -> int:
+        return sum(_count_tokens(f"{m.get('role', '')}: {m.get('content', '')}") for m in msgs)
+
+    working = list(messages)
+    total = _total(working)
+
+    while total > max_tokens and len(working) > 2:
+        first_assistant = next(
+            (i for i, m in enumerate(working) if m.get("role") == "assistant"), None
+        )
+        if first_assistant is None:
+            break
+        second_assistant = next(
+            (
+                i
+                for i, m in enumerate(working)
+                if m.get("role") == "assistant" and i > first_assistant
+            ),
+            None,
+        )
+        if second_assistant is not None:
+            removed = working[first_assistant:second_assistant]
+            del working[first_assistant:second_assistant]
+            total -= _total(removed)
+        else:
+            break
+
+    # Ensure the context starts with an assistant message
+    first_assistant = next(
+        (i for i, m in enumerate(working) if m.get("role") == "assistant"), None
+    )
+    if first_assistant and first_assistant > 0:
+        del working[:first_assistant]
+
+    return working
+
+
 async def generate_letter_content(
     patient_name: str,
     gender: str,
@@ -17,7 +74,11 @@ async def generate_letter_content(
     additional_instruction: str | None = None,
     context: list | None = None,
 ):
-    """Generates letter content using the LLM client based on provided data and prompts."""
+    """Generates letter content using the LLM client based on provided data and prompts.
+
+    Returns a dict with ``letter`` (the generated text) and ``context`` (the
+    truncated conversation context actually used, so callers can stay in sync).
+    """
     config = config_manager.get_config()
     prompts = config_manager.get_prompts_and_options()
     llm_client = get_llm_client()
@@ -69,11 +130,13 @@ async def generate_letter_content(
             }
         )
 
-        # Add any context from the frontend
-        # Filter out system messages to ensure they only appear at the beginning
-        if context:
-            context_messages = [m for m in context if m.get("role") != "system"]
-            request_body.extend(context_messages)
+        # Add any context from the frontend (server-side truncation keeps it in budget)
+        num_ctx = prompts["options"]["general"].get("num_ctx", 7168)
+        budget = int(num_ctx * 0.9)
+        truncated_context = _truncate_context(
+            [m for m in (context or []) if m.get("role") != "system"], budget
+        )
+        request_body.extend(truncated_context)
 
         # Set up response format for structured output with thinking support
         base_schema = LetterDraft.model_json_schema()
@@ -101,7 +164,7 @@ async def generate_letter_content(
 
         # Parse the JSON response
         letter_content = LetterDraft.model_validate_json(response_json)
-        return letter_content.content
+        return {"letter": letter_content.content, "context": truncated_context}
 
     except Exception as e:
         logging.error(f"Error generating letter content: {e}")

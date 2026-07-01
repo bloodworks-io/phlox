@@ -17,7 +17,7 @@ client = TestClient(app)
 def test_generate_letter(monkeypatch):
     # generate_letter_content is async, so the mock must be async too
     async def fake_generate_letter_content(*_args, **_kwargs):
-        return "This is a generated letter."
+        return {"letter": "This is a generated letter.", "context": []}
 
     monkeypatch.setattr("server.api.letter.generate_letter_content", fake_generate_letter_content)
     payload = {
@@ -32,13 +32,14 @@ def test_generate_letter(monkeypatch):
     assert response.status_code == 200
     data = response.json()
     assert "letter" in data
+    assert "context" in data
     assert "generated letter" in data["letter"]
 
 
 @pytest.mark.asyncio
 async def test_save_letter(monkeypatch):
     async def fake_generate_letter_content(*_args, **_kwargs):
-        return "This is a generated letter."
+        return {"letter": "This is a generated letter.", "context": []}
 
     monkeypatch.setattr("server.api.letter.generate_letter_content", fake_generate_letter_content)
     payload = {"noteId": 123, "letter": "This is a saved letter."}
