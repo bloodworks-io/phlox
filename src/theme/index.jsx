@@ -1,26 +1,61 @@
 // Entry point for the Chakra UI v3 theme.
 //
-// The v2 global styles (./styles — 14 modules) are functions of
-// (props) => ({ ... }) keyed off `props.colorMode`, reading `colors.light.X` /
-// `colors.dark.X` (plain hex). v3's `globalCss` is static (no colorMode prop),
-// so we evaluate both color modes up front and attach each selector's light /
-// dark values as `_light` / `_dark` variants — v3 applies the active color mode
-// automatically. This reuses all 14 style modules verbatim; no per-rule rewrite.
+
 import { createSystem, defaultConfig } from "@chakra-ui/react";
-import { styles } from "./styles";
 import { typography } from "./typography";
 import { tokens as colorTokens } from "./colors";
-
-const lightGlobal = styles.global({ colorMode: "light" });
-const darkGlobal = styles.global({ colorMode: "dark" });
+import { buttonGlobalCss } from "./styles/button";
+import { inputGlobalCss } from "./styles/input";
+import { sidebarGlobalCss } from "./styles/sidebar";
+import { baseGlobalCss } from "./styles/base";
+import { panelGlobalCss } from "./styles/panel";
+import { modalGlobalCss } from "./styles/modal";
+import { floatingGlobalCss } from "./styles/floating";
+import { modeSelectorGlobalCss } from "./styles/modeSelector";
+import { toggleGlobalCss } from "./styles/toggle";
+import { documentExplorerGlobalCss } from "./styles/documentExplorer";
+import { checkboxGlobalCss } from "./styles/checkbox";
+import { tabGlobalCss } from "./styles/tab";
+import { scrollbarGlobalCss } from "./styles/scrollbar";
+import { patientInfoGlobalCss } from "./styles/patientInfo";
 
 const globalCss = {};
-for (const selector of Object.keys(lightGlobal)) {
-    globalCss[selector] = {
-        _light: lightGlobal[selector],
-        _dark: darkGlobal[selector],
-    };
-}
+
+Object.assign(
+    globalCss,
+    baseGlobalCss,
+    sidebarGlobalCss,
+    panelGlobalCss,
+    buttonGlobalCss,
+    inputGlobalCss,
+    modalGlobalCss,
+    floatingGlobalCss,
+    modeSelectorGlobalCss,
+    toggleGlobalCss,
+    documentExplorerGlobalCss,
+    checkboxGlobalCss,
+    tabGlobalCss,
+    scrollbarGlobalCss,
+    patientInfoGlobalCss,
+);
+
+globalCss[".main-bg"] = { backgroundColor: "base" };
+globalCss[".flex-container"] = {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "50px",
+};
+globalCss[".landing-items"] = {
+    backgroundColor: { _light: "base", _dark: "crust" },
+    color: "textSecondary !important",
+    border: "none",
+    fontWeight: "normal",
+};
+globalCss[".green-icon"] = { color: "successButton !important" };
+globalCss[".red-icon"] = { color: "dangerButton !important" };
+globalCss[".yellow-icon"] = { color: "secondaryButton !important" };
+globalCss[".blue-icon"] = { color: "primaryButton !important" };
 
 // Heavier button label weight (v3 Button base is "medium"/500; v2 was heavier).
 globalCss[".chakra-button"] = {
@@ -57,7 +92,7 @@ globalCss[".anim-stagger > *"] = {
         "phloxFadeSlideUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both",
 };
 for (let i = 1; i <= 8; i++) {
-    globalCss[`.anim-stagger > *:nth-child(${i})`] = {
+    globalCss[`.anim-stagger > *:nth-of-type(${i})`] = {
         animationDelay: `${i * 80}ms`,
     };
 }
