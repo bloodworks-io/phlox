@@ -1,7 +1,7 @@
 import { colors } from "../colors";
 import { darkenColor } from "../utils";
 
-export const sidebarStyles = (props) => ({
+const sidebarStyles = (props) => ({
     ".sidebar": {
         position: "fixed",
         top: 0,
@@ -184,3 +184,13 @@ export const sidebarStyles = (props) => ({
         },
     },
 });
+
+const _lightOut = sidebarStyles({ colorMode: "light" });
+const _darkOut = sidebarStyles({ colorMode: "dark" });
+export const sidebarGlobalCss = {};
+for (const selector of Object.keys(_lightOut)) {
+    sidebarGlobalCss[selector] = {
+        _light: _lightOut[selector],
+        _dark: _darkOut[selector],
+    };
+}

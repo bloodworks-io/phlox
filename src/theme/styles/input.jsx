@@ -2,7 +2,7 @@
 import { colors } from "../colors";
 import { lightenColor, darkenColor } from "../utils"; // adjust path as needed
 
-export const inputStyles = (props) => ({
+const inputStyles = (props) => ({
     ".textarea-style": {
         backgroundColor:
             props.colorMode === "light"
@@ -333,3 +333,13 @@ export const inputStyles = (props) => ({
         maxHeight: "200px !important",
     },
 });
+
+const _lightOut = inputStyles({ colorMode: "light" });
+const _darkOut = inputStyles({ colorMode: "dark" });
+export const inputGlobalCss = {};
+for (const selector of Object.keys(_lightOut)) {
+    inputGlobalCss[selector] = {
+        _light: _lightOut[selector],
+        _dark: _darkOut[selector],
+    };
+}
