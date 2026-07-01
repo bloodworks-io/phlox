@@ -9,6 +9,7 @@
 import { createSystem, defaultConfig } from "@chakra-ui/react";
 import { styles } from "./styles";
 import { typography } from "./typography";
+import { tokens as colorTokens } from "./colors";
 
 const lightGlobal = styles.global({ colorMode: "light" });
 const darkGlobal = styles.global({ colorMode: "dark" });
@@ -93,6 +94,7 @@ export const system = createSystem(defaultConfig, {
                 heading: { value: typography.fonts.heading },
                 body: { value: typography.fonts.body },
             },
+            colors: colorTokens,
         },
         slotRecipes: {
             table: {
