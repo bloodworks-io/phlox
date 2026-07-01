@@ -250,12 +250,7 @@ def _format_instructions_for_display(instructions: list[str]) -> str:
     """Format instruction list for display to the LLM."""
     if not instructions:
         return "No current instructions."
-
-    formatted = []
-    for i, instruction in enumerate(instructions):
-        formatted.append(f"{i}: {instruction}")
-
-    return "\n".join(formatted)
+    return "\n".join(f"{i}: {inst}" for i, inst in enumerate(instructions))
 
 
 async def _process_single_tool_call(
