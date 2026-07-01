@@ -21,7 +21,10 @@ const AppLayout = ({
                     left="6"
                     zIndex="101"
                     aria-label="Toggle sidebar"
-                    className="dark-toggle"><CollapseIcon /></IconButton>
+                    className="dark-toggle"
+                >
+                    <CollapseIcon />
+                </IconButton>
             )}
             <Sidebar {...sidebarProps} />
             <Box

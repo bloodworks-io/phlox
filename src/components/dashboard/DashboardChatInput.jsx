@@ -227,9 +227,9 @@ const DashboardChatInput = ({
                     py="1.5"
                     px="3"
                     lineHeight="1.35"
-                    color="sendButtonText"
+                    color="textPrimary"
                     _placeholder={{
-                        color: "sendButtonTextDisabled",
+                        color: "textQuaternary",
                     }}
                     fontSize="md"
                     disabled={isLoading || isProcessingImage}
@@ -244,7 +244,7 @@ const DashboardChatInput = ({
                             aria-label="Attach image or PDF"
                             size="sm"
                             variant="ghost"
-                            color="sendButtonTextDisabled"
+                            color="textQuaternary"
                             _hover={{
                                 bg: "hoverOverlay",
                             }}

@@ -63,8 +63,8 @@ const ChatInput = ({
                     px="3"
                     fontSize="sm"
                     lineHeight="1.35"
-                    color="sendButtonText"
-                    _placeholder={{ color: "sendButtonTextDisabled" }}
+                    color="textPrimary"
+                    _placeholder={{ color: "textQuaternary" }}
                     _focusVisible={{
                         boxShadow: "none",
                     }}

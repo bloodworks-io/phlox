@@ -129,6 +129,8 @@ export const system = createSystem(defaultConfig, {
                 heading: { value: typography.fonts.heading },
                 body: { value: typography.fonts.body },
             },
+        },
+        semanticTokens: {
             colors: colorTokens,
         },
         slotRecipes: {
