@@ -1,7 +1,7 @@
 // Defines visual styles for tab components within the application.
 import { colors } from "../colors";
 
-export const tabStyles = (props) => ({
+const tabStyles = (props) => ({
     ".tab-style": {
         backgroundColor: "transparent !important",
         borderRadius: "0 !important",
@@ -42,3 +42,10 @@ export const tabStyles = (props) => ({
         justifyContent: "center !important",
     },
 });
+
+const _lo = tabStyles({ colorMode: "light" });
+const _do = tabStyles({ colorMode: "dark" });
+export const tabGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    tabGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

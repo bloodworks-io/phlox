@@ -1,7 +1,7 @@
 // Defines visual styles for toggle buttons and switches.
 import { colors } from "../colors";
 
-export const toggleStyles = (props) => ({
+const toggleStyles = (props) => ({
     ".transcript-mode": {
         display: "inline-flex",
         justifyContent: "center",
@@ -55,3 +55,10 @@ export const toggleStyles = (props) => ({
         cursor: "pointer",
     },
 });
+
+const _lo = toggleStyles({ colorMode: "light" });
+const _do = toggleStyles({ colorMode: "dark" });
+export const toggleGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    toggleGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

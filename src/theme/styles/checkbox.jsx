@@ -1,7 +1,7 @@
 // Styles for checkbox components
 import { colors } from "../colors";
 
-export const checkboxStyles = (props) => ({
+const checkboxStyles = (props) => ({
     ".task-checkbox": {
         borderRadius: "sm !important",
     },
@@ -33,3 +33,10 @@ export const checkboxStyles = (props) => ({
                 : `${colors.dark.textSecondary} !important`,
     },
 });
+
+const _lo = checkboxStyles({ colorMode: "light" });
+const _do = checkboxStyles({ colorMode: "dark" });
+export const checkboxGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    checkboxGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

@@ -1,7 +1,7 @@
 // Styles for the patient information bar component
 import { colors } from "../colors";
 
-export const patientInfoStyles = (props) => ({
+const patientInfoStyles = (props) => ({
     ".pill-box": {
         display: "inline-flex",
         justifyContent: "center",
@@ -70,3 +70,10 @@ export const patientInfoStyles = (props) => ({
                 : `${colors.dark.surface2} !important`,
     },
 });
+
+const _lo = patientInfoStyles({ colorMode: "light" });
+const _do = patientInfoStyles({ colorMode: "dark" });
+export const patientInfoGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    patientInfoGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

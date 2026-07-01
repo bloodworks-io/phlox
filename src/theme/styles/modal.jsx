@@ -1,7 +1,7 @@
 // Styles for modal components.
 import { colors } from "../colors";
 
-export const modalStyles = (props) => ({
+const modalStyles = (props) => ({
     ".modal-style": {
         backgroundColor:
             props.colorMode === "light"
@@ -21,3 +21,10 @@ export const modalStyles = (props) => ({
         marginBlock: "auto !important",
     },
 });
+
+const _lo = modalStyles({ colorMode: "light" });
+const _do = modalStyles({ colorMode: "dark" });
+export const modalGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    modalGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

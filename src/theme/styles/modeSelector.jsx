@@ -1,7 +1,7 @@
 // Styles for the mode selector components.
 import { colors } from "../colors";
 
-export const modeSelectorStyles = (props) => ({
+const modeSelectorStyles = (props) => ({
     ".mode-selector": {
         position: "relative",
         backgroundColor:
@@ -108,3 +108,10 @@ export const modeSelectorStyles = (props) => ({
         },
     },
 });
+
+const _lo = modeSelectorStyles({ colorMode: "light" });
+const _do = modeSelectorStyles({ colorMode: "dark" });
+export const modeSelectorGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    modeSelectorGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

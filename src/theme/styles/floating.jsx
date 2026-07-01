@@ -22,7 +22,7 @@ const CHAT_UI_TOKENS = {
     },
 };
 
-export const floatingStyles = (props) => ({
+const floatingStyles = (props) => ({
     ".chat-icon": {
         backgroundColor:
             props.colorMode === "light"
@@ -299,3 +299,10 @@ export const floatingStyles = (props) => ({
                 : `${colors.dark.textTertiary} !important`,
     },
 });
+
+const _lo = floatingStyles({ colorMode: "light" });
+const _do = floatingStyles({ colorMode: "dark" });
+export const floatingGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    floatingGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

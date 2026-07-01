@@ -2,7 +2,7 @@
 import { colors } from "../colors";
 import { typography } from "../typography";
 
-export const baseStyles = (props) => ({
+const baseStyles = (props) => ({
     body: {
         bg: props.colorMode === "light" ? colors.light.base : colors.dark.base,
         color:
@@ -73,3 +73,10 @@ export const baseStyles = (props) => ({
         lineHeight: "1.5",
     },
 });
+
+const _lo = baseStyles({ colorMode: "light" });
+const _do = baseStyles({ colorMode: "dark" });
+export const baseGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    baseGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}
