@@ -8,7 +8,7 @@ import logging
 import re
 import sqlite3
 
-from .base import ChunkData, SearchResult, VectorStoreBackend
+from .base import ChunkData, SearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def _safe_table_name(name: str) -> str:
     return re.sub(r"[^a-z0-9_]", "", name.lower().replace(" ", "_"))
 
 
-class SqliteVecBackend(VectorStoreBackend):
+class SqliteVecBackend:
     """sqlite-vec implementation of the vector-store backend."""
 
     def __init__(self, db_path: str):

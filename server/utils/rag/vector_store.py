@@ -10,7 +10,7 @@ from pathlib import Path
 
 # Optional RAG dependencies (core)
 try:
-    from .backends.base import ChunkData, SearchResult, VectorStoreBackend
+    from .backends.base import ChunkData, SearchResult
     from .backends.sqlite_vec import SqliteVecBackend
     from .embeddings.providers import OpenAICompatibleProvider
     from .semantic_chunker import ClusterSemanticChunker
@@ -57,7 +57,7 @@ class VectorStoreManager:
     Mnager for vector storage and retrieval.
     """
 
-    def __init__(self, backend: VectorStoreBackend | None = None):
+    def __init__(self, backend: SqliteVecBackend | None = None):
         if not VECTOR_STORE_AVAILABLE:
             raise RuntimeError("RAG features require sqlite-vec.")
 
@@ -67,7 +67,7 @@ class VectorStoreManager:
         self.extracted_pdf_bytes: bytes | None = None
 
         # Initialise backend (default: sqlite-vec)
-        self.backend: VectorStoreBackend = backend or SqliteVecBackend(str(DOCUMENTS_DB_PATH))
+        self.backend: SqliteVecBackend = backend or SqliteVecBackend(str(DOCUMENTS_DB_PATH))
 
         self._reload_embedding_function()
         self.llm_client = get_llm_client()
