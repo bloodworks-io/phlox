@@ -80,16 +80,6 @@ class NarrativeResponse(BaseModel):
 
 
 # Patient Analysis
-class PatientAnalysis(BaseModel):
-    """
-    Structured model for generating a patient analysis digest.
-    """
-
-    analysis: str = Field(
-        description="A concise 3-4 sentence narrative digest of the most pressing patient tasks that need attention"
-    )
-
-
 class PreviousVisitSummary(BaseModel):
     """
     Structured model for generating a summary of a patient's previous visit.
@@ -131,27 +121,6 @@ class LetterDraft(BaseModel):
     """
 
     content: str = Field(description="The complete formatted letter content ready for display")
-
-
-# RSS News Digests
-class ItemDigest(BaseModel):
-    """
-    Structured model for individual RSS item digest.
-    """
-
-    digest: str = Field(
-        description="A 1-2 sentence summary highlighting the key finding or clinical implication of the article"
-    )
-
-
-class NewsDigest(BaseModel):
-    """
-    Structured model for combined news digest.
-    """
-
-    digest: str = Field(
-        description="A concise 3-4 sentence digest summarizing multiple medical news articles with focus on clinical implications"
-    )
 
 
 class ConsolidatedInstructions(BaseModel):
