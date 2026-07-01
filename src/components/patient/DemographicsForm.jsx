@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useColorMode } from "../ui/color-mode";
 import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { FaFileUpload } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import { transcriptionApi } from "../../utils/api/transcriptionApi";
 import { extractFromFile } from "../../utils/helpers/documentExtraction";
 import { areRequiredDemographicsMet } from "../../utils/helpers/validationHelpers";
@@ -32,8 +30,6 @@ const DemographicsForm = ({
     cancelLabel = "Cancel",
     cancelIcon = null,
 }) => {
-    const { colorMode } = useColorMode();
-    const c = colors[colorMode];
     const toast = useToast();
     const [form, setForm] = useState({});
     const [isDragOver, setIsDragOver] = useState(false);
@@ -155,7 +151,7 @@ const DemographicsForm = ({
                 position="relative"
                 borderRadius="md"
                 border="2px dashed"
-                borderColor={isDragOver ? "blue.400" : c.surface}
+                borderColor={isDragOver ? "blue.400" : "surface"}
                 bg={isDragOver ? "rgba(66, 153, 225, 0.15)" : "transparent"}
                 p={3}
                 textAlign="center"
@@ -176,7 +172,7 @@ const DemographicsForm = ({
                 <HStack
                     gap={2}
                     justify="center"
-                    color={c.textSecondary}
+                    color={"textSecondary"}
                     fontSize="sm"
                 >
                     <Icon asChild><FaFileUpload /></Icon>

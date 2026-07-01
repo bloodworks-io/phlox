@@ -1,5 +1,4 @@
 import React from "react";
-import { useColorMode } from "../ui/color-mode";
 import ReactMarkdown from "react-markdown";
 import ModalTitle from "../common/ModalTitle";
 
@@ -13,11 +12,8 @@ import {
     Dialog,
     Portal,
 } from "@chakra-ui/react";
-import { colors } from "../../theme/colors";
 
 const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
-    const { colorMode } = useColorMode();
-    const currentColors = colors[colorMode];
 
     const cleanChangelog = changelog.replace(/^# Changelog\s*\n/, "");
     const releases = cleanChangelog
@@ -66,7 +62,7 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                         </Box>
                                     ))
                                 ) : (
-                                    <Text color={currentColors.textPrimary}>
+                                    <Text color={"textPrimary"}>
                                         Loading changelog...
                                     </Text>
                                 )}

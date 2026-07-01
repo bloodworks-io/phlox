@@ -1,6 +1,5 @@
 // Modal component to display disclaimer on first visit to landing page per session.
 import { useState } from "react";
-import { useColorMode } from "../ui/color-mode";
 import {
     Button,
     Box,
@@ -15,11 +14,8 @@ import {
     Portal,
 } from "@chakra-ui/react";
 import { FaExclamationTriangle } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 
 const DisclaimerModal = ({ isOpen, onClose }) => {
-    const { colorMode } = useColorMode();
-    const currentColors = colors[colorMode];
     const [agreed, setAgreed] = useState(false);
 
     const handleContinue = () => {
@@ -77,7 +73,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                             <VStack align="stretch" gap={4}>
                                 <Box>
                                     <Text
-                                        color={currentColors.textPrimary}
+                                        color={"textPrimary"}
                                         fontSize="sm"
                                         fontWeight="600"
                                         mb={2}
@@ -86,7 +82,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                         educational and personal experimentation ONLY.
                                     </Text>
                                     <Text
-                                        color={currentColors.textPrimary}
+                                        color={"textPrimary"}
                                         fontSize="sm"
                                         fontWeight="600"
                                     >
@@ -98,7 +94,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
 
                                 <Box>
                                     <Text
-                                        color={currentColors.textPrimary}
+                                        color={"textPrimary"}
                                         fontSize="sm"
                                         fontWeight="600"
                                         mb={2}
@@ -107,7 +103,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                     </Text>
                                     <VStack align="stretch" gap={2}>
                                         <Text
-                                            color={currentColors.textPrimary}
+                                            color={"textPrimary"}
                                             fontSize="sm"
                                         >
                                             <strong>Experimental Code:</strong> The
@@ -115,7 +111,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                             contain bugs and inconsistencies.
                                         </Text>
                                         <Text
-                                            color={currentColors.textPrimary}
+                                            color={"textPrimary"}
                                             fontSize="sm"
                                         >
                                             <strong>AI Hallucinations:</strong> LLM
@@ -127,7 +123,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                             judgment.
                                         </Text>
                                         <Text
-                                            color={currentColors.textPrimary}
+                                            color={"textPrimary"}
                                             fontSize="sm"
                                         >
                                             <strong>No User Authentication:</strong>{" "}
@@ -137,7 +133,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                             input sanitisation.
                                         </Text>
                                         <Text
-                                            color={currentColors.textPrimary}
+                                            color={"textPrimary"}
                                             fontSize="sm"
                                         >
                                             <strong>Not HIPAA/GDPR Compliant:</strong>{" "}
@@ -149,14 +145,14 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                     </VStack>
                                 </Box>
 
-                                <Text color={currentColors.textPrimary} fontSize="sm">
+                                <Text color={"textPrimary"} fontSize="sm">
                                     USE AT YOUR OWN RISK and only for non-clinical,
                                     educational purposes unless you have implemented
                                     robust security measures and undertaken thorough
                                     validation.
                                 </Text>
 
-                                <Text color={currentColors.textSecondary} fontSize="xs">
+                                <Text color={"textSecondary"} fontSize="xs">
                                     This software is provided under the MIT License.
                                 </Text>
                             </VStack>
@@ -169,7 +165,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                     checked={agreed}
                                 ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
                                     <Text
-                                        color={currentColors.textPrimary}
+                                        color={"textPrimary"}
                                         fontSize="sm"
                                         css={{
                                             fontFamily: '"Roboto", sans-serif'

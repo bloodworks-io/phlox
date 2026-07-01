@@ -1,13 +1,9 @@
 import { Box, Flex, Text, IconButton } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
-import { useColorMode } from "../ui/color-mode";
 import { FaEdit } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import { getAvatarColor, getInitials } from "../sidebar/SidebarHelpers";
 
 const PatientInfoBar = ({ patient, onEdit }) => {
-    const { colorMode } = useColorMode();
-    const c = colors[colorMode];
 
     const name = patient.name || "New patient";
     const meta = [
@@ -48,7 +44,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                     <Text
                         fontSize="lg"
                         fontWeight="700"
-                        color={c.textPrimary}
+                        color={"textPrimary"}
                         lineClamp={1}
                         css={{
                             fontFamily: '"Space Grotesk", sans-serif'
@@ -58,7 +54,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                     </Text>
                     <Text
                         fontSize="sm"
-                        color={c.textSecondary}
+                        color={"textSecondary"}
                         lineClamp={1}
                         css={{
                             fontFamily: '"Roboto", sans-serif'
@@ -75,7 +71,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                         aria-label="Edit patient details"
                         size="sm"
                         variant="ghost"
-                        color={c.textSecondary}
+                        color={"textSecondary"}
                         onClick={onEdit}
                         flexShrink={0}><FaEdit /></IconButton>
                 </Tooltip>

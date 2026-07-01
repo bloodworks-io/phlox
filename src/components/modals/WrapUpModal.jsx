@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useColorMode } from "../ui/color-mode";
 import {
     HStack,
     Heading,
@@ -20,7 +19,6 @@ import {
 import { FaCheckDouble, FaPlus, FaTimes } from "react-icons/fa";
 import { patientApi } from "../../utils/api/patientApi";
 import { GreenButton } from "../common/Buttons";
-import { colors } from "../../theme/colors";
 
 const Section = ({ title, children }) => (
     <Box>
@@ -32,8 +30,6 @@ const Section = ({ title, children }) => (
 );
 
 const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
-    const { colorMode } = useColorMode();
-    const currentColors = colors[colorMode];
 
     const [extracting, setExtracting] = useState(false);
     const [actionItems, setActionItems] = useState([]); // { text, checked }
@@ -171,7 +167,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                 ml={2}
                                                 fontSize="sm"
                                                 color={
-                                                    currentColors.textSecondary
+                                                    "textSecondary"
                                                 }
                                             >
                                                 Extracting tasks from the
@@ -182,7 +178,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                       fallback !== "empty" ? (
                                         <Text
                                             fontSize="sm"
-                                            color={currentColors.textSecondary}
+                                            color={"textSecondary"}
                                         >
                                             No tasks extracted — add any below.
                                         </Text>
@@ -228,7 +224,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                     size="sm"
                                                     flex="1"
                                                     color={
-                                                        currentColors.textPrimary
+                                                        "textPrimary"
                                                     }
                                                     css={{
                                                         padding: 0,
@@ -281,7 +277,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                         <Text
                                             fontSize="sm"
                                             fontWeight="600"
-                                            color={currentColors.textPrimary}
+                                            color={"textPrimary"}
                                             cursor="pointer"
                                             userSelect="none"
                                             onClick={() =>
@@ -309,7 +305,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                                 <Text
                                                                     fontSize="sm"
                                                                     color={
-                                                                        currentColors.textSecondary
+                                                                        "textSecondary"
                                                                     }
                                                                 >
                                                                     {item.text}
