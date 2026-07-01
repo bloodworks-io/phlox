@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from server.constants import IS_DOCKER
 from server.database.config.manager import config_manager
-from server.utils.llm_client.manager import LocalModelManager
+from server.utils.llama_models import llama_model_manager
 from server.utils.url_utils import build_openai_v1_url, build_whisper_v1_url
 
 router = APIRouter()
@@ -45,8 +45,7 @@ async def get_llm_models(
                 }
 
             try:
-                model_manager = LocalModelManager()
-                models = await model_manager.list_models()
+                models = llama_model_manager.get_downloaded_models()
                 return {"models": [model["name"] for model in models]}
             except Exception as e:
                 logging.error(f"Error fetching local models: {e}")
