@@ -1,6 +1,7 @@
 """FastAPI middleware classes."""
 
 import asyncio
+import ipaddress
 import logging
 import secrets
 import time
@@ -66,6 +67,14 @@ def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
     return bool(check_api and not path.startswith("/api/"))
 
 
+def _is_private_ip(ip_str: str) -> bool:
+    """Check if an IP belongs to a private network (Docker/Localhost)."""
+    try:
+        return ipaddress.ip_address(ip_str).is_private
+    except ValueError:
+        return False
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses."""
 
@@ -97,21 +106,12 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
     from spoofing the header directly.
     """
 
-    def _is_private_ip(self, ip_str: str) -> bool:
-        """Check if an IP belongs to a private network (Docker/Localhost)."""
-        import ipaddress
-
-        try:
-            return ipaddress.ip_address(ip_str).is_private
-        except ValueError:
-            return False
-
     async def dispatch(self, request, call_next):
         client_host = request.client.host if request.client else "unknown"
         forwarded_for = request.headers.get("x-forwarded-for")
 
         # Only trust X-Forwarded-For if the direct connection is from a private IP
-        if forwarded_for and client_host != "unknown" and self._is_private_ip(client_host):
+        if forwarded_for and client_host != "unknown" and _is_private_ip(client_host):
             # Take the first IP in the chain (original client)
             request.state.client_ip = forwarded_for.split(",")[0].strip()
         else:
@@ -177,17 +177,8 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
 
     Only trusts the auth header when the direct connection is from a private IP
     (e.g., a reverse proxy on the same Docker network). This prevents clients
-    from spoofing the header directly.
+        from spoofing the header directly.
     """
-
-    def _is_private_ip(self, ip_str: str) -> bool:
-        """Check if an IP belongs to a private network (Docker/Localhost)."""
-        import ipaddress
-
-        try:
-            return ipaddress.ip_address(ip_str).is_private
-        except ValueError:
-            return False
 
     async def dispatch(self, request, call_next):
         from server.constants import (
@@ -208,7 +199,7 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
 
         # Only trust auth header if coming from a trusted proxy (private IP)
         client_host = request.client.host if request.client else "unknown"
-        if client_host == "unknown" or not self._is_private_ip(client_host):
+        if client_host == "unknown" or not _is_private_ip(client_host):
             # Direct connection from public IP - reject or fall through
             # Since proxy auth is enabled, we require the header
             logger.warning(f"Proxy auth header received from non-private IP: {client_host}")
