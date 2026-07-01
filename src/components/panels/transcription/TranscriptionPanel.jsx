@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useColorMode } from "../../ui/color-mode";
 import { Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
@@ -21,7 +20,6 @@ const TranscriptionPanel = ({
   templateKey,
   noteId,
 }) => {
-  const { colorMode } = useColorMode();
   const [showSuccess, setShowSuccess] = useState(false);
   const { reprocessTranscription, isTranscribing } = useTranscription(onReprocess, () => {});
 
@@ -59,7 +57,7 @@ const TranscriptionPanel = ({
           "&::-webkit-scrollbar": { width: "4px" },
           "&::-webkit-scrollbar-track": { background: "transparent" },
           "&::-webkit-scrollbar-thumb": {
-            background: colorMode === "light" ? "#CBD5E0" : "#4A5568",
+            background: "var(--colors-scrollbar-thumb)",
             borderRadius: "24px",
           },
         }}
@@ -101,7 +99,7 @@ const TranscriptionPanel = ({
                 "&::-webkit-scrollbar": { width: "4px" },
                 "&::-webkit-scrollbar-track": { background: "transparent" },
                 "&::-webkit-scrollbar-thumb": {
-                  background: colorMode === "light" ? "#CBD5E0" : "#4A5568",
+                  background: "var(--colors-scrollbar-thumb)",
                   borderRadius: "24px",
                 },
               }}
