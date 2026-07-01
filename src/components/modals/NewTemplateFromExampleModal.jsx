@@ -1,6 +1,4 @@
 import { Button, HStack, Heading, Textarea, Box, Text, VStack, Dialog, Portal } from "@chakra-ui/react";
-import { useColorMode } from "../ui/color-mode";
-import { colors } from "../../theme/colors";
 
 const NewTemplateFromExampleModal = ({
     isOpen,
@@ -10,9 +8,6 @@ const NewTemplateFromExampleModal = ({
     setExampleNote,
     isLoading,
 }) => {
-    const { colorMode } = useColorMode();
-    const currentColors = colors[colorMode];
-
     return (
         <Dialog.Root open={isOpen} size='lg' onOpenChange={e => {
             if (!e.open) {
@@ -34,7 +29,7 @@ const NewTemplateFromExampleModal = ({
                             <VStack gap={4} align="stretch">
                                 {/* Info box */}
                                 <Box
-                                    bg={colorMode === "light" ? "blue.50" : "blue.900"}
+                                    bg={{ _light: "blue.50", _dark: "blue.900" }}
                                     borderLeft="4px solid"
                                     borderColor="blue.400"
                                     p={4}
@@ -42,14 +37,14 @@ const NewTemplateFromExampleModal = ({
                                 >
                                     <VStack align="start" gap={2}>
                                         <Text
-                                            color={currentColors.textPrimary}
+                                            color="textPrimary"
                                             fontWeight="600"
                                             fontSize="sm"
                                         >
                                             Create a Template from an Existing Note
                                         </Text>
                                         <Text
-                                            color={currentColors.textSecondary}
+                                            color="textSecondary"
                                             fontSize="sm"
                                         >
                                             Paste an example clinical note below. The AI
@@ -62,7 +57,7 @@ const NewTemplateFromExampleModal = ({
                                 {/* Tips */}
                                 <Box px={2}>
                                     <Text
-                                        color={currentColors.textPrimary}
+                                        color="textPrimary"
                                         fontSize="xs"
                                         fontWeight="600"
                                         mb={2}
@@ -71,21 +66,21 @@ const NewTemplateFromExampleModal = ({
                                     </Text>
                                     <VStack align="start" gap={1} pl={2}>
                                         <Text
-                                            color={currentColors.textSecondary}
+                                            color="textSecondary"
                                             fontSize="sm"
                                         >
                                             • Use a complete, well-formatted note as
                                             your example
                                         </Text>
                                         <Text
-                                            color={currentColors.textSecondary}
+                                            color="textSecondary"
                                             fontSize="sm"
                                         >
                                             • Include typical sections like Subjective,
                                             Objective, Assessment, Plan
                                         </Text>
                                         <Text
-                                            color={currentColors.textSecondary}
+                                            color="textSecondary"
                                             fontSize="sm"
                                         >
                                             • The AI will identify field names and their

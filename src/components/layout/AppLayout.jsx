@@ -6,7 +6,6 @@ import { isTauri } from "../../utils/helpers/apiConfig";
 const AppLayout = ({
     isSmallScreen,
     isCollapsed,
-    colorMode,
     toggleSidebar,
     sidebarProps,
     children,
@@ -30,13 +29,7 @@ const AppLayout = ({
                 ml={isSmallScreen ? "0" : isCollapsed ? "96px" : "236px"}
                 minH="100vh"
                 transition="margin-left 0.3s ease"
-                bg={
-                    isTauri()
-                        ? colorMode === "light"
-                            ? "#232634"
-                            : "#1e2030"
-                        : "transparent"
-                }
+                bg={isTauri() ? "sidebar.background" : "transparent"}
                 display="flex"
                 flexDirection="column"
             >

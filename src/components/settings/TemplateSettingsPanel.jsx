@@ -1,6 +1,5 @@
 import { Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
-import { useColorMode } from "../ui/color-mode";
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -23,7 +22,6 @@ const TemplateSettingsPanel = ({
   templates,
   setTemplates,
 }) => {
-  const { colorMode } = useColorMode();
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -203,7 +201,7 @@ const TemplateSettingsPanel = ({
                     key={template.template_key}
                     p={4}
                     border="1px"
-                    borderColor={colorMode === "light" ? "gray.200" : "gray.600"}
+                    borderColor="border"
                     borderRadius="sm"
                   >
                     <Flex align="center" justify="space-between">

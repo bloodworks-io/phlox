@@ -15,7 +15,6 @@ import {
     Portal,
 } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
-import { useColorMode } from "../ui/color-mode";
 import {
     AddIcon,
     ChevronRightIcon,
@@ -26,11 +25,9 @@ import {
 import { FaThumbtack } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { typography } from "../../theme/typography";
-import { colors } from "../../theme/colors";
 
 // Preview component that mimics Summary.jsx field rendering
 const FieldPreview = ({ field }) => {
-    const { colorMode } = useColorMode();
     const content = field.style_example || "";
 
     return (
@@ -58,19 +55,11 @@ const FieldPreview = ({ field }) => {
                 borderRadius="sm"
                 whiteSpace="pre-wrap"
                 fontSize="sm"
-                color={
-                    colorMode === "light"
-                        ? colors.light.textTertiary
-                        : colors.dark.textTertiary
-                }
+                color="textTertiary"
             >
                 {content || (
                     <Text
-                        color={
-                            colorMode === "light"
-                                ? colors.light.textSecondary
-                                : colors.dark.textSecondary
-                        }
+                        color="textSecondary"
                         asChild
                     ><i>
                             {field.persistent
@@ -91,7 +80,6 @@ const FieldEditor = ({
     isNewTemplate,
 }) => {
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const { colorMode } = useColorMode();
     const isPlanField = field.field_name?.toLowerCase() === "plan";
     const canEdit = isNewTemplate; // Only allow editing/deleting for new templates
 
@@ -142,10 +130,7 @@ const FieldEditor = ({
 
                                     transition: "all 0.2s",
 
-                                    color:
-                                        colorMode === "light"
-                                            ? colors.light.textSecondary
-                                            : colors.dark.textSecondary
+                                    color: "var(--colors-text-secondary)"
                                 }}
                             />
                             <EditIcon
@@ -166,11 +151,7 @@ const FieldEditor = ({
                     <Text
                         fontSize="md"
                         fontWeight="600"
-                        color={
-                            colorMode === "light"
-                                ? colors.light.textSecondary
-                                : colors.dark.textSecondary
-                        }
+                        color="textSecondary"
                         flex="1"
                     >
                         {field.field_name || "Unnamed Field"}
@@ -420,7 +401,6 @@ const TemplateEditor = ({
     isNewTemplate = false,
 }) => {
     const [editedTemplate, setEditedTemplate] = useState(null);
-    const { colorMode } = useColorMode();
     useEffect(() => {
         if (template) {
             setEditedTemplate({
@@ -561,9 +541,7 @@ const TemplateEditor = ({
                                                 transition: "all 0.2s",
 
                                                 color:
-                                                    colorMode === "light"
-                                                        ? `${colors.light.textSecondary} !important`
-                                                        : `${colors.dark.textSecondary} !important`
+                                                    "var(--colors-text-secondary) !important"
                                             }}
                                         />
                                         <EditIcon
@@ -590,7 +568,7 @@ const TemplateEditor = ({
                                 <Box
                                     px={6}
                                     py={4}
-                                    bg={colorMode === "light" ? "blue.50" : "blue.900"}
+                                    bg={{ _light: "blue.50", _dark: "blue.900" }}
                                     borderLeft="4px solid"
                                     borderLeftColor="blue.400"
                                     borderBottom="1px solid"
@@ -639,10 +617,7 @@ const TemplateEditor = ({
                                             css={{
                                                 ...typography.styles.h4,
 
-                                                color:
-                                                    colorMode === "light"
-                                                        ? colors.light.textTertiary
-                                                        : colors.dark.textTertiary
+                                                color: "var(--colors-text-tertiary)"
                                             }}
                                         >
                                             Editor
@@ -704,10 +679,7 @@ const TemplateEditor = ({
                                             css={{
                                                 ...typography.styles.h4,
 
-                                                color:
-                                                    colorMode === "light"
-                                                        ? colors.light.textTertiary
-                                                        : colors.dark.textTertiary
+                                                color: "var(--colors-text-tertiary)"
                                             }}
                                         >
                                             Preview
@@ -728,11 +700,7 @@ const TemplateEditor = ({
                                                     px={4}
                                                     py={3}
                                                     mb={2}
-                                                    bg={
-                                                        colorMode === "light"
-                                                            ? "gray.50"
-                                                            : "gray.800"
-                                                    }
+                                                    bg={{ _light: "gray.50", _dark: "gray.800" }}
                                                     borderRadius="md"
                                                     fontSize="xs"
                                                     opacity={0.8}

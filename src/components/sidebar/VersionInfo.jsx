@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Box, Text, useDisclosure, Badge, Link, VStack, HStack, Center } from "@chakra-ui/react";
-import { Tooltip } from '@/components/ui/tooltip';
+import {
+    Box,
+    Text,
+    useDisclosure,
+    Badge,
+    Link,
+    VStack,
+    HStack,
+    Center,
+} from "@chakra-ui/react";
+import { Tooltip } from "@/components/ui/tooltip";
 import { FaGithub, FaMoon, FaSun } from "react-icons/fa";
 import { TbVersions } from "react-icons/tb";
 import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
-import { colors } from "../../theme/colors";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import ChangelogModal from "../modals/ChangelogModal";
@@ -21,9 +29,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
     const version = APP_VERSION;
     const changelog = changelogContent;
 
-    // Use consistent dark theme text color
-    const textColor = colors.dark.textPrimary;
-    const iconColor = colors.dark.textSecondary;
+    // Sidebar is always-dark by design; sidebar.text token resolves to a light value in both modes
 
     useEffect(() => {
         // Check server status
@@ -59,7 +65,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                         : `Services: ${serverStatus.llm ? "✓" : "✗"} LLM, ${serverStatus.whisper ? "✓" : "✗"} Whisper`
                 }
                 positioning={{
-                    placement: isCollapsed ? "right" : "top"
+                    placement: isCollapsed ? "right" : "top",
                 }}
             >
                 <Badge
@@ -83,30 +89,36 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
         return (
             <Box position="relative" width="100%">
                 <VStack gap={2} align="center" width="100%">
-                    <Tooltip content="View Version Info" positioning={{
-                        placement: "right"
-                    }}>
+                    <Tooltip
+                        content="View Version Info"
+                        positioning={{
+                            placement: "right",
+                        }}
+                    >
                         <Box
                             onClick={onOpen}
                             cursor="pointer"
                             fontSize="md"
-                            color={iconColor} // Apply consistent color
-                            _hover={{ color: textColor }} // Brighten on hover
+                            color="sidebar.text" // Apply consistent color
+                            _hover={{ color: "sidebar.text" }} // Brighten on hover
                         >
                             <TbVersions />
                         </Box>
                     </Tooltip>
 
-                    <Tooltip content="GitHub Repository" positioning={{
-                        placement: "right"
-                    }}>
+                    <Tooltip
+                        content="GitHub Repository"
+                        positioning={{
+                            placement: "right",
+                        }}
+                    >
                         <Link
                             href="https://github.com/bloodworks-io/phlox"
                             target="_blank"
                             rel="noopener noreferrer"
                             fontSize="md"
-                            color={iconColor} // Apply consistent color
-                            _hover={{ color: textColor }} // Brighten on hover
+                            color="sidebar.text" // Apply consistent color
+                            _hover={{ color: "sidebar.text" }} // Brighten on hover
                         >
                             <FaGithub />
                         </Link>
@@ -119,15 +131,15 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                                 : "Switch to Light Mode"
                         }
                         positioning={{
-                            placement: "right"
+                            placement: "right",
                         }}
                     >
                         <Box
                             onClick={toggleColorMode}
                             cursor="pointer"
                             fontSize="md"
-                            color={iconColor}
-                            _hover={{ color: textColor }}
+                            color="sidebar.text"
+                            _hover={{ color: "sidebar.text" }}
                         >
                             {colorMode === "light" ? <FaMoon /> : <FaSun />}
                         </Box>
@@ -156,10 +168,10 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                             fontSize="md"
                             onClick={onOpen}
                             cursor="pointer"
-                            color={textColor} // Apply consistent color
+                            color="sidebar.text" // Apply consistent color
                             _hover={{
                                 textDecoration: "underline",
-                                color: colors.dark.textPrimary,
+                                color: "var(--colors-sidebar-text)",
                             }}
                         >
                             v{version}
@@ -172,8 +184,8 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                             target="_blank"
                             rel="noopener noreferrer"
                             fontSize="lg"
-                            color={iconColor} // Apply consistent color
-                            _hover={{ color: textColor }} // Brighten on hover
+                            color="sidebar.text" // Apply consistent color
+                            _hover={{ color: "sidebar.text" }} // Brighten on hover
                         >
                             <FaGithub />
                         </Link>
@@ -190,8 +202,8 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                             onClick={toggleColorMode}
                             cursor="pointer"
                             fontSize="lg"
-                            color={iconColor}
-                            _hover={{ color: textColor }}
+                            color="sidebar.text"
+                            _hover={{ color: "sidebar.text" }}
                         >
                             {colorMode === "light" ? <FaMoon /> : <FaSun />}
                         </Box>

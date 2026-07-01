@@ -1,5 +1,4 @@
 import React from "react";
-import { useColorMode } from "../ui/color-mode";
 import { IconButton, Box } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ChatIcon } from "./icons";
@@ -23,9 +22,7 @@ const FloatingActionMenu = ({
     showPreviousVisitDot = false,
     isEncounterSaved = false,
 }) => {
-    const { colorMode } = useColorMode();
-
-    const surfaceBg = colorMode === "light" ? "#ccd0da" : "#363a4f";
+    const surfaceBg = "surface";
 
     const getButtonBg = (isOpen) => (isOpen ? surfaceBg : "transparent");
 

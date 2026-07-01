@@ -1,6 +1,5 @@
 import { Box, Button, Flex, Input, Spinner, Text, VStack, Alert, ButtonGroup, Badge, SimpleGrid, Separator } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
-import { useColorMode } from "../../ui/color-mode";
 import {
   FaFileUpload,
   FaRedo,
@@ -34,7 +33,6 @@ const DocumentPanel = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const toast = useToast();
-  const { colorMode } = useColorMode();
 
   const { processDocument, isTranscribing } = useTranscription(
     null,
@@ -322,9 +320,7 @@ const DocumentPanel = ({
                     p={2}
                     borderWidth="1px"
                     borderRadius="sm"
-                    borderColor={
-                      colorMode === "light" ? "gray.200" : "gray.700"
-                    }
+                    borderColor="border"
                   >
                     <Flex justify="space-between" align="center">
                       <Text

@@ -159,7 +159,7 @@ const ThinkingCard = ({ step, index, colorMode }) => {
             borderRadius="md"
             borderLeftWidth="4px"
             borderLeftColor={getCardAccent(step.type)}
-            bg={colorMode === "dark" ? "whiteAlpha.100" : "gray.50"}
+            bg="surfaceMuted"
         >
             <Badge mb={2} colorPalette="gray" variant="subtle">
                 {getCardBadge(step.type)}
