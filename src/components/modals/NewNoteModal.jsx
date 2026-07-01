@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useColorMode } from "../ui/color-mode";
 import {
     Box,
     Flex,
@@ -14,7 +13,6 @@ import {
 } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
 import { formatDate } from "../../utils/helpers/formatHelpers";
 import { PathHalf } from "../patient/NewNoteStartCard";
@@ -42,9 +40,6 @@ const NewNoteModal = ({
     selectedDate,
     onComplete,
 }) => {
-    const { colorMode } = useColorMode();
-    const c = colors[colorMode];
-    const tileBg = colorMode === "light" ? c.base : c.crust;
     const toast = useToast();
 
     const [view, setView] = useState("choose");
@@ -168,7 +163,7 @@ const NewNoteModal = ({
                             <Heading
                                 as="h3"
                                 size="xl"
-                                color={c.textPrimary}
+                                color="textPrimary"
                                 css={{
                                     fontFamily: '"Space Grotesk", sans-serif',
                                 }}
@@ -184,7 +179,7 @@ const NewNoteModal = ({
                         >
                             <Text
                                 fontSize="sm"
-                                color={c.textSecondary}
+                                color="textSecondary"
                                 mb={4}
                                 lineHeight={1.5}
                             >
@@ -198,18 +193,16 @@ const NewNoteModal = ({
                                             icon={FaUserPlus}
                                             title="New patient"
                                             subtitle="Create a new record"
-                                            accent={c.primaryButton}
-                                            c={c}
-                                            tileBg={tileBg}
+                                            accent="primaryButton"
+                                            tileBg="tile"
                                             onClick={handleNewPatient}
                                         />
                                         <PathHalf
                                             icon={FaSearch}
                                             title="Search"
                                             subtitle="Existing patient"
-                                            accent={c.secondaryButton}
-                                            c={c}
-                                            tileBg={tileBg}
+                                            accent="secondaryButton"
+                                            tileBg="tile"
                                             onClick={() => setView("search")}
                                         />
                                     </Flex>
@@ -256,14 +249,14 @@ const NewNoteModal = ({
                                                     justify="space-between"
                                                     p={3}
                                                     borderRadius="lg"
-                                                    bg={tileBg}
+                                                    bg="tile"
                                                 >
                                                     <HStack gap={3} minW="0">
                                                         <Avatar.Root
                                                             size="sm"
-                                                            bg={c.surface}
+                                                            bg="surface"
                                                             color={
-                                                                c.textPrimary
+                                                                "textPrimary"
                                                             }
                                                         >
                                                             <Avatar.Fallback
@@ -282,7 +275,7 @@ const NewNoteModal = ({
                                                             <Text
                                                                 fontWeight="600"
                                                                 color={
-                                                                    c.textPrimary
+                                                                    "textPrimary"
                                                                 }
                                                                 lineClamp={1}
                                                             >
@@ -292,7 +285,7 @@ const NewNoteModal = ({
                                                             <Text
                                                                 fontSize="xs"
                                                                 color={
-                                                                    c.textSecondary
+                                                                    "textSecondary"
                                                                 }
                                                                 lineClamp={1}
                                                             >
@@ -305,7 +298,7 @@ const NewNoteModal = ({
                                                                 <Text
                                                                     fontSize="xs"
                                                                     color={
-                                                                        c.textSecondary
+                                                                        "textSecondary"
                                                                     }
                                                                 >
                                                                     Last seen{" "}

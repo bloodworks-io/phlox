@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useColorMode } from "../ui/color-mode";
 import {
     Box,
     Button,
@@ -9,7 +8,6 @@ import {
     Text,
 } from "@chakra-ui/react";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import UrSearchField from "./UrSearchField";
 
 export const PathHalf = ({
@@ -17,7 +15,6 @@ export const PathHalf = ({
     title,
     subtitle,
     accent,
-    c,
     tileBg,
     onClick,
 }) => (
@@ -46,10 +43,10 @@ export const PathHalf = ({
                 transition="transform 0.2s"
                 _groupHover={{ transform: "scale(1.12)" }}
             />
-            <Text fontWeight="600" color={c.textPrimary} fontSize="md">
+            <Text fontWeight="600" color="textPrimary" fontSize="md">
                 {title}
             </Text>
-            <Text fontSize="xs" color={c.textSecondary} mt={1}>
+            <Text fontSize="xs" color="textSecondary" mt={1}>
                 {subtitle}
             </Text>
         </button>
@@ -57,9 +54,6 @@ export const PathHalf = ({
 );
 
 const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
-    const { colorMode } = useColorMode();
-    const c = colors[colorMode];
-    const tileBg = colorMode === "light" ? c.base : c.crust;
     const [view, setView] = useState("choose"); // "choose" | "search"
     const [query, setQuery] = useState("");
 
@@ -93,7 +87,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                     <Heading
                         as="h1"
                         size="lg"
-                        color={c.textPrimary}
+                        color="textPrimary"
                         css={{
                             fontFamily: '"Space Grotesk", sans-serif',
                         }}
@@ -102,7 +96,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                     </Heading>
                     <Text
                         fontSize="sm"
-                        color={c.textSecondary}
+                        color="textSecondary"
                         mt={2}
                         maxW="400px"
                         lineHeight={1.5}
@@ -118,18 +112,16 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                                 icon={FaUserPlus}
                                 title="New patient"
                                 subtitle="Create a new record"
-                                accent={c.primaryButton}
-                                c={c}
-                                tileBg={tileBg}
+                                accent="primaryButton"
+                                tileBg="tile"
                                 onClick={onNewPatient}
                             />
                             <PathHalf
                                 icon={FaSearch}
                                 title="Search"
                                 subtitle="Existing patient"
-                                accent={c.secondaryButton}
-                                c={c}
-                                tileBg={tileBg}
+                                accent="secondaryButton"
+                                tileBg="tile"
                                 onClick={() => setView("search")}
                             />
                         </Flex>
