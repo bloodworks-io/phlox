@@ -1,6 +1,5 @@
 import React from "react";
 import { Box, Text, Badge, HStack, VStack } from "@chakra-ui/react";
-import { colors } from "../../../../theme/colors";
 
 export const ReasoningItem = ({ item, section, colorMode }) => {
     // Check if item is in legacy format (string) or new format (object)
@@ -10,13 +9,13 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
     const getAccentColor = (section) => {
         switch (section) {
             case "differentials":
-                return colors.light.primaryButton;
+                return "primaryButton";
             case "investigations":
-                return colors.light.successButton;
+                return "successButton";
             case "considerations":
-                return colors.light.secondaryButton;
+                return "secondaryButton";
             default:
-                return colors.light.neutralButton;
+                return "neutralButton";
         }
     };
 
@@ -26,11 +25,7 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
         <Box
             p={2}
             borderRadius="sm"
-            bg={
-                colorMode === "light"
-                    ? "white"
-                    : colors.dark.surface
-            }
+            bg="cardBg"
             borderLeft="3px solid"
             borderColor={
                 isCritical
@@ -73,12 +68,7 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
                                         <Text
                                             key={j}
                                             fontSize="xs"
-                                            color={
-                                                colorMode ===
-                                                "light"
-                                                    ? "gray.600"
-                                                    : "gray.400"
-                                            }
+                                            color="textTertiary"
                                             pl={2}
                                         >
                                             • {point}

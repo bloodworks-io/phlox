@@ -22,7 +22,6 @@ import {
 } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useColorMode } from "../ui/color-mode";
 import { useState, useRef, useEffect } from "react";
 import { FaUser, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
 import {
@@ -38,7 +37,6 @@ import {
     debouncedUpdateJobsList,
     flushPendingJobsUpdate,
 } from "../../utils/patient/patientHandlers";
-import { colors } from "../../theme/colors";
 import { patientApi } from "../../utils/api/patientApi";
 
 const PatientTable = ({
@@ -50,7 +48,6 @@ const PatientTable = ({
     groupByDate = false,
     summaryOnly = false,
 }) => {
-    const { colorMode } = useColorMode();
     const toast = useToast();
     const [loadingStates, setLoadingStates] = useState({});
     const pendingJobsUpdates = useRef(new Map());
@@ -70,15 +67,8 @@ const PatientTable = ({
         return `${firstNameInitial}. ${lastName}`;
     };
 
-    const getRowBackgroundColor = (index) => {
-        return colorMode === "light"
-            ? index % 2 === 0
-                ? colors.light.secondary
-                : colors.light.tertiary
-            : index % 2 === 0
-              ? colors.dark.secondary
-              : colors.dark.tertiary;
-    };
+    const getRowBackgroundColor = (index) =>
+        index % 2 === 0 ? "secondary" : "surface1";
 
     const PatientDetails = ({ patient }) => (
         <Box>
@@ -106,30 +96,15 @@ const PatientTable = ({
     const getTagColorScheme = (section) => {
         switch (section) {
             case "differentials":
-                return {
-                    bg: colors.light.primaryButton,
-                    color: colors.light.invertedText,
-                };
+                return { bg: "primaryButton", color: "invertedText" };
             case "investigations":
-                return {
-                    bg: colors.light.successButton,
-                    color: colors.light.invertedText,
-                };
+                return { bg: "successButton", color: "invertedText" };
             case "considerations":
-                return {
-                    bg: colors.light.secondaryButton,
-                    color: colors.light.invertedText,
-                };
+                return { bg: "secondaryButton", color: "invertedText" };
             case "thinking":
-                return {
-                    bg: colors.light.neutralButton,
-                    color: colors.light.invertedText,
-                };
+                return { bg: "neutralButton", color: "invertedText" };
             default:
-                return {
-                    bg: colors.light.surface,
-                    color: colors.light.textPrimary,
-                };
+                return { bg: "surface", color: "textPrimary" };
         }
     };
 
@@ -254,11 +229,7 @@ const PatientTable = ({
                     <Box
                         p={2}
                         borderRadius="md"
-                        bg={
-                            colorMode === "light"
-                                ? colors.light.crust
-                                : colors.dark.crust
-                        }
+                        bg="crust"
                     >
                         <Text fontSize="sm">
                             {patient.reasoning?.summary ??
@@ -353,11 +324,7 @@ const PatientTable = ({
                                 overflowY="auto"
                                 className="scroll-container"
                                 p={3}
-                                bg={
-                                    colorMode === "light"
-                                        ? colors.light.crust
-                                        : colors.dark.crust
-                                }
+                                bg="crust"
                                 borderRadius="lg"
                                 h="100%"
                                 position="relative"
@@ -580,11 +547,7 @@ const PatientTable = ({
                                     }}
                                 >
                                     <Table.Header
-                                        bg={
-                                            colorMode === "light"
-                                                ? colors.light.surface
-                                                : colors.dark.surface
-                                        }
+                                        bg="surface"
                                     >
                                         <Table.Row>
                                             <Table.ColumnHeader width="25%">
@@ -624,11 +587,7 @@ const PatientTable = ({
                         }}
                     >
                         <Table.Header
-                            bg={
-                                colorMode === "light"
-                                    ? colors.light.surface
-                                    : colors.dark.surface
-                            }
+                            bg="surface"
                         >
                             <Table.Row>
                                 <Table.ColumnHeader width="25%">
