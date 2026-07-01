@@ -2,6 +2,6 @@
 Vector store backends.
 """
 
-from .base import ChunkData, SearchResult, VectorStoreBackend
+from .base import ChunkData, SearchResult
 
-__all__ = ["ChunkData", "SearchResult", "VectorStoreBackend"]
+__all__ = ["ChunkData", "SearchResult"]

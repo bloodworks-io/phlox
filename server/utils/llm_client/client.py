@@ -15,7 +15,6 @@ from typing import Any, Union
 from server.database.config.manager import config_manager
 from server.utils.url_utils import normalize_openai_base_url
 
-from .base import LLMProviderType
 from .providers.openai import openai_compatible_chat
 from .utils import repair_json
 
@@ -27,7 +26,7 @@ class AsyncLLMClient:
 
     def __init__(
         self,
-        provider_type: Union[str, LLMProviderType],
+        provider_type: str,
         base_url: str | None = None,
         api_key: str | None = None,
         timeout: int = 80,
@@ -41,15 +40,7 @@ class AsyncLLMClient:
             api_key: API key (required for some providers)
             timeout: Request timeout in seconds
         """
-        if isinstance(provider_type, str):
-            try:
-                self.provider_type = LLMProviderType(provider_type.lower())
-            except ValueError as error:
-                raise ValueError(
-                    f"Invalid provider type: {provider_type}. Must be 'openai' or 'local'"
-                ) from error
-        else:
-            self.provider_type = provider_type
+        self.provider_type = provider_type.lower()
 
         if base_url:
             self.base_url = normalize_openai_base_url(base_url)
@@ -144,21 +135,6 @@ class AsyncLLMClient:
             self.extra_body,
         )
 
-    async def ps(self) -> dict[str, Any]:
-        """
-        List models that are currently loaded into memory.
-
-        For OpenAI-compatible providers, this returns a graceful fallback response.
-
-        Returns:
-            Dictionary with models information
-        """
-        return {
-            "models": [],
-            "message": "Model process information not available for OpenAI-compatible providers",
-            "provider_type": self.provider_type.value,
-        }
-
 
 def get_llm_client(timeout: int = 80):
     """Create and return an LLM client with configuration from config manager.
@@ -176,7 +152,7 @@ def get_llm_client(timeout: int = 80):
         from server.utils.allocated_ports import get_llama_port
 
         base_url = f"http://127.0.0.1:{get_llama_port()}"
-        provider_type = LLMProviderType.OPENAI_COMPATIBLE.value
+        provider_type = "openai"
     else:
         # Default endpoint remains Ollama's default host, accessed via /v1 API.
         if not base_url:
