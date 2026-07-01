@@ -1,6 +1,5 @@
 // Modal for uploading a new PDF form template.
 import React, { useState, useRef } from "react";
-import { useColorModeValue } from "../ui/color-mode";
 import { Input, Text, VStack, Box, Dialog, Portal } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
@@ -13,7 +12,6 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const toast = useToast();
-  const mutedColor = useColorModeValue("gray.500", "gray.400");
 
   const handleFileChange = (e) => {
     const selected = e.target.files?.[0];
@@ -126,7 +124,7 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
                     style={{ display: "block", width: "100%", fontSize: "0.875rem" }}
                   />
                 </Box>
-                <Text fontSize="xs" color={mutedColor}>
+                <Text fontSize="xs" color="overlay0">
                   Page metadata will be extracted automatically by the browser.
                 </Text>
               </VStack>

@@ -1,7 +1,6 @@
 import { Alert, Badge, Box, Button, Checkbox, Flex, HStack, IconButton, Input, Spacer, Switch, Text, VStack, Field } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
-import { useColorModeValue } from "../ui/color-mode";
 import {
     FaPuzzlePiece,
     FaPlus,
@@ -69,7 +68,6 @@ const ToolsSettingsTab = ({ className }) => {
     ]);
 
     const toast = useToast();
-    const warningIconColor = useColorModeValue("#df8e1d", "#eed49f");
 
     const fetchServers = async () => {
         setIsLoading(true);
@@ -350,7 +348,7 @@ const ToolsSettingsTab = ({ className }) => {
         <VStack gap={4} align="stretch" className={className}>
             {/* Warning Banner */}
             <Alert.Root status="warning" borderRadius="md">
-                <Alert.Indicator color={warningIconColor} />
+                <Alert.Indicator color="secondaryButton" />
                 <Alert.Description fontSize="sm">
                     Tool servers may receive sensitive patient information
                     (PHI). Only add servers you trust that comply with your
@@ -398,7 +396,7 @@ const ToolsSettingsTab = ({ className }) => {
                                                         <FaLock
                                                             style={{
                                                                 opacity: 0.6,
-                                                                color: warningIconColor,
+                                                                color: "var(--colors-secondary-button)",
                                                             }}
                                                         />
                                                     </Box>
@@ -501,7 +499,7 @@ const ToolsSettingsTab = ({ className }) => {
                                 </Checkbox.Label></Checkbox.Root>
                                 <Tooltip content="When enabled, patient data will be sent to this server without sanitization. Only enable for fully trusted servers.">
                                     <Box>
-                                        <FaLock style={{ opacity: 0.6, color: warningIconColor }} />
+                                        <FaLock style={{ opacity: 0.6, color: "var(--colors-secondary-button)" }} />
                                     </Box>
                                 </Tooltip>
                             </HStack>

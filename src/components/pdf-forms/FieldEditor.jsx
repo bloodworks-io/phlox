@@ -1,6 +1,5 @@
 // Field property editor panel.
 import React from "react";
-import { useColorModeValue } from "../ui/color-mode";
 import {
   Box,
   Text,
@@ -24,13 +23,10 @@ const FIELD_COLORS = {
 };
 
 const FieldEditor = ({ field, onChange, onDelete }) => {
-  const mutedColor = useColorModeValue("gray.500", "gray.400");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-
   if (!field) {
     return (
       <Box py="4" textAlign="center">
-        <Text color={mutedColor} fontSize="sm">
+        <Text color="overlay0" fontSize="sm">
           Select a field to edit its properties, or draw a new field on the PDF.
         </Text>
       </Box>
@@ -127,8 +123,8 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
         checked={field.required}
       ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>Required field
                 </Checkbox.Label></Checkbox.Root>
-      <Box pt="2" borderTop="1px solid" borderColor={borderColor}>
-        <Text fontSize="xs" color={mutedColor}>
+      <Box pt="2" borderTop="1px solid" borderColor="border">
+        <Text fontSize="xs" color="overlay0">
           Position: ({field.x.toFixed(1)}, {field.y.toFixed(1)}) · Size:{" "}
           {field.width.toFixed(1)} × {field.height.toFixed(1)}
         </Text>

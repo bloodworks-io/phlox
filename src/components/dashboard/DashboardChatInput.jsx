@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useColorMode, useColorModeValue } from "../ui/color-mode";
+import { useColorMode } from "../ui/color-mode";
 import {
     Box,
     Flex,
@@ -41,8 +41,6 @@ const DashboardChatInput = ({
 }) => {
     const { colorMode } = useColorMode();
     const isLight = colorMode === "light";
-    const imageChipBg = useColorModeValue("gray.100", "gray.700");
-    const errorIconColor = useColorModeValue("red.500", "red.300");
     const [isDragOver, setIsDragOver] = useState(false);
 
     const fileInputRef = useRef(null);
@@ -177,7 +175,7 @@ const DashboardChatInput = ({
                         px={2}
                         py={1.5}
                         borderRadius="md"
-                        bg={imageChipBg}
+                        bg="surfaceMuted"
                         maxW="33%"
                     >
                         {pendingImage.type.startsWith("image/") ? (
@@ -192,7 +190,7 @@ const DashboardChatInput = ({
                         ) : (
                             <Icon
                                 boxSize={3.5}
-                                color={errorIconColor}
+                                color="dangerButton"
                                 flexShrink={0}
                                 asChild
                             >

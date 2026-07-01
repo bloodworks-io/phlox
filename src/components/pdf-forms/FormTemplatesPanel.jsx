@@ -1,6 +1,5 @@
 // Panel component for the Form Templates tab — sidebar, builder canvas, and field editor.
 import React from "react";
-import { useColorModeValue } from "../ui/color-mode";
 import { Box, Text, VStack, HStack, NativeSelect, Flex } from "@chakra-ui/react";
 import { AddIcon } from "../common/icons";
 import { FaPencilAlt, FaMagic, FaSave } from "react-icons/fa";
@@ -33,9 +32,6 @@ const FormTemplatesPanel = ({
   onDeleteField,
   onSaveFields,
 }) => {
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-  const mutedColor = useColorModeValue("gray.400", "gray.500");
-
   return (
     <HStack gap="4" align="start">
       {/* Forms sidebar */}
@@ -82,10 +78,10 @@ const FormTemplatesPanel = ({
             py="16"
             textAlign="center"
             border="1px dashed"
-            borderColor={borderColor}
+            borderColor="border"
             borderRadius="sm"
           >
-            <Text color={mutedColor} fontSize="sm">
+            <Text color="overlay0" fontSize="sm">
               Select a template or upload a new PDF
             </Text>
           </Box>
@@ -105,7 +101,7 @@ const FormTemplatesPanel = ({
             mb="3"
             pb="2"
             borderBottom="1px solid"
-            borderColor={borderColor}
+            borderColor="border"
           >
             {isDrawingMode ? (
               <VStack gap="2" align="stretch">
@@ -170,7 +166,7 @@ const FormTemplatesPanel = ({
         />
 
         {selectedTemplate && (
-          <Box mt="3" pt="2" borderTop="1px solid" borderColor={borderColor}>
+          <Box mt="3" pt="2" borderTop="1px solid" borderColor="border">
             <GreenButton
               size="xs"
               width="100%"

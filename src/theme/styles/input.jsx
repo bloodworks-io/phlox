@@ -65,29 +65,6 @@ export const inputStyles = (props) => ({
                 ? `1px solid ${colors.light.surface} !important`
                 : `1px solid ${colors.dark.surface} !important`,
     },
-    ".search-button": {
-        borderLeft: "none !important",
-        borderTopLeftRadius: "0 !important",
-        borderBottomLeftRadius: "0 !important",
-        borderTopRightRadius: "md !important",
-        borderBottomRightRadius: "md !important",
-        marginLeft: "-5px",
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface2} !important`
-                : `${colors.dark.base} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface2} !important`
-                : `${colors.dark.textTertiary} !important`,
-        color: "#575279 !important",
-    },
-    ".search-button:hover": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface} !important`
-                : `${colors.dark.surface2} !important`,
-    },
     ".template-field-container": {
         backgroundColor:
             props.colorMode === "light"

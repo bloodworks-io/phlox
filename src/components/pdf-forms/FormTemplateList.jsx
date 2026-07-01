@@ -1,6 +1,5 @@
 // Template list panel for PDF form templates.
 import React from "react";
-import { useColorModeValue } from "../ui/color-mode";
 import { Box, Text, List, IconButton, Spinner, HStack, Flex } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { DeleteIcon } from "../common/icons";
@@ -9,8 +8,6 @@ import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 
 const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
   const toast = useToast();
-  const hoverBg = useColorModeValue("gray.100", "gray.700");
-  const mutedColor = useColorModeValue("gray.500", "gray.400");
 
   const handleDelete = async (e, id, name) => {
     e.stopPropagation();
@@ -46,7 +43,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
   if (!templates.length) {
     return (
       <Box py="4" textAlign="center">
-        <Text color={mutedColor} fontSize="sm">
+        <Text color="overlay0" fontSize="sm">
           No form templates yet. Upload a PDF to get started.
         </Text>
       </Box>
@@ -61,7 +58,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
           p="2"
           borderRadius="sm"
           cursor="pointer"
-          _hover={{ bg: hoverBg }}
+          _hover={{ bg: "surfaceMuted" }}
           onClick={() => onSelect(tmpl.id)}
         >
           <HStack justify="space-between">
@@ -71,7 +68,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
                 <Text fontSize="sm" fontWeight="medium" lineClamp={1}>
                   {tmpl.name}
                 </Text>
-                <Text fontSize="xs" color={mutedColor}>
+                <Text fontSize="xs" color="overlay0">
                   {tmpl.page_count} page{tmpl.page_count !== 1 ? "s" : ""} ·{" "}
                   {tmpl.field_count || 0} field
                   {(tmpl.field_count || 0) !== 1 ? "s" : ""}

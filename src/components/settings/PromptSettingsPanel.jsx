@@ -1,6 +1,5 @@
 // Component for managing and editing prompts for LLMs.
 import { useState } from "react";
-import { useColorModeValue } from "../ui/color-mode";
 import { Box, Flex, IconButton, Text, Collapsible, Textarea, Button, Tabs, NumberInput, HStack, VStack, Alert } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
@@ -39,8 +38,6 @@ const PromptSettingsPanel = ({
 }) => {
   const [tabIndex, setTabIndex] = useState("0");
 
-  const warningIconColor = useColorModeValue("#df8e1d", "#eed49f");
-
   return (
     <Box className="panels-bg" p="4" borderRadius="sm">
       <Flex align="center" justify="space-between">
@@ -59,7 +56,7 @@ const PromptSettingsPanel = ({
       <Collapsible.Root open={!isCollapsed}>
         <Collapsible.Content>
           <Alert.Root status="warning" mt={4} borderRadius="sm">
-            <Alert.Indicator color={warningIconColor} />
+            <Alert.Indicator color="secondaryButton" />
             <Alert.Description fontSize="sm">
               These prompts are carefully crafted defaults. We recommend not
               changing them unless you have a specific reason.

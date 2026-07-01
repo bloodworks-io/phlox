@@ -1,6 +1,5 @@
 // Chat artifact renderer for form_fill type.
 import React, { useState } from "react";
-import { useColorModeValue } from "../ui/color-mode";
 import { Box, HStack, Text, Button } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { DownloadIcon } from "../common/icons";
@@ -11,9 +10,6 @@ import { fillPdf } from "../../utils/pdf/fillForm";
 const FormFillArtifact = ({ artifact }) => {
     const [loading, setLoading] = useState(false);
     const toast = useToast();
-
-    const borderColor = useColorModeValue("gray.200", "gray.600");
-    const bgColor = useColorModeValue("gray.50", "gray.750");
 
     const { template_id, template_name } = artifact;
     const filename = `${template_name || "form"}_filled.pdf`;
@@ -59,8 +55,8 @@ const FormFillArtifact = ({ artifact }) => {
             p={2}
             borderWidth="1px"
             borderRadius="md"
-            borderColor={borderColor}
-            bg={bgColor}
+            borderColor="border"
+            bg="surfaceInset"
             maxW="320px"
         >
             <HStack gap={2} mb={1}>

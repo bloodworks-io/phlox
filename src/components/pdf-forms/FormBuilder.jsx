@@ -1,6 +1,5 @@
 // Canvas-based PDF form field builder.
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useColorModeValue } from "../ui/color-mode";
 import { Box, Flex, HStack, IconButton, Text, Spinner } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
@@ -67,7 +66,7 @@ const FormBuilder = ({
     const [resizeFieldId, setResizeFieldId] = useState(null);
     const [resizeOrigin, setResizeOrigin] = useState(null); // { canvasX, canvasY, fieldW, fieldH }
 
-    const overlayBg = useColorModeValue("whiteAlpha.600", "blackAlpha.600");
+    const overlayBg = "var(--colors-hover-overlay)";
     const renderTaskRef = useRef(null);
     const isRenderingRef = useRef(false);
 

@@ -1,6 +1,5 @@
 // Modal for filling a PDF form template and downloading the result.
 import React, { useState } from "react";
-import { useColorModeValue } from "../ui/color-mode";
 import { Input, Checkbox, VStack, Text, Field, Dialog, Portal } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
@@ -11,7 +10,6 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
   const [values, setValues] = useState({});
   const [filling, setFilling] = useState(false);
   const toast = useToast();
-  const mutedColor = useColorModeValue("gray.500", "gray.400");
 
   const fields = template?.fields || [];
 
@@ -83,7 +81,7 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
             </Dialog.Header>
             <Dialog.Body>
               {fields.length === 0 ? (
-                <Text color={mutedColor} fontSize="sm">
+                <Text color="overlay0" fontSize="sm">
                   This template has no fields defined yet.
                 </Text>
               ) : (

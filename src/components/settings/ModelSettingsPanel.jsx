@@ -1,7 +1,6 @@
 import { Box, Flex, IconButton, Text, Collapsible, Input, NativeSelect, VStack, InputGroup, Tabs, HStack, Badge, Button, Alert, Spinner, Dialog, Portal } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
-import { useColorModeValue } from "../ui/color-mode";
 import {
     ChevronRightIcon,
     ChevronDownIcon,
@@ -62,9 +61,6 @@ const ModelSettingsPanel = ({
 
     // Determine if we're using local inference
     const isLocalInference = config?.LLM_PROVIDER === "local";
-
-    const warningBg = useColorModeValue("#df8e1d", "#eed49f");
-    const warningFg = useColorModeValue("#232634", "#1e2030");
 
     useEffect(() => {
         checkLocalStatus();
@@ -1104,7 +1100,7 @@ const ModelSettingsPanel = ({
                                                         </Text>
                                                         <Text
                                                             fontSize="xs"
-                                                            color={warningBg}
+                                                            color="secondaryButton"
                                                             mt="2"
                                                             fontWeight="medium"
                                                         >
