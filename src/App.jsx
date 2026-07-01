@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useColorMode } from "./components/ui/color-mode";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import { useToast } from "@/utils/useToastShim";
 
 import { TemplateProvider } from "./utils/templates/templateContext";

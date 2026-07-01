@@ -105,7 +105,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       clearInterval(messageInterval);
       clearTimeout(timeoutId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [shouldPoll]);
 
   const handleRetry = () => {

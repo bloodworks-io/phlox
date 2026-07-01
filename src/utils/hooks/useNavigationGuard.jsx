@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useDisclosure } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 

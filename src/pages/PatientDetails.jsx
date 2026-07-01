@@ -10,7 +10,7 @@ import { Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
 import { useClipboard } from "../utils/hooks/useClipboard";
 import { useToast } from "@/utils/useToastShim";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
 import NewNoteStartCard from "../components/patient/NewNoteStartCard";
 import { useScribe } from "../components/patient/Scribe";
