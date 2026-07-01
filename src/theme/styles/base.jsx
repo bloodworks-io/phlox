@@ -44,7 +44,7 @@ export const baseStyles = (props) => ({
         color:
             props.colorMode === "light"
                 ? colors.light.sidebar.text
-                : colors.light.sidebar.text,
+                : colors.dark.sidebar.text,
     },
     h5: {
         ...typography.styles.h5,

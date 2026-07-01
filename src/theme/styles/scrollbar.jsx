@@ -4,7 +4,10 @@ import { colors } from "../colors";
 export const scrollbarStyles = (props) => ({
     ".custom-scrollbar": {
         scrollbarWidth: "thin",
-        scrollbarColor: `${colors.light.surface2} transparent`,
+        scrollbarColor:
+            props.colorMode === "light"
+                ? `${colors.light.surface2} transparent`
+                : `${colors.dark.surface2} transparent`,
     },
     ".custom-scrollbar::-webkit-scrollbar": {
         width: "6px",

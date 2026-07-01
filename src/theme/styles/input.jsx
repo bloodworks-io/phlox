@@ -214,7 +214,7 @@ export const inputStyles = (props) => ({
         backgroundColor: `${
             props.colorMode === "light"
                 ? colors.light.extraButton
-                : colors.light.extraButton
+                : colors.dark.extraButton
         } !important`,
         opacity: 0,
         transition: "opacity 0.2s ease-in-out",
@@ -225,7 +225,7 @@ export const inputStyles = (props) => ({
             backgroundColor: `${
                 props.colorMode === "light"
                     ? lightenColor(colors.light.extraButton)
-                    : lightenColor(colors.light.extraButton)
+                    : lightenColor(colors.dark.extraButton)
             } !important`,
         },
     },
@@ -235,7 +235,7 @@ export const inputStyles = (props) => ({
         backgroundColor: `${
             props.colorMode === "light"
                 ? colors.light.extraButton
-                : colors.light.extraButton
+                : colors.dark.extraButton
         } !important`,
         border:
             props.colorMode === "light"
@@ -245,7 +245,7 @@ export const inputStyles = (props) => ({
             backgroundColor: `${
                 props.colorMode === "light"
                     ? lightenColor(colors.light.extraButton)
-                    : lightenColor(colors.light.extraButton)
+                    : lightenColor(colors.dark.extraButton)
             } !important`,
         },
     },

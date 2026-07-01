@@ -156,7 +156,7 @@ export const floatingStyles = (props) => ({
         borderLeftColor:
             props.colorMode === "light"
                 ? `${colors.light.secondaryButton} !important`
-                : `${colors.light.secondaryButton} !important`,
+                : `${colors.dark.secondaryButton} !important`,
     },
     ".thinking-block-text": {
         fontSize: "0.9rem !important",

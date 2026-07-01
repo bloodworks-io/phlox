@@ -36,7 +36,7 @@ export const patientInfoStyles = (props) => ({
         border:
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
-                : `${colors.dark.textTertiary} !important`,
+                : `1px solid ${colors.dark.surface} !important`,
         padding: "7px 8px !important",
         borderRadius: "md !important",
         height: "35px !important",
@@ -57,7 +57,7 @@ export const patientInfoStyles = (props) => ({
         border:
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface2} !important`
-                : `${colors.dark.textTertiary} !important`,
+                : `1px solid ${colors.dark.textTertiary} !important`,
         color: "#575279 !important",
         height: "32px !important",
         minWidth: "32px !important",
