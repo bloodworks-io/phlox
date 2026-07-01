@@ -73,7 +73,10 @@ export const SectionHeader = ({ title, count, isCollapsed, onToggle }) => {
                 _hover={{
                     bg: `rgba(184, 192, 224, 0.1)`,
                 }}
-                aria-label={isCollapsed ? "Expand section" : "Collapse section"}>{isCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}</IconButton>
+                aria-label={isCollapsed ? "Expand section" : "Collapse section"}
+            >
+                {isCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
+            </IconButton>
         </Flex>
     );
 };
@@ -113,7 +116,10 @@ export const AvatarButton = ({
                         bg={backgroundColor}
                         color="white"
                         size={isCollapsed ? "sm" : "sm"}
-                        mr={isCollapsed ? "0" : "3"}><Avatar.Fallback>{icon}</Avatar.Fallback></Avatar.Root>
+                        mr={isCollapsed ? "0" : "3"}
+                    >
+                        <Avatar.Fallback>{icon}</Avatar.Fallback>
+                    </Avatar.Root>
 
                     {badge && (
                         <Box

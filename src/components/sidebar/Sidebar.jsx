@@ -417,12 +417,7 @@ const Sidebar = ({
                 </Box>
 
                 {/* Navigation Section - Natural flow at bottom */}
-                <Box
-                    width="100%"
-                    bg="transparent"
-                    pt="2"
-                    borderTop={`1px solid ${dividerColor}`}
-                >
+                <Box width="100%" bg="transparent" pt="2">
                     <SidebarNavigation
                         isCollapsed={isCollapsed}
                         handleNavigation={handleNavigation}
