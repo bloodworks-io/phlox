@@ -186,16 +186,6 @@ class PatientDatabase:
         self.ensure_default_templates()  # Then ensure default templates
         set_initial_default_template(self.cursor, self.db)  # Set phlox as default template
 
-    def test_database(self):
-        """Test database functionality with sample data.
-
-        Returns:
-            True if test successful
-        """
-        from server.database.testing import run_database_test
-
-        return run_database_test(self.cursor, self.db)
-
     def commit(self):
         """Commit current transaction."""
         self.db.commit()
