@@ -21,7 +21,6 @@ export const LettersStep = ({
   selectedLetterTemplate,
   setSelectedLetterTemplate,
   isFetchingLetterTemplates,
-  currentColors,
 }) => (
   <VStack
     key="letters"
@@ -42,8 +41,8 @@ export const LettersStep = ({
 
     {isFetchingLetterTemplates ? (
       <Flex align="center" justify="center" py={8}>
-        <Spinner size="lg" color={currentColors.primaryButton} />
-        <Text ml={4} color={currentColors.textSecondary}>
+        <Spinner size="lg" color={"primaryButton"} />
+        <Text ml={4} color={"textSecondary"}>
           Loading letter templates...
         </Text>
       </Flex>
@@ -57,23 +56,23 @@ export const LettersStep = ({
             borderWidth="2px"
             borderColor={
               selectedLetterTemplate === template.id.toString()
-                ? currentColors.primaryButton
+                ? "primaryButton"
                 : "transparent"
             }
             bg={
               selectedLetterTemplate === template.id.toString()
-                ? currentColors.surface + "40"
-                : currentColors.surface
+                ? "surfaceQuartile"
+                : "surface"
             }
             _hover={{
-              borderColor: currentColors.primaryButton + "80",
+              borderColor: "primaryButtonHalftone",
               transform: "translateY(-2px)",
             }}
             transition="all 0.2s"
           >
             <Card.Header pb={2}>
               <HStack justify="space-between">
-                <Heading size="md" color={currentColors.textPrimary}>
+                <Heading size="md" color={"textPrimary"}>
                   {template.name}
                 </Heading>
                 {selectedLetterTemplate === template.id.toString() && (
@@ -84,7 +83,7 @@ export const LettersStep = ({
             <Card.Body pt={0}>
               <Text
                 fontSize="sm"
-                color={currentColors.textSecondary}
+                color={"textSecondary"}
                 lineClamp={2}
               >
                 {template.content ||

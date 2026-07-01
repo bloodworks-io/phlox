@@ -66,7 +66,6 @@ export const QuickChatStep = ({
   setQuickChat3Title,
   quickChat3Prompt,
   setQuickChat3Prompt,
-  currentColors,
 }) => (
   <VStack
     key="quickchat"
@@ -88,12 +87,12 @@ export const QuickChatStep = ({
 
     <VStack gap={6} w="100%">
       <Box w="100%" p={4} borderRadius="md" className="floating-main">
-        <Text fontWeight="medium" mb={3} color={currentColors.textPrimary}>
+        <Text fontWeight="medium" mb={3} color={"textPrimary"}>
           Quick Chat Button 1
         </Text>
         <VStack gap={3}>
           <Field.Root required>
-            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
+            <Field.Label fontSize="sm" color={"textSecondary"}>
               Button Title
             </Field.Label>
             <Input
@@ -105,7 +104,7 @@ export const QuickChatStep = ({
             />
           </Field.Root>
           <Field.Root required>
-            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
+            <Field.Label fontSize="sm" color={"textSecondary"}>
               Prompt
             </Field.Label>
             <Textarea
@@ -121,12 +120,12 @@ export const QuickChatStep = ({
       </Box>
 
       <Box w="100%" p={4} borderRadius="md" className="floating-main">
-        <Text fontWeight="medium" mb={3} color={currentColors.textPrimary}>
+        <Text fontWeight="medium" mb={3} color={"textPrimary"}>
           Quick Chat Button 2
         </Text>
         <VStack gap={3}>
           <Field.Root required>
-            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
+            <Field.Label fontSize="sm" color={"textSecondary"}>
               Button Title
             </Field.Label>
             <Input
@@ -138,7 +137,7 @@ export const QuickChatStep = ({
             />
           </Field.Root>
           <Field.Root required>
-            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
+            <Field.Label fontSize="sm" color={"textSecondary"}>
               Prompt
             </Field.Label>
             <Textarea
@@ -154,12 +153,12 @@ export const QuickChatStep = ({
       </Box>
 
       <Box w="100%" p={4} borderRadius="md" className="floating-main">
-        <Text fontWeight="medium" mb={3} color={currentColors.textPrimary}>
+        <Text fontWeight="medium" mb={3} color={"textPrimary"}>
           Quick Chat Button 3
         </Text>
         <VStack gap={3}>
           <Field.Root required>
-            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
+            <Field.Label fontSize="sm" color={"textSecondary"}>
               Button Title
             </Field.Label>
             <Input
@@ -171,7 +170,7 @@ export const QuickChatStep = ({
             />
           </Field.Root>
           <Field.Root required>
-            <Field.Label fontSize="sm" color={currentColors.textSecondary}>
+            <Field.Label fontSize="sm" color={"textSecondary"}>
               Prompt
             </Field.Label>
             <Textarea

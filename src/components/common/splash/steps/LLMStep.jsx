@@ -21,7 +21,6 @@ const LocalModelCard = ({
     downloadProgress,
     onSelect,
     onDownload,
-    currentColors,
 }) => {
     const getRecommendationBadge = () => {
         if (model.recommendedType === "fastest")
@@ -55,7 +54,7 @@ const LocalModelCard = ({
             borderWidth="2px"
             borderColor={
                 isSelected
-                    ? currentColors.primaryButton
+                    ? "primaryButton"
                     : badge?.color === "purple"
                       ? "purple.200"
                       : "gray.200"
@@ -63,11 +62,11 @@ const LocalModelCard = ({
             position="relative"
             cursor={isDownloaded ? "pointer" : "default"}
             onClick={isDownloaded ? onSelect : undefined}
-            bg={isSelected ? `${currentColors.primaryButton}15` : "transparent"}
+            bg={isSelected ? `"primaryButtonFaint"` : "transparent"}
             transition="all 0.2s"
             _hover={
                 isDownloaded
-                    ? { borderColor: currentColors.primaryButton, shadow: "md" }
+                    ? { borderColor: "primaryButton", shadow: "md" }
                     : {}
             }
             minH="160px"
@@ -135,12 +134,12 @@ const LocalModelCard = ({
                     size="sm"
                     w="full"
                     bgColor={
-                        isSelected ? currentColors.primaryButton : "gray.200"
+                        isSelected ? "primaryButton" : "gray.200"
                     }
                     color={isSelected ? "white" : "gray.700"}
                     _hover={{
                         bgColor: isSelected
-                            ? currentColors.primaryButton
+                            ? "primaryButton"
                             : "gray.300",
                     }}
                     onClick={onSelect}
@@ -178,7 +177,6 @@ export const LLMStep = ({
     availableModels,
     isFetchingLLMModels,
     fetchLLMModels,
-    currentColors,
     // New props for local/remote mode
     inferenceMode,
     setInferenceMode,
@@ -336,7 +334,7 @@ export const LLMStep = ({
                         >
                             <Text
                                 fontSize="sm"
-                                color={currentColors.textSecondary}
+                                color={"textSecondary"}
                                 css={{ fontFamily: '"Roboto", sans-serif' }}
                             >
                                 <strong>Local Mode:</strong> AI models run
@@ -416,7 +414,6 @@ export const LLMStep = ({
                                         onDownload={() =>
                                             handleDownload(model.id)
                                         }
-                                        currentColors={currentColors}
                                     />
                                 ))}
                             </Grid>
@@ -450,7 +447,7 @@ export const LLMStep = ({
                         <Field.Root>
                             <HStack>
                                 <Field.Label
-                                    color={currentColors.textSecondary}
+                                    color={"textSecondary"}
                                     css={{
                                         fontFamily: '"Roboto", sans-serif',
                                         fontSize: "sm",
@@ -469,7 +466,7 @@ export const LLMStep = ({
                                 >
                                     <InfoIcon
                                         boxSize={3}
-                                        color={currentColors.textSecondary}
+                                        color={"textSecondary"}
                                     />
                                 </Tooltip>
                             </HStack>
@@ -487,7 +484,7 @@ export const LLMStep = ({
                         <Field.Root required={availableModels.length > 0}>
                             <HStack>
                                 <Field.Label
-                                    color={currentColors.textSecondary}
+                                    color={"textSecondary"}
                                     css={{
                                         fontFamily: '"Roboto", sans-serif',
                                         fontSize: "sm",
@@ -506,7 +503,7 @@ export const LLMStep = ({
                                 >
                                     <InfoIcon
                                         boxSize={3}
-                                        color={currentColors.textSecondary}
+                                        color={"textSecondary"}
                                     />
                                 </Tooltip>
                             </HStack>
@@ -542,11 +539,11 @@ export const LLMStep = ({
                                     <Spinner
                                         size="xs"
                                         mr={2}
-                                        color={currentColors.primaryButton}
+                                        color={"primaryButton"}
                                     />
                                     <Text
                                         fontSize="sm"
-                                        color={currentColors.textSecondary}
+                                        color={"textSecondary"}
                                         css={{
                                             fontFamily: '"Roboto", sans-serif',
                                         }}
@@ -560,7 +557,7 @@ export const LLMStep = ({
                                 llmBaseUrl.trim() && (
                                     <Text
                                         fontSize="sm"
-                                        color={currentColors.secondaryButton}
+                                        color={"secondaryButton"}
                                         mt={2}
                                         css={{
                                             fontFamily: '"Roboto", sans-serif',

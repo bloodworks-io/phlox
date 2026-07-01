@@ -58,7 +58,6 @@ const WhisperModelCard = ({
   downloadProgress,
   onSelect,
   onDownload,
-  currentColors,
 }) => {
   const getRecommendationBadge = () => {
     if (model.recommendedType === "fastest")
@@ -80,7 +79,7 @@ const WhisperModelCard = ({
       borderWidth="2px"
       borderColor={
         isSelected
-          ? currentColors.primaryButton
+          ? "primaryButton"
           : badge?.color === "purple"
             ? "purple.200"
             : "gray.200"
@@ -88,11 +87,11 @@ const WhisperModelCard = ({
       position="relative"
       cursor={isDownloaded ? "pointer" : "default"}
       onClick={isDownloaded ? onSelect : undefined}
-      bg={isSelected ? `${currentColors.primaryButton}15` : "transparent"}
+      bg={isSelected ? `"primaryButtonFaint"` : "transparent"}
       transition="all 0.2s"
       _hover={
         isDownloaded
-          ? { borderColor: currentColors.primaryButton, shadow: "md" }
+          ? { borderColor: "primaryButton", shadow: "md" }
           : {}
       }
       minH="120px"
@@ -139,10 +138,10 @@ const WhisperModelCard = ({
         <Button
           size="xs"
           w="full"
-          bgColor={isSelected ? currentColors.primaryButton : "gray.200"}
+          bgColor={isSelected ? "primaryButton" : "gray.200"}
           color={isSelected ? "white" : "gray.700"}
           _hover={{
-            bgColor: isSelected ? currentColors.primaryButton : "gray.300",
+            bgColor: isSelected ? "primaryButton" : "gray.300",
           }}
           onClick={onSelect}
           mt={2}
@@ -178,7 +177,6 @@ export const TranscriptionStep = ({
   whisperModelListAvailable,
   isFetchingWhisperModels,
   fetchWhisperModels,
-  currentColors,
   // New props for local mode
   inferenceMode,
   localWhisperModels,
@@ -205,7 +203,7 @@ export const TranscriptionStep = ({
     >
       <VStack gap={4} w="100%">
         <Box w="100%" p={4} borderRadius="md" className="floating-main">
-          <Text fontSize="sm" color={currentColors.textSecondary} mb={2}>
+          <Text fontSize="sm" color={"textSecondary"} mb={2}>
             <strong>Note:</strong> Voice transcription is required for
             hands-free operation during patient consultations.
             {isLocal &&
@@ -220,7 +218,7 @@ export const TranscriptionStep = ({
               <HStack>
                 <Text
                   fontSize="sm"
-                  color={currentColors.textSecondary}
+                  color={"textSecondary"}
                   css={{
                     fontFamily: '"Roboto", sans-serif',
                     fontWeight: "500"
@@ -238,7 +236,7 @@ export const TranscriptionStep = ({
                     placement: "top"
                   }}
                 >
-                  <InfoIcon boxSize={3} color={currentColors.textSecondary} />
+                  <InfoIcon boxSize={3} color={"textSecondary"} />
                 </Tooltip>
               </HStack>
             </HStack>
@@ -265,7 +263,6 @@ export const TranscriptionStep = ({
                   downloadProgress={whisperDownloadProgress}
                   onSelect={() => setLocalWhisperModel(model.id)}
                   onDownload={() => downloadWhisperModel(model.id)}
-                  currentColors={currentColors}
                 />
               ))}
             </Grid>
@@ -295,7 +292,7 @@ export const TranscriptionStep = ({
             <HStack w="100%">
               <Text
                 fontSize="sm"
-                color={currentColors.textSecondary}
+                color={"textSecondary"}
                 css={{
                   fontFamily: '"Roboto", sans-serif',
                   fontWeight: "500"
@@ -313,7 +310,7 @@ export const TranscriptionStep = ({
                   placement: "top"
                 }}
               >
-                <InfoIcon boxSize={3} color={currentColors.textSecondary} />
+                <InfoIcon boxSize={3} color={"textSecondary"} />
               </Tooltip>
             </HStack>
             <Box w="100%">
@@ -339,7 +336,7 @@ export const TranscriptionStep = ({
                 <HStack w="100%" mt={2}>
                   <Text
                     fontSize="sm"
-                    color={currentColors.textSecondary}
+                    color={"textSecondary"}
                     css={{
                       fontFamily: '"Roboto", sans-serif',
                       fontWeight: "500"
@@ -357,7 +354,7 @@ export const TranscriptionStep = ({
                           placement: "top"
                         }}
                       >
-                    <InfoIcon boxSize={3} color={currentColors.textSecondary} />
+                    <InfoIcon boxSize={3} color={"textSecondary"} />
                   </Tooltip>
                 </HStack>
                 <Box w="100%">
@@ -406,11 +403,11 @@ export const TranscriptionStep = ({
                     <Spinner
                       size="xs"
                       mr={2}
-                      color={currentColors.primaryButton}
+                      color={"primaryButton"}
                     />
                     <Text
                       fontSize="sm"
-                      color={currentColors.textSecondary}
+                      color={"textSecondary"}
                       css={{
                         fontFamily: '"Roboto", sans-serif'
                       }}

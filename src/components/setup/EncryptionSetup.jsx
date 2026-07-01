@@ -1,10 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useColorMode } from "../ui/color-mode";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { FaEye, FaEyeSlash, FaExclamationTriangle } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import {
   encryptionApi,
   calculatePassphraseStrength,
@@ -19,8 +17,6 @@ import {
 } from "../common/splash/constants";
 
 const EncryptionSetup = ({ onComplete }) => {
-  const { colorMode } = useColorMode();
-  const currentColors = colors[colorMode];
   const toast = useToast();
 
   const [passphrase, setPassphrase] = useState("");
@@ -167,7 +163,7 @@ const EncryptionSetup = ({ onComplete }) => {
         p={{ base: 6, md: 8 }}
         borderRadius="2xl"
         boxShadow="2xl"
-        border={`1px solid ${currentColors.surface}`}
+        border={`1px solid ${"surface"}`}
         w={{ base: "100%", sm: "90%", md: "500px" }}
         maxW="500px"
         position="relative"
@@ -179,7 +175,7 @@ const EncryptionSetup = ({ onComplete }) => {
           left="0"
           right="0"
           height="120px"
-          bgGradient={`linear(to b, ${currentColors.sidebar.background}15, transparent)`}
+          bgGradient={`linear(to b, "sidebarBackgroundFaint", transparent)`}
           borderRadius="2xl"
           zIndex="0"
         />
@@ -200,7 +196,7 @@ const EncryptionSetup = ({ onComplete }) => {
             <Heading
               as="h1"
               textAlign="center"
-              color={currentColors.textPrimary}
+              color={"textPrimary"}
               css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
@@ -215,7 +211,7 @@ const EncryptionSetup = ({ onComplete }) => {
             <Text
               textAlign="center"
               fontSize="sm"
-              color={currentColors.textSecondary}
+              color={"textSecondary"}
               maxW="400px"
               lineHeight="1.6"
               css={{
@@ -239,7 +235,7 @@ const EncryptionSetup = ({ onComplete }) => {
             </Progress.Root>
             <Text
               fontSize="xs"
-              color={currentColors.textSecondary}
+              color={"textSecondary"}
               textAlign="center"
               css={{
                 fontFamily: '"Roboto", sans-serif'
@@ -258,7 +254,7 @@ const EncryptionSetup = ({ onComplete }) => {
               />
               <Heading
                 as="h2"
-                color={currentColors.textPrimary}
+                color={"textPrimary"}
                 css={{
                   fontFamily: '"Space Grotesk", sans-serif',
                   fontSize: ["1.25rem", "1.5rem"],
@@ -272,7 +268,7 @@ const EncryptionSetup = ({ onComplete }) => {
             <Text
               textAlign="center"
               fontSize="sm"
-              color={currentColors.textSecondary}
+              color={"textSecondary"}
               mb={4}
               css={{
                 fontFamily: '"Roboto", sans-serif'
@@ -305,7 +301,7 @@ const EncryptionSetup = ({ onComplete }) => {
                 mb={1}
                 fontSize="sm"
                 fontWeight="500"
-                color={currentColors.textPrimary}
+                color={"textPrimary"}
               >
                 Passphrase
               </Text>
@@ -316,13 +312,13 @@ const EncryptionSetup = ({ onComplete }) => {
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
                   size="md"
-                  bg={currentColors.surface}
-                  border={`1px solid ${currentColors.border}`}
-                  color={currentColors.textPrimary}
-                  _placeholder={{ color: currentColors.textSecondary }}
+                  bg={"surface"}
+                  border={`1px solid ${"border"}`}
+                  color={"textPrimary"}
+                  _placeholder={{ color: "textSecondary" }}
                   _focus={{
-                    borderColor: currentColors.accent,
-                    boxShadow: `0 0 0 1px ${currentColors.accent}`,
+                    borderColor: "accent",
+                    boxShadow: `0 0 0 1px ${"accent"}`,
                   }}
                 />
                 <Button
@@ -338,13 +334,13 @@ const EncryptionSetup = ({ onComplete }) => {
               {passphrase.length > 0 && (
                 <Box mt={2}>
                   <HStack justify="space-between" mb={1}>
-                    <Text fontSize="xs" color={currentColors.textSecondary}>
+                    <Text fontSize="xs" color={"textSecondary"}>
                       Strength
                     </Text>
                     <Text
                       fontSize="xs"
                       fontWeight="600"
-                      color={currentColors[getStrengthColor()] || "gray"}
+                      color={getStrengthColor() + ".400"}
                     >
                       {strength.strength}
                     </Text>
@@ -367,7 +363,7 @@ const EncryptionSetup = ({ onComplete }) => {
                 mb={1}
                 fontSize="sm"
                 fontWeight="500"
-                color={currentColors.textPrimary}
+                color={"textPrimary"}
               >
                 Confirm Passphrase
               </Text>
@@ -378,13 +374,13 @@ const EncryptionSetup = ({ onComplete }) => {
                   value={confirmPassphrase}
                   onChange={(e) => setConfirmPassphrase(e.target.value)}
                   size="md"
-                  bg={currentColors.surface}
-                  border={`1px solid ${currentColors.border}`}
-                  color={currentColors.textPrimary}
-                  _placeholder={{ color: currentColors.textSecondary }}
+                  bg={"surface"}
+                  border={`1px solid ${"border"}`}
+                  color={"textPrimary"}
+                  _placeholder={{ color: "textSecondary" }}
                   _focus={{
-                    borderColor: currentColors.accent,
-                    boxShadow: `0 0 0 1px ${currentColors.accent}`,
+                    borderColor: "accent",
+                    boxShadow: `0 0 0 1px ${"accent"}`,
                   }}
                   onKeyPress={(e) => {
                     if (e.key === "Enter" && isValid()) {

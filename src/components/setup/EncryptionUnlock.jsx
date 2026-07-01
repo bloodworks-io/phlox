@@ -1,16 +1,12 @@
 import { useState, useCallback } from "react";
-import { useColorMode } from "../ui/color-mode";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
 
 const EncryptionUnlock = ({ onComplete }) => {
-  const { colorMode } = useColorMode();
-  const currentColors = colors[colorMode];
   const toast = useToast();
 
   const [passphrase, setPassphrase] = useState("");
@@ -144,7 +140,7 @@ const EncryptionUnlock = ({ onComplete }) => {
         p={{ base: 6, md: 8 }}
         borderRadius="2xl"
         boxShadow="2xl"
-        border={`1px solid ${currentColors.surface}`}
+        border={`1px solid ${"surface"}`}
         w={{ base: "100%", sm: "90%", md: "450px" }}
         maxW="450px"
         position="relative"
@@ -156,7 +152,7 @@ const EncryptionUnlock = ({ onComplete }) => {
           left="0"
           right="0"
           height="120px"
-          bgGradient={`linear(to b, ${currentColors.sidebar.background}15, transparent)`}
+          bgGradient={`linear(to b, "sidebarBackgroundFaint", transparent)`}
           borderRadius="2xl"
           zIndex="0"
         />
@@ -173,7 +169,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             <Heading
               as="h1"
               textAlign="center"
-              color={currentColors.textPrimary}
+              color={"textPrimary"}
               css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
@@ -187,7 +183,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             <Text
               textAlign="center"
               fontSize="sm"
-              color={currentColors.textSecondary}
+              color={"textSecondary"}
               maxW="350px"
               lineHeight="1.6"
             >
@@ -211,7 +207,7 @@ const EncryptionUnlock = ({ onComplete }) => {
                 mb={1}
                 fontSize="sm"
                 fontWeight="500"
-                color={currentColors.textPrimary}
+                color={"textPrimary"}
               >
                 Passphrase
               </Text>
@@ -224,13 +220,13 @@ const EncryptionUnlock = ({ onComplete }) => {
                   onKeyPress={handleKeyPress}
                   size="md"
                   autoFocus
-                  bg={currentColors.surface}
-                  border={`1px solid ${currentColors.border}`}
-                  color={currentColors.textPrimary}
-                  _placeholder={{ color: currentColors.textSecondary }}
+                  bg={"surface"}
+                  border={`1px solid ${"border"}`}
+                  color={"textPrimary"}
+                  _placeholder={{ color: "textSecondary" }}
                   _focus={{
-                    borderColor: currentColors.accent,
-                    boxShadow: `0 0 0 1px ${currentColors.accent}`,
+                    borderColor: "accent",
+                    boxShadow: `0 0 0 1px ${"accent"}`,
                   }}
                 />
                 <Button

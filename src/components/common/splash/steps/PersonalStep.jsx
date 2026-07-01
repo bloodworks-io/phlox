@@ -24,7 +24,6 @@ export const PersonalStep = ({
   setName,
   specialty,
   setSpecialty,
-  currentColors,
 }) => (
   <VStack
     key="personal"
@@ -36,7 +35,7 @@ export const PersonalStep = ({
       <Field.Root required>
         <HStack>
           <Field.Label
-            color={currentColors.textSecondary}
+            color={"textSecondary"}
             css={{
               fontFamily: '"Roboto", sans-serif',
               fontSize: "sm",
@@ -55,7 +54,7 @@ export const PersonalStep = ({
               placement: "top"
             }}
           >
-            <InfoIcon boxSize={3} color={currentColors.textSecondary} />
+            <InfoIcon boxSize={3} color={"textSecondary"} />
           </Tooltip>
         </HStack>
         <Input
@@ -70,7 +69,7 @@ export const PersonalStep = ({
       <Field.Root required>
         <HStack>
           <Field.Label
-            color={currentColors.textSecondary}
+            color={"textSecondary"}
             css={{
               fontFamily: '"Roboto", sans-serif',
               fontSize: "sm",
@@ -89,7 +88,7 @@ export const PersonalStep = ({
               placement: "top"
             }}
           >
-            <InfoIcon boxSize={3} color={currentColors.textSecondary} />
+            <InfoIcon boxSize={3} color={"textSecondary"} />
           </Tooltip>
         </HStack>
         <NativeSelect.Root>

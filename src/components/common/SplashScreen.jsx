@@ -1,9 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
-import { useColorMode } from "../ui/color-mode";
 import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Icon, Progress, Badge } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { FaArrowRight, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import { isTauri } from "../../utils/helpers/apiConfig";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
@@ -24,8 +22,6 @@ import { useQuickChatStep, QuickChatStep } from "./splash/steps/QuickChatStep";
 import { useLettersStep, LettersStep } from "./splash/steps/LettersStep";
 
 const SplashScreen = ({ onComplete }) => {
-  const { colorMode } = useColorMode();
-  const currentColors = colors[colorMode];
   const toast = useToast();
 
   // Step management
@@ -233,23 +229,22 @@ const SplashScreen = ({ onComplete }) => {
   const renderCurrentStep = () => {
     switch (currentStep) {
       case SPLASH_STEPS.PERSONAL:
-        return <PersonalStep currentColors={currentColors} {...personal} />;
+        return <PersonalStep {...personal} />;
       case SPLASH_STEPS.LLM:
-        return <LLMStep currentColors={currentColors} {...llm} />;
+        return <LLMStep {...llm} />;
       case SPLASH_STEPS.TRANSCRIPTION:
         return (
           <TranscriptionStep
-            currentColors={currentColors}
             inferenceMode={llm.inferenceMode}
             {...transcription}
           />
         );
       case SPLASH_STEPS.TEMPLATES:
-        return <TemplatesStep currentColors={currentColors} {...templates} />;
+        return <TemplatesStep {...templates} />;
       case SPLASH_STEPS.QUICK_CHAT:
-        return <QuickChatStep currentColors={currentColors} {...quickChat} />;
+        return <QuickChatStep {...quickChat} />;
       case SPLASH_STEPS.LETTERS:
-        return <LettersStep currentColors={currentColors} {...letters} />;
+        return <LettersStep {...letters} />;
       default:
         return null;
     }
@@ -282,7 +277,7 @@ const SplashScreen = ({ onComplete }) => {
         p={{ base: 6, md: 8 }}
         borderRadius="2xl"
         boxShadow="2xl"
-        border={`1px solid ${currentColors.surface}`}
+        border={`1px solid ${"surface"}`}
         w={{ base: "100%", sm: "90%", md: "700px" }}
         maxW="700px"
         position="relative"
@@ -296,7 +291,7 @@ const SplashScreen = ({ onComplete }) => {
           left="0"
           right="0"
           height="120px"
-          bgGradient={`linear(to b, ${currentColors.sidebar.background}15, transparent)`}
+          bgGradient={`linear(to b, "sidebarBackgroundFaint", transparent)`}
           borderRadius="2xl"
           zIndex="0"
         />
@@ -317,7 +312,7 @@ const SplashScreen = ({ onComplete }) => {
             <Heading
               as="h1"
               textAlign="center"
-              color={currentColors.textPrimary}
+              color={"textPrimary"}
               css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
@@ -332,7 +327,7 @@ const SplashScreen = ({ onComplete }) => {
             <Text
               textAlign="center"
               fontSize="sm"
-              color={currentColors.textSecondary}
+              color={"textSecondary"}
               maxW="400px"
               lineHeight="1.6"
               css={{
@@ -356,7 +351,7 @@ const SplashScreen = ({ onComplete }) => {
             </Progress.Root>
             <Text
               fontSize="xs"
-              color={currentColors.textSecondary}
+              color={"textSecondary"}
               textAlign="center"
               css={{
                 fontFamily: '"Roboto", sans-serif'
@@ -375,7 +370,7 @@ const SplashScreen = ({ onComplete }) => {
               />
               <Heading
                 as="h2"
-                color={currentColors.textPrimary}
+                color={"textPrimary"}
                 css={{
                   fontFamily: '"Space Grotesk", sans-serif',
                   fontSize: ["1.25rem", "1.5rem"],
@@ -395,7 +390,7 @@ const SplashScreen = ({ onComplete }) => {
             <Text
               textAlign="center"
               fontSize="sm"
-              color={currentColors.textSecondary}
+              color={"textSecondary"}
               mb={6}
               css={{
                 fontFamily: '"Roboto", sans-serif'

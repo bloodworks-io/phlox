@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useColorMode } from "../ui/color-mode";
 import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
 import { FaServer } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 
@@ -28,8 +26,6 @@ const POLL_INTERVAL = 2000; // ms - increased to reduce CPU load
 const TIMEOUT = 60000; // 60 seconds - increased for slower systems
 
 const ServerStartupLoader = ({ onReady, onError }) => {
-  const { colorMode } = useColorMode();
-  const currentColors = colors[colorMode];
 
   const [messageIndex, setMessageIndex] = useState(0);
   const [isTimedOut, setIsTimedOut] = useState(false);
@@ -146,7 +142,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           p={8}
           borderRadius="2xl"
           boxShadow="2xl"
-          border={`1px solid ${currentColors.surface}`}
+          border={`1px solid ${"surface"}`}
           w="100%"
           maxW="450px"
           textAlign="center"
@@ -155,7 +151,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             <Icon boxSize={12} color="red.500" asChild><FaServer /></Icon>
             <Heading
               as="h1"
-              color={currentColors.textPrimary}
+              color={"textPrimary"}
               css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: "1.5rem",
@@ -164,11 +160,11 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             >
               Server Taking Too Long
             </Heading>
-            <Text color={currentColors.textSecondary}>
+            <Text color={"textSecondary"}>
               The server is taking longer than expected to start. This might be
               due to system resources or other factors.
             </Text>
-            <Text color={currentColors.textSecondary} fontSize="sm">
+            <Text color={"textSecondary"} fontSize="sm">
               Waited {Math.floor(elapsed / 1000)} seconds
             </Text>
             <Button
@@ -215,7 +211,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         p={8}
         borderRadius="2xl"
         boxShadow="2xl"
-        border={`1px solid ${currentColors.surface}`}
+        border={`1px solid ${"surface"}`}
         w="100%"
         maxW="450px"
         textAlign="center"
@@ -223,13 +219,13 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         <VStack gap={6}>
           <Spinner
             size="xl"
-            color={currentColors.accent}
+            color={"accent"}
             borderWidth="4px"
             animationDuration="0.8s"
           />
           <Heading
             as="h1"
-            color={currentColors.textPrimary}
+            color={"textPrimary"}
             css={{
               fontFamily: '"Space Grotesk", sans-serif',
               fontSize: "1.5rem",
@@ -238,7 +234,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           >
             Starting Server
           </Heading>
-          <Text color={currentColors.textSecondary} fontSize="lg" minH="2rem">
+          <Text color={"textSecondary"} fontSize="lg" minH="2rem">
             {LOADING_MESSAGES[messageIndex]}
           </Text>
         </VStack>

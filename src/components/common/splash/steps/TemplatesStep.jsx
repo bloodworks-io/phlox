@@ -22,7 +22,6 @@ export const TemplatesStep = ({
   selectedTemplate,
   setSelectedTemplate,
   isFetchingTemplates,
-  currentColors,
 }) => (
   <VStack
     key="templates"
@@ -44,8 +43,8 @@ export const TemplatesStep = ({
 
     {isFetchingTemplates ? (
       <Flex align="center" justify="center" py={8}>
-        <Spinner size="lg" color={currentColors.primaryButton} />
-        <Text ml={4} color={currentColors.textSecondary}>
+        <Spinner size="lg" color={"primaryButton"} />
+        <Text ml={4} color={"textSecondary"}>
           Loading templates...
         </Text>
       </Flex>
@@ -59,23 +58,23 @@ export const TemplatesStep = ({
             borderWidth="2px"
             borderColor={
               selectedTemplate === template.template_key
-                ? currentColors.primaryButton
+                ? "primaryButton"
                 : "transparent"
             }
             bg={
               selectedTemplate === template.template_key
-                ? currentColors.surface + "40"
-                : currentColors.surface
+                ? "surfaceQuartile"
+                : "surface"
             }
             _hover={{
-              borderColor: currentColors.primaryButton + "80",
+              borderColor: "primaryButtonHalftone",
               transform: "translateY(-2px)",
             }}
             transition="all 0.2s"
           >
             <Card.Header pb={2}>
               <HStack justify="space-between">
-                <Heading size="md" color={currentColors.textPrimary}>
+                <Heading size="md" color={"textPrimary"}>
                   {template.template_name}
                 </Heading>
                 {selectedTemplate === template.template_key && (
@@ -84,13 +83,13 @@ export const TemplatesStep = ({
               </HStack>
             </Card.Header>
             <Card.Body pt={0}>
-              <Text fontSize="sm" color={currentColors.textSecondary} mb={3}>
+              <Text fontSize="sm" color={"textSecondary"} mb={3}>
                 {TEMPLATE_DESCRIPTIONS[template.template_key] ||
                   "A custom template for clinical documentation."}
               </Text>
               <Text
                 fontSize="xs"
-                color={currentColors.textSecondary}
+                color={"textSecondary"}
                 fontWeight="medium"
               >
                 Fields:{" "}
