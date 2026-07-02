@@ -1,4 +1,4 @@
-import { Box, Flex, Text, IconButton, HStack } from "@chakra-ui/react";
+import { Flex, Text, IconButton, HStack } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaEdit } from "react-icons/fa";
 import { getAvatarColor, getInitials } from "../sidebar/SidebarHelpers";

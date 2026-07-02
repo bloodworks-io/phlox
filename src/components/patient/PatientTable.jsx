@@ -20,7 +20,6 @@ import {
     Wrap,
     WrapItem,
 } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useState, useRef, useEffect } from "react";
 import { FaUser, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
@@ -47,7 +46,6 @@ const PatientTable = ({
     groupByDate = false,
     summaryOnly = false,
 }) => {
-    const toast = useToast();
     const [, setLoadingStates] = useState({});
     const pendingJobsUpdates = useRef(new Map());
 

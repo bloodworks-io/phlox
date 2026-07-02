@@ -8,7 +8,8 @@
 */
 import { Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
 import { useClipboard } from "../utils/hooks/useClipboard";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
@@ -50,7 +51,6 @@ const PatientDetails = ({
     const location = useLocation();
     const isNewPatient = location.pathname === "/new-note";
     const { viaModal, cameFromSearch } = location.state || {};
-    const toast = useToast();
     const summaryRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
@@ -190,10 +190,10 @@ const PatientDetails = ({
             onCloseConsent();
             await scribeControls.startRecording();
         } catch (error) {
-            toast({
+            toaster.create({
                 title: "Could not record consent",
                 description: error.message,
-                status: "error",
+                type: "error",
                 ...DEFAULT_TOAST_CONFIG,
             });
         }
@@ -207,10 +207,10 @@ const PatientDetails = ({
             setScribeConsent(data);
             onCloseConsent();
         } catch (error) {
-            toast({
+            toaster.create({
                 title: "Could not record decision",
                 description: error.message,
-                status: "error",
+                type: "error",
                 ...DEFAULT_TOAST_CONFIG,
             });
         }
@@ -310,7 +310,7 @@ const PatientDetails = ({
     }, [isLetterModified, isSummaryModified, setParentIsModified]);
 
     useEffect(() => {
-        toast.closeAll();
+        toaster.remove();
     }, [toast]);
 
     const handleTranscriptionComplete = (data, triggerResize = false) => {
@@ -426,12 +426,11 @@ const PatientDetails = ({
         if (!patient?.gender) missingFields.push("Gender");
 
         if (missingFields.length > 0) {
-            toast({
+            toaster.create({
                 title: "Missing Required Fields",
                 description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             return;
         }
@@ -456,13 +455,12 @@ const PatientDetails = ({
                 await patientApi.updateJobsList(noteId, curatedJobs);
             } catch (jobsErr) {
                 console.error("Failed to write curated jobs:", jobsErr);
-                toast({
+                toaster.create({
                     title: "Jobs not saved",
                     description:
                         "The note was saved, but the curated jobs couldn't be written. Please try again.",
-                    status: "warning",
+                    type: "warning",
                     duration: 5000,
-                    isClosable: true,
                 });
                 return;
             }
@@ -500,11 +498,11 @@ const PatientDetails = ({
     const handleSearch = async (urNumber) => {
         const query = (urNumber || "").trim();
         if (!query) {
-            toast({
+            toaster.create({
                 title: "Enter a UR number",
                 description:
                     "Type a UR number, then click search to find an existing patient.",
-                status: "warning",
+                type: "warning",
                 ...DEFAULT_TOAST_CONFIG,
             });
             return;
@@ -521,10 +519,10 @@ const PatientDetails = ({
                     "Setting isSearchedPatient to true - search successful",
                 );
             } else {
-                toast({
+                toaster.create({
                     title: "No patient found",
                     description: `No patient matches UR number "${query}". Fill in their details to create a new record.`,
-                    status: "info",
+                    type: "info",
                     ...DEFAULT_TOAST_CONFIG,
                 });
             }
@@ -665,7 +663,6 @@ const PatientDetails = ({
                     loading={letterHook.loading}
                     handleGenerateLetterClick={handleGenerateLetterClick}
                     setIsModified={setIsLetterModified}
-                    toast={toast}
                     patient={patient}
                     setLoading={setLoading}
                 />

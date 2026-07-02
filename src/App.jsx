@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useColorMode } from "./components/ui/color-mode";
 import { useLocation } from "react-router";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+
+const toast = toaster.create;
 
 import { TemplateProvider } from "./utils/templates/templateContext";
 import { ApiToastProvider } from "./utils/helpers/apiToastContext";
@@ -44,7 +46,6 @@ function AppContent({ setIsInitializing }) {
     const { isSidebarCollapsed, toggleSidebar, isSmallScreen } =
         useSidebarState();
     const { colorMode, toggleColorMode } = useColorMode();
-    const toast = useToast();
     const location = useLocation();
 
     useEffect(() => {

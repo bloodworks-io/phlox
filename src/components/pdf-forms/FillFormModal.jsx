@@ -1,7 +1,7 @@
 // Modal for filling a PDF form template and downloading the result.
 import React, { useState } from "react";
 import { Input, Checkbox, VStack, Text, Field, Dialog, Portal } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
 import { GreenButton, GreyButton } from "../common/Buttons";
@@ -9,7 +9,6 @@ import { GreenButton, GreyButton } from "../common/Buttons";
 const FillFormModal = ({ isOpen, onClose, template }) => {
   const [values, setValues] = useState({});
   const [filling, setFilling] = useState(false);
-  const toast = useToast();
 
   const fields = template?.fields || [];
 
@@ -39,21 +38,19 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast({
+      toaster.create({
         title: "Form filled",
         description: "PDF downloaded successfully",
-        status: "success",
+        type: "success",
         duration: 2000,
-        isClosable: true,
       });
       handleClose();
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Error",
         description: `Failed to fill form: ${error.message}`,
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setFilling(false);

@@ -11,7 +11,7 @@ import {
     Dialog,
     Portal,
 } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
 import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
 import { formatDate } from "../../utils/helpers/formatHelpers";
@@ -40,7 +40,6 @@ const NewNoteModal = ({
     selectedDate,
     onComplete,
 }) => {
-    const toast = useToast();
 
     const [view, setView] = useState("choose");
     const [query, setQuery] = useState("");
@@ -62,11 +61,11 @@ const NewNoteModal = ({
         if (e && e.preventDefault) e.preventDefault();
         const q = (query || "").trim();
         if (!q) {
-            toast({
+            toaster.create({
                 title: "Enter a UR number or name",
                 description:
                     "Type a UR number or patient name, then click search.",
-                status: "warning",
+                type: "warning",
                 ...DEFAULT_TOAST_CONFIG,
             });
             return;
@@ -78,21 +77,20 @@ const NewNoteModal = ({
                     setResults(list);
                     setView("results");
                 } else {
-                    toast({
+                    toaster.create({
                         title: "No patient found",
                         description: `No patient matches "${q}". Fill in their details to create a new record.`,
-                        status: "info",
+                        type: "info",
                         ...DEFAULT_TOAST_CONFIG,
                     });
                 }
             })
             .catch(() => {
-                toast({
+                toaster.create({
                     title: "Search failed",
                     description: "Couldn't search patients. Please try again.",
-                    status: "error",
+                    type: "error",
                     duration: 3000,
-                    isClosable: true,
                 });
             })
             .finally(() => setIsSearchLoading(false));
@@ -103,12 +101,11 @@ const NewNoteModal = ({
         loadSelectedPatient(candidate, selectedDate)
             .then(() => onComplete({ cameFromSearch: true }))
             .catch(() => {
-                toast({
+                toaster.create({
                     title: "Couldn't load patient",
                     description: "Please try again.",
-                    status: "error",
+                    type: "error",
                     duration: 3000,
-                    isClosable: true,
                 });
             })
             .finally(() => setConfirmingId(null));
@@ -126,12 +123,11 @@ const NewNoteModal = ({
                 onComplete({ cameFromSearch: false });
             })
             .catch(() => {
-                toast({
+                toaster.create({
                     title: "Couldn't start new patient",
                     description: "Please try again.",
-                    status: "error",
+                    type: "error",
                     duration: 3000,
-                    isClosable: true,
                 });
             });
     };

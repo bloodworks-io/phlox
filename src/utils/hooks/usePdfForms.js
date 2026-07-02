@@ -1,6 +1,6 @@
 // Hook for managing PDF form templates, fields, and auto-detection.
 import { useState, useEffect } from "react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../api/pdfFormsApi";
 import { chatApi } from "../api/chatApi";
 import { renderRulerOverlay } from "../pdf/renderGridOverlay";
@@ -21,7 +21,6 @@ export const usePdfForms = () => {
   const [visionCapable, setVisionCapable] = useState(false);
   const [detecting, setDetecting] = useState(false);
 
-  const toast = useToast();
 
   const selectedField = fields.find((f) => f.id === selectedFieldId);
 
@@ -32,12 +31,11 @@ export const usePdfForms = () => {
         const data = await pdfFormsApi.fetchTemplates();
         setTemplates(data);
       } catch (error) {
-        toast({
+        toaster.create({
           title: "Error",
           description: error.message,
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
       } finally {
         setTemplatesLoading(false);
@@ -67,12 +65,11 @@ export const usePdfForms = () => {
       setFields(template.fields || []);
       setSelectedFieldId(null);
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Error",
         description: error.message,
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };
@@ -90,20 +87,18 @@ export const usePdfForms = () => {
     setSaving(true);
     try {
       await pdfFormsApi.saveFields(selectedTemplate.id, fields);
-      toast({
+      toaster.create({
         title: "Saved",
         description: "Field definitions saved",
-        status: "success",
+        type: "success",
         duration: 2000,
-        isClosable: true,
       });
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Error",
         description: error.message,
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setSaving(false);
@@ -202,20 +197,18 @@ export const usePdfForms = () => {
       // 6. Auto-save (strip id — storage generates its own)
       const savePayload = detectedFields.map(({ _id, ...rest }) => rest);
       await pdfFormsApi.saveFields(selectedTemplate.id, savePayload);
-      toast({
+      toaster.create({
         title: "Fields detected",
         description: `Found ${detectedFields.length} fields`,
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Detection failed",
         description: error.message,
-        status: "error",
+        type: "error",
         duration: 4000,
-        isClosable: true,
       });
     } finally {
       setDetecting(false);

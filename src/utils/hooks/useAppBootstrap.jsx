@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { invoke } from "@tauri-apps/api/core";
 import SplashScreen from "../../components/common/SplashScreen";
 import EncryptionSetup from "../../components/setup/EncryptionSetup";
@@ -19,7 +19,6 @@ export const useAppBootstrap = () => {
     const [showServerStartupLoader, setShowServerStartupLoader] =
         useState(false);
     const [isInGracePeriod, setIsInGracePeriod] = useState(true);
-    const toast = useToast();
 
     // App initialization state - true when server is not ready yet.
     const isInitializing =
@@ -156,12 +155,11 @@ export const useAppBootstrap = () => {
         console.error("Server startup error:", error);
         setShowServerStartupLoader(false);
         // Show error toast
-        toast({
+        toaster.create({
             title: "Server Error",
             description: error.message || "Failed to start the server",
-            status: "error",
+            type: "error",
             duration: 5000,
-            isClosable: true,
         });
         // Go back to unlock screen
         setShowEncryptionUnlock(true);

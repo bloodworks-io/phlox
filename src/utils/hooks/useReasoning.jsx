@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { patientApi } from "../api/patientApi";
 
 
@@ -16,7 +17,6 @@ export const useReasoning = (options = {}) => {
         height: 420,
     });
     const resizerRef = useRef(null);
-    const toast = useToast();
 
     // Update reasoning when initialReasoning changes
     useEffect(() => {

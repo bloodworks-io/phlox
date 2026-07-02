@@ -1,5 +1,5 @@
 import { Alert, Badge, Box, Button, Checkbox, Flex, HStack, IconButton, Input, Spacer, Switch, Text, VStack, Field } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaPuzzlePiece,
@@ -67,7 +67,6 @@ const ToolsSettingsTab = ({ className }) => {
         "wiki_search",
     ]);
 
-    const toast = useToast();
 
     const fetchServers = async () => {
         setIsLoading(true);
@@ -76,12 +75,11 @@ const ToolsSettingsTab = ({ className }) => {
             setToolServers(data.servers || []);
         } catch (error) {
             console.error("Error fetching tool servers:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to load tool servers",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setIsLoading(false);
@@ -144,12 +142,11 @@ const ToolsSettingsTab = ({ className }) => {
             await toolsApi.addToolServer(serverData);
             await toolsApi.refreshTools();
 
-            toast({
+            toaster.create({
                 title: "Success",
                 description: "Tool server added successfully",
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
 
             setServerName("");
@@ -159,12 +156,11 @@ const ToolsSettingsTab = ({ className }) => {
             fetchServers();
         } catch (error) {
             console.error("Error adding tool server:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to add tool server",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setIsLoading(false);
@@ -177,23 +173,21 @@ const ToolsSettingsTab = ({ className }) => {
             await toolsApi.deleteToolServer(serverId);
             await toolsApi.refreshTools();
 
-            toast({
+            toaster.create({
                 title: "Success",
                 description: "Tool server deleted",
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
 
             fetchServers();
         } catch (error) {
             console.error("Error deleting tool server:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to delete tool server",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setIsLoading(false);
@@ -206,23 +200,21 @@ const ToolsSettingsTab = ({ className }) => {
             await toolsApi.toggleToolServer(serverId, enabled);
             await toolsApi.refreshTools();
 
-            toast({
+            toaster.create({
                 title: "Success",
                 description: `Tool server ${enabled ? "enabled" : "disabled"}`,
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
 
             fetchServers();
         } catch (error) {
             console.error("Error toggling tool server:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to toggle tool server",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setIsLoading(false);
@@ -235,23 +227,21 @@ const ToolsSettingsTab = ({ className }) => {
             await toolsApi.updateToolServer(serverId, { allow_sensitive_data: allowSensitive });
             await toolsApi.refreshTools();
 
-            toast({
+            toaster.create({
                 title: "Success",
                 description: `Sensitive data ${allowSensitive ? "allowed" : "sanitized"}`,
                 status: allowSensitive ? "warning" : "success",
                 duration: 3000,
-                isClosable: true,
             });
 
             fetchServers();
         } catch (error) {
             console.error("Error toggling sensitive data:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to update sensitive data setting",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setIsLoading(false);
@@ -274,34 +264,31 @@ const ToolsSettingsTab = ({ className }) => {
                     description = `${serverName}${serverVersion ? ` v${serverVersion}` : ""} - ${toolCount} tools`;
                 }
 
-                toast({
+                toaster.create({
                     title: "Connection Successful",
                     description: description,
-                    status: "success",
+                    type: "success",
                     duration: 4000,
-                    isClosable: true,
                 });
 
                 // Refresh to get updated description
                 fetchServers();
             } else {
-                toast({
+                toaster.create({
                     title: "Connection Failed",
                     description:
                         result.message || "Failed to connect to server",
-                    status: "error",
+                    type: "error",
                     duration: 5000,
-                    isClosable: true,
                 });
             }
         } catch (error) {
             console.error("Error testing tool server:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to test tool server",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setTestingServerId(null);
@@ -321,23 +308,21 @@ const ToolsSettingsTab = ({ className }) => {
                 disabled_tools: newDisabledTools,
             });
 
-            toast({
+            toaster.create({
                 title: "Success",
                 description: `${toolName} ${enabled ? "enabled" : "disabled"}`,
-                status: "success",
+                type: "success",
                 duration: 2000,
-                isClosable: true,
             });
         } catch (error) {
             console.error("Error saving tool settings:", error);
             // Revert on error
             setDisabledTools(disabledTools);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to save tool settings",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         }
     };

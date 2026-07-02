@@ -21,8 +21,6 @@ export const Toaster = () => {
                         status={toast.type}
                         title={toast.title}
                         description={toast.description}
-                        isClosable={toast.closable}
-                        id={toast.id}
                         onClose={() => toaster.dismiss(toast.id)}
                     />
                 )}

@@ -1,6 +1,7 @@
 // Page component for configuring application settings.
 import { Box, Text, VStack, useDisclosure } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { useState, useEffect, useCallback } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
@@ -47,7 +48,6 @@ const Settings = () => {
     const [whisperModelListAvailable, setWhisperModelListAvailable] =
         useState(false);
 
-    const toast = useToast();
     const [urlStatus, setUrlStatus] = useState({
         whisper: false,
         llm: false,
@@ -113,12 +113,11 @@ const Settings = () => {
             }));
         } catch (error) {
             console.error("Error loading settings:", error);
-            toast({
+            toaster.create({
                 title: "Error loading settings",
                 description: error.message,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setCoreLoading(false);
@@ -274,19 +273,17 @@ const Settings = () => {
             // Fetch settings again after saving
             await fetchCoreSettings();
 
-            toast({
+            toaster.create({
                 title: "Settings saved and refreshed",
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
         } catch (error) {
-            toast({
+            toaster.create({
                 title: "Error saving settings",
                 description: error.message,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         }
     };
@@ -300,20 +297,18 @@ const Settings = () => {
             const updatedPrompts =
                 await settingsService.resetIndividualPrompt(promptType);
             setPrompts(updatedPrompts);
-            toast({
+            toaster.create({
                 title: "Success",
                 description: `${promptType} prompt reset to default`,
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
         } catch (error) {
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to reset prompt",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         }
     };
@@ -374,7 +369,6 @@ const Settings = () => {
                     specialties={SPECIALTIES}
                     templates={templates}
                     letterTemplates={letterTemplates}
-                    toast={toast}
                 />
 
                 <ModelSettingsPanel

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import {
     useTemplateSelection,
     useTemplate,
@@ -14,7 +15,6 @@ export const usePatientTemplate = ({
     initialPatient,
     isSearchLoading,
 }) => {
-    const toast = useToast();
     const { showWarningToast } = useToastMessage();
     const hasDefaultTemplateBeenSet = useRef(false);
 
@@ -38,12 +38,11 @@ export const usePatientTemplate = ({
     // Handle template errors
     useEffect(() => {
         if (templateError) {
-            toast({
+            toaster.create({
                 title: "Template Error",
                 description: templateError,
-                status: "error",
+                type: "error",
                 duration: 5000,
-                isClosable: true,
             });
         }
     }, [templateError, toast]);
@@ -88,12 +87,11 @@ export const usePatientTemplate = ({
                         }));
                     } catch (error) {
                         console.error("Failed to set default template:", error);
-                        toast({
+                        toaster.create({
                             title: "Error",
                             description: "Failed to set default template",
-                            status: "error",
+                            type: "error",
                             duration: 3000,
-                            isClosable: true,
                         });
                     }
                 }

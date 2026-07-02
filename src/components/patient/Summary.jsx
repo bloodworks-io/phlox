@@ -6,7 +6,7 @@ import React, {
 } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
   EditIcon,
@@ -52,18 +52,16 @@ const Summary = forwardRef(
     const [isTemplateChangeModalOpen, setIsTemplateChangeModalOpen] =
       useState(false);
     const [pendingTemplateKey, setPendingTemplateKey] = useState(null);
-    const toast = useToast();
 
     const handleTemplateChange = async (e) => {
       const newTemplateKey = e.target.value;
 
       if (!isNewPatient && !isSearchedPatient) {
-        toast({
+        toaster.create({
           title: "Template Locked",
           description: "Template cannot be changed for historical encounters",
-          status: "warning",
+          type: "warning",
           duration: 3000,
-          isClosable: true,
         });
         return;
       }

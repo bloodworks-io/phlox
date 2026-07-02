@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Input, Spinner, Text, VStack, Alert, ButtonGroup, Badge, SimpleGrid, Separator } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import {
   FaFileUpload,
   FaRedo,
@@ -32,7 +32,6 @@ const DocumentPanel = ({
   const [processingError, setProcessingError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const toast = useToast();
 
   const { processDocument, isTranscribing } = useTranscription(
     null,
@@ -49,12 +48,11 @@ const DocumentPanel = ({
 
   const handleUpload = async () => {
     if (!file) {
-      toast({
+      toaster.create({
         title: "No file selected",
         description: "Please select a file to upload",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -151,12 +149,11 @@ const DocumentPanel = ({
       !validTypes.includes(droppedFile.type) &&
       !droppedFile.name.match(/\.(pdf|doc|docx|txt)$/i)
     ) {
-      toast({
+      toaster.create({
         title: "Invalid file type",
         description: "Please upload a PDF, Word document, or text file.",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }

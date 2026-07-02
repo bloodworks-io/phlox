@@ -1,7 +1,7 @@
 // Chat artifact renderer for form_fill type.
 import React, { useState } from "react";
 import { Box, HStack, Text, Button } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { DownloadIcon } from "../common/icons";
 import { FaFilePdf } from "react-icons/fa";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
@@ -9,7 +9,6 @@ import { fillPdf } from "../../utils/pdf/fillForm";
 
 const FormFillArtifact = ({ artifact }) => {
     const [loading, setLoading] = useState(false);
-    const toast = useToast();
 
     const { template_id, template_name } = artifact;
     const filename = `${template_name || "form"}_filled.pdf`;
@@ -38,12 +37,11 @@ const FormFillArtifact = ({ artifact }) => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch (error) {
-            toast({
+            toaster.create({
                 title: "Error",
                 description: `Failed to generate PDF: ${error.message}`,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setLoading(false);

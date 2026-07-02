@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { useTemplateSelection } from "../templates/templateContext";
 import { patientApi } from "../api/patientApi";
 import {
@@ -70,7 +71,6 @@ const buildAdaptiveRefinementData = (
 export const usePatientEditor = (initialPatient = null) => {
     const [patient, setPatient] = useState(initialPatient);
     const [, setIsModified] = useState(false);
-    const toast = useToast();
     const navigate = useNavigate();
     const { currentTemplate } = useTemplateSelection();
 
@@ -88,12 +88,11 @@ export const usePatientEditor = (initialPatient = null) => {
         if (!patient?.ur_number) missingFields.push("UR Number");
 
         if (missingFields.length > 0) {
-            toast({
+            toaster.create({
                 title: "Missing Required Fields",
                 description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             return null; // Return null to indicate save failed
         }
@@ -151,12 +150,11 @@ export const usePatientEditor = (initialPatient = null) => {
             return response;
         } catch (error) {
             console.error("Error saving patient:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to save patient data",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             throw error;
         }
@@ -187,23 +185,21 @@ export const usePatientEditor = (initialPatient = null) => {
             if (!hit) return null;
             const loaded = await buildEncounterFromCandidate(hit, selectedDate);
             setPatient(loaded);
-            toast({
+            toaster.create({
                 title: "Patient Found",
                 description:
                     "Patient data pre-filled from the latest encounter.",
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
             return loaded;
         } catch (error) {
             console.error("Error searching patient:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: `Error searching for patient: ${error.message}`,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             throw error;
         }

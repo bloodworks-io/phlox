@@ -9,7 +9,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { colors } from "../../../theme/colors";
 import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaMicrophone, FaStop } from "react-icons/fa";
 import { universalFetch } from "../../../utils/helpers/apiHelpers";
@@ -108,7 +108,6 @@ const DictationWidget = ({
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
-  const toast = useToast();
 
   useEffect(() => {
     return () => {
@@ -124,12 +123,11 @@ const DictationWidget = ({
 
   const startRecording = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast({
+      toaster.create({
         title: "Error",
         description: "Audio recording is not supported in this browser.",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -154,13 +152,12 @@ const DictationWidget = ({
       }, 1000);
     } catch (error) {
       console.error("Error starting recording:", error);
-      toast({
+      toaster.create({
         title: "Error",
         description:
           "Failed to start recording. Please check microphone permissions.",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };
@@ -235,24 +232,22 @@ const DictationWidget = ({
 
       if (letterResponse && letterResponse.letter) {
         setFinalCorrespondence(letterResponse.letter);
-        toast({
+        toaster.create({
           title: "Success",
           description: "Letter generated from dictation",
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
         });
       } else {
         throw new Error("Failed to generate letter content");
       }
     } catch (error) {
       console.error("Error processing dictation:", error);
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to process dictation",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setIsProcessing(false);

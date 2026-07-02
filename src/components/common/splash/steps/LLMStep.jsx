@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { VStack, Box, HStack, Button, Badge, Grid, IconButton, Field, Input, Tooltip, Flex, Spinner, Text, Progress, NativeSelect } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { InfoIcon } from "../../icons";
 import { FaDesktop, FaCloud } from "react-icons/fa";
 import { ChevronLeftIcon, ChevronRightIcon } from "../../icons";
@@ -191,7 +192,6 @@ export const LLMStep = ({
     downloadLocalModel,
     isLocalModelDownloaded,
 }) => {
-    const toast = useToast();
 
     // Check if we're on desktop
     const showToggle = isDesktop;
@@ -270,12 +270,11 @@ export const LLMStep = ({
                 systemSpecs &&
                 systemSpecs.total_memory_gb < (model.recommended_ram_gb || 4)
             ) {
-                toast({
+                toaster.create({
                     title: "Memory Warning",
                     description: `This model requires ${model.recommended_ram_gb}GB RAM but your system has ${systemSpecs.total_memory_gb.toFixed(0)}GB. It may run slowly.`,
-                    status: "warning",
+                    type: "warning",
                     duration: 5000,
-                    isClosable: true,
                 });
             }
 

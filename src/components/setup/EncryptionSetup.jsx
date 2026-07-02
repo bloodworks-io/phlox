@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { FaEye, FaEyeSlash, FaExclamationTriangle } from "react-icons/fa";
 import {
   encryptionApi,
@@ -17,7 +18,6 @@ import {
 } from "../common/splash/constants";
 
 const EncryptionSetup = ({ onComplete }) => {
-  const toast = useToast();
 
   const [passphrase, setPassphrase] = useState("");
   const [confirmPassphrase, setConfirmPassphrase] = useState("");
@@ -52,7 +52,7 @@ const EncryptionSetup = ({ onComplete }) => {
 
   const handleSubmit = useCallback(async () => {
     if (!isValid()) {
-      toast({
+      toaster.create({
         title: "Invalid Passphrase",
         description:
           passphrase.length < 12
@@ -60,9 +60,8 @@ const EncryptionSetup = ({ onComplete }) => {
             : passphrase !== confirmPassphrase
               ? "Passphrases do not match"
               : "Please use a stronger passphrase",
-        status: "warning",
+        type: "warning",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -94,31 +93,28 @@ const EncryptionSetup = ({ onComplete }) => {
         }
       } catch (serverError) {
         console.error("Server start failed:", serverError);
-        toast({
+        toaster.create({
           title: "Server Warning",
           description: serverError.toString(),
-          status: "warning",
+          type: "warning",
           duration: 5000,
-          isClosable: true,
         });
       }
 
-      toast({
+      toaster.create({
         title: "Encryption Setup Complete",
         description:
           "Your encryption key has been created. Your data is now secure.",
-        status: "success",
+        type: "success",
         duration: 5000,
-        isClosable: true,
       });
       onComplete();
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Setup Failed",
         description: error.toString() || "An error occurred during setup",
-        status: "error",
+        type: "error",
         duration: 5000,
-        isClosable: true,
       });
     } finally {
       setIsSubmitting(false);

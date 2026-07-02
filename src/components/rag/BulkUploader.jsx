@@ -1,7 +1,7 @@
 // Component for bulk uploading and vectorizing multiple PDF documents.
 import React, { useState, useRef } from "react";
 import { Field, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import {
     ChevronDownIcon,
     CloseIcon,
@@ -39,7 +39,6 @@ const BulkUploader = ({ setCollections }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [expandedFile, setExpandedFile] = useState(null);
     const fileInputRef = useRef(null);
-    const toast = useToast();
 
     // --- Drag and drop handlers ---
 
@@ -63,22 +62,20 @@ const BulkUploader = ({ setCollections }) => {
                 f.name.toLowerCase().endsWith(".pdf"),
         );
         if (pdfFiles.length === 0) {
-            toast({
+            toaster.create({
                 title: "No PDF files",
                 description: "Only PDF files are supported",
-                status: "warning",
+                type: "warning",
                 duration: 3000,
-                isClosable: true,
             });
             return;
         }
         if (files.length > pdfFiles.length) {
-            toast({
+            toaster.create({
                 title: "Some files skipped",
                 description: `${files.length - pdfFiles.length} non-PDF file(s) were ignored`,
-                status: "info",
+                type: "info",
                 duration: 3000,
-                isClosable: true,
             });
         }
         addFiles(pdfFiles);
@@ -170,20 +167,18 @@ const BulkUploader = ({ setCollections }) => {
         });
 
         if (failed.length === 0 && pending.length > 0) {
-            toast({
+            toaster.create({
                 title: "Extraction Complete",
                 description: `Successfully extracted ${pending.length} file(s)`,
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
         } else if (failed.length > 0) {
-            toast({
+            toaster.create({
                 title: "Extraction Partially Complete",
                 description: `${pending.length - failed.length} of ${pending.length} file(s) extracted successfully`,
-                status: "warning",
+                type: "warning",
                 duration: 3000,
-                isClosable: true,
             });
         }
     };
@@ -254,12 +249,11 @@ const BulkUploader = ({ setCollections }) => {
             return current?.status === STATUS.COMMITTED;
         }).length;
 
-        toast({
+        toaster.create({
             title: "Commit Complete",
             description: `${committedCount} of ${ready.length} file(s) committed successfully`,
             status: committedCount === ready.length ? "success" : "warning",
             duration: 3000,
-            isClosable: true,
         });
     };
 

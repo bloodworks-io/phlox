@@ -1,7 +1,7 @@
 // Modal for uploading a new PDF form template.
 import React, { useState, useRef } from "react";
 import { Input, Text, VStack, Box, Dialog, Portal } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
 import { GreenButton, GreyButton } from "../common/Buttons";
@@ -11,17 +11,15 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
-  const toast = useToast();
 
   const handleFileChange = (e) => {
     const selected = e.target.files?.[0];
     if (selected && !selected.name.toLowerCase().endsWith(".pdf")) {
-      toast({
+      toaster.create({
         title: "Invalid file",
         description: "Please select a PDF file",
-        status: "error",
+        type: "error",
         duration: 2000,
-        isClosable: true,
       });
       return;
     }
@@ -56,22 +54,20 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
       formData.append("page_heights", JSON.stringify(pageHeights));
 
       const template = await pdfFormsApi.uploadTemplate(formData);
-      toast({
+      toaster.create({
         title: "Template created",
         description: `"${name}" uploaded (${pageCount} page${pageCount !== 1 ? "s" : ""})`,
-        status: "success",
+        type: "success",
         duration: 2000,
-        isClosable: true,
       });
       onCreated(template);
       handleClose();
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Upload failed",
         description: error.message,
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setUploading(false);

@@ -1,13 +1,13 @@
 import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
 
 const EncryptionUnlock = ({ onComplete }) => {
-  const toast = useToast();
 
   const [passphrase, setPassphrase] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -17,12 +17,11 @@ const EncryptionUnlock = ({ onComplete }) => {
 
   const handleSubmit = useCallback(async () => {
     if (passphrase.length < 1) {
-      toast({
+      toaster.create({
         title: "Passphrase Required",
         description: "Please enter your passphrase to unlock.",
-        status: "warning",
+        type: "warning",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -67,12 +66,11 @@ const EncryptionUnlock = ({ onComplete }) => {
         );
       }
 
-      toast({
+      toaster.create({
         title: "Unlocked",
         description: "Your database has been unlocked successfully.",
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
       onComplete();
     } catch (error) {
@@ -84,16 +82,15 @@ const EncryptionUnlock = ({ onComplete }) => {
         /wrong key|wrong encryption key|cannot decrypt database/i.test(errStr);
       setLastWasPassphrase(isPassphraseError);
 
-      toast({
+      toaster.create({
         title: isPassphraseError
           ? "Incorrect Passphrase"
           : "Server Failed to Start",
         description: isPassphraseError
           ? "The passphrase you entered is incorrect. Please try again."
           : "The server couldn't start (this isn't a passphrase problem). Click Unlock to retry — it will re-launch the server.",
-        status: "error",
+        type: "error",
         duration: 6000,
-        isClosable: true,
       });
 
       if (isPassphraseError) {

@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTemplatesStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
 
 export const useTemplatesStep = (currentStep) => {
-  const toast = useToast();
   const [availableTemplates, setAvailableTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [isFetchingTemplates, setIsFetchingTemplates] = useState(false);
@@ -21,12 +21,11 @@ export const useTemplatesStep = (currentStep) => {
           }
         });
       } catch (error) {
-        toast({
+        toaster.create({
           title: "Error fetching templates",
           description: error.message || "Could not load templates",
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
       } finally {
         setIsFetchingTemplates(false);

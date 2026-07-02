@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useCollapse } from "./useCollapse";
 import { ragApi } from "../api/ragApi";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 
 export const useRagDocuments = () => {
   const [collections, setCollections] = useState([]);
@@ -12,7 +12,6 @@ export const useRagDocuments = () => {
   const collapseExplorer = useCollapse(false);
   const collapseUploader = useCollapse(false);
 
-  const toast = useToast();
 
   useEffect(() => {
     const fetchCollections = async () => {
@@ -23,12 +22,11 @@ export const useRagDocuments = () => {
           data.files.map((name) => ({ name, files: [], loaded: false }))
         );
       } catch (error) {
-        toast({
+        toaster.create({
           title: "Error",
           description: error.message,
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
       } finally {
         setLoading(false);
@@ -52,24 +50,22 @@ export const useRagDocuments = () => {
           loaded: false,
         }))
       );
-      toast({
+      toaster.create({
         title: "Success",
         description: `${
           itemToDelete.type === "file" ? "File" : "Collection"
         } deleted successfully`,
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
     } catch {
-      toast({
+      toaster.create({
         title: "Error",
         description: `Failed to delete ${
           itemToDelete.type === "file" ? "file" : "collection"
         }`,
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setItemToDelete(null);

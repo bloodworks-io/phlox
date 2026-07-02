@@ -1,5 +1,6 @@
 import { Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -16,7 +17,6 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
   const [letterTemplates, setLetterTemplates] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editTemplate, setEditTemplate] = useState(null);
-  const toast = useToast();
 
   useEffect(() => {
     fetchTemplates();
@@ -28,12 +28,11 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
       setLetterTemplates(response.templates || []);
     } catch (error) {
       console.error("Failed to fetch letter templates", error);
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to fetch letter templates",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };
@@ -42,12 +41,11 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
     try {
       await settingsService.saveLetterTemplate(template);
       // Show success toast
-      toast({
+      toaster.create({
         title: "Success",
         description: `Letter template ${template?.id ? "updated" : "created"} successfully`,
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
 
       fetchTemplates();
@@ -57,12 +55,11 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
     } catch (error) {
       console.error("Failed to save letter template", error);
       // Show error toast
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to save letter template",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };
@@ -70,22 +67,20 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
   const handleDelete = async (templateId) => {
     try {
       await settingsService.deleteLetterTemplate(templateId);
-      toast({
+      toaster.create({
         title: "Success",
         description: "Letter template deleted successfully",
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
       fetchTemplates();
     } catch (error) {
       console.error("Failed to delete letter template", error);
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to delete letter template",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };

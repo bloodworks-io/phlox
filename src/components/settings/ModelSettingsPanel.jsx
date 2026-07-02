@@ -1,5 +1,5 @@
 import { Box, Flex, IconButton, Text, Collapsible, Input, NativeSelect, VStack, InputGroup, Tabs, HStack, Badge, Button, Alert, Spinner, Dialog, Portal } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     ChevronRightIcon,
@@ -57,7 +57,6 @@ const ModelSettingsPanel = ({
     const [visionProbeStatus, setVisionProbeStatus] = useState("info");
     const [currentVisionCapability, setCurrentVisionCapability] =
         useState(null);
-    const toast = useToast();
 
     // Determine if we're using local inference
     const isLocalInference = config?.LLM_PROVIDER === "local";
@@ -239,14 +238,13 @@ const ModelSettingsPanel = ({
             // Refresh cached current capability view after probe is stored server-side
             await loadCurrentVisionCapability();
 
-            toast({
+            toaster.create({
                 title: capable
                     ? "Vision capability detected"
                     : "Vision capability not detected",
                 description: detail,
                 status: capable ? "success" : "warning",
                 duration: 4500,
-                isClosable: true,
             });
         } catch (error) {
             const detail =
@@ -255,12 +253,11 @@ const ModelSettingsPanel = ({
             setVisionProbeDetail(detail);
             setCurrentVisionCapability(null);
 
-            toast({
+            toaster.create({
                 title: "Vision capability probe failed",
                 description: detail,
-                status: "error",
+                type: "error",
                 duration: 5000,
-                isClosable: true,
             });
         } finally {
             setIsProbingVision(false);

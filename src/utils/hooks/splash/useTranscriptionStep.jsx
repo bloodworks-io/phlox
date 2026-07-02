@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTranscriptionStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
@@ -8,7 +9,6 @@ import { downloadWhisperModel as downloadWhisperService } from "../../services/l
 import { useDebounce } from "../useDebounce";
 
 export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
-    const toast = useToast();
 
     // Remote mode state
     const [whisperBaseUrl, setWhisperBaseUrl] = useState(
@@ -62,14 +62,13 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
             setAvailableWhisperModels(models);
             setWhisperModelListAvailable(listAvailable);
         } catch (error) {
-            toast({
+            toaster.create({
                 title: "Error fetching Whisper models",
                 description:
                     error.message ||
                     "Could not connect or provider returned an error.",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             setAvailableWhisperModels([]);
             setWhisperModelListAvailable(false);
@@ -95,14 +94,13 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
             setDownloadedWhisperModels(downloadedResponse.models || []);
         } catch (error) {
             console.error("Error fetching local Whisper models:", error);
-            toast({
+            toaster.create({
                 title: "Error fetching local Whisper models",
                 description:
                     error.message ||
                     "Could not retrieve local Whisper model list.",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         }
     }, [inferenceMode, toast]);

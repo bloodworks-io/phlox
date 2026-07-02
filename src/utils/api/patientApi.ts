@@ -1,4 +1,5 @@
 // API functions for patient related data operations.
+import { toaster } from "@/components/ui/toaster";
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 
@@ -21,12 +22,11 @@ export const patientApi = {
 
       const data = await response.json();
 
-      toast({
+      toaster.create({
         title: "Success",
         description: "Patient data saved successfully",
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
 
       if (refreshSidebar) {
@@ -170,12 +170,11 @@ export const patientApi = {
     }
 
     if (toast) {
-      toast({
+      toaster.create({
         title: "Success",
         description: "Clinical reasoning generated successfully.",
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
     }
 

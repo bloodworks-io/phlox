@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLLMStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
@@ -9,7 +10,6 @@ import { downloadLlmModel as downloadLlmService } from "../../services/localMode
 import { useDebounce } from "../useDebounce";
 
 export const useLLMStep = (currentStep) => {
-    const toast = useToast();
 
     // Desktop detection
     const isDesktop = isTauri();
@@ -65,14 +65,13 @@ export const useLLMStep = (currentStep) => {
             );
             setAvailableModels(models);
         } catch (error) {
-            toast({
+            toaster.create({
                 title: "Error fetching LLM models",
                 description:
                     error.message ||
                     "Could not connect or provider returned an error.",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             setAvailableModels([]);
         } finally {
@@ -104,13 +103,12 @@ export const useLLMStep = (currentStep) => {
             }
         } catch (error) {
             console.error("Error fetching local models:", error);
-            toast({
+            toaster.create({
                 title: "Error fetching local models",
                 description:
                     error.message || "Could not retrieve local model list.",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         }
     }, [inferenceMode, primaryLocalModel, toast]);

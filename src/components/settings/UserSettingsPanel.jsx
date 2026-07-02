@@ -30,7 +30,7 @@ const UserSettingsPanel = ({
   specialties,
   templates,
   letterTemplates,
-  _toast,
+  
 }) => {
   const handleDefaultTemplateChange = (templateKey) => {
     setUserSettings((prev) => ({

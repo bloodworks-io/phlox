@@ -1,8 +1,6 @@
 // Application-wide constants, such as default configurations and data defaults
 export const DEFAULT_TOAST_CONFIG = {
     duration: 3000,
-    isClosable: true,
-    position: "bottom",
 };
 
 export const SPECIALTIES = [

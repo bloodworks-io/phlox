@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { FaFileUpload } from "react-icons/fa";
 import { transcriptionApi } from "../../utils/api/transcriptionApi";
 import { extractFromFile } from "../../utils/helpers/documentExtraction";
@@ -30,7 +30,6 @@ const DemographicsForm = ({
     cancelLabel = "Cancel",
     cancelIcon = null,
 }) => {
-    const toast = useToast();
     const [form, setForm] = useState({});
     const [isDragOver, setIsDragOver] = useState(false);
     const [isExtracting, setIsExtracting] = useState(false);
@@ -124,12 +123,11 @@ const DemographicsForm = ({
             try {
                 await onSave(updated);
             } catch (error) {
-                toast({
+                toaster.create({
                     title: "Couldn't save demographics",
                     description: "Please try again.",
-                    status: "error",
+                    type: "error",
                     duration: 3000,
-                    isClosable: true,
                 });
                 setIsSaving(false);
                 return;

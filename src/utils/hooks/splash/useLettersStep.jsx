@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLettersStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
 
 export const useLettersStep = (currentStep) => {
-  const toast = useToast();
   const [availableLetterTemplates, setAvailableLetterTemplates] = useState([]);
   const [selectedLetterTemplate, setSelectedLetterTemplate] = useState("");
   const [isFetchingLetterTemplates, setIsFetchingLetterTemplates] =
@@ -28,12 +28,11 @@ export const useLettersStep = (currentStep) => {
           setSelectedLetterTemplate(response.templates[0].id.toString());
         }
       } catch (error) {
-        toast({
+        toaster.create({
           title: "Error fetching letter templates",
           description: error.message || "Could not load letter templates",
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
       } finally {
         setIsFetchingLetterTemplates(false);

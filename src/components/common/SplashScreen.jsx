@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Icon, Progress, Badge } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { FaArrowRight, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import { isTauri } from "../../utils/helpers/apiConfig";
@@ -22,7 +23,6 @@ import { useQuickChatStep, QuickChatStep } from "./splash/steps/QuickChatStep";
 import { useLettersStep, LettersStep } from "./splash/steps/LettersStep";
 
 const SplashScreen = ({ onComplete }) => {
-  const toast = useToast();
 
   // Step management
   const [currentStep, setCurrentStep] = useState(SPLASH_STEPS.PERSONAL);
@@ -105,12 +105,11 @@ const SplashScreen = ({ onComplete }) => {
   const handleNext = useCallback(() => {
     const validator = getCurrentValidator();
     if (!validator()) {
-      toast({
+      toaster.create({
         title: "Missing Information",
         description: getValidationMessage(),
-        status: "warning",
+        type: "warning",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -191,22 +190,20 @@ const SplashScreen = ({ onComplete }) => {
       }
 
       await settingsService.markSplashCompleted();
-      toast({
+      toaster.create({
         title: "Setup Complete!",
         description:
           "Your initial settings have been saved. You can change any of these settings later in the Settings panel.",
-        status: "success",
+        type: "success",
         duration: 5000,
-        isClosable: true,
       });
       onComplete();
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Error Saving Settings",
         description: error.message || "An unexpected error occurred.",
-        status: "error",
+        type: "error",
         duration: 5000,
-        isClosable: true,
       });
     } finally {
       setIsLoading(false);

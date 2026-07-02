@@ -1,4 +1,5 @@
 import { ragApi } from "../api/ragApi";
+import { toaster } from "@/components/ui/toaster";
 import { settingsApi } from "../api/settingsApi";
 import { letterApi } from "../api/letterApi";
 import { settingsHelpers } from "../helpers/settingsHelpers";
@@ -271,21 +272,19 @@ export const settingsService = {
   resetLetterTemplates: async (toast) => {
     try {
       await letterApi.resetLetterTemplates();
-      toast({
+      toaster.create({
         title: "Success",
         description: "Letter templates reset to defaults",
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
     } catch (error) {
       console.error("Failed to reset letter templates:", error);
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to reset letter templates",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
       throw error;
     }
@@ -304,22 +303,20 @@ export const settingsService = {
       }
 
       if (toast) {
-        toast({
+        toaster.create({
           title: "Success",
           description: "RAG database cleared and embedding model updated",
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
         });
       }
     } catch (error) {
       if (toast) {
-        toast({
+        toaster.create({
           title: "Error",
           description: "Failed to clear RAG database",
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
       }
       throw error;
@@ -351,24 +348,22 @@ export const settingsService = {
       }
 
       if (toast && result) {
-        toast({
+        toaster.create({
           title: "Success",
           description: `Re-embedded ${result.total_chunks_re_embedded || "all"} chunks with new model`,
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
         });
       }
 
       return result;
     } catch (error) {
       if (toast) {
-        toast({
+        toaster.create({
           title: "Error",
           description: "Failed to re-embed documents",
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
       }
       throw error;

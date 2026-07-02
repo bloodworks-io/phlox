@@ -6,6 +6,7 @@ import React, {
   useMemo,
 } from "react";
 import { useApiToast } from "../helpers/apiToastContext";
+import { toaster } from "@/components/ui/toaster";
 import { templateApi } from "../api/templateApi";
 import { templateService } from "./templateService";
 import { useAppInit } from "../context/appInit";
@@ -115,12 +116,11 @@ export const TemplateProvider = ({ children }) => {
       dispatch({ type: "SET_TEMPLATES", payload: templatesData });
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to load templates",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   }, [toast]);
@@ -137,12 +137,11 @@ export const TemplateProvider = ({ children }) => {
       return defaultTemplateData;
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to load default template",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
       return null;
     }
@@ -181,12 +180,11 @@ export const TemplateProvider = ({ children }) => {
         dispatch({ type: "FINISH_LOADING" });
         dispatch({ type: "SET_VISUAL_LOADING", payload: false });
 
-        toast({
+        toaster.create({
           title: "Error",
           description: "Failed to load template",
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
         return null;
       }
@@ -221,12 +219,11 @@ export const TemplateProvider = ({ children }) => {
         dispatch({ type: "SET_ERROR", payload: error.message });
         // Only show toast if we're not initializing
         if (!isInitializing) {
-          toast({
+          toaster.create({
             title: "Error",
             description: "Failed to initialize templates",
-            status: "error",
+            type: "error",
             duration: 3000,
-            isClosable: true,
           });
         }
       }
@@ -252,12 +249,11 @@ export const TemplateProvider = ({ children }) => {
       }
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to refresh templates",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   }, [loadTemplates, loadDefaultTemplate, setActiveTemplate, toast]);
@@ -265,12 +261,11 @@ export const TemplateProvider = ({ children }) => {
   const deleteTemplate = useCallback(
     async (templateKey) => {
       if (templateService.isDefaultTemplate(templateKey)) {
-        toast({
+        toaster.create({
           title: "Error",
           description: "Cannot delete default templates",
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
         return false;
       }
@@ -283,22 +278,20 @@ export const TemplateProvider = ({ children }) => {
         // Refresh templates after deletion
         await refreshTemplates();
 
-        toast({
+        toaster.create({
           title: "Success",
           description: "Template deleted successfully",
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
         });
         return true;
       } catch (error) {
         dispatch({ type: "SET_ERROR", payload: error.message });
-        toast({
+        toaster.create({
           title: "Error",
           description: error.message || "Failed to delete template",
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
         return false;
       }

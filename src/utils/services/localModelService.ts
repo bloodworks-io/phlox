@@ -1,4 +1,5 @@
 import { localModelApi } from "../api/localModelApi";
+import { toaster } from "@/components/ui/toaster";
 
 /**
  * Downloads an LLM model and restarts the llama server
@@ -20,22 +21,20 @@ export async function downloadLlmModel(modelId, { onProgress, onStart, toast }) 
         // Restart llama server to use the new model
         try {
           await localModelApi.restartLlamaServer();
-          toast({
+          toaster.create({
             title: "Success",
             description: "Model downloaded and server restarted",
-            status: "success",
+            type: "success",
             duration: 3000,
-            isClosable: true,
           });
         } catch (restartError) {
           // Model downloaded but restart failed - still notify user of success
           console.error("Error restarting llama server:", restartError);
-          toast({
+          toaster.create({
             title: "Model Downloaded",
             description: "Model downloaded. Please restart the app to use it.",
-            status: "info",
+            type: "info",
             duration: 5000,
-            isClosable: true,
           });
         }
       } else if (event.type === "error") {
@@ -44,12 +43,11 @@ export async function downloadLlmModel(modelId, { onProgress, onStart, toast }) 
     }
   } catch (error) {
     console.error("Error downloading model:", error);
-    toast({
+    toaster.create({
       title: "Error",
       description: `Failed to download model: ${error.message}`,
-      status: "error",
+      type: "error",
       duration: 5000,
-      isClosable: true,
     });
     throw error;
   }
@@ -75,22 +73,20 @@ export async function downloadWhisperModel(modelId, { onProgress, onStart, toast
         // Restart whisper server to use the new model
         try {
           await localModelApi.restartWhisperServer();
-          toast({
+          toaster.create({
             title: "Success",
             description: `Whisper model ${modelId} downloaded and server restarted`,
-            status: "success",
+            type: "success",
             duration: 3000,
-            isClosable: true,
           });
         } catch (restartError) {
           // Model downloaded but restart failed - still notify user of success
           console.error("Error restarting Whisper server:", restartError);
-          toast({
+          toaster.create({
             title: "Model Downloaded",
             description: `Whisper model ${modelId} downloaded. Please restart the app to use it.`,
-            status: "info",
+            type: "info",
             duration: 5000,
-            isClosable: true,
           });
         }
       } else if (event.type === "error") {
@@ -99,12 +95,11 @@ export async function downloadWhisperModel(modelId, { onProgress, onStart, toast
     }
   } catch (error) {
     console.error("Error downloading Whisper model:", error);
-    toast({
+    toaster.create({
       title: "Error",
       description: `Failed to download Whisper model: ${error.message}`,
-      status: "error",
+      type: "error",
       duration: 5000,
-      isClosable: true,
     });
     throw error;
   }

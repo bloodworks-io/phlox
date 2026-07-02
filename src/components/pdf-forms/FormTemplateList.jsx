@@ -1,33 +1,30 @@
 // Template list panel for PDF form templates.
 import React from "react";
 import { Box, Text, List, IconButton, Spinner, HStack, Flex } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { DeleteIcon } from "../common/icons";
 import { FiFileText } from "react-icons/fi";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 
 const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
-  const toast = useToast();
 
   const handleDelete = async (e, id, name) => {
     e.stopPropagation();
     try {
       await pdfFormsApi.deleteTemplate(id);
-      toast({
+      toaster.create({
         title: "Deleted",
         description: `"${name}" deleted`,
-        status: "success",
+        type: "success",
         duration: 2000,
-        isClosable: true,
       });
       onDelete(id);
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Error",
         description: error.message,
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };

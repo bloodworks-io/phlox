@@ -1,4 +1,5 @@
 // Functionality for specific patient actions such as saving, searching, and letter generation.
+import { toaster } from "@/components/ui/toaster";
 import { patientApi } from "../api/patientApi";
 import { letterApi } from "../api/letterApi";
 
@@ -15,13 +16,12 @@ export const handleSavePatient = async (
         !patient.ur_number ||
         !patient.gender
     ) {
-        toast({
+        toaster.create({
             title: "Missing Fields",
             description:
                 "Name, Date of Birth, UR Number, and Gender must be filled in.",
-            status: "error",
+            type: "error",
             duration: 3000,
-            isClosable: true,
         });
         return;
     }

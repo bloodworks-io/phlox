@@ -1,7 +1,7 @@
 // Component for navigating and managing document collections.
 import React, { useState } from "react";
 import { Box, Text, HStack, Flex, List, Collapsible, IconButton, Spinner } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     ChevronDownIcon,
@@ -24,7 +24,6 @@ const DocumentExplorer = ({
     setItemToDelete,
 }) => {
     const [expandedCollections, setExpandedCollections] = useState({});
-    const toast = useToast();
     const toggleCollection = async (collectionName) => {
         setExpandedCollections((prev) => ({
             ...prev,
@@ -43,12 +42,11 @@ const DocumentExplorer = ({
                 );
             } catch (error) {
                 console.log("Error fetching collection:", error);
-                toast({
+                toaster.create({
                     title: "Error",
                     description: "Error fetching collection files",
-                    status: "error",
+                    type: "error",
                     duration: 3000,
-                    isClosable: true,
                 });
             }
         }
@@ -59,12 +57,11 @@ const DocumentExplorer = ({
             ragApi
                 .renameCollection(oldName, newName)
                 .then(() => {
-                    toast({
+                    toaster.create({
                         title: "Success",
                         description: `Successfully renamed to ${newName}`,
-                        status: "success",
+                        type: "success",
                         duration: 3000,
-                        isClosable: true,
                     });
                     // After successful rename, refetch collections
                     const fetchCollections = async () => {
@@ -79,13 +76,12 @@ const DocumentExplorer = ({
                                 })),
                             );
                         } catch (error) {
-                            toast({
+                            toaster.create({
                                 title: "Error",
                                 description:
                                     "Error fetching updated collection list",
-                                status: "error",
+                                type: "error",
                                 duration: 3000,
-                                isClosable: true,
                             });
                         }
                     };
@@ -93,12 +89,11 @@ const DocumentExplorer = ({
                 })
                 .catch((error) => {
                     console.error("Error renaming collection:", error);
-                    toast({
+                    toaster.create({
                         title: "Error",
                         description: "Failed to rename collection",
-                        status: "error",
+                        type: "error",
                         duration: 3000,
-                        isClosable: true,
                     });
                 });
         }
@@ -117,12 +112,11 @@ const DocumentExplorer = ({
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Error downloading PDF:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to download PDF",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         }
     };

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 
 export const useDocumentExtraction = ({
     patient,
@@ -19,12 +21,11 @@ export const useDocumentExtraction = ({
 
             setExtractedDocData(data);
 
-            toast({
+            toaster.create({
                 title: "Document processed",
                 description: "Use the toggle buttons to update fields",
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
         } else {
             const fieldKey = Object.keys(data.fields)[0];
@@ -53,13 +54,12 @@ export const useDocumentExtraction = ({
             extractedDocData.fields[fieldKey]?.trim(),
         );
         if (!hasExtractedContent) {
-            toast({
+            toaster.create({
                 title: "No content available",
                 description:
                     "This field doesn't have any content in the uploaded document",
-                status: "info",
+                type: "info",
                 duration: 2000,
-                isClosable: true,
             });
             return;
         }

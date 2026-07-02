@@ -1,5 +1,5 @@
 import { Box, Flex, IconButton, Text, Collapsible, Button, VStack, HStack } from "@chakra-ui/react";
-import { useToast } from "@/utils/useToastShim";
+import { toaster } from "@/components/ui/toaster";
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -28,7 +28,6 @@ const TemplateSettingsPanel = ({
   const [isNewTemplate, setIsNewTemplate] = useState(false);
    
   const [, setIsSaving] = useState(false);
-  const toast = useToast();
 
   // State for new template from example
   const [isNewTemplateModalOpen, setIsNewTemplateModalOpen] = useState(false);
@@ -59,21 +58,19 @@ const TemplateSettingsPanel = ({
       const freshTemplates = await templateApi.fetchTemplates();
       setTemplates(freshTemplates);
 
-      toast({
+      toaster.create({
         title: "Success",
         description: "Template saved successfully",
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
     } catch (error) {
       console.error("Failed to save template:", error);
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to save template",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setIsSaving(false);
@@ -109,12 +106,11 @@ const TemplateSettingsPanel = ({
       }
     } catch (error) {
       console.error("Error deleting template:", error);
-      toast({
+      toaster.create({
         title: "Error",
         description: error.message || "Failed to delete template",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };
@@ -147,12 +143,11 @@ const TemplateSettingsPanel = ({
       setIsModalOpen(true);
     } catch (error) {
       console.error("Error generating template from example:", error);
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to generate template from example",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setIsGeneratingTemplate(false);
