@@ -396,7 +396,7 @@ const ToolsSettingsTab = ({ className }) => {
                                                         <FaLock
                                                             style={{
                                                                 opacity: 0.6,
-                                                                color: "var(--colors-secondary-button)",
+                                                                color: "var(--chakra-colors-secondary-button)",
                                                             }}
                                                         />
                                                     </Box>
@@ -499,7 +499,7 @@ const ToolsSettingsTab = ({ className }) => {
                                 </Checkbox.Label></Checkbox.Root>
                                 <Tooltip content="When enabled, patient data will be sent to this server without sanitization. Only enable for fully trusted servers.">
                                     <Box>
-                                        <FaLock style={{ opacity: 0.6, color: "var(--colors-secondary-button)" }} />
+                                        <FaLock style={{ opacity: 0.6, color: "var(--chakra-colors-secondary-button)" }} />
                                     </Box>
                                 </Tooltip>
                             </HStack>

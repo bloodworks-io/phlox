@@ -19,7 +19,8 @@ const toggleStyles = (props) => ({
     },
     ".switch-mode": {
         display: "inline-flex",
-        borderRadius: "lg !important",
+        height: "35px !important",
+        borderRadius: "xl !important",
         justifyContent: "center",
         alignItems: "center",
         backgroundColor:

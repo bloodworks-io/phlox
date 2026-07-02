@@ -75,6 +75,26 @@ const floatingStyles = (props) => ({
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
                 : "none !important",
+        fontWeight: "500 !important",
+        fontSize: "0.9rem !important",
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textSecondary} !important`
+                : `${colors.dark.textTertiary} !important`,
+    },
+    ".refinement-suggestions": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.crust} !important`
+                : `${colors.dark.overlay0} !important`,
+        borderRadius: "xl !important",
+        height: "25px !important",
+        fontSize: "0.8rem !important",
+        fontWeight: "500 !important",
+        border:
+            props.colorMode === "light"
+                ? `1px solid ${colors.light.surface} !important`
+                : "none !important",
         color:
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
@@ -289,6 +309,8 @@ const floatingStyles = (props) => ({
                 ? `${colors.light.crust} !important`
                 : `${colors.dark.overlay0} !important`,
         borderRadius: "xl !important",
+        fontWeight: "500 !important",
+        fontSize: "0.9rem !important",
         border:
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`

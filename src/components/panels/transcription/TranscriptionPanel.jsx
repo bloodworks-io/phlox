@@ -57,7 +57,7 @@ const TranscriptionPanel = ({
           "&::-webkit-scrollbar": { width: "4px" },
           "&::-webkit-scrollbar-track": { background: "transparent" },
           "&::-webkit-scrollbar-thumb": {
-            background: "var(--colors-scrollbar-thumb)",
+            background: "var(--chakra-colors-scrollbar-thumb)",
             borderRadius: "24px",
           },
         }}
@@ -99,7 +99,7 @@ const TranscriptionPanel = ({
                 "&::-webkit-scrollbar": { width: "4px" },
                 "&::-webkit-scrollbar-track": { background: "transparent" },
                 "&::-webkit-scrollbar-thumb": {
-                  background: "var(--colors-scrollbar-thumb)",
+                  background: "var(--chakra-colors-scrollbar-thumb)",
                   borderRadius: "24px",
                 },
               }}

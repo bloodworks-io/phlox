@@ -65,7 +65,7 @@ const FormBuilder = ({
     const [resizeFieldId, setResizeFieldId] = useState(null);
     const [resizeOrigin, setResizeOrigin] = useState(null); // { canvasX, canvasY, fieldW, fieldH }
 
-    const overlayBg = "var(--colors-hover-overlay)";
+    const overlayBg = "var(--chakra-colors-hover-overlay)";
     const renderTaskRef = useRef(null);
     const isRenderingRef = useRef(false);
 

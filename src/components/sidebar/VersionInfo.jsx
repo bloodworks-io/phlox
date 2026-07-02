@@ -171,7 +171,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                             color="sidebar.text" // Apply consistent color
                             _hover={{
                                 textDecoration: "underline",
-                                color: "var(--colors-sidebar-text)",
+                                color: "var(--chakra-colors-sidebar-text)",
                             }}
                         >
                             v{version}

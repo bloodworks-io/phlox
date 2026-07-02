@@ -130,7 +130,7 @@ const FieldEditor = ({
 
                                     transition: "all 0.2s",
 
-                                    color: "var(--colors-text-secondary)"
+                                    color: "var(--chakra-colors-text-secondary)"
                                 }}
                             />
                             <EditIcon
@@ -541,7 +541,7 @@ const TemplateEditor = ({
                                                 transition: "all 0.2s",
 
                                                 color:
-                                                    "var(--colors-text-secondary) !important"
+                                                    "var(--chakra-colors-text-secondary) !important"
                                             }}
                                         />
                                         <EditIcon
@@ -617,7 +617,7 @@ const TemplateEditor = ({
                                             css={{
                                                 ...typography.styles.h4,
 
-                                                color: "var(--colors-text-tertiary)"
+                                                color: "var(--chakra-colors-text-tertiary)"
                                             }}
                                         >
                                             Editor
@@ -679,7 +679,7 @@ const TemplateEditor = ({
                                             css={{
                                                 ...typography.styles.h4,
 
-                                                color: "var(--colors-text-tertiary)"
+                                                color: "var(--chakra-colors-text-tertiary)"
                                             }}
                                         >
                                             Preview

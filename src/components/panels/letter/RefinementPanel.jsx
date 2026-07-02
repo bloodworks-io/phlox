@@ -64,7 +64,7 @@ const RefinementPanel = ({
                         key={suggestion}
                         size="xs"
                         onClick={() => setRefinementInput(suggestion)}
-                        className="chat-suggestions"
+                        className="refinement-suggestions"
                     >
                         {suggestion}
                     </Button>
