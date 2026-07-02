@@ -1,4 +1,4 @@
-import { Box, Flex, Text, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Text, IconButton, HStack } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaEdit } from "react-icons/fa";
 import { getAvatarColor, getInitials } from "../sidebar/SidebarHelpers";
@@ -13,24 +13,24 @@ const PatientInfoBar = ({ patient, onEdit }) => {
     ].filter(Boolean);
 
     return (
-        <Flex justify="center" w="100%">
+        <Flex w="100%">
             <Flex
                 className="panels-bg"
                 borderRadius="lg"
-                p={3}
-                px={5}
+                py={2}
+                px={4}
                 align="center"
-                gap={4}
-                maxW="100%"
+                gap={3}
+                w="100%"
             >
                 <Flex
                     align="center"
                     justify="center"
-                    boxSize="38px"
+                    boxSize="28px"
                     borderRadius="full"
                     bg={getAvatarColor(patient.name)}
                     color="#fff"
-                    fontSize="sm"
+                    fontSize="xs"
                     fontWeight="700"
                     flexShrink={0}
                     css={{
@@ -40,10 +40,10 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                     {(patient.name && getInitials(patient.name)) || "?"}
                 </Flex>
 
-                <Box minW="0">
+                <HStack gap={2} minW="0">
                     <Text
-                        fontSize="lg"
                         fontWeight="700"
+                        fontSize="md"
                         color={"textPrimary"}
                         lineClamp={1}
                         css={{
@@ -64,7 +64,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                             ? meta.join("  ·  ")
                             : "No demographics yet"}
                     </Text>
-                </Box>
+                </HStack>
 
                 <Tooltip content="Edit patient details">
                     <IconButton
