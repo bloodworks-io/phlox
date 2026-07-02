@@ -14,10 +14,6 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
 
-  esbuild: {
-    jsx: "automatic",
-  },
-
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
