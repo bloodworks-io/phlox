@@ -49,7 +49,7 @@ const Chat = ({
   return (
     <FloatingPanel
       isOpen={isOpen}
-      position="left-of-fab"
+      position="above-transcript-button"
       showArrow={true}
       triggerId="fab-chat"
       width={`${dimensions.width}px`}

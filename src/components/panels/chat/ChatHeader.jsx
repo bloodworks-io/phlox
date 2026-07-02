@@ -15,6 +15,15 @@ const ChatHeader = ({ title = "Chat With Phlox", onClose }) => {
                 <ChatIcon mr="2" />
                 <Text fontWeight="bold">{title}</Text>
             </Flex>
+            {onClose && (
+                <IconButton
+                    icon={<CloseIcon />}
+                    onClick={onClose}
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Close chat"
+                />
+            )}
         </Flex>
     );
 };
