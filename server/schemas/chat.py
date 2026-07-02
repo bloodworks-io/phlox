@@ -24,6 +24,9 @@ class PatientContext(BaseModel):
         name (str): Patient name.
         dob (str): Patient date of birth in 'YYYY-MM-DD' format.
         ur_number (str): Patient UR number.
+        gender (str | None): Patient gender.
+        address (str | None): Patient address (available to form-filling).
+        phone (str | None): Patient phone (available to form-filling).
         encounter_date (str | None): Date of the encounter in 'YYYY-MM-DD' format.
         template_data (dict | None): Template data containing patient notes.
         template_fields (list | None): List of template field definitions.
@@ -32,6 +35,9 @@ class PatientContext(BaseModel):
     name: str
     dob: str
     ur_number: str
+    gender: str | None = None
+    address: str | None = None
+    phone: str | None = None
     encounter_date: str | None = None
     template_data: dict[str, Any] | None = None
     template_fields: list[dict[str, Any]] | None = None
