@@ -314,7 +314,6 @@ const PatientDetails = ({
     }, [toast]);
 
     const handleTranscriptionComplete = (data, triggerResize = false) => {
-        const isReprocessing = !!patient?.raw_transcription;
         const isRestoration = data.isRestoration === true;
         previousTranscriptionRef.current = patient?.raw_transcription;
         console.log("Transcription complete!");
@@ -336,7 +335,7 @@ const PatientDetails = ({
         handleProcessingComplete(data, {
             setLoading,
             setters: {
-                template_data: (value) => {
+                template_data: (_value) => {
                     console.log("Setting template_data with:", data.fields);
                     setPatient((prev) => ({
                         ...prev,
@@ -346,17 +345,17 @@ const PatientDetails = ({
                         },
                     }));
                 },
-                rawTranscription: (value) =>
+                rawTranscription: (_value) =>
                     setPatient((prev) => ({
                         ...prev,
                         raw_transcription: data.rawTranscription,
                     })),
-                transcriptionDuration: (value) =>
+                transcriptionDuration: (_value) =>
                     setPatient((prev) => ({
                         ...prev,
                         transcription_duration: data.transcriptionDuration,
                     })),
-                processDuration: (value) =>
+                processDuration: (_value) =>
                     setPatient((prev) => ({
                         ...prev,
                         process_duration: data.processDuration,
@@ -481,12 +480,6 @@ const PatientDetails = ({
         } finally {
             setWrapUpLoading(false);
         }
-    };
-
-    const handleLetterChange = (newValue) => {
-        letterHook.setFinalCorrespondence(newValue);
-        setIsModified(true);
-        setParentIsModified(true);
     };
 
     const handleLetterSave = async () => {

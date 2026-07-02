@@ -49,7 +49,6 @@ const DashboardMessageList = ({
         );
     };
 
-    const getToolExpanded = (messageIndex, blockIndex) =>
         Boolean(expandedToolBlocks[`${messageIndex}:${blockIndex}`]);
 
     const toggleToolExpanded = (messageIndex, blockIndex) => {

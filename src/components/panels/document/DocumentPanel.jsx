@@ -14,7 +14,7 @@ import FloatingPanel from "../../common/FloatingPanel";
 
 const DocumentPanel = ({
   isOpen,
-  onClose,
+  _onClose,
   handleDocumentComplete,
   toggleDocumentField,
   replacedFields,

@@ -7,11 +7,11 @@ import FloatingPanel from "../../common/FloatingPanel";
 
 const TranscriptionPanel = ({
   isOpen,
-  onClose,
+  _onClose,
   rawTranscription,
   transcriptionDuration,
   processDuration,
-  isTranscribing: parentIsTranscribing,
+  isTranscribing: _parentIsTranscribing,
   onReprocess,
   isAmbient,
   name,

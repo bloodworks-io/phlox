@@ -69,7 +69,7 @@ const buildAdaptiveRefinementData = (
 
 export const usePatientEditor = (initialPatient = null) => {
     const [patient, setPatient] = useState(initialPatient);
-    const [isModified, setIsModified] = useState(false);
+    const [, setIsModified] = useState(false);
     const toast = useToast();
     const navigate = useNavigate();
     const { currentTemplate } = useTemplateSelection();

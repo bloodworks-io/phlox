@@ -5,7 +5,6 @@ import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
 
-const FIELD_TYPES = ["text", "checkbox", "date", "number"];
 
 // Canvas-safe colors mapped from field types (can't use Chakra tokens in canvas)
 const FIELD_CANVAS_COLORS = {
@@ -39,9 +38,9 @@ const FormBuilder = ({
     onSelectField,
     onUpdateField,
     isDrawing = false,
-    onToggleDrawing,
+    _onToggleDrawing,
     activeFieldType = "text",
-    onFieldTypeChange,
+    _onFieldTypeChange,
 }) => {
     const containerRef = useRef(null);
     const pdfCanvasRef = useRef(null);
@@ -106,12 +105,12 @@ const FormBuilder = ({
         if (renderTaskRef.current) {
             try {
                 renderTaskRef.current.cancel();
-            } catch (_) {
+            } catch {
                 /* already finished */
             }
             try {
                 await renderTaskRef.current.promise;
-            } catch (_) {
+            } catch {
                 /* RenderingCancelledException */
             }
             renderTaskRef.current = null;

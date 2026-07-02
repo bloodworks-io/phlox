@@ -40,7 +40,6 @@ const LocalModelManager = ({ className }) => {
     // Whisper
     whisperModels,
     whisperRecommendations,
-    whisperStatus,
     downloadWhisperModel,
     deleteWhisperModel,
   } = useLocalModels();

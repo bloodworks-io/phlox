@@ -139,7 +139,7 @@ const truncateText = (text, maxChars) => {
     return `${text.slice(0, maxChars)}...`;
 };
 
-const ThinkingCard = ({ step, index, colorMode }) => {
+const ThinkingCard = ({ step, index }) => {
     const isResultCard = step.type === "tool_result";
     const [isResultCollapsed, setIsResultCollapsed] = useState(isResultCard);
 

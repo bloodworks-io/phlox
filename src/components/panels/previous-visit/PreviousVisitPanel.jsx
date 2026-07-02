@@ -6,7 +6,7 @@ import FloatingPanel from "../../common/FloatingPanel";
 
 const PreviousVisitPanel = ({
   isOpen,
-  onClose,
+  _onClose,
   previousVisitSummary,
   previousVisitTemplateData,
   previousVisitTemplateKey,

@@ -23,12 +23,12 @@ const Summary = forwardRef(
   (
     {
       isSummaryCollapsed,
-      toggleSummaryCollapse,
+      _toggleSummaryCollapse,
       patient,
       setPatient,
       handleGenerateLetterClick,
       handleSavePatientData,
-      setParentIsModified,
+      _setParentIsModified,
       saveLoading,
       onWrapUp,
       wrapUpLoading,
@@ -129,7 +129,6 @@ const Summary = forwardRef(
     };
 
     const renderField = (field) => {
-      const hasContent = patient.template_data?.[field.field_key]?.trim();
       const persistentMarker = field.persistent ? (
         <Tooltip
           content="Persists between encounters."

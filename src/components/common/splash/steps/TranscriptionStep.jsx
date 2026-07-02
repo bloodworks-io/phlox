@@ -47,7 +47,6 @@ const WHISPER_MODEL_OPTIONS = [
   },
 ];
 
-const MODELS_PER_ROW = 4;
 
 // Whisper Model Card Component
 const WhisperModelCard = ({
@@ -176,11 +175,11 @@ export const TranscriptionStep = ({
   availableWhisperModels,
   whisperModelListAvailable,
   isFetchingWhisperModels,
-  fetchWhisperModels,
+  _fetchWhisperModels,
   // New props for local mode
   inferenceMode,
-  localWhisperModels,
-  downloadedWhisperModels,
+  _localWhisperModels,
+  _downloadedWhisperModels,
   localWhisperModel,
   setLocalWhisperModel,
   isDownloadingWhisper,

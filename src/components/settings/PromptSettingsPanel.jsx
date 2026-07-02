@@ -34,7 +34,7 @@ const PromptSettingsPanel = ({
   handlePromptReset,
   options,
   handleOptionChange,
-  config,
+  _config,
 }) => {
   const [tabIndex, setTabIndex] = useState("0");
 

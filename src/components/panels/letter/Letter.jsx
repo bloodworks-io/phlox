@@ -25,7 +25,7 @@ const Letter = forwardRef(
       handleGenerateLetterClick,
       handleRefineLetter,
       setIsModified,
-      toast,
+      _toast,
       patient,
       setLoading: setGeneralLoading,
     },

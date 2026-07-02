@@ -27,7 +27,7 @@ const TemplateSettingsPanel = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNewTemplate, setIsNewTemplate] = useState(false);
    
-  const [isSaving, setIsSaving] = useState(false);
+  const [, setIsSaving] = useState(false);
   const toast = useToast();
 
   // State for new template from example
@@ -49,12 +49,11 @@ const TemplateSettingsPanel = ({
     }
   };
 
-  const handleSaveTemplate = async (templateKey, updatedTemplate) => {
+  const handleSaveTemplate = async (_templateKey, _updatedTemplate) => {
     setIsSaving(true);
     try {
       // Save to backend
        
-      const response = await templateApi.saveTemplates([updatedTemplate]);
 
       // Fetch fresh templates list
       const freshTemplates = await templateApi.fetchTemplates();

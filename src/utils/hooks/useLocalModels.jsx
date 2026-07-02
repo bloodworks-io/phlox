@@ -77,11 +77,6 @@ export const useLocalModels = () => {
     }
   }, []);
 
-  // Fetch model recommendations (same as available models now)
-  const fetchModelRecommendations = useCallback(async () => {
-    return await fetchAvailableModels();
-  }, [fetchAvailableModels]);
-
   // Check local status
   const checkLocalStatus = useCallback(async () => {
     try {

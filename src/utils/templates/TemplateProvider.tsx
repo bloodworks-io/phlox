@@ -150,7 +150,7 @@ export const TemplateProvider = ({ children }) => {
 
   // Set active template
   const setActiveTemplate = useCallback(
-    async (templateKey, reason = "unspecified") => {
+    async (templateKey= "unspecified") => {
       dispatch({ type: "START_LOADING" });
       const loadingStartTime = Date.now();
 
@@ -192,34 +192,6 @@ export const TemplateProvider = ({ children }) => {
       }
     },
     [toast],
-  );
-
-  // Update default template
-  const updateDefaultTemplate = useCallback(
-    async (templateKey) => {
-      dispatch({ type: "SET_LOADING" });
-      try {
-        await templateApi.setDefaultTemplate(templateKey);
-        await loadDefaultTemplate();
-        toast({
-          title: "Success",
-          description: "Default template updated successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } catch (error) {
-        dispatch({ type: "SET_ERROR", payload: error.message });
-        toast({
-          title: "Error",
-          description: "Failed to update default template",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    },
-    [loadDefaultTemplate, toast],
   );
 
   // Initialize templates on mount

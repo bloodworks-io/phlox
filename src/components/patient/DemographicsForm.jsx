@@ -75,7 +75,7 @@ const DemographicsForm = ({
             if (data && typeof data === "object") {
                 setForm((prev) => ({ ...prev, ...data }));
             }
-        } catch (e) {
+        } catch (error) {
             setExtractError("Couldn't read demographics from that document.");
         } finally {
             setIsExtracting(false);
@@ -123,7 +123,7 @@ const DemographicsForm = ({
             setIsSaving(true);
             try {
                 await onSave(updated);
-            } catch (e) {
+            } catch (error) {
                 toast({
                     title: "Couldn't save demographics",
                     description: "Please try again.",

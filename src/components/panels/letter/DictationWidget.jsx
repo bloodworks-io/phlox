@@ -8,7 +8,6 @@
 */
 import React, { useState, useRef, useEffect } from "react";
 import { colors } from "../../../theme/colors";
-import { useColorMode } from "../../ui/color-mode";
 import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
 import { useToast } from "@/utils/useToastShim";
 import { Tooltip } from '@/components/ui/tooltip';
@@ -19,7 +18,6 @@ import { letterApi } from "../../../utils/api/letterApi";
 import { convertAudioToWav } from "../../../utils/hooks/useTranscription";
 
 const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
-  const { colorMode } = useColorMode();
   const barCount = 8; // Smaller for widget
 
   const [bars] = useState(() =>
@@ -100,7 +98,7 @@ const DictationWidget = ({
   patient,
   setFinalCorrespondence,
   letterTemplates,
-  setIsRefining,
+  _setIsRefining,
   setLoading,
   isDisabled,
 }) => {

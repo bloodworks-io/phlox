@@ -1,5 +1,4 @@
 import React from "react";
-import { useColorMode } from "../ui/color-mode";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -31,7 +30,6 @@ export const RecordButton = ({
     canStart = true,
     onBlockedClick,
 }) => {
-    const { colorMode } = useColorMode();
     const [isHovered, setIsHovered] = React.useState(false);
 
     const getButtonStyles = () => {
@@ -157,7 +155,6 @@ export const ModeResetButton = ({
     onModeToggle,
     onReset,
 }) => {
-    const { colorMode } = useColorMode();
     const [isHovered, setIsHovered] = React.useState(false);
 
     if (isRecording) {
@@ -237,7 +234,6 @@ export const TranscriptSendButton = ({
     isTranscriptionOpen,
     hasRawTranscription,
 }) => {
-    const { colorMode } = useColorMode();
     const [isHovered, setIsHovered] = React.useState(false);
 
     if (isRecording) {

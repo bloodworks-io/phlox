@@ -12,8 +12,8 @@ import { EmptyState } from "./components/EmptyState";
 
 const ReasoningPanel = forwardRef(
     (
-        { isOpen, onClose, noteId, initialReasoning, onReasoningGenerated },
-        ref,
+        { isOpen, _onClose, noteId, initialReasoning, onReasoningGenerated },
+        _ref,
     ) => {
         const { colorMode } = useColorMode();
         const {

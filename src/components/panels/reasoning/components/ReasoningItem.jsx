@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text, Badge, HStack, VStack } from "@chakra-ui/react";
 
-export const ReasoningItem = ({ item, section, colorMode }) => {
+export const ReasoningItem = ({ item, section }) => {
     // Check if item is in legacy format (string) or new format (object)
     const isLegacyFormat = typeof item === "string";
 

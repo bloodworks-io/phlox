@@ -82,10 +82,7 @@ const Sidebar = ({
     const toast = useApiToast();
 
     // Color mode values
-    const sidebarBg = colors.dark.sidebar.background;
-    const textColor = colors.dark.sidebar.text;
     const labelColor = colors.dark.textSecondary;
-    const dividerColor = colors.dark.divider;
     const hoverColor = colors.dark.sidebar.hover;
 
     // Ref for detecting outside clicks on small screens

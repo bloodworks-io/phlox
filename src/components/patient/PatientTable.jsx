@@ -37,7 +37,6 @@ import {
     debouncedUpdateJobsList,
     flushPendingJobsUpdate,
 } from "../../utils/patient/patientHandlers";
-import { patientApi } from "../../utils/api/patientApi";
 
 const PatientTable = ({
     patients,
@@ -49,7 +48,7 @@ const PatientTable = ({
     summaryOnly = false,
 }) => {
     const toast = useToast();
-    const [loadingStates, setLoadingStates] = useState({});
+    const [, setLoadingStates] = useState({});
     const pendingJobsUpdates = useRef(new Map());
 
     useEffect(() => {
@@ -105,34 +104,6 @@ const PatientTable = ({
                 return { bg: "neutralButton", color: "invertedText" };
             default:
                 return { bg: "surface", color: "textPrimary" };
-        }
-    };
-
-    const handleGenerateReasoning = async (noteId) => {
-        try {
-            setLoadingStates((prev) => ({ ...prev, [noteId]: true }));
-            // Use streaming API, ignore status updates (table just shows spinner)
-            const res = await patientApi.generateReasoningStream(
-                noteId,
-                () => {}, // No-op status callback - table only shows spinner
-                toast,
-            );
-            const updatedPatients = patients.map((patient) =>
-                patient.id === noteId
-                    ? { ...patient, reasoning: res, activeSection: "summary" }
-                    : patient,
-            );
-            setPatients(updatedPatients);
-        } catch (error) {
-            console.error("Error generating reasoning:", error);
-            toast({
-                title: "Error generating reasoning",
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-            });
-        } finally {
-            setLoadingStates((prev) => ({ ...prev, [noteId]: false }));
         }
     };
 
@@ -261,7 +232,7 @@ const PatientTable = ({
                                         icon: FaBrain,
                                         tooltip: "Clinical Considerations",
                                     },
-                                ].map(({ section, icon, tooltip }) => (
+                                ].map(({ section, _icon, tooltip }) => (
                                     <Tooltip
                                         key={section}
                                         content={tooltip}

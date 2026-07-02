@@ -27,7 +27,7 @@ const getCitationIcon = (citation) => {
     return FaGlobe; // MCP tools / other
 };
 
-export const CitationList = ({ citations, colorMode, inline = false }) => {
+export const CitationList = ({ citations, inline = false }) => {
     if (!citations || citations.length === 0) return null;
 
     const unique = [...new Set(citations)];

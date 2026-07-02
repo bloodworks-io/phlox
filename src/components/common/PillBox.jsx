@@ -1,5 +1,4 @@
 import React from "react";
-import { useColorMode } from "../ui/color-mode";
 import { Box, Flex } from "@chakra-ui/react";
 
 /**
@@ -22,7 +21,6 @@ const PillBox = ({
   py = 3,
   ...rest
 }) => {
-  const { colorMode } = useColorMode();
 
   return (
     <Box

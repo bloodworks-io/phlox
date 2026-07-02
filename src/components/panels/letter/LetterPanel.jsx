@@ -15,7 +15,7 @@ const LetterPanel = ({
   dimensions,
   resizerRef,
   handleMouseDown,
-  onClose,
+  _onClose,
   finalCorrespondence,
   setFinalCorrespondence,
   letterLoading,

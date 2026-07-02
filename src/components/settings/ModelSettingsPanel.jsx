@@ -40,7 +40,7 @@ const ModelSettingsPanel = ({
     showLocalManagerButton,
     modelManagerRefreshKey = 0,
     embeddingModelOptions = [],
-    handleClearDatabase,
+    _handleClearDatabase,
     handleReEmbed,
 }) => {
     const [localStatus, setLocalStatus] = useState(null);

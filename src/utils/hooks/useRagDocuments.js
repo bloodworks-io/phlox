@@ -61,7 +61,7 @@ export const useRagDocuments = () => {
         duration: 3000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: `Failed to delete ${

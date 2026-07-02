@@ -24,7 +24,6 @@ export const useTemplateSelection = () => {
         return null;
       }
 
-      const callStack = new Error().stack;
 
       try {
         const template = await setActiveTemplate(templateKey);

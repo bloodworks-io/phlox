@@ -12,7 +12,7 @@ import BulkUploader from "./BulkUploader";
 const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
     const [pdfFile, setPdfFile] = useState(null);
      
-    const [suggestedCollection, setSuggestedCollection] = useState("");
+    const [, setSuggestedCollection] = useState("");
     const [customCollectionName, setCustomCollectionName] = useState("");
     const [documentSource, setDocumentSource] = useState("");
     const [focusArea, setFocusArea] = useState("");

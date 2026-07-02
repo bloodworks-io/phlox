@@ -168,21 +168,21 @@ const LocalModelCard = ({
 };
 
 export const LLMStep = ({
-    llmProvider,
-    setLlmProvider,
+    _llmProvider,
+    _setLlmProvider,
     llmBaseUrl,
     setLlmBaseUrl,
     primaryModel,
     setPrimaryModel,
     availableModels,
     isFetchingLLMModels,
-    fetchLLMModels,
+    _fetchLLMModels,
     // New props for local/remote mode
     inferenceMode,
     setInferenceMode,
     isDesktop,
     localAvailableModels,
-    localDownloadedModels,
+    _localDownloadedModels,
     primaryLocalModel,
     setPrimaryLocalModel,
     isDownloadingLocal,

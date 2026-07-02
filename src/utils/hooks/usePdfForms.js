@@ -200,7 +200,7 @@ export const usePdfForms = () => {
       }
 
       // 6. Auto-save (strip id — storage generates its own)
-      const savePayload = detectedFields.map(({ id, ...rest }) => rest);
+      const savePayload = detectedFields.map(({ _id, ...rest }) => rest);
       await pdfFormsApi.saveFields(selectedTemplate.id, savePayload);
       toast({
         title: "Fields detected",

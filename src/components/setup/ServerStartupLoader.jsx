@@ -73,7 +73,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             setShouldPoll(false);
             onReadyRef.current();
           }
-        } catch (error) {
+        } catch {
           // Server not ready yet, continue polling
         }
       }

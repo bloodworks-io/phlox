@@ -32,7 +32,7 @@ const candidateMeta = (cand) =>
 const NewNoteModal = ({
     isOpen,
     onClose,
-    patient,
+    _patient,
     setPatient,
     createNewPatient,
     findPatients,
