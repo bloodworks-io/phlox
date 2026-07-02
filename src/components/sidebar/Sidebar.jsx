@@ -211,8 +211,9 @@ const Sidebar = ({
               backdropFilter: "none",
               borderRadius: "0",
               boxShadow: "none",
-              border: "1px solid",
-              borderColor: "divider",
+              border: "none",
+              borderRight: "1px solid",
+              borderRightColor: "divider",
           };
 
     return (
