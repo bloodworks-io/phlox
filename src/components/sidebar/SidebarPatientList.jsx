@@ -116,7 +116,7 @@ const SidebarPatientList = ({
                                                     transition="all 0.2s"
                                                     className="patient-list-item"
                                                 >
-                                                    <Flex align="center">
+                                                    <Flex align="center" minW="0" flex="1">
                                                         <Avatar.Root
                                                             bg={avatarBg}
                                                             color="white"
@@ -137,7 +137,7 @@ const SidebarPatientList = ({
                                                         </Avatar.Root>
 
                                                         {!isCollapsed && (
-                                                            <Box>
+                                                            <Box minW="0" flex="1">
                                                                 <Text
                                                                     fontSize="sm"
                                                                     fontWeight="500"
@@ -154,6 +154,7 @@ const SidebarPatientList = ({
                                                                     color={
                                                                         labelColor
                                                                     }
+                                                                    lineClamp={1}
                                                                 >
                                                                     UR:{" "}
                                                                     {
