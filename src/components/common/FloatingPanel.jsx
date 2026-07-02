@@ -49,7 +49,10 @@ const FloatingPanel = ({
             const triggerRect = triggerEl.getBoundingClientRect();
             const panelRect = panelRef.current.getBoundingClientRect();
 
-            if (position === "left-of-fab") {
+            if (
+                position === "left-of-fab" ||
+                position === "left-of-fab-grow-down"
+            ) {
                 const menuEl = triggerEl.closest(".floating-action-menu");
                 if (menuEl) {
                     setMinPanelHeight(
@@ -156,7 +159,9 @@ const FloatingPanel = ({
                 </Box>
 
                 {/* Isthmus / Arrow */}
-                {showArrow && position === "left-of-fab" && (
+                {showArrow &&
+                    (position === "left-of-fab" ||
+                        position === "left-of-fab-grow-down") && (
                     <Box
                         position="absolute"
                         right="-12px"
