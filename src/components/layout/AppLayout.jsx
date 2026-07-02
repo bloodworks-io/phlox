@@ -29,7 +29,17 @@ const AppLayout = ({
             <Sidebar {...sidebarProps} />
             <Box
                 flex="1"
-                ml={isSmallScreen ? "0" : isCollapsed ? "96px" : "236px"}
+                ml={
+                    isSmallScreen
+                        ? "0"
+                        : isCollapsed
+                          ? isTauri()
+                              ? "96px"
+                              : "80px"
+                          : isTauri()
+                            ? "236px"
+                            : "220px"
+                }
                 minH="100vh"
                 transition="margin-left 0.3s ease"
                 bg={isTauri() ? "sidebar.background" : "transparent"}
