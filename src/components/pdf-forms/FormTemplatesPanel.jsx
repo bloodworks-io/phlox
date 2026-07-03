@@ -24,6 +24,7 @@ const FormTemplatesPanel = ({
   onSetFieldType,
   onAutoDetect,
   onOpenUpload,
+  onReplaceTemplate,
   onSelectTemplate,
   onDeleteTemplate,
   onFieldsChange,
@@ -56,6 +57,7 @@ const FormTemplatesPanel = ({
           loading={templatesLoading}
           onSelect={onSelectTemplate}
           onDelete={onDeleteTemplate}
+          onReplace={onReplaceTemplate}
         />
       </Box>
       {/* Form builder canvas */}

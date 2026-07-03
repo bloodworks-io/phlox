@@ -9,6 +9,7 @@ import DeleteModal from "../components/rag/DeleteModal";
 import KnowledgeBasePanel from "../components/rag/KnowledgeBasePanel";
 import FormTemplatesPanel from "../components/pdf-forms/FormTemplatesPanel";
 import UploadTemplateModal from "../components/pdf-forms/UploadTemplateModal";
+import ReplacePdfModal from "../components/pdf-forms/ReplacePdfModal";
 import FillFormModal from "../components/pdf-forms/FillFormModal";
 
 const Rag = () => {
@@ -44,6 +45,7 @@ const Rag = () => {
     onSetFieldType: forms.setActiveFieldType,
     onAutoDetect: forms.handleAutoDetectFields,
     onOpenUpload: () => forms.setShowUploadModal(true),
+    onReplaceTemplate: forms.handleOpenReplace,
     onSelectTemplate: forms.handleTemplateSelected,
     onDeleteTemplate: forms.handleTemplateDeleted,
     onFieldsChange: forms.setFields,
@@ -106,6 +108,14 @@ const Rag = () => {
             onClose={() => forms.setShowUploadModal(false)}
             onCreated={forms.handleTemplateCreated}
           />
+          {forms.selectedTemplate && (
+            <ReplacePdfModal
+              isOpen={forms.showReplaceModal}
+              onClose={() => forms.setShowReplaceModal(false)}
+              template={forms.selectedTemplate}
+              onReplaced={forms.handlePdfReplaced}
+            />
+          )}
           {forms.selectedTemplate && (
             <FillFormModal
               isOpen={forms.showFillModal}

@@ -190,6 +190,40 @@ class PDFFormStore:
         ).fetchone()
         return row[0] if row else None
 
+    def replace_pdf(
+        self,
+        template_id: str,
+        pdf_file_name: str,
+        pdf_data: bytes,
+        page_count: int,
+        page_heights: list[float],
+    ) -> dict | None:
+        """Replace the PDF bytes of an existing template, keeping its fields.
+
+        Caller must ensure page geometry matches the original; this method does
+        not validate dimensions.
+        """
+        now = datetime.now(UTC).isoformat()
+        cursor = self._db.execute(
+            """UPDATE pdf_form_templates
+               SET pdf_data = ?, pdf_file_name = ?, page_count = ?,
+                   page_heights = ?, updated_at = ?
+               WHERE id = ?""",
+            (
+                pdf_data,
+                pdf_file_name,
+                page_count,
+                json.dumps(page_heights),
+                now,
+                template_id,
+            ),
+        )
+        self._db.commit()
+        if cursor.rowcount == 0:
+            return None
+        logger.info("Replaced PDF for template %s", template_id)
+        return self.get_template(template_id)
+
     def delete_template(self, template_id: str) -> bool:
         """Delete a template and its fields (CASCADE)."""
         cursor = self._db.execute(

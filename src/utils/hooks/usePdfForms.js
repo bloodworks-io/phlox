@@ -14,6 +14,7 @@ export const usePdfForms = () => {
   const [fields, setFields] = useState([]);
   const [selectedFieldId, setSelectedFieldId] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [showFillModal, setShowFillModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -80,6 +81,19 @@ export const usePdfForms = () => {
       setSelectedTemplate(null);
       setFields([]);
     }
+  };
+
+  const handlePdfReplaced = (updated) => {
+    setTemplates((prev) =>
+      prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+    );
+    setSelectedTemplate(updated);
+    setFields(updated.fields || []);
+  };
+
+  const handleOpenReplace = (tmpl) => {
+    setSelectedTemplate(tmpl);
+    setShowReplaceModal(true);
   };
 
   const handleSaveFields = async () => {
@@ -228,8 +242,10 @@ export const usePdfForms = () => {
     visionCapable,
     detecting,
     showUploadModal,
+    showReplaceModal,
     showFillModal,
     setShowUploadModal,
+    setShowReplaceModal,
     setShowFillModal,
     setSelectedFieldId,
     setIsDrawingMode,
@@ -238,6 +254,8 @@ export const usePdfForms = () => {
     handleTemplateCreated,
     handleTemplateSelected,
     handleTemplateDeleted,
+    handlePdfReplaced,
+    handleOpenReplace,
     handleSaveFields,
     handleUpdateField,
     handleDeleteField,

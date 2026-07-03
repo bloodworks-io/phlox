@@ -2,11 +2,11 @@
 import React from "react";
 import { Box, Text, List, IconButton, Spinner, HStack, Flex } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { DeleteIcon } from "../common/icons";
+import { DeleteIcon, RepeatIcon } from "../common/icons";
 import { FiFileText } from "react-icons/fi";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 
-const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
+const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace }) => {
 
   const handleDelete = async (e, id, name) => {
     e.stopPropagation();
@@ -72,12 +72,24 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete }) => {
                 </Text>
               </Box>
             </HStack>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              colorPalette="red"
-              aria-label="Delete template"
-              onClick={(e) => handleDelete(e, tmpl.id, tmpl.name)}><DeleteIcon /></IconButton>
+            <HStack gap="1" flexShrink={0}>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                aria-label="Replace PDF"
+                title="Replace PDF (keep fields)"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReplace(tmpl);
+                }}
+              ><RepeatIcon /></IconButton>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                colorPalette="red"
+                aria-label="Delete template"
+                onClick={(e) => handleDelete(e, tmpl.id, tmpl.name)}><DeleteIcon /></IconButton>
+            </HStack>
           </HStack>
         </List.Item>
       ))}

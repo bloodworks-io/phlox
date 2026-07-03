@@ -36,6 +36,20 @@ export const pdfFormsApi = {
     });
   },
 
+  replaceTemplatePdf: async (id, formData) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(`/api/pdf-forms/templates/${id}/pdf`);
+        return universalFetch(url, {
+          method: "PUT",
+          body: formData,
+        });
+      },
+      successMessage: "PDF replaced",
+      errorMessage: "Failed to replace PDF",
+    });
+  },
+
   deleteTemplate: async (id) => {
     return handleApiRequest({
       apiCall: async () => {
