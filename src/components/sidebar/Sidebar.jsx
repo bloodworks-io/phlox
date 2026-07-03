@@ -212,8 +212,6 @@ const Sidebar = ({
               borderRadius: "0",
               boxShadow: "none",
               border: "none",
-              borderRight: "1px solid",
-              borderRightColor: "divider",
           };
 
     return (
