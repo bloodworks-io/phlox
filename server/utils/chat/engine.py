@@ -100,7 +100,7 @@ class ChatEngine:
         tools = get_tools_definition(collection_names)
 
         try:
-            MAX_ITERATIONS = 5
+            MAX_ITERATIONS = 10
             iterations = 0
             function_response = None
             generated_final_answer = False

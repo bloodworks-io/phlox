@@ -75,3 +75,14 @@ async def find_ur_by_name(patient_name: str, threshold: int = 70) -> PatientMatc
         logger.error(f"Error finding patient by name: {e}")
         return None
 
+
+def rank_patients_by_name(patients: list[dict], query: str) -> list[dict]:
+    """Score and sort patient dicts by fuzzy name similarity to ``query``.
+    """
+    if not query or not patients:
+        return patients
+    q = query.lower()
+    for p in patients:
+        p["score"] = int(fuzz.token_set_ratio(q, (p.get("name") or "").lower()))
+    patients.sort(key=lambda p: p["score"], reverse=True)
+    return patients

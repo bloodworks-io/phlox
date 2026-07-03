@@ -213,6 +213,64 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
         {
             "type": "function",
             "function": {
+                "name": "search_patient",
+                "description": "Search for patients by name (fuzzy-ranked), UR number, DOB, or encounter date. Returns matching patients with last visit date and encounter count. Use this to find or list patients matching criteria when the UR number is unknown.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Patient name to search (partial or fuzzy match, case-insensitive)",
+                        },
+                        "ur_number": {
+                            "type": "string",
+                            "description": "Patient's UR number (partial match)",
+                        },
+                        "dob": {
+                            "type": "string",
+                            "description": "Date of birth in YYYY-MM-DD format",
+                        },
+                        "encounter_date": {
+                            "type": "string",
+                            "description": "Filter by encounter date in YYYY-MM-DD format",
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Maximum number of results to return (default: 10)",
+                        },
+                    },
+                    "required": [],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "search_patients_by_condition",
+                "description": "Find all patients with a primary condition matching the query (fuzzy). Returns each patient's latest encounter summary so you can answer questions about treatment, line of therapy, or status across the cohort. Use when the user asks 'how many patients with X' or wants a cohort list by condition.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "condition": {
+                            "type": "string",
+                            "description": "Condition to search (e.g. 'myeloma', 'CLL', 'iron deficiency anaemia'). Matched fuzzily against stored primary conditions.",
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Maximum number of patients to return (default: 20)",
+                        },
+                    },
+                    "required": ["condition"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "todo_list",
                 "description": "Access the user's global todo list. Use this to list todos, add new tasks, mark tasks as complete, or delete tasks.",
                 "parameters": {

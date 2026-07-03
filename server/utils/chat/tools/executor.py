@@ -106,6 +106,22 @@ async def execute_tool_streaming(
         ):
             yield result
 
+    elif function_name == "search_patient":
+        from .search_patient import execute
+
+        async for result in execute(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
+    elif function_name == "search_patients_by_condition":
+        from .search_patients_by_condition import execute
+
+        async for result in execute(
+            tool_call, llm_client, config, message_list, context_question_options
+        ):
+            yield result
+
     elif function_name == "todo_list":
         from .todo_list import execute
 

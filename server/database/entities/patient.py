@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from rapidfuzz import fuzz
 from server.database.core.connection import get_db
 from server.database.entities.jobs import (
     are_all_jobs_completed,
@@ -699,6 +700,77 @@ def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
     search_patients.
     """
     return search_patients(ur_number)
+
+
+def search_patients_by_condition(query: str, limit: int = 20) -> list[dict[str, Any]]:
+    """
+    Find patients whose primary condition fuzzy-matches ``query``.
+    """
+    if not query or not query.strip():
+        return []
+    query = query.strip()
+
+    distinct = get_unique_primary_conditions()
+    if not distinct:
+        return []
+
+    q_lower = query.lower()
+    matched: list[str] = [c for c in distinct if fuzz.token_set_ratio(q_lower, c.lower()) >= 70]
+    # Fallback: if fuzzy missed everything, try a plain LIKE substring pass.
+    if not matched:
+        matched = [c for c in distinct if query.lower() in c.lower()]
+    if not matched:
+        return []
+
+    placeholders = ",".join("?" for _ in matched)
+    try:
+        get_db().cursor.execute(
+            f"""
+            SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender,
+                   e.primary_condition, e.encounter_date, e.encounter_summary,
+                   e.template_key, cnt.encounter_count
+            FROM patient_profiles p
+            JOIN encounters e ON e.id = (
+                SELECT id FROM encounters
+                WHERE ur_number = p.ur_number
+                  AND primary_condition IS NOT NULL
+                ORDER BY encounter_date DESC, id DESC
+                LIMIT 1
+            )
+            JOIN (
+                SELECT ur_number, COUNT(*) AS encounter_count
+                FROM encounters
+                WHERE primary_condition IS NOT NULL
+                GROUP BY ur_number
+            ) cnt ON cnt.ur_number = p.ur_number
+            WHERE e.primary_condition IN ({placeholders})
+            ORDER BY p.last_name, p.first_name
+            LIMIT ?
+            """,
+            (*matched, limit),
+        )
+        rows = get_db().cursor.fetchall()
+
+        patients = []
+        for row in rows:
+            first_name = row["first_name"]
+            last_name = row["last_name"]
+            patients.append(
+                {
+                    "ur_number": row["ur_number"],
+                    "name": _format_name(first_name, last_name),
+                    "dob": row["dob"],
+                    "gender": row["gender"],
+                    "primary_condition": row["primary_condition"],
+                    "last_encounter_date": row["encounter_date"],
+                    "encounter_summary": row["encounter_summary"],
+                    "encounter_count": row["encounter_count"],
+                }
+            )
+        return patients
+    except Exception as e:
+        logging.error(f"Error searching patients by condition: {e}")
+        raise
 
 
 def delete_patient_by_id(note_id: int) -> bool:

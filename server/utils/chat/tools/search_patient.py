@@ -14,9 +14,9 @@ from server.database.core.connection import get_db
 from server.utils.chat.streaming.response import (
     end_message,
     status_message,
-    stream_llm_response,
     tool_response_message,
 )
+from server.utils.chat.tools.patient_utils import rank_patients_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ async def search_patients(
         Dict with success status and list of matching patients
     """
     try:
+        search_name = name
         query = """
             SELECT e.ur_number, p.first_name, p.last_name, p.dob, p.gender,
                    MAX(e.encounter_date) as last_encounter,
@@ -78,17 +79,20 @@ async def search_patients(
         for row in rows:
             first = row["first_name"]
             last = row["last_name"]
-            name = f"{last}, {first}" if (last and first) else (last or first or "")
+            full_name = f"{last}, {first}" if (last and first) else (last or first or "")
             patients.append(
                 {
                     "ur_number": row["ur_number"],
-                    "name": name,
+                    "name": full_name,
                     "dob": row["dob"],
                     "gender": row["gender"],
                     "last_encounter": row["last_encounter"],
                     "encounter_count": row["encounter_count"],
                 }
             )
+
+        if search_name:
+            rank_patients_by_name(patients, search_name)
 
         return {
             "success": True,
@@ -132,19 +136,19 @@ def format_search_results(result: dict) -> str:
 
 async def execute(
     tool_call: dict[str, Any],
-    llm_client,
-    config: dict[str, Any],
+    _llm_client,
+    _config: dict[str, Any],
     message_list: list,
-    context_question_options: dict[str, Any],
+    _context_question_options: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the search_patient tool.
 
     Args:
         tool_call: The tool call to execute
-        llm_client: The LLM client instance
-        config: The configuration dictionary
+        _llm_client: Unused (kept for signature compatibility with executor)
+        _config: Unused (kept for signature compatibility with executor)
         message_list: The current message list
-        context_question_options: The context question options
+        _context_question_options: Unused (kept for signature compatibility with executor)
 
     Yields:
         Dict[str, Any]: Streaming response chunks
@@ -211,15 +215,4 @@ async def execute(
                 )
             )
 
-    if llm_client is not None:
-        yield status_message("Generating response...")
-        async for chunk in stream_llm_response(
-            llm_client=llm_client,
-            model=config["PRIMARY_MODEL"],
-            messages=message_list,
-            options=context_question_options,
-        ):
-            yield chunk
-
     yield end_message(function_response={"content": result_content, "citations": citations})
-
