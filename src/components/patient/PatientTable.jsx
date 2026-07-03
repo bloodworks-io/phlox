@@ -65,7 +65,7 @@ const PatientTable = ({
     };
 
     const getRowBackgroundColor = (index) =>
-        index % 2 === 0 ? "secondary" : "surface1";
+        index % 2 === 0 ? "secondary" : "crust";
 
     const PatientDetails = ({ patient }) => (
         <Box>
@@ -198,7 +198,7 @@ const PatientTable = ({
                     <Box
                         p={2}
                         borderRadius="md"
-                        bg="crust"
+                        bg="surface"
                     >
                         <Text fontSize="sm">
                             {patient.reasoning?.summary ??
@@ -290,10 +290,10 @@ const PatientTable = ({
                             </VStack>
 
                             <Box
-                                overflowY="auto"
-                                className="scroll-container"
-                                p={3}
-                                bg="crust"
+                            overflowY="auto"
+                            className="scroll-container"
+                            p={3}
+                            bg="surface"
                                 borderRadius="lg"
                                 h="100%"
                                 position="relative"
