@@ -129,7 +129,7 @@ async def execute(
     # Sanitize query to remove potential PHI
     query = sanitize_query_for_external_search(query)
 
-    citations: list[str] = []
+    citations: list[dict] = []
     result_content: str = ""
 
     if not query:
@@ -147,17 +147,20 @@ async def execute(
                 formatted = []
                 for i, article in enumerate(articles):
                     logger.info(f"Article {i + 1} extract length: {len(article['extract'])} chars")
-                    parts = [
-                        f"Title: {article['title']}",
-                    ]
+                    parts = [f"[{i + 1}] Title: {article['title']}"]
                     if article.get("extract"):
                         parts.append(f"Summary: {article['extract']}")
                     parts.append(f"URL: {article['url']}")
                     formatted.append("\n".join(parts))
 
-                    # Build citation string
-                    citation = f"Wikipedia: {article['title']}. {article['url']}"
-                    citations.append(citation)
+                    citations.append(
+                        {
+                            "type": "wiki",
+                            "title": article["title"],
+                            "url": article["url"],
+                            "snippet": article.get("extract", ""),
+                        }
+                    )
 
                 result_content = "Found the following relevant articles:\n\n" + "\n\n---\n\n".join(
                     formatted
@@ -168,4 +171,3 @@ async def execute(
             result_content = f"Error searching Wikipedia: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
-
