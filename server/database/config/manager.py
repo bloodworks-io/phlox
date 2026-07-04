@@ -232,6 +232,8 @@ class ConfigManager:
 
     def update_user_settings(self, settings: dict):
         self.refresh_db()
+        existing = self.get_user_settings()
+        settings = {**existing, **settings}
         self.db.cursor.execute("DELETE FROM user_settings")
         self.db.cursor.execute(
             """
