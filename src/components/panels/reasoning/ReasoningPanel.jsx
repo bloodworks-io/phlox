@@ -100,12 +100,12 @@ const ReasoningPanel = forwardRef(
                     <Box
                         ref={resizerRef}
                         position="absolute"
-                        top="0"
+                        bottom="0"
                         left="0"
                         width="20px"
                         height="20px"
                         bg="transparent"
-                        cursor="nwse-resize"
+                        cursor="nesw-resize"
                         onMouseDown={handleMouseDown}
                     />
 

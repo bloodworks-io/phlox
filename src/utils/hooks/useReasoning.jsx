@@ -92,7 +92,7 @@ export const useReasoning = (options = {}) => {
             ),
             height: Math.max(
                 300,
-                prev.height -
+                prev.height +
                     (e.clientY -
                         resizerRef.current.getBoundingClientRect().top),
             ),
