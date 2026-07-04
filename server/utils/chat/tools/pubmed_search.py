@@ -191,7 +191,7 @@ async def execute(
     query = sanitize_pubmed_query(query)
 
     # Track citations for the function response
-    citations: list[str] = []
+    citations: list[dict] = []
     result_content: str = ""
 
     if not query:
@@ -209,18 +209,12 @@ async def execute(
                 formatted = []
                 for i, article in enumerate(articles):
                     authors_str = ", ".join(article["authors"])
-                    parts = [
-                        f"Title: {article['title']}",
-                        f"Authors: {authors_str}",
-                        f"Journal: {article['journal']} ({article['pubdate']})",
-                    ]
+                    parts = [f"[{i + 1}] Title: {article['title']}"]
+                    parts.append(f"Authors: {authors_str}")
+                    parts.append(f"Journal: {article['journal']} ({article['pubdate']})")
                     if article.get("abstract"):
-                        # Log abstract length for verification
                         logger.info(
                             f"Article {i + 1} abstract length: {len(article['abstract'])} chars"
-                        )
-                        logger.debug(
-                            f"Article {i + 1} abstract preview: {article['abstract'][:200]}..."
                         )
                         parts.append(f"Abstract: {article['abstract']}")
                     else:
@@ -228,9 +222,17 @@ async def execute(
                     parts.append(f"URL: {article['url']}")
                     formatted.append("\n".join(parts))
 
-                    # Build citation string
-                    citation = f"PubMed: {article['title']}. {article['journal']} ({article['pubdate']}). {article['url']}"
-                    citations.append(citation)
+                    citations.append(
+                        {
+                            "type": "pubmed",
+                            "title": article["title"],
+                            "authors": article["authors"],
+                            "journal": article["journal"],
+                            "pubdate": article["pubdate"],
+                            "url": article["url"],
+                            "snippet": article.get("abstract", ""),
+                        }
+                    )
 
                 result_content = (
                     "Found the following relevant articles on PubMed:\n\n"
@@ -246,4 +248,3 @@ async def execute(
             result_content = f"Error searching PubMed: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
-

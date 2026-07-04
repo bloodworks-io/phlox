@@ -27,7 +27,7 @@ class ToolResultAccumulator:
 
     def __init__(self):
         self.content: str = ""
-        self.citations: list[str] | None = None
+        self.citations: list | None = None
         self.function_response: dict[str, Any] | None = None
         self.status_messages: list[str] = []
 
@@ -81,4 +81,3 @@ class ToolResultAccumulator:
         )
 
         return (self.content, self.citations)
-

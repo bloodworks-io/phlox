@@ -23,7 +23,9 @@ def _sanitize_disease_name(disease_name: str) -> str:
     return re.sub(r"[.\(\n/].*", "", disease_name.lower().replace(" ", "_")).rstrip("_").strip()
 
 
-def _get_relevant_literature(vector_store_manager, disease_name: str, question: str) -> str | list:
+def _get_relevant_literature(
+    vector_store_manager, disease_name: str, question: str
+) -> str | list[dict]:
     """
     Retrieve relevant literature for a given disease and question.
 
@@ -33,7 +35,9 @@ def _get_relevant_literature(vector_store_manager, disease_name: str, question: 
         question: The question to search for in the literature.
 
     Returns:
-        str | list: Relevant literature excerpts or a message if no literature is found.
+        str | list[dict]: Sentinel string if no literature, else a list of
+        ``{"source", "formatted_source", "snippet", "download_url?"}`` dicts.
+        ``download_url`` is included only when the original PDF is stored.
     """
     logger.info(f"Searching literature for disease: '{disease_name}' with query: '{question}'")
     collection_names = vector_store_manager.list_collections()
@@ -60,25 +64,47 @@ def _get_relevant_literature(vector_store_manager, disease_name: str, question: 
         logger.error(f"Error querying collection: {e}")
         return "No relevant literature available"
 
-    output_strings = []
+        downloadable = {
+            f["filename"]
+            for f in vector_store_manager.get_files_for_collection_with_pdf_flag(
+                sanitized_disease_name
+            )
+            if f.get("has_pdf")
+        }
+    except Exception as e:
+        logger.warning(f"Could not fetch downloadable files list: {e}")
+        downloadable = set()
+
+    excerpts: list[dict] = []
 
     for i, doc_list in enumerate(context["documents"]):
         for j, doc in enumerate(doc_list):
             distance = context["distances"][i][j]
-            source = context["metadatas"][i][j]["source"]
+            meta = context["metadatas"][i][j]
+            source = meta.get("source", "")
+            filename = meta.get("filename", "")
             formatted_source = source.replace("_", " ").title()
             cleaned_doc = doc.strip().replace("\n", " ")
             logger.info(f"Adding document from source: {formatted_source} (distance: {distance})")
-            output_strings.append(
-                f'According to {formatted_source}:\n\n"...{cleaned_doc}..."\n'
-            )
+            entry = {
+                "source": source,
+                "formatted_source": formatted_source,
+                "snippet": cleaned_doc,
+            }
+            if filename and filename in downloadable:
+                from urllib.parse import quote
 
-    if not output_strings:
+                entry["download_url"] = (
+                    f"/api/rag/download-pdf/{quote(sanitized_disease_name)}/{quote(filename)}"
+                )
+            excerpts.append(entry)
+
+    if not excerpts:
         logger.info("No relevant literature matching query found.")
         return "No relevant literature matching your query was found"
 
-    logger.info(f"Retrieved {len(output_strings)} relevant literature excerpts.")
-    return output_strings
+    logger.info(f"Retrieved {len(excerpts)} relevant literature excerpts.")
+    return excerpts
 
 
 async def execute(
@@ -128,7 +154,7 @@ async def execute(
     )
 
     # Track citations and content for the function response
-    citations: list[str] = []
+    citations: list[dict] = []
     result_content: str = ""
 
     if function_response_list == "No relevant literature available":
@@ -137,15 +163,25 @@ async def execute(
     else:
         logger.info(f"Retrieved relevant literature for disease: {disease_name}")
         if isinstance(function_response_list, list):
-            # Build citations from excerpts
-            for excerpt in function_response_list:
-                # Extract source from the excerpt format "According to {source}:\n\n..."
-                match = re.search(r"According to ([^:]+):", excerpt)
-                if match:
-                    source = match.group(1)
-                    citations.append(f"Clinical Guidelines ({source})")
-
-            function_response_string = "\n".join(function_response_list)
+            formatted = []
+            for i, ex in enumerate(function_response_list):
+                formatted_source = ex["formatted_source"]
+                snippet = ex["snippet"]
+                download_url = ex.get("download_url")
+                suffix = " (original PDF available for download)" if download_url else ""
+                formatted.append(
+                    f'[{i + 1}] According to {formatted_source}:\n\n"...{snippet}..."{suffix}'
+                )
+                citation = {
+                    "type": "literature",
+                    "source": formatted_source,
+                    "snippet": snippet,
+                }
+                if download_url:
+                    citation["url"] = download_url
+                    citation["title"] = formatted_source
+                citations.append(citation)
+            function_response_string = "\n\n".join(formatted)
         else:
             function_response_string = str(function_response_list)
 

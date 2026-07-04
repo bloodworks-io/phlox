@@ -85,7 +85,7 @@ Act as an educational peer-reviewer. You may use tools like PubMed search, wiki_
 Highlight potential documentation gaps and provide standard literature correlations to broaden the consideration set."""
 
     tool_iterations = 0
-    citations: list[str] = []
+    citations: list[str | dict] = []
     reasoning_trace: list[str] = []
     conversation: list[dict[str, Any]] = [{"role": "user", "content": initial_prompt}]
 
