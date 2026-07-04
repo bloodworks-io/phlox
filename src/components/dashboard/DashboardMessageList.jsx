@@ -5,7 +5,10 @@ import { AttachmentIcon } from "../common/icons";
 import { FaFilePdf, FaFileImage } from "react-icons/fa";
 import MarkdownRenderer from "../common/MarkdownRenderer";
 import ArtifactCard from "../common/ArtifactCard";
-import { parseMessageContent } from "../../utils/chat/messageParser";
+import {
+    parseMessageContent,
+    buildCitationRemap,
+} from "../../utils/chat/messageParser";
 import { groupActivityTrace } from "../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../common/ActivityTraceBlock";
 import { CitationList } from "../panels/reasoning/components/CitationList";
@@ -74,6 +77,15 @@ const DashboardMessageList = ({
                         : [{ type: "text", content: message.content || "" }];
 
                 const blocks = groupActivityTrace(rawBlocks);
+
+                const allCitations = Object.values(
+                    message.context || {},
+                ).filter(Boolean);
+                const { remap, citedOriginals } = buildCitationRemap(
+                    parsed?.visibleText || "",
+                );
+                const footerOriginals =
+                    citedOriginals.length > 0 ? citedOriginals : null;
 
                 return (
                     <Flex
@@ -184,7 +196,10 @@ const DashboardMessageList = ({
                                                 key={`text-${messageIndex}-${blockIndex}`}
                                                 width="100%"
                                             >
-                                                <MarkdownRenderer>
+                                                <MarkdownRenderer
+                                                    citations={allCitations}
+                                                    citationRemap={remap}
+                                                >
                                                     {block.content}
                                                 </MarkdownRenderer>
                                             </Box>
@@ -194,9 +209,8 @@ const DashboardMessageList = ({
                                     {message.role === "assistant" &&
                                         message.context && (
                                             <CitationList
-                                                citations={Object.values(
-                                                    message.context,
-                                                ).filter(Boolean)}
+                                                citations={allCitations}
+                                                citedOriginals={footerOriginals}
                                                 colorMode={colorMode}
                                                 inline
                                             />

@@ -209,4 +209,59 @@ export const parseMessageContent = (rawContent) => {
     };
 };
 
+/**
+ * Expand a citation-group body
+ */
+export const expandCitationNumbers = (contents: string): number[] => {
+    const out: number[] = [];
+    for (const part of contents.split(",")) {
+        const trimmed = part.trim();
+        const rangeMatch = trimmed.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (rangeMatch) {
+            const lo = Math.min(+rangeMatch[1], +rangeMatch[2]);
+            const hi = Math.max(+rangeMatch[1], +rangeMatch[2]);
+            for (let n = lo; n <= hi; n++) out.push(n);
+        } else {
+            const n = parseInt(trimmed, 10);
+            if (!Number.isNaN(n)) out.push(n);
+        }
+    }
+    return out;
+};
+
+const CITATION_GROUP_RE = /\[(\d+(?:\s*[-,]\s*\d+)*)\]/g;
+
+/**
+ * Build a remap from original citation indices to contiguous numbers
+ */
+export const buildCitationRemap = (
+    visibleText: string,
+): { remap: Map<number, number>; citedOriginals: number[] } => {
+    const remap = new Map<number, number>();
+    const citedOriginals: number[] = [];
+    const seen = new Set<number>();
+    CITATION_GROUP_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = CITATION_GROUP_RE.exec(visibleText || "")) !== null) {
+        for (const n of expandCitationNumbers(m[1])) {
+            if (!seen.has(n)) {
+                seen.add(n);
+                citedOriginals.push(n);
+                remap.set(n, citedOriginals.length);
+            }
+        }
+    }
+    return { remap, citedOriginals };
+};
+
+export const extractCitedIndices = (visibleText: string): Set<number> => {
+    const set = new Set<number>();
+    CITATION_GROUP_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = CITATION_GROUP_RE.exec(visibleText || "")) !== null) {
+        for (const n of expandCitationNumbers(m[1])) set.add(n);
+    }
+    return set;
+};
+
 export default parseMessageContent;

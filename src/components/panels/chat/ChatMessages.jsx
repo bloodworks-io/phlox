@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { useColorMode } from "../../ui/color-mode";
 import { Flex, Box, Text, HStack, VStack, Spinner, Image } from "@chakra-ui/react";
-import { parseMessageContent } from "../../../utils/chat/messageParser";
+import {
+    parseMessageContent,
+    buildCitationRemap,
+} from "../../../utils/chat/messageParser";
 import { groupActivityTrace } from "../../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../../common/ActivityTraceBlock";
 import MarkdownRenderer from "../../common/MarkdownRenderer";
@@ -52,6 +55,15 @@ const ChatMessages = ({
                         : [{ type: "text", content: message.content || "" }];
 
                 const blocks = groupActivityTrace(rawBlocks);
+
+                const allCitations = Object.values(
+                    message.context || {},
+                ).filter(Boolean);
+                const { remap, citedOriginals } = buildCitationRemap(
+                    parsed?.visibleText || "",
+                );
+                const footerOriginals =
+                    citedOriginals.length > 0 ? citedOriginals : null;
 
                 return (
                     <Flex
@@ -154,7 +166,10 @@ const ChatMessages = ({
                                                 key={`text-${messageIndex}-${blockIndex}`}
                                                 width="100%"
                                             >
-                                                <MarkdownRenderer>
+                                                <MarkdownRenderer
+                                                    citations={allCitations}
+                                                    citationRemap={remap}
+                                                >
                                                     {block.content}
                                                 </MarkdownRenderer>
                                             </Box>
@@ -164,9 +179,8 @@ const ChatMessages = ({
                                     {message.role === "assistant" &&
                                         message.context && (
                                             <CitationList
-                                                citations={Object.values(
-                                                    message.context,
-                                                ).filter(Boolean)}
+                                                citations={allCitations}
+                                                citedOriginals={footerOriginals}
                                                 colorMode={colorMode}
                                                 inline
                                             />

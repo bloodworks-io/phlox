@@ -1,14 +1,9 @@
-import React, { useState } from "react";
-import {
-    Text,
-    Tabs,
-    VStack,
-    Box,
-    Badge,
-    Button,
-} from "@chakra-ui/react";
+import React, { useState, useMemo } from "react";
+import { Text, Tabs, VStack, Box, Badge, Button } from "@chakra-ui/react";
 import { ReasoningItem } from "./ReasoningItem";
 import { CitationList } from "./CitationList";
+import MarkdownRenderer from "../../../common/MarkdownRenderer";
+import { buildCitationRemap } from "../../../../utils/chat/messageParser";
 
 const getReasoningKey = (section) => {
     if (section === "considerations") {
@@ -212,9 +207,35 @@ export const ReasoningContent = ({
     setTabIndex,
     colorMode,
 }) => {
+    const { remap, citedOriginals } = useMemo(() => {
+        const citations = reasoning?.citations;
+        if (!citations || citations.length === 0) {
+            return { remap: new Map(), citedOriginals: [] };
+        }
+        const parts = [];
+        if (reasoning?.summary) parts.push(String(reasoning.summary));
+        if (reasoning?.thinking) parts.push(String(reasoning.thinking));
+        for (const key of [
+            "differentials",
+            "investigations",
+            "clinical_considerations",
+        ]) {
+            const items = reasoning?.[key];
+            if (Array.isArray(items)) {
+                for (const it of items) {
+                    if (Array.isArray(it?.rationale)) {
+                        parts.push(...it.rationale.map(String));
+                    }
+                    if (it?.suggestion) parts.push(String(it.suggestion));
+                }
+            }
+        }
+        return buildCitationRemap(parts.join("\n"));
+    }, [reasoning]);
+
     return (
         <Tabs.Root
-            variant='enclosed'
+            variant="enclosed"
             value={tabIndex}
             onValueChange={({ value }) => setTabIndex(value)}
             display="flex"
@@ -222,37 +243,87 @@ export const ReasoningContent = ({
             height="100%"
         >
             <Tabs.List>
-                <Tabs.Trigger className="tab-style" value="0">Summary</Tabs.Trigger>
-                <Tabs.Trigger className="tab-style" value="1">Differentials</Tabs.Trigger>
-                <Tabs.Trigger className="tab-style" value="2">Investigations</Tabs.Trigger>
-                <Tabs.Trigger className="tab-style" value="3">Considerations</Tabs.Trigger>
-                <Tabs.Trigger className="tab-style" value="4">Thinking</Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="0">
+                    Summary
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="1">
+                    Differentials
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="2">
+                    Investigations
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="3">
+                    Considerations
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="4">
+                    Thinking
+                </Tabs.Trigger>
             </Tabs.List>
             {/* Summary Tab */}
-            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" display="flex" flexDirection="column" value="0">
-                <Text fontSize="sm">{reasoning.summary}</Text>
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                display="flex"
+                flexDirection="column"
+                value="0"
+            >
+                <MarkdownRenderer
+                    citations={reasoning?.citations}
+                    citationRemap={remap}
+                >
+                    {reasoning.summary || ""}
+                </MarkdownRenderer>
             </Tabs.Content>
 
             {/* Differentials Tab */}
-            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="1">
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                value="1"
+            >
                 {renderItems("differentials", reasoning, colorMode)}
             </Tabs.Content>
 
             {/* Investigations Tab */}
-            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="2">
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                value="2"
+            >
                 {renderItems("investigations", reasoning, colorMode)}
             </Tabs.Content>
 
             {/* Considerations Tab */}
-            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="3">
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                value="3"
+            >
                 {renderItems("considerations", reasoning, colorMode)}
             </Tabs.Content>
 
             {/* Thinking Tab */}
-            <Tabs.Content className="floating-main" flex="1" minHeight="0" overflowY="auto" value="4">
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                value="4"
+            >
                 {renderThinkingCards(reasoning?.thinking, colorMode)}
                 <CitationList
                     citations={reasoning?.citations}
+                    citedOriginals={
+                        citedOriginals.length > 0 ? citedOriginals : null
+                    }
                     colorMode={colorMode}
                 />
             </Tabs.Content>
