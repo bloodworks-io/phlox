@@ -61,6 +61,15 @@ def build_system_messages(
     # Start with the main system prompt
     content = prompts["prompts"]["chat"]["system"]
 
+    content += (
+        "\n\nCITATION RULE: When your answer uses information from a tool that "
+        "returned numbered sources ([1], [2], ...), you MUST cite the relevant "
+        "source inline as [N] at the end of the sentence that uses it. If a "
+        "sentence draws on several sources, group them as [N, M]. Only cite "
+        'sources you actually used; do not invent numbers. Example: "... oral '
+        'iron is first-line for iron-deficiency anaemia [1]."'
+    )
+
     today = datetime.now().strftime("%Y-%m-%d")
     today_readable = datetime.now().strftime("%A, %B %d, %Y")
     content += f"\n\nToday's date is {today_readable} ({today})."

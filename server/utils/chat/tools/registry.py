@@ -46,7 +46,7 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "get_relevant_literature",
-                "description": f"Only use this tool if answering the most recent message from the user would benefit from a literature search. Available disease areas: {collection_names_string}, other",
+                "description": f"Only use this tool if answering the most recent message from the user would benefit from a literature search. Available disease areas: {collection_names_string}, other. Sources are numbered [1], [2], etc. in the results; cite the relevant source inline as [N] in your answer when you use its information.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -69,7 +69,7 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "pubmed_search",
-                "description": "Search PubMed for medical literature and research articles. Use this when the user asks about recent research, clinical studies, or medical publications.",
+                "description": "Search PubMed for medical literature and research articles. Use this when the user asks about recent research, clinical studies, or medical publications. Sources are numbered [1], [2], etc. in the results; cite the relevant source inline as [N] in your answer when you use its information.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -92,7 +92,7 @@ def _get_built_in_tools(collection_names: list[str]) -> list[dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "wiki_search",
-                "description": "Search Wikipedia for general medical information, drug information, disease overviews, and clinical guidelines. Use this for background information, drug details, or when PubMed is too specific. IMPORTANT: Use only 1-2 word queries (e.g., 'hydroxyurea', 'thrombocythemia', 'aspirin') not full sentences.",
+                "description": "Search Wikipedia for general medical information, drug information, disease overviews, and clinical guidelines. Use this for background information, drug details, or when PubMed is too specific. IMPORTANT: Use only 1-2 word queries (e.g., 'hydroxyurea', 'thrombocythemia', 'aspirin') not full sentences. Sources are numbered [1], [2], etc. in the results; cite the relevant source inline as [N] in your answer when you use its information.",
                 "parameters": {
                     "type": "object",
                     "properties": {
