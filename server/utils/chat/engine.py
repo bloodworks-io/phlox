@@ -7,6 +7,7 @@ the LLM client, VectorStoreManager, and tool execution.
 
 import json
 import logging
+import re
 from typing import Any
 
 from server.database.config.manager import config_manager
@@ -25,6 +26,17 @@ from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE, VectorStoreMan
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def _shift_citation_markers(text: str, offset: int) -> str:
+    """Shift ``[N]`` citation markers in ``text`` by ``offset``.
+
+    Used so multiple tools in one turn share a single global citation
+    numbering.
+    """
+    if not text or offset == 0:
+        return text
+    return re.sub(r"\[(\d+)\]", lambda m: f"[{int(m.group(1)) + offset}]", text)
 
 
 class ChatEngine:
@@ -104,6 +116,8 @@ class ChatEngine:
             iterations = 0
             function_response = None
             generated_final_answer = False
+            all_citations: list = []
+            citation_offset = 0
 
             while iterations < MAX_ITERATIONS:
                 iterations += 1
@@ -282,8 +296,13 @@ class ChatEngine:
                                 if not isinstance(tool_content, str):
                                     tool_content = str(tool_content)
 
-                                # If this was the last allowed tool iteration, explicitly tell the model
-                                # that time is up and no further tool calls are allowed.
+                                tool_citations = function_response.get("citations") or []
+                                tool_content = _shift_citation_markers(
+                                    tool_content, citation_offset
+                                )
+                                all_citations.extend(tool_citations)
+                                citation_offset += len(tool_citations)
+
                                 if iterations >= MAX_ITERATIONS:
                                     tool_content += (
                                         "\n\n[TOOL_LIMIT_REACHED] "
@@ -330,9 +349,12 @@ class ChatEngine:
             ):
                 yield chunk
 
-        # Signal end of stream with function_response if available
-        self.logger.info("Streaming chat completed.")
-        yield end_message(function_response=function_response)
+        merged_response = {"citations": all_citations} if all_citations else function_response
+        self.logger.info(
+            "Streaming chat completed. Emitting %d merged citation(s).",
+            len(all_citations),
+        )
+        yield end_message(function_response=merged_response)
 
     async def _execute_tool_call(
         self,
