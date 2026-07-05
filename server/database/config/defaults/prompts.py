@@ -33,10 +33,10 @@ DEFAULT_PROMPTS = {
         },
     },
     "options": {
-        "chat": {"temperature": 0.1, "num_ctx": 7168},
-        "general": {"temperature": 0.1, "num_ctx": 7168},
-        "letter": {"temperature": 0.6, "num_ctx": 7168},
-        "secondary": {"temperature": 0.1, "num_ctx": 1024},
-        "reasoning": {"temperature": 0.1, "num_ctx": 4096},
+        "chat": {"temperature": 0.1},
+        "general": {"temperature": 0.1},
+        "letter": {"temperature": 0.6},
+        "secondary": {"temperature": 0.1},
+        "reasoning": {"temperature": 0.1},
     },
 }
