@@ -64,6 +64,7 @@ def _get_relevant_literature(
         logger.error(f"Error querying collection: {e}")
         return "No relevant literature available"
 
+    try:
         downloadable = {
             f["filename"]
             for f in vector_store_manager.get_files_for_collection_with_pdf_flag(
