@@ -203,11 +203,24 @@ async def execute_tool_streaming(
             yield result
 
     else:
-        # Unknown tool - this shouldn't happen if registry is in sync
-        logger.error(f"Unknown tool requested: {function_name}")
-        from server.utils.chat.streaming.response import status_message
+        logger.warning(f"Unknown tool requested: {function_name}")
+        from server.utils.chat.streaming.response import end_message, status_message
 
-        yield status_message(f"Error: Unknown tool '{function_name}'")
+        yield status_message(f"Tool '{function_name}' not found")
+        yield end_message(
+            function_response={
+                "content": (
+                    f"Error: tool '{function_name}' does not exist. "
+                    "Do not call it again. For literature/web searches use "
+                    "'wiki_search' (general background, drugs, disease overviews), "
+                    "'pubmed_search' (research articles), or "
+                    "'get_relevant_literature' (clinical guidelines in the local "
+                    "knowledge base). For patients use 'search_patient' or "
+                    "'search_patients_by_condition'."
+                ),
+                "citations": [],
+            }
+        )
 
 
 async def execute_tool_non_streaming(
