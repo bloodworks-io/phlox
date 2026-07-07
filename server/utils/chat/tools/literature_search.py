@@ -46,7 +46,9 @@ def _get_relevant_literature(
     logger.info(f"Sanitized disease name: '{sanitized_disease_name}'")
     logger.info(f"Available collections: {collection_names}")
 
-    if sanitized_disease_name not in collection_names:
+
+    collection_slugs = {_sanitize_disease_name(c) for c in collection_names}
+    if sanitized_disease_name not in collection_slugs:
         logger.info(f"No collection found for disease: {sanitized_disease_name}")
         return "No relevant literature available"
 
@@ -84,7 +86,7 @@ def _get_relevant_literature(
             meta = context["metadatas"][i][j]
             source = meta.get("source", "")
             filename = meta.get("filename", "")
-            formatted_source = source.replace("_", " ").title()
+            formatted_source = source
             cleaned_doc = doc.strip().replace("\n", " ")
             logger.info(f"Adding document from source: {formatted_source} (distance: {distance})")
             entry = {

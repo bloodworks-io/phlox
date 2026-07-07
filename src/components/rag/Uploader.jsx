@@ -16,6 +16,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
     const [customCollectionName, setCustomCollectionName] = useState("");
     const [documentSource, setDocumentSource] = useState("");
     const [focusArea, setFocusArea] = useState("");
+    const [title, setTitle] = useState("");
     const [filename, setFilename] = useState("");
     const [pdfData, setPdfData] = useState(null);
     const [isExtracting, setIsExtracting] = useState(false);
@@ -45,6 +46,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
             setCustomCollectionName(result.disease_name);
             setDocumentSource(result.document_source);
             setFocusArea(result.focus_area);
+            setTitle(result.title || "");
             toaster.create({
                 title: "Extraction Successful",
                 description: result.extractedText
@@ -86,6 +88,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                     focus_area: focusArea,
                     document_source: documentSource,
                     filename: filename,
+                    title: title || null,
                     pdf_base64: pdfData.pdfBase64 || null,
                 });
             } else {
@@ -94,6 +97,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                     focus_area: focusArea,
                     document_source: documentSource,
                     filename: filename,
+                    title: title || null,
                 });
             }
             const updatedCollections = await ragApi.fetchCollections();
@@ -109,6 +113,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
             setCustomCollectionName("");
             setDocumentSource("");
             setFocusArea("");
+            setTitle("");
             setFilename("");
             setPdfData(null);
             toaster.create({
@@ -226,6 +231,18 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                                 className="input-style"
                                                 value={focusArea}
                                                 onChange={(e) => setFocusArea(e.target.value)}
+                                            />
+                                            </Field.Root>
+                                            <Field.Root>
+                                            <Field.Label htmlFor="document-title">
+                                                Document Title:
+                                            </Field.Label>
+                                            <Input
+                                                id="document-title"
+                                                placeholder="Document Title"
+                                                className="input-style"
+                                                value={title}
+                                                onChange={(e) => setTitle(e.target.value)}
                                             />
                                             </Field.Root>
                                             <Button

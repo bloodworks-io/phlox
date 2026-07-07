@@ -248,6 +248,7 @@ const DocumentExplorer = ({
                                                         collection.files.map(
                                                             (file, index) => {
                                                                 const fileName = typeof file === "string" ? file : file.filename;
+                                                                const fileTitle = typeof file === "object" ? (file.title || file.filename) : file;
                                                                 const hasPdf = typeof file === "object" ? file.has_pdf : false;
                                                                 return (
                                                                     <List.Item
@@ -262,7 +263,7 @@ const DocumentExplorer = ({
                                                                             color="blue.500"
                                                                         />
                                                                         <Text fontSize="sm">
-                                                                            {fileName}
+                                                                            {fileTitle || fileName}
                                                                         </Text>
                                                                         <Flex ml="auto">
                                                                             {hasPdf && (

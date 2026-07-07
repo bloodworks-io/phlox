@@ -144,6 +144,7 @@ const BulkUploader = ({ setCollections }) => {
                         focus_area: result.focus_area,
                         document_source: result.document_source,
                         filename: result.filename,
+                        title: result.title,
                     },
                 });
             } catch (error) {
@@ -201,6 +202,7 @@ const BulkUploader = ({ setCollections }) => {
                         focus_area: entry.metadata.focus_area,
                         document_source: entry.metadata.document_source,
                         filename: entry.metadata.filename,
+                        title: entry.metadata.title || null,
                         pdf_base64: entry.pdfBase64 || null,
                     });
                 } else {
@@ -210,6 +212,7 @@ const BulkUploader = ({ setCollections }) => {
                         focus_area: entry.metadata.focus_area,
                         document_source: entry.metadata.document_source,
                         filename: entry.metadata.filename,
+                        title: entry.metadata.title || null,
                     });
                 }
                 updateQueueEntry(entry.id, {

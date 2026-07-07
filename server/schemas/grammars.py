@@ -13,28 +13,30 @@ class ClinicalSuggestionList(BaseModel):
 
 
 # RAG Collection Management
-class DiseaseNameResponse(BaseModel):
+class DocumentClassification(BaseModel):
     """
-    Structured model for disease name identification.
-    """
-
-    disease_name: str
-
-
-class FocusAreaResponse(BaseModel):
-    """
-    Structured model for document focus area.
+    Single-pass classification of an uploaded RAG document: disease area,
+    focus area, source, and a readable title.
     """
 
-    focus_area: str
-
-
-class DocumentSourceResponse(BaseModel):
-    """
-    Structured model for document source identification.
-    """
-
-    source: str
+    disease_name: str = Field(
+        ..., description="Main disease in natural casing, e.g. 'Systemic AL Amyloidosis'"
+    )
+    focus_area: str = Field(
+        ...,
+        description=(
+            "Document category — one of: guidelines, diagnosis, treatment, "
+            "monitoring, prognosis, pathology, overview, other"
+        ),
+    )
+    document_source: str = Field(
+        ...,
+        description="Publishing source in natural casing, e.g. 'NCCN Guidelines', 'EHA Consensus'",
+    )
+    title: str = Field(
+        ...,
+        description="The document's own title as it appears in the text, e.g. '2024 EHA Consensus Guidelines on AL Amyloidosis'",
+    )
 
 
 # Transcription Processing

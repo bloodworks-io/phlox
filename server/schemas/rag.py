@@ -16,6 +16,7 @@ class CommitRequest(BaseModel):
     focus_area: str
     document_source: str
     filename: str
+    title: str | None = None
 
 
 class ModifyCollectionRequest(BaseModel):
@@ -52,6 +53,7 @@ class BulkCommitRequest(BaseModel):
     focus_area: str
     document_source: str
     filename: str
+    title: str | None = None
     pdf_base64: str | None = None
 
 

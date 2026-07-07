@@ -184,6 +184,7 @@ export async function extractPdfMetadata(file) {
         disease_name: metadata.disease_name,
         focus_area: metadata.focus_area,
         document_source: metadata.document_source,
+        title: metadata.title,
         filename,
     };
 }

@@ -84,16 +84,57 @@ class SqliteVecBackend:
             db.execute(
                 "CREATE INDEX IF NOT EXISTS idx_chunks_source_doc ON chunks(source_document_id)"
             )
+
+            self._ensure_columns_and_backfill(db)
             db.commit()
         finally:
             db.close()
+
+    @staticmethod
+    def _has_column(db, table: str, column: str) -> bool:
+        rows = db.execute(f"PRAGMA table_info({table})").fetchall()
+        return any(r[1] == column for r in rows)
+
+    def _ensure_columns_and_backfill(self, db) -> None:
+        """Add display_name/title columns and backfill legacy snake_case data."""
+        # collections.display_name
+        if not self._has_column(db, "collections", "display_name"):
+            db.execute("ALTER TABLE collections ADD COLUMN display_name TEXT")
+            for row in db.execute("SELECT name FROM collections").fetchall():
+                slug = row[0]
+                display = slug.replace("_", " ").title()
+                db.execute(
+                    "UPDATE collections SET display_name = ? WHERE name = ?",
+                    (display, slug),
+                )
+        # source_documents.title
+        if not self._has_column(db, "source_documents", "title"):
+            db.execute("ALTER TABLE source_documents ADD COLUMN title TEXT")
+
+        rows = db.execute(
+            "SELECT name, display_name FROM collections WHERE display_name IS NOT NULL"
+        ).fetchall()
+        for slug, display in rows:
+            db.execute(
+                "UPDATE chunks SET disease_name = ? WHERE disease_name = ?",
+                (display, slug),
+            )
+
+        for row in db.execute(
+            "SELECT DISTINCT source FROM chunks WHERE source LIKE '%\\_%' ESCAPE '\\'"
+        ).fetchall():
+            raw = row[0]
+            display = raw.replace("_", " ").title()
+            db.execute("UPDATE chunks SET source = ? WHERE source = ?", (display, raw))
 
     # Collection lifecycle
 
     def list_collections(self) -> list[str]:
         db = self._connect()
         try:
-            rows = db.execute("SELECT name FROM collections ORDER BY name").fetchall()
+            rows = db.execute(
+                "SELECT COALESCE(display_name, name) AS display FROM collections ORDER BY display"
+            ).fetchall()
             return [r[0] for r in rows]
         except Exception as e:
             logger.error("Error listing collections: %s", e)
@@ -101,14 +142,21 @@ class SqliteVecBackend:
         finally:
             db.close()
 
-    def create_collection(self, name: str, embedding_model: str, embedding_dim: int) -> None:
+    def create_collection(
+        self,
+        name: str,
+        embedding_model: str,
+        embedding_dim: int,
+        display_name: str | None = None,
+    ) -> None:
         safe = _safe_table_name(name)
         db = self._connect()
         try:
             db.execute(
-                "INSERT OR IGNORE INTO collections (name, embedding_model, embedding_dim) "
-                "VALUES (?, ?, ?)",
-                (name, embedding_model, embedding_dim),
+                "INSERT OR IGNORE INTO collections "
+                "(name, embedding_model, embedding_dim, display_name) "
+                "VALUES (?, ?, ?, ?)",
+                (name, embedding_model, embedding_dim, display_name),
             )
             db.execute(
                 f"CREATE VIRTUAL TABLE IF NOT EXISTS vec_{safe} USING vec0("
@@ -134,16 +182,23 @@ class SqliteVecBackend:
         finally:
             db.close()
 
-    def rename_collection(self, old_name: str, new_name: str) -> bool:
+    def rename_collection(
+        self, old_name: str, new_name: str, display_name: str | None = None
+    ) -> bool:
         old_safe = _safe_table_name(old_name)
         new_safe = _safe_table_name(new_name)
         db = self._connect()
         try:
             db.execute(f"ALTER TABLE vec_{old_safe} RENAME TO vec_{new_safe}")
             db.execute("UPDATE collections SET name = ? WHERE name = ?", (new_name, old_name))
+            if display_name is not None:
+                db.execute(
+                    "UPDATE collections SET display_name = ? WHERE name = ?",
+                    (display_name, new_name),
+                )
             db.execute(
                 "UPDATE chunks SET collection_name = ?, disease_name = ? WHERE collection_name = ?",
-                (new_name, new_name, old_name),
+                (new_name, display_name or new_name, old_name),
             )
             db.execute(
                 "UPDATE source_documents SET collection_name = ? WHERE collection_name = ?",
@@ -167,14 +222,20 @@ class SqliteVecBackend:
     # Document storage
 
     def store_source_document(
-        self, collection_name: str, filename: str, full_text: str, pdf_bytes: bytes | None = None
+        self,
+        collection_name: str,
+        filename: str,
+        full_text: str,
+        pdf_bytes: bytes | None = None,
+        title: str | None = None,
     ) -> int:
         db = self._connect()
         try:
             db.execute(
-                "INSERT INTO source_documents (collection_name, filename, full_text, pdf_blob) "
-                "VALUES (?, ?, ?, ?)",
-                (collection_name, filename, full_text, pdf_bytes),
+                "INSERT INTO source_documents "
+                "(collection_name, filename, full_text, pdf_blob, title) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (collection_name, filename, full_text, pdf_bytes, title),
             )
             row_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
             db.commit()
@@ -230,9 +291,10 @@ class SqliteVecBackend:
             db.close()
 
     def get_files_for_collection_with_pdf_flag(self, collection_name: str) -> list[dict]:
-        """Return files for a collection with a ``has_pdf`` flag per file.
+        """Return files for a collection with ``has_pdf`` + ``title`` per file.
 
-        Each dict has keys ``filename`` (str) and ``has_pdf`` (bool).
+        Each dict has keys ``filename`` (str), ``has_pdf`` (bool), and
+        ``title`` (str | None — display title, falls back to filename).
         """
         db = self._connect()
         try:
@@ -247,13 +309,20 @@ class SqliteVecBackend:
             # Check which files have a non-null pdf_blob in source_documents
             placeholders = ",".join("?" * len(filenames))
             pdf_rows = db.execute(
-                f"SELECT filename, pdf_blob IS NOT NULL FROM source_documents "
+                f"SELECT filename, pdf_blob IS NOT NULL, title FROM source_documents "
                 f"WHERE collection_name = ? AND filename IN ({placeholders})",
                 [collection_name, *filenames],
             ).fetchall()
-            pdf_map = {r[0]: bool(r[1]) for r in pdf_rows}
+            info_map = {r[0]: (bool(r[1]), r[2]) for r in pdf_rows}
 
-            return [{"filename": f, "has_pdf": pdf_map.get(f, False)} for f in filenames]
+            return [
+                {
+                    "filename": f,
+                    "has_pdf": info_map.get(f, (False, None))[0],
+                    "title": info_map.get(f, (False, None))[1],
+                }
+                for f in filenames
+            ]
         except Exception as e:
             logger.error("Error retrieving files with pdf flag for '%s': %s", collection_name, e)
             return []

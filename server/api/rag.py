@@ -47,26 +47,26 @@ async def _extract_rag_metadata_from_text(
     logger.debug(f"Text extracted. Length: {len(extracted_text)}. Storing temporarily.")
     vector_store_manager.set_extracted_text(extracted_text)
 
-    logger.info("Attempting to determine disease name...")
-    disease_name = await vector_store_manager.get_disease_name(extracted_text)
-    logger.info(f"Disease name determined: '{disease_name}'")
-
-    logger.debug("Attempting to determine focus area...")
-    focus_area = await vector_store_manager.get_focus_area(extracted_text)
-    logger.debug(f"Focus area determined: '{focus_area}'")
-
-    logger.debug("Attempting to determine document source...")
-    document_source = await vector_store_manager.get_document_source(extracted_text)
-    logger.debug(f"Document source determined: '{document_source}'")
-
+    logger.info("Classifying document (disease / focus / source / title)...")
+    classification = await vector_store_manager.get_document_classification(extracted_text)
+    disease_name = classification.disease_name
+    focus_area = classification.focus_area
+    document_source = classification.document_source
+    title = classification.title
     logger.info(
-        f"PDF processing complete for '{filename}': disease='{disease_name}', focus='{focus_area}', source='{document_source}'"
+        "Classification complete for '%s': disease='%s' focus='%s' source='%s' title='%s'",
+        filename,
+        disease_name,
+        focus_area,
+        document_source,
+        title,
     )
 
     return {
         "disease_name": disease_name,
         "focus_area": focus_area,
         "document_source": document_source,
+        "title": title,
         "filename": filename,
         "message": "PDF information extracted. Ready for commit.",
     }
@@ -279,6 +279,7 @@ async def commit_to_db(request: CommitRequest):
             request.focus_area,
             request.document_source,
             request.filename,
+            title=request.title,
         )
 
         return {"message": "Data committed to the database successfully"}
@@ -308,6 +309,7 @@ async def commit_direct(request: BulkCommitRequest):
             focus_area=request.focus_area,
             document_source=request.document_source,
             filename=request.filename,
+            title=request.title,
             pdf_bytes=pdf_bytes,
         )
         return {

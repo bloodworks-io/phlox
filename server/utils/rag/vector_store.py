@@ -3,7 +3,6 @@ VectorStoreManager — backend-agnostic facade for RAG.
 """
 
 import io
-import json
 import logging
 import threading
 from pathlib import Path
@@ -126,9 +125,11 @@ class VectorStoreManager:
         return self.backend.delete_file_from_collection(formatted, file_name)
 
     def modify_collection_name(self, old_name: str, new_name: str) -> bool:
+        """Rename a collection. ``new_name`` is the new display name; the
+        underlying slug/PK is derived from it."""
         old_formatted = self.format_to_collection_name(old_name)
         new_formatted = self.format_to_collection_name(new_name)
-        return self.backend.rename_collection(old_formatted, new_formatted)
+        return self.backend.rename_collection(old_formatted, new_formatted, display_name=new_name)
 
     def delete_collection(self, name: str) -> bool:
         formatted = self.format_to_collection_name(name)
@@ -163,15 +164,17 @@ class VectorStoreManager:
         focus_area: str,
         document_source: str,
         filename: str,
+        title: str | None = None,
         pdf_bytes: bytes | None = None,
     ) -> None:
         """Core commit logic: chunk text, embed, and store everything."""
         logger.info(
-            "Committing to vectordb: disease=%s focus_area=%s source=%s filename=%s",
+            "Committing to vectordb: disease=%s focus_area=%s source=%s filename=%s title=%s",
             disease_name,
             focus_area,
             document_source,
             filename,
+            title,
         )
 
         formatted = self.format_to_collection_name(disease_name)
@@ -190,8 +193,8 @@ class VectorStoreManager:
         dim = len(embeddings[0])
         logger.info("Embeddings generated: %d vectors, dim=%d", len(embeddings), dim)
 
-        # Ensure collection exists
-        self.backend.create_collection(formatted, self._model_name, dim)
+        # Ensure collection exists (display_name preserves original casing).
+        self.backend.create_collection(formatted, self._model_name, dim, display_name=disease_name)
 
         # Store source document (include raw PDF if config enabled)
         user_settings = config_manager.get_user_settings()
@@ -202,10 +205,10 @@ class VectorStoreManager:
                 "store_original_pdfs enabled — pdf_bytes=%s", "present" if pdf_bytes else "None"
             )
         source_doc_id = self.backend.store_source_document(
-            formatted, filename, extracted_text, stored_pdf
+            formatted, filename, extracted_text, stored_pdf, title=title
         )
 
-        # Build chunk data objects
+        # Build chunk data objects (store natural-cased disease_name/source).
         chunks = [
             ChunkData(
                 id=f"{filename}_{idx}",
@@ -213,7 +216,7 @@ class VectorStoreManager:
                 source_document_id=source_doc_id,
                 chunk_index=idx,
                 text=text,
-                disease_name=formatted,
+                disease_name=disease_name,
                 focus_area=focus_area,
                 source=document_source,
                 filename=filename,
@@ -226,7 +229,12 @@ class VectorStoreManager:
         logger.info("Documents successfully added: %d", len(texts))
 
     def commit_to_vectordb(
-        self, disease_name: str, focus_area: str, document_source: str, filename: str
+        self,
+        disease_name: str,
+        focus_area: str,
+        document_source: str,
+        filename: str,
+        title: str | None = None,
     ) -> None:
         """Chunk staged text, embed, and store everything."""
         try:
@@ -240,6 +248,7 @@ class VectorStoreManager:
                 focus_area=focus_area,
                 document_source=document_source,
                 filename=filename,
+                title=title,
                 pdf_bytes=self.extracted_pdf_bytes,
             )
         except Exception:
@@ -256,6 +265,7 @@ class VectorStoreManager:
         focus_area: str,
         document_source: str,
         filename: str,
+        title: str | None = None,
         pdf_bytes: bytes | None = None,
     ) -> None:
         """Commit directly with extracted text (no staging required).
@@ -270,6 +280,7 @@ class VectorStoreManager:
                 focus_area=focus_area,
                 document_source=document_source,
                 filename=filename,
+                title=title,
                 pdf_bytes=pdf_bytes,
             )
         except Exception:
@@ -411,123 +422,41 @@ class VectorStoreManager:
         )
         return response_json
 
-    async def get_disease_name(self, text: str) -> str:
-        """Determine the disease name from the extracted text."""
-        from server.schemas.grammars import DiseaseNameResponse
+    async def get_document_classification(self, text: str):
+        """Single-pass RAG document classification.
+        """
+        from server.schemas.grammars import DocumentClassification
 
         collection_names = self.list_collections()
-        collection_names_string = ", ".join(collection_names)
-
-        words = text.split()
-        sample_text = " ".join(words[:500])
-
-        json_schema_instruction = (
-            "Output MUST be ONLY valid JSON with top-level key "
-            '"disease_name" (string). Example: ' + json.dumps({"disease_name": "..."})
-        )
-
-        disease_messages = [
-            {
-                "role": "system",
-                "content": self.prompts["prompts"]["chat"]["system"]
-                + "\n\n"
-                + json_schema_instruction,
-            },
-            {
-                "role": "user",
-                "content": f"""Analyze this text sample and determine the disease it discusses:
-
-                Text: {sample_text}
-
-                Available collections: {collection_names_string}
-
-                If the text primarily relates to one of the available collections, use that exact name.
-                Otherwise, identify the main disease discussed in American English (no acronyms).
-                Provide the disease name in lowercase with underscores instead of spaces.""",
-            },
-        ]
-
-        disease_response = await self.get_structured_response(
-            disease_messages, DiseaseNameResponse.model_json_schema()
-        )
-        disease_data = DiseaseNameResponse.model_validate_json(disease_response)
-        return disease_data.disease_name
-
-    async def get_focus_area(self, text: str) -> str:
-        """Determine the focus area of the document."""
-        from server.schemas.grammars import FocusAreaResponse
-
-        words = text.split()
-        sample_text = " ".join(words[:500])
-
-        json_schema_instruction = (
-            "Output MUST be ONLY valid JSON with top-level key "
-            '"focus_area" (string). Example: ' + json.dumps({"focus_area": "..."})
-        )
-
-        focus_area_messages = [
-            {
-                "role": "system",
-                "content": self.prompts["prompts"]["chat"]["system"]
-                + "\n\n"
-                + json_schema_instruction,
-            },
-            {
-                "role": "user",
-                "content": f"""Analyze this text and determine its primary focus area:
-
-                Text: {sample_text}
-
-                Choose the most appropriate focus area from: guidelines, diagnosis, treatment, epidemiology, pathophysiology, prognosis, clinical_features, prevention, or miscellaneous.
-
-                Provide the focus area in lowercase with underscores instead of spaces.""",
-            },
-        ]
-
-        focus_response = await self.get_structured_response(
-            focus_area_messages, FocusAreaResponse.model_json_schema()
-        )
-        focus_data = FocusAreaResponse.model_validate_json(focus_response)
-        return focus_data.focus_area
-
-    async def get_document_source(self, text: str) -> str:
-        """Determine the source of the document."""
-        from server.schemas.grammars import DocumentSourceResponse
-
-        words = text.split()
-        sample_text = " ".join(words[:250])
-
+        collection_names_string = ", ".join(collection_names) or "(none yet)"
         existing_sources = self.list_sources_from_all_collections()
-        existing_sources_string = ", ".join(existing_sources)
+        existing_sources_string = ", ".join(existing_sources) or "(none yet)"
 
-        json_schema_instruction = (
-            "Output MUST be ONLY valid JSON with top-level key "
-            '"source" (string). Example: ' + json.dumps({"source": "..."})
-        )
+        words = text.split()
+        sample_text = " ".join(words[:500])
 
-        source_messages = [
+        messages = [
             {
                 "role": "system",
-                "content": self.prompts["prompts"]["chat"]["system"]
-                + "\n\n"
-                + json_schema_instruction,
+                "content": self.prompts["prompts"]["chat"]["system"],
             },
             {
                 "role": "user",
-                "content": f"""Identify the source of this document:
+                "content": f"""Classify this medical document in a single pass.
 
-                Text: {sample_text}
+Text sample: {sample_text}
 
-                Available sources: {existing_sources_string}
+Return JSON with these fields:
+- "disease_name": the main disease discussed, in natural written casing (e.g. "Systemic AL Amyloidosis", "Essential Thrombocythemia"). If the text clearly relates to one of these existing collections, reuse that exact name: {collection_names_string}. Otherwise identify the disease in American English (no acronyms unless universally used, e.g. "CLL" is acceptable).
+- "focus_area": the document category — exactly one of: guidelines, diagnosis, treatment, epidemiology, pathophysiology, prognosis, clinical_features, prevention, miscellaneous.
+- "document_source": the publishing source in natural casing (e.g. "NCCN Guidelines", "EHA Consensus", "British Society for Haematology"). If it matches an existing source, reuse that exact name: {existing_sources_string}.
+- "title": the document's own title as printed in the text (e.g. "2024 EHA Consensus Guidelines on the Diagnosis and Management of AL Amyloidosis"). If no explicit title is present, write a concise descriptive title.
 
-                If the document matches one of the available sources, use that exact name.
-                Otherwise, provide the actual source name of the document.
-                Provide the source in lowercase with underscores instead of spaces.""",
+Use normal casing and spaces throughout (no underscores, no lowercasing).""",
             },
         ]
 
-        source_response = await self.get_structured_response(
-            source_messages, DocumentSourceResponse.model_json_schema()
+        response = await self.get_structured_response(
+            messages, DocumentClassification.model_json_schema()
         )
-        source_data = DocumentSourceResponse.model_validate_json(source_response)
-        return source_data.source
+        return DocumentClassification.model_validate_json(response)
