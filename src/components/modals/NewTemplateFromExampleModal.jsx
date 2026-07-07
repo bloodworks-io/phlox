@@ -29,9 +29,9 @@ const NewTemplateFromExampleModal = ({
                             <VStack gap={4} align="stretch">
                                 {/* Info box */}
                                 <Box
-                                    bg={{ _light: "blue.50", _dark: "blue.900" }}
+                                    bg="surfaceMuted"
                                     borderLeft="4px solid"
-                                    borderColor="blue.400"
+                                    borderColor="accent"
                                     p={4}
                                     borderRadius="md"
                                 >

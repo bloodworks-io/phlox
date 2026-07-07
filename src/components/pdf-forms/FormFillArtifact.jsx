@@ -64,7 +64,7 @@ const FormFillArtifact = ({ artifact }) => {
                 </Text>
             </HStack>
             <HStack gap={2} justify="space-between">
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="overlay0">
                     PDF form · filled
                 </Text>
                 <Button

@@ -346,7 +346,7 @@ const DocumentExplorer = ({
                                             alignItems="center"
                                             p="2"
                                             className="documentExplorer-style"
-                                            _hover={{ bg: "gray.100" }}
+                                            _hover={{ bg: "surfaceMuted" }}
                                         >
                                             <Tooltip content="Toggle collection" showArrow>
                                             <IconButton
@@ -449,7 +449,7 @@ const DocumentExplorer = ({
                                                                         <Box
                                                                             as={FaFile}
                                                                             mr="2"
-                                                                            color="blue.500"
+                                                                            color="primaryButton"
                                                                         />
                                                                         <Text fontSize="sm">
                                                                             {fileTitle || fileName}
@@ -515,7 +515,7 @@ const DocumentExplorer = ({
                                                     ) : (
                                                         <List.Item
                                                             fontSize="sm"
-                                                            color="gray.500"
+                                                            color="overlay0"
                                                         >
                                                             No files found.
                                                         </List.Item>

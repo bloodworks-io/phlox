@@ -76,7 +76,7 @@ export const LettersStep = ({
                   {template.name}
                 </Heading>
                 {selectedLetterTemplate === template.id.toString() && (
-                  <Icon color="green.500" asChild><FaCheckCircle /></Icon>
+                  <Icon color="successButton" asChild><FaCheckCircle /></Icon>
                 )}
               </HStack>
             </Card.Header>

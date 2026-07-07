@@ -381,7 +381,7 @@ const DashboardChat = () => {
                         >
                             How can I help you today?
                         </Text>
-                        <Text fontSize="md" color="gray.500">
+                        <Text fontSize="md" color="overlay0">
                             Ask about patients, evidence, or outstanding jobs
                         </Text>
                     </VStack>

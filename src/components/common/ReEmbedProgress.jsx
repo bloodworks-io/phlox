@@ -15,7 +15,7 @@ export const ReEmbedProgress = ({ progress }) => {
 
     return (
         <Box w="100%">
-            <Text fontSize="xs" color="gray.600" mb={1}>
+            <Text fontSize="xs" color="textTertiary" mb={1}>
                 Collection {collection_index + 1} of {total_collections}
                 {collection_name ? `: ${collection_name}` : ""}
             </Text>
@@ -24,7 +24,7 @@ export const ReEmbedProgress = ({ progress }) => {
                     <Progress.Range />
                 </Progress.Track>
             </Progress.Root>
-            <Text fontSize="xs" color="gray.500" mt={1}>
+            <Text fontSize="xs" color="overlay0" mt={1}>
                 {chunks_embedded} of {total_chunks_in_collection} chunks
                 embedded
             </Text>

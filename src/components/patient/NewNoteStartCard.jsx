@@ -27,11 +27,15 @@ export const PathHalf = ({
         py={10}
         px={4}
         cursor="pointer"
-        role="group"
-        transition="all 0.2s"
+        transition="transform 0.1s ease, background 0.15s ease"
         bg={tileBg}
         borderRadius="xl"
-        _hover={{ bg: "rgba(184, 192, 224, 0.12)" }}
+        _hover={{
+            bg: "rgba(184, 192, 224, 0.12)",
+            "& svg": { transform: "scale(1.12)" },
+        }}
+        _active={{ transform: "scale(0.98)" }}
+        _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
         asChild
     >
         <button onClick={onClick}>
@@ -41,7 +45,6 @@ export const PathHalf = ({
                 color={accent}
                 mb={4}
                 transition="transform 0.2s"
-                _groupHover={{ transform: "scale(1.12)" }}
             />
             <Text fontWeight="600" color="textPrimary" fontSize="md">
                 {title}

@@ -48,7 +48,7 @@ export const PersonalStep = ({
             content="This will be used to personalize your experience and in generated documents"
             showArrow
             fontSize="xs"
-            bg="gray.700"
+            bg="surface1"
             color="white"
             positioning={{
               placement: "top"
@@ -82,7 +82,7 @@ export const PersonalStep = ({
             content="Your medical specialty helps Phlox provide more relevant assistance and suggestions"
             showArrow
             fontSize="xs"
-            bg="gray.700"
+            bg="surface1"
             color="white"
             positioning={{
               placement: "top"

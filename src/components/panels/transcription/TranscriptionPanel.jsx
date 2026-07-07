@@ -113,7 +113,7 @@ const TranscriptionPanel = ({
             <Flex justify="space-between" align="center">
               {/* Stats */}
               {transcriptionDuration && (
-                <HStack fontSize="10px" color="gray.500" gap={2}>
+                <HStack fontSize="10px" color="overlay0" gap={2}>
                   <Tooltip content="Transcription time" showArrow positioning={{
                     placement: "top"
                   }}>
@@ -153,7 +153,7 @@ const TranscriptionPanel = ({
             </Flex>
           </>
         ) : (
-          <Text color="gray.500" textAlign="center" fontSize="xs" py={3}>
+          <Text color="overlay0" textAlign="center" fontSize="xs" py={3}>
             No transcription
           </Text>
         )}

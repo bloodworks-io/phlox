@@ -45,11 +45,11 @@ const DashboardTodoPanel = ({
                     <Button
                         onClick={toggleCollapsed}
                         variant='plain'
-                        color="gray.500"
+                        color="overlay0"
                         fontWeight="medium"
                         fontSize="sm"
                         textDecoration="none"
-                        _hover={{ color: "gray.700", textDecoration: "none" }}>Todo list
+                        _hover={{ color: "textPrimary", textDecoration: "none" }}>Todo list
                                             {
                             isCollapsed ? (
                                 <ChevronDownIcon />
@@ -57,7 +57,7 @@ const DashboardTodoPanel = ({
                                 <ChevronUpIcon />
                             )
                         }</Button>
-                    <Text fontSize="xs" color="gray.500">
+                    <Text fontSize="xs" color="overlay0">
                         {activeCount} active
                     </Text>
                 </HStack>
@@ -66,7 +66,7 @@ const DashboardTodoPanel = ({
                     <Collapsible.Content>
                         <VStack align="stretch" gap={2} pt={1}>
                             <Flex align="center" justify="space-between">
-                                <Text fontSize="xs" color="gray.500">
+                                <Text fontSize="xs" color="overlay0">
                                     Optional workspace tasks
                                 </Text>
                                 <Button
@@ -75,9 +75,9 @@ const DashboardTodoPanel = ({
                                     onClick={() =>
                                         setShowAllTodos?.((prev) => !prev)
                                     }
-                                    color="gray.500"
+                                    color="overlay0"
                                     _hover={{
-                                        color: "gray.700",
+                                        color: "textPrimary",
                                         textDecoration: "none",
                                     }}
                                 >
@@ -143,8 +143,8 @@ const DashboardTodoPanel = ({
                                                     }
                                                     color={
                                                         todo.completed
-                                                            ? "gray.500"
-                                                            : "gray.600"
+                                                            ? "overlay0"
+                                                            : "textTertiary"
                                                     }
                                                 >
                                                     {todo.task}
@@ -159,22 +159,22 @@ const DashboardTodoPanel = ({
                                                 variant="ghost"
                                                 aria-label="Delete todo"
                                                 disabled={isSaving}
-                                                color="gray.400"
+                                                color="overlay0"
                                                 _hover={{
-                                                    color: "red.400",
+                                                    color: "dangerButton",
                                                     bg: "transparent",
                                                 }}><DeleteIcon /></IconButton>
                                         </HStack>
                                     ))
                                 ) : (
-                                    <Text fontSize="sm" color="gray.500" px={1}>
+                                    <Text fontSize="sm" color="overlay0" px={1}>
                                         No tasks yet.
                                     </Text>
                                 )}
                             </VStack>
 
                             {completedCount > 0 && (
-                                <Text fontSize="xs" color="gray.400" pt={1}>
+                                <Text fontSize="xs" color="overlay0" pt={1}>
                                     {completedCount} completed
                                 </Text>
                             )}

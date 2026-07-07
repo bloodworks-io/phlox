@@ -9,7 +9,7 @@ export const EmptyState = ({ loading, status, onGenerate }) => {
             <Text
                 textAlign="center"
                 fontSize="sm"
-                color="gray.500"
+                color="overlay0"
             >
                 Generate an analysis of the case using your
                 model's reasoning capabilities.

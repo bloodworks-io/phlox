@@ -78,7 +78,7 @@ export const TemplatesStep = ({
                   {template.template_name}
                 </Heading>
                 {selectedTemplate === template.template_key && (
-                  <Icon color="green.500" asChild><FaCheckCircle /></Icon>
+                  <Icon color="successButton" asChild><FaCheckCircle /></Icon>
                 )}
               </HStack>
             </Card.Header>

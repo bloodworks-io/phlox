@@ -11,7 +11,7 @@ const Field = ({ label, required, children }) => (
         <Text fontSize="sm" fontWeight="bold" mb={1}>
             {label}
             {required && (
-                <Text as="span" color="red.400" ml={1}>
+                <Text as="span" color="dangerButton" ml={1}>
                     *
                 </Text>
             )}
@@ -149,7 +149,7 @@ const DemographicsForm = ({
                 position="relative"
                 borderRadius="md"
                 border="2px dashed"
-                borderColor={isDragOver ? "blue.400" : "surface"}
+                borderColor={isDragOver ? "accent" : "surface"}
                 bg={isDragOver ? "rgba(66, 153, 225, 0.15)" : "transparent"}
                 p={3}
                 textAlign="center"
@@ -182,7 +182,7 @@ const DemographicsForm = ({
                     {isExtracting && <Spinner size="xs" />}
                 </HStack>
                 {extractError && (
-                    <Text fontSize="xs" color="red.400" mt={1}>
+                    <Text fontSize="xs" color="dangerButton" mt={1}>
                         {extractError}
                     </Text>
                 )}

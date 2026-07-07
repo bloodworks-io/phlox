@@ -41,10 +41,10 @@ export const ServerConnectionCheck = ({ children }) => {
         display="flex"
         alignItems="center"
         justifyContent="center"
-        bg="gray.50"
+        bg="surfaceInset"
       >
         <VStack gap={4}>
-          <Spinner size="xl" color="blue.500" />
+          <Spinner size="xl" color="primaryButton" />
           <Text fontSize="lg" fontWeight="medium">
             Initializing...
           </Text>

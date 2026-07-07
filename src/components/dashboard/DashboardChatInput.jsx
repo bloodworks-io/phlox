@@ -142,12 +142,12 @@ const DashboardChatInput = ({
                     bg="rgba(99, 179, 237, 0.1)"
                     borderWidth="2px"
                     borderStyle="dashed"
-                    borderColor="blue.400"
+                    borderColor="accent"
                     borderRadius="lg"
                     zIndex={20}
                     pointerEvents="none"
                 >
-                    <Text fontWeight="bold" color="blue.400">
+                    <Text fontWeight="bold" color="primaryButton">
                         Drop image or PDF here
                     </Text>
                 </Flex>
@@ -286,7 +286,7 @@ const DashboardChatInput = ({
                 <Text
                     textAlign="center"
                     fontSize="xs"
-                    color="gray.500"
+                    color="overlay0"
                     mt={2}
                     opacity={0.8}
                 >

@@ -81,7 +81,7 @@ const WhisperModelCard = ({
           ? "primaryButton"
           : badge?.color === "purple"
             ? "purple.200"
-            : "gray.200"
+            : "surface1"
       }
       position="relative"
       cursor={isDownloaded ? "pointer" : "default"}
@@ -137,10 +137,10 @@ const WhisperModelCard = ({
         <Button
           size="xs"
           w="full"
-          bgColor={isSelected ? "primaryButton" : "gray.200"}
-          color={isSelected ? "white" : "gray.700"}
+          bgColor={isSelected ? "primaryButton" : "surface1"}
+          color={isSelected ? "white" : "textPrimary"}
           _hover={{
-            bgColor: isSelected ? "primaryButton" : "gray.300",
+            bgColor: isSelected ? "primaryButton" : "surface2",
           }}
           onClick={onSelect}
           mt={2}
@@ -229,7 +229,7 @@ export const TranscriptionStep = ({
                   content="The Whisper model to use for speech-to-text. Base is recommended for most use cases."
                   showArrow
                   fontSize="xs"
-                  bg="gray.700"
+                  bg="surface1"
                   color="white"
                   positioning={{
                     placement: "top"
@@ -272,11 +272,11 @@ export const TranscriptionStep = ({
                 w="100%"
                 p={3}
                 borderRadius="md"
-                bg="blue.50"
+                bg="surfaceMuted"
                 borderWidth="1px"
-                borderColor="blue.200"
+                borderColor="accent"
               >
-                <Text fontSize="sm" color="blue.700">
+                <Text fontSize="sm" color="primaryButton">
                   💡 Download a Whisper model to enable voice transcription.
                   This is required for hands-free operation.
                 </Text>
@@ -303,7 +303,7 @@ export const TranscriptionStep = ({
                 content="The URL where your Whisper transcription server is running."
                 showArrow
                 fontSize="xs"
-                bg="gray.700"
+                bg="surface1"
                 color="white"
                 positioning={{
                   placement: "top"
@@ -347,7 +347,7 @@ export const TranscriptionStep = ({
                     content="The Whisper model to use for speech-to-text. Common options include whisper-1, base, small, medium, or large."
                     showArrow
                     fontSize="xs"
-                    bg="gray.700"
+                    bg="surface1"
                     color="white"
                         positioning={{
                           placement: "top"

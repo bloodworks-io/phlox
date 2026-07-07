@@ -129,7 +129,7 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
                 key={template.id}
                 p={4}
                 border="1px"
-                borderColor="gray.200"
+                borderColor="border"
                 borderRadius="sm"
                 width="100%"
               >
@@ -152,7 +152,7 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
                     )}
                   </HStack>
                 </Flex>
-                <Text mt={2} fontSize="sm" color="gray.600">
+                <Text mt={2} fontSize="sm" color="textTertiary">
                   {template.instructions}
                 </Text>
               </Box>

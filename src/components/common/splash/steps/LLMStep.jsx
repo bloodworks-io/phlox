@@ -58,7 +58,7 @@ const LocalModelCard = ({
                     ? "primaryButton"
                     : badge?.color === "purple"
                       ? "purple.200"
-                      : "gray.200"
+                      : "surface1"
             }
             position="relative"
             cursor={isDownloaded ? "pointer" : "default"}
@@ -82,7 +82,7 @@ const LocalModelCard = ({
                         placement="top"
                         hasArrow
                         fontSize="xs"
-                        bg="gray.700"
+                        bg="surface1"
                         color="white"
                     >
                         <Badge colorPalette={badge.color} fontSize="xs">
@@ -135,13 +135,13 @@ const LocalModelCard = ({
                     size="sm"
                     w="full"
                     bgColor={
-                        isSelected ? "primaryButton" : "gray.200"
+                        isSelected ? "primaryButton" : "surface1"
                     }
-                    color={isSelected ? "white" : "gray.700"}
+                    color={isSelected ? "white" : "textPrimary"}
                     _hover={{
                         bgColor: isSelected
                             ? "primaryButton"
-                            : "gray.300",
+                            : "surface2",
                     }}
                     onClick={onSelect}
                     mt={2}
@@ -361,7 +361,7 @@ export const LLMStep = ({
                                         transform="translateY(-50%)"
                                         zIndex="1"
                                         bg="white"
-                                        _dark={{ bg: "gray.800" }}
+                                        _dark={{ bg: "surface1" }}
                                     />
                                     <IconButton
                                         icon={<ChevronRightIcon />}
@@ -376,7 +376,7 @@ export const LLMStep = ({
                                         transform="translateY(-50%)"
                                         zIndex="1"
                                         bg="white"
-                                        _dark={{ bg: "gray.800" }}
+                                        _dark={{ bg: "surface1" }}
                                     />
                                 </>
                             )}
@@ -426,11 +426,11 @@ export const LLMStep = ({
                                 w="100%"
                                 p={3}
                                 borderRadius="md"
-                                bg="blue.50"
+                                bg="surfaceMuted"
                                 borderWidth="1px"
-                                borderColor="blue.200"
+                                borderColor="accent"
                             >
-                                <Text fontSize="sm" color="blue.700">
+                                <Text fontSize="sm" color="primaryButton">
                                     💡 Select a model and click "Download" to
                                     get started. You can proceed once the
                                     download is complete.
@@ -460,7 +460,7 @@ export const LLMStep = ({
                                     placement="top"
                                     hasArrow
                                     fontSize="xs"
-                                    bg="gray.700"
+                                    bg="surface1"
                                     color="white"
                                 >
                                     <InfoIcon
@@ -497,7 +497,7 @@ export const LLMStep = ({
                                     placement="top"
                                     hasArrow
                                     fontSize="xs"
-                                    bg="gray.700"
+                                    bg="surface1"
                                     color="white"
                                 >
                                     <InfoIcon

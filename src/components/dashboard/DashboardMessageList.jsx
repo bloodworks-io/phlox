@@ -122,7 +122,7 @@ const DashboardMessageList = ({
                                             <Text
                                                 fontSize="xs"
                                                 fontWeight="semibold"
-                                                color="gray.500"
+                                                color="overlay0"
                                             >
                                                 Phlox Assistant
                                             </Text>

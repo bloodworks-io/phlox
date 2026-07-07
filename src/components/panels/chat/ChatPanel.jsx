@@ -156,7 +156,7 @@ const ChatPanel = ({
                     chatLoading={chatLoading}
                 />
 
-                <Text textAlign="center" fontSize="xs" color="gray.500">
+                <Text textAlign="center" fontSize="xs" color="overlay0">
                     Phlox may make mistakes. Always verify critical information.
                 </Text>
             </Box>

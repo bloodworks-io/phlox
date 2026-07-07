@@ -45,14 +45,14 @@ export const LoadingStatus = ({ status, colorMode }) => {
             gap={4}
         >
             <VStack gap={4}>
-                <Spinner size="lg" color="orange.500" borderWidth="3px" />
+                <Spinner size="lg" color="secondaryButton" borderWidth="3px" />
                 <Flex align="center" gap={3}>
-                    <Icon size="1.2em" color="gray.500" />
+                    <Icon size="1.2em" color="overlay0" />
                     <Text
                         fontSize="sm"
                         fontWeight="medium"
-                        color="gray.700"
-                        _dark={{ color: "gray.300" }}
+                        color="textPrimary"
+                        _dark={{ color: "textTertiary" }}
                     >
                         {status}
                     </Text>

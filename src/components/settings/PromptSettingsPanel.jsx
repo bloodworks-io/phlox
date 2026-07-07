@@ -118,7 +118,7 @@ const PromptSettingsPanel = ({
                       <Text fontSize="md" fontWeight="bold">
                         Refinement Prompt
                       </Text>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color="overlay0">
                         System prompt used for refining the generated outputs
                       </Text>
                     </Box>
@@ -146,7 +146,7 @@ const PromptSettingsPanel = ({
                       <Text fontSize="md" fontWeight="bold">
                         Summary Prompt
                       </Text>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color="overlay0">
                         System prompt used for generating summaries
                       </Text>
                     </Box>
@@ -174,7 +174,7 @@ const PromptSettingsPanel = ({
                       <Text fontSize="md" fontWeight="bold">
                         Chat Prompt
                       </Text>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color="overlay0">
                         System prompt used for chat interactions
                       </Text>
                     </Box>
@@ -202,7 +202,7 @@ const PromptSettingsPanel = ({
                       <Text fontSize="md" fontWeight="bold">
                         Letter Prompt
                       </Text>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color="overlay0">
                         System prompt used for generating letters
                       </Text>
                     </Box>
@@ -233,7 +233,7 @@ const PromptSettingsPanel = ({
                     <Text fontSize="sm" fontWeight="bold" mb={2}>
                       Primary Model
                     </Text>
-                    <Text fontSize="xs" color="gray.500" mb={2}>
+                    <Text fontSize="xs" color="overlay0" mb={2}>
                       Context window size for the primary model
                     </Text>
                     <HStack>
@@ -254,7 +254,7 @@ const PromptSettingsPanel = ({
                     <Text fontSize="sm" fontWeight="bold" mb={2}>
                       Secondary Model
                     </Text>
-                    <Text fontSize="xs" color="gray.500" mb={2}>
+                    <Text fontSize="xs" color="overlay0" mb={2}>
                       Context window size for the secondary model
                     </Text>
                     <HStack>
@@ -275,7 +275,7 @@ const PromptSettingsPanel = ({
                     <Text fontSize="sm" fontWeight="bold" mb={2}>
                       Letter Generation
                     </Text>
-                    <Text fontSize="xs" color="gray.500" mb={2}>
+                    <Text fontSize="xs" color="overlay0" mb={2}>
                       Temperature setting for the letter generation model
                     </Text>
                     <HStack>

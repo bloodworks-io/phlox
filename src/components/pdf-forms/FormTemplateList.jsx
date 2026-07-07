@@ -60,7 +60,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace })
         >
           <HStack justify="space-between">
             <HStack gap="2" overflow="hidden">
-              <Box color="blue.400" flexShrink={0} asChild><FiFileText /></Box>
+              <Box color="primaryButton" flexShrink={0} asChild><FiFileText /></Box>
               <Box overflow="hidden">
                 <Text fontSize="sm" fontWeight="medium" lineClamp={1}>
                   {tmpl.name}

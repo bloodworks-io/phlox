@@ -24,19 +24,19 @@ const ArtifactCard = ({ artifact }) => {
             p={2}
             borderWidth="1px"
             borderRadius="md"
-            borderColor="gray.200"
-            bg="gray.50"
-            _dark={{ borderColor: "gray.600", bg: "gray.750" }}
+            borderColor="border"
+            bg="surfaceInset"
+            _dark={{ borderColor: "border", bg: "surface1" }}
             maxW="320px"
         >
             <HStack gap={2} mb={1}>
-                <Icon size="1.2em" color="gray.500" />
+                <Icon size="1.2em" color="overlay0" />
                 <Text fontSize="xs" fontWeight="semibold" isTruncated flex={1}>
                     {filename}
                 </Text>
             </HStack>
             <HStack gap={2} justify="space-between">
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="overlay0">
                     {mime_type} · {formatFileSize(size)}
                 </Text>
                 <HStack gap={1}>

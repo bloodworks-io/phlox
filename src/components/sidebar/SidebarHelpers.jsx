@@ -60,7 +60,18 @@ export const SectionHeader = ({ title, count, isCollapsed, onToggle }) => {
             alignItems="center"
             onClick={onToggle}
             cursor="pointer"
-            _hover={{ color: "gray.600" }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onToggle();
+                }
+            }}
+            _hover={{ color: "textTertiary" }}
+            _active={{ transform: "scale(0.98)" }}
+            _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
+            transition="transform 0.1s ease, background 0.15s ease"
             mt="2"
         >
             <Text fontSize="xs" fontWeight="medium" color={labelColor}>
@@ -101,15 +112,24 @@ export const AvatarButton = ({
                 align="center"
                 p={isCollapsed ? "1.5" : "2"}
                 borderRadius="lg"
-                role="group"
+                role="button"
+                tabIndex={0}
                 cursor="pointer"
                 w={isCollapsed ? "auto" : "100%"}
                 onClick={onClick}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onClick();
+                    }
+                }}
                 className="avatar-button"
                 _hover={{
                     bg: `rgba(184, 192, 224, 0.1)`,
                 }}
-                transition="all 0.2s"
+                _active={{ transform: "scale(0.98)" }}
+                _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
+                transition="transform 0.1s ease, background 0.15s ease"
             >
                 <Box position="relative">
                     <Avatar.Root
@@ -127,7 +147,7 @@ export const AvatarButton = ({
                             top="-2px"
                             right={isCollapsed ? "-5px" : "-8px"}
                             borderRadius="full"
-                            bg="red.500"
+                            bg="dangerButton"
                             color="white"
                             fontSize="0.6rem"
                             p="1px 5px"

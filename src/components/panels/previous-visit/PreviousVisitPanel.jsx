@@ -149,7 +149,7 @@ const PreviousVisitPanel = ({
                       {previousVisitSummary}
                     </Text>
                   ) : (
-                    <Text color="gray.500" textAlign="center" py={4}>
+                    <Text color="overlay0" textAlign="center" py={4}>
                       No previous visit summary available.
                     </Text>
                   )}
@@ -176,7 +176,7 @@ const PreviousVisitPanel = ({
                       {/* Encounter Date */}
                       {previousVisitEncounterDate && (
                         <Box p="2" width="100%">
-                          <Text fontSize="xs" color="gray.500" fontWeight="bold">
+                          <Text fontSize="xs" color="overlay0" fontWeight="bold">
                             ENCOUNTER DATE
                           </Text>
                           <Text fontSize="sm">{previousVisitEncounterDate}</Text>
@@ -189,7 +189,7 @@ const PreviousVisitPanel = ({
                       </VStack>
                     </VStack>
                   ) : (
-                    <Text color="gray.500" textAlign="center" py={4}>
+                    <Text color="overlay0" textAlign="center" py={4}>
                       No previous visit note content available.
                     </Text>
                   )}

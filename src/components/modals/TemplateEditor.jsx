@@ -138,7 +138,7 @@ const FieldEditor = ({
                                 position="absolute"
                                 right="0"
                                 display="none"
-                                color="gray.500"
+                                color="overlay0"
                                 fontSize="14px"
                                 _groupHover={{
                                     display: "block",
@@ -230,15 +230,15 @@ const FieldEditor = ({
                             size="sm"
                             variant="ghost"
                             ml={3}
-                            color="red.400"
-                            _hover={{ bg: "red.400", color: "white" }}><DeleteIcon /></IconButton>
+                            color="dangerButton"
+                            _hover={{ bg: "dangerButton", color: "white" }}><DeleteIcon /></IconButton>
                     )}
                 </Flex>
             </Flex>
             <VStack gap={3} align="stretch">
                 {/* System prompt */}
                 <Box width="full">
-                    <Text fontSize="sm" color="gray.400" mb={1}>
+                    <Text fontSize="sm" color="overlay0" mb={1}>
                         System Prompt
                     </Text>
                     <Textarea
@@ -270,7 +270,7 @@ const FieldEditor = ({
                             ) : (
                                 <ChevronRightIcon />
                             )}</IconButton>
-                        <Text fontSize="sm" color="gray.400">
+                        <Text fontSize="sm" color="overlay0">
                             Advanced Settings
                         </Text>
                     </HStack>
@@ -279,7 +279,7 @@ const FieldEditor = ({
                             <VStack gap={3} mt={3}>
                                 <HStack>
                                     <Box flex="1">
-                                        <Text fontSize="sm" color="gray.400" mb={1}>
+                                        <Text fontSize="sm" color="overlay0" mb={1}>
                                             Format Schema
                                         </Text>
                                         <NativeSelect.Root>
@@ -327,7 +327,7 @@ const FieldEditor = ({
                                         <Box flex="1">
                                             <Text
                                                 fontSize="sm"
-                                                color="gray.400"
+                                                color="overlay0"
                                                 mb={1}
                                             >
                                                 Bullet Character
@@ -365,7 +365,7 @@ const FieldEditor = ({
 
                                 {/* Style Example */}
                                 <Box width="full">
-                                    <Text fontSize="sm" color="gray.400" mb={1}>
+                                    <Text fontSize="sm" color="overlay0" mb={1}>
                                         Style Example (shows in preview)
                                     </Text>
                                     <Textarea
@@ -551,7 +551,7 @@ const TemplateEditor = ({
                                             top="50%"
                                             transform="translateY(-50%)"
                                             display="none"
-                                            color="gray.500"
+                                            color="overlay0"
                                             fontSize="16px"
                                             _groupHover={{
                                                 display: "block",
@@ -568,14 +568,14 @@ const TemplateEditor = ({
                                 <Box
                                     px={6}
                                     py={4}
-                                    bg={{ _light: "blue.50", _dark: "blue.900" }}
+                                    bg="surfaceMuted"
                                     borderLeft="4px solid"
-                                    borderLeftColor="blue.400"
+                                    borderLeftColor="accent"
                                     borderBottom="1px solid"
                                     borderBottomColor="whiteAlpha.200"
                                 >
                                     <HStack align="start" gap={3}>
-                                        <Box color="blue.500" mt={0.5}>
+                                        <Box color="primaryButton" mt={0.5}>
                                             <svg
                                                 width="20"
                                                 height="20"
@@ -700,7 +700,7 @@ const TemplateEditor = ({
                                                     px={4}
                                                     py={3}
                                                     mb={2}
-                                                    bg={{ _light: "gray.50", _dark: "gray.800" }}
+                                                    bg="surfaceInset"
                                                     borderRadius="md"
                                                     fontSize="xs"
                                                     opacity={0.8}

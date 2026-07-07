@@ -18,7 +18,7 @@ const renderItems = (section, reasoning, colorMode) => {
 
     if (!items || items.length === 0) {
         return (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="sm" color="overlay0">
                 No items available
             </Text>
         );
@@ -181,7 +181,7 @@ const renderThinkingCards = (thinking, colorMode) => {
 
     if (!steps.length) {
         return (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="sm" color="overlay0">
                 No thinking trace available
             </Text>
         );

@@ -88,7 +88,7 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
                       <Field.Label fontSize="sm" mb="1">
                         {field.name || `Field (${field.field_type})`}
                         {field.required && (
-                          <Text as="span" color="red.400" ml="1">
+                          <Text as="span" color="dangerButton" ml="1">
                             *
                           </Text>
                         )}

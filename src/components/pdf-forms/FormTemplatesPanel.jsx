@@ -108,7 +108,7 @@ const FormTemplatesPanel = ({
             {isDrawingMode ? (
               <VStack gap="2" align="stretch">
                 <HStack gap="1">
-                  <Box color="blue.400" fontSize="0.7em" asChild><FaPencilAlt /></Box>
+                  <Box color="primaryButton" fontSize="0.7em" asChild><FaPencilAlt /></Box>
                   <Text fontSize="xs" fontWeight="bold">
                     Drawing mode
                   </Text>

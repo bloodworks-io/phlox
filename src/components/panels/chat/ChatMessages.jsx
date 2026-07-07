@@ -117,7 +117,7 @@ const ChatMessages = ({
                                             <Text
                                                 fontSize="xs"
                                                 fontWeight="semibold"
-                                                color="gray.500"
+                                                color="overlay0"
                                                 lineHeight="1"
                                             >
                                                 Phlox Assistant

@@ -276,15 +276,15 @@ const EncryptionSetup = ({ onComplete }) => {
 
           {/* Warning alert with better legibility */}
           <Box
-            bg="orange.100"
+            bg="surfaceMuted"
             borderLeft="4px solid"
-            borderColor="orange.400"
+            borderColor="secondaryButton"
             p={3}
             borderRadius="md"
           >
             <HStack align="start">
-              <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
-              <Text color="gray.700" fontSize="sm" lineHeight="1.5">
+              <Icon as={FaExclamationTriangle} color="secondaryButton" mt={0.5} />
+              <Text color="textPrimary" fontSize="sm" lineHeight="1.5">
                 <strong>Important:</strong> If you forget your passphrase, your
                 data cannot be recovered. Store it securely.
               </Text>
@@ -396,7 +396,7 @@ const EncryptionSetup = ({ onComplete }) => {
 
               {confirmPassphrase.length > 0 &&
                 passphrase !== confirmPassphrase && (
-                  <Text mt={1} fontSize="xs" color="red.400">
+                  <Text mt={1} fontSize="xs" color="dangerButton">
                     Passphrases do not match
                   </Text>
                 )}

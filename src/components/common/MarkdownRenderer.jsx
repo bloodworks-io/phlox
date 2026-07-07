@@ -84,9 +84,9 @@ const pillVisual = (Icon, index, { as = "span", ...rest } = {}) => (
         verticalAlign="middle"
         ml="2px"
         mr="2px"
-        bg="blue.50"
+        bg="surfaceMuted"
         border="1px solid"
-        borderColor="blue.200"
+        borderColor="accent"
         borderRadius="full"
         px="7px"
         h="22px"
@@ -94,15 +94,15 @@ const pillVisual = (Icon, index, { as = "span", ...rest } = {}) => (
         fontSize="11px"
         fontWeight="bold"
         lineHeight={1}
-        color="blue.600"
+        color="primaryButton"
         _dark={{
-            bg: "blue.900",
-            borderColor: "blue.700",
-            color: "blue.200",
+            bg: "surfaceMuted",
+            borderColor: "accent",
+            color: "primaryButton",
         }}
         _hover={{
-            bg: "blue.100",
-            _dark: { bg: "blue.800" },
+            bg: "surfaceMuted",
+            _dark: { bg: "surfaceMuted" },
         }}
         {...rest}
     >
@@ -125,7 +125,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
             <Text
                 as="sup"
                 ml="1px"
-                color="blue.500"
+                color="primaryButton"
                 fontSize="xs"
                 fontWeight="bold"
                 verticalAlign="super"
@@ -256,7 +256,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                             <Link
                                 href={url}
                                 fontSize="xs"
-                                color="blue.500"
+                                color="primaryButton"
                                 _hover={{ textDecoration: "underline" }}
                                 onClick={openUrl}
                             >
@@ -314,7 +314,7 @@ const MarkdownRenderer = ({ children, citations, citationRemap, ...props }) => {
                     }
 
                     return (
-                        <Text as="span" color="gray.500" fontSize="xs">
+                        <Text as="span" color="overlay0" fontSize="xs">
                             {" "}
                             [{children} ({domain})]{" "}
                         </Text>
@@ -334,7 +334,7 @@ const MarkdownRenderer = ({ children, citations, citationRemap, ...props }) => {
                     </Box>
                 ),
                 thead: ({ children }) => (
-                    <Box bg="gray.50" _dark={{ bg: "gray.700" }} asChild><thead>
+                    <Box bg="surfaceInset" _dark={{ bg: "surface1" }} asChild><thead>
                             {children}
                         </thead></Box>
                 ),

@@ -88,7 +88,8 @@ const SidebarPatientList = ({
                                                     align="center"
                                                     p="2"
                                                     borderRadius="lg"
-                                                    role="group"
+                                                    role="button"
+                                                    tabIndex={0}
                                                     cursor="pointer"
                                                     justifyContent={
                                                         isCollapsed
@@ -98,6 +99,12 @@ const SidebarPatientList = ({
                                                     onClick={() =>
                                                         onSelectPatient(patient)
                                                     }
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter" || e.key === " ") {
+                                                            e.preventDefault();
+                                                            onSelectPatient(patient);
+                                                        }
+                                                    }}
                                                     onMouseEnter={() =>
                                                         setHoveredPatientId(
                                                             patient.id,
@@ -113,7 +120,9 @@ const SidebarPatientList = ({
                                                             ? "rgba(184, 192, 224, 0.1)"
                                                             : "transparent"
                                                     }
-                                                    transition="all 0.2s"
+                                                    transition="transform 0.1s ease, background 0.15s ease"
+                                                    _active={{ transform: "scale(0.98)" }}
+                                                    _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
                                                     className="patient-list-item"
                                                 >
                                                     <Flex align="center" minW="0" flex="1">

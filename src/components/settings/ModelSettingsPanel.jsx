@@ -383,7 +383,7 @@ const ModelSettingsPanel = ({
                                                         </Text>
                                                         <Badge colorPalette="green">Local</Badge>
                                                     </HStack>
-                                                    <Text fontSize="sm" color="gray.600" mb="4">
+                                                    <Text fontSize="sm" color="textTertiary" mb="4">
                                                         Models run directly on your machine.
                                                         Both LLM and Whisper will use local
                                                         inference.
@@ -550,7 +550,7 @@ const ModelSettingsPanel = ({
                                                     </Text>
                                                     <Text
                                                         fontSize="sm"
-                                                        color="gray.500"
+                                                        color="overlay0"
                                                     >
                                                         Configure the speech-to-text
                                                         service for transcribing
@@ -571,7 +571,7 @@ const ModelSettingsPanel = ({
                                                         </Tooltip>
                                                         <InputGroup size="sm" endElement={urlStatus.whisper ? (
                                                             <Tooltip content="Connection successful">
-                                                                <CheckCircleIcon color="green.500" />
+                                                                <CheckCircleIcon color="successButton" />
                                                             </Tooltip>
                                                         ) : undefined}>
                                                             <Input
@@ -606,7 +606,7 @@ const ModelSettingsPanel = ({
                                                         {whisperModelsLoading ? (
                                                             <HStack gap="2">
                                                                 <Spinner size="sm" />
-                                                                <Text fontSize="sm" color="gray.500">
+                                                                <Text fontSize="sm" color="overlay0">
                                                                     Loading models...
                                                                 </Text>
                                                             </HStack>
@@ -709,7 +709,7 @@ const ModelSettingsPanel = ({
                                                     </Text>
                                                     <Text
                                                         fontSize="sm"
-                                                        color="gray.500"
+                                                        color="overlay0"
                                                     >
                                                         Configure the language model
                                                         provider for generating
@@ -731,7 +731,7 @@ const ModelSettingsPanel = ({
                                                         </Tooltip>
                                                         <InputGroup size="sm" endElement={urlStatus.llm ? (
                                                             <Tooltip content="Connection successful">
-                                                                <CheckCircleIcon color="green.500" />
+                                                                <CheckCircleIcon color="successButton" />
                                                             </Tooltip>
                                                         ) : undefined}>
                                                             <Input
@@ -795,7 +795,7 @@ const ModelSettingsPanel = ({
                                                         {llmModelsLoading ? (
                                                             <HStack gap="2">
                                                                 <Spinner size="sm" />
-                                                                <Text fontSize="sm" color="gray.500">
+                                                                <Text fontSize="sm" color="overlay0">
                                                                     Loading models...
                                                                 </Text>
                                                             </HStack>
@@ -846,7 +846,7 @@ const ModelSettingsPanel = ({
                                                         {llmModelsLoading ? (
                                                             <HStack gap="2">
                                                                 <Spinner size="sm" />
-                                                                <Text fontSize="sm" color="gray.500">
+                                                                <Text fontSize="sm" color="overlay0">
                                                                     Loading models...
                                                                 </Text>
                                                             </HStack>
@@ -924,7 +924,7 @@ const ModelSettingsPanel = ({
                                                         </NativeSelect.Root>
                                                         <Text
                                                             fontSize="xs"
-                                                            color="gray.500"
+                                                            color="overlay0"
                                                             mt="1"
                                                         >
                                                             Auto uses visual
@@ -980,7 +980,7 @@ const ModelSettingsPanel = ({
                                                         {currentVisionCapability ? (
                                                             <Text
                                                                 fontSize="xs"
-                                                                color="gray.500"
+                                                                color="overlay0"
                                                                 mb={2}
                                                             >
                                                                 Source:{" "}
@@ -1029,7 +1029,7 @@ const ModelSettingsPanel = ({
                                                         </Text>
                                                         <Text
                                                             fontSize="sm"
-                                                            color="gray.500"
+                                                            color="overlay0"
                                                         >
                                                             Configure the embedding
                                                             model used for knowledge
@@ -1050,7 +1050,7 @@ const ModelSettingsPanel = ({
                                                         {llmModelsLoading ? (
                                                             <HStack gap="2">
                                                                 <Spinner size="sm" />
-                                                                <Text fontSize="sm" color="gray.500">
+                                                                <Text fontSize="sm" color="overlay0">
                                                                     Loading models...
                                                                 </Text>
                                                             </HStack>
@@ -1087,7 +1087,7 @@ const ModelSettingsPanel = ({
                                                         )}
                                                         <Text
                                                             fontSize="xs"
-                                                            color="gray.500"
+                                                            color="overlay0"
                                                             mt="1"
                                                         >
                                                             Available embedding

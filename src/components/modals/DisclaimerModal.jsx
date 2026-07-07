@@ -48,9 +48,9 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                         </Dialog.Header>
                         {/* Warning alert */}
                         <Box
-                            bg="orange.100"
+                            bg="surfaceMuted"
                             borderLeft="4px solid"
-                            borderColor="orange.400"
+                            borderColor="secondaryButton"
                             width="90%"
                             marginLeft="5%"
                             p={3}
@@ -58,8 +58,8 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                             mb={4}
                         >
                             <HStack align="start">
-                                <Icon color="orange.500" mt={0.5} asChild><FaExclamationTriangle /></Icon>
-                                <Text color="gray.700" fontSize="sm" fontWeight="600">
+                                <Icon color="secondaryButton" mt={0.5} asChild><FaExclamationTriangle /></Icon>
+                                <Text color="textPrimary" fontSize="sm" fontWeight="600">
                                     Experimental Software - Use at Your Own Risk
                                 </Text>
                             </HStack>

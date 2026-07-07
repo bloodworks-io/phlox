@@ -148,7 +148,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           textAlign="center"
         >
           <VStack gap={6}>
-            <Icon boxSize={12} color="red.500" asChild><FaServer /></Icon>
+            <Icon boxSize={12} color="dangerButton" asChild><FaServer /></Icon>
             <Heading
               as="h1"
               color={"textPrimary"}

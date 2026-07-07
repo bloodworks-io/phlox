@@ -29,7 +29,7 @@ export const ReasoningItem = ({ item, section }) => {
             borderLeft="3px solid"
             borderColor={
                 isCritical
-                    ? "red.500"
+                    ? "dangerButton"
                     : getAccentColor(section)
             }
             shadow="sm"

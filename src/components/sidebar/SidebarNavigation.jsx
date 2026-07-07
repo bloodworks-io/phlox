@@ -24,15 +24,26 @@ const NavButton = ({
             align="center"
             borderRadius="md"
             cursor="pointer"
+            role="button"
+            tabIndex={0}
             onClick={onClick}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onClick();
+                }
+            }}
             _hover={{ bg: colors.dark.sidebar.hover }}
+            _active={{ transform: "scale(0.98)" }}
+            _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
+            transition="transform 0.1s ease, background 0.15s ease"
             justify={isCollapsed ? "center" : "flex-start"}
             position="relative"
         >
             {isCollapsed && badge ? (
                 // For collapsed mode with badge, show the badge instead of the icon
                 (<Badge
-                    bg="red.500"
+                    bg="dangerButton"
                     color="white"
                     borderRadius="full"
                     px={1.5}
@@ -60,7 +71,7 @@ const NavButton = ({
                     {badge && (
                         <Badge
                             ml={2}
-                            bg="red.500"
+                            bg="dangerButton"
                             color="white"
                             borderRadius="full"
                             px={1.5}

@@ -57,10 +57,13 @@ globalCss[".red-icon"] = { color: "dangerButton !important" };
 globalCss[".yellow-icon"] = { color: "secondaryButton !important" };
 globalCss[".blue-icon"] = { color: "primaryButton !important" };
 
-// Heavier button label weight (v3 Button base is "medium"/500; v2 was heavier).
 globalCss[".chakra-button"] = {
     fontWeight: "600 !important",
     fontSize: "16px !important",
+    transition: "transform 0.1s ease, background 0.15s ease !important",
+};
+globalCss[".chakra-button:active"] = {
+    transform: "scale(0.97)",
 };
 
 // Slightly smaller icons inside buttons (rendered as <svg> children in v3).

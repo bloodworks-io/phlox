@@ -102,7 +102,7 @@ const FloatingActionMenu = ({
                         w="8px"
                         h="8px"
                         borderRadius="full"
-                        bg="red.500"
+                        bg="dangerButton"
                         zIndex={2}
                         pointerEvents="none"
                     />
@@ -173,7 +173,7 @@ const FloatingActionMenu = ({
                             w="8px"
                             h="8px"
                             borderRadius="full"
-                            bg="red.500"
+                            bg="dangerButton"
                             zIndex={2}
                             pointerEvents="none"
                         />

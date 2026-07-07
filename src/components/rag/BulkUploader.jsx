@@ -286,13 +286,13 @@ const BulkUploader = ({ setCollections }) => {
             case STATUS.COMMITTING:
                 return <Spinner size="xs" mr="2" />;
             case STATUS.EXTRACTED:
-                return <CheckIcon color="green.500" mr="2" boxSize={3} />;
+                return <CheckIcon color="successButton" mr="2" boxSize={3} />;
             case STATUS.COMMITTED:
                 return (
-                    <CheckIcon color="green.500" mr="2" boxSize={3} />
+                    <CheckIcon color="successButton" mr="2" boxSize={3} />
                 );
             case STATUS.FAILED:
-                return <WarningIcon color="red.500" mr="2" boxSize={3} />;
+                return <WarningIcon color="dangerButton" mr="2" boxSize={3} />;
             default:
                 return null;
         }
@@ -322,13 +322,13 @@ const BulkUploader = ({ setCollections }) => {
             {/* Drop zone */}
             <Box
                         border="2px dashed"
-                        borderColor={isDragOver ? "blue.400" : "gray.300"}
+                        borderColor={isDragOver ? "accent" : "border"}
                         borderRadius="md"
                         p="6"
                         textAlign="center"
                         cursor="pointer"
-                        bg={isDragOver ? "blue.50" : "transparent"}
-                        _hover={{ borderColor: "gray.400" }}
+                        bg={isDragOver ? "surfaceMuted" : "transparent"}
+                        _hover={{ borderColor: "border" }}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
@@ -340,7 +340,7 @@ const BulkUploader = ({ setCollections }) => {
                             color={isDragOver ? "#3182ce" : "#a0aec0"}
                             style={{ margin: "0 auto 8px" }}
                         />
-                        <Text fontSize="sm" color="gray.500">
+                        <Text fontSize="sm" color="overlay0">
                             Drag and drop PDFs here, or click to browse
                         </Text>
                         <Input
@@ -362,9 +362,9 @@ const BulkUploader = ({ setCollections }) => {
                                 p="2"
                                 borderRadius="sm"
                                 className="documentExplorer-style"
-                                _hover={{ bg: "gray.100" }}
+                                _hover={{ bg: "surfaceMuted" }}
                             >
-                                <Box mr="2" color="red.400" asChild><FaFilePdf /></Box>
+                                <Box mr="2" color="dangerButton" asChild><FaFilePdf /></Box>
                                 <Text
                                     fontSize="sm"
                                     fontWeight="medium"
@@ -378,8 +378,8 @@ const BulkUploader = ({ setCollections }) => {
                                     fontSize="xs"
                                     color={
                                         entry.status === STATUS.FAILED
-                                            ? "red.500"
-                                            : "gray.500"
+                                            ? "dangerButton"
+                                            : "overlay0"
                                     }
                                     mr="2"
                                 >
@@ -518,7 +518,7 @@ const BulkUploader = ({ setCollections }) => {
                     wrap="wrap"
                     gap="2"
                 >
-                    <Text fontSize="xs" color="gray.500">
+                    <Text fontSize="xs" color="overlay0">
                         {totalPending} pending · {readyToCommit} ready
                         to commit · {committedCount} committed
                     </Text>

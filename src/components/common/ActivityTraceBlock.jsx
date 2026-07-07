@@ -92,7 +92,7 @@ const ActivityTraceBlock = ({
                         )}
                     </>
                 ) : (
-                    <Text mr="2" fontWeight="medium" fontSize="xs" color="gray.500">
+                    <Text mr="2" fontWeight="medium" fontSize="xs" color="overlay0">
                         {stepCount} {stepCount === 1 ? "step" : "steps"}
                     </Text>
                 )}
@@ -165,7 +165,7 @@ const ActivityTraceBlock = ({
                                                     mt={1}
                                                     p={1}
                                                     borderLeftWidth="3px"
-                                                    borderColor="blue.300"
+                                                    borderColor="accent"
                                                     bg="blackAlpha.50"
                                                     borderRadius="sm"
                                                 >
@@ -251,7 +251,7 @@ const ActivityTraceBlock = ({
                                                 >
                                                     <Text
                                                         fontSize="xs"
-                                                        color="gray.500"
+                                                        color="overlay0"
                                                         mb={1}
                                                     >
                                                         {toolContent ||

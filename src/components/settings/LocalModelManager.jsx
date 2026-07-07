@@ -164,7 +164,7 @@ const LocalModelManager = ({ className }) => {
         borderRadius="md"
         className="summary-panels"
         borderWidth="2px"
-        borderColor={badge?.color === "purple" ? "purple.200" : "gray.200"}
+        borderColor={badge?.color === "purple" ? "purple.200" : "border"}
         position="relative"
       >
         <HStack position="absolute" top="-2" right="2" gap={1}>
@@ -503,7 +503,7 @@ const LocalModelManager = ({ className }) => {
                           borderColor={
                             model.badge_color === "purple"
                               ? "purple.200"
-                              : "gray.200"
+                              : "border"
                           }
                           position="relative"
                         >
@@ -587,9 +587,9 @@ const LocalModelManager = ({ className }) => {
                     p="3"
                     borderWidth="1px"
                     borderRadius="md"
-                    borderColor="green.200"
+                    borderColor="successButton"
                   >
-                    <CheckIcon color="green.500" boxSize={5} />
+                    <CheckIcon color="successButton" boxSize={5} />
                     <VStack align="start" gap={1}>
                       <HStack>
                         <Text fontSize="sm" fontWeight="bold">
