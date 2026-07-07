@@ -238,7 +238,7 @@ const inputStyles = (props) => ({
     },
     ".reason-button-active-patient-table": {
         backgroundColor: `${
-            props.colorMode === "light" ? colors.light.crust : colors.dark.crust
+            props.colorMode === "light" ? colors.light.surface : colors.dark.surface
         } !important`,
     },
     ".transcription-style": {

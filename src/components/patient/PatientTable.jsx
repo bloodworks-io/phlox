@@ -230,7 +230,7 @@ const PatientTable = ({
                                         icon: FaBrain,
                                         tooltip: "Clinical Considerations",
                                     },
-                                ].map(({ section, _icon, tooltip }) => (
+                                ].map(({ section, icon: ReasonIcon, tooltip }) => (
                                     <Tooltip
                                         key={section}
                                         content={tooltip}
@@ -284,7 +284,11 @@ const PatientTable = ({
                                                     : 1
                                             }
                                             p={1}
-                                        />
+                                        >
+                                            <Icon asChild>
+                                                <ReasonIcon />
+                                            </Icon>
+                                        </Button>
                                     </Tooltip>
                                 ))}
                             </VStack>
