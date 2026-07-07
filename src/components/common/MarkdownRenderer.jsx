@@ -170,12 +170,6 @@ const CitationTag = ({ index, citation, displayLabel }) => {
             </Popover.Trigger>
             <Popover.Positioner>
                 <Popover.Content
-                    bg="secondary"
-                    css={{ "--popover-bg": "var(--chakra-colors-secondary)" }}
-                    border="1px solid"
-                    borderColor="surface"
-                    borderRadius="lg"
-                    color="textPrimary"
                     maxW="460px"
                     w="460px"
                     position="relative"
@@ -184,18 +178,10 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                         <Popover.ArrowTip />
                     </Popover.Arrow>
                     <Popover.Header
-                        fontSize="sm"
-                        fontWeight="600"
-                        color="textPrimary"
-                        borderBottom="1px solid"
-                        borderColor="surface"
                         display="flex"
                         alignItems="center"
                         justifyContent="space-between"
                         gap={2}
-                        px={3}
-                        py={2.5}
-                        lineHeight="1.2"
                     >
                         <Box
                             display="flex"
@@ -244,7 +230,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                             <FaTimes size={12} />
                         </Box>
                     </Popover.Header>
-                    <Popover.Body maxH="300px" overflowY="auto">
+                    <Popover.Body>
                         {snippet ? (
                             <Text
                                 fontSize="xs"

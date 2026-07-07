@@ -176,6 +176,36 @@ export const system = createSystem(defaultConfig, {
                     },
                 },
             },
+            popover: {
+                base: {
+                    content: {
+                        "--popover-bg": "var(--chakra-colors-secondary)",
+                        bg: "var(--popover-bg)",
+                        border: "1px solid",
+                        borderColor: "surface",
+                        borderRadius: "lg",
+                        color: "textPrimary",
+                    },
+                    header: {
+                        fontSize: "sm",
+                        fontWeight: "600",
+                        color: "textPrimary",
+                        borderBottom: "1px solid",
+                        borderColor: "surface",
+                        px: "3",
+                        py: "2.5",
+                        lineHeight: "1.2",
+                    },
+                    body: {
+                        maxH: "300px",
+                        overflowY: "auto",
+                    },
+                    footer: {
+                        borderTop: "1px solid",
+                        borderColor: "surface",
+                    },
+                },
+            },
         },
         recipes: {
             input: {
