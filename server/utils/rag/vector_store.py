@@ -124,6 +124,20 @@ class VectorStoreManager:
         formatted = self.format_to_collection_name(collection_name)
         return self.backend.delete_file_from_collection(formatted, file_name)
 
+    def update_document_metadata(
+        self,
+        collection_name: str,
+        filename: str,
+        title: str | None = None,
+        source: str | None = None,
+        focus_area: str | None = None,
+    ) -> bool:
+        """Partial update of a document's title / source / focus_area."""
+        formatted = self.format_to_collection_name(collection_name)
+        return self.backend.update_document_metadata(
+            formatted, filename, title=title, source=source, focus_area=focus_area
+        )
+
     def modify_collection_name(self, old_name: str, new_name: str) -> bool:
         """Rename a collection. ``new_name`` is the new display name; the
         underlying slug/PK is derived from it."""
@@ -423,8 +437,7 @@ class VectorStoreManager:
         return response_json
 
     async def get_document_classification(self, text: str):
-        """Single-pass RAG document classification.
-        """
+        """Single-pass RAG document classification."""
         from server.schemas.grammars import DocumentClassification
 
         collection_names = self.list_collections()

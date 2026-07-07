@@ -105,6 +105,23 @@ export const ragApi = {
         });
     },
 
+    updateDocumentMetadata: async (data) => {
+        return handleApiRequest({
+            apiCall: async () => {
+                const url = await buildApiUrl(
+                    "/api/rag/update-document-metadata",
+                );
+                return universalFetch(url, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+            },
+            successMessage: "Document updated",
+            errorMessage: "Failed to update document",
+        });
+    },
+
     extractPdfInfo: async (formData) => {
         return handleApiRequest({
             apiCall: async () => {

@@ -315,11 +315,21 @@ class SqliteVecBackend:
             ).fetchall()
             info_map = {r[0]: (bool(r[1]), r[2]) for r in pdf_rows}
 
+            # Per-file source + focus_area (uniform across a file's chunks).
+            meta_rows = db.execute(
+                f"SELECT DISTINCT filename, source, focus_area FROM chunks "
+                f"WHERE collection_name = ? AND filename IN ({placeholders})",
+                [collection_name, *filenames],
+            ).fetchall()
+            meta_map = {r[0]: (r[1], r[2]) for r in meta_rows}
+
             return [
                 {
                     "filename": f,
                     "has_pdf": info_map.get(f, (False, None))[0],
                     "title": info_map.get(f, (False, None))[1],
+                    "source": meta_map.get(f, (None, None))[0],
+                    "focus_area": meta_map.get(f, (None, None))[1],
                 }
                 for f in filenames
             ]
@@ -341,6 +351,60 @@ class SqliteVecBackend:
         except Exception as e:
             logger.error("Error retrieving PDF for '%s/%s': %s", collection_name, filename, e)
             return None
+        finally:
+            db.close()
+
+    def update_document_metadata(
+        self,
+        collection_name: str,
+        filename: str,
+        title: str | None = None,
+        source: str | None = None,
+        focus_area: str | None = None,
+    ) -> bool:
+        """Partial update of per-document metadata.
+
+        ``title`` lives on ``source_documents``; ``source`` and ``focus_area``
+        on ``chunks`` (updated for every chunk of the file). Only fields
+        provided (not None) are written.
+        """
+        db = self._connect()
+        try:
+            if title is not None:
+                db.execute(
+                    "UPDATE source_documents SET title = ? "
+                    "WHERE collection_name = ? AND filename = ?",
+                    (title, collection_name, filename),
+                )
+            if source is not None and focus_area is not None:
+                db.execute(
+                    "UPDATE chunks SET source = ?, focus_area = ? "
+                    "WHERE collection_name = ? AND filename = ?",
+                    (source, focus_area, collection_name, filename),
+                )
+            elif source is not None:
+                db.execute(
+                    "UPDATE chunks SET source = ? WHERE collection_name = ? AND filename = ?",
+                    (source, collection_name, filename),
+                )
+            elif focus_area is not None:
+                db.execute(
+                    "UPDATE chunks SET focus_area = ? WHERE collection_name = ? AND filename = ?",
+                    (focus_area, collection_name, filename),
+                )
+            db.commit()
+            logger.info(
+                "Updated metadata for '%s/%s': title=%s source=%s focus=%s",
+                collection_name,
+                filename,
+                title,
+                source,
+                focus_area,
+            )
+            return True
+        except Exception as e:
+            logger.error("Error updating metadata for '%s/%s': %s", collection_name, filename, e)
+            return False
         finally:
             db.close()
 

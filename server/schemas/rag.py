@@ -68,3 +68,22 @@ class DeleteFileRequest(BaseModel):
 
     collection_name: str
     file_name: str
+
+
+class UpdateDocumentMetadataRequest(BaseModel):
+    """
+    Partial update of a document's display metadata.
+
+    Attributes:
+        collection_name (str): The collection containing the document.
+        filename (str): The storage filename identifying the document.
+        title (str | None): New display title.
+        source (str | None): New publishing source (shown in citations).
+        focus_area (str | None): New category enum value.
+    """
+
+    collection_name: str
+    filename: str
+    title: str | None = None
+    source: str | None = None
+    focus_area: str | None = None

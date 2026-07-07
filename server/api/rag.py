@@ -17,6 +17,7 @@ from server.schemas.rag import (
     CommitRequest,
     DeleteFileRequest,
     ModifyCollectionRequest,
+    UpdateDocumentMetadataRequest,
 )
 from server.utils.rag.processing import (
     generate_specialty_suggestions,
@@ -152,6 +153,29 @@ async def delete_file_endpoint(request: DeleteFileRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error deleting file from collection: {str(e)}",
+        ) from e
+
+
+@router.patch("/update-document-metadata")
+async def update_document_metadata(request: UpdateDocumentMetadataRequest):
+    """Update a document's title / source / focus_area (partial)."""
+    _check_rag_available()
+    try:
+        vector_store_manager = get_vector_store_manager()
+        success = vector_store_manager.update_document_metadata(
+            request.collection_name,
+            request.filename,
+            title=request.title,
+            source=request.source,
+            focus_area=request.focus_area,
+        )
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update document metadata")
+        return {"message": "Document metadata updated successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error updating document metadata: {str(e)}",
         ) from e
 
 
