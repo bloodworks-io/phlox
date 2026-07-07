@@ -233,15 +233,26 @@ const DemographicsForm = ({
                     </NativeSelect.Root>
                 </Field>
             </HStack>
-            <Field label="UR number" required>
-                <Input
-                    className="input-style"
-                    size="sm"
-                    placeholder="UR number"
-                    value={form.ur_number || ""}
-                    onChange={(e) => set("ur_number", e.target.value)}
-                />
-            </Field>
+            <HStack gap={3} align="flex-start">
+                <Field label="UR number" required>
+                    <Input
+                        className="input-style"
+                        size="sm"
+                        placeholder="UR number"
+                        value={form.ur_number || ""}
+                        onChange={(e) => set("ur_number", e.target.value)}
+                    />
+                </Field>
+                <Field label="Phone">
+                    <Input
+                        className="input-style"
+                        size="sm"
+                        placeholder="Phone"
+                        value={form.phone || ""}
+                        onChange={(e) => set("phone", e.target.value)}
+                    />
+                </Field>
+            </HStack>
             <Field label="Address">
                 <Input
                     className="input-style"
@@ -249,15 +260,6 @@ const DemographicsForm = ({
                     placeholder="Address"
                     value={form.address || ""}
                     onChange={(e) => set("address", e.target.value)}
-                />
-            </Field>
-            <Field label="Phone">
-                <Input
-                    className="input-style"
-                    size="sm"
-                    placeholder="Phone"
-                    value={form.phone || ""}
-                    onChange={(e) => set("phone", e.target.value)}
                 />
             </Field>
             <HStack justify="space-between" width="100%" mt={2}>
