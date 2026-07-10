@@ -44,7 +44,10 @@ const panelStyles = (props) => ({
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textSecondary} !important`,
-        borderColor: "#cecacd",
+        borderColor:
+            props.colorMode === "light"
+                ? colors.light.surface
+                : colors.dark.surface,
         border: "none !important",
         borderRadius: "lg !important",
         fontSize: "1rem !important",
@@ -59,7 +62,10 @@ const panelStyles = (props) => ({
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textSecondary} !important`,
-        borderColor: "#cecacd",
+        borderColor:
+            props.colorMode === "light"
+                ? colors.light.surface
+                : colors.dark.surface,
         border: "none !important",
         fontSize: "1rem !important",
         fontWeight: "normal",
@@ -79,8 +85,8 @@ const panelStyles = (props) => ({
         overflow: "hidden",
         background:
             props.colorMode === "light"
-                ? "linear-gradient(135deg, #ff6b35 0%, #f7931e 25%, #ff8c42 50%, #ffa62b 75%, #ff6b35 100%)"
-                : "linear-gradient(135deg, #cc4125 0%, #cc5500 25%, #e65c00 50%, #cc4125 75%, #cc5500 100%)",
+                ? `linear-gradient(135deg, ${colors.light.brand} 0%, ${colors.light.secondaryButton} 50%, ${colors.light.brand} 100%)`
+                : `linear-gradient(135deg, ${colors.dark.brand} 0%, ${colors.dark.secondaryButton} 50%, ${colors.dark.brand} 100%)`,
         "&::before": {
             content: '""',
             position: "absolute",
@@ -90,8 +96,8 @@ const panelStyles = (props) => ({
             height: "200%",
             background:
                 props.colorMode === "light"
-                    ? "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,107,53,0.4) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(247,147,30,0.4) 0%, transparent 40%)"
-                    : "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,107,53,0.2) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(247,147,30,0.2) 0%, transparent 40%)",
+                    ? "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(254,100,11,0.4) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(223,142,29,0.4) 0%, transparent 40%)"
+                    : "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(245,169,127,0.25) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(238,212,159,0.25) 0%, transparent 40%)",
             animation: "swirl 20s ease-in-out infinite",
             borderRadius: "40%",
             zIndex: -1,
@@ -105,8 +111,8 @@ const panelStyles = (props) => ({
             height: "200%",
             background:
                 props.colorMode === "light"
-                    ? "radial-gradient(circle at 60% 40%, rgba(255,166,43,0.3) 0%, transparent 45%), radial-gradient(circle at 40% 60%, rgba(255,107,53,0.3) 0%, transparent 45%)"
-                    : "radial-gradient(circle at 60% 40%, rgba(255,166,43,0.15) 0%, transparent 45%), radial-gradient(circle at 40% 60%, rgba(255,107,53,0.15) 0%, transparent 45%)",
+                    ? "radial-gradient(circle at 60% 40%, rgba(223,142,29,0.35) 0%, transparent 45%), radial-gradient(circle at 40% 60%, rgba(254,100,11,0.35) 0%, transparent 45%)"
+                    : "radial-gradient(circle at 60% 40%, rgba(238,212,159,0.2) 0%, transparent 45%), radial-gradient(circle at 40% 60%, rgba(245,169,127,0.2) 0%, transparent 45%)",
             animation: "swirl 25s ease-in-out infinite reverse",
             borderRadius: "40%",
             zIndex: -1,

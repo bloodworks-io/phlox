@@ -6,33 +6,9 @@ const CHAT_UI_TOKENS = {
         light: "#9ca3af",
         dark: "#9ca3af",
     },
-    userBubble: {
-        light: {
-            gradient:
-                "linear-gradient(180deg, rgba(247, 147, 30, 0.88), rgba(230, 95, 35, 0.82)) !important",
-            border: "1px solid rgba(255, 255, 255, 0.32) !important",
-            shadow: "0 6px 18px rgba(230, 95, 35, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important",
-        },
-        dark: {
-            gradient:
-                "linear-gradient(180deg, rgba(247, 147, 30, 0.34), rgba(230, 95, 35, 0.26)) !important",
-            border: "1px solid rgba(255, 167, 102, 0.28) !important",
-            shadow: "0 6px 20px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important",
-        },
-    },
 };
 
 const floatingStyles = (props) => ({
-    ".chat-icon": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.chatIcon} !important`
-                : `${colors.dark.chatIcon} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.invertedText} !important`
-                : `${colors.dark.invertedText} !important`,
-    },
     ".floating-panel": {
         backgroundColor:
             props.colorMode === "light"
@@ -146,9 +122,9 @@ const floatingStyles = (props) => ({
     ".message-box.user": {
         background:
             props.colorMode === "light"
-                ? "#f7931ecc !important"
-                : "#f7931e66 !important",
-        color: "#fff !important",
+                ? `${colors.light.brandFaint} !important`
+                : `${colors.dark.brandFaint} !important`,
+        color: `${colors.light.invertedText} !important`,
         borderRadius: "2xl !important",
     },
     ".message-box ul, .message-box ol": {
@@ -254,7 +230,7 @@ const floatingStyles = (props) => ({
         color: colors.light.sidebar.text,
         border: "1px solid rgba(0, 0, 0, 0.2) !important",
         boxShadow:
-            "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important",
+            "0 8px 32px rgba(20, 20, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -275,7 +251,7 @@ const floatingStyles = (props) => ({
     },
     // Dashboard chat styles
     ".dashboard-chat-container": {
-        height: "calc(100vh - 60px)",
+        height: "calc(100dvh - 60px)",
         display: "flex",
         flexDirection: "column",
         width: "100%",
@@ -293,7 +269,7 @@ const floatingStyles = (props) => ({
         padding: "10px 16px !important",
     },
     ".dashboard-chat-messages": {
-        height: "calc(100vh - 160px)",
+        height: "calc(100dvh - 160px)",
         overflowY: "auto",
         paddingBottom: "100px", // Space for fixed input
     },

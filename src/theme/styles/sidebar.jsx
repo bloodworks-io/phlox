@@ -7,7 +7,7 @@ const sidebarStyles = (props) => ({
         top: 0,
         left: 0,
         width: "200px",
-        height: "100vh",
+        height: "100dvh",
         background:
             props.colorMode === "light"
                 ? colors.light.sidebar.background
@@ -66,27 +66,6 @@ const sidebarStyles = (props) => ({
         color: colors.light.invertedText,
         transform: "translateY(-1px)",
         boxShadow: "sm",
-    },
-    ".new-patient": {
-        padding: "2px 8px",
-        borderRadius: "lg !important",
-        background: `${colors.light.tertiaryButton} !important`,
-        marginTop: "6px",
-        marginBottom: "6px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        height: "36px",
-        fontWeight: "500",
-        fontSize: "0.9rem",
-        transition: "all 0.2s ease",
-        border: `1px solid ${darkenColor(colors.light.tertiaryButton, 0.15)} !important`,
-    },
-    ".new-patient:hover": {
-        background: `${colors.light.buttonHover.tertiary} !important`,
-        cursor: "pointer !important",
-        transform: "translateY(-1px)",
-        boxShadow: "md",
     },
     ".patient": {
         padding: "2px 8px",

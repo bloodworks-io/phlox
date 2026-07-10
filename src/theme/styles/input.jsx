@@ -169,12 +169,12 @@ const inputStyles = (props) => ({
         color: `${colors.light.invertedText} !important`,
         border:
             props.colorMode === "light"
-                ? `1px solid ${darkenColor(colors.light.extraButton, 0.15)} !important`
+                ? `1px solid ${darkenColor(colors.light.chatIcon, 0.15)} !important`
                 : `none !important`,
         backgroundColor: `${
             props.colorMode === "light"
-                ? colors.light.extraButton
-                : colors.dark.extraButton
+                ? colors.light.chatIcon
+                : colors.dark.chatIcon
         } !important`,
         opacity: 0,
         transition: "opacity 0.2s ease-in-out",
@@ -184,8 +184,8 @@ const inputStyles = (props) => ({
         "&:hover": {
             backgroundColor: `${
                 props.colorMode === "light"
-                    ? lightenColor(colors.light.extraButton)
-                    : lightenColor(colors.dark.extraButton)
+                    ? lightenColor(colors.light.chatIcon)
+                    : lightenColor(colors.dark.chatIcon)
             } !important`,
         },
     },
@@ -194,18 +194,18 @@ const inputStyles = (props) => ({
         color: `${colors.light.invertedText} !important`,
         backgroundColor: `${
             props.colorMode === "light"
-                ? colors.light.extraButton
-                : colors.dark.extraButton
+                ? colors.light.chatIcon
+                : colors.dark.chatIcon
         } !important`,
         border:
             props.colorMode === "light"
-                ? `1px solid ${darkenColor(colors.light.extraButton, 0.15)} !important`
+                ? `1px solid ${darkenColor(colors.light.chatIcon, 0.15)} !important`
                 : `none !important`,
         "&:hover": {
             backgroundColor: `${
                 props.colorMode === "light"
-                    ? lightenColor(colors.light.extraButton)
-                    : lightenColor(colors.dark.extraButton)
+                    ? lightenColor(colors.light.chatIcon)
+                    : lightenColor(colors.dark.chatIcon)
             } !important`,
         },
     },
