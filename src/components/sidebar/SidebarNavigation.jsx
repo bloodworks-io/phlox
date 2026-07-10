@@ -14,17 +14,17 @@ const NavButton = ({
     isActive = false,
     accent,
 }) => {
-    const iconColor = accent
-        ? accent
-        : isActive
-          ? colors.dark.primaryButton
+    const iconColor = isActive
+        ? colors.dark.primaryButton
+        : accent
+          ? accent
           : colors.dark.overlay2;
-    const labelColor = accent
-        ? accent
-        : isActive
-          ? colors.dark.primaryButton
+    const labelColor = isActive
+        ? colors.dark.primaryButton
+        : accent
+          ? accent
           : colors.dark.textPrimary;
-    const weight = accent || isActive ? "600" : "medium";
+    const weight = isActive || accent ? "600" : "medium";
     return (
         <Flex
             w="100%"
@@ -144,6 +144,7 @@ const SidebarNavigation = ({
                         onClick={onNewPatient}
                         isCollapsed={isCollapsed}
                         accent={colors.dark.brand}
+                        isActive={isActive("/new-note")}
                     />
                 </Box>
             </Tooltip>
