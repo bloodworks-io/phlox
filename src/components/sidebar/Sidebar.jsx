@@ -11,21 +11,19 @@ import {
     Text,
     IconButton,
     useDisclosure,
-    Input,
     Image,
     Flex,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useApiToast } from "../../utils/helpers/apiToastContext";
 import { useState, useEffect, useRef } from "react";
-import { FaPlus } from "react-icons/fa";
 
 import VersionInfo from "./VersionInfo";
 import SidebarPatientList from "./SidebarPatientList";
 import SidebarNavigation from "./SidebarNavigation";
-import { AvatarButton } from "./SidebarHelpers";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { colors } from "../../theme/colors";
+import { sidebarWidth } from "../../theme/dimensions";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { isTauri } from "../../utils/helpers/apiConfig";
@@ -64,6 +62,7 @@ const CollapseIcon = ({ boxSize = "20px" }) => (
 const Sidebar = ({
     onNewPatient,
     onSelectPatient,
+    selectedPatientId,
     selectedDate,
     setSelectedDate,
     refreshKey,
@@ -181,7 +180,6 @@ const Sidebar = ({
     };
 
     useEffect(() => {
-        console.log("Sidebar refresh triggered, refreshKey:", refreshKey);
         fetchPatients(selectedDate);
         fetchIncompleteJobsCount();
     }, [selectedDate, refreshKey]);
@@ -192,19 +190,19 @@ const Sidebar = ({
     // glass styling only for desktop; web/docker gets flat full-height
     const navStyle = isTauri()
         ? {
-              h: "calc(100vh - 18px)",
+              h: "calc(100dvh - 18px)",
               my: 2,
               mx: 2,
               bg: "linear-gradient(to bottom, rgba(45, 47, 65, 0.95), rgba(30, 32, 48, 0.95))",
               backdropFilter: "blur(20px) saturate(180%)",
               borderRadius: "2xl",
               boxShadow:
-                  "0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
+                  "0 4px 24px rgba(20, 20, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
               border: "1px solid",
               borderColor: "rgba(0, 0, 0, 0.2)",
           }
         : {
-              h: "100vh",
+              h: "100dvh",
               my: 0,
               mx: 0,
               bg: "sidebar.background",
@@ -222,11 +220,11 @@ const Sidebar = ({
             top="0"
             left="0"
             {...navStyle}
-            p={isCollapsed ? "2" : "4"}
+            p="4"
             pt={isCollapsed ? (isTauri() ? "2" : "2") : isTauri() ? "8" : "4"}
             display="flex"
             flexDirection="column"
-            w={isCollapsed ? "80px" : "220px"}
+            w={sidebarWidth(isCollapsed)}
             transition="all 0.3s ease"
             zIndex={shouldFloat ? "1200" : "100"} // Increase z-index when in overlay mode
             transform={
@@ -265,174 +263,144 @@ const Sidebar = ({
                     <CollapseIcon boxSize="20px" />
                 </IconButton>
             )}
-            {/* Regular toggle button - only show when expanded on larger screens */}
-            {!isSmallScreen && !isCollapsed && (
-                <Tooltip
-                    content="Collapse Sidebar"
-                    positioning={{
-                        placement: "right",
-                    }}
-                >
-                    <IconButton
-                        cursor={isCollapsed ? "pointer" : "w-resize"}
-                        onClick={toggleSidebar}
-                        position="absolute"
-                        top={isTauri() ? "32px" : "12px"}
-                        right="15px"
-                        size="sm"
-                        borderRadius="full"
-                        aria-label="Toggle sidebar"
-                        zIndex="200"
-                        variant="ghost"
-                        color={labelColor}
-                        _hover={{ bg: hoverColor }}
-                    >
-                        <CollapseIcon boxSize="20px" />
-                    </IconButton>
-                </Tooltip>
-            )}
-            {/* Logo Area */}
-            <Box
-                cursor={isCollapsed ? "e-resize" : "pointer"}
-                display="flex"
-                justifyContent="center"
+            {/* Logo Area + inline collapse toggle */}
+            <Flex
                 width="100%"
+                align="center"
+                justify="space-between"
+                overflow="hidden"
+                transition="margin-top 0.3s ease"
                 mt={
                     isCollapsed
                         ? isTauri()
                             ? "50px"
-                            : "12px"
+                            : "8px"
                         : isTauri()
                           ? "15px"
-                          : "5px"
+                          : "0px"
                 }
-                mb={isCollapsed ? "10px" : "15px"}
-                asChild
+                mb={isCollapsed ? "21px" : "15px"}
             >
-                <button
-                    onClick={() =>
-                        isCollapsed ? toggleSidebar() : handleNavigation("/")
-                    }
+                <Box
+                    cursor={isCollapsed ? "e-resize" : "pointer"}
+                    asChild
+                    ml="10px"
                 >
-                    {isCollapsed ? (
-                        <Tooltip
-                            content="Expand Sidebar"
-                            positioning={{
-                                placement: "right",
-                            }}
-                        >
-                            <Box
-                                position="relative"
-                                width="35px"
-                                height="35px"
-                                role="group"
+                    <button
+                        onClick={() =>
+                            isCollapsed
+                                ? toggleSidebar()
+                                : handleNavigation("/")
+                        }
+                    >
+                        {isCollapsed ? (
+                            <Tooltip
+                                content="Expand Sidebar"
+                                positioning={{
+                                    placement: "right",
+                                }}
                             >
+                                <Box
+                                    position="relative"
+                                    width="28px"
+                                    height="40px"
+                                    role="group"
+                                >
+                                    <Image
+                                        src="/logo.webp"
+                                        alt="Phlox logo"
+                                        width="100%"
+                                        height="100%"
+                                        mt="2px"
+                                        objectFit="contain"
+                                        position="absolute"
+                                        top="0"
+                                        left="0"
+                                        transition="opacity 0.2s"
+                                        _groupHover={{ opacity: 0 }}
+                                    />
+                                    <Flex
+                                        position="absolute"
+                                        top="0"
+                                        left="0"
+                                        width="100%"
+                                        height="100%"
+                                        align="center"
+                                        justify="center"
+                                        opacity="0"
+                                        transition="opacity 0.2s"
+                                        _groupHover={{ opacity: 1 }}
+                                    >
+                                        <CollapseIcon boxSize="28px" />
+                                    </Flex>
+                                </Box>
+                            </Tooltip>
+                        ) : (
+                            <Flex align="center" gap={3}>
                                 <Image
                                     src="/logo.webp"
-                                    alt="Logo"
-                                    width="35px"
-                                    position="absolute"
-                                    transition="opacity 0.2s"
-                                    _groupHover={{ opacity: 0 }}
+                                    alt="Phlox logo"
+                                    width="28px"
                                 />
-                                <Box
-                                    position="absolute"
-                                    top="0"
-                                    left="0"
-                                    opacity="0"
-                                    transition="opacity 0.2s"
-                                    _groupHover={{ opacity: 1 }}
+                                <Text
+                                    fontFamily="heading"
+                                    fontSize="3xl"
+                                    fontWeight="700"
+                                    color="sidebar.text"
+                                    letterSpacing="-0.02em"
                                 >
-                                    <CollapseIcon boxSize="35px" />
-                                </Box>
-                            </Box>
-                        </Tooltip>
-                    ) : (
-                        <Image src="/logo.webp" alt="Logo" width="100px" />
-                    )}
-                </button>
-            </Box>
-            {/* Main Content Area - Restructured for better collapsed view */}
-            <Flex
-                direction="column"
-                flex="1"
-                justifyContent="space-between"
-                overflow="hidden"
-            >
-                {/* Top section with date selector and new note button */}
-                <Box>
-                    {/* Date selector - only visible when expanded */}
-                    {!isCollapsed && (
-                        <Box mb="2">
-                            <Text
-                                fontSize="xs"
-                                fontWeight="medium"
-                                color={labelColor}
-                                mb="1"
-                            >
-                                CLINIC DATE
-                            </Text>
-                            <Input
-                                type="date"
-                                value={selectedDate || ""}
-                                onChange={(e) =>
-                                    setSelectedDate(e.target.value)
-                                }
-                                size="sm"
-                                borderRadius="md"
-                                className="clinic-date-input"
-                            />
-                        </Box>
-                    )}
-
-                    {/* New Note button - adjusted size for collapsed view */}
+                                    Phlox
+                                </Text>
+                            </Flex>
+                        )}
+                    </button>
+                </Box>
+                {!isSmallScreen && !isCollapsed && (
                     <Tooltip
-                        content="New Note"
-                        positioning={{
-                            placement: isCollapsed ? "right" : "top",
-                        }}
+                        content="Collapse Sidebar"
+                        positioning={{ placement: "bottom" }}
                     >
-                        <Box
-                            w="100%"
-                            mb={isCollapsed ? 4 : 0}
-                            mt={isCollapsed ? 4 : 0}
+                        <IconButton
+                            onClick={toggleSidebar}
+                            size="sm"
+                            variant="ghost"
+                            borderRadius="full"
+                            aria-label="Collapse sidebar"
+                            color={labelColor}
+                            _hover={{ bg: hoverColor }}
                         >
-                            <AvatarButton
-                                icon={
-                                    <FaPlus
-                                        fontSize={
-                                            isCollapsed ? "0.9rem" : "1.2rem"
-                                        }
-                                    />
-                                }
-                                backgroundColor={colors.dark.tertiaryButton}
-                                label="New Note"
-                                onClick={onNewPatient}
-                                isCollapsed={isCollapsed}
-                            />
-                        </Box>
+                            <CollapseIcon boxSize="18px" />
+                        </IconButton>
                     </Tooltip>
-                </Box>
+                )}
+            </Flex>
+            {/* Main Content Area */}
+            <Flex direction="column" flex="1" overflow="hidden">
+                {/* Navigation (top) — New Note is the primary action, first row */}
+                <SidebarNavigation
+                    isCollapsed={isCollapsed}
+                    handleNavigation={handleNavigation}
+                    onNewPatient={handleNewPatient}
+                    incompleteJobsCount={incompleteJobsCount}
+                />
 
-                {/* Patient List Section */}
-                <Box flex="1" minH="0" mb={2}>
-                    <SidebarPatientList
-                        patients={patients}
-                        onSelectPatient={handlePatientClick}
-                        onDeletePatient={handleDelete}
-                        isCollapsed={isCollapsed}
-                    />
-                </Box>
-
-                {/* Navigation Section - Natural flow at bottom */}
-                <Box width="100%" bg="transparent" pt="2">
-                    <SidebarNavigation
-                        isCollapsed={isCollapsed}
-                        handleNavigation={handleNavigation}
-                        onNewPatient={handleNewPatient}
-                        incompleteJobsCount={incompleteJobsCount}
-                    />
-                </Box>
+                {/* Patient List — hidden in collapsed mode */}
+                {!isCollapsed && (
+                    <Box flex="1" minH="0" mb={2}>
+                        <SidebarPatientList
+                            patients={patients}
+                            onSelectPatient={handlePatientClick}
+                            onDeletePatient={handleDelete}
+                            isCollapsed={isCollapsed}
+                            selectedPatientId={selectedPatientId}
+                            selectedDate={selectedDate}
+                            setSelectedDate={setSelectedDate}
+                            onShowSummary={() =>
+                                handleNavigation("/clinic-summary")
+                            }
+                        />
+                    </Box>
+                )}
             </Flex>
             {/* Version info at bottom - adjusted for collapsed view */}
             <Box mt="2" pt="2" pb={isCollapsed ? "2" : "0"}>

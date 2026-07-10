@@ -27,7 +27,7 @@ export const GreyButton = ({ children, leftIcon, ...props }) => (
 
 // Utility Buttons
 export const SettingsButton = ({ children, leftIcon, ...props }) => (
-  <Button className="settings-button" gap="2" {...props}>
+  <Button className="grey-button" gap="2" {...props}>
     {leftIcon}
     {children}
   </Button>

@@ -1,12 +1,9 @@
-import { Box, VStack, Flex, Icon, Text, Badge, Collapsible } from "@chakra-ui/react";
-import { Tooltip } from '@/components/ui/tooltip';
-import { FaClinicMedical, FaTasks } from "react-icons/fa";
-import { GiBrain } from "react-icons/gi";
-import { SettingsIcon } from "../common/icons";
+import { Box, VStack, Flex, Icon, Text, Badge } from "@chakra-ui/react";
+import { Tooltip } from "@/components/ui/tooltip";
+import { FaTasks, FaNotesMedical, FaBrain, FaCog } from "react-icons/fa";
+import { useLocation } from "react-router";
 import { colors } from "../../theme/colors";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
-import { SectionHeader } from "./SidebarHelpers";
-import { useState } from "react";
 
 const NavButton = ({
     icon,
@@ -14,13 +11,25 @@ const NavButton = ({
     onClick,
     isCollapsed,
     badge = null,
-    color,
+    isActive = false,
+    accent,
 }) => {
+    const iconColor = accent
+        ? accent
+        : isActive
+          ? colors.dark.primaryButton
+          : colors.dark.overlay2;
+    const labelColor = accent
+        ? accent
+        : isActive
+          ? colors.dark.primaryButton
+          : colors.dark.textPrimary;
+    const weight = accent || isActive ? "600" : "medium";
     return (
         <Flex
             w="100%"
-            px={isCollapsed ? 2 : 3}
-            py={isCollapsed ? 1.5 : 2}
+            pr="2"
+            py="1.5"
             align="center"
             borderRadius="md"
             cursor="pointer"
@@ -33,55 +42,80 @@ const NavButton = ({
                     onClick();
                 }
             }}
-            _hover={{ bg: colors.dark.sidebar.hover }}
+            bg={isActive ? "primaryButtonFaint" : undefined}
+            boxShadow={
+                isActive
+                    ? "inset 3px 0 0 var(--chakra-colors-primaryButton)"
+                    : undefined
+            }
+            _hover={{
+                bg: isActive
+                    ? "primaryButtonHalftone"
+                    : colors.dark.sidebar.hover,
+            }}
             _active={{ transform: "scale(0.98)" }}
-            _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
+            _focusVisible={{
+                outline: "2px solid",
+                outlineColor: "accent",
+                outlineOffset: "2px",
+            }}
             transition="transform 0.1s ease, background 0.15s ease"
-            justify={isCollapsed ? "center" : "flex-start"}
+            justify="flex-start"
             position="relative"
         >
-            {isCollapsed && badge ? (
-                // For collapsed mode with badge, show the badge instead of the icon
-                (<Badge
-                    bg="dangerButton"
-                    color="white"
-                    borderRadius="full"
-                    px={1.5}
-                    py={0}
-                    fontSize="xs"
-                >
-                    {badge}
-                </Badge>)
-            ) : (
-                // Show the regular icon if no badge or not collapsed
-                (<Icon
-                    as={icon}
-                    color={color}
-                    boxSize={isCollapsed ? 4 : 5}
-                    mr={isCollapsed ? 0 : 3}
-                />)
-            )}
-            {!isCollapsed && (
-                <Flex align="center">
-                    <Text fontWeight="medium" color={colors.dark.textPrimary}>
-                        {label}
-                    </Text>
-
-                    {/* Show badge next to text in expanded view */}
-                    {badge && (
-                        <Badge
-                            ml={2}
-                            bg="dangerButton"
-                            color="white"
-                            borderRadius="full"
-                            px={1.5}
-                            fontSize="xs"
+            <Flex
+                ml="14px"
+                align="center"
+                minW="0"
+                flex="1"
+                overflow={isCollapsed ? "visible" : "hidden"}
+            >
+                {isCollapsed && badge ? (
+                    <Badge
+                        bg="dangerButton"
+                        color="white"
+                        borderRadius="full"
+                        px={1.5}
+                        fontSize="xs"
+                        ml="-3px"
+                        height="22px"
+                    >
+                        {badge}
+                    </Badge>
+                ) : (
+                    <Icon
+                        as={icon}
+                        color={iconColor}
+                        boxSize={5}
+                        mr={isCollapsed ? 0 : 3}
+                    />
+                )}
+                {!isCollapsed && (
+                    <Flex align="center" flexShrink={0}>
+                        <Text
+                            fontWeight={weight}
+                            fontSize="sm"
+                            color={labelColor}
+                            whiteSpace="nowrap"
                         >
-                            {badge}
-                        </Badge>
-                    )}
-                </Flex>
-            )}
+                            {label}
+                        </Text>
+
+                        {badge && (
+                            <Badge
+                                ml={2}
+                                bg="dangerButton"
+                                color="white"
+                                borderRadius="full"
+                                px={1.5}
+                                fontSize="xs"
+                            >
+                                {badge}
+                            </Badge>
+                        )}
+                    </Flex>
+                )}
+            </Flex>
         </Flex>
     );
 };
@@ -90,123 +124,87 @@ const SidebarNavigation = ({
     isCollapsed,
     handleNavigation,
     incompleteJobsCount,
+    onNewPatient,
 }) => {
-    const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+    const location = useLocation();
+    const isActive = (to) =>
+        location.pathname === to || location.pathname.startsWith(`${to}/`);
 
     return (
-        <Box w="100%">
-            {/* Navigation Header - Collapsible when expanded */}
-            {!isCollapsed && (
-                <SectionHeader
-                    title="NAVIGATION"
-                    count={null}
-                    isCollapsed={isNavCollapsed}
-                    onToggle={() => setIsNavCollapsed(!isNavCollapsed)}
-                />
+        <VStack gap="1" align="stretch" w="100%" py="1">
+            <Tooltip
+                content="New Note"
+                disabled={!isCollapsed}
+                positioning={{ placement: isCollapsed ? "right" : "top" }}
+            >
+                <Box>
+                    <NavButton
+                        icon={FaNotesMedical}
+                        label="New Note"
+                        onClick={onNewPatient}
+                        isCollapsed={isCollapsed}
+                        accent={colors.dark.brand}
+                    />
+                </Box>
+            </Tooltip>
+
+            <Tooltip
+                content={
+                    isCollapsed && incompleteJobsCount > 0
+                        ? `All Jobs (${incompleteJobsCount})`
+                        : "All Jobs"
+                }
+                disabled={!isCollapsed}
+                positioning={{ placement: isCollapsed ? "right" : "top" }}
+            >
+                <Box>
+                    <NavButton
+                        icon={FaTasks}
+                        label="All Jobs"
+                        onClick={() => handleNavigation("/outstanding-jobs")}
+                        isCollapsed={isCollapsed}
+                        badge={
+                            incompleteJobsCount > 0 ? incompleteJobsCount : null
+                        }
+                        isActive={isActive("/outstanding-jobs")}
+                    />
+                </Box>
+            </Tooltip>
+
+            {isRagEnabled() && (
+                <Tooltip
+                    content="Documents"
+                    disabled={!isCollapsed}
+                    positioning={{ placement: isCollapsed ? "right" : "top" }}
+                >
+                    <Box mb={isCollapsed ? "1px" : "0px"}>
+                        <NavButton
+                            icon={FaBrain}
+                            label="Documents"
+                            onClick={() => handleNavigation("/rag")}
+                            isCollapsed={isCollapsed}
+                            isActive={isActive("/rag")}
+                        />
+                    </Box>
+                </Tooltip>
             )}
-            {/* Navigation Items */}
-            <Collapsible.Root open={isCollapsed || !isNavCollapsed}>
-                <Collapsible.Content>
-                    <VStack
-                        gap={isCollapsed ? 0 : 1}
-                        align="stretch"
-                        w="100%"
-                        py={isCollapsed ? 1 : 2}
-                    >
-                        {/* Day Summary button */}
-                        <Tooltip
-                            content="Day Summary"
-                            disabled={!isCollapsed}
-                            positioning={{
-                                placement: isCollapsed ? "right" : "top"
-                            }}
-                        >
-                            <Box>
-                                <NavButton
-                                    icon={FaClinicMedical}
-                                    color={colors.dark.primaryButton}
-                                    label="Day Summary"
-                                    onClick={() =>
-                                        handleNavigation("/clinic-summary")
-                                    }
-                                    isCollapsed={isCollapsed}
-                                />
-                            </Box>
-                        </Tooltip>
 
-                        {/* All Jobs button */}
-                        <Tooltip
-                            content={
-                                isCollapsed && incompleteJobsCount > 0
-                                    ? `All Jobs (${incompleteJobsCount})`
-                                    : "All Jobs"
-                            }
-                            disabled={!isCollapsed}
-                            positioning={{
-                                placement: isCollapsed ? "right" : "top"
-                            }}
-                        >
-                            <Box>
-                                <NavButton
-                                    icon={FaTasks}
-                                    color={colors.dark.neutralButton}
-                                    label="All Jobs"
-                                    onClick={() =>
-                                        handleNavigation("/outstanding-jobs")
-                                    }
-                                    isCollapsed={isCollapsed}
-                                    badge={
-                                        incompleteJobsCount > 0
-                                            ? incompleteJobsCount
-                                            : null
-                                    }
-                                />
-                            </Box>
-                        </Tooltip>
-
-                        {/* Documents button */}
-                        {isRagEnabled() && (
-                            <Tooltip
-                                content="Documents"
-                                disabled={!isCollapsed}
-                                positioning={{
-                                    placement: isCollapsed ? "right" : "top"
-                                }}
-                            >
-                                <Box>
-                                    <NavButton
-                                        icon={GiBrain}
-                                        color={colors.dark.chatIcon}
-                                        label="Documents"
-                                        onClick={() => handleNavigation("/rag")}
-                                        isCollapsed={isCollapsed}
-                                    />
-                                </Box>
-                            </Tooltip>
-                        )}
-
-                        {/* Settings button */}
-                        <Tooltip
-                            content="Settings"
-                            disabled={!isCollapsed}
-                            positioning={{
-                                placement: isCollapsed ? "right" : "top"
-                            }}
-                        >
-                            <Box>
-                                <NavButton
-                                    icon={SettingsIcon}
-                                    color={colors.dark.extraButton}
-                                    label="Settings"
-                                    onClick={() => handleNavigation("/settings")}
-                                    isCollapsed={isCollapsed}
-                                />
-                            </Box>
-                        </Tooltip>
-                    </VStack>
-                </Collapsible.Content>
-            </Collapsible.Root>
-        </Box>
+            <Tooltip
+                content="Settings"
+                disabled={!isCollapsed}
+                positioning={{ placement: isCollapsed ? "right" : "top" }}
+            >
+                <Box>
+                    <NavButton
+                        icon={FaCog}
+                        label="Settings"
+                        onClick={() => handleNavigation("/settings")}
+                        isCollapsed={isCollapsed}
+                        isActive={isActive("/settings")}
+                    />
+                </Box>
+            </Tooltip>
+        </VStack>
     );
 };
 

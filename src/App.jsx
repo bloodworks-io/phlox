@@ -103,6 +103,9 @@ function AppContent({ setIsInitializing }) {
                 sidebarProps={{
                     onNewPatient: newNote.openNewNoteModal,
                     onSelectPatient: handleSelectPatient,
+                    selectedPatientId: location.pathname.startsWith("/note/")
+                        ? patient?.id
+                        : undefined,
                     selectedDate,
                     setSelectedDate,
                     refreshKey,
