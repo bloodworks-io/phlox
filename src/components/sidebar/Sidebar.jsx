@@ -304,7 +304,7 @@ const Sidebar = ({
                                     position="relative"
                                     width="28px"
                                     height="40px"
-                                    role="group"
+                                    className="group"
                                 >
                                     <Image
                                         src="/logo.webp"
