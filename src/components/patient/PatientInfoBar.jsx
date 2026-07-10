@@ -1,10 +1,9 @@
 import { Flex, Text, IconButton, HStack } from "@chakra-ui/react";
-import { Tooltip } from '@/components/ui/tooltip';
+import { Tooltip } from "@/components/ui/tooltip";
 import { FaEdit } from "react-icons/fa";
 import { getAvatarColor, getInitials } from "../sidebar/SidebarHelpers";
 
 const PatientInfoBar = ({ patient, onEdit }) => {
-
     const name = patient.name || "New patient";
     const meta = [
         patient.gender,
@@ -34,7 +33,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                     fontWeight="700"
                     flexShrink={0}
                     css={{
-                        fontFamily: '"Space Grotesk", sans-serif'
+                        fontFamily: '"Space Grotesk", sans-serif',
                     }}
                 >
                     {(patient.name && getInitials(patient.name)) || "?"}
@@ -47,7 +46,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                         color={"textPrimary"}
                         lineClamp={1}
                         css={{
-                            fontFamily: '"Space Grotesk", sans-serif'
+                            fontFamily: '"Space Grotesk", sans-serif',
                         }}
                     >
                         {name}
@@ -57,7 +56,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                         color={"textSecondary"}
                         lineClamp={1}
                         css={{
-                            fontFamily: '"Roboto", sans-serif'
+                            fontFamily: '"Roboto", sans-serif',
                         }}
                     >
                         {meta.length
@@ -73,7 +72,10 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                         variant="ghost"
                         color={"textSecondary"}
                         onClick={onEdit}
-                        flexShrink={0}><FaEdit /></IconButton>
+                        flexShrink={0}
+                    >
+                        <FaEdit />
+                    </IconButton>
                 </Tooltip>
             </Flex>
         </Flex>
