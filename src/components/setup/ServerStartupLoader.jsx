@@ -119,7 +119,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       <Flex
         align="center"
         justify="center"
-        minH="100vh"
+        minH="100dvh"
         className="splash-bg"
         px={4}
         py={8}
@@ -188,7 +188,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
     <Flex
       align="center"
       justify="center"
-      minH="100vh"
+      minH="100dvh"
       className="splash-bg"
       px={4}
       py={8}

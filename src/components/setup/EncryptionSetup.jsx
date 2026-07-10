@@ -136,7 +136,7 @@ const EncryptionSetup = ({ onComplete }) => {
     <Flex
       align="center"
       justify="center"
-      minH="100vh"
+      minH="100dvh"
       className="splash-bg"
       px={4}
       py={8}

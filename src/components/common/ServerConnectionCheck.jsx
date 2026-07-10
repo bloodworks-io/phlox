@@ -37,7 +37,7 @@ export const ServerConnectionCheck = ({ children }) => {
   if (serverStatus === "checking") {
     return (
       <Box
-        height="100vh"
+        height="100dvh"
         display="flex"
         alignItems="center"
         justifyContent="center"

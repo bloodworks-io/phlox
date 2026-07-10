@@ -576,7 +576,7 @@ const PatientDetails = ({
 
     if (!patient) {
         return (
-            <Center h="100vh">
+            <Center h="100dvh">
                 <Spinner size="xl" />
             </Center>
         );
@@ -596,7 +596,13 @@ const PatientDetails = ({
     }
 
     return (
-        <Box p={[2, 4, 5]} borderRadius="sm" w="100%" pb="100px">
+        <Box
+            px={[2, 4, 5]}
+            pt={[1, 2, 3]}
+            pb="100px"
+            borderRadius="sm"
+            w="100%"
+        >
             <VStack gap={[3, 4, 5]} align="stretch">
                 <PatientInfoBar patient={patient} onEdit={onOpenDemographics} />
 

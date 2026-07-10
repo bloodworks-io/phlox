@@ -251,7 +251,7 @@ const SplashScreen = ({ onComplete }) => {
     <Flex
       align="center"
       justify="center"
-      minH="100vh"
+      minH="100dvh"
       className="splash-bg"
       px={4}
       py={8}
@@ -310,14 +310,6 @@ const SplashScreen = ({ onComplete }) => {
               as="h1"
               textAlign="center"
               color={"textPrimary"}
-              css={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontSize: ["1.5rem", "1.75rem"],
-                fontWeight: "700",
-                lineHeight: "1.2",
-                marginBottom: "0.5rem",
-                letterSpacing: "-0.02em"
-              }}
             >
               Welcome to Phlox
             </Heading>
@@ -368,12 +360,6 @@ const SplashScreen = ({ onComplete }) => {
               <Heading
                 as="h2"
                 color={"textPrimary"}
-                css={{
-                  fontFamily: '"Space Grotesk", sans-serif',
-                  fontSize: ["1.25rem", "1.5rem"],
-                  fontWeight: "600",
-                  lineHeight: "1.2"
-                }}
               >
                 {STEP_TITLES[currentStep]}
               </Heading>
