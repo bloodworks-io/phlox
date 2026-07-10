@@ -2,6 +2,7 @@ import { Box, Flex, IconButton } from "@chakra-ui/react";
 import Sidebar from "../sidebar/Sidebar";
 import CollapseIcon from "../common/icons/CollapseIcon";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import { sidebarOffset } from "../../theme/dimensions";
 
 const AppLayout = ({
     isSmallScreen,
@@ -29,18 +30,8 @@ const AppLayout = ({
             <Sidebar {...sidebarProps} />
             <Box
                 flex="1"
-                ml={
-                    isSmallScreen
-                        ? "0"
-                        : isCollapsed
-                          ? isTauri()
-                              ? "96px"
-                              : "80px"
-                          : isTauri()
-                            ? "236px"
-                            : "220px"
-                }
-                minH="100vh"
+                ml={isSmallScreen ? "0" : sidebarOffset(isCollapsed, isTauri())}
+                minH="100dvh"
                 transition="margin-left 0.3s ease"
                 bg={isTauri() ? "sidebar.background" : "transparent"}
                 display="flex"
@@ -54,9 +45,7 @@ const AppLayout = ({
                         position="fixed"
                         top="0"
                         right="0"
-                        left={
-                            isSmallScreen ? "0" : isCollapsed ? "96px" : "236px"
-                        }
+                        left={isSmallScreen ? "0" : sidebarOffset(isCollapsed, true)}
                         zIndex="1000"
                         transition="left 0.3s ease"
                     />
@@ -74,7 +63,7 @@ const AppLayout = ({
                               : "0"
                     }
                     className="main-bg"
-                    height="100vh"
+                    height="100dvh"
                     overflowY="auto"
                     position="relative"
                 >
