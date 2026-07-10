@@ -139,6 +139,9 @@ export const system = createSystem(defaultConfig, {
         slotRecipes: {
             table: {
                 base: {
+                    cell: {
+                        fontVariantNumeric: "tabular-nums",
+                    },
                     columnHeader: {
                         fontSize: "12px",
                         fontWeight: "700",

@@ -22,22 +22,22 @@ const baseStyles = (props) => ({
         ...typography.styles.h1,
         color:
             props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+                ? `${colors.light.textPrimary} !important`
+                : `${colors.dark.textPrimary} !important`,
     },
     h2: {
         ...typography.styles.h2,
         color:
             props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+                ? `${colors.light.textPrimary} !important`
+                : `${colors.dark.textPrimary} !important`,
     },
     h3: {
         ...typography.styles.h3,
         color:
             props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+                ? `${colors.light.textPrimary} !important`
+                : `${colors.dark.textPrimary} !important`,
     },
     h4: {
         ...typography.styles.h4,
@@ -71,6 +71,7 @@ const baseStyles = (props) => ({
         fontFamily: '"Roboto", sans-serif',
         fontSize: "1rem",
         lineHeight: "1.5",
+        textWrap: "pretty",
     },
 });
 
