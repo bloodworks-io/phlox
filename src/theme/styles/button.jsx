@@ -5,31 +5,33 @@ import { darkenColor } from "../utils";
 const buttonStyles = (props) => ({
     ".nav-button": {
         marginTop: "4px",
-        background: colors.light.primaryButton,
+        background: `${colors.light.primaryButton} !important`,
+        color: `${colors.light.invertedText} !important`,
         fontSize: "0.9rem",
         padding: "6px 12px",
-        borderRadius: "xl",
+        borderRadius: "xl !important",
         border:
             props.colorMode === "light"
                 ? `1px solid ${darkenColor(colors.light.primaryButton, 0.15)} !important`
                 : `1px solid ${darkenColor(colors.dark.primaryButton, 0.15)} !important`,
     },
     ".nav-button:hover": {
-        background: colors.light.buttonHover.primary,
+        background: `${colors.light.buttonHover.primary} !important`,
     },
     ".small-nav-button": {
         marginTop: "4px",
-        background: colors.light.primaryButton,
+        background: `${colors.light.primaryButton} !important`,
+        color: `${colors.light.invertedText} !important`,
         fontSize: "0.8rem",
         padding: "4px 8px",
-        borderRadius: "xl",
+        borderRadius: "xl !important",
         border:
             props.colorMode === "light"
                 ? `1px solid ${darkenColor(colors.light.primaryButton, 0.15)} !important`
                 : `1px solid ${darkenColor(colors.dark.primaryButton, 0.15)} !important`,
     },
     ".small-nav-button:hover": {
-        background: colors.light.buttonHover.primary,
+        background: `${colors.light.buttonHover.primary} !important`,
     },
     ".summary-buttons": {
         backgroundColor: `${colors.light.primaryButton} !important`,
