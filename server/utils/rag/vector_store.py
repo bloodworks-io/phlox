@@ -77,8 +77,13 @@ class VectorStoreManager:
         """Reload the embedding function with fresh config."""
         self.config = config_manager.get_config()
 
-        raw_base_url = self.config.get("LLM_BASE_URL") or "http://127.0.0.1:11434"
-        base_url = normalize_openai_base_url(raw_base_url)
+        raw_base_url = self.config.get("LLM_BASE_URL")
+        if raw_base_url:
+            base_url = normalize_openai_base_url(raw_base_url)
+        else:
+            from server.utils.allocated_ports import get_embedding_port
+
+            base_url = f"http://127.0.0.1:{get_embedding_port()}"
 
         self.embedding_model = OpenAICompatibleProvider(
             base_url=f"{base_url}/v1",
@@ -87,8 +92,9 @@ class VectorStoreManager:
         )
 
         logger.info(
-            "Reloaded embedding function: model=%s",
+            "Reloaded embedding function: model=%s, base_url=%s",
             self.config.get("EMBEDDING_MODEL", "N/A"),
+            base_url,
         )
 
     @property
