@@ -252,4 +252,35 @@ export const localModelApi = {
       successMessage: "Whisper server restarted successfully",
       errorMessage: "Failed to restart Whisper server",
     }),
+
+  // Embedding model management
+  fetchDownloadedEmbeddingModels: async () =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(
+          "/api/config/local/embedding/models/downloaded",
+        );
+        return universalFetch(url);
+      },
+      errorMessage: "Failed to fetch embedding models",
+    }),
+
+  streamDownloadEmbeddingModel: async function* (modelId) {
+    const baseUrl = await buildApiUrl("");
+    const url = `${baseUrl}/api/config/local/embedding/models/download/stream?model_id=${encodeURIComponent(modelId)}`;
+    yield* this.streamSSE(url);
+  },
+
+  restartEmbeddingServer: async () =>
+    handleApiRequest({
+      apiCall: async () => {
+        if (window.__TAURI__) {
+          const { invoke } = await import("@tauri-apps/api/core");
+          return await invoke("restart_embedding");
+        }
+        throw new Error("Embedding restart is only available in Tauri builds");
+      },
+      successMessage: "Embedding server restarted successfully",
+      errorMessage: "Failed to restart embedding server",
+    }),
 };

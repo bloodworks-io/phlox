@@ -104,3 +104,47 @@ export async function downloadWhisperModel(modelId, { onProgress, onStart, toast
     throw error;
   }
 }
+
+/**
+ * Downloads an embedding model and restarts the embedding server
+ */
+export async function downloadEmbeddingModel(modelId, { onProgress, onStart, toast }) {
+  try {
+    for await (const event of localModelApi.streamDownloadEmbeddingModel(modelId)) {
+      if (event.type === "start") {
+        onStart?.();
+      } else if (event.type === "progress") {
+        onProgress?.(event);
+      } else if (event.type === "complete") {
+        try {
+          await localModelApi.restartEmbeddingServer();
+          toaster.create({
+            title: "Success",
+            description: "Embedding model downloaded",
+            type: "success",
+            duration: 3000,
+          });
+        } catch (restartError) {
+          console.error("Error restarting embedding server:", restartError);
+          toaster.create({
+            title: "Model Downloaded",
+            description: "Embedding model downloaded. Please restart the app.",
+            type: "info",
+            duration: 5000,
+          });
+        }
+      } else if (event.type === "error") {
+        throw new Error(event.message);
+      }
+    }
+  } catch (error) {
+    console.error("Error downloading embedding model:", error);
+    toaster.create({
+      title: "Error",
+      description: `Failed to download embedding model: ${error.message}`,
+      type: "error",
+      duration: 5000,
+    });
+    throw error;
+  }
+}
