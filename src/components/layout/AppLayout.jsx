@@ -33,7 +33,7 @@ const AppLayout = ({
                 ml={isSmallScreen ? "0" : sidebarOffset(isCollapsed, isTauri())}
                 minH="100dvh"
                 transition="margin-left 0.3s ease"
-                bg={isTauri() ? "sidebar.background" : "transparent"}
+                bg={isTauri() ? "base" : "transparent"}
                 display="flex"
                 flexDirection="column"
             >
@@ -54,13 +54,11 @@ const AppLayout = ({
                 <Box
                     m="0px"
                     borderRadius="0px"
-                    p={isTauri() ? "6" : "0"}
+                    p="0"
                     pt={
                         isSmallScreen && isTauri()
                             ? "50px"
-                            : isTauri()
-                              ? "6"
-                              : "0"
+                            : "0"
                     }
                     className="main-bg"
                     height="100dvh"
