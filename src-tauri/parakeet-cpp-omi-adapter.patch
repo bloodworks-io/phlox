@@ -1,0 +1,118 @@
+diff --git a/src/conformer.cpp b/src/conformer.cpp
+index 0622f05..a31ada5 100644
+--- a/src/conformer.cpp
++++ b/src/conformer.cpp
+@@ -276,6 +276,8 @@ ConformerLayer::ConformerLayer(const ModelLoader& ml, int layer_idx)
+     conv_kernel_ = (int)ml.config().conv_kernel;
+     conv_norm_type_ = ml.config().conv_norm_type;
+     conv_causal_    = ml.config().conv_causal;
++    omi_med_adapter_ = ml.config().omi_med_adapter;
++    omi_med_adapter_name_ = ml.config().omi_med_adapter_name;
+     assert((conv_norm_type_ == "batch_norm" || conv_norm_type_ == "layer_norm") &&
+            "ConformerLayer supports conv_norm_type in {batch_norm, layer_norm}");
+     assert(n_heads_ > 0 && d_model_ % n_heads_ == 0);
+@@ -325,6 +327,21 @@ ggml_tensor* ConformerLayer::build_graph_batched(ggml_context* ctx,
+         h = linear(h, ff + ".linear2", /*bias*/true);               // [D, T, B]
+         return h;
+     };
++    auto omi_med_adapter = [&](ggml_tensor* in) {
++        if (!omi_med_adapter_) return in;
++        const std::string ap = pre + "omi_adapter.";
++        ggml_tensor* g = clone_weight(ctx, ml, ap + "norm.weight");
++        ggml_tensor* b = clone_weight(ctx, ml, ap + "norm.bias");
++        ggml_tensor* w_down = clone_weight(ctx, ml, ap + "down.weight");
++        ggml_tensor* w_up = clone_weight(ctx, ml, ap + "up.weight");
++        ggml_tensor* y = ggml_norm(ctx, in, ln_eps);
++        y = ggml_mul(ctx, y, g);
++        y = ggml_add(ctx, y, b);
++        y = ggml_mul_mat(ctx, w_down, y);
++        y = ggml_silu(ctx, y);
++        y = ggml_mul_mat(ctx, w_up, y);
++        return ggml_add(ctx, in, y);
++    };
+ 
+     // === Stage A: r = x + 0.5 * FFN1(norm_ff1(x)). ===
+     ggml_tensor* h1 = layer_norm(xt, "norm_feed_forward1");
+@@ -354,6 +371,7 @@ ggml_tensor* ConformerLayer::build_graph_batched(ggml_context* ctx,
+     h2 = ggml_scale(ctx, h2, 0.5f);
+     r = ggml_add(ctx, r, h2);
+     r = layer_norm(r, "norm_out");
++    r = omi_med_adapter(r);
+     return r; // [D, T, B] -> per item row-major [T, D]
+ }
+ 
+@@ -402,6 +420,21 @@ ggml_tensor* ConformerLayer::build_graph(ggml_context* ctx, ggml_tensor* xt,
+         h = linear(h, ff + ".linear2", /*bias*/true);               // [D, T]
+         return h;
+     };
++    auto omi_med_adapter = [&](ggml_tensor* in) {
++        if (!omi_med_adapter_) return in;
++        const std::string ap = pre + "omi_adapter.";
++        ggml_tensor* g = clone_weight(ctx, ml, ap + "norm.weight");
++        ggml_tensor* b = clone_weight(ctx, ml, ap + "norm.bias");
++        ggml_tensor* w_down = clone_weight(ctx, ml, ap + "down.weight");
++        ggml_tensor* w_up = clone_weight(ctx, ml, ap + "up.weight");
++        ggml_tensor* y = ggml_norm(ctx, in, ln_eps);
++        y = ggml_mul(ctx, y, g);
++        y = ggml_add(ctx, y, b);
++        y = ggml_mul_mat(ctx, w_down, y);
++        y = ggml_silu(ctx, y);
++        y = ggml_mul_mat(ctx, w_up, y);
++        return ggml_add(ctx, in, y);
++    };
+ 
+     // === Stage A: r = x + 0.5 * FFN1(norm_ff1(x)). ===
+     ggml_tensor* h1 = layer_norm(xt, "norm_feed_forward1");
+@@ -430,6 +463,7 @@ ggml_tensor* ConformerLayer::build_graph(ggml_context* ctx, ggml_tensor* xt,
+     h2 = ggml_scale(ctx, h2, 0.5f);
+     r = ggml_add(ctx, r, h2);
+     r = layer_norm(r, "norm_out");
++    r = omi_med_adapter(r);
+     return r; // [D, T] -> row-major [T, D]
+ }
+ 
+diff --git a/src/conformer.hpp b/src/conformer.hpp
+index 5fafc0b..c14d781 100644
+--- a/src/conformer.hpp
++++ b/src/conformer.hpp
+@@ -107,6 +107,8 @@ private:
+     int conv_kernel_;
+     std::string conv_norm_type_;  // "batch_norm" (offline) or "layer_norm" (streaming)
+     bool conv_causal_ = false;    // causal depthwise conv pad (left k-1, right 0)
++    bool omi_med_adapter_ = false;
++    std::string omi_med_adapter_name_;
+ };
+ 
+ } // namespace pk
+diff --git a/src/model_loader.cpp b/src/model_loader.cpp
+index a1a0d66..cb3a62e 100644
+--- a/src/model_loader.cpp
++++ b/src/model_loader.cpp
+@@ -137,6 +137,10 @@ bool ModelLoader::load(const std::string& path){
+     cfg_.subsampling_conv_channels = kv_u32(gguf_, "parakeet.encoder.subsampling_conv_channels");
+     cfg_.xscaling    = kv_bool(gguf_, "parakeet.encoder.xscaling", true);
+     cfg_.pos_emb_max_len = kv_u32(gguf_, "parakeet.encoder.pos_emb_max_len", 5000);
++    cfg_.omi_med_adapter = kv_bool(gguf_, "parakeet.omi_med_adapter.enabled", false);
++    cfg_.omi_med_adapter_rank = kv_u32(gguf_, "parakeet.omi_med_adapter.rank", 0);
++    cfg_.omi_med_adapter_name = kv_str(
++        gguf_, "parakeet.omi_med_adapter.name", "medical_v1d_rank128");
+     // cache-aware streaming / causal config (Phase 5). Absent for offline models
+     // -> offline-safe defaults (regular style, no causal, streaming.present=false).
+     cfg_.att_context_left  = kv_i32(gguf_, "parakeet.encoder.att_context_left", -1);
+diff --git a/src/model_loader.hpp b/src/model_loader.hpp
+index f181f24..f3ab4f4 100644
+--- a/src/model_loader.hpp
++++ b/src/model_loader.hpp
+@@ -51,6 +51,12 @@ struct ParakeetConfig {
+     std::string conv_norm_type;
+     uint32_t subsampling_factor=0, subsampling_conv_channels=0, pos_emb_max_len=5000;
+     bool xscaling=true;
++    // Optional Omi Med STT post-Conformer adapter. Absent/false for upstream
++    // Parakeet checkpoints; enabled only when the GGUF declares it and carries
++    // the adapter tensors.
++    bool omi_med_adapter=false;
++    uint32_t omi_med_adapter_rank=0;
++    std::string omi_med_adapter_name;
+     // cache-aware streaming / causal config (Phase 5; offline-safe defaults)
+     int32_t att_context_left=-1, att_context_right=-1; // [-1,-1] = full context
+     std::string att_context_style="regular";            // or "chunked_limited"

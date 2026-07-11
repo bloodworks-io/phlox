@@ -46,7 +46,8 @@ dist/
 main.*/
 
 # Cloned external repos (cloned by CI)
-src-tauri/whisper.cpp/
+src-tauri/parakeet.cpp/
+src-tauri/omi-med-stt-runtime/
 src-tauri/llama.cpp/
 
 # Coverage

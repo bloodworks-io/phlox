@@ -3,7 +3,7 @@
 # This script builds all required components:
 # 1. Python server (Nuitka)
 # 2. phlox-pm (Process Manager - Rust)
-# 3. whisper.cpp server (for local transcription) [SKIP with --skip-whisper]
+# 3. parakeet.cpp server (Omi Med STT, for local transcription) [SKIP with --skip-whisper]
 # 4. llama.cpp server (for local LLM) [SKIP with --skip-llama]
 # 5. Copies all binaries to src-tauri/binaries/ for Tauri bundling
 #
@@ -162,15 +162,15 @@ fi
 echo "✅ Python server built successfully"
 
 # ========================================
-# Step 3: Build whisper.cpp
+# Step 3: Build parakeet.cpp
 # ========================================
 echo ""
 echo "=========================================="
-echo "Step 3: Building whisper.cpp..."
+echo "Step 3: Building parakeet.cpp..."
 echo "=========================================="
 
 if [ "$SKIP_WHISPER" = true ]; then
-    echo "⏭️  Skipping whisper.cpp build (--skip-whisper)"
+    echo "⏭️  Skipping parakeet.cpp build (--skip-whisper)"
     WHISPER_BIN="src-tauri/phlox-whisper-server"
     if [[ "$PLATFORM" == "windows-"* ]]; then
         WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
@@ -180,9 +180,9 @@ if [ "$SKIP_WHISPER" = true ]; then
     fi
 else
     if [ "$DEBUG_MODE" = true ]; then
-        bash src-tauri/build-whisper.sh --debug
+        bash src-tauri/build-parakeet.sh --debug
     else
-        bash src-tauri/build-whisper.sh
+        bash src-tauri/build-parakeet.sh
     fi
 
     # Check if whisper-server was built
@@ -193,11 +193,11 @@ else
     fi
 
     if [ ! -f "$WHISPER_BIN" ]; then
-        echo "❌ Error: whisper-server binary not found at $WHISPER_BIN"
+        echo "❌ Error: parakeet-server binary not found at $WHISPER_BIN"
         exit 1
     fi
 
-    echo "✅ whisper.cpp built successfully"
+    echo "✅ parakeet.cpp built successfully"
 fi
 
 # ========================================
@@ -342,9 +342,9 @@ echo "Built components:"
 echo "  • Python server: src-tauri/server_dist/"
 echo "  • phlox-pm: $PM_BIN"
 if [ "$SKIP_WHISPER" != true ]; then
-    echo "  • whisper-server: $WHISPER_BIN"
+    echo "  • parakeet-server: $WHISPER_BIN"
 else
-    echo "  • whisper-server: (skipped)"
+    echo "  • parakeet-server: (skipped)"
 fi
 if [ "$SKIP_LLAMA" != true ]; then
     echo "  • llama-server: $LLAMA_BIN"
