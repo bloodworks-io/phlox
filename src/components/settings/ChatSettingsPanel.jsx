@@ -18,6 +18,7 @@ const ChatSettingsPanel = ({
     setIsCollapsed,
     userSettings,
     setUserSettings,
+    embedded,
 }) => {
     const [isQuickChat1Collapsed, setIsQuickChat1Collapsed] = useState(true);
     const [isQuickChat2Collapsed, setIsQuickChat2Collapsed] = useState(true);
@@ -30,27 +31,7 @@ const ChatSettingsPanel = ({
         }));
     };
 
-    return (
-        <Box className="panels-bg" p="4" borderRadius="sm">
-            <Flex align="center" justify="space-between">
-                <Flex align="center">
-                    <IconButton
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        aria-label="Toggle collapse"
-                        variant="outline"
-                        size="sm"
-                        mr="2"
-                        className="collapse-toggle">{isCollapsed ? (
-                            <ChevronRightIcon />
-                        ) : (
-                            <ChevronDownIcon />
-                        )}</IconButton>
-                    <FaComments size="1.2em" style={{ marginRight: "5px" }} />
-                    <Text as="h3">Quick Chat Settings</Text>
-                </Flex>
-            </Flex>
-            <Collapsible.Root open={!isCollapsed}>
-                <Collapsible.Content>
+    const bodyContent = (
                     <VStack gap={6} align="stretch" mt={4}>
                         <Box>
                             <Text fontSize="md" fontWeight="bold" mb={3}>
@@ -283,10 +264,38 @@ const ChatSettingsPanel = ({
                             </VStack>
                         </Box>
                     </VStack>
+    );
+
+    const shell = embedded ? (
+        bodyContent
+    ) : (
+        <Box className="panels-bg" p="4" borderRadius="sm">
+            <Flex align="center" justify="space-between">
+                <Flex align="center">
+                    <IconButton
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        aria-label="Toggle collapse"
+                        variant="outline"
+                        size="sm"
+                        mr="2"
+                        className="collapse-toggle">{isCollapsed ? (
+                            <ChevronRightIcon />
+                        ) : (
+                            <ChevronDownIcon />
+                        )}</IconButton>
+                    <FaComments size="1.2em" style={{ marginRight: "5px" }} />
+                    <Text as="h3">Quick Chat Settings</Text>
+                </Flex>
+            </Flex>
+            <Collapsible.Root open={!isCollapsed}>
+                <Collapsible.Content>
+                    {bodyContent}
                 </Collapsible.Content>
             </Collapsible.Root>
         </Box>
     );
+
+    return shell;
 };
 
 export default ChatSettingsPanel;

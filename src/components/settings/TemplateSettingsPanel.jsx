@@ -21,6 +21,7 @@ const TemplateSettingsPanel = ({
   setIsCollapsed,
   templates,
   setTemplates,
+  embedded,
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
@@ -155,26 +156,13 @@ const TemplateSettingsPanel = ({
     }
   };
 
-  return (
-    <Box className="panels-bg" p="4" borderRadius="sm">
-      <Flex align="center" justify="space-between">
-        <Flex align="center">
-          <IconButton
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            aria-label="Toggle collapse"
-            variant="outline"
-            size="sm"
-            mr="2"
-            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
-          <FaFileAlt size="1.2em" style={{ marginRight: "5px" }} />
-          <Text as="h3">Note Templates</Text>
-        </Flex>
-        <Button onClick={() => setIsNewTemplateModalOpen(true)} className="grey-button"><AddIcon />New Template
-                  </Button>
-      </Flex>
-      <Collapsible.Root open={!isCollapsed}>
-        <Collapsible.Content>
-          <VStack gap={4} align="stretch" mt={4}>
+  const actionsContent = (
+    <Button onClick={() => setIsNewTemplateModalOpen(true)} className="grey-button"><AddIcon />New Template
+    </Button>
+  );
+
+  const bodyContent = (
+    <VStack gap={4} align="stretch" mt={4}>
             {Array.isArray(templates) ? (
               // Sort templates: default templates first, custom templates last
               (templates
@@ -234,9 +222,41 @@ const TemplateSettingsPanel = ({
             ) : (
               <Text>No templates available</Text>
             )}
-          </VStack>
+    </VStack>
+  );
+
+  const shell = embedded ? (
+    <VStack gap={4} align="stretch" mt={4}>
+      <Flex justify="flex-end">{actionsContent}</Flex>
+      {bodyContent}
+    </VStack>
+  ) : (
+    <Box className="panels-bg" p="4" borderRadius="sm">
+      <Flex align="center" justify="space-between">
+        <Flex align="center">
+          <IconButton
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            aria-label="Toggle collapse"
+            variant="outline"
+            size="sm"
+            mr="2"
+            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
+          <FaFileAlt size="1.2em" style={{ marginRight: "5px" }} />
+          <Text as="h3">Note Templates</Text>
+        </Flex>
+        {actionsContent}
+      </Flex>
+      <Collapsible.Root open={!isCollapsed}>
+        <Collapsible.Content>
+          {bodyContent}
         </Collapsible.Content>
       </Collapsible.Root>
+    </Box>
+  );
+
+  return (
+    <>
+      {shell}
       <TemplateEditor
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -265,7 +285,7 @@ const TemplateSettingsPanel = ({
         itemName={templateToDelete?.name}
         title="Delete Template"
       />
-    </Box>
+    </>
   );
 };
 

@@ -13,7 +13,7 @@ import { useState, useEffect } from "react";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import LetterTemplateEditModal from "../modals/LetterTemplateEditModal";
 
-const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
+const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed, embedded }) => {
   const [letterTemplates, setLetterTemplates] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editTemplate, setEditTemplate] = useState(null);
@@ -94,36 +94,23 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
     }
   };
 
-  return (
-    <Box p="4" borderRadius="sm" className="panels-bg">
-      <Flex align="center" justify="space-between">
-        <Flex align="center">
-          <IconButton
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            aria-label="Toggle collapse"
-            variant="outline"
-            size="sm"
-            mr="2"
-            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
-          <FaEnvelopeOpenText size="1.2em" style={{ marginRight: "5px" }} />
-          <Text as="h3">Letter Templates</Text>
-        </Flex>
-        <HStack>
-          <Button
-            onClick={() => {
-              setEditTemplate(null);
-              setIsEditing(true);
-            }}
-            className="grey-button"><AddIcon />New Template
-                      </Button>
-          <Button onClick={handleReset} className="red-button">
-            Reset to Defaults
-          </Button>
-        </HStack>
-      </Flex>
-      <Collapsible.Root open={!isCollapsed}>
-        <Collapsible.Content>
-          <VStack gap={4} mt={4}>
+  const actionsContent = (
+    <HStack>
+      <Button
+        onClick={() => {
+          setEditTemplate(null);
+          setIsEditing(true);
+        }}
+        className="grey-button"><AddIcon />New Template
+      </Button>
+      <Button onClick={handleReset} className="red-button">
+        Reset to Defaults
+      </Button>
+    </HStack>
+  );
+
+  const bodyContent = (
+    <VStack gap={4} mt={4}>
             {letterTemplates.map((template) => (
               <Box
                 key={template.id}
@@ -157,9 +144,41 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
                 </Text>
               </Box>
             ))}
-          </VStack>
+    </VStack>
+  );
+
+  const shell = embedded ? (
+    <VStack gap={4} mt={4}>
+      <Flex justify="flex-end">{actionsContent}</Flex>
+      {bodyContent}
+    </VStack>
+  ) : (
+    <Box p="4" borderRadius="sm" className="panels-bg">
+      <Flex align="center" justify="space-between">
+        <Flex align="center">
+          <IconButton
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            aria-label="Toggle collapse"
+            variant="outline"
+            size="sm"
+            mr="2"
+            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
+          <FaEnvelopeOpenText size="1.2em" style={{ marginRight: "5px" }} />
+          <Text as="h3">Letter Templates</Text>
+        </Flex>
+        {actionsContent}
+      </Flex>
+      <Collapsible.Root open={!isCollapsed}>
+        <Collapsible.Content>
+          {bodyContent}
         </Collapsible.Content>
       </Collapsible.Root>
+    </Box>
+  );
+
+  return (
+    <>
+      {shell}
       {/* Edit/New Template Modal */}
       <LetterTemplateEditModal
         isOpen={isEditing}
@@ -171,7 +190,7 @@ const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
         template={editTemplate}
         setTemplate={setEditTemplate}
       />
-    </Box>
+    </>
   );
 };
 
