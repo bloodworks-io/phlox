@@ -1,7 +1,11 @@
 // Component for configuring user-specific settings.
 import { Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, Switch, Tabs, VStack, Field } from "@chakra-ui/react";
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
-import { FaUser, FaCog } from "react-icons/fa";
+import { FaUser, FaCog, FaFileAlt, FaEnvelopeOpenText, FaComments } from "react-icons/fa";
+import TemplateSettingsPanel from "./TemplateSettingsPanel";
+import LetterTemplatesPanel from "./LetterTemplatesPanel";
+import ChatSettingsPanel from "./ChatSettingsPanel";
+import { isChatEnabled } from "../../utils/helpers/featureFlags";
 
 const ADVANCED_OPTIONS_SCHEMA = [
   {
@@ -30,7 +34,7 @@ const UserSettingsPanel = ({
   specialties,
   templates,
   letterTemplates,
-  
+  setTemplates,
 }) => {
   const handleDefaultTemplateChange = (templateKey) => {
     setUserSettings((prev) => ({
@@ -78,6 +82,26 @@ const UserSettingsPanel = ({
                   <Text>General</Text>
                 </HStack>
               </Tabs.Trigger>
+              <Tabs.Trigger className="tab-style" value="2">
+                <HStack>
+                  <FaFileAlt />
+                  <Text>Note Templates</Text>
+                </HStack>
+              </Tabs.Trigger>
+              <Tabs.Trigger className="tab-style" value="3">
+                <HStack>
+                  <FaEnvelopeOpenText />
+                  <Text>Letter Templates</Text>
+                </HStack>
+              </Tabs.Trigger>
+              {isChatEnabled() && (
+                <Tabs.Trigger className="tab-style" value="4">
+                  <HStack>
+                    <FaComments />
+                    <Text>Quick Chat</Text>
+                  </HStack>
+                </Tabs.Trigger>
+              )}
               <Tabs.Trigger className="tab-style" value="1">
                 <HStack>
                   <FaCog />
@@ -214,6 +238,25 @@ const UserSettingsPanel = ({
                 </VStack>
               </Tabs.Content>
             
+              <Tabs.Content value="2" className="floating-main">
+                <TemplateSettingsPanel
+                  embedded
+                  templates={templates}
+                  setTemplates={setTemplates}
+                />
+              </Tabs.Content>
+              <Tabs.Content value="3" className="floating-main">
+                <LetterTemplatesPanel embedded />
+              </Tabs.Content>
+              {isChatEnabled() && (
+                <Tabs.Content value="4" className="floating-main">
+                  <ChatSettingsPanel
+                    embedded
+                    userSettings={userSettings}
+                    setUserSettings={setUserSettings}
+                  />
+                </Tabs.Content>
+              )}
           </Tabs.Root>
         </Collapsible.Content>
       </Collapsible.Root>

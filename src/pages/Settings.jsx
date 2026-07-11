@@ -7,12 +7,8 @@ import { settingsService } from "../utils/settings/settingsUtils";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
-import LetterTemplatesPanel from "../components/settings/LetterTemplatesPanel";
 import SettingsActions from "../components/settings/SettingsActions";
 import { SPECIALTIES } from "../utils/constants";
-import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel";
-import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
-import { isChatEnabled } from "../utils/helpers/featureFlags";
 import { templateService } from "../utils/services/templateService";
 import { localModelApi } from "../utils/api/localModelApi";
 import { useDebounce } from "../utils/hooks/useDebounce";
@@ -56,9 +52,6 @@ const Settings = () => {
         userSettings: false,
         modelSettings: true,
         promptSettings: true,
-        letterTemplates: true,
-        templates: true,
-        chatSettings: true,
         localModels: true,
     });
     const fetchCoreSettings = useCallback(async () => {
@@ -367,6 +360,7 @@ const Settings = () => {
                     specialties={SPECIALTIES}
                     templates={templates}
                     letterTemplates={letterTemplates}
+                    setTemplates={setTemplates}
                 />
 
                 <ModelSettingsPanel
@@ -397,27 +391,6 @@ const Settings = () => {
                     handleOptionChange={handleOptionChange}
                     config={config}
                 />
-
-                <TemplateSettingsPanel
-                    isCollapsed={collapseStates.templates}
-                    setIsCollapsed={() => toggleCollapse("templates")}
-                    templates={templates}
-                    setTemplates={setTemplates}
-                />
-
-                <LetterTemplatesPanel
-                    isCollapsed={collapseStates.letterTemplates}
-                    setIsCollapsed={() => toggleCollapse("letterTemplates")}
-                />
-
-                {isChatEnabled() && (
-                    <ChatSettingsPanel
-                        isCollapsed={collapseStates.chatSettings}
-                        setIsCollapsed={() => toggleCollapse("chatSettings")}
-                        userSettings={userSettings}
-                        setUserSettings={setUserSettings}
-                    />
-                )}
 
                 <SettingsActions
                     onSave={handleSaveChanges}
