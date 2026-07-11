@@ -133,9 +133,8 @@ const SidebarNavigation = ({
     return (
         <VStack gap="1" align="stretch" w="100%" py="1">
             <Tooltip
-                content="New Note"
-                disabled={!isCollapsed}
-                positioning={{ placement: isCollapsed ? "right" : "top" }}
+                content="Start a new clinical note"
+                positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
             >
                 <Box>
                     <NavButton
@@ -150,13 +149,8 @@ const SidebarNavigation = ({
             </Tooltip>
 
             <Tooltip
-                content={
-                    isCollapsed && incompleteJobsCount > 0
-                        ? `All Jobs (${incompleteJobsCount})`
-                        : "All Jobs"
-                }
-                disabled={!isCollapsed}
-                positioning={{ placement: isCollapsed ? "right" : "top" }}
+                content="Outstanding clinic jobs"
+                positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
             >
                 <Box>
                     <NavButton
@@ -174,9 +168,8 @@ const SidebarNavigation = ({
 
             {isRagEnabled() && (
                 <Tooltip
-                    content="Documents"
-                    disabled={!isCollapsed}
-                    positioning={{ placement: isCollapsed ? "right" : "top" }}
+                    content="Knowledge base & uploaded documents"
+                    positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
                 >
                     <Box mb={isCollapsed ? "1px" : "0px"}>
                         <NavButton
@@ -191,9 +184,8 @@ const SidebarNavigation = ({
             )}
 
             <Tooltip
-                content="Settings"
-                disabled={!isCollapsed}
-                positioning={{ placement: isCollapsed ? "right" : "top" }}
+                content="Models, templates & preferences"
+                positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
             >
                 <Box>
                     <NavButton

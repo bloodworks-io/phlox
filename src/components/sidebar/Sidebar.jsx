@@ -324,6 +324,11 @@ const Sidebar = ({
                 </Box>
               </Tooltip>
             ) : (
+              <Tooltip
+                content="Chat dashboard"
+                positioning={{ placement: "bottom" }}
+                openDelay={700}
+              >
               <Flex align="center" gap={3}>
                 <Image src="/logo.webp" alt="Phlox logo" width="28px" />
                 <Text
@@ -336,6 +341,7 @@ const Sidebar = ({
                   Phlox
                 </Text>
               </Flex>
+              </Tooltip>
             )}
           </button>
         </Box>
