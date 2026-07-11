@@ -18,6 +18,7 @@ import {
 import { useState, useEffect } from "react";
 
 import ToolsSettingsTab from "./ToolsSettingsTab";
+import LocalModelManager from "./LocalModelManager";
 import { ReEmbedProgress } from "../common/ReEmbedProgress";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
@@ -30,14 +31,11 @@ const ModelSettingsPanel = ({
     config,
     handleConfigChange,
     modelOptions,
-    selectedLocalModel = "",
     whisperModelOptions = [],
     whisperModelListAvailable = false,
     whisperModelsLoading = false,
     llmModelsLoading = false,
     urlStatus = { whisper: false, llm: false },
-    onOpenLocalModelManager,
-    showLocalManagerButton,
     modelManagerRefreshKey = 0,
     embeddingModelOptions = [],
     _handleClearDatabase,
@@ -45,7 +43,6 @@ const ModelSettingsPanel = ({
 }) => {
     const [localStatus, setLocalStatus] = useState(null);
     const [isDocker, setIsDocker] = useState(false);
-    const [downloadedWhisperModel, setDownloadedWhisperModel] = useState(null);
     const [tabIndex, setTabIndex] = useState("0");
     const [isEmbeddingModelModalOpen, setIsEmbeddingModelModalOpen] =
         useState(false);
@@ -374,121 +371,7 @@ const ModelSettingsPanel = ({
                                     </Tabs.List>
                                         {/* Models Tab */}
                                         <Tabs.Content className="floating-main" value="0">
-                                            <VStack gap={4} align="stretch">
-                                                <Box>
-                                                    <HStack mb="2">
-                                                        <FaDesktop />
-                                                        <Text fontSize="md" fontWeight="bold">
-                                                            Local Inference Settings
-                                                        </Text>
-                                                        <Badge colorPalette="green">Local</Badge>
-                                                    </HStack>
-                                                    <Text fontSize="sm" color="textTertiary" mb="4">
-                                                        Models run directly on your machine.
-                                                        Both LLM and Whisper will use local
-                                                        inference.
-                                                    </Text>
-                                                </Box>
-
-                                                {/* Primary Model Selection for Local */}
-                                                <Box>
-                                                    <Tooltip content="Primary model for local inference - manage through Model Manager below">
-                                                        <Text fontSize="sm" mb="2">
-                                                            Primary Model (Local)
-                                                        </Text>
-                                                    </Tooltip>
-                                                    <NativeSelect.Root>
-                                                        <NativeSelect.Field
-                                                            size="sm"
-                                                            value={selectedLocalModel || config?.PRIMARY_MODEL || ""}
-                                                            disabled={true}
-                                                            placeholder="Select downloaded model"
-                                                            className="input-style"
-                                                            cursor="not-allowed"
-                                                            opacity={0.7}>
-                                                            {modelOptions.map((model) => (
-                                                                <option key={model} value={model}>
-                                                                    {model}
-                                                                </option>
-                                                            ))}
-                                                        </NativeSelect.Field>
-                                                        <NativeSelect.Indicator />
-                                                    </NativeSelect.Root>
-                                                </Box>
-
-                                                {/* Local Whisper Model Selection */}
-                                                <Box>
-                                                    <Tooltip content="Whisper model for local transcription - manage through Model Manager below">
-                                                        <Text fontSize="sm" mb="2">
-                                                            Whisper Model (Local)
-                                                        </Text>
-                                                    </Tooltip>
-                                                    <NativeSelect.Root>
-                                                        <NativeSelect.Field
-                                                            size="sm"
-                                                            value={
-                                                                downloadedWhisperModel ||
-                                                                config?.WHISPER_MODEL ||
-                                                                "base"
-                                                            }
-                                                            disabled={true}
-                                                            className="input-style"
-                                                            cursor="not-allowed"
-                                                            opacity={0.7}>
-                                                            <option value="tiny">
-                                                                tiny (39MB) - Fastest
-                                                            </option>
-                                                            <option value="tiny.en">
-                                                                tiny.en (39MB) - English-only
-                                                            </option>
-                                                            <option value="base">
-                                                                base (74MB) - Multilingual
-                                                            </option>
-                                                            <option value="base.en">
-                                                                base.en (74MB) - English-only,
-                                                                Recommended
-                                                            </option>
-                                                            <option value="small">
-                                                                small (244MB) - Better accuracy
-                                                            </option>
-                                                            <option value="small.en">
-                                                                small.en (244MB) - English-only
-                                                            </option>
-                                                            <option value="medium">
-                                                                medium (769MB) - High accuracy
-                                                            </option>
-                                                            <option value="medium.en">
-                                                                medium.en (769MB) - English-only
-                                                            </option>
-                                                            <option value="large-v1">
-                                                                large-v1 (1.5GB) - Best accuracy V1
-                                                            </option>
-                                                            <option value="large-v2">
-                                                                large-v2 (1.5GB) - Best accuracy V2
-                                                            </option>
-                                                            <option value="large-v3">
-                                                                large-v3 (1.5GB) - Best accuracy V3
-                                                            </option>
-                                                        </NativeSelect.Field>
-                                                        <NativeSelect.Indicator />
-                                                    </NativeSelect.Root>
-                                                </Box>
-
-                                                {/* Local Model Manager Trigger */}
-                                                {showLocalManagerButton &&
-                                                    typeof onOpenLocalModelManager ===
-                                                        "function" && (
-                                                        <Button
-                                                            onClick={onOpenLocalModelManager}
-                                                            variant="outline"
-                                                            size="sm"
-                                                            alignSelf="flex-start"
-                                                            className="nav-button"
-                                                        >
-                                                            Manage Local Models
-                                                        </Button>
-                                                    )}
-                                            </VStack>
+                                            <LocalModelManager />
                                         </Tabs.Content>
 
                                         {/* Tools Tab */}

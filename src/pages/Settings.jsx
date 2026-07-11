@@ -1,5 +1,5 @@
 // Page component for configuring application settings.
-import { Box, Text, VStack, useDisclosure } from "@chakra-ui/react";
+import { Box, Text, VStack } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 const toast = toaster.create;
 import { useState, useEffect, useCallback } from "react";
@@ -14,7 +14,6 @@ import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel"
 import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
 import { isChatEnabled } from "../utils/helpers/featureFlags";
 import { templateService } from "../utils/services/templateService";
-import LocalModelManagerModal from "../components/modals/LocalModelManagerModal";
 import { localModelApi } from "../utils/api/localModelApi";
 import { useDebounce } from "../utils/hooks/useDebounce";
 
@@ -52,7 +51,6 @@ const Settings = () => {
         whisper: false,
         llm: false,
     });
-    const localModelsDisclosure = useDisclosure();
     const [modelManagerRefreshKey, setModelManagerRefreshKey] = useState(0);
     const [collapseStates, setCollapseStates] = useState({
         userSettings: false,
@@ -384,8 +382,6 @@ const Settings = () => {
                     whisperModelsLoading={whisperModelsLoading}
                     llmModelsLoading={llmModelsLoading}
                     urlStatus={urlStatus}
-                    onOpenLocalModelManager={localModelsDisclosure.onOpen}
-                    showLocalManagerButton
                     modelManagerRefreshKey={modelManagerRefreshKey}
                     handleClearDatabase={handleClearDatabase}
                     handleReEmbed={handleReEmbed}
@@ -428,32 +424,6 @@ const Settings = () => {
                     onRestoreDefaults={handleRestoreDefaults}
                 />
             </VStack>
-            <LocalModelManagerModal
-                isOpen={localModelsDisclosure.open}
-                onClose={async () => {
-                    localModelsDisclosure.onClose();
-                    // Refresh model list based on provider
-                    if (config?.LLM_PROVIDER === "local") {
-                        try {
-                            const localModels =
-                                await localModelApi.fetchLocalModels();
-                            const modelNames = localModels.models.map(
-                                (m) => m.name || m.filename,
-                            );
-                            setModelOptions(modelNames);
-                        } catch (error) {
-                            console.error("Error loading local models:", error);
-                        }
-                    } else if (config?.LLM_BASE_URL) {
-                        await settingsService.fetchLLMModels(
-                            config,
-                            setModelOptions,
-                        );
-                    }
-                    // Trigger refresh in ModelSettingsPanel for Whisper model
-                    setModelManagerRefreshKey((prev) => prev + 1);
-                }}
-            />
         </Box>
     );
 };
