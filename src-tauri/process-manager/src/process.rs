@@ -248,7 +248,7 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
         .arg("--model")
         .arg(model_path.to_string_lossy().as_ref())
         .arg("--ctx-size")
-        .arg("8192")
+        .arg("16384")
         .arg("--n-gpu-layers")
         .arg("99")
         .arg("--jinja")

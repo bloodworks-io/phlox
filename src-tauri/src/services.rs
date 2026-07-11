@@ -98,7 +98,7 @@ pub fn start_llama() -> Result<Child, Box<dyn std::error::Error>> {
         .arg("--model")
         .arg(&model_path.to_string_lossy().to_string())
         .arg("--ctx-size")
-        .arg("8192")
+        .arg("16384")
         .arg("--n-gpu-layers")
         .arg("99") // Use GPU for all layers on macOS
         .arg("--jinja");
