@@ -44,7 +44,7 @@ async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
         )
 
         if is_local_whisper:
-            logger.info("Using local whisper.cpp server for transcription")
+            logger.info("Using local STT server for transcription")
             return await _transcribe_local_whisper(audio_buffer, config)
         else:
             logger.info("Using external API for transcription")
@@ -57,11 +57,11 @@ async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
 async def _transcribe_local_whisper(
     audio_buffer: bytes, _config: dict
 ) -> dict[str, Union[str, float]]:
-    """Transcribe using local whisper.cpp server."""
+    """Transcribe using the local STT server (parakeet.cpp, OpenAI-compatible)."""
     whisper_port = _get_whisper_port()
-    whisper_url = f"http://127.0.0.1:{whisper_port}/inference"
+    whisper_url = f"http://127.0.0.1:{whisper_port}/v1/audio/transcriptions"
 
-    logger.info(f"Sending audio to local whisper server at {whisper_url}")
+    logger.info(f"Sending audio to local STT server at {whisper_url}")
 
     filename, content_type = _detect_audio_format(audio_buffer)
 
