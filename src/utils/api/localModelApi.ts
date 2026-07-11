@@ -283,4 +283,18 @@ export const localModelApi = {
       successMessage: "Embedding server restarted successfully",
       errorMessage: "Failed to restart embedding server",
     }),
+
+  deleteEmbeddingModel: async (modelId) =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(
+          `/api/config/local/embedding/models/${modelId}`,
+        );
+        return universalFetch(url, {
+          method: "DELETE",
+        });
+      },
+      successMessage: "Embedding model deleted successfully",
+      errorMessage: "Failed to delete embedding model",
+    }),
 };
