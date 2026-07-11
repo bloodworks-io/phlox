@@ -11,11 +11,12 @@ const modeSelectorStyles = (props) => ({
         border: props.colorMode === "light" ? "none !important" : `none`,
         borderRadius: "full !important",
         overflow: "hidden",
-        width: "300px",
-        height: "40px",
+        width: "240px",
+        height: "34px",
         ".chakra-button": {
             transition: "color 0.3s ease",
-            height: "38px",
+            height: "32px",
+            fontSize: "xs",
             "&:hover": {
                 backgroundColor: "transparent !important",
             },
