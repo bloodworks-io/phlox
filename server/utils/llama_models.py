@@ -38,6 +38,7 @@ PRECONFIGURED_MODELS = {
     "qwen3.5-0.8b": {
         "repo_id": "unsloth/Qwen3.5-0.8B-GGUF",
         "filename": "Qwen3.5-0.8B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 1500,
         "description": "Fast but limited quality",
         "category": "tiny",
@@ -50,6 +51,7 @@ PRECONFIGURED_MODELS = {
     "qwen3.5-2b": {
         "repo_id": "unsloth/Qwen3.5-2B-GGUF",
         "filename": "Qwen3.5-2B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 1700,
         "description": "Fast and capable for everyday tasks",
         "category": "small",
@@ -62,6 +64,7 @@ PRECONFIGURED_MODELS = {
     "qwen3.5-4b": {
         "repo_id": "unsloth/Qwen3.5-4B-GGUF",
         "filename": "Qwen3.5-4B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 2740,
         "description": "A great balance of speed and quality",
         "category": "medium",
@@ -74,6 +77,7 @@ PRECONFIGURED_MODELS = {
     "qwen3.5-9b": {
         "repo_id": "unsloth/Qwen3.5-9B-GGUF",
         "filename": "Qwen3.5-9B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 5500,
         "description": "High quality, good for most users",
         "category": "medium",
@@ -86,6 +90,7 @@ PRECONFIGURED_MODELS = {
     "qwen3.5-27b": {
         "repo_id": "unsloth/Qwen3.5-27B-GGUF",
         "filename": "Qwen3.5-27B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 16000,
         "description": "Excellent quality, slower responses",
         "category": "large",
@@ -98,6 +103,7 @@ PRECONFIGURED_MODELS = {
     "qwen3.5-35b-a3b": {
         "repo_id": "unsloth/Qwen3.5-35B-A3B-GGUF",
         "filename": "Qwen3.5-35B-A3B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 19000,
         "description": "Fast and excellent quality (MoE)",
         "category": "large",
@@ -218,50 +224,25 @@ class LlamaModelManager:
             except Exception as e:
                 logger.warning(f"Failed to delete {model_file.name}: {e}")
 
-    async def download_model(self, model_id: str, progress_callback=None) -> str:
-        """Download a model. Deletes existing model first.
-
-        Args:
-            model_id: Either a pre-configured model ID (e.g., "qwen3-4b")
-                     or a custom "repo_id/filename.gguf" string
-            progress_callback: Optional async callback for progress updates
-
-        Returns:
-            Path to the downloaded model file
-        """
-        repo_id = None
-        filename = None
-
-        # Check if it's a pre-configured model
-        if model_id in PRECONFIGURED_MODELS:
-            model_info = PRECONFIGURED_MODELS[model_id]
-            repo_id = str(model_info["repo_id"])
-            filename = str(model_info["filename"])
-        elif "/" in model_id:
-            # Custom format: "repo_id/filename.gguf"
-            parts = model_id.split("/", 1)
-            if len(parts) == 2:
-                repo_id = parts[0]
-                filename = parts[1]
-            else:
-                raise ValueError("Invalid custom model format. Use 'repo_id/filename.gguf'")
-        else:
-            raise ValueError(f"Unknown model: {model_id}")
-
-        # Delete existing models first (1 model at a time)
-        self._delete_all_models()
-
-        model_file = self.models_dir / filename
+    async def _download_file(
+        self,
+        repo_id: str,
+        filename: str,
+        progress_callback,
+        file_label: str,
+        pct_start: float = 0.0,
+        pct_end: float = 100.0,
+    ) -> Path:
+        """Download a single file from HuggingFace, mapping progress to [pct_start, pct_end]."""
+        dest = self.models_dir / filename
         url = f"https://huggingface.co/{repo_id}/resolve/main/{filename}"
-
         logger.info(f"Downloading {filename} from {repo_id}")
 
         timeout = httpx.Timeout(600.0)
-
-        # Track download speed and ETA
         start_time = time.time()
         last_update_time = start_time
         last_downloaded = 0
+        span = pct_end - pct_start
 
         try:
             async with (
@@ -275,7 +256,7 @@ class LlamaModelManager:
                 response.raise_for_status()
                 total_size = int(response.headers.get("content-length", 0))
 
-                with model_file.open("wb") as f:
+                with dest.open("wb") as f:
                     downloaded = 0
                     async for chunk in response.aiter_bytes(8192):
                         f.write(chunk)
@@ -294,38 +275,79 @@ class LlamaModelManager:
                             eta = (total_size - downloaded) / speed if speed > 0 else None
 
                             progress = DownloadProgress(
-                                percentage=(downloaded / total_size) * 100,
+                                percentage=pct_start + (downloaded / total_size) * span,
                                 downloaded_bytes=downloaded,
                                 total_bytes=total_size,
                                 speed_bytes_per_sec=speed,
                                 eta_seconds=eta,
-                                current_file="model",
+                                current_file=file_label,
                             )
                             await progress_callback(progress)
 
                             last_update_time = current_time
                             last_downloaded = downloaded
 
-            # Send final 100% progress
+            # Send final 100% progress for this file's slice
             if progress_callback and total_size:
                 progress = DownloadProgress(
-                    percentage=100.0,
+                    percentage=pct_end,
                     downloaded_bytes=total_size,
                     total_bytes=total_size,
                     speed_bytes_per_sec=0,
                     eta_seconds=0,
-                    current_file="model",
+                    current_file=file_label,
                 )
                 await progress_callback(progress)
 
-            logger.info(f"Successfully downloaded {filename} to {model_file}")
+            logger.info(f"Successfully downloaded {filename} to {dest}")
 
         except Exception:
             # Clean up partial downloads on failure
-            if model_file.exists():
+            if dest.exists():
                 with suppress(Exception):
-                    model_file.unlink()
+                    dest.unlink()
             raise
+
+        return dest
+
+    async def download_model(self, model_id: str, progress_callback=None) -> str:
+        # Download a model (and its multimodal projector if applicable).
+
+        repo_id = None
+        filename = None
+        mmproj_filename = None
+
+        # Check if it's a pre-configured model
+        if model_id in PRECONFIGURED_MODELS:
+            model_info = PRECONFIGURED_MODELS[model_id]
+            repo_id = str(model_info["repo_id"])
+            filename = str(model_info["filename"])
+            mmproj_filename = model_info.get("mmproj_filename")
+        elif "/" in model_id:
+            # Custom format: "repo_id/filename.gguf"
+            parts = model_id.split("/", 1)
+            if len(parts) == 2:
+                repo_id = parts[0]
+                filename = parts[1]
+            else:
+                raise ValueError("Invalid custom model format. Use 'repo_id/filename.gguf'")
+        else:
+            raise ValueError(f"Unknown model: {model_id}")
+
+        # Delete existing models first (1 model at a time)
+        self._delete_all_models()
+
+        # Main model fills 0-90% when a projector follows, else 0-100%.
+        model_pct_end = 90.0 if mmproj_filename else 100.0
+        model_file = await self._download_file(
+            repo_id, filename, progress_callback, "model", 0.0, model_pct_end
+        )
+
+        # Multimodal projector (vision models): 90-100% of the progress bar.
+        if mmproj_filename:
+            await self._download_file(
+                repo_id, str(mmproj_filename), progress_callback, "mmproj", 90.0, 100.0
+            )
 
         # Write the model selection file for Tauri to read
         self._write_model_selection_file(filename)
@@ -333,17 +355,29 @@ class LlamaModelManager:
         return str(model_file)
 
     def delete_model(self, filename: str) -> bool:
-        """Delete a downloaded model."""
+        """Delete a downloaded model and its multimodal projector."""
         model_file = self.models_dir / filename
 
+        deleted = False
         if model_file.exists():
             model_file.unlink()
             logger.info(f"Deleted LLM model {filename}")
+            deleted = True
+
+        # Also remove any companion multimodal projector files.
+        for mmproj in self.models_dir.glob("*mmproj*.gguf"):
+            try:
+                mmproj.unlink()
+                logger.info(f"Deleted mmproj file: {mmproj.name}")
+                deleted = True
+            except Exception as e:
+                logger.warning(f"Failed to delete {mmproj.name}: {e}")
+
+        if deleted:
             # Also clean up the model selection file
             self._delete_model_selection_file()
-            return True
 
-        return False
+        return deleted
 
     def _get_model_selection_file_path(self) -> Path:
         """Get the path to the model selection file."""
@@ -396,4 +430,3 @@ class LlamaModelManager:
 
 # Singleton instance
 llama_model_manager = LlamaModelManager()
-
