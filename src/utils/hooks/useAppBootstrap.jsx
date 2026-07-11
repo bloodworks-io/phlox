@@ -151,11 +151,9 @@ export const useAppBootstrap = () => {
         // Sync embedding model status for RAG feature flag (Tauri only)
         if (isTauri()) {
             import("../../utils/api/localModelApi").then(({ localModelApi }) => {
-                localModelApi.fetchDownloadedEmbeddingModels()
+                localModelApi.fetchEmbeddingStatus()
                     .then((res) => {
-                        const has = (res?.models || []).some(
-                            (m) => m.id === "granite-embedding",
-                        );
+                        const has = !!res?.downloaded;
                         setEmbeddingReady(has);
                     })
                     .catch(() => {});

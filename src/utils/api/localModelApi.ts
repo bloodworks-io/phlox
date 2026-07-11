@@ -254,20 +254,18 @@ export const localModelApi = {
     }),
 
   // Embedding model management
-  fetchDownloadedEmbeddingModels: async () =>
+  fetchEmbeddingStatus: async () =>
     handleApiRequest({
       apiCall: async () => {
-        const url = await buildApiUrl(
-          "/api/config/local/embedding/models/downloaded",
-        );
+        const url = await buildApiUrl("/api/config/local/embedding/status");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch embedding models",
+      errorMessage: "Failed to fetch embedding model status",
     }),
 
-  streamDownloadEmbeddingModel: async function* (modelId) {
+  streamDownloadEmbeddingModel: async function* () {
     const baseUrl = await buildApiUrl("");
-    const url = `${baseUrl}/api/config/local/embedding/models/download/stream?model_id=${encodeURIComponent(modelId)}`;
+    const url = `${baseUrl}/api/config/local/embedding/download/stream`;
     yield* this.streamSSE(url);
   },
 
@@ -284,12 +282,10 @@ export const localModelApi = {
       errorMessage: "Failed to restart embedding server",
     }),
 
-  deleteEmbeddingModel: async (modelId) =>
+  deleteEmbeddingModel: async () =>
     handleApiRequest({
       apiCall: async () => {
-        const url = await buildApiUrl(
-          `/api/config/local/embedding/models/${modelId}`,
-        );
+        const url = await buildApiUrl("/api/config/local/embedding");
         return universalFetch(url, {
           method: "DELETE",
         });

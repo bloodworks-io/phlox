@@ -20,9 +20,9 @@ import { localModelApi } from "../../utils/api/localModelApi";
 const MODELS_PER_PAGE = 3;
 
 const RECOMMENDED_EMBEDDING = {
-  id: "granite-embedding",
-  name: "Granite Embeddings",
-  size_mb: 640,
+  id: "qwen3-embedding-0.6b",
+  name: "Qwen3 Embedding 0.6B",
+  size_mb: 639,
 };
 
 const getBadge = (recommendedType) => {
@@ -195,9 +195,9 @@ const LocalModelManager = ({ className }) => {
   const [embeddingProgress, setEmbeddingProgress] = useState(0);
 
   useMemo(() => {
-    localModelApi.fetchDownloadedEmbeddingModels()
+    localModelApi.fetchEmbeddingStatus()
       .then((res) => {
-        const has = (res?.models || []).some((m) => m.id === RECOMMENDED_EMBEDDING.id);
+        const has = !!res?.downloaded;
         setEmbeddingDownloaded(has);
         setEmbeddingReady(has);
       })
@@ -237,7 +237,7 @@ const LocalModelManager = ({ className }) => {
     setIsDownloadingEmbedding(true);
     setEmbeddingProgress(0);
     try {
-      await downloadEmbeddingService(RECOMMENDED_EMBEDDING.id, {
+      await downloadEmbeddingService({
         onProgress: (p) => { if (p.percentage !== undefined) setEmbeddingProgress(p.percentage); },
       });
       setEmbeddingDownloaded(true);
@@ -252,7 +252,7 @@ const LocalModelManager = ({ className }) => {
       for (const model of models) await deleteLlmModel(model.filename);
       for (const model of whisperModels) await deleteWhisperModel(model.id);
       if (embeddingDownloaded) {
-        try { await localModelApi.deleteEmbeddingModel(RECOMMENDED_EMBEDDING.id); } catch {}
+        try { await localModelApi.deleteEmbeddingModel(); } catch {}
         setEmbeddingDownloaded(false);
         setEmbeddingReady(false);
       }

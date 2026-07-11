@@ -106,11 +106,11 @@ export async function downloadWhisperModel(modelId, { onProgress, onStart, toast
 }
 
 /**
- * Downloads an embedding model and restarts the embedding server
+ * Downloads the embedding model and restarts the embedding server
  */
-export async function downloadEmbeddingModel(modelId, { onProgress, onStart, toast }) {
+export async function downloadEmbeddingModel({ onProgress, onStart, toast }) {
   try {
-    for await (const event of localModelApi.streamDownloadEmbeddingModel(modelId)) {
+    for await (const event of localModelApi.streamDownloadEmbeddingModel()) {
       if (event.type === "start") {
         onStart?.();
       } else if (event.type === "progress") {
