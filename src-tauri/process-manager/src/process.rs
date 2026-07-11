@@ -125,12 +125,38 @@ pub fn find_llama_model() -> Option<PathBuf> {
         }
     }
 
-    // Scan for any .gguf file
+    // Scan for any .gguf file that isn't a multimodal projector
     if let Ok(entries) = fs::read_dir(&models_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension()?.to_str()? == "gguf" {
-                return Some(path);
+                let name = path.file_name()?.to_str()?.to_lowercase();
+                if !name.contains("mmproj") {
+                    return Some(path);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Find the companion multimodal projector (mmproj) for the loaded model
+pub fn find_llama_mmproj() -> Option<PathBuf> {
+    let models_dir = phlox_dir()?.join("llm_models");
+
+    if let Ok(entries) = fs::read_dir(&models_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension()?.to_str()? == "gguf" {
+                if path
+                    .file_name()?
+                    .to_str()?
+                    .to_lowercase()
+                    .contains("mmproj")
+                {
+                    return Some(path);
+                }
             }
         }
     }
@@ -196,6 +222,7 @@ pub enum ServiceType {
     Llama,
     Whisper,
     Server,
+    Embedding,
 }
 
 /// Start the llama server
@@ -236,6 +263,13 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
             cmd.arg("--chat-template-kwargs")
                 .arg(r#"{"enable_thinking": false}"#);
         }
+    }
+
+    // Load the multimodal projector (vision models) if a companion mmproj is present.
+    if let Some(mmproj_path) = find_llama_mmproj() {
+        log::info!("Loading multimodal projector: {:?}", mmproj_path);
+        cmd.arg("--mmproj")
+            .arg(mmproj_path.to_string_lossy().as_ref());
     }
 
     #[cfg(unix)]
@@ -586,6 +620,7 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                             server,
                             llama,
                             whisper,
+                            embedding,
                             &token[..8.min(token.len())]
                         );
                         return Ok(ServerSignal::Ports(AllocatedPorts {
