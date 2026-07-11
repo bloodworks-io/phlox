@@ -7,6 +7,7 @@ import EncryptionUnlock from "../../components/setup/EncryptionUnlock";
 import ServerStartupLoader from "../../components/setup/ServerStartupLoader";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import { setEmbeddingReady } from "../../utils/helpers/featureFlags";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 
 export const useAppBootstrap = () => {
@@ -146,6 +147,21 @@ export const useAppBootstrap = () => {
     const handleServerReady = () => {
         setShowServerStartupLoader(false);
         checkSplashStatus({ maxRetries: 3, retryDelay: 300 });
+
+        // Sync embedding model status for RAG feature flag (Tauri only)
+        if (isTauri()) {
+            import("../../utils/api/localModelApi").then(({ localModelApi }) => {
+                localModelApi.fetchDownloadedEmbeddingModels()
+                    .then((res) => {
+                        const has = (res?.models || []).some(
+                            (m) => m.id === "granite-embedding",
+                        );
+                        setEmbeddingReady(has);
+                    })
+                    .catch(() => {});
+            });
+        }
+
         setTimeout(() => {
             setIsInGracePeriod(false);
         }, 2000); // 2 second grace period
