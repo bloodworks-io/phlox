@@ -43,6 +43,10 @@ const patientInfoStyles = (props) => ({
         fontSize: "0.9rem !important",
         fontWeight: "400 !important",
     },
+    ".input-style.quick-chat-title-input": {
+        paddingLeft: "32px !important",
+        borderRadius: "lg !important",
+    },
     ".search-button": {
         borderLeft: "none !important",
         borderTopLeftRadius: "0 !important",

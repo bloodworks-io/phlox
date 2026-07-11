@@ -240,18 +240,16 @@ const UserSettingsPanel = ({
             
               <Tabs.Content value="2" className="floating-main">
                 <TemplateSettingsPanel
-                  embedded
                   templates={templates}
                   setTemplates={setTemplates}
                 />
               </Tabs.Content>
               <Tabs.Content value="3" className="floating-main">
-                <LetterTemplatesPanel embedded />
+                <LetterTemplatesPanel />
               </Tabs.Content>
               {isChatEnabled() && (
                 <Tabs.Content value="4" className="floating-main">
                   <ChatSettingsPanel
-                    embedded
                     userSettings={userSettings}
                     setUserSettings={setUserSettings}
                   />
