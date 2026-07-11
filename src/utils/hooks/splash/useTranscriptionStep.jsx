@@ -191,7 +191,7 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
 
     // Fetch models when step becomes active or mode changes
     useEffect(() => {
-        if (currentStep === SPLASH_STEPS.TRANSCRIPTION) {
+        if (currentStep === SPLASH_STEPS.AI_MODELS) {
             if (inferenceMode === "local") {
                 fetchLocalWhisperModels();
             } else {

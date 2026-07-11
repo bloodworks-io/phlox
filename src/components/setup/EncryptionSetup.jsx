@@ -1,20 +1,18 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon } from "@chakra-ui/react";
+import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon, Alert } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 const toast = toaster.create;
-import { FaEye, FaEyeSlash, FaExclamationTriangle } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import {
   encryptionApi,
   calculatePassphraseStrength,
 } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
-import { isChatEnabled } from "../../utils/helpers/featureFlags";
 import {
   SPLASH_STEPS,
   STEP_TITLES,
   STEP_DESCRIPTIONS,
-  getStepIcon,
 } from "../common/splash/constants";
 
 const EncryptionSetup = ({ onComplete }) => {
@@ -26,15 +24,8 @@ const EncryptionSetup = ({ onComplete }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [strength, setStrength] = useState(calculatePassphraseStrength(""));
 
-  // Calculate total steps including encryption as step 1
-  const totalSteps = useMemo(() => {
-    // Base steps from SplashScreen: Personal, LLM, Transcription, Templates, Letters = 5
-    // Plus optional QuickChat if enabled
-    // Plus encryption step = 1
-    const baseSteps = 5;
-    const chatSteps = isChatEnabled() ? 1 : 0;
-    return 1 + baseSteps + chatSteps; // encryption + splash steps
-  }, []);
+  // Encryption + 3 splash steps (About You, Templates, AI Models)
+  const totalSteps = 4;
 
   const currentStepIndex = 0; // Encryption is always step 1 (index 0)
 
@@ -132,6 +123,7 @@ const EncryptionSetup = ({ onComplete }) => {
     return (strength.score / 4) * 100;
   };
 
+
   return (
     <Flex
       align="center"
@@ -157,13 +149,17 @@ const EncryptionSetup = ({ onComplete }) => {
       <Box
         className="anim-fade-scale panels-bg"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl"
         boxShadow="2xl"
-        border={`1px solid ${"surface"}`}
-        w={{ base: "100%", sm: "90%", md: "500px" }}
-        maxW="500px"
+        borderWidth="1px"
+        borderColor="surface"
+        w={{ base: "100%", sm: "90%", md: "600px" }}
+        maxW="600px"
+        h="600px"
+        maxH="85vh"
         position="relative"
         overflow="hidden"
+        display="flex"
+        flexDirection="column"
       >
         <Box
           position="absolute"
@@ -171,134 +167,58 @@ const EncryptionSetup = ({ onComplete }) => {
           left="0"
           right="0"
           height="120px"
-          bgGradient={`linear(to b, "sidebarBackgroundFaint", transparent)`}
-          borderRadius="2xl"
+          bgGradient="linear(to b, sidebarBackgroundFaint, transparent)"
           zIndex="0"
         />
 
-        <VStack
-          gap={6}
-          align="stretch"
-          position="relative"
-          zIndex="1"
-          className="anim-stagger"
-        >
-          <Flex
-            direction="column"
-            align="center"
-            mb={4}
-          >
-            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
-            <Heading
-              as="h1"
-              textAlign="center"
-              color={"textPrimary"}
-              css={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontSize: ["1.5rem", "1.75rem"],
-                fontWeight: "700",
-                lineHeight: "1.2",
-                marginBottom: "0.5rem",
-                letterSpacing: "-0.02em"
-              }}
-            >
-              Welcome to Phlox
-            </Heading>
-            <Text
-              textAlign="center"
-              fontSize="sm"
-              color={"textSecondary"}
-              maxW="400px"
-              lineHeight="1.6"
-              css={{
-                fontFamily: '"Roboto", sans-serif'
-              }}
-            >
-              Let's set up your AI-powered medical assistant
-            </Text>
-          </Flex>
-
-          <Box>
+        <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
+          <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
+          <Heading as="h2" size="md" color="textPrimary" textAlign="center">
+            {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
+          </Heading>
+          <Text fontSize="sm" color="textSecondary" textAlign="center" maxW="420px" lineHeight="1.5">
+            {STEP_DESCRIPTIONS[SPLASH_STEPS.ENCRYPTION]}
+          </Text>
+          <HStack w="100%" justify="space-between" mt={1}>
             <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
               colorPalette="blue"
               borderRadius="full"
               size="sm"
-              mb={2}>
+              flex="1"
+            >
               <Progress.Track>
                 <Progress.Range />
               </Progress.Track>
             </Progress.Root>
-            <Text
-              fontSize="xs"
-              color={"textSecondary"}
-              textAlign="center"
-              css={{
-                fontFamily: '"Roboto", sans-serif'
-              }}
-            >
-              Step {currentStepIndex + 1} of {totalSteps}
+            <Text fontSize="xs" color="textSecondary" whiteSpace="nowrap" ml={3}>
+              {currentStepIndex + 1} of {totalSteps}
             </Text>
-          </Box>
+          </HStack>
+        </VStack>
 
-          <Box>
-            <HStack mb={4} align="center" justify="center">
-              <Icon
-                as={getStepIcon(SPLASH_STEPS.ENCRYPTION)}
-                className="pill-box-icons"
-                boxSize={5}
-              />
-              <Heading
-                as="h2"
-                color={"textPrimary"}
-                css={{
-                  fontFamily: '"Space Grotesk", sans-serif',
-                  fontSize: ["1.25rem", "1.5rem"],
-                  fontWeight: "600",
-                  lineHeight: "1.2"
-                }}
-              >
-                {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
-              </Heading>
-            </HStack>
-            <Text
-              textAlign="center"
-              fontSize="sm"
-              color={"textSecondary"}
-              mb={4}
-              css={{
-                fontFamily: '"Roboto", sans-serif'
-              }}
-            >
-              {STEP_DESCRIPTIONS[SPLASH_STEPS.ENCRYPTION]}
-            </Text>
-          </Box>
-
-          {/* Warning alert with better legibility */}
-          <Box
-            bg="surfaceMuted"
-            borderLeft="4px solid"
-            borderColor="secondaryButton"
-            p={3}
-            borderRadius="md"
-          >
-            <HStack align="start">
-              <Icon as={FaExclamationTriangle} color="secondaryButton" mt={0.5} />
-              <Text color="textPrimary" fontSize="sm" lineHeight="1.5">
-                <strong>Important:</strong> If you forget your passphrase, your
-                data cannot be recovered. Store it securely.
-              </Text>
-            </HStack>
-          </Box>
-
-          <VStack gap={4} align="stretch">
+        {/* Content area — scrolls independently */}
+        <Box
+          flex="1"
+          overflowY="auto"
+          minH="340px"
+          position="relative"
+          zIndex={1}
+          className="custom-scrollbar"
+        >
+          <Alert.Root status="warning" borderRadius="md">
+            <Alert.Indicator />
             <Box>
-              <Text
-                mb={1}
-                fontSize="sm"
-                fontWeight="500"
-                color={"textPrimary"}
-              >
+              <Alert.Description>
+                If you forget your passphrase, your data cannot be recovered.
+                Store it securely.
+              </Alert.Description>
+            </Box>
+          </Alert.Root>
+
+          <VStack gap={4} align="stretch" mt={4}>
+            <Box>
+              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
                 Passphrase
               </Text>
               <HStack>
@@ -307,30 +227,23 @@ const EncryptionSetup = ({ onComplete }) => {
                   placeholder="Enter a secure passphrase (min 12 characters)"
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
-                  size="md"
-                  bg={"surface"}
-                  border={`1px solid ${"border"}`}
-                  color={"textPrimary"}
-                  _placeholder={{ color: "textSecondary" }}
-                  _focus={{
-                    borderColor: "accent",
-                    boxShadow: `0 0 0 1px ${"accent"}`,
-                  }}
+                  size="sm"
+                  className="input-style"
                 />
                 <Button
-                  size="md"
+                  size="sm"
                   variant="ghost"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label="Toggle password visibility"
                 >
-                  <Icon as={showPassword ? FaEyeSlash : FaEye} />
+                  <Icon asChild>{showPassword ? <FaEyeSlash /> : <FaEye />}</Icon>
                 </Button>
               </HStack>
 
               {passphrase.length > 0 && (
                 <Box mt={2}>
                   <HStack justify="space-between" mb={1}>
-                    <Text fontSize="xs" color={"textSecondary"}>
+                    <Text fontSize="xs" color="textSecondary">
                       Strength
                     </Text>
                     <Text
@@ -345,7 +258,8 @@ const EncryptionSetup = ({ onComplete }) => {
                     value={getStrengthPercent()}
                     colorPalette={getStrengthColor()}
                     size="xs"
-                    borderRadius="full">
+                    borderRadius="full"
+                  >
                     <Progress.Track>
                       <Progress.Range />
                     </Progress.Track>
@@ -355,12 +269,7 @@ const EncryptionSetup = ({ onComplete }) => {
             </Box>
 
             <Box>
-              <Text
-                mb={1}
-                fontSize="sm"
-                fontWeight="500"
-                color={"textPrimary"}
-              >
+              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
                 Confirm Passphrase
               </Text>
               <HStack>
@@ -369,15 +278,8 @@ const EncryptionSetup = ({ onComplete }) => {
                   placeholder="Confirm your passphrase"
                   value={confirmPassphrase}
                   onChange={(e) => setConfirmPassphrase(e.target.value)}
-                  size="md"
-                  bg={"surface"}
-                  border={`1px solid ${"border"}`}
-                  color={"textPrimary"}
-                  _placeholder={{ color: "textSecondary" }}
-                  _focus={{
-                    borderColor: "accent",
-                    boxShadow: `0 0 0 1px ${"accent"}`,
-                  }}
+                  size="sm"
+                  className="input-style"
                   onKeyPress={(e) => {
                     if (e.key === "Enter" && isValid()) {
                       handleSubmit();
@@ -385,12 +287,14 @@ const EncryptionSetup = ({ onComplete }) => {
                   }}
                 />
                 <Button
-                  size="md"
+                  size="sm"
                   variant="ghost"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label="Toggle confirm password visibility"
                 >
-                  <Icon as={showConfirmPassword ? FaEyeSlash : FaEye} />
+                  <Icon asChild>
+                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                  </Icon>
                 </Button>
               </HStack>
 
@@ -402,29 +306,33 @@ const EncryptionSetup = ({ onComplete }) => {
                 )}
             </Box>
           </VStack>
+        </Box>
 
-          <Flex
-            justify="flex-end"
-            align="center"
-            mt={2}
+        {/* Footer */}
+        <Flex
+          justify="flex-end"
+          align="center"
+          flexShrink={0}
+          position="relative"
+          zIndex={1}
+          pt={4}
+        >
+          <Button
+            onClick={handleSubmit}
+            loading={isSubmitting}
+            loadingText="Setting up encryption..."
+            disabled={!isValid()}
+            size="md"
+            borderRadius="2xl"
+            className="switch-mode"
+            css={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontWeight: "600",
+            }}
           >
-            <Button
-              onClick={handleSubmit}
-              loading={isSubmitting}
-              loadingText="Setting up encryption..."
-              disabled={!isValid()}
-              size="md"
-              borderRadius="2xl"
-              className="switch-mode"
-              css={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontWeight: "600"
-              }}
-            >
-              Continue
-            </Button>
-          </Flex>
-        </VStack>
+            Continue
+          </Button>
+        </Flex>
       </Box>
     </Flex>
   );

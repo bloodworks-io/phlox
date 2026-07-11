@@ -24,12 +24,14 @@ export const useLLMStep = (currentStep) => {
     const [llmBaseUrl, setLlmBaseUrl] = useState(
         import.meta.env.VITE_OLLAMA_BASE_URL || "http://localhost:11434",
     );
+    const [llmApiKey, setLlmApiKey] = useState("");
     const [primaryModel, setPrimaryModel] = useState("");
     const [availableModels, setAvailableModels] = useState([]);
     const [isFetchingLLMModels, setIsFetchingLLMModels] = useState(false);
 
     const debouncedLlmBaseUrl = useDebounce(llmBaseUrl, 500);
     const debouncedLlmProvider = useDebounce(llmProvider, 500);
+    const debouncedLlmApiKey = useDebounce(llmApiKey, 500);
 
     // Local mode state
     const [localAvailableModels, setLocalAvailableModels] = useState([]);
@@ -58,6 +60,7 @@ export const useLLMStep = (currentStep) => {
                 {
                     LLM_BASE_URL: debouncedLlmBaseUrl,
                     LLM_PROVIDER: debouncedLlmProvider,
+                    LLM_API_KEY: debouncedLlmApiKey || null,
                 },
                 (fetchedModels) => {
                     models = fetchedModels;
@@ -77,7 +80,7 @@ export const useLLMStep = (currentStep) => {
         } finally {
             setIsFetchingLLMModels(false);
         }
-    }, [debouncedLlmBaseUrl, debouncedLlmProvider, toast, inferenceMode]);
+    }, [debouncedLlmBaseUrl, debouncedLlmProvider, debouncedLlmApiKey, toast, inferenceMode]);
 
     // Fetch local models
     const fetchLocalModels = useCallback(async () => {
@@ -204,6 +207,7 @@ export const useLLMStep = (currentStep) => {
             return {
                 llmProvider,
                 llmBaseUrl,
+                llmApiKey,
                 primaryModel,
                 inferenceMode,
                 localModelId: null,
@@ -213,13 +217,14 @@ export const useLLMStep = (currentStep) => {
         inferenceMode,
         llmProvider,
         llmBaseUrl,
+        llmApiKey,
         primaryModel,
         primaryLocalModel,
     ]);
 
     // Fetch models when step becomes active or mode changes
     useEffect(() => {
-        if (currentStep === SPLASH_STEPS.LLM) {
+        if (currentStep === SPLASH_STEPS.AI_MODELS) {
             if (inferenceMode === "local") {
                 fetchLocalModels();
             } else {
@@ -239,6 +244,8 @@ export const useLLMStep = (currentStep) => {
         setLlmProvider,
         llmBaseUrl,
         setLlmBaseUrl,
+        llmApiKey,
+        setLlmApiKey,
         primaryModel,
         setPrimaryModel,
         availableModels,

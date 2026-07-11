@@ -13,7 +13,7 @@ export const useLettersStep = (currentStep) => {
 
   const fetchLetterTemplates = useCallback(async () => {
     if (
-      currentStep === SPLASH_STEPS.LETTERS &&
+      currentStep === SPLASH_STEPS.ABOUT_YOU &&
       availableLetterTemplates.length === 0
     ) {
       setIsFetchingLetterTemplates(true);
