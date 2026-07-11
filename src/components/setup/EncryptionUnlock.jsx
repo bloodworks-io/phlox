@@ -66,6 +66,15 @@ const EncryptionUnlock = ({ onComplete }) => {
         );
       }
 
+      try {
+        await invoke("start_embedding_service");
+      } catch (embeddingError) {
+        console.warn(
+          "Embedding service did not start (no model downloaded yet):",
+          embeddingError,
+        );
+      }
+
       toaster.create({
         title: "Unlocked",
         description: "Your database has been unlocked successfully.",

@@ -82,6 +82,12 @@ const EncryptionSetup = ({ onComplete }) => {
         } catch (whisperError) {
           console.warn("Whisper service did not start (no model downloaded yet):", whisperError);
         }
+
+        try {
+          await invoke("start_embedding_service");
+        } catch (embeddingError) {
+          console.warn("Embedding service did not start (no model downloaded yet):", embeddingError);
+        }
       } catch (serverError) {
         console.error("Server start failed:", serverError);
         toaster.create({
