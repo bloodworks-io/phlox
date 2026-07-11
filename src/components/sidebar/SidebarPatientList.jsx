@@ -35,6 +35,10 @@ const SidebarPatientList = ({
         <Box w="100%" h="100%" display="flex" flexDirection="column" minH="0">
             {/* Patient List heading — whole row toggles the section */}
             {!isCollapsed && (
+                <Tooltip
+                    content="Toggle patient list"
+                    positioning={{ placement: "top" }} openDelay={700}
+                >
                 <Flex
                     pt={2}
                     pb={1}
@@ -90,6 +94,7 @@ const SidebarPatientList = ({
                         )}
                     </IconButton>
                 </Flex>
+                </Tooltip>
             )}
             <Collapsible.Root
                 open={isCollapsed || !isPatientsCollapsed}
@@ -106,17 +111,22 @@ const SidebarPatientList = ({
                 >
                     {/* Clinic date — pinned at the top of the section */}
                     {!isCollapsed && (
-                        <Input
-                            type="date"
-                            value={selectedDate || ""}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            size="sm"
-                            borderRadius="md"
-                            className="clinic-date-input"
-                            w="100%"
-                            mb={2}
-                            flexShrink={0}
-                        />
+                        <Tooltip
+                            content="Clinic date — filters the patient list"
+                            positioning={{ placement: "top" }} openDelay={700}
+                        >
+                            <Input
+                                type="date"
+                                value={selectedDate || ""}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                size="sm"
+                                borderRadius="md"
+                                className="clinic-date-input"
+                                w="100%"
+                                mb={2}
+                                flexShrink={0}
+                            />
+                        </Tooltip>
                     )}
                     {/* Patient list — the only part that scrolls */}
                     <Box
@@ -266,20 +276,28 @@ const SidebarPatientList = ({
                                                 </Flex>
 
                                                 {!isCollapsed && isHovered && (
-                                                    <IconButton
-                                                        size="xs"
-                                                        aria-label="Delete patient"
-                                                        variant="ghost"
-                                                        colorPalette="red"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onDeletePatient(
-                                                                patient,
-                                                            );
+                                                    <Tooltip
+                                                        content="Remove patient"
+                                                        positioning={{
+                                                            placement: "top",
                                                         }}
+                                                        openDelay={700}
                                                     >
-                                                        <DeleteIcon />
-                                                    </IconButton>
+                                                        <IconButton
+                                                            size="xs"
+                                                            aria-label="Delete patient"
+                                                            variant="ghost"
+                                                            colorPalette="red"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onDeletePatient(
+                                                                    patient,
+                                                                );
+                                                            }}
+                                                        >
+                                                            <DeleteIcon />
+                                                        </IconButton>
+                                                    </Tooltip>
                                                 )}
                                             </Flex>
                                         </Tooltip>
@@ -301,7 +319,11 @@ const SidebarPatientList = ({
                         )}
                     </Box>
                     {/* Day Summary — pinned at the bottom of the section */}
-                    {!isCollapsed && (
+                    {!isCollapsed && patients.length > 0 && (
+                        <Tooltip
+                            content="Open the selected day's summary"
+                            positioning={{ placement: "top" }} openDelay={700}
+                        >
                         <Flex
                             align="center"
                             gap={1.5}
@@ -342,6 +364,7 @@ const SidebarPatientList = ({
                                 Day Summary
                             </Text>
                         </Flex>
+                        </Tooltip>
                     )}
                 </Collapsible.Content>
             </Collapsible.Root>
