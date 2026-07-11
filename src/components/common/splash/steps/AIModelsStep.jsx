@@ -47,9 +47,9 @@ const RECOMMENDED_WHISPER = {
 };
 
 const RECOMMENDED_EMBEDDING = {
-  id: "granite-embedding",
-  name: "Granite Embeddings",
-  size_mb: 640,
+  id: "qwen3-embedding-0.6b",
+  name: "Qwen3 Embedding 0.6B",
+  size_mb: 639,
 };
 
 const getBadge = (recommendedType) => {
@@ -306,10 +306,9 @@ export const AIModelsStep = ({ llm, transcription }) => {
       import("../../../../utils/api/localModelApi").then(
         ({ localModelApi }) => {
           localModelApi
-            .fetchDownloadedEmbeddingModels()
+            .fetchEmbeddingStatus()
             .then((res) => {
-              const models = res?.models || [];
-              const has = models.some((m) => m.id === RECOMMENDED_EMBEDDING.id);
+              const has = !!res?.downloaded;
               setEmbeddingDownloaded(has);
               setEmbeddingReady(has);
             })
@@ -323,7 +322,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
     setIsDownloadingEmbedding(true);
     setEmbeddingProgress(0);
     try {
-      await downloadEmbeddingService(RECOMMENDED_EMBEDDING.id, {
+      await downloadEmbeddingService({
         onProgress: (p) => {
           if (p.percentage !== undefined) setEmbeddingProgress(p.percentage);
         },
