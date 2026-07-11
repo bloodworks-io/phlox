@@ -81,6 +81,7 @@ fn get_cached_port(service: &str) -> String {
             "llama" => status.llama,
             "whisper" => status.whisper,
             "server" => status.server,
+            "embedding" => status.embedding,
             _ => None,
         };
         if let Some(info) = info {
@@ -92,6 +93,7 @@ fn get_cached_port(service: &str) -> String {
         "llama" => "8082".to_string(),
         "whisper" => "8081".to_string(),
         "server" => "5000".to_string(),
+        "embedding" => "8083".to_string(),
         _ => "0".to_string(),
     }
 }
@@ -109,6 +111,11 @@ pub fn get_llm_port() -> String {
 #[tauri::command]
 pub fn get_whisper_port() -> String {
     get_cached_port("whisper")
+}
+
+#[tauri::command]
+pub fn get_embedding_port() -> String {
+    get_cached_port("embedding")
 }
 
 /// Get the request token for API authentication
@@ -133,9 +140,11 @@ pub fn get_service_status(cached_status: tauri::State<CachedServiceStatus>) -> s
             "server_running": status.server.as_ref().map(|s| s.running).unwrap_or(false),
             "llama_running": status.llama.as_ref().map(|s| s.running).unwrap_or(false),
             "whisper_running": status.whisper.as_ref().map(|s| s.running).unwrap_or(false),
+            "embedding_running": status.embedding.as_ref().map(|s| s.running).unwrap_or(false),
             "server_port": status.server.as_ref().map(|s| s.port).unwrap_or(5000),
             "llm_port": status.llama.as_ref().map(|s| s.port).unwrap_or(8082),
-            "whisper_port": status.whisper.as_ref().map(|s| s.port).unwrap_or(8081)
+            "whisper_port": status.whisper.as_ref().map(|s| s.port).unwrap_or(8081),
+            "embedding_port": status.embedding.as_ref().map(|s| s.port).unwrap_or(8083)
         })
     } else {
         // PM not available, return defaults
@@ -143,9 +152,11 @@ pub fn get_service_status(cached_status: tauri::State<CachedServiceStatus>) -> s
             "server_running": false,
             "llama_running": false,
             "whisper_running": false,
+            "embedding_running": false,
             "server_port": "5000",
             "llm_port": "8082",
-            "whisper_port": "8081"
+            "whisper_port": "8081",
+            "embedding_port": "8083"
         })
     }
 }
@@ -230,6 +241,46 @@ pub fn restart_llama(_app_handle: tauri::AppHandle) -> Result<String, String> {
         Err(e) => {
             log::error!("Failed to restart Llama: {}", e);
             Err(format!("Failed to restart Llama: {}", e))
+        }
+    }
+}
+
+#[tauri::command]
+pub fn start_embedding_service() -> Result<String, String> {
+    log::info!("Starting embedding server via PM...");
+
+    let client = ProcessManagerClient::new()
+        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
+
+    match client.start_embedding() {
+        Ok((pid, port)) => {
+            log::info!("Embedding started with PID: {}, port: {}", pid, port);
+            Ok(format!("Embedding server started with PID: {}", pid))
+        }
+        Err(e) => {
+            log::error!("Failed to start embedding: {}", e);
+            Err(format!("Failed to start embedding: {}", e))
+        }
+    }
+}
+
+#[tauri::command]
+pub fn restart_embedding(_app_handle: tauri::AppHandle) -> Result<String, String> {
+    log::info!("Restarting embedding server via PM...");
+
+    let client = ProcessManagerClient::new()
+        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
+
+    let _ = client.stop("embedding");
+
+    match client.start_embedding() {
+        Ok((pid, port)) => {
+            log::info!("Embedding restarted with PID: {}, port: {}", pid, port);
+            Ok(format!("Embedding server restarted with PID: {}", pid))
+        }
+        Err(e) => {
+            log::error!("Failed to restart embedding: {}", e);
+            Err(format!("Failed to restart embedding: {}", e))
         }
     }
 }

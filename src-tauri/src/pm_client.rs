@@ -17,6 +17,7 @@ pub fn socket_path() -> PathBuf {
 pub enum ClientRequest {
     StartLlama { model_path: Option<String> },
     StartWhisper { model_path: Option<String> },
+    StartEmbedding,
     StartServer,
     SendPassphrase { passphrase: String },
     Stop { service: String },
@@ -45,6 +46,10 @@ impl ClientRequest {
             ClientRequest::StartWhisper { model_path } => RequestWrapper {
                 request_type: "start_whisper",
                 payload: Some(serde_json::json!({ "model_path": model_path })),
+            },
+            ClientRequest::StartEmbedding => RequestWrapper {
+                request_type: "start_embedding",
+                payload: None,
             },
             ClientRequest::StartServer => RequestWrapper {
                 request_type: "start_server",
@@ -110,6 +115,7 @@ pub struct ServiceStatusData {
     pub llama: Option<ServiceInfo>,
     pub whisper: Option<ServiceInfo>,
     pub server: Option<ServiceInfo>,
+    pub embedding: Option<ServiceInfo>,
     pub request_token: Option<String>,
 }
 
@@ -232,6 +238,17 @@ impl ProcessManagerClient {
     /// Start the whisper server
     pub fn start_whisper(&self, model_path: Option<String>) -> Result<(u32, u16), ClientError> {
         match self.send_request(&ClientRequest::StartWhisper { model_path })? {
+            ClientResponse::Ok(OkData::Started { pid, port, .. }) => Ok((pid, port)),
+            ClientResponse::Error { message } => Err(ClientError::RequestFailed(message)),
+            _ => Err(ClientError::InvalidResponse(
+                "Unexpected response".to_string(),
+            )),
+        }
+    }
+
+    /// Start the embedding server
+    pub fn start_embedding(&self) -> Result<(u32, u16), ClientError> {
+        match self.send_request(&ClientRequest::StartEmbedding)? {
             ClientResponse::Ok(OkData::Started { pid, port, .. }) => Ok((pid, port)),
             ClientResponse::Error { message } => Err(ClientError::RequestFailed(message)),
             _ => Err(ClientError::InvalidResponse(
