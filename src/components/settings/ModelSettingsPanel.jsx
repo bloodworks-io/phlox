@@ -36,7 +36,6 @@ const ModelSettingsPanel = ({
     whisperModelsLoading = false,
     llmModelsLoading = false,
     urlStatus = { whisper: false, llm: false },
-    modelManagerRefreshKey = 0,
     embeddingModelOptions = [],
     _handleClearDatabase,
     handleReEmbed,
@@ -62,41 +61,11 @@ const ModelSettingsPanel = ({
         checkLocalStatus();
         checkIfDocker();
         loadCurrentVisionCapability();
-
-        if (isTauri()) {
-            fetchDownloadedWhisperModel();
-        }
     }, []);
 
     useEffect(() => {
         loadCurrentVisionCapability();
     }, [config?.LLM_PROVIDER, config?.LLM_BASE_URL, config?.PRIMARY_MODEL]);
-
-    useEffect(() => {
-        // Refresh Whisper model when model manager closes (desktop only)
-        if (isTauri() && modelManagerRefreshKey > 0) {
-            fetchDownloadedWhisperModel();
-        }
-    }, [modelManagerRefreshKey]);
-
-    const fetchDownloadedWhisperModel = async () => {
-        try {
-            const response = await universalFetch(
-                await buildApiUrl(
-                    "/api/config/local/whisper/models/downloaded",
-                ),
-            );
-            if (response.ok) {
-                const data = await response.json();
-                // Set the downloaded model (there should only be one)
-                if (data.models && data.models.length > 0) {
-                    setDownloadedWhisperModel(data.models[0].id);
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching downloaded Whisper model:", error);
-        }
-    };
 
     const checkLocalStatus = async () => {
         try {

@@ -193,23 +193,6 @@ export const localModelApi = {
       errorMessage: "Failed to fetch Whisper model recommendations",
     }),
 
-  downloadWhisperModel: async (modelId) =>
-    handleApiRequest({
-      apiCall: async () => {
-        const url = await buildApiUrl(
-          "/api/config/local/whisper/models/download",
-        );
-        return universalFetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model_id: modelId }),
-        });
-      },
-      successMessage: "Whisper model downloaded successfully",
-      errorMessage: "Failed to download Whisper model",
-      timeout: 300000, // 5 minutes for model downloads
-    }),
-
   streamDownloadWhisperModel: async function* (modelId) {
     const baseUrl = await buildApiUrl("");
     const url = `${baseUrl}/api/config/local/whisper/models/download/stream?model_id=${encodeURIComponent(modelId)}`;
