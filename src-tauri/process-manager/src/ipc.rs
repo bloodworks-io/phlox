@@ -1,6 +1,6 @@
 use crate::process::{
-    create_status_data, kill_all_processes, send_passphrase_and_wait_for_ports, start_llama,
-    start_server, start_whisper, stop_drain_threads, AllocatedPorts, ManagedProcess,
+    create_status_data, kill_all_processes, send_passphrase_and_wait_for_ports, start_embedding,
+    start_llama, start_server, start_whisper, stop_drain_threads, AllocatedPorts, ManagedProcess,
 };
 use crate::protocol::{Request, Response};
 use log::{error, info, warn};
@@ -99,6 +99,36 @@ fn handle_client(
                             Err(e) => {
                                 error!("Failed to check whisper process: {}", e);
                                 Response::error("Failed to verify whisper server status")
+                            }
+                        }
+                    }
+                    Err(e) => Response::error(e),
+                }
+            }
+        }
+        "start_embedding" => {
+            if state.embedding.is_some() {
+                Response::error("Embedding server is already running")
+            } else {
+                // Use allocated port if available, otherwise None (will use fallback)
+                let port = state.allocated_ports.as_ref().map(|p| p.embedding);
+                match start_embedding(port) {
+                    Ok(mut proc) => {
+                        thread::sleep(Duration::from_millis(500));
+                        match proc.child.try_wait() {
+                            Ok(Some(status)) => {
+                                error!("Embedding process exited immediately: {:?}", status);
+                                Response::error("Embedding server failed to start")
+                            }
+                            Ok(None) => {
+                                let pid = proc.child.id();
+                                let port = proc.port;
+                                state.embedding = Some(proc);
+                                Response::ok_started(pid, port, 0, 0)
+                            }
+                            Err(e) => {
+                                error!("Failed to check embedding process: {}", e);
+                                Response::error("Failed to verify embedding server status")
                             }
                         }
                     }
@@ -206,6 +236,16 @@ fn handle_client(
                         Some(Response::error("Whisper server is not running"))
                     }
                 }
+                "embedding" => {
+                    if let Some(mut proc) = state.embedding.take() {
+                        let _ = proc.child.kill();
+                        let _ = proc.child.wait();
+                        crate::process::remove_pid_file("embedding");
+                        Some(Response::ok_stopped())
+                    } else {
+                        Some(Response::error("Embedding server is not running"))
+                    }
+                }
                 "server" => {
                     if let Some(mut proc) = state.server.take() {
                         // Stop drain threads first
@@ -229,6 +269,7 @@ fn handle_client(
                 state.llama.as_ref(),
                 state.whisper.as_ref(),
                 state.server.as_ref(),
+                state.embedding.as_ref(),
                 state.request_token.as_ref(),
             );
             Response::ok_status(status)
@@ -274,12 +315,21 @@ fn update_process_states(state: &mut ProcessManagerState) {
             crate::process::remove_pid_file("server");
         }
     }
+
+    if let Some(ref mut proc) = state.embedding {
+        if let Ok(Some(_)) = proc.child.try_wait() {
+            warn!("Embedding process died, removing from state");
+            state.embedding = None;
+            crate::process::remove_pid_file("embedding");
+        }
+    }
 }
 
 pub struct ProcessManagerState {
     pub llama: Option<ManagedProcess>,
     pub whisper: Option<ManagedProcess>,
     pub server: Option<ManagedProcess>,
+    pub embedding: Option<ManagedProcess>,
     pub allocated_ports: Option<AllocatedPorts>,
     pub request_token: Option<String>,
     pub should_shutdown: bool,
@@ -291,6 +341,7 @@ impl Default for ProcessManagerState {
             llama: None,
             whisper: None,
             server: None,
+            embedding: None,
             allocated_ports: None,
             request_token: None,
             should_shutdown: false,

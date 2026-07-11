@@ -12,6 +12,7 @@ use std::time::Duration;
 /// Fixed ports for LLM and Whisper services (used as fallbacks)
 pub const LLAMA_PORT: u16 = 8082;
 pub const WHISPER_PORT: u16 = 8081;
+pub const EMBEDDING_PORT: u16 = 8083;
 
 /// Default server port (will be overridden by server's actual port)
 pub const DEFAULT_SERVER_PORT: u16 = 5000;
@@ -22,6 +23,7 @@ pub struct AllocatedPorts {
     pub server: u16,
     pub llama: u16,
     pub whisper: u16,
+    pub embedding: u16,
     pub request_token: String,
 }
 
@@ -155,6 +157,22 @@ pub fn find_whisper_model() -> Option<PathBuf> {
             let path = entry.path();
             let name = path.file_name()?.to_str()?;
             if name.starts_with("ggml-") && path.extension()?.to_str()? == "bin" {
+                return Some(path);
+            }
+        }
+    }
+
+    None
+}
+
+/// Find an embedding model in the models directory.
+pub fn find_embedding_model() -> Option<PathBuf> {
+    let models_dir = phlox_dir()?.join("embedding_models");
+
+    if let Ok(entries) = fs::read_dir(&models_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension()?.to_str()? == "gguf" {
                 return Some(path);
             }
         }
@@ -302,6 +320,60 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
         child,
         port: actual_port,
         service_type: ServiceType::Whisper,
+        drain_handles: None,
+        drain_shutdown: None,
+    })
+}
+
+/// Start the embedding server.
+pub fn start_embedding(port: Option<u16>) -> Result<ManagedProcess, String> {
+    let server_path = find_llama_server().ok_or("phlox-llama-server binary not found")?;
+    let model_path = find_embedding_model().ok_or("No embedding model found")?;
+
+    // Use provided port or fallback to default
+    let actual_port = port.unwrap_or(EMBEDDING_PORT);
+
+    log::info!("Starting embedding server from: {:?}", server_path);
+    log::info!("embedding model: {:?}, port: {}", model_path, actual_port);
+
+    let mut cmd = Command::new(&server_path);
+    cmd.arg("--port")
+        .arg(actual_port.to_string())
+        .arg("--host")
+        .arg("127.0.0.1")
+        .arg("--model")
+        .arg(model_path.to_string_lossy().as_ref())
+        .arg("--embedding")
+        .arg("--n-gpu-layers")
+        .arg("99");
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
+
+    cmd.stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit());
+
+    let child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn embedding server: {}", e))?;
+
+    let pid = child.id();
+    log::info!("Embedding server started with PID: {}", pid);
+    write_pid_file("embedding", pid);
+
+    // Write port file for Python server to read
+    if let Some(dir) = phlox_dir() {
+        let port_file = dir.join("embedding_port.txt");
+        fs::write(&port_file, actual_port.to_string()).ok();
+    }
+
+    Ok(ManagedProcess {
+        child,
+        port: actual_port,
+        service_type: ServiceType::Embedding,
         drain_handles: None,
         drain_shutdown: None,
     })
@@ -470,13 +542,10 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                             return Err("PORTS line missing token".to_string());
                         }
 
-                        // Parse ports
+                        // Parse ports (server, llama, whisper, [embedding])
                         let ports: Vec<&str> = parts[0].split(',').collect();
-                        if ports.len() != 3 {
-                            return Err(format!(
-                                "PORTS line has wrong number of ports: {:?}",
-                                ports
-                            ));
+                        if ports.len() < 3 {
+                            return Err(format!("PORTS line has too few ports: {:?}", ports));
                         }
 
                         let server = ports[0]
@@ -491,6 +560,14 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                             .trim()
                             .parse::<u16>()
                             .map_err(|e| format!("Failed to parse whisper port: {}", e))?;
+                        let embedding = if ports.len() >= 4 {
+                            ports[3]
+                                .trim()
+                                .parse::<u16>()
+                                .map_err(|e| format!("Failed to parse embedding port: {}", e))?
+                        } else {
+                            EMBEDDING_PORT
+                        };
 
                         // Parse token
                         let token_part = parts[1];
@@ -505,7 +582,7 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                         }
 
                         log::info!(
-                            "Parsed allocated ports: server={}, llama={}, whisper={}, token={}...",
+                            "Parsed allocated ports: server={}, llama={}, whisper={}, embedding={}, token={}...",
                             server,
                             llama,
                             whisper,
@@ -515,6 +592,7 @@ pub fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String>
                             server,
                             llama,
                             whisper,
+                            embedding,
                             request_token: token,
                         }));
                     }
@@ -783,7 +861,7 @@ pub fn kill_all_processes() {
     log::info!("Killing all processes...");
 
     // Kill by PID files first
-    for service in ["llama", "whisper", "server"] {
+    for service in ["llama", "whisper", "server", "embedding"] {
         if let Some(pid_file) = pid_file(service) {
             if let Ok(pid_str) = fs::read_to_string(&pid_file) {
                 if let Ok(pid) = pid_str.trim().parse::<u32>() {
@@ -812,6 +890,7 @@ pub fn create_status_data(
     llama: Option<&ManagedProcess>,
     whisper: Option<&ManagedProcess>,
     server: Option<&ManagedProcess>,
+    embedding: Option<&ManagedProcess>,
     request_token: Option<&String>,
 ) -> StatusData {
     StatusData {
@@ -826,6 +905,11 @@ pub fn create_status_data(
             port: p.port,
         }),
         server: server.map(|p| ServiceStatus {
+            running: true,
+            pid: p.child.id(),
+            port: p.port,
+        }),
+        embedding: embedding.map(|p| ServiceStatus {
             running: true,
             pid: p.child.id(),
             port: p.port,
