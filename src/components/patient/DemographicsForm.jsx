@@ -75,7 +75,10 @@ const DemographicsForm = ({
                 setForm((prev) => ({ ...prev, ...data }));
             }
         } catch (error) {
-            setExtractError("Couldn't read demographics from that document.");
+            setExtractError(
+                error?.message ||
+                    "Couldn't read demographics from that document.",
+            );
         } finally {
             setIsExtracting(false);
             if (fileInputRef.current) fileInputRef.current.value = "";
