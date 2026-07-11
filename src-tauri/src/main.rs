@@ -2,7 +2,6 @@ mod commands;
 mod encryption;
 mod pm_client;
 mod process;
-mod services;
 
 use log::LevelFilter;
 use std::thread;
@@ -18,10 +17,7 @@ use commands::{
     start_whisper_service, unlock_with_passphrase, CachedServiceStatus,
 };
 use pm_client::ProcessManagerClient;
-use process::{
-    cleanup_stale_files, kill_all_processes, LlamaProcess, RestartCoordinator, ServerProcess,
-    WhisperProcess,
-};
+use process::{cleanup_stale_files, kill_all_processes};
 
 /// Position the traffic light buttons (close, minimize, maximize) with custom offset
 #[cfg(target_os = "macos")]
@@ -64,10 +60,6 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
-        .manage(ServerProcess(std::sync::Mutex::new(None)))
-        .manage(LlamaProcess(std::sync::Mutex::new(None)))
-        .manage(WhisperProcess(std::sync::Mutex::new(None)))
-        .manage(RestartCoordinator::default())
         .manage(CachedServiceStatus(std::sync::Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             commands::get_server_port,

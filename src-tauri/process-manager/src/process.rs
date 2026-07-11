@@ -164,25 +164,21 @@ pub fn find_llama_mmproj() -> Option<PathBuf> {
     None
 }
 
-/// Find a whisper model in the models directory
+/// Find the Omi Med STT model (GGUF) in the models directory.
 pub fn find_whisper_model() -> Option<PathBuf> {
     let models_dir = phlox_dir()?.join("whisper_models");
 
-    // First check whisper_model.txt for user selection
-    let model_file = phlox_dir()?.join("whisper_model.txt");
-    if let Ok(model_id) = fs::read_to_string(&model_file) {
-        let model_path = models_dir.join(format!("ggml-{}.bin", model_id.trim()));
-        if model_path.exists() {
-            return Some(model_path);
-        }
+    // Primary: the fixed Omi Med STT q8_0 GGUF.
+    let primary = models_dir.join("omi-med-stt-v1-q8_0.gguf");
+    if primary.exists() {
+        return Some(primary);
     }
 
-    // Scan for any ggml-*.bin file
+    // Fallback: any .gguf file in the models directory.
     if let Ok(entries) = fs::read_dir(&models_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            let name = path.file_name()?.to_str()?;
-            if name.starts_with("ggml-") && path.extension()?.to_str()? == "bin" {
+            if path.extension()?.to_str()? == "gguf" {
                 return Some(path);
             }
         }
