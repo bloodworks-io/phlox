@@ -41,9 +41,9 @@ import { invoke } from "@tauri-apps/api/core";
 const MODELS_PER_PAGE = 3;
 
 const RECOMMENDED_WHISPER = {
-  id: "base",
-  name: "Whisper Base",
-  size_mb: 74,
+  id: "omi-med-stt-v1-q8_0",
+  name: "Omi Med STT",
+  size_mb: 886,
 };
 
 const RECOMMENDED_EMBEDDING = {
@@ -582,7 +582,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           Required
                         </Badge>
                         <Tooltip
-                          content={`Required for speech-to-text. Whisper Base is recommended. (${RECOMMENDED_WHISPER.size_mb}MB)`}
+                          content={`Required for speech-to-text. Omi Med STT is the bundled medical model. (${RECOMMENDED_WHISPER.size_mb}MB)`}
                           showArrow
                         >
                           <InfoIcon boxSize={3} color="textSecondary" />

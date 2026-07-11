@@ -27,7 +27,9 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
     // Local mode state
     const [localWhisperModels, setLocalWhisperModels] = useState([]);
     const [downloadedWhisperModels, setDownloadedWhisperModels] = useState([]);
-    const [localWhisperModel, setLocalWhisperModel] = useState("base");
+    const [localWhisperModel, setLocalWhisperModel] = useState(
+        "omi-med-stt-v1-q8_0",
+    );
     const [isDownloadingWhisper, setIsDownloadingWhisper] = useState(false);
     const [downloadingWhisperModelId, setDownloadingWhisperModelId] =
         useState(null);
@@ -145,16 +147,9 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
 
     // Validate based on current mode
     const validate = useCallback(() => {
-        // Transcription is always optional
         if (inferenceMode === "local") {
-            // For local mode, if they selected a model, it must be downloaded
-            if (
-                localWhisperModel &&
-                !isWhisperModelDownloaded(localWhisperModel)
-            ) {
-                return false;
-            }
-            return true; // Or true if they want to skip
+            // Hard gate: the STT model must be downloaded before proceeding.
+            return isWhisperModelDownloaded(localWhisperModel);
         } else {
             // For remote mode, use existing validation
             return validateTranscriptionStep(
