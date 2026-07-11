@@ -273,19 +273,20 @@ def start_server_for_desktop():
     # Now initialize the app
     app = initialize_and_get_app()
 
-    # Find 3 ports - one for each service
+    # Find ports - one for each service
     server_port = find_free_port()
     llama_port = find_free_port()
     whisper_port = find_free_port()
+    embedding_port = find_free_port()
 
     # Store in global state for other modules to access
     from server.utils.allocated_ports import set_ports
 
-    set_ports(server_port, llama_port, whisper_port)
+    set_ports(server_port, llama_port, whisper_port, embedding_port)
 
     # Write ports and token to stdout so process manager can read them
     print(
-        f"PORTS:{server_port},{llama_port},{whisper_port}|TOKEN:{get_request_token()}",
+        f"PORTS:{server_port},{llama_port},{whisper_port},{embedding_port}|TOKEN:{get_request_token()}",
         flush=True,
     )
 
