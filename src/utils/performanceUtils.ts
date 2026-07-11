@@ -87,6 +87,13 @@ export function getSmartRecommendations(availableModels, systemSpecs) {
   }
 
   const ram = systemSpecs.total_memory_gb;
+  const RAM_BUFFER_GB = 4;
+
+  // Filter out models that won't fit with at least a 4GB buffer
+  const usableModels = sortedModels.filter((model) => {
+    const recommendedRam = model.recommended_ram_gb || 4;
+    return ram >= recommendedRam + RAM_BUFFER_GB;
+  });
 
   // Determine tier based on machine RAM
   let tier;
@@ -99,7 +106,7 @@ export function getSmartRecommendations(availableModels, systemSpecs) {
   }
 
   // First pass: identify which models are recommended (in tier AND fit in RAM)
-  const sortedModelsWithRecStatus = sortedModels.map((model) => {
+  const sortedModelsWithRecStatus = usableModels.map((model) => {
     const modelTier = model.tier || [];
     const recommendedRam = model.recommended_ram_gb || 4;
     const isInTier = modelTier.length > 0 && modelTier.includes(tier);
