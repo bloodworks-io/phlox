@@ -501,9 +501,9 @@ async def generate_reasoning_stream(note_id: int):
             raise HTTPException(status_code=404, detail="Patient not found")
 
         async def generate():
-            from server.utils.nlp_tools.reasoning import stream_clinical_reasoning_with_tools
+            from server.utils.nlp_tools.reasoning import stream_chart_insights_with_tools
 
-            async for event in stream_clinical_reasoning_with_tools(
+            async for event in stream_chart_insights_with_tools(
                 patient["template_data"],
                 patient["dob"],
                 patient["encounter_date"],

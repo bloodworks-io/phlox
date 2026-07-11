@@ -123,7 +123,7 @@ export const patientApi = {
   },
 
   /**
-   * Generate clinical reasoning with streaming status updates
+   * Generate chart insights with streaming status updates
    * @param {number} noteId - The patient ID
    * @param {function} onStatus - Callback for status updates (receives status string)
    * @param {object} toast - Chakra UI toast for notifications
@@ -172,7 +172,7 @@ export const patientApi = {
     if (toast) {
       toaster.create({
         title: "Success",
-        description: "Clinical reasoning generated successfully.",
+        description: "Chart insights generated successfully.",
         type: "success",
         duration: 3000,
       });

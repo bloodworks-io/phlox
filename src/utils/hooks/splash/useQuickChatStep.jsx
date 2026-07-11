@@ -2,21 +2,21 @@ import { useState } from "react";
 import { validateQuickChatStep } from "../../../utils/splash/validators";
 
 export const useQuickChatStep = () => {
-  const [quickChat1Title, setQuickChat1Title] = useState("Critique my plan");
+  const [quickChat1Title, setQuickChat1Title] = useState("Review my plan");
   const [quickChat1Prompt, setQuickChat1Prompt] = useState(
-    "Critique my plan",
+    "Review my plan",
   );
   const [quickChat2Title, setQuickChat2Title] = useState(
-    "Any additional investigations",
+    "Additional points to review",
   );
   const [quickChat2Prompt, setQuickChat2Prompt] = useState(
-    "Any additional investigations",
+    "Additional points to review",
   );
   const [quickChat3Title, setQuickChat3Title] = useState(
-    "Any differentials to consider",
+    "Other conditions worth reviewing",
   );
   const [quickChat3Prompt, setQuickChat3Prompt] = useState(
-    "Any differentials to consider",
+    "Other conditions worth reviewing",
   );
 
   return {

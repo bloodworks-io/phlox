@@ -145,12 +145,12 @@ def migrate(cursor, _db):
             specialty TEXT,
             default_template_key TEXT,
             default_letter_template_id INTEGER,
-            quick_chat_1_title TEXT DEFAULT 'Critique my plan',
-            quick_chat_1_prompt TEXT DEFAULT 'Critique my plan',
-            quick_chat_2_title TEXT DEFAULT 'Any additional investigations',
-            quick_chat_2_prompt TEXT DEFAULT 'Any additional investigations',
-            quick_chat_3_title TEXT DEFAULT 'Any differentials to consider',
-            quick_chat_3_prompt TEXT DEFAULT 'Any differentials to consider'
+            quick_chat_1_title TEXT DEFAULT 'Review my plan',
+            quick_chat_1_prompt TEXT DEFAULT 'Review my plan',
+            quick_chat_2_title TEXT DEFAULT 'Additional points to review',
+            quick_chat_2_prompt TEXT DEFAULT 'Additional points to review',
+            quick_chat_3_title TEXT DEFAULT 'Other conditions worth reviewing',
+            quick_chat_3_prompt TEXT DEFAULT 'Other conditions worth reviewing'
         )
     """
     )

@@ -132,14 +132,14 @@ const FloatingActionMenu = ({
                     </IconButton>
                 </Tooltip>
             )}
-            {/* Clinical Reasoning button */}
+            {/* Chart Insights button */}
             {isChatEnabled() && onOpenReasoning && (
                 <Box position="relative" display="inline-block">
                     <Tooltip
                         content={
                             isEncounterSaved
-                                ? "Clinical Reasoning"
-                                : "Save encounter to access Clinical Reasoning"
+                                ? "Chart Insights"
+                                : "Save encounter to access Chart Insights"
                         }
                         positioning={{
                             placement: "left",

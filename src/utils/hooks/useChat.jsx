@@ -6,7 +6,7 @@ import { formatPatientContext } from "../chat/messageUtils";
 const RAG_SYSTEM_MESSAGE = {
     role: "system",
     content:
-        "The user is a healthcare professional. They will ask you questions about medical treatment and guidelines.",
+        "The user is a qualified healthcare professional. They will ask you general questions about medical conditions, treatment and guidelines. You are an informational and educational assistant only; you are NOT a clinical decision support tool. Do not provide definitive diagnoses or treatment recommendations. All responses are general and educational; the clinician is solely responsible for all clinical decisions and must rely on their own professional judgement and current authoritative guidelines.",
 };
 
 const getClinicianToolActionLabel = (toolName = "") => {

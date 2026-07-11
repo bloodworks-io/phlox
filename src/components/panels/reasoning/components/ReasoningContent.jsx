@@ -247,10 +247,10 @@ export const ReasoningContent = ({
                     Summary
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="1">
-                    Differentials
+                    Possible Conditions
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="2">
-                    Investigations
+                    Suggested Workup
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="3">
                     Considerations
@@ -277,7 +277,7 @@ export const ReasoningContent = ({
                 </MarkdownRenderer>
             </Tabs.Content>
 
-            {/* Differentials Tab */}
+            {/* Possible Conditions Tab */}
             <Tabs.Content
                 className="floating-main"
                 flex="1"
@@ -288,7 +288,7 @@ export const ReasoningContent = ({
                 {renderItems("differentials", reasoning, colorMode)}
             </Tabs.Content>
 
-            {/* Investigations Tab */}
+            {/* Suggested Workup Tab */}
             <Tabs.Content
                 className="floating-main"
                 flex="1"

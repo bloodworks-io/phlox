@@ -429,7 +429,7 @@ const ToolsSettingsTab = ({ className }) => {
             </Flex>
             <Text fontSize="xs" className="pill-box-icons">
                 External tool servers provide additional tools for chat and
-                clinical reasoning. Servers must implement the Streamable HTTP
+                chart insights. Servers must implement the Streamable HTTP
                 transport.
             </Text>
             {/* Add Server Button */}

@@ -21,12 +21,12 @@ const Settings = () => {
     const [userSettings, setUserSettings] = useState({
         name: "",
         specialty: "",
-        quick_chat_1_title: "Critique my plan",
-        quick_chat_1_prompt: "Critique my plan",
-        quick_chat_2_title: "Any additional investigations",
-        quick_chat_2_prompt: "Any additional investigations",
-        quick_chat_3_title: "Any differentials to consider",
-        quick_chat_3_prompt: "Any differentials to consider",
+        quick_chat_1_title: "Review my plan",
+        quick_chat_1_prompt: "Review my plan",
+        quick_chat_2_title: "Additional points to review",
+        quick_chat_2_prompt: "Additional points to review",
+        quick_chat_3_title: "Other conditions worth reviewing",
+        quick_chat_3_prompt: "Other conditions worth reviewing",
     });
     const [prompts, setPrompts] = useState(null);
     const [options, setOptions] = useState({

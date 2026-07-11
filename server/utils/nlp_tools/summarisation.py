@@ -83,7 +83,7 @@ def _create_condition_prompt_with_constraints(
     if not existing_conditions:
         # Fallback to original prompts
         condition_system = (
-            "You are a medical AI that is skilled at extracting the primary diagnosis for a medical encounter. "
+            "You are a documentation assistant that identifies the primary problem or condition from a medical encounter for indexing purposes. "
             "Return a JSON formatted string with a single field called `condition_name` that represents the primary problem "
             "according to the ICD-10 WHO classifications. "
             "Important: `condition_name` must contain only the condition itself (no descriptors such as 'recurrent', 'relapsed', 'mild', or 'bilateral', "
@@ -104,7 +104,7 @@ def _create_condition_prompt_with_constraints(
         )
 
         condition_system = (
-            "You are a medical AI that extracts the primary diagnosis for a medical encounter. "
+            "You are a documentation assistant that identifies the primary condition from a medical encounter for indexing purposes. "
             "You must choose from the existing conditions in our database when possible. "
             "If the patient's condition closely matches one of the existing conditions, use that exact name including the exact letter casing. "
             "Only set is_new_condition to true if the condition is genuinely different from all existing options. "
@@ -288,8 +288,8 @@ async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
                         )
 
                         disambig_system = (
-                            "You are a medical AI that selects the best matching condition from a curated list. "
-                            "Choose the condition that best matches the patient's primary diagnosis. "
+                            "You are a documentation assistant that selects the best matching condition from a curated list for indexing. "
+                            "Choose the condition that best matches the patient's primary documented problem. "
                             "If none of the options are appropriate, respond with 'NEW_CONDITION'. "
                             "Return JSON with 'condition_name' field containing either the exact condition name from the list or 'NEW_CONDITION'."
                         )
@@ -298,7 +298,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
                             f"Patient note: {combined_text}\n\n"  # nosec B608
                             f"Initial extraction suggested: '{cleaned_condition}'\n\n"
                             f"Select the best match from these similar conditions:\n{candidates_list}\n\n"
-                            f"Choose the condition that best matches this patient's primary diagnosis, or respond with 'NEW_CONDITION' if none fit."
+                            f"Choose the condition that best matches this patient's primary documented problem, or respond with 'NEW_CONDITION' if none fit."
                         )
 
                         disambig_request_body = [

@@ -59,7 +59,7 @@ const ReasoningPanel = forwardRef(
                     >
                         <Flex align="center">
                             <FaAtom size="1em" style={{ marginRight: "8px" }} />
-                            <Text fontWeight="bold">Clinical Reasoning</Text>
+                            <Text fontWeight="bold">Chart Insights</Text>
                         </Flex>
                         {reasoning && (
                             <Tooltip content="Regenerate reasoning">

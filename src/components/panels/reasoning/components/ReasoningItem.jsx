@@ -52,7 +52,7 @@ export const ReasoningItem = ({ item, section }) => {
                                 fontSize="xs"
                                 textTransform="uppercase"
                             >
-                                Critical
+                                Priority
                             </Badge>
                         )}
                     </HStack>

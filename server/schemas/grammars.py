@@ -94,17 +94,17 @@ class PreviousVisitSummary(BaseModel):
 
 # Reasoning
 class ReasoningItem(BaseModel):
-    """A clinical reasoning suggestion with justification."""
+    """A chart insights suggestion with justification."""
 
     suggestion: str = Field(description="The main suggestion or finding")
     rationale: list[str] = Field(description="1-2 brief bullet points justifying this suggestion")
     critical: bool = Field(
         default=False,
-        description="Set to true ONLY for potentially fatal or serious misses that require immediate attention",
+        description="Set to true for items the clinician may wish to review promptly",
     )
 
 
-class ClinicalReasoning(BaseModel):
+class ChartInsights(BaseModel):
     thinking: str
     summary: str
     differentials: list[ReasoningItem]

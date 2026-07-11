@@ -5,7 +5,7 @@ from typing import Any
 
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.manager import config_manager
-from server.schemas.grammars import ClinicalReasoning
+from server.schemas.grammars import ChartInsights
 from server.utils.chat.tools import execute_tool_non_streaming, get_tools_definition
 from server.utils.helpers import calculate_age
 from server.utils.llm_client import repair_json
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-async def stream_clinical_reasoning_with_tools(
+async def stream_chart_insights_with_tools(
     template_data: dict,
     dob: str,
     encounter_date: str,
@@ -25,12 +25,12 @@ async def stream_clinical_reasoning_with_tools(
     ur_number: str | None = None,
     max_tool_iterations: int = 10,
 ):
-    """Stream clinical reasoning with real-time status updates.
+    """Stream chart insights with real-time status updates.
 
     An async generator that yields status updates and the final result.
     Yields dictionaries with 'type' key:
     - {'type': 'status', 'message': '...'} for status updates
-    - {'type': 'result', 'data': ClinicalReasoning} for final result
+    - {'type': 'result', 'data': ChartInsights} for final result
 
     Args:
         template_data: Dictionary of clinical note sections
@@ -272,11 +272,11 @@ Highlight potential documentation gaps and provide standard literature correlati
                 label="Final non-tool reasoning",
             )
             if tool_iterations == 0:
-                logger.info("Clinical reasoning: LLM did not request any tools")
+                logger.info("Chart insights: LLM did not request any tools")
             break
 
         if tool_iterations == 0:
-            logger.info(f"Clinical reasoning: LLM requested {len(tool_calls)} tool call(s)")
+            logger.info(f"Chart insights: LLM requested {len(tool_calls)} tool call(s)")
 
         logger.info(f"Reasoning tool iteration {tool_iterations + 1}/{max_tool_iterations}")
 
@@ -338,7 +338,7 @@ Highlight potential documentation gaps and provide standard literature correlati
 
     if tool_iterations > 0:
         logger.info(
-            f"Clinical reasoning: Completed {tool_iterations} tool iteration(s), generating final response"
+            f"Chart insights: Completed {tool_iterations} tool iteration(s), generating final response"
         )
 
     # Final JSON schema instruction
@@ -348,7 +348,8 @@ Highlight potential documentation gaps and provide standard literature correlati
         '"differentials" (array of objects with "suggestion", "rationale", and "critical" keys), '
         '"investigations" (array of objects with "suggestion", "rationale", and "critical" keys), '
         '"clinical_considerations" (array of objects with "suggestion", "rationale", and "critical" keys). '
-        "The 'critical' field is a boolean - set to true ONLY for potentially fatal or urgent misses. "
+        "The 'critical' field is a boolean - set it to true sparingly for items the clinician may wish to review promptly. "
+        "All content is educational and for the clinician's review; it is NOT diagnostic output. "
         "Example: "
         + json.dumps(
             {
@@ -356,21 +357,21 @@ Highlight potential documentation gaps and provide standard literature correlati
                 "summary": "...",
                 "differentials": [
                     {
-                        "suggestion": "Diagnosis name",
+                        "suggestion": "Condition to review",
                         "rationale": ["reason 1", "reason 2"],
                         "critical": False,
                     }
                 ],
                 "investigations": [
                     {
-                        "suggestion": "Test name",
+                        "suggestion": "Consideration for the clinician",
                         "rationale": ["reason 1"],
                         "critical": False,
                     }
                 ],
                 "clinical_considerations": [
                     {
-                        "suggestion": "Critical consideration",
+                        "suggestion": "Priority consideration",
                         "rationale": ["reason 1"],
                         "critical": True,
                     }
@@ -392,7 +393,7 @@ Highlight potential documentation gaps and provide standard literature correlati
     final_response = await client.chat(
         model=config["REASONING_MODEL"],
         messages=conversation,
-        format=ClinicalReasoning.model_json_schema(),
+        format=ChartInsights.model_json_schema(),
         options=reasoning_options,
     )
 
@@ -413,9 +414,9 @@ Highlight potential documentation gaps and provide standard literature correlati
 
     if citations:
         content_dict["citations"] = citations
-        logger.info(f"Clinical reasoning: Added {len(citations)} citation(s) to output")
+        logger.info(f"Chart insights: Added {len(citations)} citation(s) to output")
 
-    result = ClinicalReasoning.model_validate(content_dict)
+    result = ChartInsights.model_validate(content_dict)
 
     # Yield final result
     yield {"type": "result", "data": result.model_dump()}

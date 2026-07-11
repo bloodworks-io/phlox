@@ -19,7 +19,7 @@ export const EmptyState = ({ loading, status, onGenerate }) => {
                 loading={loading}
                 loadingText={status || "Generating"}
                 size="sm"
-                className="green-button"><FaAtom />Generate Clinical Reasoning
+                className="green-button"><FaAtom />Generate Chart Insights
                             </Button>
         </VStack>
     );
