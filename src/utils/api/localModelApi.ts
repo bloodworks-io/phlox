@@ -1,5 +1,5 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
-import { buildApiUrl } from "../helpers/apiConfig";
+import { buildApiUrl, isTauri } from "../helpers/apiConfig";
 
 export const localModelApi = {
   // Streaming download helper for SSE
@@ -110,8 +110,7 @@ export const localModelApi = {
   restartLlamaServer: async () =>
     handleApiRequest({
       apiCall: async () => {
-        // This calls the Tauri command directly
-        if (window.__TAURI__) {
+        if (isTauri()) {
           const { invoke } = await import("@tauri-apps/api/core");
           return await invoke("restart_llama");
         }
@@ -225,8 +224,7 @@ export const localModelApi = {
   restartWhisperServer: async () =>
     handleApiRequest({
       apiCall: async () => {
-        // This calls the Tauri command directly
-        if (window.__TAURI__) {
+        if (isTauri()) {
           const { invoke } = await import("@tauri-apps/api/core");
           return await invoke("restart_whisper");
         }
@@ -255,7 +253,7 @@ export const localModelApi = {
   restartEmbeddingServer: async () =>
     handleApiRequest({
       apiCall: async () => {
-        if (window.__TAURI__) {
+        if (isTauri()) {
           const { invoke } = await import("@tauri-apps/api/core");
           return await invoke("restart_embedding");
         }
