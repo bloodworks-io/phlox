@@ -2,6 +2,7 @@ import json
 from threading import Lock
 
 import sqlcipher3 as sqlite3
+from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.core.connection import get_db, is_db_initialized
 
 
@@ -159,15 +160,26 @@ class ConfigManager:
         self.db.commit()
         self._load_configs()
 
-    def reset_to_defaults(self):
-        """Resets prompts and options to their default values."""
+    def reset_options_to_defaults(self):
+        """Resets options to their default values. Preserves prompts and config."""
         self.refresh_db()
-        # Clear existing data for prompts and options
-        self.db.cursor.execute("DELETE FROM prompts")
         self.db.cursor.execute("DELETE FROM options")
         self.db.commit()
 
-        self._initialize_database()
+        # Re-seed default options from DEFAULT_PROMPTS
+        default_options = DEFAULT_PROMPTS["options"].get("general", {})
+        for category, options in DEFAULT_PROMPTS["options"].items():
+            if category != "reasoning":
+                for key, _value in options.items():
+                    actual_value = options.get(key, default_options.get(key))
+                    if actual_value is not None:
+                        self.db.cursor.execute(
+                            "INSERT OR REPLACE INTO options (category, key, value) VALUES (?, ?, ?)",
+                            (category, key, json.dumps(actual_value)),
+                        )
+
+        self.db.commit()
+        self._load_configs()
 
     def _initialize_database(self):
         """Initialize database if empty (now just a check)"""

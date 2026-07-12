@@ -177,8 +177,8 @@ async def get_whisper_models(
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
-@router.post("/reset-to-defaults")
-async def reset_to_defaults():
-    """Reset configuration settings to their default values."""
-    config_manager.reset_to_defaults()
-    return {"message": "All configurations reset to defaults"}
+@router.post("/options/reset-to-defaults")
+async def reset_options_to_defaults():
+    """Reset all model configuration options to their default values."""
+    config_manager.reset_options_to_defaults()
+    return {"message": "Options reset to defaults successfully"}

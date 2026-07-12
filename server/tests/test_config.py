@@ -75,8 +75,8 @@ def test_update_options():
     assert "updated" in data.get("message", "").lower()
 
 
-def test_reset_to_defaults():
-    response = client.post("/api/config/reset-to-defaults")
+def test_reset_options_to_defaults():
+    response = client.post("/api/config/options/reset-to-defaults")
     assert response.status_code == 200
     data = response.json()
     assert "reset" in data.get("message", "").lower()
