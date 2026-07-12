@@ -14,12 +14,12 @@ export function calculateLLMPerformance(
   paramsBillions,
   activeParamsBillions,
 ) {
-  // Tier multipliers (core count factor)
+  // Tier multipliers (based on M3 anchored memory bandwidth ratios)
   const tierMultipliers = {
     Base: 1.0,
-    Pro: 2.2,
-    Max: 5.0,
-    Ultra: 9.5,
+    Pro: 1.25,
+    Max: 3.3,
+    Ultra: 6.6,
   };
 
   // 20% improvement per generation
@@ -38,7 +38,7 @@ export function calculateLLMPerformance(
   const modelSizeFactor = Math.pow(sizeRatio, scalingExponent);
 
   const totalSpeedFactor = baseSpeedFactor / modelSizeFactor;
-  const estimatedTime = 60.0 * modelSizeFactor;
+  const estimatedTime = (45.0 * modelSizeFactor) / baseSpeedFactor;
 
   return {
     estimatedTime,
@@ -47,23 +47,6 @@ export function calculateLLMPerformance(
   };
 }
 
-/**
- * Parse Apple Silicon info from CPU brand string.
- *
- * @param {string} cpuBrand - CPU brand string (e.g., "Apple M3 Pro")
- * @returns {{generation: number, tier: string}|null}
- */
-export function parseAppleSilicon(cpuBrand) {
-  if (!cpuBrand) return null;
-
-  const match = cpuBrand.match(/Apple M(\d+)\s*(Pro|Max|Ultra)?/i);
-  if (!match) return null;
-
-  return {
-    generation: parseInt(match[1], 10),
-    tier: match[2] || "Base",
-  };
-}
 
 /**
  * Get smart LLM model recommendations based on system specifications.
