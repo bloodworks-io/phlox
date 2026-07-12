@@ -57,8 +57,6 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(log_plugin)
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
         .manage(CachedServiceStatus(std::sync::Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![

@@ -66,10 +66,5 @@
       "binaries/phlox-llama-server",
       "binaries/phlox-whisper-server"
     ]
-  },
-  "plugins": {
-    "shell": {
-      "open": true
-    }
   }
 }
