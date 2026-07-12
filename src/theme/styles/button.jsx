@@ -158,6 +158,11 @@ const buttonStyles = (props) => ({
             },
         },
     },
+    ".grey-button.grey-button-sm": {
+        height: "28px !important",
+        padding: "0 10px !important",
+        fontSize: "0.8rem !important",
+    },
 });
 
 // Pre-evaluate both modes and emit _light/_dark blocks ready for globalCss.

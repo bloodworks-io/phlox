@@ -24,7 +24,7 @@ const TemplateSelector = ({
                   : "outline"
               }
               onClick={() => onTemplateSelect(template)}
-              className="grey-button"
+              className="grey-button grey-button-sm"
               minWidth="auto"
               flexShrink={0}
             >
@@ -35,7 +35,7 @@ const TemplateSelector = ({
           size="sm"
           variant={selectedTemplate === "custom" ? "solid" : "outline"}
           onClick={() => onTemplateSelect("custom")}
-          className="grey-button"
+          className="grey-button grey-button-sm"
           minWidth="auto"
           flexShrink={0}
         >
