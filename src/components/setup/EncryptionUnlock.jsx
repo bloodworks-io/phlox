@@ -142,7 +142,7 @@ const EncryptionUnlock = ({ onComplete }) => {
         />
       )}
       <Box
-        className="anim-fade-slide-up panels-bg"
+        className="anim-fade-slide-up panels-bg splash-panel"
         p={{ base: 6, md: 8 }}
         borderRadius="2xl"
         boxShadow="2xl"
@@ -225,7 +225,9 @@ const EncryptionUnlock = ({ onComplete }) => {
                   onChange={(e) => setPassphrase(e.target.value)}
                   onKeyPress={handleKeyPress}
                   size="md"
+                  fontWeight="400"
                   autoFocus
+                  borderRadius="lg"
                   bg={"surface"}
                   border={`1px solid ${"border"}`}
                   color={"textPrimary"}

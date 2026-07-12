@@ -207,7 +207,7 @@ const SplashScreen = ({ onComplete }) => {
         />
       )}
       <Box
-        className="anim-fade-scale panels-bg"
+        className="anim-fade-scale panels-bg splash-panel"
         p={{ base: 6, md: 8 }}
         boxShadow="2xl"
         borderWidth="1px"

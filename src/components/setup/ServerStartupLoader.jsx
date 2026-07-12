@@ -138,7 +138,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           />
         )}
         <Box
-          className="anim-fade-slide-up panels-bg"
+          className="anim-fade-slide-up panels-bg splash-panel"
           p={8}
           borderRadius="2xl"
           boxShadow="2xl"
@@ -207,7 +207,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         />
       )}
       <Box
-        className="anim-fade-slide-up panels-bg"
+        className="anim-fade-slide-up panels-bg splash-panel"
         p={8}
         borderRadius="2xl"
         boxShadow="2xl"

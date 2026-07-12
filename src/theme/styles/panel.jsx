@@ -53,6 +53,9 @@ const panelStyles = (props) => ({
         fontSize: "1rem !important",
         fontWeight: "700",
     },
+    ".splash-panel": {
+        borderRadius: "2xl !important",
+    },
     ".summary-panels": {
         backgroundColor:
             props.colorMode === "light"
