@@ -149,9 +149,11 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
         # Get expected token
         expected_token = get_request_token()
         if not expected_token:
-            logger.warning(f"Auth bypassed - no request token set (path: {path})")
-            # Server not fully initialized yet, allow through
-            return await call_next(request)
+            logger.error(f"Auth fail-closed - no request token set (path: {path})")
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Service not initialized"},
+            )
 
         # Verify Authorization header
         auth_header = request.headers.get("Authorization", "")
