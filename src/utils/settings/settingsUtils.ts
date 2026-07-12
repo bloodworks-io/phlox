@@ -3,7 +3,6 @@ import { toaster } from "@/components/ui/toaster";
 import { settingsApi } from "../api/settingsApi";
 import { letterApi } from "../api/letterApi";
 import { settingsHelpers } from "../helpers/settingsHelpers";
-import { templateService } from "../templates/templateService";
 import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../helpers/apiHelpers";
 
@@ -196,44 +195,6 @@ export const settingsService = {
                     "Failed to set default letter template",
                 );
             }
-            throw error;
-        }
-    },
-
-    saveSettings: async ({ prompts, config, options, userSettings, toast }) => {
-        try {
-            await settingsApi.savePrompts(prompts);
-            await settingsApi.saveConfig(config);
-
-            for (const [category, categoryOptions] of Object.entries(options)) {
-                await settingsApi.saveOptions(category, categoryOptions);
-            }
-
-            const { disabled_tools: _ownedByToolsTab, ...userSettingsRest } =
-                userSettings;
-            await settingsApi.saveUserSettings({
-                ...userSettingsRest,
-                default_letter_template_id:
-                    userSettings.default_letter_template_id || null,
-            });
-
-            // Save default template selection
-            if (userSettings.default_template) {
-                await templateService.setDefaultTemplate(
-                    userSettings.default_template,
-                    toast,
-                );
-            }
-
-            settingsHelpers.showSuccessToast(
-                toast,
-                "All settings saved successfully",
-            );
-        } catch (error) {
-            settingsHelpers.showErrorToast(
-                toast,
-                "Failed to save some settings",
-            );
             throw error;
         }
     },
@@ -475,6 +436,27 @@ export const settingsService = {
             return updatedPrompts;
         } catch (error) {
             console.error("Error resetting prompt:", error);
+            throw error;
+        }
+    },
+
+    resetOptionsToDefaults: async (toast) => {
+        try {
+            await settingsApi.resetOptionsToDefaults();
+            if (toast) {
+                settingsHelpers.showSuccessToast(
+                    toast,
+                    "Advanced options reset to defaults",
+                );
+            }
+        } catch (error) {
+            console.error("Error resetting options:", error);
+            if (toast) {
+                settingsHelpers.showErrorToast(
+                    toast,
+                    "Failed to reset advanced options",
+                );
+            }
             throw error;
         }
     },

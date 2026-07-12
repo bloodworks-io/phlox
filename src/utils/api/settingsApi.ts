@@ -217,15 +217,17 @@ export const settingsApi = {
             errorMessage: "Failed to set default letter template",
         }),
 
-    resetToDefaults: async () =>
+    resetOptionsToDefaults: async () =>
         handleApiRequest({
             apiCall: async () => {
-                const url = await buildApiUrl("/api/reset-to-defaults");
+                const url = await buildApiUrl(
+                    "/api/config/options/reset-to-defaults",
+                );
                 return universalFetch(url, {
                     method: "POST",
                 });
             },
-            errorMessage: "Failed to restore defaults",
+            errorMessage: "Failed to reset options to defaults",
         }),
 
     clearDatabase: async () =>

@@ -34,6 +34,7 @@ const PromptSettingsPanel = ({
   handlePromptReset,
   options,
   handleOptionChange,
+  handleOptionsReset,
   _config,
 }) => {
   const [tabIndex, setTabIndex] = useState("0");
@@ -225,9 +226,16 @@ const PromptSettingsPanel = ({
 
               <Tabs.Content value="4" className="floating-main">
                 <VStack gap={6} align="stretch">
-                  <Text fontSize="md" fontWeight="bold">
-                    Model Configuration
-                  </Text>
+                  <Flex justify="space-between" align="center">
+                    <Text fontSize="md" fontWeight="bold">
+                      Model Configuration
+                    </Text>
+                    <ResetToDefaultButton
+                      onClick={() =>
+                        handleOptionsReset && handleOptionsReset()
+                      }
+                    />
+                  </Flex>
 
                   <Box>
                     <Text fontSize="sm" fontWeight="bold" mb={2}>

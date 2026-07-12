@@ -1,17 +1,21 @@
 // Page component for configuring application settings.
-import { Box, Text, VStack } from "@chakra-ui/react";
+import {
+    Box,
+    Text,
+    VStack,
+} from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
+import { settingsApi } from "../utils/api/settingsApi";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
-import SettingsActions from "../components/settings/SettingsActions";
 import { SPECIALTIES } from "../utils/constants";
 import { templateService } from "../utils/services/templateService";
 import { localModelApi } from "../utils/api/localModelApi";
 import { useDebounce } from "../utils/hooks/useDebounce";
+import { useAutosave } from "../utils/hooks/useAutosave";
 
 const Settings = () => {
     const [userSettings, setUserSettings] = useState({
@@ -47,13 +51,16 @@ const Settings = () => {
         whisper: false,
         llm: false,
     });
-    const [modelManagerRefreshKey, setModelManagerRefreshKey] = useState(0);
     const [collapseStates, setCollapseStates] = useState({
         userSettings: false,
         modelSettings: true,
         promptSettings: true,
         localModels: true,
     });
+
+    // Track default_template separately — it persists via a different endpoint
+    const lastDefaultTemplateRef = useRef(null);
+
     const fetchCoreSettings = useCallback(async () => {
         try {
             setCoreLoading(true);
@@ -102,6 +109,7 @@ const Settings = () => {
                 ...prev,
                 default_template: defaultTemplate.template_key,
             }));
+            lastDefaultTemplateRef.current = defaultTemplate.template_key;
         } catch (error) {
             console.error("Error loading settings:", error);
             toaster.create({
@@ -113,7 +121,7 @@ const Settings = () => {
         } finally {
             setCoreLoading(false);
         }
-    }, [toast]);
+    }, []);
 
     useEffect(() => {
         fetchCoreSettings();
@@ -251,37 +259,78 @@ const Settings = () => {
         }));
     };
 
-    const handleSaveChanges = async () => {
-        try {
-            await settingsService.saveSettings({
-                prompts,
-                config,
-                options,
-                userSettings,
-                toast,
-            });
-
-            // Fetch settings again after saving
-            await fetchCoreSettings();
-
-            toaster.create({
-                title: "Settings saved and refreshed",
-                type: "success",
-                duration: 3000,
-            });
-        } catch (error) {
-            toaster.create({
-                title: "Error saving settings",
-                description: error.message,
-                type: "error",
-                duration: 3000,
-            });
+    const saveUserSettingsFn = async (newSettings) => {
+        const { disabled_tools: _dt, default_template, ...rest } = newSettings;
+        await settingsApi.saveUserSettings({
+            ...rest,
+            default_letter_template_id:
+                newSettings.default_letter_template_id || null,
+        });
+        if (
+            default_template &&
+            default_template !== lastDefaultTemplateRef.current
+        ) {
+            await templateService.setDefaultTemplate(default_template);
+            lastDefaultTemplateRef.current = default_template;
         }
     };
 
-    const handleRestoreDefaults = async () => {
-        await settingsService.resetToDefaults(fetchCoreSettings, toast);
+    const savePromptsFn = async (newPrompts) => {
+        if (newPrompts) await settingsApi.savePrompts(newPrompts);
     };
+
+    const saveConfigFn = async (newConfig) => {
+        if (newConfig) await settingsApi.saveConfig(newConfig);
+    };
+
+    const saveOptionsFn = async (newOptions) => {
+        for (const [category, categoryOptions] of Object.entries(newOptions)) {
+            await settingsApi.saveOptions(category, categoryOptions);
+        }
+    };
+
+    const autosaveEnabled = !coreLoading;
+    const userAutosave = useAutosave(
+        userSettings,
+        saveUserSettingsFn,
+        800,
+        autosaveEnabled,
+    );
+    const promptsAutosave = useAutosave(
+        prompts,
+        savePromptsFn,
+        1200,
+        autosaveEnabled,
+    );
+    const configAutosave = useAutosave(
+        config,
+        saveConfigFn,
+        800,
+        autosaveEnabled,
+    );
+    const optionsAutosave = useAutosave(
+        options,
+        saveOptionsFn,
+        800,
+        autosaveEnabled,
+    );
+
+    const isDirty =
+        userAutosave.isDirty ||
+        promptsAutosave.isDirty ||
+        configAutosave.isDirty ||
+        optionsAutosave.isDirty;
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = "";
+            }
+        };
+        window.addEventListener("beforeunload", handler);
+        return () => window.removeEventListener("beforeunload", handler);
+    }, [isDirty]);
 
     const handlePromptReset = async (promptType) => {
         try {
@@ -294,10 +343,30 @@ const Settings = () => {
                 type: "success",
                 duration: 3000,
             });
-        } catch (error) {
+        } catch {
             toaster.create({
                 title: "Error",
                 description: "Failed to reset prompt",
+                type: "error",
+                duration: 3000,
+            });
+        }
+    };
+
+    const handleOptionsReset = async () => {
+        try {
+            await settingsService.resetOptionsToDefaults();
+            await settingsService.fetchOptions(setOptions);
+            toaster.create({
+                title: "Success",
+                description: "Advanced options reset to defaults",
+                type: "success",
+                duration: 3000,
+            });
+        } catch {
+            toaster.create({
+                title: "Error",
+                description: "Failed to reset advanced options",
                 type: "error",
                 duration: 3000,
             });
@@ -324,7 +393,6 @@ const Settings = () => {
         }));
     };
     const handleConfigChange = (key, value) => {
-        // Update local config state only
         setConfig((prev) => ({
             ...prev,
             [key]: value,
@@ -332,14 +400,17 @@ const Settings = () => {
     };
 
     const handleClearDatabase = async (newEmbeddingModel) => {
-        await settingsService.clearDatabase(newEmbeddingModel, config, toast);
-        // Refresh settings after database clear
+        await settingsService.clearDatabase(newEmbeddingModel, config, true);
         await fetchCoreSettings();
     };
 
     const handleReEmbed = async (newEmbeddingModel, onProgress = null) => {
-        await settingsService.reEmbed(newEmbeddingModel, config, toast, onProgress);
-        // Refresh settings after re-embed
+        await settingsService.reEmbed(
+            newEmbeddingModel,
+            config,
+            true,
+            onProgress,
+        );
         await fetchCoreSettings();
     };
 
@@ -376,7 +447,6 @@ const Settings = () => {
                     whisperModelsLoading={whisperModelsLoading}
                     llmModelsLoading={llmModelsLoading}
                     urlStatus={urlStatus}
-                    modelManagerRefreshKey={modelManagerRefreshKey}
                     handleClearDatabase={handleClearDatabase}
                     handleReEmbed={handleReEmbed}
                 />
@@ -389,12 +459,8 @@ const Settings = () => {
                     handlePromptReset={handlePromptReset}
                     options={options}
                     handleOptionChange={handleOptionChange}
+                    handleOptionsReset={handleOptionsReset}
                     config={config}
-                />
-
-                <SettingsActions
-                    onSave={handleSaveChanges}
-                    onRestoreDefaults={handleRestoreDefaults}
                 />
             </VStack>
         </Box>
