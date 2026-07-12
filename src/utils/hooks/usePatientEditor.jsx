@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { useTemplateSelection } from "../templates/templateContext";
 import { patientApi } from "../api/patientApi";
 import {

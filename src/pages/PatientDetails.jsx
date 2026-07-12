@@ -119,7 +119,7 @@ const PatientDetails = ({
         handleDocumentComplete,
         toggleDocumentField,
         resetDocumentState,
-    } = useDocumentExtraction({ patient, setPatient, setIsModified, toast });
+    } = useDocumentExtraction({ patient, setPatient, setIsModified });
 
     const requiredDemographicsMet = areRequiredDemographicsMet(patient);
 
@@ -311,7 +311,7 @@ const PatientDetails = ({
 
     useEffect(() => {
         toaster.remove();
-    }, [toast]);
+    }, []);
 
     const handleTranscriptionComplete = (data, triggerResize = false) => {
         const isRestoration = data.isRestoration === true;

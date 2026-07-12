@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDisclosure } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 
 export const useNewNoteFlow = ({ createNewPatient, guardedNavigate }) => {
     const [newNoteKey, setNewNoteKey] = useState(0);
@@ -23,7 +22,7 @@ export const useNewNoteFlow = ({ createNewPatient, guardedNavigate }) => {
     const openNewNoteModal = useCallback(() => {
         toaster.remove();
         onOpenNewNote();
-    }, [toast, onOpenNewNote]);
+    }, [onOpenNewNote]);
 
     const completeNewNote = useCallback(
         ({ cameFromSearch } = {}) => {

@@ -1,7 +1,6 @@
 // Custom hook for managing toast notifications.
 import { useCallback, useMemo } from "react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { DEFAULT_TOAST_CONFIG } from "../constants";
 
 export const useToastMessage = () => {
@@ -15,7 +14,7 @@ export const useToastMessage = () => {
                 ...DEFAULT_TOAST_CONFIG,
             });
         },
-        [toast],
+        [],
     );
 
     const showErrorToast = useCallback(
@@ -27,7 +26,7 @@ export const useToastMessage = () => {
                 ...DEFAULT_TOAST_CONFIG,
             });
         },
-        [toast],
+        [],
     );
 
     const showWarningToast = useCallback(
@@ -39,7 +38,7 @@ export const useToastMessage = () => {
                 ...DEFAULT_TOAST_CONFIG,
             });
         },
-        [toast],
+        [],
     );
 
     return useMemo(

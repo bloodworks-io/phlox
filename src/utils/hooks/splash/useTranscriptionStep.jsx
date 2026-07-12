@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTranscriptionStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
@@ -77,7 +76,7 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
         } finally {
             setIsFetchingWhisperModels(false);
         }
-    }, [debouncedWhisperBaseUrl, toast, inferenceMode]);
+    }, [debouncedWhisperBaseUrl, inferenceMode]);
 
     // Fetch local Whisper models
     const fetchLocalWhisperModels = useCallback(async () => {
@@ -105,7 +104,7 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
                 duration: 3000,
             });
         }
-    }, [inferenceMode, toast]);
+    }, [inferenceMode]);
 
     // Download local Whisper model
     const downloadWhisperModel = useCallback(
@@ -121,7 +120,6 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
                             setWhisperDownloadProgress(progress.percentage);
                         }
                     },
-                    toast,
                 });
 
                 // Refresh downloaded models after completion
@@ -132,7 +130,7 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
                 setWhisperDownloadProgress(0);
             }
         },
-        [fetchLocalWhisperModels, toast],
+        [fetchLocalWhisperModels],
     );
 
     // Check if a Whisper model is downloaded

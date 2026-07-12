@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
@@ -108,7 +107,7 @@ const EncryptionUnlock = ({ onComplete }) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [passphrase, attempts, onComplete, toast]);
+  }, [passphrase, attempts, onComplete]);
 
   const handleKeyPress = useCallback(
     (e) => {

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLLMStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
@@ -80,7 +79,7 @@ export const useLLMStep = (currentStep) => {
         } finally {
             setIsFetchingLLMModels(false);
         }
-    }, [debouncedLlmBaseUrl, debouncedLlmProvider, debouncedLlmApiKey, toast, inferenceMode]);
+    }, [debouncedLlmBaseUrl, debouncedLlmProvider, debouncedLlmApiKey, inferenceMode]);
 
     // Fetch local models
     const fetchLocalModels = useCallback(async () => {
@@ -114,7 +113,7 @@ export const useLLMStep = (currentStep) => {
                 duration: 3000,
             });
         }
-    }, [inferenceMode, primaryLocalModel, toast]);
+    }, [inferenceMode, primaryLocalModel]);
 
     // Download local model with progress
     const downloadLocalModel = useCallback(
@@ -130,7 +129,6 @@ export const useLLMStep = (currentStep) => {
                             setDownloadProgress(progress.percentage);
                         }
                     },
-                    toast,
                 });
 
                 // Refresh downloaded models after completion
@@ -141,7 +139,7 @@ export const useLLMStep = (currentStep) => {
                 setDownloadProgress(0);
             }
         },
-        [fetchLocalModels, toast],
+        [fetchLocalModels],
     );
 
     // Check if a local model is downloaded

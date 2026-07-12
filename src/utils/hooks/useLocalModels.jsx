@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { localModelApi } from "../api/localModelApi";
 import { invoke } from "@tauri-apps/api/core";
 import { downloadLlmModel as downloadLlmService, downloadWhisperModel as downloadWhisperService } from "../services/localModelService";
@@ -48,7 +47,7 @@ export const useLocalModels = () => {
       });
       return null;
     }
-  }, [toast]);
+  }, []);
 
   // Fetch downloaded local models
   const fetchLocalModels = useCallback(async () => {
@@ -117,7 +116,6 @@ export const useLocalModels = () => {
               },
             }));
           },
-          toast,
         });
 
         // Refresh models after successful download
@@ -128,7 +126,7 @@ export const useLocalModels = () => {
         setDownloadProgress((prev) => ({ ...prev, llm: null }));
       }
     },
-    [fetchLocalModels, toast],
+    [fetchLocalModels],
   );
 
   // Delete LLM model
@@ -153,7 +151,7 @@ export const useLocalModels = () => {
         });
       }
     },
-    [fetchLocalModels, toast],
+    [fetchLocalModels],
   );
 
   // ========== Whisper Model Functions ==========
@@ -225,7 +223,6 @@ export const useLocalModels = () => {
               },
             }));
           },
-          toast,
         });
 
         // Refresh models after successful download
@@ -236,7 +233,7 @@ export const useLocalModels = () => {
         setDownloadProgress((prev) => ({ ...prev, whisper: null }));
       }
     },
-    [fetchWhisperModels, toast],
+    [fetchWhisperModels],
   );
 
   // Delete Whisper model
@@ -261,7 +258,7 @@ export const useLocalModels = () => {
         });
       }
     },
-    [fetchWhisperModels, toast],
+    [fetchWhisperModels],
   );
 
   // Initialize data on mount

@@ -2,9 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Box } from "@chakra-ui/react";
 import { useColorMode } from "./components/ui/color-mode";
 import { useLocation } from "react-router";
-import { toaster } from "@/components/ui/toaster";
-
-const toast = toaster.create;
 
 import { TemplateProvider } from "./utils/templates/templateContext";
 import { ApiToastProvider } from "./utils/helpers/apiToastContext";
@@ -65,10 +62,10 @@ function AppContent({ setIsInitializing }) {
                     setIsFromOutstandingJobs,
                 });
             } catch (error) {
-                handleError(error, toast);
+                handleError(error);
             }
         },
-        [isFromOutstandingJobs, toast, setPatient, setSelectedDate],
+        [isFromOutstandingJobs, setPatient, setSelectedDate],
     );
 
     useEffect(() => {

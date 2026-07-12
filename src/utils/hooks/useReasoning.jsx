@@ -48,7 +48,7 @@ export const useReasoning = (options = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [noteId, toast, onReasoningGenerated]);
+    }, [noteId, onReasoningGenerated]);
 
     const openReasoning = useCallback(() => {
         setIsReasoningOpen(true);

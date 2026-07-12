@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon, Alert } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import {
   encryptionApi,
@@ -116,7 +115,7 @@ const EncryptionSetup = ({ onComplete }) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [passphrase, confirmPassphrase, strength, isValid, onComplete, toast]);
+  }, [passphrase, confirmPassphrase, isValid, onComplete]);
 
   const getStrengthColor = () => {
     if (strength.score <= 1) return "red";

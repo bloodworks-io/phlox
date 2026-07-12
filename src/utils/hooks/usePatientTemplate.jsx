@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import {
     useTemplateSelection,
     useTemplate,
@@ -45,7 +44,7 @@ export const usePatientTemplate = ({
                 duration: 5000,
             });
         }
-    }, [templateError, toast]);
+    }, [templateError]);
 
     // Handle template consistency for already saved (historical) encounters
     useEffect(() => {
@@ -104,7 +103,6 @@ export const usePatientTemplate = ({
         patient,
         selectTemplate,
         setPatient,
-        toast,
     ]);
 
     // Handle template data for historical patients

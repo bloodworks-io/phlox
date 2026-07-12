@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 
 export const useDocumentExtraction = ({
     patient,
     setPatient,
     setIsModified,
-    toast,
 }) => {
     const [originalContent, setOriginalContent] = useState({});
     const [replacedFields, setReplacedFields] = useState({});

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLettersStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
@@ -42,7 +41,6 @@ export const useLettersStep = (currentStep) => {
     currentStep,
     availableLetterTemplates.length,
     selectedLetterTemplate,
-    toast,
   ]);
 
   useEffect(() => {
