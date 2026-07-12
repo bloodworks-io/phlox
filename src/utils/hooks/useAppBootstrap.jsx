@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Box } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { invoke } from "@tauri-apps/api/core";
 import SplashScreen from "../../components/common/SplashScreen";
@@ -12,11 +13,13 @@ import { encryptionApi } from "../../utils/api/encryptionApi";
 
 export const useAppBootstrap = () => {
     const [showSplashScreen, setShowSplashScreen] = useState(undefined);
-    const [isLoadingSplashCheck, setIsLoadingSplashCheck] = useState(true);
+    const [, setIsLoadingSplashCheck] = useState(true);
     const [, setEncryptionStatus] = useState(null);
     const [showEncryptionSetup, setShowEncryptionSetup] = useState(false);
     const [showEncryptionUnlock, setShowEncryptionUnlock] = useState(false);
     const [, setIsLoadingEncryptionCheck] = useState(true);
+    const [isCheckingEncryptionStatus, setIsCheckingEncryptionStatus] =
+        useState(isTauri());
     const [showServerStartupLoader, setShowServerStartupLoader] =
         useState(false);
     const [isInGracePeriod, setIsInGracePeriod] = useState(true);
@@ -103,6 +106,7 @@ export const useAppBootstrap = () => {
     useEffect(() => {
         if (!isTauri()) {
             setIsLoadingEncryptionCheck(false);
+            setIsCheckingEncryptionStatus(false);
             return;
         }
 
@@ -128,6 +132,7 @@ export const useAppBootstrap = () => {
                 console.error("Error checking encryption status:", error);
             } finally {
                 setIsLoadingEncryptionCheck(false);
+                setIsCheckingEncryptionStatus(false);
             }
         };
 
@@ -180,8 +185,8 @@ export const useAppBootstrap = () => {
     };
 
     let gate = null;
-    if (isLoadingSplashCheck) {
-        gate = null;
+    if (isCheckingEncryptionStatus) {
+        gate = <Box className="splash-bg" w="100vw" h="100dvh" />;
     } else if (showEncryptionSetup) {
         gate = <EncryptionSetup onComplete={handleEncryptionSetupComplete} />;
     } else if (showEncryptionUnlock) {

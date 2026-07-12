@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Box } from "@chakra-ui/react";
 import { useColorMode } from "./components/ui/color-mode";
 import { useLocation } from "react-router";
 import { toaster } from "@/components/ui/toaster";
@@ -91,6 +92,10 @@ function AppContent({ setIsInitializing }) {
 
     if (bootstrap.gate) {
         return bootstrap.gate;
+    }
+
+    if (bootstrap.isInitializing) {
+        return <Box className="splash-bg" w="100vw" h="100dvh" />;
     }
 
     return (
