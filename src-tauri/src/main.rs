@@ -94,14 +94,18 @@ pub fn run() {
                 use cocoa::base::{id, nil};
 
                 if let Some(window) = app.get_webview_window("main") {
+                    let theme = window.theme().unwrap_or(tauri::Theme::Light);
+                    let (r, g, b) = match theme {
+                        tauri::Theme::Dark => (30.0, 32.0, 48.0),
+                        _ => (230.0, 233.0, 239.0),
+                    };
                     let ns_window = window.ns_window().unwrap() as id;
                     unsafe {
-                        // Convert #1e2030 to RGB: (30, 32, 48)
                         let bg_color = NSColor::colorWithRed_green_blue_alpha_(
                             nil,
-                            30.0 / 255.0,
-                            32.0 / 255.0,
-                            48.0 / 255.0,
+                            r / 255.0,
+                            g / 255.0,
+                            b / 255.0,
                             1.0,
                         );
                         ns_window.setBackgroundColor_(bg_color);

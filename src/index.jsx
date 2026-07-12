@@ -18,15 +18,14 @@ import { ServerConnectionCheck } from "./components/common/ServerConnectionCheck
 
 (function () {
   try {
-    const stored = localStorage.getItem("theme");
-    const mode =
-      stored ||
-      (window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light");
+
+    localStorage.removeItem("theme");
+    const mode = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+    document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(mode);
-    if (!stored) localStorage.setItem("theme", mode);
-  } catch (e) {
+  } catch {
     // ignore
   }
 })();
