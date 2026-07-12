@@ -6,7 +6,6 @@ import React, {
   useMemo,
 } from "react";
 import { useApiToast } from "../helpers/apiToastContext";
-import { toaster } from "@/components/ui/toaster";
 import { templateApi } from "../api/templateApi";
 import { templateService } from "./templateService";
 import { useAppInit } from "../context/appInit";
@@ -116,7 +115,7 @@ export const TemplateProvider = ({ children }) => {
       dispatch({ type: "SET_TEMPLATES", payload: templatesData });
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });
-      toaster.create({
+      toast({
         title: "Error",
         description: "Failed to load templates",
         type: "error",
@@ -137,7 +136,7 @@ export const TemplateProvider = ({ children }) => {
       return defaultTemplateData;
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });
-      toaster.create({
+      toast({
         title: "Error",
         description: "Failed to load default template",
         type: "error",
@@ -180,7 +179,7 @@ export const TemplateProvider = ({ children }) => {
         dispatch({ type: "FINISH_LOADING" });
         dispatch({ type: "SET_VISUAL_LOADING", payload: false });
 
-        toaster.create({
+        toast({
           title: "Error",
           description: "Failed to load template",
           type: "error",
@@ -219,7 +218,7 @@ export const TemplateProvider = ({ children }) => {
         dispatch({ type: "SET_ERROR", payload: error.message });
         // Only show toast if we're not initializing
         if (!isInitializing) {
-          toaster.create({
+          toast({
             title: "Error",
             description: "Failed to initialize templates",
             type: "error",
@@ -249,7 +248,7 @@ export const TemplateProvider = ({ children }) => {
       }
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });
-      toaster.create({
+      toast({
         title: "Error",
         description: "Failed to refresh templates",
         type: "error",
@@ -261,7 +260,7 @@ export const TemplateProvider = ({ children }) => {
   const deleteTemplate = useCallback(
     async (templateKey) => {
       if (templateService.isDefaultTemplate(templateKey)) {
-        toaster.create({
+        toast({
           title: "Error",
           description: "Cannot delete default templates",
           type: "error",
@@ -278,7 +277,7 @@ export const TemplateProvider = ({ children }) => {
         // Refresh templates after deletion
         await refreshTemplates();
 
-        toaster.create({
+        toast({
           title: "Success",
           description: "Template deleted successfully",
           type: "success",
@@ -287,7 +286,7 @@ export const TemplateProvider = ({ children }) => {
         return true;
       } catch (error) {
         dispatch({ type: "SET_ERROR", payload: error.message });
-        toaster.create({
+        toast({
           title: "Error",
           description: error.message || "Failed to delete template",
           type: "error",
