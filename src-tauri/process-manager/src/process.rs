@@ -730,6 +730,7 @@ pub fn start_server() -> Result<ManagedProcess, String> {
     cmd.stdin(Stdio::piped());
     // Capture stdout to read signals
     cmd.stdout(Stdio::piped());
+    cmd.env("RATE_LIMIT_ENABLED", "true");
 
     #[cfg(unix)]
     {

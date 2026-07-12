@@ -10,6 +10,8 @@ IS_TESTING = os.getenv("TESTING", "false").lower() == "true"
 IS_DOCKER = Path("/.dockerenv").exists() or os.getenv("DOCKER_CONTAINER") == "true"
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "false").lower() == "true"
 
+RATE_LIMIT_DESKTOP_MULTIPLIER = int(os.getenv("RATE_LIMIT_DESKTOP_MULTIPLIER", "3"))
+
 # Proxy auth configuration (for reverse proxy deployments)
 PROXY_AUTH_ENABLED = os.getenv("PROXY_AUTH_ENABLED", "false").lower() == "true"
 PROXY_AUTH_USER_HEADER = os.getenv("PROXY_AUTH_USER_HEADER", "X-Forwarded-User")

@@ -232,6 +232,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     # Endpoint-specific limits: (requests_per_minute, burst_multiplier)
     # Burst multiplier allows 2x rate in first 10 seconds of window
+    # Tauri mode multiplies rate_limit by RATE_LIMIT_DESKTOP_MULTIPLIER
     RATE_LIMITS = {
         "/api/transcribe": (10, 2),
         "/api/chat": (30, 2),
@@ -256,18 +257,28 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _get_limit_for_path(self, path: str) -> tuple[int, int]:
         """Get rate limit for a given path."""
+        from server.constants import IS_DOCKER, RATE_LIMIT_DESKTOP_MULTIPLIER
+
         # Check for patient list vs detail
         if path == "/api/note" or path == "/api/note/":
-            return self.PATIENT_LIST_LIMIT
-        if path.startswith("/api/note/"):
-            return self.PATIENT_DETAIL_LIMIT
+            rate, burst = self.PATIENT_LIST_LIMIT
+        elif path.startswith("/api/note/"):
+            rate, burst = self.PATIENT_DETAIL_LIMIT
+        else:
+            # Check other endpoints
+            matched = False
+            for prefix, limit in self.RATE_LIMITS.items():
+                if path.startswith(prefix):
+                    rate, burst = limit
+                    matched = True
+                    break
+            if not matched:
+                rate, burst = self.DEFAULT_LIMIT
 
-        # Check other endpoints
-        for prefix, limit in self.RATE_LIMITS.items():
-            if path.startswith(prefix):
-                return limit
+        if not IS_DOCKER:
+            rate = rate * RATE_LIMIT_DESKTOP_MULTIPLIER
 
-        return self.DEFAULT_LIMIT
+        return rate, burst
 
     def _get_endpoint_key(self, path: str) -> str:
         """Get endpoint key for rate limiting (groups related paths)."""
