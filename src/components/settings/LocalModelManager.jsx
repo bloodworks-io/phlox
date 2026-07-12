@@ -233,9 +233,12 @@ const LocalModelManager = ({ className }) => {
       .catch(() => {});
   }, []);
 
-  const smartRecommendations = systemSpecs && availableModels.length > 0
-    ? getSmartRecommendations(availableModels, systemSpecs)
-    : [];
+  const smartRecommendations = useMemo(
+    () => systemSpecs && availableModels.length > 0
+      ? getSmartRecommendations(availableModels, systemSpecs)
+      : [],
+    [systemSpecs, availableModels],
+  );
 
   const firstRecommendedIndex = useMemo(
     () => smartRecommendations.findIndex(
