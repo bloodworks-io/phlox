@@ -609,7 +609,6 @@ const PatientDetails = ({
                 <Summary
                     ref={summaryRef}
                     isSummaryCollapsed={summary.isCollapsed}
-                    toggleSummaryCollapse={summary.toggle}
                     patient={patient}
                     setPatient={setPatient}
                     handleGenerateLetterClick={handleGenerateLetterClick}
@@ -618,7 +617,6 @@ const PatientDetails = ({
                     saveLoading={saveLoading}
                     wrapUpLoading={wrapUpLoading}
                     setIsModified={setIsSummaryModified}
-                    setParentIsModified={setIsSummaryModified}
                     template={currentTemplate}
                     selectTemplate={selectTemplate}
                     isNewPatient={isNewPatient}

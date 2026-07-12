@@ -23,12 +23,10 @@ const Summary = forwardRef(
   (
     {
       isSummaryCollapsed,
-      _toggleSummaryCollapse,
       patient,
       setPatient,
       handleGenerateLetterClick,
       handleSavePatientData,
-      _setParentIsModified,
       saveLoading,
       onWrapUp,
       wrapUpLoading,

@@ -42,7 +42,6 @@ const Settings = () => {
     const [llmModelsLoading, setLlmModelsLoading] = useState(false);
     const [whisperModelsLoading, setWhisperModelsLoading] = useState(false);
     const [modelOptions, setModelOptions] = useState([]);
-    const [selectedLocalModel, setSelectedLocalModel] = useState("");
     const [whisperModelOptions, setWhisperModelOptions] = useState([]);
     const [whisperModelListAvailable, setWhisperModelListAvailable] =
         useState(false);
@@ -236,12 +235,6 @@ const Settings = () => {
                     (m) => m.name || m.filename,
                 );
                 setModelOptions(modelNames);
-                const selectedLocal = localModels.models.find(
-                    (m) => m.is_selected,
-                );
-                setSelectedLocalModel(
-                    selectedLocal?.name || selectedLocal?.filename || "",
-                );
             } catch (error) {
                 console.error("Error loading local models:", error);
                 setModelOptions([]);
@@ -400,11 +393,6 @@ const Settings = () => {
         }));
     };
 
-    const handleClearDatabase = async (newEmbeddingModel) => {
-        await settingsService.clearDatabase(newEmbeddingModel, config, true);
-        await fetchCoreSettings();
-    };
-
     const handleReEmbed = async (newEmbeddingModel, onProgress = null) => {
         await settingsService.reEmbed(
             newEmbeddingModel,
@@ -441,14 +429,12 @@ const Settings = () => {
                     config={config}
                     handleConfigChange={handleConfigChange}
                     modelOptions={modelOptions}
-                    selectedLocalModel={selectedLocalModel}
                     embeddingModelOptions={modelOptions}
                     whisperModelOptions={whisperModelOptions}
                     whisperModelListAvailable={whisperModelListAvailable}
                     whisperModelsLoading={whisperModelsLoading}
                     llmModelsLoading={llmModelsLoading}
                     urlStatus={urlStatus}
-                    handleClearDatabase={handleClearDatabase}
                     handleReEmbed={handleReEmbed}
                 />
 
