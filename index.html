@@ -10,34 +10,11 @@
         />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400..700&display=swap"
-            rel="stylesheet"
-        />
         <title>Phlox</title>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
-        <script>
-
-            (function () {
-                try {
-                    var stored = localStorage.getItem("theme");
-                    var mode =
-                        stored ||
-                        (window.matchMedia("(prefers-color-scheme: dark)")
-                            .matches
-                            ? "dark"
-                            : "light");
-                    document.documentElement.classList.add(mode);
-                    if (!stored) localStorage.setItem("theme", mode);
-                } catch (e) {}
-            })();
-        </script>
         <script type="module" src="/src/index.jsx"></script>
     </body>
 </html>
