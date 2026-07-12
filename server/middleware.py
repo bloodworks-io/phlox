@@ -56,7 +56,7 @@ def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
     # Static assets (check /assets/ prefix and common extensions)
     if path.startswith("/assets/"):
         return True
-    if any(path.endswith(ext) for ext in STATIC_EXTENSIONS):
+    if not path.startswith("/api/") and any(path.endswith(ext) for ext in STATIC_EXTENSIONS):
         return True
 
     # React routes (SPA pages)
