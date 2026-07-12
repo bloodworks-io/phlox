@@ -1,6 +1,6 @@
 use crate::protocol::{ServiceStatus, StatusData};
 use std::env;
-use std::fs::{self, File};
+use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -13,9 +13,6 @@ use std::time::Duration;
 pub const LLAMA_PORT: u16 = 8082;
 pub const WHISPER_PORT: u16 = 8081;
 pub const EMBEDDING_PORT: u16 = 8083;
-
-/// Default server port (will be overridden by server's actual port)
-pub const DEFAULT_SERVER_PORT: u16 = 5000;
 
 /// Ports allocated by the Python server
 #[derive(Debug, Clone)]
@@ -207,18 +204,10 @@ pub fn find_embedding_model() -> Option<PathBuf> {
 pub struct ManagedProcess {
     pub child: Child,
     pub port: u16,
-    pub service_type: ServiceType,
     /// Handles for background threads draining stdout/stderr (for server process)
     pub drain_handles: Option<(JoinHandle<()>, JoinHandle<()>)>,
     /// Flag to signal drain threads to stop
     pub drain_shutdown: Option<Arc<AtomicBool>>,
-}
-
-pub enum ServiceType {
-    Llama,
-    Whisper,
-    Server,
-    Embedding,
 }
 
 /// Start the llama server
@@ -294,7 +283,6 @@ pub fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
     Ok(ManagedProcess {
         child,
         port: actual_port,
-        service_type: ServiceType::Llama,
         drain_handles: None,
         drain_shutdown: None,
     })
@@ -349,7 +337,6 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
     Ok(ManagedProcess {
         child,
         port: actual_port,
-        service_type: ServiceType::Whisper,
         drain_handles: None,
         drain_shutdown: None,
     })
@@ -403,7 +390,6 @@ pub fn start_embedding(port: Option<u16>) -> Result<ManagedProcess, String> {
     Ok(ManagedProcess {
         child,
         port: actual_port,
-        service_type: ServiceType::Embedding,
         drain_handles: None,
         drain_shutdown: None,
     })
@@ -758,7 +744,6 @@ pub fn start_server() -> Result<ManagedProcess, String> {
             Ok(ManagedProcess {
                 child,
                 port: 0, // Port not known until after passphrase
-                service_type: ServiceType::Server,
                 drain_handles: None,
                 drain_shutdown: None,
             })
