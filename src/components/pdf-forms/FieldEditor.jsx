@@ -121,8 +121,13 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
         size="sm"
         onCheckedChange={({ checked }) => onChange({ ...field, required: checked })}
         checked={field.required}
-      ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>Required field
-                </Checkbox.Label></Checkbox.Root>
+      >
+        <Checkbox.HiddenInput />
+        <Checkbox.Control>
+          <Checkbox.Indicator />
+        </Checkbox.Control>
+        <Checkbox.Label>Required field</Checkbox.Label>
+      </Checkbox.Root>
       <Box pt="2" borderTop="1px solid" borderColor="border">
         <Text fontSize="xs" color="overlay0">
           Position: ({field.x.toFixed(1)}, {field.y.toFixed(1)}) · Size:{" "}

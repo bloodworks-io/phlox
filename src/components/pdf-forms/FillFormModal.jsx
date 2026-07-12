@@ -99,9 +99,15 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
                             handleChange(field.name, e.checked ? "true" : "")
                           }
                           checked={values[field.name] === "true"}
-                        ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
-                          {field.description || "Check to enable"}
-                        </Checkbox.Label></Checkbox.Root>
+                        >
+                          <Checkbox.HiddenInput />
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                          <Checkbox.Label>
+                            {field.description || "Check to enable"}
+                          </Checkbox.Label>
+                        </Checkbox.Root>
                       ) : (
                         <Input
                           size="sm"

@@ -42,6 +42,8 @@ const FormTemplatesPanel = ({
         borderRadius="sm"
         className="panels-bg"
         p="2"
+        maxH="calc(100vh - 200px)"
+        overflowY="auto"
       >
         <Flex justify="space-between" align="center" mb="2">
           <Text as="h4" fontSize="sm">
@@ -58,6 +60,7 @@ const FormTemplatesPanel = ({
           onSelect={onSelectTemplate}
           onDelete={onDeleteTemplate}
           onReplace={onReplaceTemplate}
+          selectedTemplateId={selectedTemplate?.id}
         />
       </Box>
       {/* Form builder canvas */}
