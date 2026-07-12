@@ -34,8 +34,20 @@ thiserror = "2"
 
 
 [target."cfg(target_os = \"macos\")".dependencies]
-cocoa = "0.26"
-objc = "0.2"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3.2", features = [
+    "NSWindow",
+    "NSView",
+    "NSResponder",
+    "NSColor",
+    "NSButton",
+    "NSControl",
+    "objc2-core-foundation",
+] }
+objc2-foundation = { version = "0.3.2", features = [
+    "NSGeometry",
+    "objc2-core-foundation",
+] }
 
 [target."cfg(unix)".dependencies]
 libc = "0.2"

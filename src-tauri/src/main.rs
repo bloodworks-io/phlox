@@ -11,7 +11,7 @@ use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{
     change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
-    get_request_token, get_service_status, get_system_specs, has_database, has_encryption_setup,
+    get_service_status, get_system_specs, has_database, has_encryption_setup,
     has_keychain_entry, restart_embedding, restart_llama, restart_whisper, send_passphrase_command,
     setup_encryption, start_embedding_service, start_llama_service, start_server_command,
     start_whisper_service, unlock_with_passphrase, CachedServiceStatus,
@@ -21,24 +21,19 @@ use process::{cleanup_stale_files, kill_all_processes};
 
 /// Position the traffic light buttons (close, minimize, maximize) with custom offset
 #[cfg(target_os = "macos")]
-fn position_traffic_light_buttons(ns_window: cocoa::base::id) {
-    use cocoa::appkit::{NSWindow, NSWindowButton};
-    use cocoa::base::{id, nil};
-    use cocoa::foundation::{NSPoint, NSRect};
-    use objc::{msg_send, sel, sel_impl};
+fn position_traffic_light_buttons(ns_window: &objc2_app_kit::NSWindow) {
+    use objc2_app_kit::NSWindowButton;
+    use objc2_foundation::{NSPoint, NSRect};
 
-    unsafe {
-        let close_button = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
-        if close_button != nil {
-            let superview: id = msg_send![close_button, superview];
-            if superview != nil {
-                let frame: NSRect = msg_send![superview, frame];
-                let new_frame = NSRect::new(
-                    NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
-                    frame.size,
-                );
-                let _: () = msg_send![superview, setFrame: new_frame];
-            }
+    if let Some(close_button) = ns_window.standardWindowButton(NSWindowButton::CloseButton) {
+        // superview() is unsafe (not retained internally)
+        if let Some(superview) = unsafe { close_button.superview() } {
+            let frame = superview.frame();
+            let new_frame = NSRect::new(
+                NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
+                frame.size,
+            );
+            superview.setFrame(new_frame);
         }
     }
 }
@@ -90,8 +85,7 @@ pub fn run() {
             // Set transparent titlebar with custom dark background color on macOS
             #[cfg(target_os = "macos")]
             {
-                use cocoa::appkit::{NSColor, NSWindow};
-                use cocoa::base::{id, nil};
+                use objc2_app_kit::{NSColor, NSWindow, NSWindowTitleVisibility};
 
                 if let Some(window) = app.get_webview_window("main") {
                     let theme = window.theme().unwrap_or(tauri::Theme::Light);
@@ -99,24 +93,21 @@ pub fn run() {
                         tauri::Theme::Dark => (30.0, 32.0, 48.0),
                         _ => (230.0, 233.0, 239.0),
                     };
-                    let ns_window = window.ns_window().unwrap() as id;
-                    unsafe {
-                        let bg_color = NSColor::colorWithRed_green_blue_alpha_(
-                            nil,
-                            r / 255.0,
-                            g / 255.0,
-                            b / 255.0,
-                            1.0,
-                        );
-                        ns_window.setBackgroundColor_(bg_color);
-                        // Hide the title text while keeping the title bar buttons visible
-                        ns_window.setTitleVisibility_(
-                            cocoa::appkit::NSWindowTitleVisibility::NSWindowTitleHidden,
-                        );
+                    let ns_window_ptr = window.ns_window().unwrap();
+                    let ns_window: &NSWindow =
+                        unsafe { &*(ns_window_ptr as *mut NSWindow) };
+                    let bg_color = NSColor::colorWithRed_green_blue_alpha(
+                        r / 255.0,
+                        g / 255.0,
+                        b / 255.0,
+                        1.0,
+                    );
+                    ns_window.setBackgroundColor(Some(&bg_color));
+                    // Hide the title text while keeping the title bar buttons visible
+                    ns_window.setTitleVisibility(NSWindowTitleVisibility::Hidden);
 
-                        // Position traffic light buttons
-                        position_traffic_light_buttons(ns_window);
-                    }
+                    // Position traffic light buttons
+                    position_traffic_light_buttons(ns_window);
                 }
             }
 
@@ -158,8 +149,10 @@ pub fn run() {
             // Re-apply traffic light button positioning on resize
             #[cfg(target_os = "macos")]
             if let tauri::WindowEvent::Resized { .. } = event {
-                if let Ok(ns_window) = window.ns_window() {
-                    position_traffic_light_buttons(ns_window as cocoa::base::id);
+                if let Ok(ns_window_ptr) = window.ns_window() {
+                    let ns_window: &objc2_app_kit::NSWindow =
+                        unsafe { &*(ns_window_ptr as *mut objc2_app_kit::NSWindow) };
+                    position_traffic_light_buttons(ns_window);
                 }
             }
 
@@ -181,8 +174,6 @@ pub fn run() {
 
 /// Launch the process manager as a child process
 fn launch_process_manager() -> Result<(), Box<dyn std::error::Error>> {
-    use std::process::Command;
-
     let current_exe = std::env::current_exe()?;
     let exe_dir = current_exe
         .parent()
