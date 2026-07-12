@@ -15,7 +15,6 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-phlox-pm = { path = "process-manager" }
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-http = "2"
 serde = { version = "1", features = ["derive"] }
