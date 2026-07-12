@@ -248,7 +248,7 @@ def start_server_for_desktop():
     # Generate cryptographically secure request token
     token = secrets.token_hex(32)  # 64 character hex string (256 bits)
     set_request_token(token)
-    logger.info(token)
+    logger.info("Request token generated (256 bits)")
 
     # Signal that we're waiting for passphrase
     print("WAITING_FOR_PASSPHRASE", flush=True)
