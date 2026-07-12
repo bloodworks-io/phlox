@@ -118,9 +118,33 @@ pub fn get_embedding_port() -> String {
     get_cached_port("embedding")
 }
 
-/// Get the request token for API authentication
+/// Get the request token for API authentication.
 #[tauri::command]
-pub fn get_request_token() -> String {
+pub fn get_request_token(webview: tauri::WebviewWindow) -> String {
+    // Reject calls from unexpected webviews
+    if webview.label() != "main" {
+        log::warn!(
+            "get_request_token rejected: caller webview='{}'",
+            webview.label()
+        );
+        return String::new();
+    }
+
+    // Reject calls from unexpected origins
+    if let Ok(url) = webview.url() {
+        let origin = url.origin().ascii_serialization();
+        const ALLOWED_ORIGINS: &[&str] = &[
+            "tauri://localhost",
+            "https://tauri.localhost",
+            "http://tauri.localhost",
+            "http://localhost:3000",
+        ];
+        if !ALLOWED_ORIGINS.contains(&origin.as_str()) {
+            log::warn!("get_request_token rejected: origin='{}'", origin);
+            return String::new();
+        }
+    }
+
     if let Some(status) = refresh_cached_status() {
         if let Some(token) = status.request_token {
             return token;
