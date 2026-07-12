@@ -123,28 +123,25 @@ pub struct ServiceStatusData {
 #[derive(Debug, Deserialize, Clone)]
 pub struct ServiceInfo {
     pub running: bool,
-    pub pid: u32,
+    #[serde(rename = "pid")]
+    pub _pid: u32,
     pub port: u16,
 }
 
 /// Error type for PM client operations
 #[derive(Debug)]
 pub enum ClientError {
-    NotConnected,
     ConnectionFailed(String),
     RequestFailed(String),
     InvalidResponse(String),
-    ProcessManagerDead,
 }
 
 impl std::fmt::Display for ClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ClientError::NotConnected => write!(f, "Not connected to process manager"),
             ClientError::ConnectionFailed(e) => write!(f, "Failed to connect: {}", e),
             ClientError::RequestFailed(e) => write!(f, "Request failed: {}", e),
             ClientError::InvalidResponse(e) => write!(f, "Invalid response: {}", e),
-            ClientError::ProcessManagerDead => write!(f, "Process manager is not responding"),
         }
     }
 }
@@ -312,17 +309,6 @@ impl ProcessManagerClient {
     pub fn shutdown(&self) -> Result<(), ClientError> {
         match self.send_request(&ClientRequest::Shutdown)? {
             ClientResponse::Ok(OkData::Shutdown) => Ok(()),
-            ClientResponse::Error { message } => Err(ClientError::RequestFailed(message)),
-            _ => Err(ClientError::InvalidResponse(
-                "Unexpected response".to_string(),
-            )),
-        }
-    }
-
-    /// Ping the process manager
-    pub fn ping(&self) -> Result<(), ClientError> {
-        match self.send_request(&ClientRequest::Ping)? {
-            ClientResponse::Ok(OkData::Pong) => Ok(()),
             ClientResponse::Error { message } => Err(ClientError::RequestFailed(message)),
             _ => Err(ClientError::InvalidResponse(
                 "Unexpected response".to_string(),

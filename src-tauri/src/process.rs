@@ -7,26 +7,6 @@ fn pid_file_for_service(service: &str) -> Option<PathBuf> {
     dirs::data_dir().map(|data_dir| data_dir.join("phlox").join(format!("{}.pid", service)))
 }
 
-/// Write a PID file after successful process spawn
-pub fn write_pid_file(service: &str, pid: u32) {
-    if let Some(pid_file) = pid_file_for_service(service) {
-        if let Some(data_dir) = dirs::data_dir() {
-            let phlox_dir = data_dir.join("phlox");
-            std::fs::create_dir_all(&phlox_dir).ok();
-        }
-        if let Err(e) = std::fs::write(&pid_file, pid.to_string()) {
-            log::warn!("Failed to write PID file for {}: {}", service, e);
-        } else {
-            log::debug!(
-                "Wrote PID file for {}: PID {} at {:?}",
-                service,
-                pid,
-                pid_file
-            );
-        }
-    }
-}
-
 /// Check if a specific PID is alive
 #[cfg(unix)]
 fn is_process_alive(pid: u32) -> bool {
