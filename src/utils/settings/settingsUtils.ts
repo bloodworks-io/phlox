@@ -251,7 +251,7 @@ export const settingsService = {
         }
     },
 
-    resetLetterTemplates: async (toast) => {
+    resetLetterTemplates: async () => {
         try {
             await letterApi.resetLetterTemplates();
             toaster.create({

@@ -21,7 +21,7 @@ import {
     WrapItem,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { FaUser, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
 import {
     FaFileAlt,
@@ -46,7 +46,6 @@ const PatientTable = ({
     groupByDate = false,
     summaryOnly = false,
 }) => {
-    const [, setLoadingStates] = useState({});
     const pendingJobsUpdates = useRef(new Map());
 
     useEffect(() => {

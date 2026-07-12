@@ -7,10 +7,9 @@ import { toaster } from "@/components/ui/toaster";
  * @param {Object} options - Configuration options
  * @param {Function} options.onProgress - Callback for progress updates: (progress) => void
  * @param {Function} options.onStart - Callback when download starts: () => void
- * @param {Object} options.toast - Chakra UI toast function from useToast()
  * @returns {Promise<void>} - Resolves when complete, rejects on error
  */
-export async function downloadLlmModel(modelId, { onProgress, onStart, toast }) {
+export async function downloadLlmModel(modelId, { onProgress, onStart }) {
   try {
     for await (const event of localModelApi.streamDownloadLlmModel(modelId)) {
       if (event.type === "start") {
@@ -59,10 +58,9 @@ export async function downloadLlmModel(modelId, { onProgress, onStart, toast }) 
  * @param {Object} options - Configuration options
  * @param {Function} options.onProgress - Callback for progress updates: (progress) => void
  * @param {Function} options.onStart - Callback when download starts: () => void
- * @param {Object} options.toast - Chakra UI toast function from useToast()
  * @returns {Promise<void>} - Resolves when complete, rejects on error
  */
-export async function downloadWhisperModel(modelId, { onProgress, onStart, toast }) {
+export async function downloadWhisperModel(modelId, { onProgress, onStart }) {
   try {
     for await (const event of localModelApi.streamDownloadWhisperModel(modelId)) {
       if (event.type === "start") {
@@ -108,7 +106,7 @@ export async function downloadWhisperModel(modelId, { onProgress, onStart, toast
 /**
  * Downloads the embedding model and restarts the embedding server
  */
-export async function downloadEmbeddingModel({ onProgress, onStart, toast }) {
+export async function downloadEmbeddingModel({ onProgress, onStart }) {
   try {
     for await (const event of localModelApi.streamDownloadEmbeddingModel()) {
       if (event.type === "start") {

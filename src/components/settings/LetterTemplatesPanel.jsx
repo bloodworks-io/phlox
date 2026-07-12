@@ -9,7 +9,8 @@ import {
     Badge,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
+
+
 import { AddIcon, DeleteIcon, EditIcon } from "../common/icons";
 import { FaEnvelopeOpenText } from "react-icons/fa";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -89,7 +90,7 @@ const LetterTemplatesPanel = () => {
 
     const handleReset = async () => {
         try {
-            await settingsService.resetLetterTemplates(toast);
+            await settingsService.resetLetterTemplates();
             fetchTemplates();
         } catch (error) {
             console.error("Failed to reset letter templates", error);

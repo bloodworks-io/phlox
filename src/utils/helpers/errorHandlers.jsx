@@ -10,7 +10,7 @@ export class ApiError extends Error {
     }
 }
 
-export const handleError = (error, toast) => {
+export const handleError = (error) => {
     console.error("Error:", error);
 
     if (error instanceof ApiError) {

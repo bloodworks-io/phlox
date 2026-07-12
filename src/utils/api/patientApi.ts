@@ -162,7 +162,7 @@ export const patientApi = {
             } else if (data.type === "result") {
               result = data.data;
             }
-          } catch (error) {
+          } catch {
             // Ignore parse errors for incomplete chunks
           }
         }

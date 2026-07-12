@@ -60,7 +60,7 @@ const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
             });
             onSaved({ ...file, title, source, focus_area: focusArea });
             setOpen(false);
-        } catch (err) {
+        } catch {
             toaster.create({
                 title: "Error",
                 description: "Failed to update document",
@@ -286,7 +286,7 @@ const DocumentExplorer = ({
                                     loaded: false,
                                 })),
                             );
-                        } catch (error) {
+                        } catch {
                             toaster.create({
                                 title: "Error",
                                 description:

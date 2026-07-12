@@ -125,7 +125,7 @@ const DemographicsForm = ({
             setIsSaving(true);
             try {
                 await onSave(updated);
-            } catch (error) {
+            } catch {
                 toaster.create({
                     title: "Couldn't save demographics",
                     description: "Please try again.",
