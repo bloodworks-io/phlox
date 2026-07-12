@@ -217,7 +217,6 @@ const EncryptionSetup = ({ onComplete }) => {
             <Box>
               <Alert.Description>
                 If you forget your passphrase, your data cannot be recovered.
-                Store it securely.
               </Alert.Description>
             </Box>
           </Alert.Root>
