@@ -234,4 +234,3 @@ def _build_patient_context(context: dict[str, str | None]) -> str:
         context_parts.append(f"DOB: {context['dob']}")
 
     return " ".join(context_parts)
-

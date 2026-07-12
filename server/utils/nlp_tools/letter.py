@@ -57,9 +57,7 @@ def _truncate_context(messages: list[dict], max_tokens: int) -> list[dict]:
             break
 
     # Ensure the context starts with an assistant message
-    first_assistant = next(
-        (i for i, m in enumerate(working) if m.get("role") == "assistant"), None
-    )
+    first_assistant = next((i for i, m in enumerate(working) if m.get("role") == "assistant"), None)
     if first_assistant and first_assistant > 0:
         del working[:first_assistant]
 

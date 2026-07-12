@@ -64,4 +64,3 @@ def ensure_system_messages_first(messages: list) -> list:
             other_msgs.append(msg)
 
     return system_msgs + other_msgs
-

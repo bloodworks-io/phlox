@@ -299,4 +299,3 @@ async def execute(
             result_content = f"Error creating note: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
-

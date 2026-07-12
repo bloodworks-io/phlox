@@ -32,4 +32,3 @@ def get_llama_port() -> int:
 def get_embedding_port() -> int:
     """Get the Embedding server port."""
     return EMBEDDING_PORT
-

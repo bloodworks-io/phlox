@@ -14,6 +14,7 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict
 
 import httpx
 
@@ -32,10 +33,21 @@ class DownloadProgress:
     current_file: str  # always "model"
 
 
+class ModelInfo(TypedDict):
+    """Metadata for a single STT model."""
+
+    url: str
+    filename: str
+    size_mb: int
+    sha256: str
+    description: str
+    category: str
+
+
 # Omi Med STT v1 q8_0 GGUF download from HuggingFace.
 # Source: https://huggingface.co/omi-health/omi-med-stt-v1-gguf
 # Public repo. Derived from nvidia/parakeet-tdt-0.6b-v2 (CC-BY-4.0).
-WHISPER_MODELS = {
+WHISPER_MODELS: dict[str, ModelInfo] = {
     "omi-med-stt-v1-q8_0": {
         "url": "https://huggingface.co/omi-health/omi-med-stt-v1-gguf/resolve/main/omi-med-stt-v1-q8_0.gguf",
         "filename": "omi-med-stt-v1-q8_0.gguf",
@@ -244,9 +256,7 @@ class WhisperModelManager:
             return False
         actual = h.hexdigest()
         if actual.lower() != expected.lower():
-            logger.warning(
-                f"SHA256 mismatch for {path.name}: expected {expected}, got {actual}"
-            )
+            logger.warning(f"SHA256 mismatch for {path.name}: expected {expected}, got {actual}")
             return False
         return True
 

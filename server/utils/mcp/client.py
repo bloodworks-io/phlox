@@ -234,4 +234,3 @@ async def call_mcp_tool(server_id: int, tool_name: str, arguments: dict[str, Any
         return await client.call_tool(tool_name, arguments)
     finally:
         await client.disconnect()
-

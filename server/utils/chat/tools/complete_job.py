@@ -209,4 +209,3 @@ async def execute(
             result_content = f"Error completing job: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
-

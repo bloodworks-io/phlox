@@ -510,4 +510,3 @@ def update_field_adaptive_instructions(
         # Attempt to rollback in case of partial transaction failure if applicable, though simple UPDATEs are often atomic.
         # db.rollback() # db object does not seem to have rollback based on PatientDatabase structure
         return False
-

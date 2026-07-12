@@ -6,9 +6,12 @@ import logging
 import time
 from contextlib import suppress
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import httpx
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from server.constants import DATA_DIR
 

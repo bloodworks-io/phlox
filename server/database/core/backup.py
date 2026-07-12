@@ -84,4 +84,3 @@ def _rotate_backups(backup_dir: Path, db_name: str) -> None:
 
     except Exception as e:
         logging.warning(f"Failed to rotate backups: {e}")
-

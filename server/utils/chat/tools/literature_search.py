@@ -46,7 +46,6 @@ def _get_relevant_literature(
     logger.info(f"Sanitized disease name: '{sanitized_disease_name}'")
     logger.info(f"Available collections: {collection_names}")
 
-
     collection_slugs = {_sanitize_disease_name(c) for c in collection_names}
     if sanitized_disease_name not in collection_slugs:
         logger.info(f"No collection found for disease: {sanitized_disease_name}")

@@ -181,4 +181,3 @@ async def execute(
             result_content = f"Error retrieving previous encounter: {str(e)}"
 
     yield end_message(function_response={"content": result_content, "citations": citations})
-

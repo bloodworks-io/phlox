@@ -14,6 +14,7 @@ from typing import (
 
 logger = logging.getLogger(__name__)
 
+
 class TextSplitter(ABC):
     """Interface for splitting text into chunks."""
 
@@ -100,6 +101,7 @@ class TextSplitter(ABC):
         if doc is not None:
             docs.append(doc)
         return docs
+
 
 class FixedTokenChunker(TextSplitter):
     """Splitting text to tokens using model tokenizer."""
