@@ -130,6 +130,7 @@ const Settings = () => {
     const debouncedWhisperUrl = useDebounce(config?.WHISPER_BASE_URL, 500);
     const debouncedLlmBaseUrl = useDebounce(config?.LLM_BASE_URL, 500);
     const debouncedLlmProvider = useDebounce(config?.LLM_PROVIDER, 500);
+    const debouncedLlmApiKey = useDebounce(config?.LLM_API_KEY, 500);
 
     useEffect(() => {
         const validateUrls = async () => {
@@ -203,7 +204,7 @@ const Settings = () => {
                     {
                         LLM_PROVIDER: debouncedLlmProvider || "openai",
                         LLM_BASE_URL: debouncedLlmBaseUrl,
-                        LLM_API_KEY: config?.LLM_API_KEY || "",
+                        LLM_API_KEY: debouncedLlmApiKey,
                     },
                     setModelOptions,
                 );
@@ -219,8 +220,8 @@ const Settings = () => {
     }, [
         debouncedLlmBaseUrl,
         debouncedLlmProvider,
+        debouncedLlmApiKey,
         config?.LLM_PROVIDER,
-        config?.LLM_API_KEY,
     ]);
 
     // Load local models when provider is "local"

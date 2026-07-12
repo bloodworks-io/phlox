@@ -72,7 +72,9 @@ export const settingsService = {
             }
 
             const baseUrl = config.LLM_BASE_URL;
-            const apiKey = config.LLM_API_KEY || "";
+
+            const rawKey = config.LLM_API_KEY || "";
+            const apiKey = rawKey.includes("•") ? null : rawKey;
 
             const response = await settingsApi.fetchLLMModels(
                 providerType,

@@ -58,7 +58,10 @@ async def get_llm_models(
                     detail="baseUrl is required for OpenAI-compatible providers",
                 )
 
-            headers = {"Authorization": f"Bearer {apiKey}"} if apiKey else {}
+            # Fall back to stored key if none provided (mirrors chat.py:375)
+            effective_key = apiKey or config_manager.get_config().get("LLM_API_KEY")
+
+            headers = {"Authorization": f"Bearer {effective_key}"} if effective_key else {}
 
             async with httpx.AsyncClient(headers=headers) as client:
                 url = build_openai_v1_url(baseUrl, "models")
