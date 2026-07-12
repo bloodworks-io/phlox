@@ -114,7 +114,7 @@ const ChatPanel = ({
                 flex="1"
                 overflowY="auto"
                 p="4"
-                className="floating-main"
+                className="floating-main sidebar-scroll-overlay"
                 onScroll={() => {
                     const el = scrollContainerRef.current;
                     if (el) {

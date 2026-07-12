@@ -64,7 +64,7 @@ const LetterEditor = ({
             transition: "color 0.2s ease-in-out",
             overflow: "auto !important",
           }}
-          className="textarea-style letter-editor-textarea"
+          className="textarea-style letter-editor-textarea sidebar-scroll-overlay"
           ref={textareaRef}
           disabled={loading}
         />
