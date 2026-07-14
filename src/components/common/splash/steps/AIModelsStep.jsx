@@ -55,19 +55,6 @@ const RECOMMENDED_EMBEDDING = {
   size_mb: 639,
 };
 
-const getBadge = (recommendedType) => {
-  if (recommendedType === "fastest") return { text: "⚡ Fast", color: "blue" };
-  if (recommendedType === "recommended")
-    return { text: "⭐ Recommended", color: "purple" };
-  if (recommendedType === "best_quality")
-    return { text: "🎯 Best", color: "green" };
-  if (recommendedType === "poor_quality")
-    return { text: "Basic", color: "orange" };
-  if (recommendedType === "slow_performance")
-    return { text: "Slow", color: "orange" };
-  return null;
-};
-
 const getMachineLabel = (os) => {
   if (os === "macos") return "Your Mac";
   if (os === "windows") return "Your PC";
@@ -194,7 +181,7 @@ const CompactModelCard = ({
   onDownload,
   systemSpecs,
 }) => {
-  const badge = getBadge(model.recommendedType);
+  const isRecommended = model.recommendedType === "recommended";
 
   return (
     <Box
@@ -204,7 +191,7 @@ const CompactModelCard = ({
       borderColor={
         isSelected
           ? "primaryButton"
-          : badge?.color === "purple"
+          : isRecommended
             ? "purple.200"
             : "surface"
       }
@@ -389,9 +376,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
   const firstRecommendedIndex = useMemo(
     () =>
       allModelsOrdered.findIndex(
-        (m) =>
-          m.recommendedType === "recommended" ||
-          m.recommendedType === "fastest",
+        (m) => m.recommendedType === "recommended",
       ),
     [allModelsOrdered],
   );

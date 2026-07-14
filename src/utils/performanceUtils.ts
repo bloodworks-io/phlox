@@ -50,16 +50,22 @@ export function calculateLLMPerformance(
 
 /**
  * Get smart LLM model recommendations based on system specifications.
+
  *
  * @param {Array} availableModels - Array of available model objects from API
  * @param {Object} systemSpecs - System specifications containing total_memory_gb
- * @returns {Array} All models with recommendedType property, ordered by size
+ * @returns {Array} All models with recommendedType property, ordered by RAM requirement
  */
 export function getSmartRecommendations(availableModels, systemSpecs) {
   if (!availableModels?.length) return [];
 
-  // Sort all models by size (smallest first)
-  const sortedModels = [...availableModels].sort((a, b) => a.size_mb - b.size_mb);
+  // Sort by recommended RAM (lightest first), with size as tiebreaker
+  const sortedModels = [...availableModels].sort((a, b) => {
+    const ramA = a.recommended_ram_gb || 4;
+    const ramB = b.recommended_ram_gb || 4;
+    if (ramA !== ramB) return ramA - ramB;
+    return a.size_mb - b.size_mb;
+  });
 
   // If no system specs or no RAM value, return models without badges
   if (!systemSpecs?.total_memory_gb) {
@@ -88,63 +94,24 @@ export function getSmartRecommendations(availableModels, systemSpecs) {
     tier = 3;
   }
 
-  // First pass: identify which models are recommended (in tier AND fit in RAM)
-  const sortedModelsWithRecStatus = usableModels.map((model) => {
+  // Identify in-tier models (those whose tier array includes the user's tier)
+  const inTierIndices = [];
+  usableModels.forEach((model, idx) => {
     const modelTier = model.tier || [];
-    const recommendedRam = model.recommended_ram_gb || 4;
-    const isInTier = modelTier.length > 0 && modelTier.includes(tier);
-    const fitsInRam = ram >= recommendedRam;
-    const isRecommended = isInTier && fitsInRam;
-    return { ...model, isRecommended };
-  });
-
-  // Count how many recommended models come before each position
-  let recommendedCount = 0;
-  const modelsWithBadges = sortedModelsWithRecStatus.map((model) => {
-    if (model.isRecommended) {
-      let recommendedType;
-      if (recommendedCount === 0) {
-        recommendedType = "fastest"; // Smallest recommended
-      } else if (recommendedCount === 1) {
-        recommendedType = "recommended"; // Middle
-      } else if (recommendedCount === 2) {
-        recommendedType = "best_quality"; // Largest recommended
-      } else {
-        recommendedType = null;
-      }
-      recommendedCount++;
-      return { ...model, recommendedType };
-    } else {
-      // Not recommended - assign appropriate badge
-      const modelTier = model.tier || [];
-      const recommendedRam = model.recommended_ram_gb || 4;
-
-      // Skip models with no tier classification (like tiny/ultra edge cases)
-      if (modelTier.length === 0) {
-        return { ...model, recommendedType: null };
-      }
-
-      const maxModelTier = Math.max(...modelTier);
-      const minModelTier = Math.min(...modelTier);
-      const isBelowUserTier = maxModelTier < tier;
-      const isAboveUserTier = minModelTier > tier;
-      const fitsInRam = ram >= recommendedRam;
-
-      let recommendedType;
-
-      if (isBelowUserTier) {
-        // Model is below user's capability level (e.g., tier 1 model for tier 2 user)
-        recommendedType = "poor_quality";
-      } else if (isAboveUserTier || !fitsInRam) {
-        // Model is above user's tier capability OR doesn't fit in RAM
-        recommendedType = "slow_performance";
-      } else {
-        recommendedType = null;
-      }
-
-      return { ...model, recommendedType };
+    if (modelTier.length > 0 && modelTier.includes(tier)) {
+      inTierIndices.push(idx);
     }
   });
 
-  return modelsWithBadges;
+  // Pick the middle in-tier model as "recommended"
+  // (2nd if 2+, 1st if only 1 — ensures the star always shows when there's a match)
+  const recommendedIdx =
+    inTierIndices.length > 0
+      ? inTierIndices[Math.min(1, inTierIndices.length - 1)]
+      : -1;
+
+  return usableModels.map((model, idx) => ({
+    ...model,
+    recommendedType: idx === recommendedIdx ? "recommended" : null,
+  }));
 }

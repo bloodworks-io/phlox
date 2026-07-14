@@ -28,13 +28,6 @@ const RECOMMENDED_EMBEDDING = {
   size_mb: 639,
 };
 
-const getBadge = (recommendedType) => {
-  if (recommendedType === "recommended") return { color: "purple" };
-  if (recommendedType === "fastest") return { color: "blue" };
-  if (recommendedType === "best_quality") return { color: "green" };
-  return null;
-};
-
 const getMachineLabel = (os) => {
   if (os === "macos") return "Your Mac";
   if (os === "windows") return "Your PC";
@@ -116,7 +109,7 @@ const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDow
       p="3"
       borderRadius="md"
       borderWidth="1px"
-      borderColor={getBadge(model.recommendedType)?.color === "purple" ? "purple.200" : "surface"}
+      borderColor={model.recommendedType === "recommended" ? "purple.200" : "surface"}
       bg="base"
       position="relative"
       overflow="hidden"
@@ -242,7 +235,7 @@ const LocalModelManager = ({ className }) => {
 
   const firstRecommendedIndex = useMemo(
     () => smartRecommendations.findIndex(
-      (m) => m.recommendedType === "recommended" || m.recommendedType === "fastest",
+      (m) => m.recommendedType === "recommended",
     ),
     [smartRecommendations],
   );
