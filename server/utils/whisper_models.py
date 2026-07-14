@@ -38,7 +38,6 @@ class ModelInfo(TypedDict):
     url: str
     filename: str
     size_mb: int
-    sha256: str
     description: str
     category: str
 
@@ -51,7 +50,6 @@ WHISPER_MODELS: dict[str, ModelInfo] = {
         "url": "https://huggingface.co/omi-health/omi-med-stt-v1-gguf/resolve/main/omi-med-stt-v1-q8_0.gguf",
         "filename": "omi-med-stt-v1-q8_0.gguf",
         "size_mb": 886,
-        "sha256": "c4f364a730df7aa9bb0714cda1b1ad5e3104331db9919bb0e2a379d0fb64dbab",
         "description": "Omi Med STT v1 (886MB) - English medical speech-to-text (q8_0)",
         "category": "omi-med-stt",
     },
@@ -157,8 +155,8 @@ class WhisperModelManager:
         model_info = WHISPER_MODELS[model_id]
         model_file = self.models_dir / model_info["filename"]
 
-        # Check if the model already exists and is verified
-        if model_file.exists() and self._verify_sha256(model_file, expected_sha256):
+        # Check if the model already exists
+        if model_file.exists():
             logger.info(f"Model {model_id} already exists at {model_file}")
             return str(model_file)
 
@@ -222,16 +220,6 @@ class WhisperModelManager:
 
             logger.info(f"Successfully downloaded {model_id} to {model_file}")
 
-            # Verify checksum
-            if not self._verify_sha256(model_file, expected_sha256):
-                with suppress(Exception):
-                    model_file.unlink()
-                raise ValueError(
-                    f"SHA256 checksum verification failed for {model_id}. "
-                    "The downloaded file may be corrupted."
-                )
-            logger.info(f"Checksum verified for {model_id}")
-
         except Exception:
             # If something fails mid-download, don't leave a corrupt partial file behind.
             if model_file.exists():
@@ -240,24 +228,6 @@ class WhisperModelManager:
             raise
 
         return str(model_file)
-
-    def _verify_sha256(self, path: Path, expected: str) -> bool:
-        """Verify the SHA256 checksum of a downloaded model file."""
-        if not path.exists():
-            return False
-        h = hashlib.sha256()
-        try:
-            with path.open("rb") as f:
-                for chunk in iter(lambda: f.read(1024 * 1024), b""):
-                    h.update(chunk)
-        except Exception as e:
-            logger.warning(f"Failed to compute SHA256 for {path}: {e}")
-            return False
-        actual = h.hexdigest()
-        if actual.lower() != expected.lower():
-            logger.warning(f"SHA256 mismatch for {path.name}: expected {expected}, got {actual}")
-            return False
-        return True
 
     def delete_model(self, model_id: str) -> bool:
         """Delete a downloaded catalog model.
@@ -282,10 +252,8 @@ class WhisperModelManager:
         return self.models_dir / WHISPER_MODELS[DEFAULT_MODEL_ID]["filename"]
 
     def ensure_default_model_exists(self) -> bool:
-        """Check if the default model exists and is checksum-valid."""
-        path = self.get_default_model_path()
-        info = WHISPER_MODELS[DEFAULT_MODEL_ID]
-        return path.exists() and self._verify_sha256(path, info["sha256"])
+        """Check if the default model exists."""
+        return self.get_default_model_path().exists()
 
 
 # Singleton instance
