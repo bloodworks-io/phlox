@@ -129,24 +129,6 @@ export const localModelApi = {
       errorMessage: "Failed to get selected model",
     }),
 
-  // Legacy method names (deprecated, kept for compatibility)
-  downloadModel: async (repoId, filename) =>
-    handleApiRequest({
-      apiCall: async () => {
-        const url = await buildApiUrl("/api/config/local/models/download");
-        return universalFetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model_id: `${repoId}/${filename}`,
-          }),
-        });
-      },
-      successMessage: "Model download started",
-      errorMessage: "Failed to start model download",
-      timeout: 600000, // 10 minutes for model downloads
-    }),
-
   // Whisper model management
   fetchWhisperModels: async () =>
     handleApiRequest({

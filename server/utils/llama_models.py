@@ -150,67 +150,61 @@ class LlamaModelManager:
         ]
 
     def get_downloaded_models(self) -> list[dict]:
-        """Get list of downloaded models (should be max 1)."""
+        """Get list of downloaded pre-configured models (should be max 1)."""
         models = []
 
-        # First, check if we have a model selection file
+        # Check if we have a model selection file
         selection_file = self._get_model_selection_file_path()
         selected_filename = None
         if selection_file.exists():
             selected_filename = selection_file.read_text().strip()
 
         for model_file in self.models_dir.glob("*.gguf"):
-            size_mb = round(model_file.stat().st_size / (1024 * 1024), 1)
             filename = model_file.name
 
-            # Check if this is a pre-configured model (case-insensitive match)
-            model_info = None
-            matched_filename = None
-            for _model_id, info in PRECONFIGURED_MODELS.items():
-                if str(info["filename"]).lower() == filename.lower():
-                    model_info = info
-                    matched_filename = str(info["filename"])  # Use the canonical filename
-                    break
-
-            if model_info:
-                # Find the model_id by matching filename
-                model_id = next(
-                    k
+            # Only surface pre-configured models; ignore any other files in the dir.
+            matched = next(
+                (
+                    (k, v)
                     for k, v in PRECONFIGURED_MODELS.items()
                     if str(v["filename"]).lower() == filename.lower()
-                )
-                models.append(
-                    {
-                        "id": model_id,
-                        "name": model_id,  # Use model_id as name for display
-                        "filename": matched_filename,  # Canonical filename for matching
-                        "size_mb": size_mb,
-                        "description": model_info["description"],
-                        "path": str(model_file),
-                        "category": model_info["category"],
-                        "is_selected": selected_filename in (filename, matched_filename),
-                    }
-                )
-            else:
-                # Custom model
-                models.append(
-                    {
-                        "id": filename,
-                        "name": filename,
-                        "filename": filename,
-                        "size_mb": size_mb,
-                        "description": "Custom model",
-                        "path": str(model_file),
-                        "category": "custom",
-                        "is_selected": selected_filename == filename,
-                    }
-                )
+                ),
+                None,
+            )
+            if not matched:
+                continue
+
+            model_id, model_info = matched
+            canonical = str(model_info["filename"])
+            size_mb = round(model_file.stat().st_size / (1024 * 1024), 1)
+            models.append(
+                {
+                    "id": model_id,
+                    "name": model_id,
+                    "filename": canonical,
+                    "size_mb": size_mb,
+                    "description": model_info["description"],
+                    "path": str(model_file),
+                    "category": model_info["category"],
+                    "is_selected": selected_filename in (filename, canonical),
+                }
+            )
 
         return sorted(models, key=lambda m: m["size_mb"])
 
     def get_model_path(self, filename: str) -> Path | None:
-        """Get the file path for a model."""
-        model_file = self.models_dir / filename
+        """Get the file path for a pre-configured model by filename."""
+        info = next(
+            (
+                v
+                for v in PRECONFIGURED_MODELS.values()
+                if str(v["filename"]).lower() == filename.lower()
+            ),
+            None,
+        )
+        if not info:
+            return None
+        model_file = self.models_dir / info["filename"]
         if model_file.exists():
             return model_file
         return None
@@ -311,28 +305,14 @@ class LlamaModelManager:
         return dest
 
     async def download_model(self, model_id: str, progress_callback=None) -> str:
-        # Download a model (and its multimodal projector if applicable).
-
-        repo_id = None
-        filename = None
-        mmproj_filename = None
-
-        # Check if it's a pre-configured model
-        if model_id in PRECONFIGURED_MODELS:
-            model_info = PRECONFIGURED_MODELS[model_id]
-            repo_id = str(model_info["repo_id"])
-            filename = str(model_info["filename"])
-            mmproj_filename = model_info.get("mmproj_filename")
-        elif "/" in model_id:
-            # Custom format: "repo_id/filename.gguf"
-            parts = model_id.split("/", 1)
-            if len(parts) == 2:
-                repo_id = parts[0]
-                filename = parts[1]
-            else:
-                raise ValueError("Invalid custom model format. Use 'repo_id/filename.gguf'")
-        else:
+        # Download a pre-configured model (and its multimodal projector if applicable).
+        if model_id not in PRECONFIGURED_MODELS:
             raise ValueError(f"Unknown model: {model_id}")
+
+        model_info = PRECONFIGURED_MODELS[model_id]
+        repo_id = str(model_info["repo_id"])
+        filename = str(model_info["filename"])
+        mmproj_filename = model_info.get("mmproj_filename")
 
         # Delete existing models first (1 model at a time)
         self._delete_all_models()
@@ -355,13 +335,23 @@ class LlamaModelManager:
         return str(model_file)
 
     def delete_model(self, filename: str) -> bool:
-        """Delete a downloaded model and its multimodal projector."""
-        model_file = self.models_dir / filename
+        """Delete a downloaded pre-configured model and its multimodal projector."""
+        info = next(
+            (
+                v
+                for v in PRECONFIGURED_MODELS.values()
+                if str(v["filename"]).lower() == filename.lower()
+            ),
+            None,
+        )
+        if not info:
+            return False
 
+        model_file = self.models_dir / info["filename"]
         deleted = False
         if model_file.exists():
             model_file.unlink()
-            logger.info(f"Deleted LLM model {filename}")
+            logger.info(f"Deleted LLM model {info['filename']}")
             deleted = True
 
         # Also remove any companion multimodal projector files.
@@ -420,8 +410,8 @@ class LlamaModelManager:
             if str(info["filename"]).lower() == selected_filename.lower():
                 return model_id
 
-        # For custom models, return the filename (or repo_id/filename format if applicable)
-        return selected_filename
+        # Unknown filename (not a pre-configured model) -> no selection.
+        return None
 
     def ensure_default_model_exists(self) -> bool:
         """Check if any model exists."""

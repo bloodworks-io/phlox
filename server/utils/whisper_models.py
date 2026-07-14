@@ -6,7 +6,6 @@ a Parakeet TDT 0.6B v2 fine-tune for English medical speech-to-text,
 from the omi-health/omi-med-stt-v1-gguf repository on HuggingFace.
 """
 
-import hashlib
 import logging
 import os
 import sys
@@ -128,10 +127,11 @@ class WhisperModelManager:
         return sorted(models, key=lambda m: m["size_mb"])
 
     def get_model_path(self, model_id: str) -> Path | None:
-        """Get the file path for a model."""
+        """Get the file path for a known (catalog) model, or None."""
         info = WHISPER_MODELS.get(model_id)
-        filename = info["filename"] if info else f"{model_id}.gguf"
-        model_file = self.models_dir / filename
+        if not info:
+            return None
+        model_file = self.models_dir / info["filename"]
         if model_file.exists():
             return model_file
         return None
@@ -156,7 +156,6 @@ class WhisperModelManager:
 
         model_info = WHISPER_MODELS[model_id]
         model_file = self.models_dir / model_info["filename"]
-        expected_sha256 = model_info["sha256"]
 
         # Check if the model already exists and is verified
         if model_file.exists() and self._verify_sha256(model_file, expected_sha256):
@@ -261,10 +260,15 @@ class WhisperModelManager:
         return True
 
     def delete_model(self, model_id: str) -> bool:
-        """Delete a downloaded model."""
+        """Delete a downloaded catalog model.
+
+        Only pre-configured model ids are accepted; the filename is taken from
+        the catalog so user input never reaches the filesystem path.
+        """
         info = WHISPER_MODELS.get(model_id)
-        filename = info["filename"] if info else f"{model_id}.gguf"
-        model_file = self.models_dir / filename
+        if not info:
+            return False
+        model_file = self.models_dir / info["filename"]
 
         if model_file.exists():
             model_file.unlink()
