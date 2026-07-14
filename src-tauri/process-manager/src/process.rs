@@ -309,7 +309,13 @@ pub fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
         .arg("--host")
         .arg("127.0.0.1")
         .arg("--model")
-        .arg(model_path.to_string_lossy().as_ref());
+        .arg(model_path.to_string_lossy().as_ref())
+        .arg("--max-seconds")
+        .arg("240")
+        .arg("--chunk-seconds")
+        .arg("240")
+        .arg("--overlap")
+        .arg("5");
 
     #[cfg(unix)]
     {
