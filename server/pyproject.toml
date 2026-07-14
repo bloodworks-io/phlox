@@ -4,11 +4,11 @@ version = "1.0.5"
 requires-python = ">=3.12"
 dependencies = [
     "APScheduler==3.11.2",
-    "fastapi==0.128.0",
+    "fastapi==0.138.0",
     "httpx==0.28.1",
     "json-repair==0.55.0",
     "openai==2.14.0",
-    "platformdirs==4.5.1",
+    "platformdirs==4.10.0",
     "pydantic==2.12.5",
     "python-multipart==0.0.32",
     "rapidfuzz==3.14.3",
@@ -38,7 +38,7 @@ docker = [
 dev = [
     "nuitka==4.0",
     "pytest==9.0.3",
-    "pytest-asyncio==1.3.0",
+    "pytest-asyncio==1.4.0",
     "pytest-cov==7.0.0",
     "ruff==0.15.4",
     "bandit[toml]==1.9.4",
