@@ -63,6 +63,7 @@
         "globals": "^17.7.0",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.62.0",
-        "vite": "^8.1.0"
+        "vite": "^8.1.0",
+        "vite-plugin-static-copy": "^4.1.1"
     }
 }

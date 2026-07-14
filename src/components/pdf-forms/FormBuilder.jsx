@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Box, Flex, HStack, IconButton, Text, Spinner } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
-import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
+import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 
 
 // Canvas-safe colors mapped from field types (can't use Chakra tokens in canvas)
@@ -78,9 +78,7 @@ const FormBuilder = ({
             setRendering(true);
             try {
                 const pdfData = await pdfFormsApi.fetchTemplatePdf(template.id);
-                const pdfjsLib = await getPdfJs();
-                const doc = await pdfjsLib.getDocument({ data: pdfData })
-                    .promise;
+                const doc = await loadPdfDocument({ data: pdfData });
                 if (!cancelled) {
                     setPdfDoc(doc);
                 }

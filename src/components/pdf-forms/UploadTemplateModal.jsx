@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 import { Input, Text, VStack, Box, Dialog, Portal } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
-import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
+import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 import { GreenButton, GreyButton } from "../common/Buttons";
 
 const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
@@ -34,9 +34,8 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }) => {
 
     setUploading(true);
     try {
-      const pdfjsLib = await getPdfJs();
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await loadPdfDocument({ data: arrayBuffer });
 
       const pageCount = pdf.numPages;
       const pageHeights = [];

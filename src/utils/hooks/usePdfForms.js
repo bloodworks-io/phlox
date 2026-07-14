@@ -138,12 +138,8 @@ export const usePdfForms = () => {
       const pdfData = await pdfFormsApi.fetchTemplatePdf(selectedTemplate.id);
 
       // 2. Render pages to canvases with ruler overlay
-      const pdfjsModule = await import("../helpers/pdfVisionHelpers").then(
-        (m) => m.getPdfJs()
-      );
-      const pdfjsLib = await pdfjsModule;
-      const loadingTask = pdfjsLib.getDocument({ data: pdfData });
-      const doc = await loadingTask.promise;
+      const { loadPdfDocument } = await import("../helpers/pdfVisionHelpers");
+      const doc = await loadPdfDocument({ data: pdfData });
 
       const rulerPages = [];
       for (let i = 1; i <= Math.min(doc.numPages, 6); i++) {
