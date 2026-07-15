@@ -13,50 +13,47 @@
 [![CodeQL](https://github.com/bloodworks-io/phlox/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/bloodworks-io/phlox/actions/workflows/github-code-scanning/codeql)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/bloodworks-io/phlox/issues)
 
 </div>
 
-Phlox is an open-source patient management system integrating AI-powered medical transcription, clinical note generation, an AI chatbot interface, and agentic tool-calling capabilities. It's designed to run locally, utilizing local models for inference and transcription.
+Phlox is a free, open-source, AI scribe with a built-in patient management system and agentic AI capabilities. It's designed as a local-first alternative to SaaS medical scribes that you can run on your own hardware.
 
-## Key Features ✨
-
-- **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local. Free and open source forever; the security of your data is in your hands.
-- **🖥️ Desktop App:** Native Apple Silicon application with bundled LLM and transcription servers - no external dependencies required.
-- **🎤 AI Medical Transcription & Summarization:** Convert patient encounters to structured clinical notes using customizable templates.
-- **📝 Flexible Template System:**  Structure clinical notes to your preferences, with versioning and automated template generation from example notes.
-- **✅ Task Manager:**  Parse clinical plans into actionable task lists with AI-generated summaries.
-- **✉️  Correspondence Generation:**  One-click generation of patient letters based on clinical notes, with support for both ambient listening and dictate mode.
-- **🤖 AI-chat/RAG:** Reference tool to query medical guidelines, literature, and documentation backed by a local knowledge base (ChromaDB).
+## Key Features 
+- **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local.
+- **🎤 Ambient Note Generation** Convert patient encounters to structured clinical notes using customizable templates.
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.
-- **🛠️ Agentic Tool-Calling System:** Built-in tools including PubMed search, Wikipedia lookup, patient note search, transcript search, outstanding job management, and note creation — with interleaved thinking for complex multi-step queries.
-- **🔌 MCP Server Support:** Connect external tool servers via the Model Context Protocol (SSE transport). Tools are dynamically loaded and can be toggled per-server, with optional sensitive data filtering to prevent PHI from being sent to external servers.
-- **📄 Vision-Enhanced Document Processing:** Hybrid PDF processing — uses vision models directly when available, falling back to OCR. Supports image uploads for clinical document analysis.
-- **📋 Agent Dashboard:** Central hub with chat-driven clinic management, built-in todo panel, outstanding jobs view, and clinic summary by date.
+- **📝 Flexible Template System:**  Structure clinical notes to your preferences, with versioning and automated template generation from example notes.
+- **🤖 AI-agent:** Your local assistant with access to medical guidelines, literature, and documentation backed by a local knowledge base.
+- **🔌 MCP Server Support:** Connect external tool servers to give your agent new capabilties.
+- **✅ Task Manager:**  Parse clinical plans into actionable to-do lists to keep up-to-date with your outstanding tasks.
+- **✉️  Correspondence Generation:**  One-click generation of patient letters based on clinical notes.
+- **📄 Document Processing:** Take advantage of vision language models to fill-in forms, extract demographics, and more.
 
 <p align="center">
   <img src="/docs/images/readme_screenshot.png" width="500" alt="Phlox Screenshot">
 </p>
 
-## Stack 🛠️
+## Architecture
+
+Ambient scribing is a relatively simple task for LLMs. In particular, large frontier models are very adept at one-shotting a decent note given a transcript and a style example. 
 
 - **Frontend:** Chakra UI (React/[Vite](https://github.com/vitejs/vite))
 - **Backend:** FastAPI (Python/[uv](https://github.com/astral-sh/uv))
 - **Database:** [SQLCipher](https://github.com/sqlcipher/sqlcipher)
-- **Desktop Wrapper:** [Tauri](https://github.com/tauri-apps/tauri) (Rust)
-- **LLM Backend:** Ollama, OpenAI-compatible endpoints, or bundled [llama.cpp ](https://github.com/ggml-org/llama.cpp) server
-- **Transcription:** OpenAI-compatible endpoints or bundled [parakeet.cpp](https://github.com/mudler/parakeet.cpp) server (Omi Med STT v1 model)
-- **RAG:** [ChromaDB](https://github.com/chroma-core/chroma)
+- **Vector DB:** [sqlite-vec](https://github.com/asg017/sqlite-vec)
+- **Desktop Wrapper:** [Tauri](https://github.com/tauri-apps/tauri) 
+- **LLM Backend:** Any OpenAI-compatible endpoint (incl. Ollama), or bundled [llama.cpp ](https://github.com/ggml-org/llama.cpp) server
+- **Transcription:** Any OpenAI Whisper-compatible endpoint or bundled [parakeet.cpp](https://github.com/mudler/parakeet.cpp) server
 
-## Quick Start 🚀
+## Getting Started
 
-### Desktop App (Apple Silicon)
+### Desktop App
 
-Pre-built Apple Silicon binaries are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases).
+Pre-built Apple Silicon binaries are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases). 
 
-**Note:** The desktop app provides transcription and correspondence features only. For extended reference tools (Chat, RAG, PDF Upload), use the Docker/Podman deployment below.
+The desktop app comes bundled with both transcription and LLM inference engines. Models can be downloaded from within the application.
 
-### Docker/Podman (Extended Reference Tools)
+### Docker/Podman
 
 Pre-built images are available from [GitHub Container Registry](https://github.com/bloodworks-io/phlox/pkgs/container/phlox):
 
@@ -64,49 +61,11 @@ Pre-built images are available from [GitHub Container Registry](https://github.c
 docker pull ghcr.io/bloodworks-io/phlox:latest
 ```
 
-Or build from source:
+The Docker image does not have any inference or transcription capability built-in. OpenAI compatible endpoints are required for transcription and note generation. 
 
-1. **Prerequisites:** Podman/Docker, Ollama/OpenAI-compatible endpoint, Whisper endpoint.
-2. **Hardware Requirements:** For reasonable performance, a GPU (CUDA, ROCm) or Apple M-Series chip is strongly recommended. Without these, especially with larger models, the system will run extremely slowly.
-3. **Clone:** `git clone https://github.com/bloodworks-io/phlox.git && cd phlox`
-4. **Build:** `docker build -t phlox:latest .`
-5. **Environment:** Create `.env` in `phlox/` (see example in documentation).
-6. **Run:** `docker-compose up` (Production) or `docker-compose -f docker-compose.dev.yml up` (Development).
-7. **Access:** http://localhost:5000
+Note quality improves with speaker diarization. [parakeet-diarized](https://github.com/jfgonsalves/parakeet-diarized) provides an easy to use docker container that serves a diarization-enabled OpenAI Whisper-comptaible endpoint.
 
-**For detailed setup, feature explanations, and important warnings, please see the [Documentation](./docs/README.md).**
-
-## Deployment Options
-
-### Docker/Podman (Extended Reference Tools)
-The complete Phlox experience with all features:
-- Medical transcription and clinical notes
-- Correspondence generation
-- AI Chat interface
-- RAG/document knowledge base
-- Agent Dashboard with agentic tool-calling and MCP server support
-
-### Desktop App (Streamlined)
-Native desktop application for Apple Silicon:
-- Medical transcription and clinical notes
-- Correspondence generation
-- Bundled llama.cpp and whisper servers - no external dependencies
-- All data stored locally. Nothing leaves your machine.
-
-*Additional platforms and full feature parity coming in future releases.*
-
-## Roadmap 🗺️
-
-Here's what's coming next for Phlox:
-
-- [x] Use structured JSON outputs for managing LLM responses
-- [x] Add support for OpenAI-compatible endpoints
-- [x] Tauri desktop app with local inference (llama.cpp + whisper bundled)
-- [x] MCP server support for custom tools and agentic workflows
-- [ ] Advanced template version control
-- [ ] Meeting and multi-disciplinary meeting scribing
-
-## Usage Warning ⚠️
+## Usage Warning 
 
 Phlox is an experimental project intended for educational and personal use. **It is not a certified medical device and should NOT be used for clinical decision-making.**
 
@@ -114,7 +73,11 @@ Phlox is **not** suitable for production deployment in the form provided in this
 
 AI outputs can be unreliable. Always verify AI-generated content and use professional clinical judgment. The application displays a disclaimer on startup with full details.
 
-**Security note:** The Docker deployment binds to `0.0.0.0` by default and has no authentication by default. You MUST place it behind a reverse proxy with an authentication layer like [Authelia](https://github.com/authelia/authelia). Proxy authentication (Traefik, Caddy, Nginx) and rate limiting are supported via environment variables. The desktop app requires a passphrase to unlock the encrypted database.
+**Security note:** The Docker deployment binds to `0.0.0.0` and has no authentication by default. You MUST place it behind a reverse proxy with an authentication layer like [Authelia](https://github.com/authelia/authelia). Proxy authentication (Traefik, Caddy, Nginx) and rate limiting are supported via environment variables. The desktop app requires a passphrase to unlock the encrypted database.
+
+## Use of AI generated code
+
+This repo has made extensive use of AI development tools - as a solo hobby developer I would simply have not been able to make Phlox otherwise. All AI generated code has been vetted by me and I ask that any contributors do the same prior to submitting PRs.
 
 ## License 📄
 
