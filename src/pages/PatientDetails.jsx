@@ -259,15 +259,6 @@ const PatientDetails = ({
         setStartCardDismissed(false);
     }, [location.pathname]);
 
-    useEffect(() => {
-        if (viaModal) return;
-        if (isNewPatient && !patient?.id) {
-            setIsSearchedPatient(false);
-            setStartCardDismissed(false);
-            console.log("Resetting isSearchedPatient - new patient");
-        }
-    }, [isNewPatient, patient?.id]);
-
     const textToCopy =
         patient && currentTemplate?.fields
             ? currentTemplate.fields
