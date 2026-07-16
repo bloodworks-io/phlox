@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Progress } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-const toast = toaster.create;
 import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import { isTauri } from "../../utils/helpers/apiConfig";
@@ -140,7 +139,7 @@ const SplashScreen = ({ onComplete }) => {
       if (templatesData.selectedTemplate) {
         await settingsService.setDefaultTemplate(
           templatesData.selectedTemplate,
-          toast,
+          null,
         );
       }
 
