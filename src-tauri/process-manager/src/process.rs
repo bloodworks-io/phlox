@@ -368,7 +368,13 @@ pub fn start_embedding(port: Option<u16>) -> Result<ManagedProcess, String> {
         .arg(model_path.to_string_lossy().as_ref())
         .arg("--embedding")
         .arg("--n-gpu-layers")
-        .arg("99");
+        .arg("99")
+        .arg("--ctx-size")
+        .arg("1024")
+        .arg("--cache-type-k")
+        .arg("q8_0")
+        .arg("--cache-type-v")
+        .arg("q8_0");
 
     #[cfg(unix)]
     {
