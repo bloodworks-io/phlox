@@ -10,6 +10,8 @@ IS_TESTING = os.getenv("TESTING", "false").lower() == "true"
 IS_DOCKER = Path("/.dockerenv").exists() or os.getenv("DOCKER_CONTAINER") == "true"
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "false").lower() == "true"
 
+IS_DEMO_MODE = os.getenv("PHLOX_DEMO_MODE", "false").lower() == "true"
+
 RATE_LIMIT_DESKTOP_MULTIPLIER = int(os.getenv("RATE_LIMIT_DESKTOP_MULTIPLIER", "3"))
 
 # Proxy auth configuration (for reverse proxy deployments)

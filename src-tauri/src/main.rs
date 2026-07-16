@@ -11,10 +11,10 @@ use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{
     change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
-    get_service_status, get_system_specs, has_database, has_encryption_setup,
-    has_keychain_entry, restart_embedding, restart_llama, restart_whisper, send_passphrase_command,
-    setup_encryption, start_embedding_service, start_llama_service, start_server_command,
-    start_whisper_service, unlock_with_passphrase, CachedServiceStatus,
+    get_service_status, get_system_specs, has_database, has_encryption_setup, has_keychain_entry,
+    restart_embedding, restart_llama, restart_whisper, send_passphrase_command, setup_encryption,
+    start_embedding_service, start_llama_service, start_server_command, start_whisper_service,
+    unlock_with_passphrase, CachedServiceStatus,
 };
 use pm_client::ProcessManagerClient;
 use process::{cleanup_stale_files, kill_all_processes};
@@ -94,8 +94,7 @@ pub fn run() {
                         _ => (230.0, 233.0, 239.0),
                     };
                     let ns_window_ptr = window.ns_window().unwrap();
-                    let ns_window: &NSWindow =
-                        unsafe { &*(ns_window_ptr as *mut NSWindow) };
+                    let ns_window: &NSWindow = unsafe { &*(ns_window_ptr as *mut NSWindow) };
                     let bg_color = NSColor::colorWithRed_green_blue_alpha(
                         r / 255.0,
                         g / 255.0,
@@ -220,7 +219,11 @@ fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     use std::os::unix::process::CommandExt;
     use std::process::Command;
 
-    Command::new(path).process_group(0).spawn()?;
+    let mut cmd = Command::new(path);
+    if cfg!(debug_assertions) {
+        cmd.env("PHLOX_DEMO_MODE", "true");
+    }
+    cmd.process_group(0).spawn()?;
 
     Ok(())
 }
@@ -229,7 +232,11 @@ fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
 fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     use std::process::Command;
 
-    Command::new(path).spawn()?;
+    let mut cmd = Command::new(path);
+    if cfg!(debug_assertions) {
+        cmd.env("PHLOX_DEMO_MODE", "true");
+    }
+    cmd.spawn()?;
 
     Ok(())
 }

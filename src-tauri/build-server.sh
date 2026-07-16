@@ -98,6 +98,7 @@ $NUITKA_CMD \
     --include-module=sqlcipher3 \
     --include-package=sqlite_vec \
     --include-data-files="$VEC0_NAME=sqlite_vec/$(basename "$VEC0_NAME")" \
+    --include-data-files="$PROJECT_DIR/server/demo/example_patients.json=server/demo/example_patients.json" \
     --include-package=pypdf \
     --include-package=mcp \
     --nofollow-import-to=server.tests \

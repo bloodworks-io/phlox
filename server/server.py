@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from server.constants import (
     APP_NAME,
     BUILD_DIR,
+    IS_DEMO_MODE,
     IS_DOCKER,
     IS_TESTING,
     PROXY_AUTH_ENABLED,
@@ -91,6 +92,15 @@ def initialize_and_get_app():
     logger.info("Initializing DB and running migrations...")
 
     logger.info("Database initialized")
+
+    if IS_DEMO_MODE:
+        try:
+            from server.demo.demo_db import seed_demo_data_desktop
+
+            seed_demo_data_desktop()
+            logger.info("Demo data seeded (PHLOX_DEMO_MODE).")
+        except Exception as e:  # pragma: no cover - never block startup
+            logger.warning("Demo seeding skipped/failed: %s", e)
 
     app = FastAPI(
         title=APP_NAME,

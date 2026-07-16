@@ -11,7 +11,14 @@
       "clinical_history": "- Patient reports feeling more energetic\n- No new symptoms\n- Compliant with medications",
       "impression": "Stable iron-deficiency anaemia, improving",
       "plan": "1. Continue current iron supplementation\n2. Repeat FBE in 3 months\n3. Follow up appointment in 4 months",
-      "encounter_summary": "65-year-old male with stable iron-deficiency anaemia showing improvement on oral iron supplementation."
+      "encounter_summary": "65-year-old male with stable iron-deficiency anaemia showing improvement on oral iron supplementation.",
+      "transcript": "John Smith, a sixty-five year old gentleman, known to the service with iron-deficiency anaemia, on oral iron for the last two years. He tells me he's feeling much more energetic lately, no new symptoms, and he's been taking his tablets faithfully. Bloods today show a haemoglobin of one thirty-two, up from the last visit, so clearly responding to supplementation.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr John Smith for review of his iron-deficiency anaemia. His haemoglobin has improved to 132 g/L on oral iron supplementation and he is now symptomatically much better.\n\nI have asked him to continue his current iron therapy and would be grateful if you could repeat a full blood examination in three months. I will review him again in four months.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue current oral iron supplementation", "completed": true },
+        { "job": "Repeat FBE in 3 months", "completed": true },
+        { "job": "Follow-up appointment in 4 months", "completed": true }
+      ]
     },
     {
       "name": "Johnson, Emily",
@@ -24,7 +31,14 @@
       "clinical_history": "- No bleeding symptoms\n- No new bruising\n- Otherwise feeling well",
       "impression": "Stable mild thrombocytopenia, likely benign",
       "plan": "1. Monitor FBE every 2 months\n2. Advise to report any unusual bleeding\n3. Consider haematology referral if platelets drop below 80",
-      "encounter_summary": "35-year-old female with stable mild thrombocytopenia, likely benign, under observation."
+      "encounter_summary": "35-year-old female with stable mild thrombocytopenia, likely benign, under observation.",
+      "transcript": "Hi Emily, come in, take a seat. How have you been since your last lot of bloods? Yeah I've been good, no problems at all. Any bleeding at all, gums, nosebleeds, bruising, anything like that? No nothing, I'd have come in if there was. Good. And the asthma and the eczema all settled? Yeah they're fine. Right, so your platelets have come back at one hundred and fifty again, which is exactly where they were last time, so it's nice and stable, nothing to worry about. We'll just keep checking them every couple of months and you let me know if you get any odd bruising.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Emily Johnson regarding her incidental thrombocytopenia. Her platelet count is stable at 150 and she remains asymptomatic with no bleeding or bruising, consistent with a benign process.\n\nI have reassured her and recommended ongoing monitoring with a full blood examination every two months. Please ask her to report any unusual bleeding, and if her platelets drop below 80 please refer her back urgently.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Monitor FBE every 2 months", "completed": false },
+        { "job": "Advise patient to report any unusual bleeding", "completed": false },
+        { "job": "Consider haematology referral if platelets drop below 80", "completed": false }
+      ]
     },
     {
       "name": "Brown, Robert",
@@ -37,7 +51,15 @@
       "clinical_history": "- Feeling well\n- No thrombotic symptoms\n- Tolerating hydroxyurea",
       "impression": "Polycythaemia vera, suboptimal control",
       "plan": "1. Increase hydroxyurea dose\n2. Schedule venesection\n3. Repeat FBE in 2 weeks\n4. Emphasize importance of hydration",
-      "encounter_summary": "62-year-old male with polycythaemia vera requiring adjustment in hydroxyurea dose and venesection."
+      "encounter_summary": "62-year-old male with polycythaemia vera requiring adjustment in hydroxyurea dose and venesection.",
+      "transcript": "Robert Brown, sixty-two, with polycythaemia vera diagnosed five years ago, on hydroxyurea and regular venesections. He feels well, no thrombotic symptoms, tolerating the medication nicely. Bloods today show a haematocrit of fifty-two with a white cell count of eighteen and a half and platelets of four hundred and fifty, so his control is suboptimal and we need to intensify treatment.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr Robert Brown, who has polycythaemia vera. His counts have drifted up with a haematocrit of 0.52 and platelets of 450, indicating suboptimal control despite hydroxyurea.\n\nI have increased his hydroxyurea dose and arranged a venesection today. I would be grateful if you could repeat a full blood examination in two weeks to ensure he is responding. In the meantime please encourage him to maintain good hydration.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Increase hydroxyurea dose", "completed": false },
+        { "job": "Schedule venesection", "completed": true },
+        { "job": "Repeat FBE in 2 weeks", "completed": false },
+        { "job": "Emphasise importance of hydration", "completed": false }
+      ]
     },
     {
       "name": "Davis, Sarah",
@@ -50,7 +72,14 @@
       "clinical_history": "- No sickle cell-related symptoms\n- Managing anxiety well\n- Recent migraine frequency increased",
       "impression": "Stable sickle cell trait, worsening migraines",
       "plan": "1. Education on sickle cell trait\n2. Refer to neurology for migraine management\n3. Annual FBE",
-      "encounter_summary": "33-year-old female with sickle cell trait and increasing migraine frequency, referred to neurology."
+      "encounter_summary": "33-year-old female with sickle cell trait and increasing migraine frequency, referred to neurology.",
+      "transcript": "Hi Sarah, lovely to see you. So the sickle cell trait side of things, any problems at all? No, nothing, I've never really had any trouble with it. Good, and your blood count today is completely normal, which is exactly what we'd expect with just the trait. The thing I wanted to ask about was the headaches, how are the migraines? Honestly they've been worse, I'm getting them most weeks now. And is the anxiety still okay on the tablets? Yeah that's under control, it's really just the headaches. Okay, so I think the trait itself is fine and doesn't need anything, but the migraines really do warrant a neurology opinion, so I'll send you through to them.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Sarah Davis, who carries a sickle cell trait identified on antenatal screening. She has never had sickle-related symptoms and her blood count today is normal.\n\nThe trait itself requires no treatment, but I have spent some time educating her about it. As her migraines have increased in frequency I have referred her on to neurology for further management. An annual full blood examination is all that is required from a haematology perspective.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Educate patient on sickle cell trait", "completed": false },
+        { "job": "Refer to neurology for migraine management", "completed": false },
+        { "job": "Annual FBE", "completed": false }
+      ]
     },
     {
       "name": "Wilson, Michael",
@@ -63,7 +92,14 @@
       "clinical_history": "- Fatigue has improved\n- No B symptoms\n- Joint pain well-managed",
       "impression": "Stable CLL, no indication for treatment",
       "plan": "1. Continue watch and wait\n2. FBE and clinical review every 3 months\n3. Discuss vaccinations",
-      "encounter_summary": "69-year-old male with stable chronic lymphocytic leukaemia, continuing watch and wait approach."
+      "encounter_summary": "69-year-old male with stable chronic lymphocytic leukaemia, continuing watch and wait approach.",
+      "transcript": "Morning Michael, how are you? Oh not bad, a lot better than last time actually, the tiredness has really settled. That's good to hear. Any fevers, drenching night sweats, weight loss? No nothing like that. And the joints? They're okay, manageable with the panadol. Right, so your bloods are back, the lymphocytes are stable at twenty five and a half, and your haemoglobin and platelets are both normal, so the leukaemia is very much behaving itself. I don't think there's any reason to start treatment at this stage, we'll just keep monitoring you every three months.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr Michael Wilson for ongoing surveillance of his chronic lymphocytic leukaemia. He remains well with no B symptoms, and his lymphocyte count is stable with preserved haemoglobin and platelets.\n\nAs he is still early stage we will continue with a watch-and-wait approach. I will review him with a full blood count every three months, and I have taken the opportunity to discuss the recommended vaccinations given his immunodeficiency.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue watch and wait approach", "completed": false },
+        { "job": "FBE and clinical review every 3 months", "completed": false },
+        { "job": "Discuss vaccinations", "completed": false }
+      ]
     },
     {
       "name": "Taylor, Emma",
@@ -76,7 +112,14 @@
       "clinical_history": "- Fatigue persists\n- Menstrual bleeding still heavy\n- Mood stable on current medication",
       "impression": "Persistent iron deficiency, likely due to ongoing blood loss",
       "plan": "1. Increase iron supplementation\n2. Refer to gynaecology for menorrhagia management\n3. Repeat FBE in 6 weeks",
-      "encounter_summary": "41-year-old female with persistent iron deficiency due to heavy menstrual bleeding, referred to gynaecology."
+      "encounter_summary": "41-year-old female with persistent iron deficiency due to heavy menstrual bleeding, referred to gynaecology.",
+      "transcript": "Hi Emma, how are you feeling? Honestly still really tired, that hasn't really improved. I'm sorry to hear that. And the periods, are they still heavy? Yeah really heavy, every month, it's miserable. Okay, and your mood on the antidepressant? That's fine, stable. So your bloods show your haemoglobin's only one ten and the cells are small, so you're still iron deficient, and I think it's pretty clear it's on the back of all the heavy bleeding. I'm going to increase your iron, but honestly the real fix here is getting the gynaecology team to sort out the periods, so I'll refer you over to them today.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Emma Taylor, who remains iron deficient despite a year of oral iron therapy. Her haemoglobin is 110 g/L with a microcytic picture, almost certainly on the basis of her ongoing menorrhagia.\n\nI have increased her iron supplementation, but the key issue is the continued menstrual blood loss. I have therefore referred her to gynaecology for management of her heavy bleeding. Please repeat a full blood examination in six weeks.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Increase iron supplementation", "completed": false },
+        { "job": "Refer to gynaecology for menorrhagia management", "completed": true },
+        { "job": "Repeat FBE in 6 weeks", "completed": false }
+      ]
     },
     {
       "name": "Anderson, James",
@@ -89,7 +132,14 @@
       "clinical_history": "- No spontaneous bleeds\n- Weight stable\n- Using CPAP regularly",
       "impression": "Well-controlled haemophilia A",
       "plan": "1. Continue current factor VIII regimen\n2. Annual comprehensive haemophilia review\n3. Encourage weight loss strategies",
-      "encounter_summary": "54-year-old male with well-controlled haemophilia A on prophylactic factor VIII."
+      "encounter_summary": "54-year-old male with well-controlled haemophilia A on prophylactic factor VIII.",
+      "transcript": "James Anderson, fifty-four, with severe haemophilia A diagnosed in childhood, on prophylactic factor VIII. He's had no spontaneous bleeds, his weight is stable, and he's using his CPAP regularly for the sleep apnoea. Bloods are all unremarkable, so his haemophilia is very well controlled on the current regimen.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr James Anderson for review of his severe haemophilia A. He has had no spontaneous bleeds and is tolerating his prophylactic factor VIII well, with stable blood counts.\n\nI have advised him to continue his current regimen and we will see him for his annual comprehensive haemophilia review. I have also encouraged him regarding weight loss, which would benefit both his joints and his sleep apnoea.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue current factor VIII regimen", "completed": false },
+        { "job": "Annual comprehensive haemophilia review", "completed": false },
+        { "job": "Encourage weight loss strategies", "completed": false }
+      ]
     },
     {
       "name": "Martin, Olivia",
@@ -102,7 +152,14 @@
       "clinical_history": "- No bleeding symptoms\n- Fatigue improved with thyroxine adjustment\n- No new bruising",
       "impression": "Stable ITP, adequate platelet count",
       "plan": "1. Continue monitoring, no treatment needed\n2. Monthly FBE for next 3 months\n3. Educate on signs of bleeding to watch for",
-      "encounter_summary": "29-year-old female with stable immune thrombocytopenia, adequate platelet count, under monitoring."
+      "encounter_summary": "29-year-old female with stable immune thrombocytopenia, adequate platelet count, under monitoring.",
+      "transcript": "Hi Olivia, how are you? I'm good thanks. Any bleeding, bruising, anything worrying you? No, nothing at all. Good. And the tiredness since we sorted out the thyroid tablets? Oh much better, that's made a real difference. Lovely. So your platelets are seventy five today, which is holding steady, and you've got no symptoms at all, so we really don't need to be treating this. I'll just keep checking your bloods once a month for the next little while, and you let me know straight away if you notice any new bruising or bleeding.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Olivia Martin for review of her immune thrombocytopenia. Her platelet count is stable at 75 and she has no bleeding symptoms, so no treatment is currently required.\n\nI will continue to monitor her with a monthly full blood examination over the next three months. I have educated her on the bleeding signs to watch out for, such as petechiae, gum bleeding and heavy bruising.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue monitoring, no treatment needed", "completed": false },
+        { "job": "Monthly FBE for next 3 months", "completed": false },
+        { "job": "Educate on signs of bleeding to watch for", "completed": false }
+      ]
     },
     {
       "name": "Thompson, William",
@@ -115,7 +172,15 @@
       "clinical_history": "- Increasing fatigue\n- No bleeding or infectious episodes\n- Stable angina symptoms",
       "impression": "Progressive MDS, increasing transfusion requirements",
       "plan": "1. Increase frequency of RBC transfusions\n2. Start erythropoiesis-stimulating agent\n3. Monitor ferritin and consider iron chelation\n4. Bone marrow biopsy in 3 months",
-      "encounter_summary": "76-year-old male with progressive myelodysplastic syndrome, increasing transfusion requirements, starting erythropoiesis-stimulating agent."
+      "encounter_summary": "76-year-old male with progressive myelodysplastic syndrome, increasing transfusion requirements, starting erythropoiesis-stimulating agent.",
+      "transcript": "Hello Mr Thompson, how are you feeling? To be honest a bit more tired than I was, I'm struggling a touch. I'm sorry to hear that. Any bleeding, or infections, that sort of thing? No, nothing like that, and the chest has been okay. Good. So your bloods today, your haemoglobin's down to seven and a half and your platelets are forty five, so things have dropped off a bit and I think you're going to need the transfusions a little more often from now on. I'm also going to start you on an injection to try and boost your own red cells, and we'll repeat the bone marrow in a few months just to see what the marrow's up to.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr William Thompson, who has low-risk myelodysplastic syndrome. His anaemia is worsening with a haemoglobin of 75 g/L and he is becoming more transfusion dependent.\n\nI have increased the frequency of his red cell transfusions and started him on an erythropoiesis-stimulating agent. We will need to monitor his ferritin and consider iron chelation if it rises. I plan to repeat his bone marrow biopsy in three months to reassess the disease.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Increase frequency of RBC transfusions", "completed": false },
+        { "job": "Start erythropoiesis-stimulating agent", "completed": true },
+        { "job": "Monitor ferritin and consider iron chelation", "completed": false },
+        { "job": "Bone marrow biopsy in 3 months", "completed": false }
+      ]
     },
     {
       "name": "White, Sophia",
@@ -128,7 +193,14 @@
       "clinical_history": "- Mild fatigue, attributed to recent viral infection\n- No new symptoms\n- Planning pregnancy in near future",
       "impression": "Stable beta thalassemia minor",
       "plan": "1. Routine FBE in 6 months\n2. Folic acid supplementation\n3. Genetic counselling referral for pregnancy planning",
-      "encounter_summary": "37-year-old female with stable beta thalassemia minor, planning pregnancy, referred for genetic counselling."
+      "encounter_summary": "37-year-old female with stable beta thalassemia minor, planning pregnancy, referred for genetic counselling.",
+      "transcript": "Hi Sophia, how are you? I'm okay thanks, just a bit washed out still after that virus. Yes that can hang around for a while. Any other symptoms? No, I'm fine otherwise. Good, and your blood count just shows that mild anaemia we'd expect with the thalassaemia trait, nothing nasty at all. Now you mentioned you and your partner are thinking about trying for a baby? Yeah we're hoping to soon. Right, so the main thing there is we should get your partner tested, and get you in to see the genetic counsellors just so you've got all the information before you fall pregnant. I'll start you on some folic acid as well.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Sophia White, who has beta thalassaemia minor. She is well aside from some recent post-viral fatigue, and her blood count shows the expected mild microcytic picture.\n\nI have started her on folic acid supplementation. As she is planning a pregnancy I have referred her for genetic counselling so her partner can be tested. A routine full blood examination in six months is otherwise all that is needed.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Routine FBE in 6 months", "completed": false },
+        { "job": "Folic acid supplementation", "completed": false },
+        { "job": "Genetic counselling referral for pregnancy planning", "completed": false }
+      ]
     },
     {
       "name": "Clark, Daniel",
@@ -141,7 +213,14 @@
       "clinical_history": "- No episodes of haemolysis\n- Good energy levels\n- Compliant with post-splenectomy prophylaxis",
       "impression": "Well-compensated hereditary spherocytosis",
       "plan": "1. Annual FBE and reticulocyte count\n2. Ensure up-to-date with vaccinations\n3. Continue penicillin prophylaxis",
-      "encounter_summary": "51-year-old male with well-compensated hereditary spherocytosis post-splenectomy, on penicillin prophylaxis."
+      "encounter_summary": "51-year-old male with well-compensated hereditary spherocytosis post-splenectomy, on penicillin prophylaxis.",
+      "transcript": "Daniel Clark, fifty-one, with hereditary spherocytosis, splenectomised at twenty-five. He's been very well, no haemolysis, good energy, and he's compliant with his post-splenectomy penicillin prophylaxis. Bloods today show a stable haemoglobin of fourteen point two with a reticulocyte count in keeping with good compensation.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr Daniel Clark, who has hereditary spherocytosis and is post-splenectomy. He is clinically well with no evidence of haemolysis and a stable haemoglobin.\n\nI have confirmed he is up to date with his vaccinations and asked him to continue his penicillin prophylaxis. An annual full blood examination with reticulocyte count is all that is required for ongoing monitoring.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Annual FBE and reticulocyte count", "completed": true },
+        { "job": "Ensure up-to-date with vaccinations", "completed": true },
+        { "job": "Continue penicillin prophylaxis", "completed": true }
+      ]
     },
     {
       "name": "Harris, Ava",
@@ -154,7 +233,14 @@
       "clinical_history": "- Minor gum bleeding\n- Anxiety well-controlled\n- Planning wisdom teeth extraction",
       "impression": "Stable Von Willebrand Disease Type 1",
       "plan": "1. Advise on dental extraction management\n2. Prescribe desmopressin nasal spray\n3. Review in 3 months post-procedure",
-      "encounter_summary": "32-year-old female with stable Von Willebrand Disease Type 1, preparing for wisdom teeth extraction."
+      "encounter_summary": "32-year-old female with stable Von Willebrand Disease Type 1, preparing for wisdom teeth extraction.",
+      "transcript": "Hi Ava, how are you? I'm good. So still getting a bit of bleeding with the gums? Yeah a little bit, and the periods are still heavy but the tranexamic acid does help. Okay, and the anxiety, all right? Yeah that's fine. Good. Now you said the dentist is keen to take your wisdom teeth out? Yeah, they want to do it fairly soon. Right, so given the von Willebrand's we do need a proper plan around that. I'll give you a desmopressin nasal spray to use at the time of the extraction, that pushes your clotting levels up, and I've written some advice for the dentist too. We'll review you afterwards to make sure it's all settled.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Ava Harris, who has type 1 von Willebrand disease. She is planning a wisdom tooth extraction and is keen to ensure her bleeding risk is adequately covered.\n\nI have advised her on management for the dental extraction and prescribed desmopressin nasal spray to use peri-procedurally. I will review her again three months after the procedure to confirm things have settled.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Advise on dental extraction management", "completed": false },
+        { "job": "Prescribe desmopressin nasal spray", "completed": false },
+        { "job": "Review in 3 months post-procedure", "completed": false }
+      ]
     },
     {
       "name": "Young, Ethan",
@@ -167,7 +253,15 @@
       "clinical_history": "- No recent haemolysis\n- Stable renal function\n- No new thrombotic events",
       "impression": "PNH well-controlled on current therapy",
       "plan": "1. Continue eculizumab as per schedule\n2. Monitor LDH and renal function monthly\n3. Maintain anticoagulation\n4. Bone marrow assessment in 6 months",
-      "encounter_summary": "44-year-old male with paroxysmal nocturnal hemoglobinuria well-controlled on eculizumab, history of thrombosis."
+      "encounter_summary": "44-year-old male with paroxysmal nocturnal hemoglobinuria well-controlled on eculizumab, history of thrombosis.",
+      "transcript": "Hello Mr Young, how are you? I'm well thanks. Any of the usual signs, dark urine, feeling washed out? No, none of that. Good. And the kidney side of things, any change? No, I feel fine. And no swelling or pain in the leg? No. Right, so your bloods are all stable, haemoglobin eleven eight, the kidneys are the same, so the PNH is very well controlled on the eculizumab. We'll keep that going as scheduled and keep you on the blood thinner. I'd like your GP to check your LDH and your kidney function each month, and I'll repeat the bone marrow in about six months.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr Ethan Young, who has paroxysmal nocturnal haemoglobinuria managed with eculizumab. He is clinically stable with no recent haemolysis or thrombosis and stable renal function.\n\nI have asked him to continue his eculizumab on schedule and to maintain his anticoagulation. I would be grateful if you could monitor his LDH and renal function monthly, and I plan to arrange a bone marrow assessment in six months.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue eculizumab as per schedule", "completed": false },
+        { "job": "Monitor LDH and renal function monthly", "completed": false },
+        { "job": "Maintain anticoagulation", "completed": false },
+        { "job": "Bone marrow assessment in 6 months", "completed": false }
+      ]
     },
     {
       "name": "Lee, Grace",
@@ -180,7 +274,15 @@
       "clinical_history": "- Stable platelet count\n- No thrombotic events\n- Occasional mild headaches",
       "impression": "Essential thrombocythemia, good response to treatment",
       "plan": "1. Continue hydroxyurea at current dose\n2. Low-dose aspirin daily\n3. FBE every 4 weeks\n4. Bone densitometry scan annually",
-      "encounter_summary": "56-year-old female with essential thrombocythemia responding well to hydroxyurea treatment."
+      "encounter_summary": "56-year-old female with essential thrombocythemia responding well to hydroxyurea treatment.",
+      "transcript": "Grace Lee, fifty-six, with JAK2-positive essential thrombocythaemia diagnosed four years ago, on hydroxyurea. Her platelet count is stable at six hundred and fifty, she's had no thrombotic events, just some occasional mild headaches on the background of her migraine with aura. She's responding well to treatment overall.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mrs Grace Lee, who has JAK2-positive essential thrombocythaemia. Her platelet count is stable at 650 on hydroxyurea and she has had no thrombotic events.\n\nI have asked her to continue the hydroxyurea and to take low-dose aspirin daily. I would be grateful for a full blood examination every four weeks, and given her osteoporosis she should have an annual bone densitometry scan.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue hydroxyurea at current dose", "completed": false },
+        { "job": "Low-dose aspirin daily", "completed": true },
+        { "job": "FBE every 4 weeks", "completed": false },
+        { "job": "Bone densitometry scan annually", "completed": false }
+      ]
     },
     {
       "name": "Walker, Noah",
@@ -193,7 +295,15 @@
       "clinical_history": "- No spontaneous bleeds in last 6 months\n- Improved mobility in target joints\n- Hepatitis C successfully treated 2 years ago",
       "impression": "Well-managed severe Haemophilia B",
       "plan": "1. Continue prophylactic factor IX\n2. Physiotherapy for target joints\n3. Annual comprehensive review\n4. Hepatology follow-up in 6 months",
-      "encounter_summary": "25-year-old male with well-managed severe Haemophilia B on prophylactic factor IX, improved joint mobility."
+      "encounter_summary": "25-year-old male with well-managed severe Haemophilia B on prophylactic factor IX, improved joint mobility.",
+      "transcript": "Noah Walker, twenty-five, with severe haemophilia B diagnosed in infancy, on prophylactic factor IX. He's had no spontaneous bleeds in the last six months and his mobility in his target joints, the right knee and left ankle, has improved. His hepatitis C was successfully treated two years ago. Bloods are all normal, so he's very well managed.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr Noah Walker, who has severe haemophilia B on prophylactic factor IX. He has been bleed-free for six months with improved joint mobility.\n\nI have asked him to continue his prophylactic factor IX and referred him for physiotherapy to his target joints. We will see him for his annual comprehensive review, and I have arranged hepatology follow-up in six months given his previous hepatitis C.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue prophylactic factor IX", "completed": false },
+        { "job": "Physiotherapy for target joints", "completed": false },
+        { "job": "Annual comprehensive review", "completed": false },
+        { "job": "Hepatology follow-up in 6 months", "completed": false }
+      ]
     },
     {
       "name": "Hall, Chloe",
@@ -206,7 +316,15 @@
       "clinical_history": "- Improving blood counts\n- Mild skin GVHD\n- No infections",
       "impression": "Recovering aplastic anaemia post-transplant, mild GVHD",
       "plan": "1. Gradually taper immunosuppression\n2. Weekly FBE for next month\n3. Continue GVHD prophylaxis\n4. Bone marrow biopsy at 1-year post-transplant",
-      "encounter_summary": "39-year-old female recovering from aplastic anaemia post-allogeneic stem cell transplant, with mild skin GVHD."
+      "encounter_summary": "39-year-old female recovering from aplastic anaemia post-allogeneic stem cell transplant, with mild skin GVHD.",
+      "transcript": "Hi Chloe, how are you? I'm okay, feeling a bit better actually. That's good to hear. Any fevers, any sign of infection? No, none of that. And the skin, how's the rash? It's there but not too bad, just a bit itchy. Okay. So your bloods are looking really encouraging, haemoglobin's up to eleven two and the platelets are up to one fifty, so the graft is clearly doing its job. I'm going to start tapering the immunosuppression just a little, but keep the graft versus host cover going, and we'll check your bloods weekly for the next month. At the one year mark we'll do another bone marrow to see where things stand.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Chloe Hall, who is six months post an allogeneic stem cell transplant for aplastic anaemia. Her counts are recovering well and she has only mild skin graft-versus-host disease with no infections.\n\nI will gradually taper her immunosuppression while continuing her GVHD prophylaxis. I would be grateful for a weekly full blood examination over the next month, and I plan a bone marrow biopsy at the one-year mark.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Gradually taper immunosuppression", "completed": false },
+        { "job": "Weekly FBE for next month", "completed": false },
+        { "job": "Continue GVHD prophylaxis", "completed": false },
+        { "job": "Bone marrow biopsy at 1-year post-transplant", "completed": false }
+      ]
     },
     {
       "name": "Lewis, Thomas",
@@ -219,7 +337,15 @@
       "clinical_history": "- Stable paraprotein levels\n- No new bone pain\n- Fatigue improved",
       "impression": "Multiple myeloma in VGPR, stable on maintenance",
       "plan": "1. Continue lenalidomide maintenance\n2. Monthly paraprotein and light chains\n3. Quarterly zoledronic acid infusion\n4. Renal function monitoring",
-      "encounter_summary": "67-year-old male with multiple myeloma in VGPR, stable on lenalidomide maintenance."
+      "encounter_summary": "67-year-old male with multiple myeloma in VGPR, stable on lenalidomide maintenance.",
+      "transcript": "Hello Mr Lewis, how are you? Not bad, a lot less tired than I was which is nice. Good. Any new bone pain? No, nothing. And the kidneys, any change in how you feel? No. Right, so your bloods are stable and the paraprotein's exactly the same, so the myeloma's holding really nicely on the lenalidomide. We'll keep that going. I'd like your GP to check the paraprotein and the light chains every month and keep an eye on your kidney function, and I'll see you for the zoledronic acid infusion every few months to protect the bones.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr Thomas Lewis, who has IgG kappa myeloma in a very good partial response and is on lenalidomide maintenance. His paraprotein is stable and he has no new bone pain.\n\nI have asked him to continue the lenalidomide and arranged a quarterly zoledronic acid infusion for his bone disease. Please monitor his paraprotein and free light chains monthly along with his renal function, given his stage three chronic kidney disease.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue lenalidomide maintenance", "completed": false },
+        { "job": "Monthly paraprotein and light chains", "completed": false },
+        { "job": "Quarterly zoledronic acid infusion", "completed": false },
+        { "job": "Renal function monitoring", "completed": false }
+      ]
     },
     {
       "name": "Scott, Mia",
@@ -232,7 +358,15 @@
       "clinical_history": "- Reduced frequency of pain crises\n- Hip pain stable\n- No recent hospitalisations",
       "impression": "Sickle cell disease, improved with hydroxyurea",
       "plan": "1. Continue hydroxyurea, adjust dose\n2. Pain management review\n3. Echocardiogram for pulmonary hypertension screening\n4. Discuss need for hip replacement",
-      "encounter_summary": "31-year-old female with sickle cell disease showing improved symptoms on hydroxyurea, considering hip replacement."
+      "encounter_summary": "31-year-old female with sickle cell disease showing improved symptoms on hydroxyurea, considering hip replacement.",
+      "transcript": "Hi Mia, how are you? I'm doing okay. How's the sickle been, many crises? Actually fewer than before, which is a relief. That's really good, the hydroxyurea's clearly doing its job. And the hip? It's about the same, it aches but it's manageable, no worse than before. Okay, and no hospital visits? No, not since I last saw you. Right, so your blood count's as we'd expect. I'll tweak the hydroxyurea dose a little and get a proper pain plan sorted for you. I'm also going to arrange an echo of your heart to check the lung pressures, and at some point we should have a chat with the surgeons about that hip.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Mia Scott, who has HbSS sickle cell disease. Her pain crisis frequency has reduced on hydroxyurea and her hip pain is currently stable.\n\nI will continue and adjust her hydroxyurea dose and have asked for a pain management review. I have arranged an echocardiogram to screen for pulmonary hypertension, and we will discuss with orthopaedics whether she may need a hip replacement for her avascular necrosis.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue hydroxyurea, adjust dose", "completed": false },
+        { "job": "Pain management review", "completed": false },
+        { "job": "Echocardiogram for pulmonary hypertension screening", "completed": false },
+        { "job": "Discuss need for hip replacement", "completed": false }
+      ]
     },
     {
       "name": "Green, Liam",
@@ -245,7 +379,15 @@
       "clinical_history": "- Achieved major molecular response\n- Tolerating nilotinib well\n- No cardiovascular symptoms",
       "impression": "CML in major molecular response",
       "plan": "1. Continue nilotinib\n2. Quarterly BCR-ABL PCR monitoring\n3. Annual cardiovascular risk assessment\n4. Consider TKI cessation trial in future",
-      "encounter_summary": "46-year-old male with chronic myeloid leukaemia in major molecular response on nilotinib."
+      "encounter_summary": "46-year-old male with chronic myeloid leukaemia in major molecular response on nilotinib.",
+      "transcript": "Hi Liam, how are you? Really good thanks. Any problems with the tablets, palpitations, chest pain, anything like that? No, nothing at all, I'm tolerating them fine. Good. And generally well in yourself? Yeah. Right, so your blood count's normal and the last PCR showed you're in a major molecular response, so the leukaemia is extremely well controlled on the nilotinib. We'll keep going with that and check the PCR every few months. Because of the particular drug you're on, I'd like your GP to keep an eye on your heart risk each year. Down the track we might even be able to think about a trial off treatment.",
+      "letter": "Dear Doctor,\n\nThank you for referring Mr Liam Green, who has BCR-ABL positive chronic myeloid leukaemia. He has achieved a major molecular response on nilotinib and is tolerating it well.\n\nI have asked him to continue the nilotinib and will monitor his BCR-ABL PCR quarterly. Given the cardiovascular considerations with nilotinib I would be grateful for an annual cardiovascular risk assessment. In the future we may consider a treatment-free remission trial.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Continue nilotinib", "completed": false },
+        { "job": "Quarterly BCR-ABL PCR monitoring", "completed": false },
+        { "job": "Annual cardiovascular risk assessment", "completed": false },
+        { "job": "Consider TKI cessation trial in future", "completed": false }
+      ]
     },
     {
       "name": "Baker, Charlotte",
@@ -258,7 +400,15 @@
       "clinical_history": "- In complete remission\n- Mild fatigue\n- No B symptoms",
       "impression": "Hodgkin Lymphoma in remission",
       "plan": "1. Surveillance CT scan\n2. Thyroid function tests\n3. Discuss fertility preservation options\n4. Long-term follow-up for secondary malignancies",
-      "encounter_summary": "35-year-old female with Hodgkin Lymphoma in remission one year post-ABVD chemotherapy, undergoing surveillance."
+      "encounter_summary": "35-year-old female with Hodgkin Lymphoma in remission one year post-ABVD chemotherapy, undergoing surveillance.",
+      "transcript": "Hi Charlotte, how are you? I'm okay, a bit tired but not too bad. That's very understandable. Any fevers, drenching sweats, weight loss? No, nothing like that. Good. And the thyroid tablets, all settled? Yeah, that's fine now. Lovely. So your bloods are all completely normal and it's been a year since you finished the chemo, so you remain in complete remission, which is wonderful news. I'm going to arrange a scan just to keep an eye on things and check your thyroid bloods, and we should also have a proper chat at some point about fertility options for the future.",
+      "letter": "Dear Doctor,\n\nThank you for referring Ms Charlotte Baker, who is one year post ABVD chemotherapy for stage two B Hodgkin lymphoma and remains in complete remission.\n\nI have arranged a surveillance CT scan and thyroid function tests given her post-treatment hypothyroidism. We will also discuss fertility preservation options, and she will need long-term follow-up to screen for secondary malignancies.\n\nKind regards,\nDr Paul Ehrlich\nConsultant Haematologist",
+      "jobs": [
+        { "job": "Surveillance CT scan", "completed": false },
+        { "job": "Thyroid function tests", "completed": false },
+        { "job": "Discuss fertility preservation options", "completed": false },
+        { "job": "Long-term follow-up for secondary malignancies", "completed": false }
+      ]
     }
   ]
 }
