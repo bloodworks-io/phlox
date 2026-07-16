@@ -40,39 +40,6 @@ export const patientApi = {
     }
   },
 
-  searchPatient: async (urNumber, callbacks = {}) => {
-    return handleApiRequest({
-      apiCall: async () => {
-        const url = await buildApiUrl(
-          `/api/note/search?ur_number=${urNumber}`,
-        );
-        return universalFetch(url);
-      },
-      onSuccess: (data) => {
-        if (data.length > 0) {
-          const latestEncounter = data[0];
-
-          // Safely iterate over callbacks
-          if (callbacks && typeof callbacks === "object") {
-            Object.entries(callbacks).forEach(([key, setter]) => {
-              if (
-                typeof setter === "function" &&
-                latestEncounter[key] !== undefined
-              ) {
-                setter(latestEncounter[key]);
-              }
-            });
-          }
-
-          return latestEncounter;
-        }
-        return null;
-      },
-      successMessage: "Patient data pre-filled from the latest encounter.",
-      errorMessage: "No patient data found",
-    });
-  },
-
   fetchPatientDetails: async (noteId, setters) => {
     return handleApiRequest({
       apiCall: async () => {
