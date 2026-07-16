@@ -1,13 +1,19 @@
 import { useState } from "react";
 import {
+    Avatar,
     Box,
     Button,
     Flex,
     Heading,
+    HStack,
     Icon,
     Text,
+    VStack,
 } from "@chakra-ui/react";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
+import { toaster } from "@/components/ui/toaster";
+import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
+import { formatDate } from "../../utils/helpers/formatHelpers";
 import UrSearchField from "./UrSearchField";
 
 export const PathHalf = ({
@@ -56,19 +62,125 @@ export const PathHalf = ({
     </Flex>
 );
 
-const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
-    const [view, setView] = useState("choose"); // "choose" | "search"
-    const [query, setQuery] = useState("");
+const candidateMeta = (cand) =>
+    [cand.gender, cand.dob, cand.ur_number && `UR ${cand.ur_number}`]
+        .filter(Boolean)
+        .join("  ·  ");
 
-    const handleFind = (e) => {
+const startBtnSx = {
+    fontFamily: '"Space Grotesk", sans-serif',
+    fontWeight: "600",
+};
+
+export const CandidateRow = ({
+    candidate,
+    onConfirm,
+    confirming = false,
+    disabled = false,
+}) => {
+    const fallbackName =
+        candidate.first_name || candidate.last_name
+            ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
+            : undefined;
+
+    return (
+        <Flex
+            align="center"
+            justify="space-between"
+            p={3}
+            borderRadius="lg"
+            bg="tile"
+        >
+            <HStack gap={3} minW="0">
+                <Avatar.Root size="sm" bg="surface" color="textPrimary">
+                    <Avatar.Fallback name={fallbackName} />
+                </Avatar.Root>
+                <Box minW="0">
+                    <Text
+                        fontWeight="600"
+                        color="textPrimary"
+                        lineClamp={1}
+                    >
+                        {candidate.name || "Unnamed patient"}
+                    </Text>
+                    <Text
+                        fontSize="xs"
+                        color="textSecondary"
+                        lineClamp={1}
+                    >
+                        {candidateMeta(candidate) ||
+                            "No demographics on file"}
+                    </Text>
+                    {candidate.encounter_date && (
+                        <Text fontSize="xs" color="textSecondary">
+                            Last seen {formatDate(candidate.encounter_date)}
+                        </Text>
+                    )}
+                </Box>
+            </HStack>
+            <Button
+                size="sm"
+                loading={confirming}
+                disabled={disabled}
+                className="green-button"
+                css={startBtnSx}
+                onClick={() => onConfirm(candidate)}
+            >
+                Start visit
+            </Button>
+        </Flex>
+    );
+};
+
+const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLoading }) => {
+    const [view, setView] = useState("choose"); // "choose" | "search" | "results"
+    const [query, setQuery] = useState("");
+    const [results, setResults] = useState([]);
+    const [confirmingId, setConfirmingId] = useState(null);
+
+    const handleFind = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        onFind(query);
+        const q = (query || "").trim();
+        if (!q) {
+            toaster.create({
+                title: "Enter a UR number or name",
+                description:
+                    "Type a UR number or patient name, then click search.",
+                type: "warning",
+                ...DEFAULT_TOAST_CONFIG,
+            });
+            return;
+        }
+        const list = await onFind(q);
+        if (list && list.length > 0) {
+            setResults(list);
+            setView("results");
+        } else {
+            toaster.create({
+                title: "No patient found",
+                description: `No patient matches "${q}". Fill in their details to create a new record.`,
+                type: "info",
+                ...DEFAULT_TOAST_CONFIG,
+            });
+        }
+    };
+
+    const handleConfirm = async (candidate) => {
+        const id = candidate.ur_number || candidate.id;
+        setConfirmingId(id);
+        try {
+            await onConfirmCandidate(candidate);
+        } finally {
+            setConfirmingId(null);
+        }
     };
 
     const subtitle =
         view === "search"
-            ? "Enter a UR number to start a new visit for an existing patient."
-            : "Find an existing patient to start a new visit, or create a new patient record.";
+            ? "Enter a UR number or name to find an existing patient."
+            : view === "results"
+              ? "Confirm the patient to start a new visit."
+              : "Find an existing patient to start a new visit, or create a new patient record.";
 
     return (
         <Flex align="center" justify="center" minH="80vh" px={4} py={8}>
@@ -128,6 +240,36 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                                 onClick={() => setView("search")}
                             />
                         </Flex>
+                    ) : view === "results" ? (
+                        <Box>
+                            <VStack gap={3} align="stretch">
+                                {results.map((cand) => (
+                                    <CandidateRow
+                                        key={cand.ur_number || cand.id}
+                                        candidate={cand}
+                                        onConfirm={handleConfirm}
+                                        confirming={
+                                            confirmingId ===
+                                            (cand.ur_number || cand.id)
+                                        }
+                                        disabled={confirmingId !== null}
+                                    />
+                                ))}
+                            </VStack>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="md"
+                                mt={3}
+                                borderRadius="2xl"
+                                className="switch-mode"
+                                css={startBtnSx}
+                                onClick={() => setView("search")}
+                            >
+                                <FaArrowLeft />
+                                Back
+                            </Button>
+                        </Box>
                     ) : (
                         <Box>
                             <Flex alignItems="center" asChild>
@@ -140,6 +282,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                                         onSearch={handleFind}
                                         isLoading={isSearchLoading}
                                         autoFocus
+                                        placeholder="UR number or name"
                                     />
                                 </form>
                             </Flex>
@@ -150,10 +293,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, isSearchLoading }) => {
                                 mt={3}
                                 borderRadius="2xl"
                                 className="switch-mode"
-                                css={{
-                                    fontFamily: '"Space Grotesk", sans-serif',
-                                    fontWeight: "600",
-                                }}
+                                css={startBtnSx}
                                 onClick={() => setView("choose")}
                             >
                                 <FaArrowLeft />

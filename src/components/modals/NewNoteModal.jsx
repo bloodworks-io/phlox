@@ -2,20 +2,17 @@ import { useEffect, useState } from "react";
 import {
     Box,
     Flex,
-    HStack,
     VStack,
     Heading,
     Text,
     Button,
-    Avatar,
     Dialog,
     Portal,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
 import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
-import { formatDate } from "../../utils/helpers/formatHelpers";
-import { PathHalf } from "../patient/NewNoteStartCard";
+import { CandidateRow, PathHalf } from "../patient/NewNoteStartCard";
 import UrSearchField from "../patient/UrSearchField";
 import DemographicsForm from "../patient/DemographicsForm";
 
@@ -23,11 +20,6 @@ const btnSx = {
     fontFamily: '"Space Grotesk", sans-serif',
     fontWeight: "600",
 };
-
-const candidateMeta = (cand) =>
-    [cand.gender, cand.dob, cand.ur_number && `UR ${cand.ur_number}`]
-        .filter(Boolean)
-        .join("  ·  ");
 
 const NewNoteModal = ({
     isOpen,
@@ -236,95 +228,22 @@ const NewNoteModal = ({
                                     <Box>
                                         <VStack gap={3} align="stretch">
                                             {results.map((cand) => (
-                                                <Flex
+                                                <CandidateRow
                                                     key={
                                                         cand.ur_number ||
                                                         cand.id
                                                     }
-                                                    align="center"
-                                                    justify="space-between"
-                                                    p={3}
-                                                    borderRadius="lg"
-                                                    bg="tile"
-                                                >
-                                                    <HStack gap={3} minW="0">
-                                                        <Avatar.Root
-                                                            size="sm"
-                                                            bg="surface"
-                                                            color={
-                                                                "textPrimary"
-                                                            }
-                                                        >
-                                                            <Avatar.Fallback
-                                                                name={
-                                                                    cand.first_name ||
-                                                                    cand.last_name
-                                                                        ? `${cand.first_name || ""} ${
-                                                                              cand.last_name ||
-                                                                              ""
-                                                                          }`.trim()
-                                                                        : undefined
-                                                                }
-                                                            />
-                                                        </Avatar.Root>
-                                                        <Box minW="0">
-                                                            <Text
-                                                                fontWeight="600"
-                                                                color={
-                                                                    "textPrimary"
-                                                                }
-                                                                lineClamp={1}
-                                                            >
-                                                                {cand.name ||
-                                                                    "Unnamed patient"}
-                                                            </Text>
-                                                            <Text
-                                                                fontSize="xs"
-                                                                color={
-                                                                    "textSecondary"
-                                                                }
-                                                                lineClamp={1}
-                                                            >
-                                                                {candidateMeta(
-                                                                    cand,
-                                                                ) ||
-                                                                    "No demographics on file"}
-                                                            </Text>
-                                                            {cand.encounter_date && (
-                                                                <Text
-                                                                    fontSize="xs"
-                                                                    color={
-                                                                        "textSecondary"
-                                                                    }
-                                                                >
-                                                                    Last seen{" "}
-                                                                    {formatDate(
-                                                                        cand.encounter_date,
-                                                                    )}
-                                                                </Text>
-                                                            )}
-                                                        </Box>
-                                                    </HStack>
-                                                    <Button
-                                                        size="sm"
-                                                        loading={
-                                                            confirmingId ===
-                                                            (cand.ur_number ||
-                                                                cand.id)
-                                                        }
-                                                        disabled={
-                                                            confirmingId !==
-                                                            null
-                                                        }
-                                                        className="green-button"
-                                                        css={btnSx}
-                                                        onClick={() =>
-                                                            handleConfirm(cand)
-                                                        }
-                                                    >
-                                                        Start visit
-                                                    </Button>
-                                                </Flex>
+                                                    candidate={cand}
+                                                    onConfirm={handleConfirm}
+                                                    confirming={
+                                                        confirmingId ===
+                                                        (cand.ur_number ||
+                                                            cand.id)
+                                                    }
+                                                    disabled={
+                                                        confirmingId !== null
+                                                    }
+                                                />
                                             ))}
                                         </VStack>
                                         <Button

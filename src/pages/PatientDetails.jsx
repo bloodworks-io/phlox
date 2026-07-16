@@ -25,6 +25,7 @@ import TranscriptionPanel from "../components/panels/transcription/Transcription
 import DocumentPanel from "../components/panels/document/DocumentPanel";
 import PreviousVisitPanel from "../components/panels/previous-visit/PreviousVisitPanel";
 import { usePatientEditor } from "../utils/hooks/usePatientEditor";
+import { findPatients } from "../utils/patient/patientLoaders";
 import { usePatientTemplate } from "../utils/hooks/usePatientTemplate";
 import { useDocumentExtraction } from "../utils/hooks/useDocumentExtraction";
 import { patientApi } from "../utils/api/patientApi";
@@ -99,7 +100,7 @@ const PatientDetails = ({
         setIsModified,
         savePatient,
         savePatientCore,
-        searchPatient,
+        loadCandidate,
     } = usePatientEditor(initialPatient);
 
     const { currentTemplate, templates, selectTemplate } = usePatientTemplate({
@@ -486,40 +487,20 @@ const PatientDetails = ({
         );
     };
 
-    const handleSearch = async (urNumber) => {
-        const query = (urNumber || "").trim();
-        if (!query) {
-            toaster.create({
-                title: "Enter a UR number",
-                description:
-                    "Type a UR number, then click search to find an existing patient.",
-                type: "warning",
-                ...DEFAULT_TOAST_CONFIG,
-            });
-            return;
-        }
-
+    const handleSearch = async (query) => {
         setIsSearchLoading(true);
         try {
-            const result = await searchPatient(query, selectedDate);
-            if (result) {
-                setSearchResult(result);
-                setIsSearchedPatient(true);
-                summary.setIsCollapsed(false);
-                console.log(
-                    "Setting isSearchedPatient to true - search successful",
-                );
-            } else {
-                toaster.create({
-                    title: "No patient found",
-                    description: `No patient matches UR number "${query}". Fill in their details to create a new record.`,
-                    type: "info",
-                    ...DEFAULT_TOAST_CONFIG,
-                });
-            }
+            return await findPatients(query);
         } finally {
             setIsSearchLoading(false);
         }
+    };
+
+    const handleConfirmCandidate = async (candidate) => {
+        const loaded = await loadCandidate(candidate, selectedDate);
+        setSearchResult(loaded);
+        setIsSearchedPatient(true);
+        summary.setIsCollapsed(false);
     };
 
     useEffect(() => {
@@ -577,6 +558,7 @@ const PatientDetails = ({
         return (
             <NewNoteStartCard
                 onFind={handleSearch}
+                onConfirmCandidate={handleConfirmCandidate}
                 onNewPatient={() => {
                     setStartCardDismissed(true);
                     onOpenDemographics();

@@ -3,10 +3,7 @@ import { useNavigate } from "react-router";
 import { toaster } from "@/components/ui/toaster";
 import { useTemplateSelection } from "../templates/templateContext";
 import { patientApi } from "../api/patientApi";
-import {
-    findPatients,
-    buildEncounterFromCandidate,
-} from "../patient/patientLoaders";
+import { buildEncounterFromCandidate } from "../patient/patientLoaders";
 
 const filterTemplateData = (templateData, template) => {
     if (!template || !template.fields) return {};
@@ -177,31 +174,13 @@ export const usePatientEditor = (initialPatient = null) => {
         return response;
     };
 
-    const searchPatient = async (urNumber, selectedDate) => {
-        try {
-            const list = await findPatients(urNumber);
-            const hit = list[0];
-            if (!hit) return null;
-            const loaded = await buildEncounterFromCandidate(hit, selectedDate);
-            setPatient(loaded);
-            toaster.create({
-                title: "Patient Found",
-                description:
-                    "Patient data pre-filled from the latest encounter.",
-                type: "success",
-                duration: 3000,
-            });
-            return loaded;
-        } catch (error) {
-            console.error("Error searching patient:", error);
-            toaster.create({
-                title: "Error",
-                description: `Error searching for patient: ${error.message}`,
-                type: "error",
-                duration: 3000,
-            });
-            throw error;
-        }
+    const loadCandidate = async (candidate, selectedDate) => {
+        const loaded = await buildEncounterFromCandidate(
+            candidate,
+            selectedDate,
+        );
+        setPatient(loaded);
+        return loaded;
     };
 
     useEffect(() => {
@@ -216,6 +195,6 @@ export const usePatientEditor = (initialPatient = null) => {
         setIsModified,
         savePatient,
         savePatientCore,
-        searchPatient,
+        loadCandidate,
     };
 };
