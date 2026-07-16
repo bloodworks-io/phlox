@@ -42,3 +42,9 @@ export const isRagEnabled = () => {
 export const isPdfFormsEnabled = () => {
   return true;
 };
+
+//Turn off forced splash screen for normal dev work with `VITE_FORCE_SPLASH=false tauri dev`.
+export const isForceSplashEnabled = () => {
+  if (!isTauri() || !import.meta.env.DEV) return false;
+  return import.meta.env.VITE_FORCE_SPLASH !== "false";
+};

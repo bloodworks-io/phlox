@@ -8,7 +8,10 @@ import EncryptionUnlock from "../../components/setup/EncryptionUnlock";
 import ServerStartupLoader from "../../components/setup/ServerStartupLoader";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import { isTauri } from "../../utils/helpers/apiConfig";
-import { setEmbeddingReady } from "../../utils/helpers/featureFlags";
+import {
+    isForceSplashEnabled,
+    setEmbeddingReady,
+} from "../../utils/helpers/featureFlags";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 
 export const useAppBootstrap = () => {
@@ -33,6 +36,13 @@ export const useAppBootstrap = () => {
 
     const checkSplashStatus = useCallback(async (options = {}) => {
         const { maxRetries = 5, retryDelay = 500 } = options;
+
+        if (isForceSplashEnabled()) {
+            setShowSplashScreen(true);
+            setIsLoadingSplashCheck(false);
+            return;
+        }
+
         let lastError;
         let success = false;
 
