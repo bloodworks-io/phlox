@@ -1,10 +1,11 @@
 import { universalFetch } from "../helpers/apiHelpers";
+import { buildApiUrl } from "../helpers/apiConfig";
 
 export const findPatients = async (query) => {
     const q = (query || "").trim();
     if (!q) return [];
     const response = await universalFetch(
-        `/api/note/search?q=${encodeURIComponent(q)}`,
+        await buildApiUrl(`/api/note/search?q=${encodeURIComponent(q)}`),
     );
     if (!response.ok) throw new Error("Search failed");
     const data = await response.json();
@@ -15,7 +16,7 @@ export const buildEncounterFromCandidate = async (candidate, selectedDate) => {
     let fullTemplateData = candidate.template_data || {};
     try {
         const fullPatientResponse = await universalFetch(
-            `/api/note/id/${candidate.id}`,
+            await buildApiUrl(`/api/note/id/${candidate.id}`),
         );
         if (fullPatientResponse.ok) {
             const fullPatient = await fullPatientResponse.json();
@@ -43,7 +44,7 @@ export const buildEncounterFromCandidate = async (candidate, selectedDate) => {
     // Fetch the previous visit summary
     try {
         const summaryResponse = await universalFetch(
-            `/api/note/summary/${candidate.id}`,
+            await buildApiUrl(`/api/note/summary/${candidate.id}`),
         );
         if (summaryResponse.ok) {
             const summaryData = await summaryResponse.json();
