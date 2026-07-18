@@ -125,17 +125,17 @@ pub fn get_request_token(webview: tauri::WebviewWindow, pm_state: tauri::State<P
         return String::new();
     }
 
-    // Reject calls from unexpected origins
+    // Reject calls from unexpected contexts.
     if let Ok(url) = webview.url() {
-        let origin = url.origin().ascii_serialization();
-        const ALLOWED_ORIGINS: &[&str] = &[
-            "tauri://localhost",
-            "https://tauri.localhost",
-            "http://tauri.localhost",
-            "http://localhost:3000",
-        ];
-        if !ALLOWED_ORIGINS.contains(&origin.as_str()) {
-            log::warn!("get_request_token rejected: origin='{}'", origin);
+        let scheme = url.scheme();
+        let host = url.host_str();
+        let is_tauri = scheme == "tauri"
+            || host.is_some_and(|h| {
+                h.ends_with(".localhost") && (scheme == "http" || scheme == "https")
+            });
+        let is_dev = cfg!(debug_assertions) && scheme == "http" && host == Some("localhost");
+        if !is_tauri && !is_dev {
+            log::warn!("get_request_token rejected: url='{}'", url);
             return String::new();
         }
     }
