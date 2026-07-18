@@ -63,7 +63,6 @@
     "copyright": "",
     "externalBin": [
       "binaries/phlox-server",
-      "binaries/phlox-pm",
       "binaries/phlox-llama-server",
       "binaries/phlox-whisper-server"
     ]

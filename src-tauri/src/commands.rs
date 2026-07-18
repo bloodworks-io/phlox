@@ -2,12 +2,13 @@ use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::sync::Mutex;
 use sysinfo::System;
+use tauri::Manager;
 
 use crate::encryption::{self, EncryptionError};
-use crate::pm_client::{ProcessManagerClient, ServiceStatusData};
+use crate::pm::{PmState, StatusData};
 
-/// Cached service status from PM
-pub struct CachedServiceStatus(pub Mutex<Option<ServiceStatusData>>);
+/// Cached service status snapshot from the in-process supervisor.
+pub struct CachedServiceStatus(pub Mutex<Option<StatusData>>);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AppleSiliconInfo {
@@ -60,33 +61,23 @@ fn parse_apple_silicon(cpu_brand: &str) -> Option<AppleSiliconInfo> {
     })
 }
 
-/// Refresh cached status from PM
-fn refresh_cached_status() -> Option<ServiceStatusData> {
-    match ProcessManagerClient::new() {
-        Ok(client) => match client.status() {
-            Ok(status) => Some(status),
-            Err(e) => {
-                log::warn!("Failed to get status from PM: {}", e);
-                None
-            }
-        },
-        Err(_) => None,
-    }
+/// Take a status snapshot from the in-process supervisor (reaps dead children).
+fn snapshot_status(pm_state: &PmState) -> StatusData {
+    let mut state = pm_state.0.lock().unwrap();
+    state.status()
 }
 
-/// Get a cached port value
-fn get_cached_port(service: &str) -> String {
-    if let Some(status) = refresh_cached_status() {
-        let info = match service {
-            "llama" => status.llama,
-            "whisper" => status.whisper,
-            "server" => status.server,
-            "embedding" => status.embedding,
-            _ => None,
-        };
-        if let Some(info) = info {
-            return info.port.to_string();
-        }
+/// Resolve a service port from a status snapshot, falling back to defaults.
+fn port_from_status(status: &StatusData, service: &str) -> String {
+    let info = match service {
+        "llama" => status.llama.as_ref(),
+        "whisper" => status.whisper.as_ref(),
+        "server" => status.server.as_ref(),
+        "embedding" => status.embedding.as_ref(),
+        _ => None,
+    };
+    if let Some(info) = info {
+        return info.port.to_string();
     }
     // Fallback to defaults
     match service {
@@ -99,28 +90,32 @@ fn get_cached_port(service: &str) -> String {
 }
 
 #[tauri::command]
-pub fn get_server_port() -> String {
-    get_cached_port("server")
+pub fn get_server_port(pm_state: tauri::State<PmState>) -> String {
+    let status = snapshot_status(&pm_state);
+    port_from_status(&status, "server")
 }
 
 #[tauri::command]
-pub fn get_llm_port() -> String {
-    get_cached_port("llama")
+pub fn get_llm_port(pm_state: tauri::State<PmState>) -> String {
+    let status = snapshot_status(&pm_state);
+    port_from_status(&status, "llama")
 }
 
 #[tauri::command]
-pub fn get_whisper_port() -> String {
-    get_cached_port("whisper")
+pub fn get_whisper_port(pm_state: tauri::State<PmState>) -> String {
+    let status = snapshot_status(&pm_state);
+    port_from_status(&status, "whisper")
 }
 
 #[tauri::command]
-pub fn get_embedding_port() -> String {
-    get_cached_port("embedding")
+pub fn get_embedding_port(pm_state: tauri::State<PmState>) -> String {
+    let status = snapshot_status(&pm_state);
+    port_from_status(&status, "embedding")
 }
 
 /// Get the request token for API authentication.
 #[tauri::command]
-pub fn get_request_token(webview: tauri::WebviewWindow) -> String {
+pub fn get_request_token(webview: tauri::WebviewWindow, pm_state: tauri::State<PmState>) -> String {
     // Reject calls from unexpected webviews
     if webview.label() != "main" {
         log::warn!(
@@ -145,58 +140,41 @@ pub fn get_request_token(webview: tauri::WebviewWindow) -> String {
         }
     }
 
-    if let Some(status) = refresh_cached_status() {
-        if let Some(token) = status.request_token {
-            return token;
-        }
-    }
-    // Return empty string if not available
-    String::new()
+    let status = snapshot_status(&pm_state);
+    status.request_token.unwrap_or_default()
 }
 
 #[tauri::command]
-pub fn get_service_status(cached_status: tauri::State<CachedServiceStatus>) -> serde_json::Value {
-    // Refresh and cache the status
-    if let Some(status) = refresh_cached_status() {
-        *cached_status.0.lock().unwrap() = Some(status.clone());
+pub fn get_service_status(
+    pm_state: tauri::State<PmState>,
+    cached_status: tauri::State<CachedServiceStatus>,
+) -> serde_json::Value {
+    let status = snapshot_status(&pm_state);
+    *cached_status.0.lock().unwrap() = Some(status.clone());
 
-        serde_json::json!({
-            "server_running": status.server.as_ref().map(|s| s.running).unwrap_or(false),
-            "llama_running": status.llama.as_ref().map(|s| s.running).unwrap_or(false),
-            "whisper_running": status.whisper.as_ref().map(|s| s.running).unwrap_or(false),
-            "embedding_running": status.embedding.as_ref().map(|s| s.running).unwrap_or(false),
-            "server_port": status.server.as_ref().map(|s| s.port).unwrap_or(5000),
-            "llm_port": status.llama.as_ref().map(|s| s.port).unwrap_or(8082),
-            "whisper_port": status.whisper.as_ref().map(|s| s.port).unwrap_or(8081),
-            "embedding_port": status.embedding.as_ref().map(|s| s.port).unwrap_or(8083)
-        })
-    } else {
-        // PM not available, return defaults
-        serde_json::json!({
-            "server_running": false,
-            "llama_running": false,
-            "whisper_running": false,
-            "embedding_running": false,
-            "server_port": "5000",
-            "llm_port": "8082",
-            "whisper_port": "8081",
-            "embedding_port": "8083"
-        })
-    }
+    serde_json::json!({
+        "server_running": status.server.as_ref().map(|s| s.running).unwrap_or(false),
+        "llama_running": status.llama.as_ref().map(|s| s.running).unwrap_or(false),
+        "whisper_running": status.whisper.as_ref().map(|s| s.running).unwrap_or(false),
+        "embedding_running": status.embedding.as_ref().map(|s| s.running).unwrap_or(false),
+        "server_port": status.server.as_ref().map(|s| s.port).unwrap_or(5000),
+        "llm_port": status.llama.as_ref().map(|s| s.port).unwrap_or(8082),
+        "whisper_port": status.whisper.as_ref().map(|s| s.port).unwrap_or(8081),
+        "embedding_port": status.embedding.as_ref().map(|s| s.port).unwrap_or(8083)
+    })
 }
 
 #[tauri::command]
-pub fn restart_whisper(_app_handle: tauri::AppHandle) -> Result<String, String> {
-    log::info!("Restarting whisper-server via PM...");
+pub fn restart_whisper(
+    _app_handle: tauri::AppHandle,
+    pm_state: tauri::State<PmState>,
+) -> Result<String, String> {
+    log::info!("Restarting whisper-server...");
 
-    let client = ProcessManagerClient::new()
-        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
+    let mut state = pm_state.0.lock().unwrap();
+    let _ = state.stop("whisper");
 
-    // First stop if running
-    let _ = client.stop("whisper");
-
-    // Then start
-    match client.start_whisper(None) {
+    match state.start_whisper(None) {
         Ok((pid, port)) => {
             log::info!("Whisper restarted with PID: {}, port: {}", pid, port);
             Ok(format!("Whisper server restarted with PID: {}", pid))
@@ -209,13 +187,11 @@ pub fn restart_whisper(_app_handle: tauri::AppHandle) -> Result<String, String> 
 }
 
 #[tauri::command]
-pub fn start_llama_service() -> Result<String, String> {
-    log::info!("Starting llama-server via PM...");
+pub fn start_llama_service(pm_state: tauri::State<PmState>) -> Result<String, String> {
+    log::info!("Starting llama-server...");
 
-    let client = ProcessManagerClient::new()
-        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
-
-    match client.start_llama(None) {
+    let mut state = pm_state.0.lock().unwrap();
+    match state.start_llama(None) {
         Ok((pid, port)) => {
             log::info!("Llama started with PID: {}, port: {}", pid, port);
             Ok(format!("Llama server started with PID: {}", pid))
@@ -228,13 +204,11 @@ pub fn start_llama_service() -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn start_whisper_service() -> Result<String, String> {
-    log::info!("Starting whisper-server via PM...");
+pub fn start_whisper_service(pm_state: tauri::State<PmState>) -> Result<String, String> {
+    log::info!("Starting whisper-server...");
 
-    let client = ProcessManagerClient::new()
-        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
-
-    match client.start_whisper(None) {
+    let mut state = pm_state.0.lock().unwrap();
+    match state.start_whisper(None) {
         Ok((pid, port)) => {
             log::info!("Whisper started with PID: {}, port: {}", pid, port);
             Ok(format!("Whisper server started with PID: {}", pid))
@@ -247,17 +221,16 @@ pub fn start_whisper_service() -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn restart_llama(_app_handle: tauri::AppHandle) -> Result<String, String> {
-    log::info!("Restarting llama-server via PM...");
+pub fn restart_llama(
+    _app_handle: tauri::AppHandle,
+    pm_state: tauri::State<PmState>,
+) -> Result<String, String> {
+    log::info!("Restarting llama-server...");
 
-    let client = ProcessManagerClient::new()
-        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
+    let mut state = pm_state.0.lock().unwrap();
+    let _ = state.stop("llama");
 
-    // First stop if running
-    let _ = client.stop("llama");
-
-    // Then start
-    match client.start_llama(None) {
+    match state.start_llama(None) {
         Ok((pid, port)) => {
             log::info!("Llama restarted with PID: {}, port: {}", pid, port);
             Ok(format!("Llama server restarted with PID: {}", pid))
@@ -270,13 +243,11 @@ pub fn restart_llama(_app_handle: tauri::AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn start_embedding_service() -> Result<String, String> {
-    log::info!("Starting embedding server via PM...");
+pub fn start_embedding_service(pm_state: tauri::State<PmState>) -> Result<String, String> {
+    log::info!("Starting embedding server...");
 
-    let client = ProcessManagerClient::new()
-        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
-
-    match client.start_embedding() {
+    let mut state = pm_state.0.lock().unwrap();
+    match state.start_embedding(None) {
         Ok((pid, port)) => {
             log::info!("Embedding started with PID: {}, port: {}", pid, port);
             Ok(format!("Embedding server started with PID: {}", pid))
@@ -289,15 +260,16 @@ pub fn start_embedding_service() -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn restart_embedding(_app_handle: tauri::AppHandle) -> Result<String, String> {
-    log::info!("Restarting embedding server via PM...");
+pub fn restart_embedding(
+    _app_handle: tauri::AppHandle,
+    pm_state: tauri::State<PmState>,
+) -> Result<String, String> {
+    log::info!("Restarting embedding server...");
 
-    let client = ProcessManagerClient::new()
-        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
+    let mut state = pm_state.0.lock().unwrap();
+    let _ = state.stop("embedding");
 
-    let _ = client.stop("embedding");
-
-    match client.start_embedding() {
+    match state.start_embedding(None) {
         Ok((pid, port)) => {
             log::info!("Embedding restarted with PID: {}, port: {}", pid, port);
             Ok(format!("Embedding server restarted with PID: {}", pid))
@@ -506,15 +478,16 @@ pub fn get_encryption_status() -> serde_json::Value {
     })
 }
 
-/// Start the Phlox server via process manager (warm start - no passphrase yet)
+/// Start the Phlox server (warm start - no passphrase yet).
 #[tauri::command]
-pub async fn start_server_command(_app_handle: tauri::AppHandle) -> Result<String, String> {
+pub async fn start_server_command(
+    _app_handle: tauri::AppHandle,
+    pm_state: tauri::State<'_, PmState>,
+) -> Result<String, String> {
     log::info!("start_server_command called - warming up server");
 
-    let client = ProcessManagerClient::new()
-        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
-
-    match client.start_server() {
+    let mut state = pm_state.0.lock().unwrap();
+    match state.start_server() {
         Ok(()) => {
             log::info!("Server started and waiting for passphrase");
             Ok("Server waiting for passphrase".to_string())
@@ -526,38 +499,34 @@ pub async fn start_server_command(_app_handle: tauri::AppHandle) -> Result<Strin
     }
 }
 
-/// Send passphrase to the waiting server
+/// Send passphrase to the waiting server.
 #[tauri::command]
 pub async fn send_passphrase_command(
-    _app_handle: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
     passphrase_hex: String,
 ) -> Result<String, String> {
     log::info!("send_passphrase_command called");
 
-    let client = ProcessManagerClient::new()
-        .map_err(|e| format!("Failed to connect to process manager: {}", e))?;
-
-    match client.send_passphrase(passphrase_hex) {
-        Ok((pid, server_port, llama_port, whisper_port)) => {
-            log::info!(
-                "Server unlocked with PID: {}, ports: server={}, llama={}, whisper={}",
-                pid,
-                server_port,
-                llama_port,
-                whisper_port
-            );
-
-            // Wait for server to be ready in background
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(2));
-                log::info!("Server should be ready now");
-            });
-
-            Ok(format!("Server unlocked with PID: {}", pid))
+    tauri::async_runtime::spawn_blocking(move || {
+        let pm_state = app_handle.state::<PmState>();
+        let mut state = pm_state.0.lock().unwrap();
+        match state.send_passphrase(passphrase_hex) {
+            Ok(ports) => {
+                log::info!(
+                    "Server unlocked; ports: server={}, llama={}, whisper={}, embedding={}",
+                    ports.server,
+                    ports.llama,
+                    ports.whisper,
+                    ports.embedding
+                );
+                Ok("Server unlocked".to_string())
+            }
+            Err(e) => {
+                log::error!("Failed to send passphrase: {}", e);
+                Err(format!("Failed to unlock server: {}", e))
+            }
         }
-        Err(e) => {
-            log::error!("Failed to send passphrase: {}", e);
-            Err(format!("Failed to unlock server: {}", e))
-        }
-    }
+    })
+    .await
+    .map_err(|e| format!("Passphrase task panicked: {}", e))?
 }

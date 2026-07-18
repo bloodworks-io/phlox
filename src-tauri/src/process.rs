@@ -99,44 +99,42 @@ fn kill_process_by_pid(pid: u32, service_name: &str) {
     }
 }
 
-/// Kill a process by name pattern and wait for it to exit
+/// Kill a process by name pattern. Only sleeps when at least one process
+/// was actually signalled (skips the 500ms wait in the common no-op case).
 fn kill_process_by_name(pattern: &str, service_name: &str) {
-    #[cfg(target_os = "macos")]
-    {
-        log::info!("Killing {} processes matching: {}", service_name, pattern);
-        let _ = std::process::Command::new("pkill")
-            .arg("-f")
-            .arg(pattern)
-            .output();
+    if kill_by_name_inner(pattern, service_name) {
+        thread::sleep(Duration::from_millis(500));
     }
+}
 
-    #[cfg(target_os = "linux")]
-    {
-        log::info!("Killing {} processes matching: {}", service_name, pattern);
-        let _ = std::process::Command::new("pkill")
-            .arg("-f")
-            .arg(pattern)
-            .output();
-    }
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
+    log::info!("Killing {} processes matching: {}", service_name, pattern);
+    std::process::Command::new("pkill")
+        .arg("-f")
+        .arg(pattern)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
 
-    #[cfg(target_os = "windows")]
-    {
-        log::info!("Killing {} processes matching: {}", service_name, pattern);
-        let _ = std::process::Command::new("taskkill")
-            .arg("/F")
-            .arg("/IM")
-            .arg(pattern)
-            .output();
-    }
-
-    thread::sleep(Duration::from_millis(500));
+#[cfg(target_os = "windows")]
+fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
+    log::info!("Killing {} processes matching: {}", service_name, pattern);
+    std::process::Command::new("taskkill")
+        .arg("/F")
+        .arg("/IM")
+        .arg(pattern)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
 }
 
 pub fn kill_all_processes() {
     log::info!("Killing all existing processes...");
 
     // First, kill any processes tracked by PID files
-    let services = ["llama", "whisper", "server"];
+    let services = ["llama", "whisper", "server", "embedding"];
 
     for service in &services {
         if let Some(pid) = is_process_running_from_pid(service) {
@@ -148,7 +146,9 @@ pub fn kill_all_processes() {
         }
     }
 
-    // Fallback: kill by name pattern for any orphaned processes
+    // Fallback: kill by name pattern for any orphaned processes.
+    // The embedding server uses the same binary as the LLM server, so
+    // phlox-llama-server covers both.
     kill_process_by_name("phlox-llama-server", "phlox-llama-server");
     kill_process_by_name("phlox-whisper-server", "phlox-whisper-server");
     kill_process_by_name("phlox-server", "phlox-server");
@@ -163,24 +163,8 @@ pub fn cleanup_stale_files() {
     if let Some(data_dir) = dirs::data_dir() {
         let phlox_dir = data_dir.join("phlox");
 
-        // Clean up port files
-        let port_file = phlox_dir.join("server_port.txt");
-        if port_file.exists() {
-            let _ = std::fs::remove_file(&port_file);
-        }
-
-        let llm_port_file = phlox_dir.join("llm_port.txt");
-        if llm_port_file.exists() {
-            let _ = std::fs::remove_file(&llm_port_file);
-        }
-
-        let whisper_port_file = phlox_dir.join("whisper_port.txt");
-        if whisper_port_file.exists() {
-            let _ = std::fs::remove_file(&whisper_port_file);
-        }
-
         // Clean up PID files
-        for service in ["llama", "whisper", "server"] {
+        for service in ["llama", "whisper", "server", "embedding"] {
             let pid_file = phlox_dir.join(format!("{}.pid", service));
             if pid_file.exists() {
                 let _ = std::fs::remove_file(&pid_file);

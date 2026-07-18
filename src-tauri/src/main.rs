@@ -1,6 +1,6 @@
 mod commands;
 mod encryption;
-mod pm_client;
+mod pm;
 mod process;
 
 use log::LevelFilter;
@@ -16,7 +16,6 @@ use commands::{
     start_embedding_service, start_llama_service, start_server_command, start_whisper_service,
     unlock_with_passphrase, CachedServiceStatus,
 };
-use pm_client::ProcessManagerClient;
 use process::{cleanup_stale_files, kill_all_processes};
 
 /// Position the traffic light buttons (close, minimize, maximize) with custom offset
@@ -54,6 +53,9 @@ pub fn run() {
         .plugin(log_plugin)
         .plugin(tauri_plugin_http::init())
         .manage(CachedServiceStatus(std::sync::Mutex::new(None)))
+        .manage(pm::PmState(std::sync::Mutex::new(
+            pm::ProcessManagerState::default(),
+        )))
         .invoke_handler(tauri::generate_handler![
             commands::get_server_port,
             commands::get_llm_port,
@@ -113,33 +115,17 @@ pub fn run() {
             let app_handle = app.handle().clone();
             log::info!("App setup started");
 
-            // Clean up any existing processes and files from previous runs
+            // Clean up orphans from a previous crashed session
             kill_all_processes();
             cleanup_stale_files();
 
-            // Launch the process manager
-            log::info!("Launching process manager...");
-            if let Err(e) = launch_process_manager() {
-                log::error!("Failed to launch process manager: {}", e);
-                // Continue anyway - we'll show an error to the user
-            }
+            // Install cleanup hooks for abnormal exits (panic, SIGTERM/SIGINT)
+            install_cleanup_hooks();
 
-            // Wait for process manager socket to be ready
-            let pm_ready = wait_for_process_manager(Duration::from_secs(5));
-
-            if !pm_ready {
-                log::error!("Process manager failed to start. This is a critical error.");
-                // We could emit an event to the frontend here to show an error
-            } else {
-                log::info!("Process manager is ready");
-                // Llama and whisper will be started after the Python server is up
-                // and has allocated the ports (triggered by frontend)
-            }
-
-            // Spawn a thread to monitor PM health
+            // Spawn liveness watcher for managed sidecar processes
             let app_handle_for_monitor = app_handle.clone();
             thread::spawn(move || {
-                monitor_process_manager(app_handle_for_monitor);
+                monitor_service_health(app_handle_for_monitor);
             });
 
             Ok(())
@@ -156,141 +142,70 @@ pub fn run() {
             }
 
             if let tauri::WindowEvent::CloseRequested { .. } = event {
-                log::info!("Window close requested. Shutting down process manager.");
+                log::info!("Window close requested. Shutting down managed processes.");
 
-                // Tell PM to shutdown - it will clean up all processes
-                if let Ok(client) = ProcessManagerClient::new() {
-                    let _ = client.shutdown();
-                }
+                // Kill all managed sidecar processes directly (no separate PM)
+                let pm_state = window.app_handle().state::<pm::PmState>();
+                pm_state.0.lock().unwrap().shutdown();
 
                 // Clean up local files
                 cleanup_stale_files();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-
-/// Launch the process manager as a child process
-fn launch_process_manager() -> Result<(), Box<dyn std::error::Error>> {
-    let current_exe = std::env::current_exe()?;
-    let exe_dir = current_exe
-        .parent()
-        .ok_or("Failed to get executable directory")?;
-
-    // Look for phlox-pm in the same directory
-    let pm_path = exe_dir.join("phlox-pm");
-
-    #[cfg(target_os = "windows")]
-    let pm_path = pm_path.with_extension("exe");
-
-    log::info!("Launching process manager from: {:?}", pm_path);
-
-    // Check if PM binary exists
-    if !pm_path.exists() {
-        // For development, try to find it in the target directory
-        // Check both debug and release paths
-        let dev_pm_paths = [
-            exe_dir
-                .parent()
-                .and_then(|p| p.parent())
-                .map(|p| p.join("target").join("debug").join("phlox-pm")),
-            exe_dir
-                .parent()
-                .and_then(|p| p.parent())
-                .map(|p| p.join("target").join("release").join("phlox-pm")),
-        ];
-
-        for dev_path in dev_pm_paths.iter().filter_map(|p| p.as_ref()) {
-            if dev_path.exists() {
-                log::info!("Using dev PM path: {:?}", dev_path);
-                return spawn_pm(dev_path);
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| match event {
+            tauri::RunEvent::ExitRequested { .. } => {
+                log::info!("RunEvent::ExitRequested — graceful shutdown via PmState");
+                let pm_state = app_handle.state::<pm::PmState>();
+                pm_state.0.lock().unwrap().shutdown();
+                cleanup_stale_files();
             }
-        }
-
-        return Err(format!("Process manager binary not found at {:?}", pm_path).into());
-    }
-
-    spawn_pm(&pm_path)
-}
-
-#[cfg(unix)]
-fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    use std::os::unix::process::CommandExt;
-    use std::process::Command;
-
-    let mut cmd = Command::new(path);
-    if cfg!(debug_assertions) {
-        cmd.env("PHLOX_DEMO_MODE", "true");
-    }
-    cmd.process_group(0).spawn()?;
-
-    Ok(())
-}
-
-#[cfg(windows)]
-fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    use std::process::Command;
-
-    let mut cmd = Command::new(path);
-    if cfg!(debug_assertions) {
-        cmd.env("PHLOX_DEMO_MODE", "true");
-    }
-    cmd.spawn()?;
-
-    Ok(())
-}
-
-/// Wait for the process manager socket to be ready
-fn wait_for_process_manager(timeout: Duration) -> bool {
-    let start = std::time::Instant::now();
-    let socket_path = pm_client::socket_path();
-
-    while start.elapsed() < timeout {
-        // Just check if the socket file exists and we can connect - don't ping yet
-        // This avoids blocking the PM server with health checks during startup
-        if socket_path.exists() {
-            // Try to connect once to verify it's actually accepting connections
-            if std::os::unix::net::UnixStream::connect(&socket_path).is_ok() {
-                return true;
+            tauri::RunEvent::Exit => {
+                log::info!("RunEvent::Exit — last-chance cleanup via PmState");
+                let pm_state = app_handle.state::<pm::PmState>();
+                let mut state = pm_state.0.lock().unwrap_or_else(|e| e.into_inner());
+                state.shutdown();
+                drop(state);
+                cleanup_stale_files();
             }
-        }
-        std::thread::sleep(Duration::from_millis(100));
-    }
-
-    false
+            _ => {}
+        });
 }
 
-/// Monitor the process manager and emit an event if it dies
-fn monitor_process_manager(app_handle: tauri::AppHandle) {
-    let mut consecutive_failures = 0;
-    const MAX_FAILURES: u32 = 3; // Allow some transient failures
+/// Install cleanup hooks for abnormal process termination.
+fn install_cleanup_hooks() {
+    extern "C" fn on_signal(_sig: libc::c_int) {
+        crate::process::kill_all_processes();
+        std::process::exit(130);
+    }
 
+    #[cfg(unix)]
+    unsafe {
+        libc::signal(libc::SIGTERM, on_signal as *const () as libc::sighandler_t);
+        libc::signal(libc::SIGINT, on_signal as *const () as libc::sighandler_t);
+    }
+
+    // Panic hook: kill children before unwinding so we don't orphan sidecars.
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        crate::process::kill_all_processes();
+        prev_hook(info);
+    }));
+}
+
+fn monitor_service_health(app_handle: tauri::AppHandle) {
     loop {
-        // Check every 30 seconds instead of 10 - less aggressive
-        std::thread::sleep(Duration::from_secs(30));
+        thread::sleep(Duration::from_secs(30));
 
-        if !ProcessManagerClient::is_alive() {
-            consecutive_failures += 1;
-            log::warn!(
-                "Process manager health check failed (attempt {}/{})",
-                consecutive_failures,
-                MAX_FAILURES
-            );
+        let pm_state = app_handle.state::<pm::PmState>();
+        let mut state = pm_state.0.lock().unwrap();
+        let died = state.check_liveness();
+        drop(state);
 
-            if consecutive_failures >= MAX_FAILURES {
-                log::error!("Process manager is not responding after multiple checks!");
-                log::error!("Please restart the application to restore functionality.");
-
-                // Emit an event to the frontend
-                let _ = app_handle.emit("process-manager-died", ());
-
-                // We can't recover from this, so stop monitoring
-                break;
-            }
-        } else {
-            // Reset on success
-            consecutive_failures = 0;
+        for service in died {
+            log::warn!("Emitting service-died event for: {}", service);
+            let _ = app_handle.emit("service-died", service);
         }
     }
 }
