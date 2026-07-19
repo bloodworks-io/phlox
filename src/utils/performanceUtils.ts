@@ -75,7 +75,8 @@ export function getSmartRecommendations(availableModels, systemSpecs) {
     }));
   }
 
-  const ram = systemSpecs.total_memory_gb;
+  // Pool system RAM with discrete GPU VRAM on platforms that expose it
+  const ram = systemSpecs.total_memory_gb + (systemSpecs.dgpu_vram_gb || 0);
   const RAM_BUFFER_GB = 4;
 
   // Filter out models that won't fit with at least a 4GB buffer

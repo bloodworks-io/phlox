@@ -26,6 +26,7 @@ pub struct SystemSpecs {
     pub os: String,
     pub arch: String,
     pub apple_silicon: Option<AppleSiliconInfo>,
+    pub dgpu_vram_gb: Option<f64>,
 }
 
 fn parse_apple_silicon(cpu_brand: &str) -> Option<AppleSiliconInfo> {
@@ -387,7 +388,12 @@ pub fn get_system_specs() -> SystemSpecs {
         .map(|cpu| cpu.brand().to_string())
         .unwrap_or_else(|| "Unknown".to_string());
 
-    let apple_silicon = parse_apple_silicon(&cpu_brand);
+    let apple_silicon = parse_apple_silicon(&cpu_brand).or_else(|| synthesize_perf_class());
+
+    #[cfg(target_os = "linux")]
+    let dgpu_vram_gb = detect_dgpu_vram_mb().map(|mb| mb as f64 / 1024.0);
+    #[cfg(not(target_os = "linux"))]
+    let dgpu_vram_gb = None;
 
     SystemSpecs {
         total_memory_gb: total_memory,
@@ -397,7 +403,107 @@ pub fn get_system_specs() -> SystemSpecs {
         os: std::env::consts::OS.to_string(),
         arch: std::env::consts::ARCH.to_string(),
         apple_silicon,
+        dgpu_vram_gb,
     }
+}
+
+fn synthesize_perf_class() -> Option<AppleSiliconInfo> {
+    #[cfg(target_os = "linux")]
+    {
+        let (gen, tier) = match detect_dgpu_vram_mb() {
+            Some(v) if v >= 16384 => (3u8, "Ultra"),
+            Some(v) if v >= 8192 => (3u8, "Max"),
+            Some(v) if v >= 4096 => (3u8, "Pro"),
+            Some(_) => (2u8, "Base"),
+            None => (1u8, "Base"),
+        };
+        return Some(AppleSiliconInfo {
+            is_apple_silicon: false,
+            generation: Some(gen),
+            tier: Some(tier.to_string()),
+        });
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        None
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn detect_dgpu_vram_mb() -> Option<u64> {
+    if let Some(mb) = nvidia_vram_mb() {
+        return Some(mb);
+    }
+
+    if let Ok(drm) = std::fs::read_dir("/sys/class/drm") {
+        let mut max_vram: u64 = 0;
+        for entry in drm.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if !name.starts_with("card") || name.contains('-') {
+                continue;
+            }
+            if let Ok(s) =
+                std::fs::read_to_string(entry.path().join("device/mem_info_vram_total"))
+            {
+                if let Ok(bytes) = s.trim().parse::<u64>() {
+                    let mb = bytes / (1024 * 1024);
+                    if mb > max_vram {
+                        max_vram = mb;
+                    }
+                }
+            }
+        }
+        if max_vram >= 2048 {
+            return Some(max_vram);
+        }
+    }
+
+    if let Ok(pci) = std::fs::read_dir("/sys/bus/pci/devices") {
+        for entry in pci.flatten() {
+            let class_path = entry.path().join("class");
+            let vendor_path = entry.path().join("vendor");
+            let class_s = match std::fs::read_to_string(&class_path) {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            let vendor_s = match std::fs::read_to_string(&vendor_path) {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            let class_val = match u32::from_str_radix(
+                class_s.trim().trim_start_matches("0x"),
+                16,
+            ) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            let vendor_val = match u32::from_str_radix(
+                vendor_s.trim().trim_start_matches("0x"),
+                16,
+            ) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+
+            if (class_val == 0x030000 || class_val == 0x030200) && vendor_val == 0x10de {
+                return Some(8 * 1024);
+            }
+        }
+    }
+
+    None
+}
+
+#[cfg(target_os = "linux")]
+fn nvidia_vram_mb() -> Option<u64> {
+    let out = std::process::Command::new("nvidia-smi")
+        .args(["--query-gpu=memory.total", "--format=csv,noheader,nounits"])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    String::from_utf8_lossy(&out.stdout).trim().parse::<u64>().ok()
 }
 
 // ============================================================================
