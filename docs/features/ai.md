@@ -33,7 +33,7 @@ The chat interface includes a built-in tool-calling system that allows the AI to
 
 ### Built-in Tools
 - **Transcript Search:** Search the current patient's transcript for relevant information
-- **Literature Search:** Query local document collections stored in ChromaDB
+- **Literature Search:** Query local document collections stored in sqlite-vec
 - **PubMed Search:** Search PubMed for medical literature (disabled by default — may expose PHI to external API)
 - **Wikipedia Search:** Look up medical terms and topics (disabled by default — may expose PHI)
 - **Patient Note Search:** Search through a patient's historical notes

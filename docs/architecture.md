@@ -14,7 +14,7 @@
 ### Backend (FastAPI)
 - REST API endpoints
 - Core application logic
-- Integrates with Ollama or any OpenAI compatible endpoint, Whisper, and ChromaDB
+- Integrates with Ollama or any OpenAI compatible endpoint, Whisper, and sqlite-vec
 - Database operations
 - MCP server management and tool routing
 
@@ -98,7 +98,9 @@ Example flow for a single field:
 Audio → Raw Transcription → JSON Extraction → Refinement (style + adaptive rules) → Final Output
 ```
 
-### RAG (ChromaDB)
+> See the [README](../README.md#architecture) for a side-by-side diagram comparing this pipeline against single-shot generation, including the adaptive-refinement feedback loop.
+
+### RAG (sqlite-vec)
 - Vector database for document storage
 - Requires a tool calling model to be selected
 - Enables context-aware queries
@@ -111,6 +113,6 @@ Audio → Raw Transcription → JSON Extraction → Refinement (style + adaptive
 - Processing mode configurable per deployment: "auto" (default), "vision", or "ocr"
 
 ## Data Persistence
-- SQLite database and ChromaDB data persisted on host
+- SQLite database and vector data persisted on host
 - Volume mount: `./data:/usr/src/app/data`
 - Data preserved across container restarts
