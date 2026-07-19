@@ -178,6 +178,62 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-flatpak:
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          persist-credentials: false
+          submodules: false
+
+      - name: Install flatpak and flatpak-builder
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder
+          flatpak --version
+          flatpak-builder --version
+
+      - name: Add Flathub remote
+        run: |
+          flatpak remote-add --user --if-not-exists flathub \
+            https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install Freedesktop SDK and extensions
+        run: |
+          flatpak install --user --assumeyes \
+            org.freedesktop.Sdk//24.08 \
+            org.freedesktop.Platform//24.08 \
+            org.webkit2gtk.BaseApp//24.08 \
+            org.freedesktop.Sdk.Extension.node22//24.08 \
+            org.freedesktop.Sdk.Extension.rust-stable//24.08
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6.3
+        with:
+          bundle: Phlox-linux-x86_64.flatpak
+          manifest-path: packaging/com.phlox.app.yaml
+          cache-key: flatpak-builder-${{ github.sha }}
+          arch: x86_64
+          verbose: true
+
+      - name: Upload Flatpak bundle
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: Phlox-linux-x86_64.flatpak
+          path: Phlox-linux-x86_64.flatpak
+
+      - name: Attach to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974 # v2.1.0
+        with:
+          files: Phlox-linux-x86_64.flatpak
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   docker:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')

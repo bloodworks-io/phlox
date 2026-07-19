@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.phlox.app</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Phlox</name>
+  <summary>Open-source AI scribe with patient management</summary>
+  <description>
+    <p>
+      Phlox is a free, open-source, AI scribe with a built-in patient
+      management system and agentic AI capabilities. It is designed as a
+      local-first alternative to SaaS medical scribes that runs entirely
+      on your own hardware with no third-party services — all data stays
+      local.
+    </p>
+    <p>
+      Key features include ambient note generation, adaptive refinement
+      from previous notes, a flexible template system, MCP server support
+      for external tools, and document processing via vision language models.
+    </p>
+    <p>
+      The desktop app comes bundled with both transcription (parakeet.cpp)
+      and LLM inference (llama.cpp) engines using the Vulkan backend for
+      GPU acceleration on AMD, Intel, and NVIDIA hardware.
+    </p>
+  </description>
+  <launchable type="desktop-id">com.phlox.app.desktop</launchable>
+  <url type="homepage">https://github.com/bloodworks-io/phlox</url>
+  <url type="bugtracker">https://github.com/bloodworks-io/phlox/issues</url>
+  <url type="help">https://github.com/bloodworks-io/phlox#readme</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/bloodworks-io/phlox/main/docs/images/readme_screenshot.png</image>
+      <caption>Phlox main interface</caption>
+    </screenshot>
+  </screenshots>
+  <provides>
+    <binary>phlox</binary>
+  </provides>
+  <releases>
+    <release version="1.0.5" date="2026-07-18">
+      <description>
+        <p>First Flatpak release. Includes Vulkan GPU acceleration via Mesa Vulkan drivers from the Freedesktop 24.08 runtime.</p>
+      </description>
+    </release>
+  </releases>
+  <suggests>
+    <id>org.freedesktop.Platform.Vulkan.Intel</id>
+    <id>org.freedesktop.Platform.Vulkan.Mesa</id>
+  </suggests>
+  <content_rating type="oars-1.1" />
+  <developer_name>bloodworks-io</developer_name>
+  <update_contact>noreply@bloodworks.io</update_contact>
+</component>

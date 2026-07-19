@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Phlox
+GenericName=Patient Management
+Comment=Open-source AI scribe with patient management
+Comment[en]=Open-source AI scribe with patient management
+Exec=phlox
+Icon=com.phlox.app
+Terminal=false
+Categories=Office;MedicalSoftware;
+StartupWMClass=Phlox
+StartupNotify=true
+MimeType=application/pdf;
