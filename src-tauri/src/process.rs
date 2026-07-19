@@ -2,9 +2,10 @@ use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 
-/// Get the PID file path for a service
+/// Get the PID file path for a service.
+
 fn pid_file_for_service(service: &str) -> Option<PathBuf> {
-    dirs::data_dir().map(|data_dir| data_dir.join("phlox").join(format!("{}.pid", service)))
+    crate::pm::phlox_dir().map(|dir| dir.join(format!("{}.pid", service)))
 }
 
 /// Check if a specific PID is alive
@@ -160,9 +161,7 @@ pub fn kill_all_processes() {
 }
 
 pub fn cleanup_stale_files() {
-    if let Some(data_dir) = dirs::data_dir() {
-        let phlox_dir = data_dir.join("phlox");
-
+    if let Some(phlox_dir) = crate::pm::phlox_dir() {
         // Clean up PID files
         for service in ["llama", "whisper", "server", "embedding"] {
             let pid_file = phlox_dir.join(format!("{}.pid", service));

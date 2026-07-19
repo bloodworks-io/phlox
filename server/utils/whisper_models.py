@@ -7,8 +7,6 @@ from the omi-health/omi-med-stt-v1-gguf repository on HuggingFace.
 """
 
 import logging
-import os
-import sys
 import time
 from contextlib import suppress
 from dataclasses import dataclass
@@ -16,6 +14,8 @@ from pathlib import Path
 from typing import TypedDict
 
 import httpx
+
+from server.constants import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -59,23 +59,11 @@ WHISPER_MODELS: dict[str, ModelInfo] = {
 DEFAULT_MODEL_ID = "omi-med-stt-v1-q8_0"
 
 
-def get_data_dir() -> Path:
-    """Get platform-specific data directory for storing models."""
-    if os.name == "nt":  # Windows
-        data_dir = os.environ.get("LOCALAPPDATA", str(Path.home()))
-    elif sys.platform == "darwin":  # macOS
-        data_dir = str(Path.home() / "Library/Application Support")
-    else:  # Linux and others
-        data_dir = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share"))
-    return Path(data_dir)
-
-
 class WhisperModelManager:
     """Manages the Omi Med STT model download and listing."""
 
     def __init__(self):
-        # Models stored in data_dir/phlox/whisper_models
-        self.models_dir = get_data_dir() / "phlox" / "whisper_models"
+        self.models_dir = DATA_DIR / "whisper_models"
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
     def get_available_models(self) -> list[dict]:

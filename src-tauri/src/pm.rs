@@ -78,9 +78,9 @@ pub struct ProcessManagerState {
 // Directory / PID file helpers
 // =========================================================================
 
-/// Get the phlox data directory
+/// Get the phlox data directory.
 pub fn phlox_dir() -> Option<PathBuf> {
-    dirs::data_dir().map(|dir| dir.join("phlox"))
+    dirs::data_dir().map(|dir| dir.join("Phlox"))
 }
 
 /// Get the PID file path for a service.
