@@ -695,7 +695,7 @@ fn spawn_drain_threads(child: &mut Child) -> (JoinHandle<()>, JoinHandle<()>, Ar
                 if shutdown_stdout.load(Ordering::Relaxed) {
                     break;
                 }
-                log::debug!("[server stdout] {}", line);
+                log::info!("[server stdout] {}", line);
             }
         }
         log::debug!("Stdout drain thread exiting");

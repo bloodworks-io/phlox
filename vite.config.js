@@ -50,6 +50,11 @@ export default defineConfig({
     emptyOutDir: true,
   },
 
+
+  optimizeDeps: {
+    entries: ["index.html"],
+  },
+
   server: {
     host: "0.0.0.0",
     port: 3000,
@@ -60,6 +65,16 @@ export default defineConfig({
         target: "http://localhost:5000",
         changeOrigin: true,
       },
+    },
+
+    watch: {
+      ignored: [
+        "**/build-dir/**",
+        "**/.flatpak-builder/**",
+        "**/src-tauri/llama.cpp/**",
+        "**/src-tauri/parakeet.cpp/**",
+        "**/src-tauri/target/**",
+      ],
     },
   },
 });
