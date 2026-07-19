@@ -745,6 +745,10 @@ fn start_server() -> Result<ManagedProcess, String> {
     cmd.stdout(Stdio::piped());
     cmd.env("RATE_LIMIT_ENABLED", "true");
 
+    if cfg!(debug_assertions) {
+        cmd.env("PHLOX_DEMO_MODE", "true");
+    }
+
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
