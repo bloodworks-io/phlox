@@ -33,26 +33,6 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
   <img src="/docs/images/readme_screenshot.png" width="500" alt="Phlox Screenshot">
 </p>
 
-## Architecture
-
-Ambient scribing is a relatively simple task for LLMs. In particular, large frontier models are very adept at one-shotting a decent note given a transcript and a style example. Smaller models capable of running on consumer hardware are able to summarise medical consultations reasonably well; however, they often struggle with replicating specific note styles.
-
-Phlox approaches this by chunking transcripts per template field and constraining outputs to structured JSON. After getting the model to make a targeted summary for a given field, a dedicated refinement pass then allows the model to focus on matching output to the users personal style example. Finally an adaptive-refinement feedback loop allows the model to improve note quality as it is used more.
-
-<p align="center">
-<img src="docs/images/architecture.png" width="500px" alt="Phlox Architecture"/>
-</p>
-
-### Technical Stack
-
-- **Frontend:** [Chakra UI](https://github.com/chakra-ui/chakra-ui) (React)
-- **Backend:** [FastAPI](https://github.com/fastapi/fastapi) (Python)
-- **Database:** [SQLCipher](https://github.com/sqlcipher/sqlcipher)
-- **Vector DB:** [sqlite-vec](https://github.com/asg017/sqlite-vec)
-- **Desktop Wrapper:** [Tauri](https://github.com/tauri-apps/tauri) 
-- **LLM Backend:** Any OpenAI-compatible endpoint (incl. Ollama), or bundled [llama.cpp ](https://github.com/ggml-org/llama.cpp) server
-- **Transcription:** Any OpenAI Whisper-compatible endpoint or bundled [parakeet.cpp](https://github.com/mudler/parakeet.cpp) server
-
 ## Getting Started
 
 ### Desktop App
@@ -98,17 +78,32 @@ The Docker image does not have any inference or transcription capability built-i
 
 Note quality benefits from speaker diarization. [parakeet-diarized](https://github.com/jfgonsalves/parakeet-diarized) provides an easy to use Docker container that serves a diarization-enabled OpenAI Whisper-comptaible endpoint.
 
+## Architecture
+
+Ambient scribing is a relatively simple task for LLMs. In particular, large frontier models are very adept at one-shotting a decent note given a transcript and a style example. Smaller models capable of running on consumer hardware are able to summarise medical consultations reasonably well; however, they often struggle with replicating specific note styles.
+
+Phlox approaches this by chunking transcripts per template field and constraining outputs to structured JSON. After getting the model to make a targeted summary for a given field, a dedicated refinement pass then allows the model to focus on matching output to the users personal style example. Finally an adaptive-refinement feedback loop allows the model to improve note quality as it is used more.
+
+<p align="center">
+<img src="docs/images/architecture.png" width="500px" alt="Phlox Architecture"/>
+</p>
+
+### Technical Stack
+
+- **Frontend:** [Chakra UI](https://github.com/chakra-ui/chakra-ui) (React)
+- **Backend:** [FastAPI](https://github.com/fastapi/fastapi) (Python)
+- **Database:** [SQLCipher](https://github.com/sqlcipher/sqlcipher)
+- **Vector DB:** [sqlite-vec](https://github.com/asg017/sqlite-vec)
+- **Desktop Wrapper:** [Tauri](https://github.com/tauri-apps/tauri) 
+- **LLM Backend:** Any OpenAI-compatible endpoint (incl. Ollama), or bundled [llama.cpp ](https://github.com/ggml-org/llama.cpp) server
+- **Transcription:** Any OpenAI Whisper-compatible endpoint or bundled [parakeet.cpp](https://github.com/mudler/parakeet.cpp) server
+
 ## Usage Warning 
 
 Phlox is an experimental project intended for educational and personal use only. **It is not a certified medical device, should NOT be used for clinical decision-making, and is not suitable for production deployment as provided in this repo.** If you intend to use it in a clinical setting, you are responsible for ensuring compliance with local applicable regulations (HIPAA, GDPR, TGA, etc.)
 
 AI outputs can be unreliable. Always verify AI-generated content and use professional clinical judgment. The application displays a disclaimer on startup with full details.
 
-**Security note:** Docker deployments have no authentication by default. You MUST place Phlox behind a reverse proxy with an auth layer before exposing it on any network. See [Deployment Security](docs/setup.md#critical-security-warning) and the [full warnings](docs/warnings.md#usage-warnings-and-disclaimers) for configuration details.
-
-## Use of AI generated code
-
-This repo has made extensive use of AI development tools - as a solo hobby developer I would simply have not been able to make Phlox otherwise. All AI generated code has been vetted by me and I ask that any contributors do the same prior to submitting PRs.
 
 ## License 
 
@@ -119,3 +114,5 @@ Third-party models, runtimes, and library attributions: [Credits](docs/credits.m
 ## Contributing 
 
 [Contributing Guidelines](.github/CONTRIBUTING.md)
+
+This repo has made extensive use of AI development tools - as a solo hobby developer I would simply have not been able to make Phlox otherwise. All AI generated code has been vetted by me and I ask that any contributors do the same prior to submitting PRs.

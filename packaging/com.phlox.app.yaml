@@ -122,6 +122,9 @@ modules:
       - ln -sf /app/bin/phlox-server-x86_64-unknown-linux-gnu src-tauri/binaries/
       - ln -sf /app/bin/phlox-llama-server-x86_64-unknown-linux-gnu src-tauri/binaries/
       - ln -sf /app/bin/phlox-whisper-server-x86_64-unknown-linux-gnu src-tauri/binaries/
+      - ln -sf phlox-server-x86_64-unknown-linux-gnu /app/bin/phlox-server
+      - ln -sf phlox-llama-server-x86_64-unknown-linux-gnu /app/bin/phlox-llama-server
+      - ln -sf phlox-whisper-server-x86_64-unknown-linux-gnu /app/bin/phlox-whisper-server
       - npm ci
       - npx tauri build --no-bundle
       - install -Dm755 src-tauri/target/release/phlox /app/bin/phlox

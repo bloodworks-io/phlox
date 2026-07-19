@@ -44,6 +44,7 @@ build/
 dist/
 .tmp/
 main.*/
+repo/
 
 # Cloned external repos (cloned by CI)
 src-tauri/parakeet.cpp/
