@@ -4,10 +4,10 @@ resolver = "2"
 [package]
 name = "phlox"
 version = "1.0.5"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+description = "Open-source AI scribe with patient management"
+authors = ["bloodworks-io"]
+license = "MIT"
+repository = "https://github.com/bloodworks-io/phlox"
 edition = "2021"
 
 [build-dependencies]

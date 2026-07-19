@@ -6,7 +6,7 @@ dependencies = [
     "APScheduler==3.11.2",
     "fastapi==0.138.0",
     "httpx==0.28.1",
-    "json-repair==0.55.0",
+    "json-repair==0.60.1",
     "openai==2.14.0",
     "platformdirs==4.10.0",
     "pydantic==2.12.5",
@@ -18,9 +18,9 @@ dependencies = [
 
 [project.optional-dependencies]
 rag = [
-    "mcp==1.26.0",
+    "mcp==1.28.1",
     "numpy==2.4.2",
-    "pypdf==6.13.2",
+    "pypdf==6.13.3",
     "sqlite-vec==0.1.9",
     "tiktoken==0.12.0",
 ]
