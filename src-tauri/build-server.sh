@@ -93,11 +93,11 @@ $NUITKA_CMD \
     --mode=standalone \
     --output-dir=server/dist \
     --output-filename=phlox-server \
-    --macos-target-arch=$ARCH \
+    $([[ "$OSTYPE" == "darwin"* ]] && echo "--macos-target-arch=$ARCH") \
     --include-package=server \
     --include-module=sqlcipher3 \
     --include-package=sqlite_vec \
-    --include-data-files="$VEC0_NAME=sqlite_vec/$(basename "$VEC0_NAME")" \
+    $([[ "$OSTYPE" != "linux-gnu"* ]] && echo "--include-data-files=$VEC0_NAME=sqlite_vec/$(basename "$VEC0_NAME")") \
     --include-data-files="$PROJECT_DIR/server/demo/example_patients.json=server/demo/example_patients.json" \
     --include-package=pypdf \
     --include-package=mcp \

@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
           git submodule update --init --recursive
-          git apply ../parakeet-cpp-omi-adapter.patch
+          git apply --recount ../parakeet-cpp-omi-adapter.patch
           rm -rf src-tauri/parakeet.cpp/.git
 
       # llama.cpp b9437
