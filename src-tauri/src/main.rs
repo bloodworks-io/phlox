@@ -115,6 +115,9 @@ pub fn run() {
             let app_handle = app.handle().clone();
             log::info!("App setup started");
 
+            #[cfg(target_os = "linux")]
+            grant_webview_permissions(&app_handle);
+
             // Clean up orphans from a previous crashed session
             kill_all_processes();
             cleanup_stale_files();
@@ -207,6 +210,31 @@ fn monitor_service_health(app_handle: tauri::AppHandle) {
             log::warn!("Emitting service-died event for: {}", service);
             let _ = app_handle.emit("service-died", service);
         }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn grant_webview_permissions(app_handle: &tauri::AppHandle) {
+    use tauri::Manager;
+
+    let Some(window) = app_handle.get_webview_window("main") else {
+        log::warn!("grant_webview_permissions: main webview window not found");
+        return;
+    };
+
+    let result = window.with_webview(|webview| {
+        use webkit2gtk::{PermissionRequestExt, WebViewExt};
+
+        let wk = webview.inner();
+        wk.connect_permission_request(|_webview, request| {
+            log::info!("Granting WebKit permission request");
+            request.allow();
+            true
+        });
+    });
+
+    if let Err(e) = result {
+        log::warn!("grant_webview_permissions: with_webview failed: {}", e);
     }
 }
 
