@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 use std::sync::Mutex;
 use sysinfo::System;
 use tauri::Manager;
@@ -279,97 +278,6 @@ pub fn restart_embedding(
             log::error!("Failed to restart embedding: {}", e);
             Err(format!("Failed to restart embedding: {}", e))
         }
-    }
-}
-
-#[tauri::command]
-pub fn convert_audio_to_wav(audio_bytes: Vec<u8>) -> Result<Vec<u8>, String> {
-    use std::io::Write;
-
-    // Only implement for macOS where afconvert is available
-    #[cfg(not(target_os = "macos"))]
-    {
-        return Err(
-            "Audio conversion is only supported on macOS. For other platforms, ensure audio is already in WAV format.".to_string()
-        );
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        log::info!(
-            "Converting audio to WAV format ({} bytes)",
-            audio_bytes.len()
-        );
-
-        // Create a temporary directory for audio conversion
-        let temp_dir = std::env::temp_dir();
-        let phlox_temp = temp_dir.join("phlox_audio");
-        std::fs::create_dir_all(&phlox_temp)
-            .map_err(|e| format!("Failed to create temp directory: {}", e))?;
-
-        // Generate unique filenames using timestamp
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|e| format!("Failed to get timestamp: {}", e))?
-            .as_micros();
-        let input_path = phlox_temp.join(format!("input_{}.audio", timestamp));
-        let output_path = phlox_temp.join(format!("output_{}.wav", timestamp));
-
-        // Write input audio bytes to temp file
-        let mut input_file = std::fs::File::create(&input_path)
-            .map_err(|e| format!("Failed to create input file: {}", e))?;
-        input_file
-            .write_all(&audio_bytes)
-            .map_err(|e| format!("Failed to write input file: {}", e))?;
-        drop(input_file); // Ensure file is flushed and closed before afconvert
-
-        log::debug!("Input file created: {:?}", input_path);
-
-        // Run afconvert to convert to WAV (16kHz, mono, 16-bit PCM - whisper.cpp preferred format)
-        let output = Command::new("afconvert")
-            .arg("-f")
-            .arg("WAVE")
-            .arg("-d")
-            .arg("LEI16@16000")
-            .arg(&input_path)
-            .arg("-o")
-            .arg(&output_path)
-            .output();
-
-        // Clean up input file regardless of conversion result
-        let _ = std::fs::remove_file(&input_path);
-
-        match output {
-            Ok(result) => {
-                if !result.status.success() {
-                    let stderr = String::from_utf8_lossy(&result.stderr);
-                    log::error!("afconvert failed: {}", stderr);
-                    return Err(format!("Audio conversion failed: {}", stderr));
-                }
-            }
-            Err(e) => {
-                log::error!("Failed to run afconvert: {}", e);
-                return Err(format!(
-                    "Failed to run afconvert: {}. Is afconvert available on this system?",
-                    e
-                ));
-            }
-        }
-
-        // Read the converted WAV file
-        let wav_bytes = std::fs::read(&output_path)
-            .map_err(|e| format!("Failed to read converted WAV file: {}", e))?;
-
-        // Clean up output file
-        let _ = std::fs::remove_file(&output_path);
-
-        log::info!(
-            "Audio conversion successful: {} bytes -> {} bytes",
-            audio_bytes.len(),
-            wav_bytes.len()
-        );
-
-        Ok(wav_bytes)
     }
 }
 

@@ -1,28 +1,6 @@
 import { useState } from "react";
 import { transcriptionApi } from "../api/transcriptionApi";
-import { isTauri } from "../helpers/apiConfig";
 import { extractFromFile } from "../helpers/documentExtraction";
-
-export const convertAudioToWav = async (audioBlob) => {
-    if (!isTauri()) {
-        // Not running in Tauri, skip conversion
-        return audioBlob;
-    }
-
-    try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const audioBytes = await audioBlob.arrayBuffer();
-        const uint8Array = new Uint8Array(audioBytes);
-        const wavBytes = await invoke("convert_audio_to_wav", {
-            audioBytes: Array.from(uint8Array),
-        });
-        return new Blob([new Uint8Array(wavBytes)], { type: "audio/wav" });
-    } catch (error) {
-        console.error("Audio conversion failed, using original audio:", error);
-        // If conversion fails, continue with original audio
-        return audioBlob;
-    }
-};
 
 export const useTranscription = (onTranscriptionComplete, setLoading) => {
     const [isTranscribing, setIsTranscribing] = useState(false);
@@ -34,11 +12,8 @@ export const useTranscription = (onTranscriptionComplete, setLoading) => {
         if (setLoading) setLoading(true);
 
         try {
-            // Convert audio to WAV format if in Tauri (macOS)
-            const wavBlob = await convertAudioToWav(audioBlob);
-
             const formData = new FormData();
-            formData.append("file", wavBlob, "recording.wav");
+            formData.append("file", audioBlob, "recording.wav");
 
             // Add metadata if provided
             if (metadata.name) formData.append("name", metadata.name);
