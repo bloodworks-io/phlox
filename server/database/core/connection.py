@@ -93,10 +93,14 @@ class PatientDatabase:
             # Set busy timeout to prevent "database is locked" errors (30 seconds)
             self.cursor.execute("PRAGMA busy_timeout = 30000")
 
+            assert self.encryption_key is not None  # for type checkers
+            escaped_key = self.encryption_key.replace("'", "''")
+            pragma = f"PRAGMA key='{escaped_key}'"
+
             if db_exists:
                 logging.info("Database exists, attempting to decrypt...")
                 try:
-                    self.cursor.execute(f"PRAGMA key='{self.encryption_key}'")
+                    self.cursor.execute(pragma)
                     logging.info("Database decrypted successfully")
                     self.cursor.execute("SELECT count(*) FROM sqlite_master")
                 except sqlite3.DatabaseError:
@@ -105,7 +109,7 @@ class PatientDatabase:
             else:
                 # New database - set up encryption
                 logging.info("No existing database, creating new database...")
-                self.cursor.execute(f"PRAGMA key='{self.encryption_key}'")
+                self.cursor.execute(pragma)
 
             logging.info("Database connection established successfully")
         except Exception as e:
