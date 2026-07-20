@@ -1,5 +1,53 @@
+# Version control
+.git/
+.gitignore
+
+# CI / IDE / tooling
+.github/
+.vscode/
+.idea/
+.zed/
+.flatpak-builder/
+build-dir/
+opencode.*
+AGENTS.md
+CLAUDE.md
+
+# Build artifacts and logs
+build.log
+build/
+dist/
+coverage/
+coverage.*
+.coverage
+.coveralls.yml
+
+# Tauri desktop artifacts
+src-tauri/
+
+# Node
+node_modules/
+server/node_modules/
+
+# Python caches and venvs
+server/.venv/
+server/.pytest_cache/
+server/.ruff_cache/
+server/dist/
+server/phlox_server.egg-info/
 **/__pycache__
 **/*.pyc
 **/*.pyo
 **/*.pyd
+
+# Documentation
 /docs/
+
+# Persistent data
+data/
+logs/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.log
+server/logs/
