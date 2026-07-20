@@ -38,6 +38,11 @@
     <binary>phlox</binary>
   </provides>
   <releases>
+    <release version="2.0.0" date="2026-07-20">
+      <description>
+        <p>v2.0.0: patient_profiles split from encounters, MCP server support, vision-enhanced document processing, and the adaptive-refinement feedback loop. Bundled llama.cpp and parakeet.cpp sidecars with Vulkan acceleration.</p>
+      </description>
+    </release>
     <release version="1.0.5" date="2026-07-18">
       <description>
         <p>First Flatpak release. Includes Vulkan GPU acceleration via Mesa Vulkan drivers from the Freedesktop 24.08 runtime.</p>

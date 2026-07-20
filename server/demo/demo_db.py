@@ -22,15 +22,6 @@ from server.schemas.templates import ClinicalTemplate, TemplateField
 current_dir = Path(__file__).resolve().parent
 
 
-def generate_jobs_list_from_plan(plan: str) -> list[dict]:
-    """Generate a jobs list from a numbered plan."""
-    jobs = [item.strip() for item in plan.split("\n") if item.strip() and item.strip()[0].isdigit()]
-    jobs_list = [
-        {"id": index + 1, "job": job, "completed": False} for index, job in enumerate(jobs)
-    ]
-    return jobs_list
-
-
 def clear_database():
     """Clear existing database tables."""
     initialize_database()

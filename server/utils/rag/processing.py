@@ -1,8 +1,11 @@
 import json
+import logging
 
 from server.database.config.manager import config_manager
 from server.schemas.grammars import ClinicalSuggestionList
 from server.utils.llm_client.client import get_llm_client
+
+logger = logging.getLogger(__name__)
 
 # Initialize ConfigManager
 config = config_manager.get_config()
@@ -67,7 +70,7 @@ async def generate_specialty_suggestions():
         return [s.question for s in suggestions.suggestions]
 
     except Exception as e:
-        print(f"Error generating suggestions: {str(e)}")
+        logger.error("Error generating suggestions: %s", e, exc_info=True)
         return [
             "How to diagnose lupus?",
             "Best treatment for pneumonia?",
