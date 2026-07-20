@@ -269,7 +269,7 @@ class SqliteVecBackend:
                     ),
                 )
                 db.execute(
-                    f"INSERT INTO vec_{safe} (chunk_id, embedding) VALUES (?, ?)",
+                    f"INSERT INTO vec_{safe} (chunk_id, embedding) VALUES (?, ?)",  # nosec B608
                     (c.id, self._sqlite_vec.serialize_float32(c.embedding)),
                 )
             db.commit()
@@ -310,7 +310,7 @@ class SqliteVecBackend:
             placeholders = ",".join("?" * len(filenames))
             pdf_rows = db.execute(
                 f"SELECT filename, pdf_blob IS NOT NULL, title FROM source_documents "
-                f"WHERE collection_name = ? AND filename IN ({placeholders})",
+                f"WHERE collection_name = ? AND filename IN ({placeholders})",  # nosec B608
                 [collection_name, *filenames],
             ).fetchall()
             info_map = {r[0]: (bool(r[1]), r[2]) for r in pdf_rows}
@@ -318,7 +318,7 @@ class SqliteVecBackend:
             # Per-file source + focus_area (uniform across a file's chunks).
             meta_rows = db.execute(
                 f"SELECT DISTINCT filename, source, focus_area FROM chunks "
-                f"WHERE collection_name = ? AND filename IN ({placeholders})",
+                f"WHERE collection_name = ? AND filename IN ({placeholders})",  # nosec B608
                 [collection_name, *filenames],
             ).fetchall()
             meta_map = {r[0]: (r[1], r[2]) for r in meta_rows}
@@ -419,7 +419,7 @@ class SqliteVecBackend:
             ids = [r[0] for r in rows]
             if ids:
                 for chunk_id in ids:
-                    db.execute(f"DELETE FROM vec_{safe} WHERE chunk_id = ?", (chunk_id,))
+                    db.execute(f"DELETE FROM vec_{safe} WHERE chunk_id = ?", (chunk_id,))  # nosec B608
                 db.execute(
                     "DELETE FROM chunks WHERE collection_name = ? AND filename = ?",
                     (collection_name, filename),
@@ -451,7 +451,7 @@ class SqliteVecBackend:
         db = self._connect()
         try:
             vec_rows = db.execute(
-                f"SELECT chunk_id, distance FROM vec_{safe} WHERE embedding MATCH ? AND k = ?",
+                f"SELECT chunk_id, distance FROM vec_{safe} WHERE embedding MATCH ? AND k = ?",  # nosec B608
                 (self._sqlite_vec.serialize_float32(query_embedding), n_results),
             ).fetchall()
         except Exception as e:
@@ -472,7 +472,7 @@ class SqliteVecBackend:
             placeholders = ",".join("?" * len(chunk_ids))
             chunk_rows = db.execute(
                 f"SELECT id, text, disease_name, focus_area, source, filename "
-                f"FROM chunks WHERE id IN ({placeholders})",
+                f"FROM chunks WHERE id IN ({placeholders})",  # nosec B608
                 chunk_ids,
             ).fetchall()
         finally:
@@ -528,7 +528,7 @@ class SqliteVecBackend:
             )
             for chunk_id, embedding in embeddings:
                 db.execute(
-                    f"INSERT INTO vec_{safe} (chunk_id, embedding) VALUES (?, ?)",
+                    f"INSERT INTO vec_{safe} (chunk_id, embedding) VALUES (?, ?)",  # nosec B608
                     (chunk_id, self._sqlite_vec.serialize_float32(embedding)),
                 )
             db.execute(

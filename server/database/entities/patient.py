@@ -725,28 +725,26 @@ def search_patients_by_condition(query: str, limit: int = 20) -> list[dict[str, 
     placeholders = ",".join("?" for _ in matched)
     try:
         get_db().cursor.execute(
-            f"""
-            SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender,
-                   e.primary_condition, e.encounter_date, e.encounter_summary,
-                   e.template_key, cnt.encounter_count
-            FROM patient_profiles p
-            JOIN encounters e ON e.id = (
-                SELECT id FROM encounters
-                WHERE ur_number = p.ur_number
-                  AND primary_condition IS NOT NULL
-                ORDER BY encounter_date DESC, id DESC
-                LIMIT 1
-            )
-            JOIN (
-                SELECT ur_number, COUNT(*) AS encounter_count
-                FROM encounters
-                WHERE primary_condition IS NOT NULL
-                GROUP BY ur_number
-            ) cnt ON cnt.ur_number = p.ur_number
-            WHERE e.primary_condition IN ({placeholders})
-            ORDER BY p.last_name, p.first_name
-            LIMIT ?
-            """,
+            f"SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender, "
+            f"e.primary_condition, e.encounter_date, e.encounter_summary, "
+            f"e.template_key, cnt.encounter_count "
+            f"FROM patient_profiles p "
+            f"JOIN encounters e ON e.id = ("
+            f"    SELECT id FROM encounters"
+            f"    WHERE ur_number = p.ur_number"
+            f"      AND primary_condition IS NOT NULL"
+            f"    ORDER BY encounter_date DESC, id DESC"
+            f"    LIMIT 1"
+            f") "
+            f"JOIN ("
+            f"    SELECT ur_number, COUNT(*) AS encounter_count"
+            f"    FROM encounters"
+            f"    WHERE primary_condition IS NOT NULL"
+            f"    GROUP BY ur_number"
+            f") cnt ON cnt.ur_number = p.ur_number "
+            f"WHERE e.primary_condition IN ({placeholders}) "  # nosec B608
+            f"ORDER BY p.last_name, p.first_name "
+            f"LIMIT ?",
             (*matched, limit),
         )
         rows = get_db().cursor.fetchall()

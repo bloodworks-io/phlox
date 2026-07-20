@@ -116,7 +116,8 @@ class PDFFormStore:
         db.commit()
         logger.info("Created template %s (%s)", tmpl_id, name)
         tmpl = self.get_template(tmpl_id)
-        assert tmpl is not None, "Template not found immediately after insert"
+        if tmpl is None:
+            raise RuntimeError("Template not found immediately after insert")
         return tmpl
 
     def list_templates(self) -> list[dict]:
