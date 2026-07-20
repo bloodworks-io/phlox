@@ -253,9 +253,6 @@ const PatientDetails = ({
         if (viaModal) return;
         if (!isNewPatient) {
             setIsSearchedPatient(false);
-            console.log(
-                "Resetting isSearchedPatient - viewing historical patient",
-            );
         }
         setStartCardDismissed(false);
     }, [location.pathname]);
@@ -308,7 +305,6 @@ const PatientDetails = ({
     const handleTranscriptionComplete = (data, triggerResize = false) => {
         const isRestoration = data.isRestoration === true;
         previousTranscriptionRef.current = patient?.raw_transcription;
-        console.log("Transcription complete!");
 
         if (
             !hasTranscriptionOccurred &&
@@ -316,10 +312,6 @@ const PatientDetails = ({
             Object.keys(data.fields).length > 0 &&
             !isRestoration
         ) {
-            console.log(
-                "Storing initial transcription content for adaptive refinement:",
-                data.fields,
-            );
             setInitialTranscriptionContent({ ...data.fields });
             setHasTranscriptionOccurred(true);
         }
@@ -328,7 +320,6 @@ const PatientDetails = ({
             setLoading,
             setters: {
                 template_data: (_value) => {
-                    console.log("Setting template_data with:", data.fields);
                     setPatient((prev) => ({
                         ...prev,
                         template_data: {

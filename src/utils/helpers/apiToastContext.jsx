@@ -22,12 +22,6 @@ export const ApiToastProvider = ({ children }) => {
   const apiToast = useMemo(() => {
     const fn = (options) => {
       if (isInitializingRef.current && options?.type === "error") {
-        console.log(
-          "[ApiToast] Error toast suppressed - isInitializing:",
-          isInitializingRef.current,
-          "options:",
-          options,
-        );
         return;
       }
       return toaster.create(options);

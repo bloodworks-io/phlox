@@ -80,15 +80,6 @@ export const letterApi = {
     context,
     additional_instruction,
   }) => {
-    console.log("Letter Generation Request:", {
-      patientName,
-      gender,
-      dob,
-      template_data,
-      context,
-      additional_instruction,
-    });
-
     return handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/letter/generate");

@@ -252,7 +252,7 @@ const DocumentExplorer = ({
                     ),
                 );
             } catch (error) {
-                console.log("Error fetching collection:", error);
+                console.error("Error fetching collection:", error);
                 toaster.create({
                     title: "Error",
                     description: "Error fetching collection files",

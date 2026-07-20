@@ -54,7 +54,6 @@ export const patientApi = {
           setters.setSelectedDate(patientData.encounter_date);
           setters.setIsFromOutstandingJobs(false);
         }
-        console.log(patientData);
         return patientData;
       },
       errorMessage: "Failed to fetch patient details",
