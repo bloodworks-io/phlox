@@ -196,7 +196,7 @@ async def chat(
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         logging.error(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/upload-image")
@@ -225,10 +225,10 @@ async def upload_image(file: UploadFile = File(...)):
     except RuntimeError as e:
         # OCR dependencies not available
         logging.error(f"OCR not available: {e}")
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        raise HTTPException(status_code=503, detail="OCR dependencies not available") from e
     except Exception as e:
         logging.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/analyze-document-visual", response_model=VisualDocumentResponse)
@@ -313,7 +313,7 @@ async def analyze_document_visual(payload: VisualDocumentRequest):
         raise
     except Exception as e:
         logging.error(f"Error analyzing visual document payload: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/vision-capability/current", response_model=VisionCurrentCapabilityResponse)

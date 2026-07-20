@@ -84,7 +84,7 @@ async def get_templates():
         )
     except Exception as e:
         logging.error(f"Error fetching letter templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/templates/{template_id}")
@@ -99,7 +99,7 @@ async def get_template(template_id: int):
         raise
     except Exception as e:
         logging.error(f"Error fetching letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/templates")
@@ -115,7 +115,7 @@ async def create_template(template: LetterTemplate = Body(...)):
         )
     except Exception as e:
         logging.error(f"Error creating letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/templates/reset")
@@ -126,7 +126,7 @@ async def reset_templates():
         return JSONResponse(content={"message": "Templates reset to defaults"})
     except Exception as e:
         logging.error(f"Error resetting letter templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.put("/templates/{template_id}")
@@ -141,7 +141,7 @@ async def update_template(template_id: int, template: LetterTemplate = Body(...)
         raise
     except Exception as e:
         logging.error(f"Error updating letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/templates/{template_id}")
@@ -156,4 +156,4 @@ async def delete_template(template_id: int):
         raise
     except Exception as e:
         logging.error(f"Error deleting letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e

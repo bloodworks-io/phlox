@@ -69,7 +69,7 @@ async def add_mcp_server(data: McpServerCreate):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to add MCP server: {str(e)}") from e
+        raise HTTPException(status_code=500, detail="Failed to add MCP server") from e
 
 
 @router.put("/mcp/{server_id}")

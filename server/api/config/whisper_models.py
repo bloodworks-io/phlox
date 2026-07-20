@@ -62,7 +62,7 @@ async def download_whisper_model(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error downloading model {model_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to download model: {str(e)}") from e
+        raise HTTPException(status_code=500, detail="Failed to download model") from e
 
 
 @router.get("/local/whisper/models/download/stream")

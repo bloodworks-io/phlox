@@ -29,7 +29,7 @@ async def add_todo(todo: TodoItem):
         return JSONResponse(content={"todo": new_todo})
     except Exception as e:
         logging.error(f"Error adding todo item: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/todos")
@@ -40,7 +40,7 @@ async def get_todos():
         return JSONResponse(content={"todos": todos})
     except Exception as e:
         logging.error(f"Error fetching todo items: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.put("/todos/{todo_id}")
@@ -51,7 +51,7 @@ async def update_todo(todo_id: int, todo: TodoItem):
         return JSONResponse(content={"todo": updated_todo})
     except Exception as e:
         logging.error(f"Error updating todo item: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/todos/{todo_id}")
@@ -62,4 +62,4 @@ async def delete_todo(todo_id: int):
         return JSONResponse(content={"message": "Todo item deleted successfully"})
     except Exception as e:
         logging.error(f"Error deleting todo item: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e

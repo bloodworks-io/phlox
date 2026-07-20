@@ -125,7 +125,7 @@ async def transcribe(
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/dictate")
@@ -147,7 +147,7 @@ async def dictate(file: UploadFile = File(...)):
         }
     except Exception as e:
         logging.error(f"Error occurred during dictation: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/reprocess", response_model=TranscribeResponse)
@@ -209,7 +209,7 @@ async def reprocess_transcription(
 
     except Exception as e:
         logging.error(f"Error occurred during reprocessing: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/process-document", response_model=TranscribeResponse)  # Changed response model
@@ -260,7 +260,7 @@ async def process_document(
         )
     except Exception as e:
         logging.error(f"Error processing document: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/extract-demographics")
@@ -272,7 +272,7 @@ async def extract_demographics(file: UploadFile = File(...)):
         return result
     except Exception as e:
         logging.error(f"Error extracting demographics: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/extract-demographics-from-text")
@@ -287,7 +287,7 @@ async def extract_demographics_from_text(payload: ExtractDemographicsFromTextReq
         raise
     except Exception as e:
         logging.error(f"Error extracting demographics from text: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/extract-demographics-visual")
@@ -302,7 +302,7 @@ async def extract_demographics_visual(payload: ExtractDemographicsVisualRequest)
         raise
     except Exception as e:
         logging.error(f"Error extracting demographics from visual: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/process-document-visual", response_model=TranscribeResponse)
@@ -353,7 +353,7 @@ async def process_document_visual(payload: ProcessVisualDocumentRequest):
         raise
     except Exception as e:
         logging.error(f"Error processing visual document: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/process-document-from-text", response_model=TranscribeResponse)
@@ -403,4 +403,4 @@ async def process_document_from_text(payload: ProcessDocumentFromTextRequest):
         raise
     except Exception as e:
         logging.error(f"Error processing extracted document text: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
