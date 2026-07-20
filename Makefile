@@ -44,20 +44,20 @@ rebuild-test:
 	docker build -f Dockerfile.test -t localhost/phlox-test:latest .
 
 lint:
-	cd server && ruff check .
+	cd server && uv run ruff check .
 
 format:
-	cd server && ruff format .
-	cd server && ruff check . --fix
+	cd server && uv run ruff format .
+	cd server && uv run ruff check . --fix
 
 typecheck:
-	cd server && ty check .
+	cd server && uv run ty check .
 
 security:
-	cd server && bandit -c pyproject.toml -r .
+	cd server && uv run bandit -c pyproject.toml -r .
 
 install-hooks:
-	pre-commit install
+	cd server && uv run pre-commit install
 
 check-all: lint typecheck security
 	@echo "All code quality checks passed!"
