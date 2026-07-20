@@ -11,19 +11,12 @@ from pydantic import BaseModel, Field
 from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
 from server.schemas.chat import ChatRequest, ChatResponse
+from server.schemas.documents import VisualDocumentPage
 from server.utils.chat import ChatEngine
 from server.utils.llm_client.client import AsyncLLMClient, get_llm_client
 from server.utils.nlp_tools.document_processing import extract_text_from_document
 
 router = APIRouter()
-
-
-class VisualDocumentPage(BaseModel):
-    page_number: int
-    data_url: str
-    mime_type: str | None = None
-    width: int | None = None
-    height: int | None = None
 
 
 class VisualDocumentRequest(BaseModel):

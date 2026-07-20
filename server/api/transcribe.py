@@ -10,6 +10,7 @@ from fastapi import (
 )
 from pydantic import BaseModel, Field
 
+from server.schemas.documents import VisualDocumentPage
 from server.schemas.patient import TranscribeResponse
 from server.utils.nlp_tools.document_processing import (
     _extract_demographics_from_text,
@@ -25,20 +26,23 @@ from server.utils.transcription.text import process_transcription
 router = APIRouter()
 
 
+def _format_patient_display_name(name: str | None) -> str:
+    """Format a "Last, First" patient name into "First Last" for display."""
+    if not name:
+        return "N/A"
+    parts = name.split(",")
+    last_name = parts[0].strip()
+    first_name = parts[1].strip() if len(parts) > 1 else ""
+    full = f"{first_name} {last_name}".strip()
+    return full or "N/A"
+
+
 class ProcessDocumentFromTextRequest(BaseModel):
     extracted_text: str
     name: str | None = None
     gender: str | None = None
     dob: str | None = None
     templateKey: str = Field(..., description="Template key is required for document processing")
-
-
-class VisualDocumentPage(BaseModel):
-    page_number: int
-    data_url: str
-    mime_type: str | None = None
-    width: int | None = None
-    height: int | None = None
 
 
 class ProcessVisualDocumentRequest(BaseModel):
@@ -75,12 +79,7 @@ async def transcribe(
         audio_buffer = await file.read()
 
         # Process the name if provided
-        formatted_name = "N/A"
-        if name:
-            name_parts = name.split(",")
-            last_name = name_parts[0].strip()
-            first_name = name_parts[1].strip()
-            formatted_name = f"{first_name} {last_name}"
+        formatted_name = _format_patient_display_name(name)
 
         # Perform transcription
         transcription_result = await transcribe_audio(audio_buffer)
@@ -164,12 +163,7 @@ async def reprocess_transcription(
     """Reprocesses an existing transcription."""
     try:
         # Process the name if provided
-        formatted_name = "N/A"
-        if name:
-            name_parts = name.split(",")
-            last_name = name_parts[0].strip()
-            first_name = name_parts[1].strip()
-            formatted_name = f"{first_name} {last_name}"
+        formatted_name = _format_patient_display_name(name)
 
         # Get template fields if template key is provided
         template_fields = []
@@ -229,12 +223,7 @@ async def process_document(
         content_type = file.content_type
 
         # Process the name if provided
-        formatted_name = "N/A"
-        if name:
-            name_parts = name.split(",")
-            last_name = name_parts[0].strip()
-            first_name = name_parts[1].strip()
-            formatted_name = f"{first_name} {last_name}"
+        formatted_name = _format_patient_display_name(name)
 
         from server.database.entities.templates import get_template_fields
 
@@ -313,12 +302,7 @@ async def process_document_visual(payload: ProcessVisualDocumentRequest):
             raise HTTPException(status_code=400, detail="No visual pages provided")
 
         # Process the name if provided
-        formatted_name = "N/A"
-        if payload.name:
-            name_parts = payload.name.split(",")
-            last_name = name_parts[0].strip()
-            first_name = name_parts[1].strip() if len(name_parts) > 1 else ""
-            formatted_name = f"{first_name} {last_name}".strip()
+        formatted_name = _format_patient_display_name(payload.name)
 
         from server.database.entities.templates import get_template_fields
 
@@ -365,12 +349,7 @@ async def process_document_from_text(payload: ProcessDocumentFromTextRequest):
             raise HTTPException(status_code=400, detail="No extracted_text provided")
 
         # Process the name if provided
-        formatted_name = "N/A"
-        if payload.name:
-            name_parts = payload.name.split(",")
-            last_name = name_parts[0].strip()
-            first_name = name_parts[1].strip() if len(name_parts) > 1 else ""
-            formatted_name = f"{first_name} {last_name}".strip()
+        formatted_name = _format_patient_display_name(payload.name)
 
         from server.database.entities.templates import get_template_fields
 
