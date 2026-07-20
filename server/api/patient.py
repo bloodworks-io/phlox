@@ -426,34 +426,6 @@ async def extract_jobs(request: JobExtractionRequest):
         }
 
 
-@router.post("/update-jobs")
-async def update_jobs(
-    note_id: int,
-    jobs_list: list[dict] = Body(..., description="Updated jobs list"),
-):
-    """Update a patient's jobs list."""
-    try:
-        update_patient_jobs_list(note_id, jobs_list)
-        return JSONResponse(content={"message": "Jobs list updated successfully"})
-    except Exception as e:
-        logging.error(f"Error updating jobs list: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/update-jobs/{note_id}")
-async def update_patient_jobs(
-    note_id: int,
-    jobs_list: list[dict] = Body(...),
-):
-    """Update a patient's jobs list."""
-    try:
-        update_patient_jobs_list(note_id, jobs_list)
-        return JSONResponse(content={"message": "Jobs updated successfully"})
-    except Exception as e:
-        logging.error(f"Error updating patient jobs: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
 @router.get("/outstanding-jobs")
 async def get_patients_with_jobs():
     """Get all patients with outstanding jobs."""
