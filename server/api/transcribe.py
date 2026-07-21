@@ -10,9 +10,7 @@ from fastapi import (
 )
 from pydantic import BaseModel, Field
 
-from server.schemas.documents import VisualDocumentPage
-from server.schemas.patient import TranscribeResponse
-from server.utils.nlp_tools.document_processing import (
+from server.nlp_tools.document_processing import (
     _extract_demographics_from_text,
     extract_demographics_from_document,
     extract_demographics_from_visual_pages,
@@ -20,8 +18,10 @@ from server.utils.nlp_tools.document_processing import (
     process_document_with_template,
     process_visual_document_with_template,
 )
-from server.utils.transcription.audio import transcribe_audio
-from server.utils.transcription.text import process_transcription
+from server.schemas.documents import VisualDocumentPage
+from server.schemas.patient import TranscribeResponse
+from server.transcription.audio import transcribe_audio
+from server.transcription.text import process_transcription
 
 router = APIRouter()
 
@@ -89,14 +89,14 @@ async def transcribe(
         # Get template fields if template key is provided
         template_fields = []
         if templateKey:
-            from server.database.entities.templates import get_template_fields
+            from server.database.repositories.templates import get_template_fields
 
             template_fields = get_template_fields(templateKey)
 
         # Look up primary condition for returning patients
         primary_condition = None
         if noteId:
-            from server.database.entities.patient import get_patient_by_id
+            from server.database.repositories.encounter import get_patient_by_id
 
             existing_patient = get_patient_by_id(noteId)
             if existing_patient and existing_patient.get("primary_condition"):
@@ -168,14 +168,14 @@ async def reprocess_transcription(
         # Get template fields if template key is provided
         template_fields = []
         if templateKey:
-            from server.database.entities.templates import get_template_fields
+            from server.database.repositories.templates import get_template_fields
 
             template_fields = get_template_fields(templateKey)
 
         # Look up primary condition for returning patients
         primary_condition = None
         if noteId:
-            from server.database.entities.patient import get_patient_by_id
+            from server.database.repositories.encounter import get_patient_by_id
 
             existing_patient = get_patient_by_id(noteId)
             if existing_patient and existing_patient.get("primary_condition"):
@@ -225,7 +225,7 @@ async def process_document(
         # Process the name if provided
         formatted_name = _format_patient_display_name(name)
 
-        from server.database.entities.templates import get_template_fields
+        from server.database.repositories.templates import get_template_fields
 
         template_fields = get_template_fields(templateKey)
 
@@ -304,7 +304,7 @@ async def process_document_visual(payload: ProcessVisualDocumentRequest):
         # Process the name if provided
         formatted_name = _format_patient_display_name(payload.name)
 
-        from server.database.entities.templates import get_template_fields
+        from server.database.repositories.templates import get_template_fields
 
         template_fields = get_template_fields(payload.templateKey)
 
@@ -351,7 +351,7 @@ async def process_document_from_text(payload: ProcessDocumentFromTextRequest):
         # Process the name if provided
         formatted_name = _format_patient_display_name(payload.name)
 
-        from server.database.entities.templates import get_template_fields
+        from server.database.repositories.templates import get_template_fields
 
         template_fields = get_template_fields(payload.templateKey)
 

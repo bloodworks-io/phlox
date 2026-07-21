@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
-from server.database.entities.templates import (
+from server.database.repositories.templates import (
     get_all_templates,
     get_default_template,
     get_template_by_key,
@@ -13,8 +13,8 @@ from server.database.entities.templates import (
     template_exists,
     update_template,
 )
+from server.nlp_tools.templates import generate_template_from_note
 from server.schemas.templates import ClinicalTemplate
-from server.utils.nlp_tools.templates import generate_template_from_note
 
 router = APIRouter()
 
@@ -81,7 +81,7 @@ async def reset_adaptive_instructions(template_key: str, field_key: str):
     """
     Reset (clear) the adaptive refinement instructions for a given field in a template.
     """
-    from server.database.entities.templates import (
+    from server.database.repositories.templates import (
         update_field_adaptive_instructions,
     )
 
@@ -105,11 +105,11 @@ async def consolidate_adaptive_instructions_endpoint(template_key: str, field_ke
     Consolidate the adaptive refinement instructions for a given field in a template.
     This resolves contradictions, merges redundancy, and simplifies complex instructions.
     """
-    from server.database.entities.templates import (
+    from server.database.repositories.templates import (
         get_template_by_key,
         update_field_adaptive_instructions,
     )
-    from server.utils.nlp_tools.adaptive_refinement import (
+    from server.nlp_tools.adaptive_refinement import (
         consolidate_adaptive_instructions,
     )
 

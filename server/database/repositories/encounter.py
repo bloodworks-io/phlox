@@ -3,84 +3,21 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from rapidfuzz import fuzz
 from server.database.core.connection import get_db
-from server.database.entities.jobs import (
+from server.database.repositories.jobs import (
     are_all_jobs_completed,
     generate_jobs_list_from_plan,
 )
-from server.database.entities.templates import (
+from server.database.repositories.patient import (
+    get_patient_profile,
+    upsert_patient_profile,
+)
+from server.database.repositories.templates import (
     get_persistent_fields,
     get_template_by_key,
 )
 from server.schemas.patient import Patient
-
-
-def get_unique_primary_conditions():
-    """
-    Retrieve all unique primary conditions from the encounters table.
-
-    Returns:
-        list: A list of unique primary condition strings, excluding None values.
-    """
-    try:
-        get_db().cursor.execute("""
-            SELECT DISTINCT primary_condition
-            FROM encounters
-            WHERE primary_condition IS NOT NULL
-            AND primary_condition != ''
-            ORDER BY primary_condition ASC
-            """)
-        results = get_db().cursor.fetchall()
-        return [row["primary_condition"] for row in results]
-    except Exception as e:
-        logging.error(f"Error getting unique primary conditions: {e}")
-        return []
-
-
-def _format_name(first_name: str | None, last_name: str | None) -> str:
-    """Format a display name as 'Last, First'"""
-    first = (first_name or "").strip()
-    last = (last_name or "").strip()
-    if last and first:
-        return f"{last}, {first}"
-    return last or first
-
-
-def _split_name(name: str | None) -> tuple[str, str]:
-    """Split a legacy display name into (first_name, last_name).
-
-    Handles "Last, First", "First Last", and bare names.
-    """
-    if not name:
-        return "", ""
-    name = name.strip()
-    if ", " in name:
-        last, first = name.split(", ", 1)
-        return first.strip(), last.strip()
-    if " " in name:
-        first, last = name.rsplit(" ", 1)
-        return first.strip(), last.strip()
-    return "", name
-
-
-def get_patient_profile(ur_number: str | None) -> dict[str, Any] | None:
-    """Fetch the per-person demographics profile keyed by ur_number."""
-    if not ur_number:
-        return None
-    try:
-        get_db().cursor.execute(
-            """
-            SELECT first_name, last_name, dob, gender, address, phone
-            FROM patient_profiles WHERE ur_number = ?
-            """,
-            (ur_number,),
-        )
-        row = get_db().cursor.fetchone()
-        return dict(row) if row else None
-    except Exception as e:
-        logging.error(f"Error fetching patient profile: {e}")
-        return None
+from server.utils.helpers import format_name, split_name
 
 
 def _attach_profile_demographics(row: dict[str, Any]) -> dict[str, Any]:
@@ -94,106 +31,11 @@ def _attach_profile_demographics(row: dict[str, Any]) -> dict[str, Any]:
         row["address"] = profile.get("address")
         row["phone"] = profile.get("phone")
     else:
-        first, last = _split_name(row.get("name"))
+        first, last = split_name(row.get("name"))
         row["first_name"] = row.get("first_name") or first
         row["last_name"] = row.get("last_name") or last
-    row["name"] = _format_name(row.get("first_name"), row.get("last_name"))
+    row["name"] = format_name(row.get("first_name"), row.get("last_name"))
     return row
-
-
-def upsert_patient_profile(
-    ur_number: str | None,
-    first_name: str | None,
-    last_name: str | None,
-    dob: str | None,
-    gender: str | None,
-    address: str | None,
-    phone: str | None,
-) -> None:
-    """Insert or update the per-person demographics profile (source of truth)."""
-    if not ur_number:
-        return
-    try:
-        get_db().cursor.execute(
-            """
-            INSERT INTO patient_profiles
-                (ur_number, first_name, last_name, dob, gender, address, phone, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(ur_number) DO UPDATE SET
-                first_name = excluded.first_name,
-                last_name = excluded.last_name,
-                dob = excluded.dob,
-                gender = excluded.gender,
-                address = excluded.address,
-                phone = excluded.phone,
-                updated_at = excluded.updated_at
-            """,
-            (
-                ur_number,
-                first_name,
-                last_name,
-                dob,
-                gender,
-                address,
-                phone,
-                datetime.now().isoformat(),
-            ),
-        )
-        get_db().commit()
-    except Exception as e:
-        get_db().rollback()
-        logging.error(f"Error upserting patient profile: {e}")
-        raise
-
-
-def get_scribe_consent(ur_number: str | None) -> dict[str, Any] | None:
-    """Fetch the ambient-scribe consent state for a person (keyed by ur_number)."""
-    if not ur_number:
-        return None
-    try:
-        get_db().cursor.execute(
-            """
-            SELECT scribe_consent_at, scribe_consent_declined_at
-            FROM patient_profiles WHERE ur_number = ?
-            """,
-            (ur_number,),
-        )
-        row = get_db().cursor.fetchone()
-        return dict(row) if row else None
-    except Exception as e:
-        logging.error(f"Error fetching scribe consent: {e}")
-        return None
-
-
-def set_scribe_consent(ur_number: str | None, consented: bool) -> dict[str, Any] | None:
-    """Record ambient-scribe consent or refusal for a person (keyed by ur_number)."""
-    if not ur_number:
-        return None
-    now = datetime.now().isoformat()
-    consented_at = now if consented else None
-    declined_at = None if consented else now
-    try:
-        get_db().cursor.execute(
-            """
-            INSERT INTO patient_profiles
-                (ur_number, scribe_consent_at, scribe_consent_declined_at, updated_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(ur_number) DO UPDATE SET
-                scribe_consent_at = excluded.scribe_consent_at,
-                scribe_consent_declined_at = excluded.scribe_consent_declined_at,
-                updated_at = excluded.updated_at
-            """,
-            (ur_number, consented_at, declined_at, now),
-        )
-        get_db().commit()
-        return {
-            "scribe_consent_at": consented_at,
-            "scribe_consent_declined_at": declined_at,
-        }
-    except Exception as e:
-        get_db().rollback()
-        logging.error(f"Error setting scribe consent: {e}")
-        raise
 
 
 def save_patient(patient: Patient) -> int:
@@ -491,7 +333,7 @@ def get_patients_by_date(
             patient = dict(row)
 
             # Derive the display name the API/frontend expect ('Last, First')
-            patient["name"] = _format_name(patient.get("first_name"), patient.get("last_name"))
+            patient["name"] = format_name(patient.get("first_name"), patient.get("last_name"))
 
             # Process template data if included
             if include_data:
@@ -618,156 +460,6 @@ def get_patient_history(ur_number: str, template_key: str | None = None) -> list
         return encounters
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
-        raise
-
-
-def _encounter_row_to_candidate(row) -> dict[str, Any] | None:
-    """Build a search-candidate dict from a joined patient_profiles + encounters row"""
-    template_key = row["template_key"]
-    if not get_template_by_key(template_key):
-        return None
-
-    persistent_fields = get_persistent_fields(template_key)
-    template_data = json.loads(row["template_data"]) if row["template_data"] else {}
-    persistent_data = {
-        field.field_key: template_data.get(field.field_key) for field in persistent_fields
-    }
-
-    first_name = row["first_name"]
-    last_name = row["last_name"]
-
-    return {
-        "id": row["id"],
-        "name": _format_name(first_name, last_name),
-        "gender": row["gender"],
-        "dob": row["dob"],
-        "ur_number": row["ur_number"],
-        "first_name": first_name,
-        "last_name": last_name,
-        "address": row["address"],
-        "phone": row["phone"],
-        "encounter_date": row["encounter_date"],
-        "template_key": template_key,
-        "template_data": persistent_data,
-    }
-
-
-def search_patients(query: str) -> list[dict[str, Any]]:
-    """
-    Search patients by UR number (exact) OR name (substring match on
-    first_name / last_name).
-    """
-    if not query:
-        return []
-    like = f"%{query}%"
-    try:
-        get_db().cursor.execute(
-            """
-            SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender,
-                   p.address, p.phone,
-                   e.id, e.encounter_date, e.template_key, e.template_data
-            FROM patient_profiles p
-            JOIN encounters e ON e.id = (
-                SELECT id FROM encounters
-                WHERE ur_number = p.ur_number
-                ORDER BY encounter_date DESC, id DESC
-                LIMIT 1
-            )
-            WHERE p.ur_number = ?
-               OR p.first_name LIKE ?
-               OR p.last_name LIKE ?
-            ORDER BY (p.last_name LIKE ?) DESC, p.last_name, p.first_name
-            LIMIT 20
-            """,
-            (query, like, like, like),
-        )
-
-        rows = get_db().cursor.fetchall()
-        candidates = []
-        for row in rows:
-            candidate = _encounter_row_to_candidate(row)
-            if candidate is not None:
-                candidates.append(candidate)
-        return candidates
-    except Exception as e:
-        logging.error(f"Error searching patients: {e}")
-        raise
-
-
-def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
-    """
-    Search for patients by UR number, delegates to
-    search_patients.
-    """
-    return search_patients(ur_number)
-
-
-def search_patients_by_condition(query: str, limit: int = 20) -> list[dict[str, Any]]:
-    """
-    Find patients whose primary condition fuzzy-matches ``query``.
-    """
-    if not query or not query.strip():
-        return []
-    query = query.strip()
-
-    distinct = get_unique_primary_conditions()
-    if not distinct:
-        return []
-
-    q_lower = query.lower()
-    matched: list[str] = [c for c in distinct if fuzz.token_set_ratio(q_lower, c.lower()) >= 70]
-    # Fallback: if fuzzy missed everything, try a plain LIKE substring pass.
-    if not matched:
-        matched = [c for c in distinct if query.lower() in c.lower()]
-    if not matched:
-        return []
-
-    placeholders = ",".join("?" for _ in matched)
-    try:
-        get_db().cursor.execute(
-            f"SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender, "
-            f"e.primary_condition, e.encounter_date, e.encounter_summary, "
-            f"e.template_key, cnt.encounter_count "
-            f"FROM patient_profiles p "
-            f"JOIN encounters e ON e.id = ("
-            f"    SELECT id FROM encounters"
-            f"    WHERE ur_number = p.ur_number"
-            f"      AND primary_condition IS NOT NULL"
-            f"    ORDER BY encounter_date DESC, id DESC"
-            f"    LIMIT 1"
-            f") "
-            f"JOIN ("
-            f"    SELECT ur_number, COUNT(*) AS encounter_count"
-            f"    FROM encounters"
-            f"    WHERE primary_condition IS NOT NULL"
-            f"    GROUP BY ur_number"
-            f") cnt ON cnt.ur_number = p.ur_number "
-            f"WHERE e.primary_condition IN ({placeholders}) "  # nosec B608
-            f"ORDER BY p.last_name, p.first_name "
-            f"LIMIT ?",
-            (*matched, limit),
-        )
-        rows = get_db().cursor.fetchall()
-
-        patients = []
-        for row in rows:
-            first_name = row["first_name"]
-            last_name = row["last_name"]
-            patients.append(
-                {
-                    "ur_number": row["ur_number"],
-                    "name": _format_name(first_name, last_name),
-                    "dob": row["dob"],
-                    "gender": row["gender"],
-                    "primary_condition": row["primary_condition"],
-                    "last_encounter_date": row["encounter_date"],
-                    "encounter_summary": row["encounter_summary"],
-                    "encounter_count": row["encounter_count"],
-                }
-            )
-        return patients
-    except Exception as e:
-        logging.error(f"Error searching patients by condition: {e}")
         raise
 
 

@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from server.database.entities.todo import (
+from server.database.repositories.todo import (
     add_todo_item,
     delete_todo_item,
     get_todo_items,

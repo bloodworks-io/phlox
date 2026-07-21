@@ -3,8 +3,8 @@ import logging
 from datetime import datetime
 
 from server.database.config.manager import config_manager
+from server.llm_client.client import get_llm_client
 from server.schemas.grammars import PreviousVisitSummary
-from server.utils.llm_client.client import get_llm_client
 
 logger = logging.getLogger(__name__)
 

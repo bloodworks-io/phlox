@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
-from server.database.entities.letter import (
+from server.database.repositories.letter import (
     delete_letter_template,
     fetch_patient_letter,
     get_letter_template_by_id,
@@ -13,8 +13,8 @@ from server.database.entities.letter import (
     update_letter_template,
     update_patient_letter,
 )
+from server.nlp_tools.letter import generate_letter_content
 from server.schemas.letter import LetterRequest, LetterSave, LetterTemplate
-from server.utils.nlp_tools.letter import generate_letter_content
 
 router = APIRouter()
 

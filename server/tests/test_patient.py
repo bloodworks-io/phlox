@@ -37,7 +37,7 @@ async def test_get_patient_not_found(monkeypatch):
 
     # Also need to import HTTPException in server/api/patient.py
     monkeypatch.setattr(
-        "server.database.entities.patient.get_patient_by_id",
+        "server.database.repositories.encounter.get_patient_by_id",
         fake_get_patient_by_id,
     )
     response = client.get("/api/note/id/999999")
@@ -156,7 +156,7 @@ def test_set_consent(monkeypatch):
 
 
 def test_scribe_consent_roundtrip_and_clearing_db():
-    from server.database.entities.patient import get_scribe_consent, set_scribe_consent
+    from server.database.repositories.patient import get_scribe_consent, set_scribe_consent
 
     ur = "URCONSENT_RT"
     # Grant consent
@@ -183,7 +183,7 @@ def test_scribe_consent_roundtrip_and_clearing_db():
 
 
 def test_scribe_consent_targeted_upsert_preserves_demographics_db():
-    from server.database.entities.patient import (
+    from server.database.repositories.patient import (
         get_patient_profile,
         get_scribe_consent,
         set_scribe_consent,

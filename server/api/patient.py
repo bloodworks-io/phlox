@@ -6,30 +6,38 @@ from fastapi import APIRouter, BackgroundTasks
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from server.database.entities.analysis import generate_previous_visit_summary
-from server.database.entities.jobs import (
+from server.database.repositories.analysis import generate_previous_visit_summary
+from server.database.repositories.encounter import (
+    delete_patient_by_id,
+    get_patient_by_id,
+    get_patient_history,
+    get_patients_by_date,
+    save_patient,
+    update_patient,
+    update_patient_reasoning,
+    update_patient_summary,
+)
+from server.database.repositories.jobs import (
     count_incomplete_jobs,
     generate_jobs_list_from_plan,
     get_patients_with_outstanding_jobs,
     update_patient_jobs_list,
 )
-from server.database.entities.patient import (
-    delete_patient_by_id,
-    get_patient_by_id,
-    get_patient_history,
-    get_patients_by_date,
+from server.database.repositories.patient import (
     get_scribe_consent,
-    save_patient,
-    search_patients,
     set_scribe_consent,
-    update_patient,
-    update_patient_reasoning,
-    update_patient_summary,
 )
-from server.database.entities.templates import (
+from server.database.repositories.patient_search import search_patients
+from server.database.repositories.templates import (
     get_template_by_key,
     update_field_adaptive_instructions,
 )
+from server.nlp_tools.adaptive_refinement import (
+    generate_adaptive_refinement_suggestions,
+)
+from server.nlp_tools.jobs import extract_jobs_from_plan
+from server.nlp_tools.summarisation import summarise_encounter
+from server.nlp_tools.summarization_manager import summarization_manager
 from server.schemas.patient import (
     JobExtractionRequest,
     JobsListUpdate,
@@ -37,12 +45,6 @@ from server.schemas.patient import (
     SavePatientRequest,
     ScribeConsentRequest,
 )
-from server.utils.nlp_tools.adaptive_refinement import (
-    generate_adaptive_refinement_suggestions,
-)
-from server.utils.nlp_tools.jobs import extract_jobs_from_plan
-from server.utils.nlp_tools.summarisation import summarise_encounter
-from server.utils.nlp_tools.summarization_manager import summarization_manager
 
 router = APIRouter()
 
@@ -471,7 +473,7 @@ async def generate_reasoning_stream(note_id: int):
             raise HTTPException(status_code=404, detail="Patient not found")
 
         async def generate():
-            from server.utils.nlp_tools.reasoning import stream_chart_insights_with_tools
+            from server.nlp_tools.reasoning import stream_chart_insights_with_tools
 
             async for event in stream_chart_insights_with_tools(
                 patient["template_data"],

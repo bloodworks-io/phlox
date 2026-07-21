@@ -14,9 +14,10 @@ from server.database.core.connection import (
 from server.database.core.connection import (
     initialize_database,
 )
-from server.database.entities.patient import _split_name, upsert_patient_profile
-from server.database.entities.templates import save_template
+from server.database.repositories.patient import upsert_patient_profile
+from server.database.repositories.templates import save_template
 from server.schemas.templates import ClinicalTemplate, TemplateField
+from server.utils.helpers import split_name
 
 # Get the directory of the current script
 current_dir = Path(__file__).resolve().parent
@@ -127,7 +128,7 @@ def initialize_fake_patients():
             ),
         )
 
-        first_name, last_name = _split_name(str(patient["name"]))
+        first_name, last_name = split_name(str(patient["name"]))
         upsert_patient_profile(
             str(patient["ur_number"]),
             first_name,
