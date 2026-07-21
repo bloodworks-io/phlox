@@ -137,6 +137,7 @@ export const extractFromFile = async (file, api, metadata = {}) => {
         throw new Error(
           "This PDF has no selectable text layer and its pages couldn't be " +
             `rendered for vision: ${renderError?.message || renderError}`,
+          { cause: renderError },
         );
       }
 

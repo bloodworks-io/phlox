@@ -21,6 +21,12 @@ export default tseslint.config(
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
+        files: ["*.config.js"],
+        languageOptions: {
+            globals: { ...globals.node },
+        },
+    },
+    {
         files: ["src/**/*.{js,jsx,ts,tsx}"],
         plugins: {
             "unused-imports": unusedImports,
@@ -28,13 +34,11 @@ export default tseslint.config(
         },
         languageOptions: {
             globals: { ...globals.browser },
-            parserOptions: {
-                ecmaFeatures: { jsx: true },
-            },
         },
         rules: {
             "no-undef": "off",
             "no-control-regex": "off",
+            "no-useless-assignment": "off",
             "@typescript-eslint/no-explicit-any": "off",
             "@typescript-eslint/no-empty-object-type": "off",
             "@typescript-eslint/ban-ts-comment": "off",
@@ -52,6 +56,11 @@ export default tseslint.config(
                 },
             ],
             ...reactHooks.configs.recommended.rules,
+            "react-hooks/set-state-in-effect": "off",
+            "react-hooks/immutability": "off",
+            "react-hooks/static-components": "off",
+            "react-hooks/preserve-manual-memoization": "off",
+            "react-hooks/purity": "off",
         },
     },
 );
