@@ -29,3 +29,22 @@ export const handleError = (error) => {
         });
     }
 };
+
+export const toastApiError = (description, title = "Error") => {
+    toaster.create({
+        title,
+        description,
+        type: "error",
+        ...DEFAULT_TOAST_CONFIG,
+    });
+};
+
+export const toastApiSuccess = (description, title = "Success") => {
+    toaster.create({
+        title,
+        description,
+        type: "success",
+        ...DEFAULT_TOAST_CONFIG,
+    });
+};
+
