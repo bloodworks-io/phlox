@@ -47,7 +47,7 @@ async def update_config(data: dict = Body(...)):
     config_manager.update_config(filtered)
 
     try:
-        from server.utils.rag.vector_store import get_vector_store_manager
+        from server.rag.vector_store import get_vector_store_manager
 
         vector_store_mgr = get_vector_store_manager()
         if vector_store_mgr is not None:

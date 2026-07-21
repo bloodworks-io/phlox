@@ -161,7 +161,7 @@ def initialize_and_get_app():
         transcribe,
     )
     from server.api.config import router as config_router
-    from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE
+    from server.rag.vector_store import VECTOR_STORE_AVAILABLE
 
     # Only create test endpoint in testing environment
     if IS_TESTING and test_database is not None:

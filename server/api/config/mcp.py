@@ -115,7 +115,7 @@ async def test_mcp_server(server_id: int):
     Returns the server's tools and server info if connection is successful.
     Also updates the server's stored description/version from the server's info.
     """
-    from server.utils.mcp.client import McpServerClient
+    from server.mcp.client import McpServerClient
 
     server_config = mcp_config_manager.get_server(server_id)
     if not server_config:
@@ -177,7 +177,7 @@ async def refresh_mcp_tools():
 
     This should be called after adding/removing MCP servers.
     """
-    from server.utils.mcp.client import refresh_mcp_tools_cache
+    from server.mcp.client import refresh_mcp_tools_cache
 
     await refresh_mcp_tools_cache()
     return JSONResponse(content={"message": "MCP tools cache refreshed"})

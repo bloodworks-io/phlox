@@ -12,6 +12,11 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from server.constants import TEMP_DIR
+from server.rag.processing import (
+    generate_specialty_suggestions,
+)
+from server.rag.progress import stream_re_embed_progress
+from server.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 from server.schemas.rag import (
     BulkCommitRequest,
     CommitRequest,
@@ -19,11 +24,6 @@ from server.schemas.rag import (
     ModifyCollectionRequest,
     UpdateDocumentMetadataRequest,
 )
-from server.utils.rag.processing import (
-    generate_specialty_suggestions,
-)
-from server.utils.rag.progress import stream_re_embed_progress
-from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 
 router = APIRouter()
 
