@@ -7,15 +7,9 @@ import {
   Text,
   Button,
   Badge,
-  Input,
-  NativeSelect,
-  Field,
   Progress,
   Spinner,
-  Popover,
   Grid,
-  Portal,
-  IconButton,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
@@ -30,16 +24,15 @@ import {
   FaCloud,
   FaMicrophone,
   FaDatabase,
-  FaStar,
 } from "react-icons/fa";
-import { GreenButton, NavButton } from "../../Buttons";
 import {
   getSmartRecommendations,
-  calculateLLMPerformance,
 } from "../../../../utils/performanceUtils";
 import { downloadEmbeddingModel as downloadEmbeddingService } from "../../../../utils/services/localModelService";
 import { setEmbeddingReady } from "../../../../utils/helpers/featureFlags";
 import { invoke } from "@tauri-apps/api/core";
+import { CompactModelCard } from "./CompactModelCard";
+import { RemoteModeForm } from "./RemoteModeForm";
 
 const MODELS_PER_PAGE = 3;
 
@@ -53,230 +46,6 @@ const RECOMMENDED_EMBEDDING = {
   id: "qwen3-embedding-0.6b",
   name: "Qwen3 Embedding 0.6B",
   size_mb: 639,
-};
-
-const getMachineLabel = (os) => {
-  if (os === "macos") return "Your Mac";
-  if (os === "windows") return "Your PC";
-  return "Your system";
-};
-
-// Performance info popover — info icon is the trigger
-const PerformancePopover = ({ model, systemSpecs }) => {
-  const perf =
-    systemSpecs?.apple_silicon && model.parameters_billions
-      ? calculateLLMPerformance(
-          systemSpecs.apple_silicon.generation,
-          systemSpecs.apple_silicon.tier,
-          model.parameters_billions,
-          model.active_parameters_billions,
-        )
-      : null;
-
-  return (
-    <Popover.Root positioning={{ placement: "top", offset: { mainAxis: 4 } }}>
-      <Popover.Trigger asChild>
-        <Box
-          cursor="pointer"
-          onClick={(e) => e.stopPropagation()}
-          display="flex"
-          alignItems="center"
-          color="textSecondary"
-          _hover={{ color: "primaryButton" }}
-          transition="color 0.15s"
-        >
-          <InfoIcon boxSize={3.5} />
-        </Box>
-      </Popover.Trigger>
-      <Portal>
-        <Popover.Positioner>
-          <Popover.Content w="200px">
-            <Popover.Arrow>
-              <Popover.ArrowTip />
-            </Popover.Arrow>
-            <Popover.Body p={3}>
-              <VStack gap={1} align="stretch">
-                <HStack justify="space-between">
-                  <Text fontSize="xs" className="pill-box-icons">
-                    Size
-                  </Text>
-                  <Text fontSize="xs" fontWeight="bold">
-                    {model.size_mb}MB
-                  </Text>
-                </HStack>
-                {(model.active_parameters_billions ||
-                  model.parameters_billions) && (
-                  <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">
-                      Parameters
-                    </Text>
-                    <Text fontSize="xs" fontWeight="bold">
-                      {model.active_parameters_billions
-                        ? `${model.active_parameters_billions}B`
-                        : `${model.parameters_billions}B`}
-                    </Text>
-                  </HStack>
-                )}
-                {model.recommended_ram_gb && (
-                  <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">
-                      RAM needed
-                    </Text>
-                    <Text fontSize="xs" fontWeight="bold">
-                      {model.recommended_ram_gb}GB
-                    </Text>
-                  </HStack>
-                )}
-                {systemSpecs && (
-                  <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">
-                      {getMachineLabel(systemSpecs.os)}
-                    </Text>
-                    <Text
-                      fontSize="xs"
-                      fontWeight="bold"
-                      color={
-                        model.recommended_ram_gb &&
-                        systemSpecs.total_memory_gb >= model.recommended_ram_gb
-                          ? "successButton"
-                          : "secondaryButton"
-                      }
-                    >
-                      {systemSpecs.total_memory_gb.toFixed(0)}GB
-                    </Text>
-                  </HStack>
-                )}
-                {perf && (
-                  <Tooltip
-                    content="Estimated processing time for a 10-minute consultation"
-                    showArrow
-                  >
-                    <HStack justify="space-between">
-                      <Text fontSize="xs" className="pill-box-icons">
-                        Est. time
-                      </Text>
-                      <Text fontSize="xs" fontWeight="bold">
-                        ~{Math.round(perf.estimatedTime)}s
-                      </Text>
-                    </HStack>
-                  </Tooltip>
-                )}
-              </VStack>
-            </Popover.Body>
-          </Popover.Content>
-        </Popover.Positioner>
-      </Portal>
-    </Popover.Root>
-  );
-};
-
-// Compact model card for carousel
-const CompactModelCard = ({
-  model,
-  isSelected,
-  isDownloaded,
-  isDownloading,
-  downloadProgress,
-  onSelect,
-  onDownload,
-  systemSpecs,
-}) => {
-  const isRecommended = model.recommendedType === "recommended";
-
-  return (
-    <Box
-      p="3"
-      borderRadius="md"
-      borderWidth="1px"
-      borderColor={
-        isSelected
-          ? "primaryButton"
-          : isRecommended
-            ? "purple.200"
-            : "surface"
-      }
-      bg={isSelected ? "primaryButtonFaint" : "base"}
-      position="relative"
-      overflow="hidden"
-      h="100%"
-      minH="120px"
-      cursor={isDownloaded ? "pointer" : "default"}
-      onClick={isDownloaded ? onSelect : undefined}
-      transition="all 0.2s ease"
-      _hover={
-        isDownloaded
-          ? { borderColor: "primaryButton", shadow: "sm" }
-          : { borderColor: "surface1" }
-      }
-      display="flex"
-      flexDirection="column"
-      justifyContent="space-between"
-    >
-      {/* Header: star + name + info icon */}
-      <HStack w="full" justify="space-between">
-        <HStack gap={1}>
-          {model.recommendedType === "recommended" && (
-            <Tooltip content="Recommended for your Mac" showArrow>
-              <Box color="secondaryButton" display="flex" alignItems="center" cursor="default">
-                <FaStar size="12" />
-              </Box>
-            </Tooltip>
-          )}
-          <Text fontSize="sm" fontWeight="bold">
-            {model.simple_name || model.id}
-          </Text>
-        </HStack>
-        <PerformancePopover model={model} systemSpecs={systemSpecs} />
-      </HStack>
-
-      <Text fontSize="xs" fontWeight="normal" className="pill-box-icons" noOfLines={2}>
-        {model.description}
-      </Text>
-
-      {/* Download progress */}
-      {isDownloading && (
-        <Box mt={1}>
-          <Progress.Root
-            value={downloadProgress}
-            colorPalette="blue"
-            size="xs"
-            striped
-            animated
-          >
-            <Progress.Track>
-              <Progress.Range />
-            </Progress.Track>
-          </Progress.Root>
-          <Text
-            fontSize="xs"
-            className="pill-box-icons"
-            textAlign="right"
-            mt={0.5}
-          >
-            {downloadProgress.toFixed(0)}%
-          </Text>
-        </Box>
-      )}
-
-      {/* Action button */}
-      {!isDownloading && isDownloaded && isSelected && (
-        <GreenButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>
-          Selected
-        </GreenButton>
-      )}
-      {!isDownloading && isDownloaded && !isSelected && (
-        <Button size="sm" w="full" variant="outline" onClick={onSelect}>
-          Select
-        </Button>
-      )}
-      {!isDownloading && !isDownloaded && (
-        <NavButton size="sm" w="full" onClick={onDownload}>
-          <DownloadIcon />
-          Download
-        </NavButton>
-      )}
-    </Box>
-  );
 };
 
 export const AIModelsStep = ({ llm, transcription }) => {
@@ -745,156 +514,23 @@ export const AIModelsStep = ({ llm, transcription }) => {
 
       {/* Remote mode */}
       {!isLocal && (
-        <VStack gap={3} w="100%">
-          <Field.Root>
-            <HStack>
-              <Field.Label fontSize="sm" color="textSecondary">
-                API URL
-              </Field.Label>
-              <Tooltip
-                content="OpenAI/Ollama-compatible endpoint (usually http://localhost:11434 for local Ollama)"
-                showArrow
-              >
-                <InfoIcon boxSize={3} color="textSecondary" />
-              </Tooltip>
-            </HStack>
-            <Input
-              placeholder="http://localhost:11434"
-              value={llmBaseUrl}
-              onChange={(e) => setLlmBaseUrl(e.target.value)}
-              className="input-style"
-              size="sm"
-            />
-          </Field.Root>
-
-          <Field.Root>
-            <HStack>
-              <Field.Label fontSize="sm" color="textSecondary">
-                API Key
-              </Field.Label>
-              <Tooltip
-                content="API key for authenticating with the service. Leave empty for local servers like Ollama."
-                showArrow
-              >
-                <InfoIcon boxSize={3} color="textSecondary" />
-              </Tooltip>
-            </HStack>
-            <Input
-              type="password"
-              placeholder="sk-..."
-              value={llmApiKey}
-              onChange={(e) => setLlmApiKey(e.target.value)}
-              className="input-style"
-              size="sm"
-            />
-          </Field.Root>
-
-          <Field.Root required={availableModels.length > 0}>
-            <HStack>
-              <Field.Label fontSize="sm" color="textSecondary">
-                Primary Model
-              </Field.Label>
-              <Tooltip
-                content="The main AI model for medical queries. We recommend llama3.1:8b or gpt-4."
-                showArrow
-              >
-                <InfoIcon boxSize={3} color="textSecondary" />
-              </Tooltip>
-            </HStack>
-            <NativeSelect.Root>
-              <NativeSelect.Field
-                placeholder={
-                  availableModels.length === 0 && !isFetchingLLMModels
-                    ? "No models found — check URL"
-                    : "Select model"
-                }
-                value={primaryModel}
-                onChange={(e) => setPrimaryModel(e.target.value)}
-                disabled={isFetchingLLMModels || availableModels.length === 0}
-                className="input-style"
-                size="sm"
-              >
-                {availableModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-            {isFetchingLLMModels && (
-              <HStack gap={2} mt={2}>
-                <Spinner size="xs" color="primaryButton" />
-                <Text fontSize="sm" color="textSecondary">
-                  Loading models...
-                </Text>
-              </HStack>
-            )}
-          </Field.Root>
-
-          {/* Transcription settings — always visible */}
-          <VStack gap={2} w="100%" align="stretch">
-            <Text fontSize="xs" fontWeight="bold" className="pill-box-icons">
-              Transcription
-            </Text>
-            <Field.Root>
-              <Field.Label fontSize="sm" color="textSecondary">
-                Whisper URL
-              </Field.Label>
-              <Input
-                placeholder="http://localhost:8080"
-                value={whisperBaseUrl}
-                onChange={(e) => setWhisperBaseUrl(e.target.value)}
-                className="input-style"
-                size="sm"
-              />
-            </Field.Root>
-            {whisperBaseUrl.trim() && (
-              <Field.Root>
-                <Field.Label fontSize="sm" color="textSecondary">
-                  Whisper Model
-                </Field.Label>
-                {whisperModelListAvailable &&
-                availableWhisperModels.length > 0 ? (
-                  <NativeSelect.Root>
-                    <NativeSelect.Field
-                      placeholder="Select model"
-                      value={whisperModel}
-                      onChange={(e) => setWhisperModel(e.target.value)}
-                      disabled={isFetchingWhisperModels}
-                      className="input-style"
-                      size="sm"
-                    >
-                      {availableWhisperModels.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </NativeSelect.Field>
-                    <NativeSelect.Indicator />
-                  </NativeSelect.Root>
-                ) : (
-                  <Input
-                    placeholder="e.g., whisper-1, base, small"
-                    value={whisperModel}
-                    onChange={(e) => setWhisperModel(e.target.value)}
-                    disabled={isFetchingWhisperModels}
-                    className="input-style"
-                    size="sm"
-                  />
-                )}
-                {isFetchingWhisperModels && (
-                  <HStack gap={2} mt={2}>
-                    <Spinner size="xs" color="primaryButton" />
-                    <Text fontSize="sm" color="textSecondary">
-                      Loading...
-                    </Text>
-                  </HStack>
-                )}
-              </Field.Root>
-            )}
-          </VStack>
-        </VStack>
+        <RemoteModeForm
+          llmBaseUrl={llmBaseUrl}
+          setLlmBaseUrl={setLlmBaseUrl}
+          llmApiKey={llmApiKey}
+          setLlmApiKey={setLlmApiKey}
+          primaryModel={primaryModel}
+          setPrimaryModel={setPrimaryModel}
+          availableModels={availableModels}
+          isFetchingLLMModels={isFetchingLLMModels}
+          whisperBaseUrl={whisperBaseUrl}
+          setWhisperBaseUrl={setWhisperBaseUrl}
+          whisperModel={whisperModel}
+          setWhisperModel={setWhisperModel}
+          availableWhisperModels={availableWhisperModels}
+          whisperModelListAvailable={whisperModelListAvailable}
+          isFetchingWhisperModels={isFetchingWhisperModels}
+        />
       )}
     </VStack>
   );
