@@ -18,6 +18,43 @@ import ChangelogModal from "../modals/ChangelogModal";
 import { APP_VERSION } from "../../utils/constants/version";
 import changelogContent from "../../../CHANGELOG.md?raw";
 
+const StatusIcon = ({ serverStatus, isCollapsed }) => {
+  // embedding is null in Docker/external mode (no distinct embedding server);
+  // only count it when the backend reports it as applicable.
+  const embeddingApplicable =
+    serverStatus.embedding !== null && serverStatus.embedding !== undefined;
+  const allServicesUp =
+    serverStatus.llm &&
+    serverStatus.whisper &&
+    (!embeddingApplicable || serverStatus.embedding);
+
+  const embeddingLine = embeddingApplicable
+    ? `, ${serverStatus.embedding ? "✓" : "✗"} Embedding`
+    : "";
+
+  return (
+    <Tooltip
+      content={
+        allServicesUp
+          ? "All services connected"
+          : `Services: ${serverStatus.llm ? "✓" : "✗"} LLM, ${serverStatus.whisper ? "✓" : "✗"} Transcription${embeddingLine}`
+      }
+      positioning={{
+        placement: isCollapsed ? "right" : "top",
+      }}
+    >
+      <Badge
+        colorPalette={allServicesUp ? "green" : "orange"}
+        borderRadius="full"
+        variant="subtle"
+        p={1}
+      >
+        {allServicesUp ? <BsCheck2All /> : <BsExclamationTriangle />}
+      </Badge>
+    </Tooltip>
+  );
+};
+
 const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
   const { open, onOpen, onClose } = useDisclosure();
   const [serverStatus, setServerStatus] = useState({
@@ -48,44 +85,6 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
 
     return () => clearInterval(intervalId);
   }, []);
-
-  // Combined status icon
-  const StatusIcon = () => {
-    // embedding is null in Docker/external mode (no distinct embedding server);
-    // only count it when the backend reports it as applicable.
-    const embeddingApplicable =
-      serverStatus.embedding !== null && serverStatus.embedding !== undefined;
-    const allServicesUp =
-      serverStatus.llm &&
-      serverStatus.whisper &&
-      (!embeddingApplicable || serverStatus.embedding);
-
-    const embeddingLine = embeddingApplicable
-      ? `, ${serverStatus.embedding ? "✓" : "✗"} Embedding`
-      : "";
-
-    return (
-      <Tooltip
-        content={
-          allServicesUp
-            ? "All services connected"
-            : `Services: ${serverStatus.llm ? "✓" : "✗"} LLM, ${serverStatus.whisper ? "✓" : "✗"} Transcription${embeddingLine}`
-        }
-        positioning={{
-          placement: isCollapsed ? "right" : "top",
-        }}
-      >
-        <Badge
-          colorPalette={allServicesUp ? "green" : "orange"}
-          borderRadius="full"
-          variant="subtle"
-          p={1}
-        >
-          {allServicesUp ? <BsCheck2All /> : <BsExclamationTriangle />}
-        </Badge>
-      </Tooltip>
-    );
-  };
 
   // Display for the collapsed sidebar
   if (isCollapsed) {
@@ -148,7 +147,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
             </Box>
           </Tooltip>
 
-          <StatusIcon />
+          <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />
         </VStack>
         <ChangelogModal
           isOpen={open}
@@ -212,7 +211,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
             </Box>
           </Tooltip>
 
-          <StatusIcon />
+          <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />
         </HStack>
       </Center>
       <ChangelogModal
