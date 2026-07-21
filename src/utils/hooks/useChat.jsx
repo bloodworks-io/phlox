@@ -78,7 +78,6 @@ export const useChat = ({ mode = "patient" } = {}) => {
     const [userInput, setUserInput] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(true);
     const [loading, setLoading] = useState(false);
-    const [streamStarted, setStreamStarted] = useState(false);
 
     const sendMessage = useCallback(
         async (
@@ -94,7 +93,6 @@ export const useChat = ({ mode = "patient" } = {}) => {
             if (mode === "patient" && (!patient || !currentTemplate)) return;
 
             setLoading(true);
-            setStreamStarted(false);
             setChatExpanded(true);
 
             // Build content for API (includes extracted text from attachments)
@@ -150,6 +148,7 @@ export const useChat = ({ mode = "patient" } = {}) => {
                     : [...messages, userMessageForApi];
 
                 let fullContent = "";
+                let firstChunkSeen = false;
 
                 // Add placeholder assistant message with loading state
                 setMessages((prev) => [
@@ -168,10 +167,10 @@ export const useChat = ({ mode = "patient" } = {}) => {
                     patientContext,
                 )) {
                     if (
-                        !streamStarted &&
+                        !firstChunkSeen &&
                         (chunk.type === "chunk" || chunk.type === "status")
                     ) {
-                        setStreamStarted(true);
+                        firstChunkSeen = true;
                         setLoading(false);
                     }
 
@@ -302,7 +301,6 @@ export const useChat = ({ mode = "patient" } = {}) => {
                 ]);
             } finally {
                 setLoading(false);
-                setStreamStarted(false);
             }
         },
         [messages, mode],
