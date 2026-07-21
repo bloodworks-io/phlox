@@ -1,11 +1,3 @@
-/*
- MIGRATION NOTE: The following Chakra UI hooks have been removed.
- Please replace them with the suggested alternatives:
-
-//   - useTheme: Use Import from system or use useChakraContext
-
- See: https://chakra-ui.com/docs/get-started/migration#hooks
-*/
 import React, { useState, useRef, useEffect } from "react";
 import { colors } from "../../../theme/colors";
 import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";

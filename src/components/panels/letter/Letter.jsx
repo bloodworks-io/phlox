@@ -1,11 +1,3 @@
-/*
- MIGRATION NOTE: The following Chakra UI hooks have been removed.
- Please replace them with the suggested alternatives:
-
-//   - useClipboard: Use react-use: useCopyToClipboard
-
- See: https://chakra-ui.com/docs/get-started/migration#hooks
-*/
 import { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { useClipboard } from "../../../utils/hooks/useClipboard";
 

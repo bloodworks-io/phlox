@@ -10,17 +10,6 @@ const REQUIRED_WRAP_UP_FIELDS = [
     { key: "gender", label: "Gender" },
 ];
 
-/**
- * Owns the wrap-up sub-flow:
- *  - modal visibility + submitting flag
- *  - open-with-required-fields-validation handler
- *  - confirm handler (save + write jobs + reset sibling hooks + navigate)
- *
- * Coupling is intentionally wide: confirm genuinely orchestrates 6 things
- * (save via savePatientCore, jobs write, summary/transcription/search-flow
- * resets, onStartNewNote callback, navigate). Extracting it makes the
- * dependencies explicit at the call site rather than scattered inline.
- */
 export const useWrapUp = ({
     patient,
     savePatientCore,
