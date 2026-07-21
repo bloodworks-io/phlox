@@ -6,7 +6,7 @@ import SplashScreen from "../../components/common/SplashScreen";
 import EncryptionSetup from "../../components/setup/EncryptionSetup";
 import EncryptionUnlock from "../../components/setup/EncryptionUnlock";
 import ServerStartupLoader from "../../components/setup/ServerStartupLoader";
-import { settingsService } from "../../utils/settings/settingsUtils";
+import { settingsApi } from "../api/settingsApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
 import {
     isForceSplashEnabled,
@@ -48,19 +48,18 @@ export const useAppBootstrap = () => {
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
-                await settingsService.fetchUserSettings((userData) => {
-                    if (
-                        userData &&
-                        typeof userData.has_completed_splash_screen ===
-                            "boolean"
-                    ) {
-                        setShowSplashScreen(
-                            !userData.has_completed_splash_screen,
-                        );
-                    } else {
-                        setShowSplashScreen(true); // Default to showing splash if flag is missing/invalid
-                    }
-                });
+                const userData = await settingsApi.fetchUserSettings();
+                if (
+                    userData &&
+                    typeof userData.has_completed_splash_screen ===
+                        "boolean"
+                ) {
+                    setShowSplashScreen(
+                        !userData.has_completed_splash_screen,
+                    );
+                } else {
+                    setShowSplashScreen(true); // Default to showing splash if flag is missing/invalid
+                }
                 // Success - exit the retry loop
                 success = true;
                 break;

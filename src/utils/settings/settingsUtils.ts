@@ -3,45 +3,8 @@ import { toaster } from "@/components/ui/toaster";
 import { settingsApi } from "../api/settingsApi";
 import { letterApi } from "../api/letterApi";
 import { settingsHelpers } from "../helpers/settingsHelpers";
-import { buildApiUrl } from "../../utils/helpers/apiConfig";
-import { universalFetch } from "../helpers/apiHelpers";
 
 export const settingsService = {
-    fetchConfig: async () => {
-        const response = await settingsApi.fetchConfig();
-        return response; // Just return the data, don't try to use setConfig here
-    },
-
-    fetchPrompts: (setPrompts) => {
-        return settingsApi.fetchPrompts().then((data) => setPrompts(data));
-    },
-
-    async fetchUserSettings(setter) {
-        // Changed: Re-add setter argument
-        try {
-            const response = await universalFetch(
-                await buildApiUrl("/api/config/user"),
-            );
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(
-                    errorData.detail || "Failed to fetch user settings",
-                );
-            }
-            const userData = await response.json();
-            if (setter) {
-                // Added check for setter
-                setter(userData); // Call the setter with fetched data
-            } else {
-                return userData;
-            }
-        } catch (error) {
-            console.error("Error in fetchUserSettings:", error);
-            // Re-throw or handle as appropriate, perhaps by calling setter with default/error state
-            throw error;
-        }
-    },
-
     fetchOptions: (setOptions) => {
         return settingsApi
             .fetchOptions()
@@ -58,8 +21,8 @@ export const settingsService = {
             if (providerType === "local") {
                 const response = await settingsApi.fetchLLMModels(
                     providerType,
-                    null, // No base URL needed for local
-                    null, // No API key needed for local
+                    null,
+                    null,
                 );
                 setModelOptions(response.models || []);
                 return;
@@ -83,10 +46,8 @@ export const settingsService = {
             );
 
             if (providerType === "ollama") {
-                // Format for Ollama response
                 setModelOptions(response.models.map((model) => model.name));
             } else {
-                // Format for OpenAI-compatible response
                 setModelOptions(response.models || []);
             }
         } catch (error) {
@@ -117,110 +78,9 @@ export const settingsService = {
         }
     },
 
-    validateUrl: async (type, url) => {
-        if (!url) {
-            return false;
-        }
-
-        try {
-            const response = await universalFetch(
-                await buildApiUrl(
-                    `/api/config/validate-url?url=${encodeURIComponent(url)}&type=${type}`,
-                ),
-            );
-            if (response.ok) {
-                const data = await response.json();
-                return data.valid;
-            }
-            return false;
-        } catch (error) {
-            console.error(`Error validating ${type} URL:`, error);
-            return false;
-        }
-    },
-
-    fetchTemplates: async (setTemplates) => {
-        const response = await universalFetch(
-            await buildApiUrl("/api/templates"),
-        );
-        if (!response.ok) {
-            throw new Error("Failed to fetch templates");
-        }
-        const data = await response.json();
-        setTemplates(data);
-        return data;
-    },
-
-    getDefaultTemplate: async () => {
-        try {
-            const response = await settingsApi.getDefaultTemplate();
-            return response;
-        } catch (error) {
-            console.error("Failed to get default template:", error);
-            throw error;
-        }
-    },
-
-    setDefaultTemplate: async (templateKey, toast) => {
-        try {
-            await settingsApi.setDefaultTemplate(templateKey);
-            if (toast) {
-                settingsHelpers.showSuccessToast(
-                    toast,
-                    "Default template updated successfully",
-                );
-            }
-        } catch (error) {
-            if (toast) {
-                settingsHelpers.showErrorToast(
-                    toast,
-                    "Failed to set default template",
-                );
-            }
-            throw error;
-        }
-    },
-
-    saveLetterTemplateSetting: async (templateId, toast) => {
-        try {
-            await settingsApi.saveLetterTemplateSetting(templateId);
-            if (toast) {
-                settingsHelpers.showSuccessToast(
-                    toast,
-                    "Default letter template updated successfully",
-                );
-            }
-        } catch (error) {
-            if (toast) {
-                settingsHelpers.showErrorToast(
-                    toast,
-                    "Failed to set default letter template",
-                );
-            }
-            throw error;
-        }
-    },
-
-    saveUserSettings: async (userSettings) => {
-        try {
-            return await settingsApi.saveUserSettings(userSettings);
-        } catch (error) {
-            console.error("Error saving user settings:", error);
-            throw error;
-        }
-    },
-
-    updateConfig: async (config, key, value) => {
-        // Simply return new config without API call
-        return {
-            ...config,
-            [key]: value,
-        };
-    },
     fetchLetterTemplates: async () => {
         try {
-            const response = await letterApi.fetchLetterTemplates();
-            return response; // Return the whole response with templates and default_template_id
+            return await letterApi.fetchLetterTemplates();
         } catch (error) {
             console.error("Failed to fetch letter templates:", error);
             throw error;
@@ -230,10 +90,8 @@ export const settingsService = {
     saveLetterTemplate: async (template) => {
         try {
             if (template.id) {
-                // Update existing template
                 await letterApi.updateLetterTemplate(template.id, template);
             } else {
-                // Create new template
                 await letterApi.createLetterTemplate(template);
             }
         } catch (error) {
@@ -271,14 +129,13 @@ export const settingsService = {
             throw error;
         }
     },
+
     clearDatabase: async (newEmbeddingModel, config, toast) => {
         try {
-            // Clear the database
             await settingsApi.clearDatabase();
 
-            // Update config with new embedding model
             if (newEmbeddingModel) {
-                await settingsApi.updateConfig({
+                await settingsApi.saveConfig({
                     ...config,
                     EMBEDDING_MODEL: newEmbeddingModel,
                 });
@@ -308,15 +165,13 @@ export const settingsService = {
 
     reEmbed: async (newEmbeddingModel, config, toast, onProgress = null) => {
         try {
-            // Update config with new embedding model first
             if (newEmbeddingModel) {
-                await settingsApi.updateConfig({
+                await settingsApi.saveConfig({
                     ...config,
                     EMBEDDING_MODEL: newEmbeddingModel,
                 });
             }
 
-            // Stream re-embed progress
             let result = null;
             for await (const event of ragApi.streamReEmbed()) {
                 if (event.type === "error") {
@@ -353,61 +208,9 @@ export const settingsService = {
         }
     },
 
-    saveGlobalConfig: async (configData) => {
-        try {
-            const response = await universalFetch(
-                await buildApiUrl("/api/config/global"),
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(configData),
-                },
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(
-                    errorData.detail || "Failed to save global config",
-                );
-            }
-            return await response.json();
-        } catch (error) {
-            console.error("Error saving global config:", error);
-            throw error;
-        }
-    },
-
-    markSplashCompleted: async () => {
-        try {
-            const response = await universalFetch(
-                await buildApiUrl("/api/config/user/mark_splash_complete"),
-                {
-                    method: "POST",
-                },
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(
-                    errorData.detail ||
-                        "Failed to mark splash screen as complete",
-                );
-            }
-            return await response.json();
-        } catch (error) {
-            console.error("Error marking splash completed:", error);
-            throw error;
-        }
-    },
-
     saveAmbientMode: async (isAmbient) => {
         try {
-            const response = await universalFetch(
-                await buildApiUrl("/api/config/user"),
-            );
-            if (!response.ok) throw new Error("Failed to fetch user settings");
-            const userData = await response.json();
-
+            const userData = await settingsApi.fetchUserSettings();
             return await settingsApi.saveUserSettings({
                 ...userData,
                 scribe_is_ambient: isAmbient,
@@ -420,21 +223,13 @@ export const settingsService = {
 
     resetIndividualPrompt: async (promptType) => {
         try {
-            // Fetch defaults
             const defaults = await settingsApi.fetchDefaultPrompts();
-
-            // Get current prompts
             const currentPrompts = await settingsApi.fetchPrompts();
-
-            // Merge: replace only the specified prompt with default
             const updatedPrompts = {
                 ...currentPrompts,
                 [promptType]: defaults[promptType],
             };
-
-            // Save updated prompts
             await settingsApi.savePrompts(updatedPrompts);
-
             return updatedPrompts;
         } catch (error) {
             console.error("Error resetting prompt:", error);

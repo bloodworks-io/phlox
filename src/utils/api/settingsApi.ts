@@ -4,45 +4,45 @@ import { buildApiUrl } from "../helpers/apiConfig";
 export const settingsApi = {
     fetchUserSettings: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/config/user");
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: "Failed to fetch user settings",
         }),
 
     fetchPrompts: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/config/prompts");
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: "Failed to fetch prompts",
         }),
 
     fetchDefaultPrompts: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/config/prompts/defaults");
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: "Failed to fetch default prompts",
         }),
 
     fetchConfig: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/config/global");
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: "Failed to fetch config",
         }),
 
     fetchOptions: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/config/options");
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: "Failed to fetch options",
         }),
@@ -61,9 +61,9 @@ export const settingsApi = {
         const endpoint = `/api/config/llm/models?${params.toString()}`;
 
         return handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl(endpoint);
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: `Failed to fetch ${providerType} models`,
         });
@@ -75,9 +75,9 @@ export const settingsApi = {
         }
         const endpoint = `/api/config/whisper/models?whisperEndpoint=${encodeURIComponent(whisperBaseUrl)}`;
         return handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl(endpoint);
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: "Failed to fetch models",
         });
@@ -85,9 +85,10 @@ export const settingsApi = {
 
     savePrompts: async (prompts) =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/config/prompts");
                 return universalFetch(url, {
+                    signal,
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(prompts),
@@ -98,9 +99,10 @@ export const settingsApi = {
 
     saveConfig: async (config) =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/config/global");
                 return universalFetch(url, {
+                    signal,
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(config),
@@ -111,11 +113,12 @@ export const settingsApi = {
 
     saveOptions: async (category, options) =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl(
                     `/api/config/options/${category}`,
                 );
                 return universalFetch(url, {
+                    signal,
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(options),
@@ -126,9 +129,10 @@ export const settingsApi = {
 
     saveUserSettings: async (userSettings) =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/config/user");
                 return universalFetch(url, {
+                    signal,
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -143,16 +147,16 @@ export const settingsApi = {
 
     fetchTemplates: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/templates");
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: "Failed to fetch templates",
         }),
 
     saveTemplates: async (templates: Record<string, any>) =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 // Convert templates object to array
                 const templatesArray = Object.values(templates).map(
                     (template) => ({
@@ -174,6 +178,7 @@ export const settingsApi = {
 
                 const url = await buildApiUrl("/api/templates");
                 return universalFetch(url, {
+                    signal,
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(templatesArray), // Send array directly
@@ -184,75 +189,104 @@ export const settingsApi = {
 
     setDefaultTemplate: async (templateKey) =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl(
                     `/api/templates/default/${templateKey}`,
                 );
-                return universalFetch(url, {
-                    method: "POST",
-                });
+                return universalFetch(url, { signal, method: "POST" });
             },
             errorMessage: "Failed to set default template",
         }),
 
     getDefaultTemplate: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/templates/default");
-                return universalFetch(url);
+                return universalFetch(url, { signal });
             },
             errorMessage: "Failed to get default template",
         }),
 
     saveLetterTemplateSetting: async (templateId) =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl(
                     `/api/letter-templates/default/${templateId}`,
                 );
-                return universalFetch(url, {
-                    method: "POST",
-                });
+                return universalFetch(url, { signal, method: "POST" });
             },
             errorMessage: "Failed to set default letter template",
         }),
 
     resetOptionsToDefaults: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl(
                     "/api/config/options/reset-to-defaults",
                 );
-                return universalFetch(url, {
-                    method: "POST",
-                });
+                return universalFetch(url, { signal, method: "POST" });
             },
             errorMessage: "Failed to reset options to defaults",
         }),
 
     clearDatabase: async () =>
         handleApiRequest({
-            apiCall: async () => {
+            apiCall: async (signal) => {
                 const url = await buildApiUrl("/api/rag/clear-database");
-                return universalFetch(url, {
-                    method: "POST",
-                });
+                return universalFetch(url, { signal, method: "POST" });
             },
             errorMessage: "Failed to clear RAG database",
         }),
 
-    updateConfig: async (config) =>
+    validateUrl: async (type: string, url: string) => {
+        if (!url) return false;
+        const params = new URLSearchParams({
+            url,
+            type,
+        });
+        try {
+            const data: any = await handleApiRequest({
+                apiCall: async (signal) => {
+                    const fullUrl = await buildApiUrl(
+                        `/api/config/validate-url?${params.toString()}`,
+                    );
+                    return universalFetch(fullUrl, { signal });
+                },
+                errorMessage: `Failed to validate ${type} URL`,
+            });
+            return Boolean(data?.valid);
+        } catch (error) {
+            console.error(`Error validating ${type} URL:`, error);
+            return false;
+        }
+    },
+
+    markSplashCompleted: async () =>
         handleApiRequest({
-            apiCall: async () => {
-                const url = await buildApiUrl("/api/config/global");
-                return universalFetch(url, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(config),
-                });
+            apiCall: async (signal) => {
+                const url = await buildApiUrl(
+                    "/api/config/user/mark_splash_complete",
+                );
+                return universalFetch(url, { signal, method: "POST" });
             },
-            errorMessage: "Failed to update config",
+            errorMessage: "Failed to mark splash screen as complete",
         }),
+
+    fetchServerStatus: async (signal?: AbortSignal) => {
+        const url = await buildApiUrl("/api/config/status");
+        const response = await universalFetch(url, { signal });
+        if (!response.ok) {
+            let detail;
+            try {
+                const errorData = await response.json();
+                detail = errorData.detail || errorData.message;
+            } catch {
+                // No JSON body
+            }
+            throw new Error(
+                detail || `HTTP error! status: ${response.status}`,
+            );
+        }
+        return response.json();
+    },
 };

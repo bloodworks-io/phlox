@@ -8,6 +8,7 @@ import { toaster } from "@/components/ui/toaster";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
 import { settingsApi } from "../utils/api/settingsApi";
+import { settingsHelpers } from "../utils/helpers/settingsHelpers";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
@@ -63,11 +64,11 @@ const Settings = () => {
     const fetchCoreSettings = useCallback(async () => {
         try {
             setCoreLoading(true);
-            const configData = await settingsService.fetchConfig();
+            const configData = await settingsApi.fetchConfig();
             setConfig(configData);
 
             // Letter templates fetched here instead of a separate useEffect
-            const [letterResponse] = await Promise.all([
+            const [letterResponse, prompts, optionsData, userSettings, templates] = await Promise.all([
                 settingsService.fetchLetterTemplates().catch((error) => {
                     console.error(
                         "Failed to fetch letter templates:",
@@ -75,20 +76,26 @@ const Settings = () => {
                     );
                     return { templates: [], default_template_id: null };
                 }),
-                settingsService.fetchPrompts(setPrompts),
-                // Only fetch model options if NOT using local models
+                settingsApi.fetchPrompts(),
                 configData?.LLM_PROVIDER !== "local"
-                    ? settingsService.fetchOptions(setOptions)
-                    : Promise.resolve(
-                          setOptions({
-                              general: { num_ctx: 0 },
-                              secondary: { num_ctx: 0 },
-                              letter: { temperature: 0 },
-                          }),
-                      ),
-                settingsService.fetchUserSettings(setUserSettings),
-                settingsService.fetchTemplates(setTemplates),
+                    ? settingsApi.fetchOptions()
+                    : Promise.resolve(null),
+                settingsApi.fetchUserSettings(),
+                settingsApi.fetchTemplates(),
             ]);
+
+            setPrompts(prompts);
+            if (optionsData) {
+                setOptions(settingsHelpers.processOptionsData(optionsData));
+            } else {
+                setOptions({
+                    general: { num_ctx: 0 },
+                    secondary: { num_ctx: 0 },
+                    letter: { temperature: 0 },
+                });
+            }
+            setUserSettings(userSettings);
+            setTemplates(templates);
 
             // Set letter templates from parallel fetch
             if (letterResponse) {
@@ -134,7 +141,7 @@ const Settings = () => {
     useEffect(() => {
         const validateUrls = async () => {
             if (debouncedWhisperUrl) {
-                const whisperValid = await settingsService.validateUrl(
+                const whisperValid = await settingsApi.validateUrl(
                     "whisper",
                     debouncedWhisperUrl,
                 );
@@ -146,7 +153,7 @@ const Settings = () => {
             if (debouncedLlmBaseUrl) {
                 // Use provider type from config for URL validation
                 const providerType = debouncedLlmProvider || "openai";
-                const llmValid = await settingsService.validateUrl(
+                const llmValid = await settingsApi.validateUrl(
                     providerType,
                     debouncedLlmBaseUrl,
                 );
@@ -350,7 +357,8 @@ const Settings = () => {
     const handleOptionsReset = async () => {
         try {
             await settingsService.resetOptionsToDefaults();
-            await settingsService.fetchOptions(setOptions);
+            const optionsData = await settingsApi.fetchOptions();
+            setOptions(settingsHelpers.processOptionsData(optionsData));
             toaster.create({
                 title: "Success",
                 description: "Advanced options reset to defaults",

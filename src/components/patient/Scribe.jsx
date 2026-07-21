@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranscription } from "../../utils/hooks/useTranscription";
 import { settingsService } from "../../utils/settings/settingsUtils";
+import { settingsApi } from "../../utils/api/settingsApi";
 import { AudioRecorder } from "../../utils/audioRecorder";
 
 // Hook to manage scribe state and logic
@@ -41,14 +42,13 @@ export const useScribe = ({
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                await settingsService.fetchUserSettings((data) => {
-                    if (data && typeof data.scribe_is_ambient === "boolean") {
-                        setIsAmbient(data.scribe_is_ambient);
-                    }
-                    setRequireConsent(
-                        Boolean(data?.advanced_options?.require_scribe_consent),
-                    );
-                });
+                const data = await settingsApi.fetchUserSettings();
+                if (data && typeof data.scribe_is_ambient === "boolean") {
+                    setIsAmbient(data.scribe_is_ambient);
+                }
+                setRequireConsent(
+                    Boolean(data?.advanced_options?.require_scribe_consent),
+                );
             } catch (error) {
                 console.error("Error fetching user settings:", error);
             }

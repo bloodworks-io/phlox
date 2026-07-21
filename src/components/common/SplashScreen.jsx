@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Progress } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
-import { settingsService } from "../../utils/settings/settingsUtils";
+import { settingsApi } from "../../utils/api/settingsApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
 import {
   SPLASH_STEPS,
@@ -98,10 +98,7 @@ const SplashScreen = ({ onComplete }) => {
   const handleComplete = async () => {
     setIsLoading(true);
     try {
-      let currentUserSettings = {};
-      await settingsService.fetchUserSettings((data) => {
-        currentUserSettings = data;
-      });
+      const currentUserSettings = await settingsApi.fetchUserSettings();
 
       const personalData = personal.getData();
       const llmData = llm.getData();
@@ -117,9 +114,9 @@ const SplashScreen = ({ onComplete }) => {
           : null,
       };
 
-      await settingsService.saveUserSettings(userSettingsToSave);
+      await settingsApi.saveUserSettings(userSettingsToSave);
 
-      const currentGlobalConfig = await settingsService.fetchConfig();
+      const currentGlobalConfig = await settingsApi.fetchConfig();
       const configToSave = {
         ...currentGlobalConfig,
         LLM_PROVIDER: llmData.llmProvider,
@@ -130,20 +127,13 @@ const SplashScreen = ({ onComplete }) => {
         WHISPER_MODEL: transcriptionData.whisperModel,
       };
 
-      if (settingsService.saveGlobalConfig) {
-        await settingsService.saveGlobalConfig(configToSave);
-      } else {
-        await settingsService.updateConfig(configToSave);
-      }
+      await settingsApi.saveConfig(configToSave);
 
       if (templatesData.selectedTemplate) {
-        await settingsService.setDefaultTemplate(
-          templatesData.selectedTemplate,
-          null,
-        );
+        await settingsApi.setDefaultTemplate(templatesData.selectedTemplate);
       }
 
-      await settingsService.markSplashCompleted();
+      await settingsApi.markSplashCompleted();
       toaster.create({
         title: "Setup Complete!",
         description: "You're ready to start using Phlox.",
