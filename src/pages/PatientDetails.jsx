@@ -398,6 +398,7 @@ const PatientDetails = ({
                 />
 
                 <WrapUpModal
+                    key={String(wrapUp.isWrapUpOpen)}
                     isOpen={wrapUp.isWrapUpOpen}
                     onClose={wrapUp.closeWrapUp}
                     onConfirm={wrapUp.confirmWrapUp}

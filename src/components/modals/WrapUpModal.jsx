@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     HStack,
     Heading,
@@ -17,8 +17,10 @@ import {
     Portal,
 } from "@chakra-ui/react";
 import { FaCheckDouble, FaPlus, FaTimes } from "react-icons/fa";
+import useSWRMutation from "swr/mutation";
 import { patientApi } from "../../utils/api/patientApi";
 import { GreenButton } from "../common/Buttons";
+import { KEYS } from "../../utils/cache/keys";
 
 const Section = ({ title, children }) => (
     <Box>
@@ -30,59 +32,51 @@ const Section = ({ title, children }) => (
 );
 
 const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
-
-    const [extracting, setExtracting] = useState(false);
-    const [actionItems, setActionItems] = useState([]); // { text, checked }
-    const [excluded, setExcluded] = useState([]); // { text }
-    const [fallback, setFallback] = useState(null); // null | "empty" | "heuristic"
+    const [actionItems, setActionItems] = useState([]);
+    const [excluded, setExcluded] = useState([]);
+    const [fallback, setFallback] = useState(null);
     const [newTaskText, setNewTaskText] = useState("");
     const [showExcluded, setShowExcluded] = useState(false);
 
-    // Guards against out-of-order responses if the modal is reopened quickly.
-    const requestIdRef = useRef(0);
+    const plan = (planText || "").trim();
+
+    const {
+        trigger,
+        data,
+        error,
+        isMutating: extracting,
+    } = useSWRMutation(KEYS.extractJobs(plan), () =>
+        patientApi.extractJobs(plan),
+    );
 
     useEffect(() => {
-        if (!isOpen) return;
-
-        setActionItems([]);
-        setExcluded([]);
-        setFallback(null);
-        setNewTaskText("");
-        setShowExcluded(false);
-
-        const plan = (planText || "").trim();
-        if (!plan) {
+        if (isOpen && plan) {
+            trigger();
+        } else if (isOpen && !plan) {
             setFallback("empty");
-            return;
         }
+    }, [trigger, isOpen, plan]);
 
-        const myRequestId = ++requestIdRef.current;
-        setExtracting(true);
-        patientApi
-            .extractJobs(plan)
-            .then((data) => {
-                if (myRequestId !== requestIdRef.current) return; // stale
-                setActionItems(
-                    (data.action_items || []).map((j) => ({
-                        text: j.text,
-                        checked: true,
-                    })),
-                );
-                setExcluded(
-                    (data.excluded || []).map((j) => ({ text: j.text })),
-                );
-                setFallback(data.fallback || null);
-            })
-            .catch((err) => {
-                if (myRequestId !== requestIdRef.current) return;
-                console.error("Job extraction failed:", err);
-                setFallback("heuristic");
-                setActionItems([]);
-            })
-            .finally(() => {
-                if (myRequestId === requestIdRef.current) setExtracting(false);
-            });
-    }, [isOpen, planText]);
+    useEffect(() => {
+        if (data) {
+            setActionItems(
+                (data.action_items || []).map((j) => ({
+                    text: j.text,
+                    checked: true,
+                })),
+            );
+            setExcluded((data.excluded || []).map((j) => ({ text: j.text })));
+            setFallback(data.fallback || null);
+        }
+    }, [data]);
+
+    useEffect(() => {
+        if (error) {
+            console.error("Job extraction failed:", error);
+            setFallback("heuristic");
+            setActionItems([]);
+        }
+    }, [error]);
 
     const toggleItem = (idx) =>
         setActionItems((items) =>
@@ -97,7 +91,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
         );
 
     const removeItem = (idx) =>
-        setActionItems((items) => items.filter((_, i) !== idx));
+        setActionItems((items) => items.filter((_, i) => i !== idx));
 
     const addTask = () => {
         const text = newTaskText.trim();

@@ -1,44 +1,37 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import useSWR from "swr";
 import { toolsApi } from "../api/toolsApi";
 import { settingsApi } from "../api/settingsApi";
 import { toastApiError, toastApiSuccess } from "../helpers/errorHandlers";
+import { KEYS } from "../cache/keys";
 
 const DEFAULT_DISABLED_TOOLS = ["pubmed_search", "wiki_search"];
 
 export const useToolServers = () => {
-    const [toolServers, setToolServers] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [testingServerId, setTestingServerId] = useState(null);
-    const [userSettings, setUserSettings] = useState({});
-    const [disabledTools, setDisabledTools] = useState(DEFAULT_DISABLED_TOOLS);
 
-    const fetchServers = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const data = await toolsApi.fetchToolServers();
-            setToolServers(data.servers || []);
-        } catch (error) {
-            console.error("Error fetching tool servers:", error);
-            toastApiError("Failed to load tool servers");
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+    const {
+        data: toolServers = [],
+        mutate: mutateServers,
+    } = useSWR(KEYS.TOOL_SERVERS, async () => {
+        const data = await toolsApi.fetchToolServers();
+        return data.servers || [];
+    });
 
-    const fetchUserSettings = useCallback(async () => {
-        try {
-            const settings = await settingsApi.fetchUserSettings();
-            setUserSettings(settings);
-            setDisabledTools(settings.disabled_tools || DEFAULT_DISABLED_TOOLS);
-        } catch (error) {
-            console.error("Error fetching user settings:", error);
-        }
-    }, []);
+    const {
+        data: userSettings = {},
+        mutate: mutateUserSettings,
+    } = useSWR(KEYS.USER_SETTINGS, () => settingsApi.fetchUserSettings());
 
-    useEffect(() => {
-        fetchServers();
-        fetchUserSettings();
-    }, [fetchServers, fetchUserSettings]);
+    const disabledTools = useMemo(
+        () => userSettings.disabled_tools || DEFAULT_DISABLED_TOOLS,
+        [userSettings],
+    );
+
+    const refreshServers = useCallback(async () => {
+        await mutateServers();
+    }, [mutateServers]);
 
     const addServer = useCallback(
         async (serverData) => {
@@ -47,7 +40,7 @@ export const useToolServers = () => {
                 await toolsApi.addToolServer(serverData);
                 await toolsApi.refreshTools();
                 toastApiSuccess("Tool server added successfully");
-                await fetchServers();
+                await mutateServers();
                 return true;
             } catch (error) {
                 console.error("Error adding tool server:", error);
@@ -57,7 +50,7 @@ export const useToolServers = () => {
                 setIsLoading(false);
             }
         },
-        [fetchServers],
+        [mutateServers],
     );
 
     const deleteServer = useCallback(
@@ -67,7 +60,7 @@ export const useToolServers = () => {
                 await toolsApi.deleteToolServer(serverId);
                 await toolsApi.refreshTools();
                 toastApiSuccess("Tool server deleted");
-                await fetchServers();
+                await mutateServers();
                 return true;
             } catch (error) {
                 console.error("Error deleting tool server:", error);
@@ -77,7 +70,7 @@ export const useToolServers = () => {
                 setIsLoading(false);
             }
         },
-        [fetchServers],
+        [mutateServers],
     );
 
     const toggleServer = useCallback(
@@ -87,7 +80,7 @@ export const useToolServers = () => {
                 await toolsApi.toggleToolServer(serverId, enabled);
                 await toolsApi.refreshTools();
                 toastApiSuccess(`Tool server ${enabled ? "enabled" : "disabled"}`);
-                await fetchServers();
+                await mutateServers();
                 return true;
             } catch (error) {
                 console.error("Error toggling tool server:", error);
@@ -97,7 +90,7 @@ export const useToolServers = () => {
                 setIsLoading(false);
             }
         },
-        [fetchServers],
+        [mutateServers],
     );
 
     const toggleSensitiveData = useCallback(
@@ -111,7 +104,7 @@ export const useToolServers = () => {
                 toastApiSuccess(
                     `Sensitive data ${allowSensitive ? "allowed" : "sanitized"}`,
                 );
-                await fetchServers();
+                await mutateServers();
                 return true;
             } catch (error) {
                 console.error("Error toggling sensitive data:", error);
@@ -121,7 +114,7 @@ export const useToolServers = () => {
                 setIsLoading(false);
             }
         },
-        [fetchServers],
+        [mutateServers],
     );
 
     const testServer = useCallback(async (serverId) => {
@@ -158,23 +151,25 @@ export const useToolServers = () => {
                 ? disabledTools.filter((t) => t !== toolName)
                 : [...disabledTools, toolName];
 
-            setDisabledTools(newDisabledTools);
-
             try {
                 await settingsApi.saveUserSettings({
                     ...userSettings,
                     disabled_tools: newDisabledTools,
                 });
+                // Optimistic local update; full revalidate via mutate
+                mutateUserSettings(
+                    (prev) => ({ ...prev, disabled_tools: newDisabledTools }),
+                    { revalidate: false },
+                );
                 toastApiSuccess(`${toolName} ${enabled ? "enabled" : "disabled"}`);
                 return true;
             } catch (error) {
                 console.error("Error saving tool settings:", error);
-                setDisabledTools(disabledTools);
                 toastApiError("Failed to save tool settings");
                 return false;
             }
         },
-        [disabledTools, userSettings],
+        [disabledTools, userSettings, mutateUserSettings],
     );
 
     const isToolEnabled = useCallback(
@@ -195,6 +190,6 @@ export const useToolServers = () => {
         testServer,
         toggleBuiltInTool,
         isToolEnabled,
-        refreshServers: fetchServers,
+        refreshServers,
     };
 };
