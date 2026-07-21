@@ -36,6 +36,8 @@ import { useCollapse } from "../utils/hooks/useCollapse";
 import { useChat } from "../utils/hooks/useChat";
 import { useLetter } from "../utils/hooks/useLetter";
 import { useActivePanel } from "../utils/hooks/useActivePanel";
+import { useTranscriptionCapture } from "../utils/hooks/useTranscriptionCapture";
+import { useModificationFlags } from "../utils/hooks/useModificationFlags";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
 import { DEFAULT_TOAST_CONFIG } from "../utils/constants";
@@ -53,7 +55,7 @@ const PatientDetails = ({
     const isNewPatient = location.pathname === "/new-note";
     const { viaModal, cameFromSearch } = location.state || {};
     const summaryRef = useRef(null);
-    const [loading, setLoading] = useState(false);
+    const [, setLoading] = useState(false);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [isSearchedPatient, setIsSearchedPatient] = useState(
         Boolean(cameFromSearch),
@@ -82,14 +84,20 @@ const PatientDetails = ({
         scribe_consent_at: null,
         scribe_consent_declined_at: null,
     });
-    const [isLetterModified, setIsLetterModified] = useState(false);
-    const [isSummaryModified, setIsSummaryModified] = useState(false);
+
+    const {
+        hasTranscriptionOccurred,
+        initialTranscriptionContent,
+        capture: captureTranscription,
+        reset: resetTranscription,
+    } = useTranscriptionCapture();
+
     const previousTranscriptionRef = useRef(null);
 
-    const [initialTranscriptionContent, setInitialTranscriptionContent] =
-        useState({});
-    const [hasTranscriptionOccurred, setHasTranscriptionOccurred] =
-        useState(false);
+    const {
+        setIsLetterModified,
+        setIsSummaryModified,
+    } = useModificationFlags(initialPatient?.id, setParentIsModified);
 
     const [hasViewedPreviousVisit, setHasViewedPreviousVisit] = useState(false);
 
@@ -295,10 +303,6 @@ const PatientDetails = ({
     }, [onResetLetter, letterHook.resetLetter]);
 
     useEffect(() => {
-        setParentIsModified(isLetterModified || isSummaryModified);
-    }, [isLetterModified, isSummaryModified, setParentIsModified]);
-
-    useEffect(() => {
         toaster.remove();
     }, []);
 
@@ -312,8 +316,7 @@ const PatientDetails = ({
             Object.keys(data.fields).length > 0 &&
             !isRestoration
         ) {
-            setInitialTranscriptionContent({ ...data.fields });
-            setHasTranscriptionOccurred(true);
+            captureTranscription(data.fields);
         }
 
         handleProcessingComplete(data, {
@@ -379,8 +382,7 @@ const PatientDetails = ({
                 );
                 if (savedPatient?.id) {
                     setIsSummaryModified(false);
-                    setInitialTranscriptionContent({});
-                    setHasTranscriptionOccurred(false);
+                    resetTranscription();
                     navigate(`/note/${savedPatient.id}`);
                 }
             } else {
@@ -393,8 +395,7 @@ const PatientDetails = ({
                         : null,
                 );
                 setIsSummaryModified(false);
-                setInitialTranscriptionContent({});
-                setHasTranscriptionOccurred(false);
+                resetTranscription();
             }
         } finally {
             setSaveLoading(false);
@@ -448,8 +449,7 @@ const PatientDetails = ({
                 return;
             }
             setIsSummaryModified(false);
-            setInitialTranscriptionContent({});
-            setHasTranscriptionOccurred(false);
+            resetTranscription();
             setIsWrapUpOpen(false);
             setIsSearchedPatient(false);
             setStartCardDismissed(false);
@@ -493,12 +493,6 @@ const PatientDetails = ({
         setIsSearchedPatient(true);
         summary.setIsCollapsed(false);
     };
-
-    useEffect(() => {
-        setIsLetterModified(false);
-        setIsSummaryModified(false);
-        setParentIsModified(false);
-    }, [initialPatient?.id, setParentIsModified]);
 
     // Functions for the Floating Action Menu
     const handleOpenLetter = () => toggle("letter");
@@ -581,7 +575,6 @@ const PatientDetails = ({
                     saveLoading={saveLoading}
                     wrapUpLoading={wrapUpLoading}
                     setIsModified={setIsSummaryModified}
-                    template={currentTemplate}
                     selectTemplate={selectTemplate}
                     isNewPatient={isNewPatient}
                     isSearchedPatient={isSearchedPatient}
@@ -661,7 +654,6 @@ const PatientDetails = ({
 
                 <ReasoningPanel
                     isOpen={isOpen("reasoning")}
-                    onClose={() => close("reasoning")}
                     noteId={patient?.id}
                     initialReasoning={patient?.reasoning_output}
                     onReasoningGenerated={handleReasoningGenerated}
@@ -716,7 +708,6 @@ const PatientDetails = ({
                 rawTranscription={patient.raw_transcription}
                 transcriptionDuration={patient.transcription_duration}
                 processDuration={patient.process_duration}
-                isTranscribing={loading}
                 onReprocess={handleTranscriptionComplete}
                 isAmbient={scribeControls.isAmbient}
                 name={patient.name}
@@ -728,7 +719,6 @@ const PatientDetails = ({
             {/* Document Panel */}
             <DocumentPanel
                 isOpen={isOpen("document")}
-                onClose={() => close("document")}
                 handleDocumentComplete={handleDocumentComplete}
                 toggleDocumentField={toggleDocumentField}
                 replacedFields={replacedFields}
@@ -745,7 +735,6 @@ const PatientDetails = ({
             {/* Previous Visit Panel */}
             <PreviousVisitPanel
                 isOpen={isOpen("previous-visit")}
-                onClose={() => close("previous-visit")}
                 previousVisitSummary={patient.previous_visit_summary}
                 previousVisitTemplateData={patient.previous_visit_template_data}
                 previousVisitTemplateKey={patient.previous_visit_template_key}
