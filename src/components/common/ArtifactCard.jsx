@@ -17,7 +17,7 @@ const getArtifactIcon = (mimeType = "") => {
 
 const ArtifactCard = ({ artifact }) => {
     const { filename, mime_type, size, url } = artifact;
-    const Icon = getArtifactIcon(mime_type);
+    const icon = getArtifactIcon(mime_type);
 
     return (
         <Box
@@ -30,7 +30,7 @@ const ArtifactCard = ({ artifact }) => {
             maxW="320px"
         >
             <HStack gap={2} mb={1}>
-                <Icon size="1.2em" color="overlay0" />
+                {React.createElement(icon, { size: "1.2em", color: "overlay0" })}
                 <Text fontSize="xs" fontWeight="semibold" isTruncated flex={1}>
                     {filename}
                 </Text>

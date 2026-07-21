@@ -24,7 +24,7 @@ const getStatusIcon = (status) => {
 export const LoadingStatus = ({ status, colorMode }) => {
     if (!status) return null;
 
-    const Icon = getStatusIcon(status);
+    const icon = getStatusIcon(status);
 
     return (
         <Flex
@@ -47,7 +47,7 @@ export const LoadingStatus = ({ status, colorMode }) => {
             <VStack gap={4}>
                 <Spinner size="lg" color="secondaryButton" borderWidth="3px" />
                 <Flex align="center" gap={3}>
-                    <Icon size="1.2em" color="overlay0" />
+                    {React.createElement(icon, { size: "1.2em", color: "overlay0" })}
                     <Text
                         fontSize="sm"
                         fontWeight="medium"

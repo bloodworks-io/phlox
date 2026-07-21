@@ -45,11 +45,6 @@ const ModelSettingsPanel = ({
     // Determine if we're using local inference
     const isLocalInference = config?.LLM_PROVIDER === "local";
 
-    useEffect(() => {
-        checkLocalStatus();
-        checkIfDocker();
-    }, []);
-
     const checkLocalStatus = async () => {
         try {
             const data = await localModelApi.checkLocalStatus();
@@ -94,6 +89,11 @@ const ModelSettingsPanel = ({
             console.error("Error checking Docker status:", error);
         }
     };
+
+    useEffect(() => {
+        checkLocalStatus();
+        checkIfDocker();
+    }, []);
 
     const handleInferenceTypeChange = (isLocal) => {
         if (isLocal) {

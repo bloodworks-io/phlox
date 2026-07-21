@@ -68,11 +68,6 @@ export const useScribe = ({
         return () => clearInterval(timerIntervalRef.current);
     }, [isRecording, isPaused]);
 
-    // Reset when patient changes
-    useEffect(() => {
-        resetRecordingState();
-    }, [name, dob, gender]);
-
     const resetRecordingState = useCallback(() => {
         setIsRecording(false);
         setIsPaused(false);
@@ -84,6 +79,11 @@ export const useScribe = ({
         }
         audioRecorderRef.current = null;
     }, []);
+
+    // Reset when patient changes
+    useEffect(() => {
+        resetRecordingState();
+    }, [name, dob, gender, resetRecordingState]);
 
     const clearLastFailed = useCallback(() => {
         lastFailedRef.current = { blob: null, meta: null, isAmbient: null };

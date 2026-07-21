@@ -16,16 +16,16 @@ import { encryptionApi } from "../../utils/api/encryptionApi";
 
 export const useAppBootstrap = () => {
     const [showSplashScreen, setShowSplashScreen] = useState(undefined);
-    const [, setIsLoadingSplashCheck] = useState(true);
+    const [, setIsLoadingSplashCheck] = useState(!isTauri());
     const [, setEncryptionStatus] = useState(null);
     const [showEncryptionSetup, setShowEncryptionSetup] = useState(false);
     const [showEncryptionUnlock, setShowEncryptionUnlock] = useState(false);
-    const [, setIsLoadingEncryptionCheck] = useState(true);
+    const [, setIsLoadingEncryptionCheck] = useState(!isTauri());
     const [isCheckingEncryptionStatus, setIsCheckingEncryptionStatus] =
         useState(isTauri());
     const [showServerStartupLoader, setShowServerStartupLoader] =
         useState(false);
-    const [isInGracePeriod, setIsInGracePeriod] = useState(true);
+    const [isInGracePeriod, setIsInGracePeriod] = useState(isTauri());
 
     // App initialization state - true when server is not ready yet.
     const isInitializing =
@@ -95,18 +95,8 @@ export const useAppBootstrap = () => {
     useEffect(() => {
         if (!isTauri()) {
             checkSplashStatus();
-        } else {
-            setIsLoadingSplashCheck(false);
         }
     }, [checkSplashStatus]);
-
-    // In non-Tauri environments, disable grace period immediately since the server is already running
-    useEffect(() => {
-        if (!isTauri()) {
-            console.log("Non-Tauri environment detected");
-            setIsInGracePeriod(false);
-        }
-    }, []);
 
     const handleSplashComplete = () => {
         setShowSplashScreen(false);
@@ -114,8 +104,6 @@ export const useAppBootstrap = () => {
 
     useEffect(() => {
         if (!isTauri()) {
-            setIsLoadingEncryptionCheck(false);
-            setIsCheckingEncryptionStatus(false);
             return;
         }
 

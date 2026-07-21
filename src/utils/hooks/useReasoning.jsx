@@ -76,12 +76,6 @@ export const useReasoning = (options = {}) => {
     }, []);
 
     // Resize handlers for drag functionality
-    const handleMouseDown = useCallback((e) => {
-        e.preventDefault();
-        window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("mouseup", handleMouseUp);
-    }, []);
-
     const handleMouseMove = useCallback((e) => {
         setDimensions((prev) => ({
             width: Math.max(
@@ -103,6 +97,12 @@ export const useReasoning = (options = {}) => {
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
     }, [handleMouseMove]);
+
+    const handleMouseDown = useCallback((e) => {
+        e.preventDefault();
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+    }, [handleMouseMove, handleMouseUp]);
 
     return {
         // Panel state

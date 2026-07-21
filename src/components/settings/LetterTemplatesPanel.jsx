@@ -23,10 +23,6 @@ const LetterTemplatesPanel = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editTemplate, setEditTemplate] = useState(null);
 
-    useEffect(() => {
-        fetchTemplates();
-    }, []);
-
     const fetchTemplates = async () => {
         try {
             const response = await settingsService.fetchLetterTemplates();
@@ -41,6 +37,10 @@ const LetterTemplatesPanel = () => {
             });
         }
     };
+
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
 
     const handleSave = async (template, closeModal) => {
         try {

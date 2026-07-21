@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Flex, Text, HStack, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "./icons";
 import {
@@ -42,21 +42,17 @@ const ActivityTraceBlock = ({
     const stepCount = traceBlocks.length;
 
     // Timer: track how long thinking/tool use took
-    const startedAtRef = useRef(null);
+    const [startedAt] = useState(() => Date.now());
     const [elapsedSeconds, setElapsedSeconds] = useState(null);
 
-    if (startedAtRef.current === null) {
-        startedAtRef.current = Date.now();
-    }
-
     useEffect(() => {
-        if (!currentActivity.isOngoing && startedAtRef.current) {
+        if (!currentActivity.isOngoing) {
             const seconds = Math.round(
-                (Date.now() - startedAtRef.current) / 1000,
+                (Date.now() - startedAt) / 1000,
             );
             setElapsedSeconds(seconds);
         }
-    }, [currentActivity.isOngoing]);
+    }, [currentActivity.isOngoing, startedAt]);
 
     const formatDuration = (secs) => {
         if (secs < 60) return `${secs}s`;

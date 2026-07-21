@@ -18,10 +18,6 @@ const LlmTab = ({
     const [currentVisionCapability, setCurrentVisionCapability] =
         useState(null);
 
-    useEffect(() => {
-        loadCurrentVisionCapability();
-    }, [config?.LLM_PROVIDER, config?.LLM_BASE_URL, config?.PRIMARY_MODEL]);
-
     const loadCurrentVisionCapability = async () => {
         try {
             const result = await chatApi.getCurrentVisionCapability();
@@ -31,6 +27,10 @@ const LlmTab = ({
             setCurrentVisionCapability(null);
         }
     };
+
+    useEffect(() => {
+        loadCurrentVisionCapability();
+    }, [config?.LLM_PROVIDER, config?.LLM_BASE_URL, config?.PRIMARY_MODEL]);
 
     const handleProbeVisionCapability = async () => {
         setIsProbingVision(true);

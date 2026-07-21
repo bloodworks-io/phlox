@@ -42,6 +42,7 @@ const PatientTable = ({
 
     useEffect(() => {
         return () => {
+            // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount cleanup: must read ref at cleanup time to flush latest pending jobs
             pendingJobsUpdates.current.forEach((_, noteId) => {
                 flushPendingJobsUpdate(noteId);
             });

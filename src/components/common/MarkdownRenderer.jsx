@@ -116,7 +116,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
     const url = c?.url;
     const title = c?.title || c?.source || c?.label || `Source ${index}`;
     const snippet = c?.snippet;
-    const Icon = iconFor(c);
+    const icon = iconFor(c);
     const [open, setOpen] = React.useState(false);
     const label = displayLabel ?? index;
 
@@ -166,7 +166,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
             lazyRender
         >
             <Popover.Trigger asChild>
-                {pillVisual(Icon, label, { as: "button" })}
+                {pillVisual(icon, label, { as: "button" })}
             </Popover.Trigger>
             <Popover.Positioner>
                 <Popover.Content
@@ -191,13 +191,13 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                             flex="1"
                             lineHeight="1"
                         >
-                            <Icon
-                                style={{
+                            {React.createElement(icon, {
+                                style: {
                                     flexShrink: 0,
                                     display: "block",
                                     lineHeight: 1,
-                                }}
-                            />
+                                },
+                            })}
                             <Text
                                 as="span"
                                 fontSize="sm"
