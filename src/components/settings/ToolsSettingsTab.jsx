@@ -1,5 +1,4 @@
 import { Alert, Badge, Box, Button, Checkbox, Flex, HStack, IconButton, Input, Spacer, Switch, Text, VStack, Field } from "@chakra-ui/react";
-import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaPuzzlePiece,
@@ -9,10 +8,8 @@ import {
     FaLock,
 } from "react-icons/fa";
 import { DeleteIcon } from "../common/icons";
-import { useState, useEffect } from "react";
-
-import { toolsApi } from "../../utils/api/toolsApi";
-import { settingsApi } from "../../utils/api/settingsApi";
+import { useState } from "react";
+import { useToolServers } from "../../utils/hooks/useToolServers";
 
 // Built-in tools configuration
 const BUILT_IN_TOOLS = [
@@ -49,59 +46,25 @@ const BUILT_IN_TOOLS = [
 ];
 
 const ToolsSettingsTab = ({ className }) => {
-    const [toolServers, setToolServers] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [testingServerId, setTestingServerId] = useState(null);
+    const {
+        toolServers,
+        isLoading,
+        testingServerId,
+        addServer,
+        deleteServer,
+        toggleServer,
+        toggleSensitiveData,
+        testServer,
+        toggleBuiltInTool,
+        isToolEnabled,
+    } = useToolServers();
 
+    const [showAddForm, setShowAddForm] = useState(false);
     const [serverName, setServerName] = useState("");
     const [serverUrl, setServerUrl] = useState("");
     const [allowSensitiveData, setAllowSensitiveData] = useState(false);
-
     const [nameError, setNameError] = useState("");
     const [urlError, setUrlError] = useState("");
-
-    const [userSettings, setUserSettings] = useState({});
-    const [disabledTools, setDisabledTools] = useState([
-        "pubmed_search",
-        "wiki_search",
-    ]);
-
-
-    const fetchServers = async () => {
-        setIsLoading(true);
-        try {
-            const data = await toolsApi.fetchToolServers();
-            setToolServers(data.servers || []);
-        } catch (error) {
-            console.error("Error fetching tool servers:", error);
-            toaster.create({
-                title: "Error",
-                description: "Failed to load tool servers",
-                type: "error",
-                duration: 3000,
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const fetchUserSettings = async () => {
-        try {
-            const settings = await settingsApi.fetchUserSettings();
-            setUserSettings(settings);
-            setDisabledTools(
-                settings.disabled_tools || ["pubmed_search", "wiki_search"],
-            );
-        } catch (error) {
-            console.error("Error fetching user settings:", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchServers();
-        fetchUserSettings();
-    }, []);
 
     const validateForm = () => {
         let isValid = true;
@@ -130,204 +93,18 @@ const ToolsSettingsTab = ({ className }) => {
 
     const handleAddServer = async () => {
         if (!validateForm()) return;
-
-        setIsLoading(true);
-        try {
-            const serverData = {
-                name: serverName,
-                url: serverUrl,
-                allow_sensitive_data: allowSensitiveData,
-            };
-
-            await toolsApi.addToolServer(serverData);
-            await toolsApi.refreshTools();
-
-            toaster.create({
-                title: "Success",
-                description: "Tool server added successfully",
-                type: "success",
-                duration: 3000,
-            });
-
+        const ok = await addServer({
+            name: serverName,
+            url: serverUrl,
+            allow_sensitive_data: allowSensitiveData,
+        });
+        if (ok) {
             setServerName("");
             setServerUrl("");
             setAllowSensitiveData(false);
             setShowAddForm(false);
-            fetchServers();
-        } catch (error) {
-            console.error("Error adding tool server:", error);
-            toaster.create({
-                title: "Error",
-                description: "Failed to add tool server",
-                type: "error",
-                duration: 3000,
-            });
-        } finally {
-            setIsLoading(false);
         }
     };
-
-    const handleDeleteServer = async (serverId) => {
-        setIsLoading(true);
-        try {
-            await toolsApi.deleteToolServer(serverId);
-            await toolsApi.refreshTools();
-
-            toaster.create({
-                title: "Success",
-                description: "Tool server deleted",
-                type: "success",
-                duration: 3000,
-            });
-
-            fetchServers();
-        } catch (error) {
-            console.error("Error deleting tool server:", error);
-            toaster.create({
-                title: "Error",
-                description: "Failed to delete tool server",
-                type: "error",
-                duration: 3000,
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleToggleServer = async (serverId, enabled) => {
-        setIsLoading(true);
-        try {
-            await toolsApi.toggleToolServer(serverId, enabled);
-            await toolsApi.refreshTools();
-
-            toaster.create({
-                title: "Success",
-                description: `Tool server ${enabled ? "enabled" : "disabled"}`,
-                type: "success",
-                duration: 3000,
-            });
-
-            fetchServers();
-        } catch (error) {
-            console.error("Error toggling tool server:", error);
-            toaster.create({
-                title: "Error",
-                description: "Failed to toggle tool server",
-                type: "error",
-                duration: 3000,
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleToggleSensitiveData = async (serverId, allowSensitive) => {
-        setIsLoading(true);
-        try {
-            await toolsApi.updateToolServer(serverId, { allow_sensitive_data: allowSensitive });
-            await toolsApi.refreshTools();
-
-            toaster.create({
-                title: "Success",
-                description: `Sensitive data ${allowSensitive ? "allowed" : "sanitized"}`,
-                status: allowSensitive ? "warning" : "success",
-                duration: 3000,
-            });
-
-            fetchServers();
-        } catch (error) {
-            console.error("Error toggling sensitive data:", error);
-            toaster.create({
-                title: "Error",
-                description: "Failed to update sensitive data setting",
-                type: "error",
-                duration: 3000,
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleTestServer = async (serverId) => {
-        setTestingServerId(serverId);
-        try {
-            const result = await toolsApi.testToolServer(serverId);
-
-            if (result.success) {
-                const serverInfo = result.server_info;
-                const toolCount = result.tools?.length || 0;
-                const serverName = serverInfo?.name || "";
-                const serverVersion = serverInfo?.version || "";
-
-                let description = `Found ${toolCount} tools`;
-                if (serverName) {
-                    description = `${serverName}${serverVersion ? ` v${serverVersion}` : ""} - ${toolCount} tools`;
-                }
-
-                toaster.create({
-                    title: "Connection Successful",
-                    description: description,
-                    type: "success",
-                    duration: 4000,
-                });
-
-                // Refresh to get updated description
-                fetchServers();
-            } else {
-                toaster.create({
-                    title: "Connection Failed",
-                    description:
-                        result.message || "Failed to connect to server",
-                    type: "error",
-                    duration: 5000,
-                });
-            }
-        } catch (error) {
-            console.error("Error testing tool server:", error);
-            toaster.create({
-                title: "Error",
-                description: "Failed to test tool server",
-                type: "error",
-                duration: 3000,
-            });
-        } finally {
-            setTestingServerId(null);
-        }
-    };
-
-    const handleToggleBuiltInTool = async (toolName, enabled) => {
-        const newDisabledTools = enabled
-            ? disabledTools.filter((t) => t !== toolName)
-            : [...disabledTools, toolName];
-
-        setDisabledTools(newDisabledTools);
-
-        try {
-            await settingsApi.saveUserSettings({
-                ...userSettings,
-                disabled_tools: newDisabledTools,
-            });
-
-            toaster.create({
-                title: "Success",
-                description: `${toolName} ${enabled ? "enabled" : "disabled"}`,
-                type: "success",
-                duration: 2000,
-            });
-        } catch (error) {
-            console.error("Error saving tool settings:", error);
-            // Revert on error
-            setDisabledTools(disabledTools);
-            toaster.create({
-                title: "Error",
-                description: "Failed to save tool settings",
-                type: "error",
-                duration: 3000,
-            });
-        }
-    };
-
-    const isToolEnabled = (toolName) => !disabledTools.includes(toolName);
 
     return (
         <VStack gap={4} align="stretch" className={className}>
@@ -400,7 +177,7 @@ const ToolsSettingsTab = ({ className }) => {
                                 <Switch.Root
                                     checked={isToolEnabled(tool.name)}
                                     onCheckedChange={({ checked }) =>
-                                        handleToggleBuiltInTool(tool.name, checked)
+                                        toggleBuiltInTool(tool.name, checked)
                                     }
                                     size="sm"
                                 >
@@ -597,7 +374,7 @@ const ToolsSettingsTab = ({ className }) => {
                                             size="sm"
                                             variant="ghost"
                                             onClick={() =>
-                                                handleTestServer(server.id)
+                                                testServer(server.id)
                                             }
                                             loading={
                                                 testingServerId === server.id
@@ -618,7 +395,7 @@ const ToolsSettingsTab = ({ className }) => {
                                             colorPalette={server.allow_sensitive_data ? "red" : "gray"}
                                             opacity={server.allow_sensitive_data ? 1 : 0.4}
                                             onClick={() =>
-                                                handleToggleSensitiveData(
+                                                toggleSensitiveData(
                                                     server.id,
                                                     !server.allow_sensitive_data,
                                                 )
@@ -636,7 +413,7 @@ const ToolsSettingsTab = ({ className }) => {
                                         <Switch.Root
                                             checked={server.enabled}
                                             onCheckedChange={({ checked }) =>
-                                                handleToggleServer(server.id, checked)
+                                                toggleServer(server.id, checked)
                                             }
                                             size="sm"
                                         >
@@ -653,7 +430,7 @@ const ToolsSettingsTab = ({ className }) => {
                                             colorPalette="red"
                                             variant="ghost"
                                             onClick={() =>
-                                                handleDeleteServer(server.id)
+                                                deleteServer(server.id)
                                             }
                                             aria-label="Delete server"><DeleteIcon /></IconButton>
                                     </Tooltip>
