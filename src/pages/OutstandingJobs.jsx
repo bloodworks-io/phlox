@@ -1,41 +1,34 @@
 // Page component listing patients with outstanding jobs.
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import PatientTable from "../components/patient/PatientTable";
 import { patientApi } from "../utils/api/patientApi";
+import { KEYS } from "../utils/cache/keys";
+
+const outstandingJobsFetcher = async () => {
+    const data = await patientApi.fetchOutstandingJobs();
+    return data.map((patient) => ({
+        ...patient,
+        activeSection: "summary",
+        jobs_list: JSON.parse(patient.jobs_list || "[]"),
+    }));
+};
 
 const OutstandingJobs = ({ handleSelectPatient, refreshSidebar }) => {
-  const [patients, setPatients] = useState([]);
+    const { data, mutate } = useSWR(KEYS.OUTSTANDING_JOBS, outstandingJobsFetcher);
+    const patients = data || [];
+    const setPatients = (updater) => mutate(updater, { revalidate: false });
 
-  const fetchPatientsWithJobs = async () => {
-    try {
-      const data = await patientApi.fetchOutstandingJobs();
-      setPatients(
-        data.map((patient) => ({
-          ...patient,
-          activeSection: "summary",
-          jobs_list: JSON.parse(patient.jobs_list || "[]"),
-        })),
-      );
-    } catch (error) {
-      console.error("Error fetching patients with jobs:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchPatientsWithJobs();
-  }, []);
-
-  return (
-    <PatientTable
-      patients={patients}
-      setPatients={setPatients}
-      handleSelectPatient={handleSelectPatient}
-      refreshSidebar={refreshSidebar}
-      title="Outstanding Jobs"
-      groupByDate={true}
-      summaryOnly={true}
-    />
-  );
+    return (
+        <PatientTable
+            patients={patients}
+            setPatients={setPatients}
+            handleSelectPatient={handleSelectPatient}
+            refreshSidebar={refreshSidebar}
+            title="Outstanding Jobs"
+            groupByDate={true}
+            summaryOnly={true}
+        />
+    );
 };
 
 export default OutstandingJobs;

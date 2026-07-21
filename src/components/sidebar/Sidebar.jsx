@@ -9,6 +9,7 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useApiToast } from "../../utils/helpers/apiToastContext";
 import { useState, useEffect, useRef } from "react";
+import useSWR from "swr";
 
 import VersionInfo from "./VersionInfo";
 import SidebarPatientList from "./SidebarPatientList";
@@ -17,6 +18,7 @@ import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { colors } from "../../theme/colors";
 import { sidebarWidth } from "../../theme/dimensions";
 import { patientApi } from "../../utils/api/patientApi";
+import { KEYS } from "../../utils/cache/keys";
 import { isTauri } from "../../utils/helpers/apiConfig";
 
 const CollapseIcon = ({ boxSize = "20px" }) => (
@@ -56,7 +58,6 @@ const Sidebar = ({
   selectedPatientId,
   selectedDate,
   setSelectedDate,
-  refreshKey,
   handleNavigation,
   isCollapsed,
   toggleSidebar,
@@ -65,10 +66,26 @@ const Sidebar = ({
   toggleColorMode,
 }) => {
   // State declarations remain the same
-  const [patients, setPatients] = useState([]);
+  const { data: patientsData, mutate: mutatePatients } = useSWR(
+    KEYS.noteList(selectedDate, false),
+    async () => {
+      const data = await patientApi.fetchNoteList({ date: selectedDate });
+      return data.sort((a, b) => a.id - b.id);
+    },
+  );
+  const patients = patientsData || [];
+  const setPatients = (updater) =>
+    mutatePatients(updater, { revalidate: false });
+  const { data: jobsCountData } = useSWR(
+    KEYS.INCOMPLETE_JOBS_COUNT,
+    async () => {
+      const data = await patientApi.fetchIncompleteJobsCount();
+      return data.incomplete_jobs_count;
+    },
+  );
+  const incompleteJobsCount = jobsCountData || 0;
   const { open, onOpen, onClose } = useDisclosure();
   const [patientToDelete, setPatientToDelete] = useState(null);
-  const [incompleteJobsCount, setIncompleteJobsCount] = useState(0);
   const toast = useApiToast();
 
   // Color mode values
@@ -99,27 +116,6 @@ const Sidebar = ({
     };
   }, [isSmallScreen, isCollapsed, toggleSidebar]);
 
-  // Function definitions remain the same
-  const fetchPatients = async (date) => {
-    try {
-      const data = await patientApi.fetchNoteList({ date });
-      // Sort patients by ID in descending order
-      const sortedPatients = data.sort((a, b) => a.id - b.id);
-      setPatients(sortedPatients);
-    } catch (error) {
-      console.error("Error fetching patients:", error);
-    }
-  };
-
-  const fetchIncompleteJobsCount = async () => {
-    try {
-      const data = await patientApi.fetchIncompleteJobsCount();
-      setIncompleteJobsCount(data.incomplete_jobs_count);
-    } catch (error) {
-      console.error("Error fetching incomplete jobs count:", error);
-    }
-  };
-
   const handlePatientClick = (patient) => {
     toast.closeAll();
     onSelectPatient(patient);
@@ -148,11 +144,6 @@ const Sidebar = ({
     toast.closeAll();
     onNewPatient();
   };
-
-  useEffect(() => {
-    fetchPatients(selectedDate);
-    fetchIncompleteJobsCount();
-  }, [selectedDate, refreshKey]);
 
   // Determine if the sidebar should have floating behavior
   const shouldFloat = isSmallScreen && !isCollapsed;

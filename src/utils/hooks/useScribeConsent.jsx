@@ -1,8 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { useDisclosure } from "@chakra-ui/react";
+import useSWR from "swr";
 import { toaster } from "@/components/ui/toaster";
 import { patientApi } from "../api/patientApi";
 import { DEFAULT_TOAST_CONFIG } from "../constants";
+import { KEYS } from "../cache/keys";
+
+const EMPTY_CONSENT = {
+    scribe_consent_at: null,
+    scribe_consent_declined_at: null,
+};
 
 export const useScribeConsent = ({
     urNumber,
@@ -12,10 +19,11 @@ export const useScribeConsent = ({
     startRecording,
     onRequireDemographics,
 }) => {
-    const [scribeConsent, setScribeConsent] = useState({
-        scribe_consent_at: null,
-        scribe_consent_declined_at: null,
-    });
+    const { data: scribeConsent = EMPTY_CONSENT, mutate: mutateConsent } =
+        useSWR(
+            urNumber ? KEYS.scribeConsent(urNumber) : null,
+            () => patientApi.fetchScribeConsent(urNumber),
+        );
     const {
         open: isConsentOpen,
         onOpen: onOpenConsent,
@@ -29,33 +37,6 @@ export const useScribeConsent = ({
     const canRecord =
         requiredDemographicsMet && !(requireConsent && !hasConsented);
 
-    // Fetch consent whenever ur_number changes
-    useEffect(() => {
-        if (!urNumber) {
-            setScribeConsent({
-                scribe_consent_at: null,
-                scribe_consent_declined_at: null,
-            });
-            return;
-        }
-        let active = true;
-        setScribeConsent({
-            scribe_consent_at: null,
-            scribe_consent_declined_at: null,
-        });
-        patientApi
-            .fetchScribeConsent(urNumber)
-            .then((data) => {
-                if (active) setScribeConsent(data);
-            })
-            .catch((error) =>
-                console.error("Error fetching scribe consent:", error),
-            );
-        return () => {
-            active = false;
-        };
-    }, [urNumber]);
-
     const handleBlockedRecord = useCallback(() => {
         if (!requiredDemographicsMet) {
             onRequireDemographics?.();
@@ -68,7 +49,7 @@ export const useScribeConsent = ({
         if (!urNumber) return;
         try {
             const data = await patientApi.saveScribeConsent(urNumber, true);
-            setScribeConsent(data);
+            mutateConsent(data, { revalidate: false });
             onCloseConsent();
             await startRecording();
         } catch (error) {
@@ -79,13 +60,13 @@ export const useScribeConsent = ({
                 ...DEFAULT_TOAST_CONFIG,
             });
         }
-    }, [urNumber, onCloseConsent, startRecording]);
+    }, [urNumber, onCloseConsent, startRecording, mutateConsent]);
 
     const handleConsentDeclined = useCallback(async () => {
         if (!urNumber) return;
         try {
             const data = await patientApi.saveScribeConsent(urNumber, false);
-            setScribeConsent(data);
+            mutateConsent(data, { revalidate: false });
             onCloseConsent();
         } catch (error) {
             toaster.create({
@@ -95,7 +76,7 @@ export const useScribeConsent = ({
                 ...DEFAULT_TOAST_CONFIG,
             });
         }
-    }, [urNumber, onCloseConsent]);
+    }, [urNumber, onCloseConsent, mutateConsent]);
 
     return {
         consent: scribeConsent,

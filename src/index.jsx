@@ -2,6 +2,7 @@ import ReactDOM from "react-dom/client";
 import { Provider } from "@/components/ui/provider";
 import { Toaster } from "@/components/ui/toaster";
 import { BrowserRouter as Router } from "react-router";
+import { SWRConfig } from "swr";
 import App from "./App";
 import "./index.css";
 
@@ -33,11 +34,21 @@ import { ServerConnectionCheck } from "./components/common/ServerConnectionCheck
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <Provider>
-    <Router>
-      <ServerConnectionCheck>
-        <App />
-      </ServerConnectionCheck>
-    </Router>
+    <SWRConfig
+      value={{
+        revalidateOnFocus: false,
+        revalidateIfStale: false,
+        shouldRetryOnError: true,
+        dedupingInterval: 2000,
+        errorRetryCount: 2,
+      }}
+    >
+      <Router>
+        <ServerConnectionCheck>
+          <App />
+        </ServerConnectionCheck>
+      </Router>
+    </SWRConfig>
     <Toaster />
   </Provider>,
 );

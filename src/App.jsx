@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Box } from "@chakra-ui/react";
+import { mutate } from "swr";
 import { useColorMode } from "./components/ui/color-mode";
 import { useLocation } from "react-router";
 
@@ -20,7 +21,6 @@ import { useNewNoteFlow } from "./utils/hooks/useNewNoteFlow";
 
 function AppContent({ setIsInitializing }) {
     const [isModified, setIsModified] = useState(false);
-    const [refreshKey, setRefreshKey] = useState(0);
     const [isFromOutstandingJobs, setIsFromOutstandingJobs] = useState(false);
 
     // App-level patient "session": briefcase patient + shared selectedDate +
@@ -76,7 +76,12 @@ function AppContent({ setIsInitializing }) {
     }, [location, fetchPatientDetailsWrapper]);
 
     const refreshSidebar = useCallback(() => {
-        setRefreshKey((prev) => prev + 1);
+        // Invalidate SWR-cached sidebar lists; matches the keys Sidebar subscribes to
+        mutate(
+            (key) =>
+                Array.isArray(key) &&
+                (key[0] === "noteList" || key[0] === "incompleteJobsCount"),
+        );
     }, []);
 
     const handleSelectPatient = (
@@ -110,7 +115,6 @@ function AppContent({ setIsInitializing }) {
                         : undefined,
                     selectedDate,
                     setSelectedDate,
-                    refreshKey,
                     handleNavigation: nav.guardedNavigate,
                     isCollapsed: isSidebarCollapsed,
                     toggleSidebar,
