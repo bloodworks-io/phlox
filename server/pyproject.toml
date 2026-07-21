@@ -27,7 +27,7 @@ rag = [
 
 ocr = [
     "phlox-server[rag]",
-    "Pillow==12.2.0",
+    "Pillow==12.3.0",
     "pytesseract==0.3.13",
 ]
 docker = [

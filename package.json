@@ -2,6 +2,9 @@
     "name": "Phlox",
     "version": "2.0.0",
     "private": true,
+    "engines": {
+        "node": ">=24 <25"
+    },
     "dependencies": {
         "@chakra-ui/react": "3.36.0",
         "@emotion/react": "11.14.0",
