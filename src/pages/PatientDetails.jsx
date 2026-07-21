@@ -202,7 +202,7 @@ const PatientDetails = ({
         summary.setIsCollapsed(false);
         closeAll();
         resetDocumentState();
-    }, [patient?.id, currentTemplate, isNewPatient]);
+    }, [patient?.id, currentTemplate, isNewPatient, summary, closeAll, resetDocumentState]);
 
     useEffect(() => {
         toaster.remove();

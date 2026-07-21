@@ -185,6 +185,7 @@ export const usePatientEditor = (initialPatient = null) => {
 
     useEffect(() => {
         if (initialPatient) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate sync of enclosed state to prop change; remounting consumer would lose chat/document state
             setPatient(initialPatient);
         }
     }, [initialPatient]);

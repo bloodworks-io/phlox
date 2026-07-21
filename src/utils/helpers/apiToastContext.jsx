@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import { toaster } from "@/components/ui/toaster";
 import { useAppInit } from "../context/appInit";
 
@@ -17,22 +17,27 @@ export const ApiToastProvider = ({ children }) => {
   const { isInitializing } = useAppInit();
 
   // Keep the ref in sync with the current state
-  isInitializingRef.current = isInitializing;
+  useEffect(() => {
+    isInitializingRef.current = isInitializing;
+  }, [isInitializing]);
 
-  const apiToast = useMemo(() => {
-    const fn = (options) => {
-      if (isInitializingRef.current && options?.type === "error") {
-        return;
-      }
-      return toaster.create(options);
-    };
-
-    fn.closeAll = () => toaster.remove();
-    fn.close = (id) => toaster.remove(id);
-    fn.isActive = (id) => toaster.isVisible(id);
-
-    return fn;
-  }, []);
+  const apiToast = useMemo(
+    () =>
+      Object.assign(
+        (options) => {
+          if (isInitializingRef.current && options?.type === "error") {
+            return;
+          }
+          return toaster.create(options);
+        },
+        {
+          closeAll: () => toaster.remove(),
+          close: (id) => toaster.remove(id),
+          isActive: (id) => toaster.isVisible(id),
+        },
+      ),
+    [],
+  );
 
   return (
     <ApiToastContext.Provider value={apiToast}>

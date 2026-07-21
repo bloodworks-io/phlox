@@ -30,8 +30,10 @@ export const useSearchFlow = ({
     useEffect(() => {
         if (viaModal) return;
         if (!isNewPatient) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate route-change reset; remounting PatientDetails would lose chat/document state
             setIsSearchedPatient(false);
         }
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate route-change reset; see above
         setStartCardDismissed(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);

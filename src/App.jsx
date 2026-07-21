@@ -132,6 +132,7 @@ function AppContent({ setIsInitializing }) {
                 />
             </AppLayout>
             <NewNoteModal
+                key={String(newNote.isNewNoteOpen)}
                 isOpen={newNote.isNewNoteOpen}
                 onClose={newNote.closeNewNoteModal}
                 patient={patient}

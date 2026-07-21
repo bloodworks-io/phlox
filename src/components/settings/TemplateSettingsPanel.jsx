@@ -239,6 +239,7 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
             )}
 
             <TemplateEditor
+                key={selectedTemplateKey || selectedTemplate?.id || "new"}
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 template={selectedTemplate}

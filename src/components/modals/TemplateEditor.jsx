@@ -15,7 +15,7 @@ import {
     AddIcon,
     EditIcon,
 } from "../common/icons";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { typography } from "../../theme/typography";
 import { FieldEditor } from "./FieldEditor";
 import { FieldPreview } from "./FieldPreview";
@@ -28,15 +28,9 @@ const TemplateEditor = ({
     onSave,
     isNewTemplate = false,
 }) => {
-    const [editedTemplate, setEditedTemplate] = useState(null);
-    useEffect(() => {
-        if (template) {
-            setEditedTemplate({
-                ...template,
-                fields: template.fields || [],
-            });
-        }
-    }, [template]);
+    const [editedTemplate, setEditedTemplate] = useState(
+        () => template ? { ...template, fields: template.fields || [] } : null,
+    );
 
     if (!editedTemplate) {
         return (

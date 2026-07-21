@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
     Box,
     Flex,
@@ -39,15 +39,6 @@ const NewNoteModal = ({
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [confirmingId, setConfirmingId] = useState(null);
     const [draftPatient, setDraftPatient] = useState({});
-
-    // Reset to the chooser whenever the modal is reopened.
-    useEffect(() => {
-        if (isOpen) {
-            setView("choose");
-            setQuery("");
-            setResults([]);
-        }
-    }, [isOpen]);
 
     const handleFind = (e) => {
         if (e && e.preventDefault) e.preventDefault();
@@ -262,6 +253,7 @@ const NewNoteModal = ({
                                     </Box>
                                 ) : (
                                     <DemographicsForm
+                                        key={draftPatient?.id || "empty"}
                                         patient={draftPatient}
                                         setPatient={setDraftPatient}
                                         onSaved={commitNewPatient}

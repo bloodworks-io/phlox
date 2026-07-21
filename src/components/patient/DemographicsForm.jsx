@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { FaFileUpload } from "react-icons/fa";
@@ -30,16 +30,8 @@ const DemographicsForm = ({
     cancelLabel = "Cancel",
     cancelIcon = null,
 }) => {
-    const [form, setForm] = useState({});
-    const [isDragOver, setIsDragOver] = useState(false);
-    const [isExtracting, setIsExtracting] = useState(false);
-    const [extractError, setExtractError] = useState(null);
-    const [isSaving, setIsSaving] = useState(false);
-    const fileInputRef = useRef(null);
-
-    useEffect(() => {
-        if (!patient) return;
-        setForm({
+    const [form, setForm] = useState(() => patient
+        ? {
             first_name: patient.first_name || "",
             last_name: patient.last_name || "",
             dob: patient.dob || "",
@@ -47,11 +39,13 @@ const DemographicsForm = ({
             ur_number: patient.ur_number || "",
             address: patient.address || "",
             phone: patient.phone || "",
-        });
-        setIsDragOver(false);
-        setIsExtracting(false);
-        setExtractError(null);
-    }, [patient]);
+        }
+        : {});
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [isExtracting, setIsExtracting] = useState(false);
+    const [extractError, setExtractError] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const fileInputRef = useRef(null);
 
     const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 

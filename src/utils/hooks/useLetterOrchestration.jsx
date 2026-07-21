@@ -9,11 +9,12 @@ export const useLetterOrchestration = ({
     toast,
 }) => {
     const letterHook = useLetter(setIsModified);
+    const { loadLetter, generateLetter, saveLetter, setFinalCorrespondence, resetLetter } = letterHook;
 
     // Load letter when patient changes
     useEffect(() => {
         if (patient?.id) {
-            letterHook.loadLetter(patient.id, toast);
+            loadLetter(patient.id, toast);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [patient?.id]);
@@ -21,36 +22,36 @@ export const useLetterOrchestration = ({
     // Pipe resetLetter up to App via onResetLetter prop
     useEffect(() => {
         if (onResetLetter) {
-            onResetLetter(letterHook.resetLetter);
+            onResetLetter(resetLetter);
         }
-    }, [onResetLetter, letterHook.resetLetter]);
+    }, [onResetLetter, resetLetter]);
 
     const handleGenerateLetterClick = useCallback(
         async (additionalInstructions) => {
             if (!patient) return;
             openLetter();
-            await letterHook.generateLetter(
+            await generateLetter(
                 patient,
                 additionalInstructions,
                 toast,
-                letterHook.setFinalCorrespondence,
+                setFinalCorrespondence,
             );
         },
-        [patient, openLetter, toast, letterHook],
+        [patient, openLetter, toast, generateLetter, setFinalCorrespondence],
     );
 
     const handleLetterSave = useCallback(async () => {
-        await letterHook.saveLetter(patient.id);
+        await saveLetter(patient.id);
         setIsModified(false);
-    }, [patient?.id, setIsModified, letterHook]);
+    }, [patient?.id, setIsModified, saveLetter]);
 
     // Wrap setFinalCorrespondence to also flip the modified flag
     const setFinalCorrespondenceWithFlag = useCallback(
         (value) => {
-            letterHook.setFinalCorrespondence(value);
+            setFinalCorrespondence(value);
             setIsModified(true);
         },
-        [setIsModified, letterHook],
+        [setIsModified, setFinalCorrespondence],
     );
 
     return {

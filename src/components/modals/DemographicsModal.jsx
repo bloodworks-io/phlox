@@ -38,6 +38,7 @@ const DemographicsModal = ({
                         className="custom-scrollbar"
                     >
                         <DemographicsForm
+                            key={patient?.id || "empty"}
                             patient={patient}
                             setPatient={setPatient}
                             onSave={onSave}
