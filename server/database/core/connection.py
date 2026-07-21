@@ -93,7 +93,7 @@ class PatientDatabase:
             # Set busy timeout to prevent "database is locked" errors (30 seconds)
             self.cursor.execute("PRAGMA busy_timeout = 30000")
 
-            assert self.encryption_key is not None  # for type checkers
+            assert self.encryption_key is not None  # nosec B101
             escaped_key = self.encryption_key.replace("'", "''")
             pragma = f"PRAGMA key='{escaped_key}'"
 

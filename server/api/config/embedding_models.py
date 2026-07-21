@@ -86,7 +86,7 @@ async def download_embedding_model_stream():
 
         except Exception as e:
             logger.error("Embedding download error: %s", e)
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Embedding download failed'})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 

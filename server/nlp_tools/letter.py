@@ -114,13 +114,13 @@ async def generate_letter_content(
             if value
         )
 
-        request_body.append(
-            {
-                "role": "user",
-                "content": f"Before we proceed with the task; please take note of the following additional instructions:\n{additional_instruction}"
-                or "",
-            }
-        )
+        if additional_instruction:
+            request_body.append(
+                {
+                    "role": "user",
+                    "content": f"Before we proceed with the task; please take note of the following additional instructions:\n{additional_instruction}",
+                }
+            )
         request_body.append(
             {
                 "role": "user",

@@ -19,6 +19,13 @@ async def get_options():
     return JSONResponse(content=prompts_and_options["options"])
 
 
+@router.post("/options/reset-to-defaults")
+async def reset_options_to_defaults():
+    """Reset all model configuration options to their default values."""
+    config_manager.reset_options_to_defaults()
+    return {"message": "Options reset to defaults successfully"}
+
+
 @router.post("/options/{category}")
 async def update_options(category: str, data: dict = Body(...)):
     """Update options for a specific category."""
@@ -178,10 +185,3 @@ async def get_whisper_models(
     except Exception as e:
         logging.error(f"Error in get_whisper_models: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
-
-
-@router.post("/options/reset-to-defaults")
-async def reset_options_to_defaults():
-    """Reset all model configuration options to their default values."""
-    config_manager.reset_options_to_defaults()
-    return {"message": "Options reset to defaults successfully"}

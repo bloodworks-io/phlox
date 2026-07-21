@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 async def complete_job(note_id: int, job_id: int) -> dict:
-    """Mark a job as completed for a patient.
-    """
+    """Mark a job as completed for a patient."""
     try:
         # Get the patient record
         get_db().cursor.execute(

@@ -207,7 +207,7 @@ jobs:
             org.freedesktop.Sdk.Extension.rust-stable//24.08
 
       - name: Build Flatpak
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6.3
+        uses: flatpak/flatpak-github-actions/flatpak-builder@df610e76bc0eabff41ffaa7953f6d03123e9e26a # v6.3
         with:
           bundle: Phlox-linux-x86_64.flatpak
           manifest-path: packaging/com.phlox.app.yaml

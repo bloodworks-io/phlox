@@ -35,7 +35,10 @@ def test_get_files(monkeypatch):
 
 def test_get_collection_files(monkeypatch):
     mock_vsm = MagicMock()
-    mock_vsm.get_files_for_collection.return_value = ["file1", "file2"]
+    mock_vsm.get_files_for_collection_with_pdf_flag.return_value = [
+        {"filename": "file1", "has_pdf": True},
+        {"filename": "file2", "has_pdf": False},
+    ]
     _setup_rag_mocks(monkeypatch, mock_vsm)
 
     response = client.get("/api/rag/collection_files/test_collection")
