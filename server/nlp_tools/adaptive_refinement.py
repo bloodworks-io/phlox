@@ -3,9 +3,9 @@ import logging
 
 from rapidfuzz.distance import Levenshtein
 from server.database.config.manager import config_manager
+from server.llm_client import repair_json
+from server.llm_client.client import get_llm_client
 from server.schemas.grammars import ConsolidatedInstructions
-from server.utils.llm_client import repair_json
-from server.utils.llm_client.client import get_llm_client
 
 logger = logging.getLogger(__name__)
 

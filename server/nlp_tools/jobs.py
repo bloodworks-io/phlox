@@ -2,8 +2,8 @@ import json
 import logging
 
 from server.database.config.manager import config_manager
+from server.llm_client.client import get_llm_client
 from server.schemas.grammars import JobExtractionResult
-from server.utils.llm_client.client import get_llm_client
 
 JSON_SCHEMA_INSTRUCTION = (
     "Output MUST be ONLY valid JSON with top-level keys "

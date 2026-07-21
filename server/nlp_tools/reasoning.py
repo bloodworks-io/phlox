@@ -3,14 +3,14 @@ import logging
 import re
 from typing import Any
 
+from server.chat.tools import execute_tool_non_streaming, get_tools_definition
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.manager import config_manager
+from server.llm_client import repair_json
+from server.llm_client.client import get_llm_client
+from server.rag.vector_store import get_vector_store_manager
 from server.schemas.grammars import ChartInsights
-from server.utils.chat.tools import execute_tool_non_streaming, get_tools_definition
 from server.utils.helpers import calculate_age
-from server.utils.llm_client import repair_json
-from server.utils.llm_client.client import get_llm_client
-from server.utils.rag.vector_store import get_vector_store_manager
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)

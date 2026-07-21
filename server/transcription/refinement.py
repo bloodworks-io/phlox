@@ -5,13 +5,13 @@ import re
 from typing import Any, Union
 
 from server.database.config.manager import config_manager
+from server.llm_client import repair_json
+from server.llm_client.client import get_llm_client
 from server.schemas.grammars import (
     NarrativeResponse,
     RefinedResponse,
 )
 from server.schemas.templates import TemplateField
-from server.utils.llm_client import repair_json
-from server.utils.llm_client.client import get_llm_client
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)

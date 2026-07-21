@@ -20,19 +20,6 @@ def _get_whisper_port() -> str:
 async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
     """
     Transcribe an audio buffer using a Whisper endpoint.
-
-    Supports both external API and local whisper.cpp server.
-
-    Args:
-        audio_buffer (bytes): The audio data to be transcribed.
-
-    Returns:
-        dict: A dictionary containing:
-            - 'text' (str): The transcribed text.
-            - 'transcriptionDuration' (float): The time taken for transcription.
-
-    Raises:
-        ValueError: If the transcription fails or no text is returned.
     """
     try:
         config = config_manager.get_config()

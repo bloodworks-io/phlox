@@ -5,11 +5,11 @@ import time
 from typing import Any
 
 from server.database.config.manager import config_manager
+from server.llm_client import repair_json
+from server.llm_client.client import get_llm_client
 from server.schemas.grammars import MultiFieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
-from server.utils.llm_client import repair_json
-from server.utils.llm_client.client import get_llm_client
-from server.utils.transcription.refinement import refine_field_content
+from server.transcription.refinement import refine_field_content
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +23,6 @@ async def process_transcription(
 ) -> dict[str, Any]:
     """
     Process the transcribed text to generate summaries for non-persistent template fields.
-
-    Args:
-        transcript_text (str): The transcribed text to process.
-        template_fields (List[TemplateField]): The fields to process.
-        patient_context (Dict[str, str]): Patient context (name, dob, gender, etc.).
-        is_ambient (bool): Whether the transcript is from an ambient session (True) or direct dictation (False).
-    Returns:
-        dict: A dictionary containing:
-            - 'fields' (Dict[str, str]): Processed field data.
-            - 'process_duration' (float): The time taken for processing.
     """
     process_start = time.perf_counter()
 
@@ -95,18 +85,6 @@ async def process_all_fields_concurrently(
 
     Builds a unified prompt with all field system prompts and patient context,
     then parses the multi-field response into a dictionary of formatted contents.
-
-    Args:
-        transcript_text: The transcribed text to process.
-        fields: List of TemplateField objects to process.
-        patient_context: Patient context (name, dob, gender, etc.).
-        is_ambient: Whether the transcript is from an ambient session (True) or direct dictation (False).
-        primary_condition: Optional primary condition for returning patients (audio-specific).
-        intro_override: Optional intro text override. When provided, used instead of the
-            audio-specific is_ambient intro.
-
-    Returns:
-        Dict mapping field_key to formatted content string with bullet points.
     """
 
     max_retries = 1
