@@ -53,15 +53,6 @@ def test_search_patient():
     assert isinstance(data, list)
 
 
-@pytest.fixture
-def mock_summarize(monkeypatch):
-    async def fake_summarize(*_args, **_kwargs):
-        return "Test summary", "Test condition"
-
-    monkeypatch.setattr("server.utils.llm.summarisation.summarise_encounter", fake_summarize)
-    return fake_summarize
-
-
 # For save and update endpoints, we patch the database functions.
 @pytest.mark.asyncio
 async def test_save_patient(monkeypatch):
