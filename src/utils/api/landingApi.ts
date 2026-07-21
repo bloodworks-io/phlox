@@ -3,6 +3,15 @@ import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 
 export const landingApi = {
+  fetchTodos: async () =>
+    handleApiRequest({
+      apiCall: async (signal) => {
+        const url = await buildApiUrl("/api/dashboard/todos");
+        return universalFetch(url, { signal });
+      },
+      errorMessage: "Error fetching todos",
+    }),
+
   addTodo: async (task) =>
     handleApiRequest({
       apiCall: async () => {

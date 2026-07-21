@@ -178,4 +178,68 @@ export const patientApi = {
     }
     return response.json();
   },
+
+  fetchNoteList: async ({ date, detailed }: { date: string; detailed?: boolean }) => {
+    const params = new URLSearchParams({ date });
+    if (detailed) params.set("detailed", "true");
+    return handleApiRequest({
+      apiCall: async (signal) => {
+        const url = await buildApiUrl(`/api/note/list?${params.toString()}`);
+        return universalFetch(url, { signal });
+      },
+      errorMessage: "Failed to fetch note list",
+    });
+  },
+
+  fetchIncompleteJobsCount: async () => {
+    return handleApiRequest({
+      apiCall: async (signal) => {
+        const url = await buildApiUrl(`/api/note/incomplete-jobs-count`);
+        return universalFetch(url, { signal });
+      },
+      errorMessage: "Failed to fetch incomplete jobs count",
+    });
+  },
+
+  deletePatient: async (noteId) => {
+    return handleApiRequest({
+      apiCall: async (signal) => {
+        const url = await buildApiUrl(`/api/note/id/${noteId}`);
+        return universalFetch(url, { signal, method: "DELETE" });
+      },
+      errorMessage: "Failed to delete patient",
+    });
+  },
+
+  fetchOutstandingJobs: async () => {
+    return handleApiRequest({
+      apiCall: async (signal) => {
+        const url = await buildApiUrl(`/api/note/outstanding-jobs`);
+        return universalFetch(url, { signal });
+      },
+      errorMessage: "Failed to fetch outstanding jobs",
+    });
+  },
+
+  searchPatients: async (query) => {
+    return handleApiRequest({
+      apiCall: async (signal) => {
+        const url = await buildApiUrl(
+          `/api/note/search?q=${encodeURIComponent(query)}`,
+        );
+        return universalFetch(url, { signal });
+      },
+      errorMessage: "Failed to search patients",
+    });
+  },
+
+  fetchPatientSummary: async (noteId) => {
+    return handleApiRequest({
+      apiCall: async (signal) => {
+        const url = await buildApiUrl(`/api/note/summary/${noteId}`);
+        return universalFetch(url, { signal });
+      },
+      errorMessage: "Failed to fetch patient summary",
+    });
+  },
 };

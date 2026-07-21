@@ -63,4 +63,18 @@ export const templateApi = {
         updated_keys: data.updated_keys,
       }),
     }),
+
+  generateTemplate: async (exampleNote) =>
+    handleApiRequest({
+      apiCall: async (signal) => {
+        const url = await buildApiUrl("/api/templates/generate");
+        return universalFetch(url, {
+          signal,
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ exampleNote }),
+        });
+      },
+      errorMessage: "Failed to generate template",
+    }),
 };
