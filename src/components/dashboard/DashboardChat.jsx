@@ -5,9 +5,9 @@ import { useChat } from "../../utils/hooks/useChat";
 import DashboardChatInput from "./DashboardChatInput";
 import DashboardTodoPanel from "./DashboardTodoPanel";
 import DashboardMessageList from "./DashboardMessageList";
-import { universalFetch } from "../../utils/helpers/apiHelpers";
-import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { chatApi } from "../../utils/api/chatApi";
+import { settingsApi } from "../../utils/api/settingsApi";
+import { ragApi } from "../../utils/api/ragApi";
 import { useDashboardTodos } from "../../utils/hooks/useDashboardTodos";
 import {
     convertFileToDataUrl,
@@ -84,16 +84,12 @@ const DashboardChat = () => {
     useEffect(() => {
         const fetchInitialChatSettings = async () => {
             try {
-                const [settingsResponse, globalConfigResponse] =
-                    await Promise.all([
-                        universalFetch(await buildApiUrl("/api/config/user")),
-                        universalFetch(await buildApiUrl("/api/config/global")),
-                    ]);
+                const [userSettings, globalConfig] = await Promise.all([
+                    settingsApi.fetchUserSettings(),
+                    settingsApi.fetchConfig(),
+                ]);
 
-                const userSettings = await settingsResponse.json();
-
-                if (globalConfigResponse.ok) {
-                    const globalConfig = await globalConfigResponse.json();
+                if (globalConfig) {
                     setDocumentImageMode(
                         normalizeProcessingMode(
                             globalConfig?.DOCUMENT_IMAGE_PROCESSING_MODE,
@@ -116,13 +112,12 @@ const DashboardChat = () => {
                 }
 
                 if (userSettings.specialty) {
-                    const response = await universalFetch(
-                        await buildApiUrl(`/api/rag/suggestions`),
-                    );
-                    if (!response.ok)
-                        throw new Error("Failed to fetch suggestions");
-                    const data = await response.json();
-                    setRagSuggestions(data.suggestions);
+                    try {
+                        const data = await ragApi.fetchSuggestions();
+                        setRagSuggestions(data.suggestions);
+                    } catch (error) {
+                        console.error("Failed to fetch suggestions:", error);
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching initial chat settings:", error);

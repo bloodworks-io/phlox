@@ -24,8 +24,7 @@ import SidebarNavigation from "./SidebarNavigation";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { colors } from "../../theme/colors";
 import { sidebarWidth } from "../../theme/dimensions";
-import { buildApiUrl } from "../../utils/helpers/apiConfig";
-import { universalFetch } from "../../utils/helpers/apiHelpers";
+import { patientApi } from "../../utils/api/patientApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
 
 const CollapseIcon = ({ boxSize = "20px" }) => (
@@ -111,12 +110,7 @@ const Sidebar = ({
   // Function definitions remain the same
   const fetchPatients = async (date) => {
     try {
-      const url = await buildApiUrl(`/api/note/list?date=${date}`);
-      const response = await universalFetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
+      const data = await patientApi.fetchNoteList({ date });
       // Sort patients by ID in descending order
       const sortedPatients = data.sort((a, b) => a.id - b.id);
       setPatients(sortedPatients);
@@ -127,12 +121,7 @@ const Sidebar = ({
 
   const fetchIncompleteJobsCount = async () => {
     try {
-      const url = await buildApiUrl(`/api/note/incomplete-jobs-count`);
-      const response = await universalFetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
+      const data = await patientApi.fetchIncompleteJobsCount();
       setIncompleteJobsCount(data.incomplete_jobs_count);
     } catch (error) {
       console.error("Error fetching incomplete jobs count:", error);
@@ -152,18 +141,11 @@ const Sidebar = ({
   const confirmDelete = async () => {
     if (patientToDelete) {
       try {
-        const url = await buildApiUrl(`/api/note/id/${patientToDelete.id}`);
-        const response = await universalFetch(url, {
-          method: "DELETE",
-        });
-        if (response.ok) {
-          setPatients(
-            patients.filter((patient) => patient.id !== patientToDelete.id),
-          );
-          onClose();
-        } else {
-          console.error("Error deleting patient");
-        }
+        await patientApi.deletePatient(patientToDelete.id);
+        setPatients(
+          patients.filter((patient) => patient.id !== patientToDelete.id),
+        );
+        onClose();
       } catch (error) {
         console.error("Error deleting patient:", error);
       }

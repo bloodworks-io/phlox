@@ -1,5 +1,5 @@
-import { buildApiUrl } from "./apiConfig";
-import { universalFetch } from "./apiHelpers";
+import { settingsApi } from "../api/settingsApi";
+import { chatApi } from "../api/chatApi";
 import {
   convertFileToDataUrl,
   extractPdfText,
@@ -20,11 +20,8 @@ export const getDocumentProcessingPreferences = async () => {
   let visionCapable = false;
 
   try {
-    const configResponse = await universalFetch(
-      await buildApiUrl("/api/config/global"),
-    );
-    if (configResponse.ok) {
-      const config = await configResponse.json();
+    const config = await settingsApi.fetchConfig();
+    if (config) {
       mode = normalizeProcessingMode(config?.DOCUMENT_IMAGE_PROCESSING_MODE);
       visionCapable = Boolean(config?.VISION_MODEL_CAPABLE);
     }
@@ -33,13 +30,8 @@ export const getDocumentProcessingPreferences = async () => {
   }
 
   try {
-    const capabilityResponse = await universalFetch(
-      await buildApiUrl("/api/chat/vision-capability/current"),
-    );
-    if (capabilityResponse.ok) {
-      const capability = await capabilityResponse.json();
-      visionCapable = Boolean(capability?.vision_capable);
-    }
+    const capability = await chatApi.getCurrentVisionCapability();
+    visionCapable = Boolean(capability?.vision_capable);
   } catch {
     // keep whatever we got from config
   }

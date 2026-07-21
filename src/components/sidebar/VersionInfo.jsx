@@ -13,8 +13,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { FaGithub, FaMoon, FaSun } from "react-icons/fa";
 import { TbVersions } from "react-icons/tb";
 import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
-import { buildApiUrl } from "../../utils/helpers/apiConfig";
-import { universalFetch } from "../../utils/helpers/apiHelpers";
+import { settingsApi } from "../../utils/api/settingsApi";
 import ChangelogModal from "../modals/ChangelogModal";
 import { APP_VERSION } from "../../utils/constants/version";
 import changelogContent from "../../../CHANGELOG.md?raw";
@@ -36,12 +35,8 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
     // Check server status
     const checkStatus = async () => {
       try {
-        const url = await buildApiUrl("/api/config/status");
-        const response = await universalFetch(url);
-        if (response.ok) {
-          const data = await response.json();
-          setServerStatus(data);
-        }
+        const data = await settingsApi.fetchServerStatus();
+        setServerStatus(data);
       } catch (error) {
         console.error("Error checking server status:", error);
       }

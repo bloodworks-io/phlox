@@ -1,8 +1,7 @@
 // Page component that renders a summary of patients for a selected date.
 import { useEffect, useState } from "react";
 import PatientTable from "../components/patient/PatientTable";
-import { buildApiUrl } from "../utils/helpers/apiConfig";
-import { universalFetch } from "../utils/helpers/apiHelpers";
+import { patientApi } from "../utils/api/patientApi";
 
 const ClinicSummary = ({
   selectedDate,
@@ -13,14 +12,7 @@ const ClinicSummary = ({
 
   const fetchPatients = async (date, detailed = true) => {
     try {
-      const url = await buildApiUrl(
-        `/api/note/list?date=${date}&detailed=${detailed}`,
-      );
-      const response = await universalFetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
+      const data = await patientApi.fetchNoteList({ date, detailed });
       setPatients(
         data.map((patient) => ({
           ...patient,

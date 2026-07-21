@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
 import { FaServer } from "react-icons/fa";
-import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
-import { universalFetch } from "../../utils/helpers/apiHelpers";
+import { settingsApi } from "../../utils/api/settingsApi";
 
 const LOADING_MESSAGES = [
   "Reticulating splines...",
@@ -64,15 +63,10 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       // Check refs instead of state to avoid stale closures
       if (shouldPollRef.current && !isTimedOutRef.current) {
         try {
-          const baseUrl = isTauri() ? await buildApiUrl("") : "";
-          const response = await universalFetch(`${baseUrl}/api/config/status`, {
-            signal: AbortSignal.timeout(5000),
-          });
-          if (response.ok) {
-            shouldPollRef.current = false;
-            setShouldPoll(false);
-            onReadyRef.current();
-          }
+          await settingsApi.fetchServerStatus(AbortSignal.timeout(5000));
+          shouldPollRef.current = false;
+          setShouldPoll(false);
+          onReadyRef.current();
         } catch {
           // Server not ready yet, continue polling
         }

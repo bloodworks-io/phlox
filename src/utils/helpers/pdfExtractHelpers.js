@@ -1,9 +1,8 @@
 // Shared PDF extraction helpers used by both single-file and bulk uploaders.
 import { ragApi } from "../api/ragApi";
 import { chatApi } from "../api/chatApi";
+import { settingsApi } from "../api/settingsApi";
 import { extractPdfTextOrRenderForVision } from "./pdfVisionHelpers";
-import { universalFetch } from "./apiHelpers";
-import { buildApiUrl } from "./apiConfig";
 
 /**
  * Determine the document processing mode and vision capability from config.
@@ -14,11 +13,8 @@ async function getProcessingConfig() {
     let visionCapable = false;
 
     try {
-        const configResponse = await universalFetch(
-            await buildApiUrl("/api/config/global"),
-        );
-        if (configResponse.ok) {
-            const cfg = await configResponse.json();
+        const cfg = await settingsApi.fetchConfig();
+        if (cfg) {
             const rawMode = String(
                 cfg?.DOCUMENT_IMAGE_PROCESSING_MODE || "auto",
             )

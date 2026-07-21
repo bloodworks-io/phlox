@@ -20,8 +20,9 @@ import LocalModelManager from "./LocalModelManager";
 import WhisperTab from "./WhisperTab";
 import LlmTab from "./LlmTab";
 import RagTab from "./RagTab";
-import { universalFetch } from "../../utils/helpers/apiHelpers";
+import { localModelApi } from "../../utils/api/localModelApi";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
+import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
 
 const ModelSettingsPanel = ({
@@ -51,13 +52,8 @@ const ModelSettingsPanel = ({
 
     const checkLocalStatus = async () => {
         try {
-            const response = await universalFetch(
-                await buildApiUrl("/api/config/local/status"),
-            );
-            if (response.ok) {
-                const data = await response.json();
-                setLocalStatus(data);
-            }
+            const data = await localModelApi.checkLocalStatus();
+            setLocalStatus(data);
         } catch (error) {
             console.error("Error checking local status:", error);
             setLocalStatus({

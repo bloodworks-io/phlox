@@ -1,20 +1,14 @@
 // Page component listing patients with outstanding jobs.
 import { useEffect, useState } from "react";
 import PatientTable from "../components/patient/PatientTable";
-import { buildApiUrl } from "../utils/helpers/apiConfig";
-import { universalFetch } from "../utils/helpers/apiHelpers";
+import { patientApi } from "../utils/api/patientApi";
 
 const OutstandingJobs = ({ handleSelectPatient, refreshSidebar }) => {
   const [patients, setPatients] = useState([]);
 
   const fetchPatientsWithJobs = async () => {
     try {
-      const url = await buildApiUrl(`/api/note/outstanding-jobs`);
-      const response = await universalFetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
+      const data = await patientApi.fetchOutstandingJobs();
       setPatients(
         data.map((patient) => ({
           ...patient,

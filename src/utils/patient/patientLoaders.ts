@@ -1,27 +1,22 @@
-import { universalFetch } from "../helpers/apiHelpers";
-import { buildApiUrl } from "../helpers/apiConfig";
+import { patientApi } from "../api/patientApi";
 
 export const findPatients = async (query) => {
     const q = (query || "").trim();
     if (!q) return [];
-    const response = await universalFetch(
-        await buildApiUrl(`/api/note/search?q=${encodeURIComponent(q)}`),
-    );
-    if (!response.ok) throw new Error("Search failed");
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
+    try {
+        const data = await patientApi.searchPatients(q);
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        console.error("Patient search failed:", error);
+        return [];
+    }
 };
 
 export const buildEncounterFromCandidate = async (candidate, selectedDate) => {
     let fullTemplateData = candidate.template_data || {};
     try {
-        const fullPatientResponse = await universalFetch(
-            await buildApiUrl(`/api/note/id/${candidate.id}`),
-        );
-        if (fullPatientResponse.ok) {
-            const fullPatient = await fullPatientResponse.json();
-            fullTemplateData = fullPatient.template_data || {};
-        }
+        const fullPatient = await patientApi.fetchPatientDetails(candidate.id);
+        fullTemplateData = fullPatient.template_data || {};
     } catch (error) {
         console.error("Error fetching full patient data:", error);
     }
@@ -43,13 +38,8 @@ export const buildEncounterFromCandidate = async (candidate, selectedDate) => {
 
     // Fetch the previous visit summary
     try {
-        const summaryResponse = await universalFetch(
-            await buildApiUrl(`/api/note/summary/${candidate.id}`),
-        );
-        if (summaryResponse.ok) {
-            const summaryData = await summaryResponse.json();
-            newPatient.previous_visit_summary = summaryData.summary;
-        }
+        const summaryData = await patientApi.fetchPatientSummary(candidate.id);
+        newPatient.previous_visit_summary = summaryData.summary;
     } catch (error) {
         console.error("Error fetching previous visit summary:", error);
     }

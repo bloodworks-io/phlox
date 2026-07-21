@@ -1,6 +1,5 @@
 // Helper functions for handling processing of documents and transcriptions.
-import { universalFetch } from "./apiHelpers";
-import { buildApiUrl } from "./apiConfig";
+import { transcriptionApi } from "../api/transcriptionApi";
 
 export const handleProcessingComplete = (
   data,
@@ -58,19 +57,7 @@ export const processDocument = async (
   });
 
   try {
-    const response = await universalFetch(
-        await buildApiUrl("/api/transcribe/process-document"),
-        {
-            method: "POST",
-            body: formData,
-        },
-    );
-
-    if (!response.ok) {
-      throw new Error("Document processing failed");
-    }
-
-    const data = await response.json();
+    const data = await transcriptionApi.processDocument(formData);
     onSuccess(data);
     return data;
   } catch (error) {

@@ -18,8 +18,6 @@ import NewTemplateFromExampleModal from "../modals/NewTemplateFromExampleModal";
 import DeleteConfirmationModal from "../modals/DeleteConfirmationModal";
 import { templateApi } from "../../utils/api/templateApi";
 import { useTemplate } from "../../utils/templates/templateContext";
-import { buildApiUrl } from "../../utils/helpers/apiConfig";
-import { universalFetch } from "../../utils/helpers/apiHelpers";
 
 const DEFAULT_TEMPLATE_KEYS = ["phlox_", "soap_", "progress_"];
 
@@ -100,18 +98,7 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
     const handleNewTemplateFromExample = async () => {
         setIsGeneratingTemplate(true);
         try {
-            const response = await universalFetch(
-                await buildApiUrl("/api/templates/generate"),
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ exampleNote }),
-                },
-            );
-            if (!response.ok) {
-                throw new Error("Failed to generate template");
-            }
-            const newTemplate = await response.json();
+            const newTemplate = await templateApi.generateTemplate(exampleNote);
 
             const freshTemplates = await templateApi.fetchTemplates();
             setTemplates(freshTemplates);

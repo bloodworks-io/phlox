@@ -12,8 +12,7 @@ import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaMicrophone, FaStop } from "react-icons/fa";
-import { universalFetch } from "../../../utils/helpers/apiHelpers";
-import { buildApiUrl } from "../../../utils/helpers/apiConfig";
+import { transcriptionApi } from "../../../utils/api/transcriptionApi";
 import { letterApi } from "../../../utils/api/letterApi";
 import { AudioRecorder } from "../../../utils/audioRecorder";
 
@@ -170,17 +169,8 @@ const DictationWidget = ({
       const formData = new FormData();
       formData.append("file", wavBlob, "dictation.wav");
 
-      const transcribeUrl = await buildApiUrl("/api/transcribe/dictate");
-      const transcribeResponse = await universalFetch(transcribeUrl, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!transcribeResponse.ok) {
-        throw new Error("Transcription failed");
-      }
-
-      const transcribeData = await transcribeResponse.json();
+      const transcribeData =
+          await transcriptionApi.transcribeDictation(formData);
       const transcription = transcribeData.transcription;
 
       if (!transcription) {

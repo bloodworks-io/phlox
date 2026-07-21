@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { landingApi } from "../api/landingApi";
-import { universalFetch } from "../helpers/apiHelpers";
-import { buildApiUrl } from "../helpers/apiConfig";
 
 export const useDashboardTodos = ({
   initialShowAll = false,
@@ -26,14 +24,10 @@ export const useDashboardTodos = ({
     setError(null);
 
     try {
-      const response = await universalFetch(await buildApiUrl("/api/dashboard/todos"));
-      if (!response.ok) {
-        throw new Error(`Failed to fetch todos (${response.status})`);
-      }
-
-      const data = await response.json();
-      setTodos(Array.isArray(data?.todos) ? data.todos : []);
-      return data?.todos || [];
+      const data = await landingApi.fetchTodos();
+      const todos = Array.isArray(data?.todos) ? data.todos : [];
+      setTodos(todos);
+      return todos;
     } catch (err) {
       setError(err);
       console.error("Error fetching todos:", err);
