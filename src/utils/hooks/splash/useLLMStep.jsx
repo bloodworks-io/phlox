@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import useSWR from "swr";
 import { toaster } from "@/components/ui/toaster";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLLMStep } from "../../../utils/splash/validators";
@@ -7,6 +8,7 @@ import { isTauri } from "../../helpers/apiConfig";
 import { localModelApi } from "../../api/localModelApi";
 import { downloadLlmModel as downloadLlmService } from "../../services/localModelService";
 import { useDebounce } from "../useDebounce";
+import { KEYS } from "../../cache/keys";
 
 export const useLLMStep = (currentStep) => {
 
@@ -25,12 +27,61 @@ export const useLLMStep = (currentStep) => {
     );
     const [llmApiKey, setLlmApiKey] = useState("");
     const [primaryModel, setPrimaryModel] = useState("");
-    const [availableModels, setAvailableModels] = useState([]);
-    const [isFetchingLLMModels, setIsFetchingLLMModels] = useState(false);
 
     const debouncedLlmBaseUrl = useDebounce(llmBaseUrl, 500);
     const debouncedLlmProvider = useDebounce(llmProvider, 500);
     const debouncedLlmApiKey = useDebounce(llmApiKey, 500);
+
+    const shouldFetchRemote =
+        currentStep === SPLASH_STEPS.AI_MODELS &&
+        inferenceMode === "remote" &&
+        !!debouncedLlmBaseUrl &&
+        !!debouncedLlmProvider;
+
+    const {
+        data: availableModels = [],
+        isValidating: isFetchingLLMModels,
+        mutate: mutateLLMModels,
+        error: llmError,
+    } = useSWR(
+        shouldFetchRemote
+            ? KEYS.llmModels(
+                  inferenceMode,
+                  debouncedLlmBaseUrl,
+                  debouncedLlmProvider,
+                  !!debouncedLlmApiKey,
+              )
+            : null,
+        () =>
+            new Promise((resolve) => {
+                settingsService.fetchLLMModels(
+                    {
+                        LLM_BASE_URL: debouncedLlmBaseUrl,
+                        LLM_PROVIDER: debouncedLlmProvider,
+                        LLM_API_KEY: debouncedLlmApiKey || null,
+                    },
+                    resolve,
+                );
+            }),
+    );
+
+    // Manual refetch hook for consumers
+    const fetchLLMModels = useCallback(() => {
+        mutateLLMModels();
+    }, [mutateLLMModels]);
+
+    useEffect(() => {
+        if (llmError) {
+            toaster.create({
+                title: "Error fetching LLM models",
+                description:
+                    llmError.message ||
+                    "Could not connect or provider returned an error.",
+                type: "error",
+                duration: 3000,
+            });
+        }
+    }, [llmError]);
 
     // Local mode state
     const [localAvailableModels, setLocalAvailableModels] = useState([]);
@@ -39,47 +90,6 @@ export const useLLMStep = (currentStep) => {
     const [isDownloadingLocal, setIsDownloadingLocal] = useState(false);
     const [downloadingModelId, setDownloadingModelId] = useState(null);
     const [downloadProgress, setDownloadProgress] = useState(0);
-
-    // Fetch remote LLM models
-    const fetchLLMModels = useCallback(async () => {
-        if (inferenceMode === "local") return;
-
-        // Guard: don't clear existing models during debounce settling
-        if (!debouncedLlmBaseUrl || !debouncedLlmProvider) {
-            return;
-        }
-
-        // Guard: prevent concurrent fetches
-        if (isFetchingLLMModels) return;
-
-        setIsFetchingLLMModels(true);
-        try {
-            let models = [];
-            await settingsService.fetchLLMModels(
-                {
-                    LLM_BASE_URL: debouncedLlmBaseUrl,
-                    LLM_PROVIDER: debouncedLlmProvider,
-                    LLM_API_KEY: debouncedLlmApiKey || null,
-                },
-                (fetchedModels) => {
-                    models = fetchedModels;
-                },
-            );
-            setAvailableModels(models);
-        } catch (error) {
-            toaster.create({
-                title: "Error fetching LLM models",
-                description:
-                    error.message ||
-                    "Could not connect or provider returned an error.",
-                type: "error",
-                duration: 3000,
-            });
-            setAvailableModels([]);
-        } finally {
-            setIsFetchingLLMModels(false);
-        }
-    }, [debouncedLlmBaseUrl, debouncedLlmProvider, debouncedLlmApiKey, inferenceMode]);
 
     // Fetch local models
     const fetchLocalModels = useCallback(async () => {
@@ -220,16 +230,15 @@ export const useLLMStep = (currentStep) => {
         primaryLocalModel,
     ]);
 
-    // Fetch models when step becomes active or mode changes
+    // Local-mode fetch on step/mode change (remote is handled by useSWR above)
     useEffect(() => {
-        if (currentStep === SPLASH_STEPS.AI_MODELS) {
-            if (inferenceMode === "local") {
-                fetchLocalModels();
-            } else {
-                fetchLLMModels();
-            }
+        if (
+            currentStep === SPLASH_STEPS.AI_MODELS &&
+            inferenceMode === "local"
+        ) {
+            fetchLocalModels();
         }
-    }, [fetchLLMModels, fetchLocalModels, currentStep, inferenceMode]);
+    }, [fetchLocalModels, currentStep, inferenceMode]);
 
     return {
         // Inference mode
