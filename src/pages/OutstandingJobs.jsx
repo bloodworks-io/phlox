@@ -14,7 +14,9 @@ const outstandingJobsFetcher = async () => {
 };
 
 const OutstandingJobs = ({ handleSelectPatient, refreshSidebar }) => {
-    const { data, mutate } = useSWR(KEYS.OUTSTANDING_JOBS, outstandingJobsFetcher);
+    const { data, mutate } = useSWR(KEYS.OUTSTANDING_JOBS, outstandingJobsFetcher, {
+        revalidateOnMount: true,
+    });
     const patients = data || [];
     const setPatients = (updater) => mutate(updater, { revalidate: false });
 

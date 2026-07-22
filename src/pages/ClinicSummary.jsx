@@ -21,6 +21,7 @@ const ClinicSummary = ({
     const { data, mutate } = useSWR(
         KEYS.noteList(selectedDate, true),
         clinicSummaryFetcher(selectedDate, true),
+        { revalidateOnMount: true },
     );
     const patients = data || [];
 
