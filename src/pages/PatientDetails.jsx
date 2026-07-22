@@ -202,7 +202,8 @@ const PatientDetails = ({
         summary.setIsCollapsed(false);
         closeAll();
         resetDocumentState();
-    }, [patient?.id, currentTemplate, isNewPatient, summary, closeAll, resetDocumentState]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- summary/closeAll/resetDocumentState come from hooks that return fresh object literals each render; this effect intentionally fires only on patient/template/isNewPatient changes
+    }, [patient?.id, currentTemplate, isNewPatient]);
 
     useEffect(() => {
         toaster.remove();
