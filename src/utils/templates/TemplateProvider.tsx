@@ -244,7 +244,7 @@ export const TemplateProvider = ({ children }) => {
       // Load and set default template
       const defaultTemplate = await loadDefaultTemplate();
       if (defaultTemplate) {
-        await setActiveTemplate(defaultTemplate.template_key, "refresh");
+        await setActiveTemplate(defaultTemplate.template_key);
       }
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });

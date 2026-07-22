@@ -40,7 +40,7 @@ export const patientApi = {
     }
   },
 
-  fetchPatientDetails: async (noteId, setters) => {
+  fetchPatientDetails: async (noteId, setters: any = {}) => {
     return handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(`/api/note/id/${noteId}`);
