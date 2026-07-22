@@ -209,7 +209,7 @@ def initialize_and_get_app():
     @app.get("/settings")
     @app.get("/rag")
     @app.get("/clinic-summary")
-    @app.get("/outstanding-tasks")
+    @app.get("/outstanding-jobs")
     @app.get("/note/{note_id}")
     async def serve_react_app():
         return FileResponse(BUILD_DIR / "index.html")

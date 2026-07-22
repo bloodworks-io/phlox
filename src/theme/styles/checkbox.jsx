@@ -12,7 +12,7 @@ const checkboxStyles = (props) => ({
         borderRadius: "2px !important",
         border:
             props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
+                ? `1px solid ${colors.light.surface1} !important`
                 : `1px solid ${colors.dark.surface2} !important`,
         backgroundColor:
             props.colorMode === "light"

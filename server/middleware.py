@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 # Centralized path skip rules - add new React routes here
 PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
 REACT_ROUTES = {
-    "/new-patient",
+    "/new-note",
     "/settings",
     "/rag",
     "/clinic-summary",
-    "/outstanding-tasks",
+    "/outstanding-jobs",
 }
 STATIC_EXTENSIONS = (
     ".js",
