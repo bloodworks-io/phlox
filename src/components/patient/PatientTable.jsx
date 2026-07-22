@@ -411,11 +411,16 @@ const PatientTable = ({
                                             }
                                         }
 
-                                        const updatedJobsList = [
-                                            ...patient.jobs_list,
-                                        ];
-                                        updatedJobsList[index].completed =
-                                            nextChecked;
+                                        const updatedJobsList =
+                                            patient.jobs_list.map((j, i) =>
+                                                i === index
+                                                    ? {
+                                                          ...j,
+                                                          completed:
+                                                              nextChecked,
+                                                      }
+                                                    : j,
+                                            );
 
                                         setPatients((prevPatients) =>
                                             prevPatients.map((p) =>
