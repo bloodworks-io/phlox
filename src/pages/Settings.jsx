@@ -3,6 +3,8 @@ import {
     Box,
     Text,
     VStack,
+    Center,
+    Spinner,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -40,6 +42,7 @@ const Settings = () => {
 
     const [config, setConfig] = useState(null);
     const [coreLoading, setCoreLoading] = useState(true);
+    const [showSpinner, setShowSpinner] = useState(false);
     const [llmModelsLoading, setLlmModelsLoading] = useState(false);
     const [whisperModelsLoading, setWhisperModelsLoading] = useState(false);
     const [modelOptions, setModelOptions] = useState([]);
@@ -411,8 +414,18 @@ const Settings = () => {
         await fetchCoreSettings();
     };
 
+    useEffect(() => {
+        if (!coreLoading) return;
+        const t = setTimeout(() => setShowSpinner(true), 150);
+        return () => clearTimeout(t);
+    }, [coreLoading]);
+
     if (coreLoading) {
-        return <Box>Loading...</Box>;
+        return (
+            <Center h="100dvh">
+                {showSpinner && <Spinner size="xl" />}
+            </Center>
+        );
     }
     return (
         <Box p="5" borderRadius="sm" w="100%">
