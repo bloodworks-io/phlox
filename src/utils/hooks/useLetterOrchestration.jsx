@@ -40,10 +40,10 @@ export const useLetterOrchestration = ({
         [patient, openLetter, toast, generateLetter, setFinalCorrespondence],
     );
 
-    const handleLetterSave = useCallback(async () => {
+    const handleLetterSave = async () => {
         await saveLetter(patient.id);
         setIsModified(false);
-    }, [patient?.id, setIsModified, saveLetter]);
+    };
 
     // Wrap setFinalCorrespondence to also flip the modified flag
     const setFinalCorrespondenceWithFlag = useCallback(

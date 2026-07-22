@@ -58,7 +58,7 @@ async function getProcessingConfig() {
 async function extractTextViaVision(file, filename) {
     const pdfResult = await extractPdfTextOrRenderForVision(file);
 
-    let extractedText = "";
+    let extractedText;
     if (pdfResult.strategy === "text") {
         extractedText = pdfResult.textResult?.text || "";
     } else {
@@ -126,8 +126,8 @@ export async function extractPdfMetadata(file) {
         );
     }
 
-    let extractedText = null;
-    let metadata = null;
+    let extractedText;
+    let metadata;
 
     if (shouldUseVision) {
         try {

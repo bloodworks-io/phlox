@@ -95,6 +95,7 @@ export const useReasoning = (options = {}) => {
 
     const handleMouseUp = useCallback(() => {
         window.removeEventListener("mousemove", handleMouseMove);
+        // eslint-disable-next-line react-hooks/immutability -- self-referencing one-shot listener; binding resolves at call time, not capture time
         window.removeEventListener("mouseup", handleMouseUp);
     }, [handleMouseMove]);
 
