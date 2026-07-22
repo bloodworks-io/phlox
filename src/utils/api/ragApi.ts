@@ -42,16 +42,6 @@ export const ragApi = {
         });
     },
 
-    fetchSuggestions: async () => {
-        return handleApiRequest({
-            apiCall: async (signal) => {
-                const url = await buildApiUrl(`/api/rag/suggestions`);
-                return universalFetch(url, { signal });
-            },
-            errorMessage: "Failed to fetch suggestions",
-        });
-    },
-
     fetchCollectionFiles: async (collectionName) => {
         return handleApiRequest({
             apiCall: async () => {

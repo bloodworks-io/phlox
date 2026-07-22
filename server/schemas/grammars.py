@@ -3,15 +3,6 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-# RAG Chat Items:
-class ClinicalSuggestion(BaseModel):
-    question: str
-
-
-class ClinicalSuggestionList(BaseModel):
-    suggestions: list[ClinicalSuggestion]
-
-
 # RAG Collection Management
 class DocumentClassification(BaseModel):
     """

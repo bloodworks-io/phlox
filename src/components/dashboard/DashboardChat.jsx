@@ -7,7 +7,7 @@ import DashboardTodoPanel from "./DashboardTodoPanel";
 import DashboardMessageList from "./DashboardMessageList";
 import { chatApi } from "../../utils/api/chatApi";
 import { settingsApi } from "../../utils/api/settingsApi";
-import { ragApi } from "../../utils/api/ragApi";
+import { SPECIALTY_SUGGESTIONS } from "../../utils/constants";
 import { useDashboardTodos } from "../../utils/hooks/useDashboardTodos";
 import {
     convertFileToDataUrl,
@@ -21,6 +21,13 @@ const normalizeProcessingMode = (value) => {
         .toLowerCase();
     if (mode === "vision" || mode === "ocr" || mode === "auto") return mode;
     return "auto";
+};
+
+const pickSuggestions = (specialty) => {
+    const pool =
+        SPECIALTY_SUGGESTIONS[String(specialty || "").trim().toLowerCase()] ||
+        SPECIALTY_SUGGESTIONS["general practice"];
+    return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
 };
 
 const DashboardChat = () => {
@@ -89,6 +96,10 @@ const DashboardChat = () => {
                     settingsApi.fetchConfig(),
                 ]);
 
+                if (userSettings.specialty) {
+                    setRagSuggestions(pickSuggestions(userSettings.specialty));
+                }
+
                 if (globalConfig) {
                     setDocumentImageMode(
                         normalizeProcessingMode(
@@ -108,15 +119,6 @@ const DashboardChat = () => {
                         setVisionCapable(
                             Boolean(globalConfig?.VISION_MODEL_CAPABLE),
                         );
-                    }
-                }
-
-                if (userSettings.specialty) {
-                    try {
-                        const data = await ragApi.fetchSuggestions();
-                        setRagSuggestions(data.suggestions);
-                    } catch (error) {
-                        console.error("Failed to fetch suggestions:", error);
                     }
                 }
             } catch (error) {
@@ -383,7 +385,12 @@ const DashboardChat = () => {
 
                     {/* Suggestions */}
                     {showSuggestions && ragSuggestions.length > 0 && (
-                        <Flex wrap="wrap" justify="center" gap={3}>
+                        <Flex
+                            wrap="wrap"
+                            justify="center"
+                            gap={3}
+                            className="anim-stagger"
+                        >
                             {ragSuggestions.map((suggestion, index) => (
                                 <Button
                                     key={index}

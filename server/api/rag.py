@@ -12,9 +12,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from server.constants import TEMP_DIR
-from server.rag.processing import (
-    generate_specialty_suggestions,
-)
 from server.rag.progress import stream_re_embed_progress
 from server.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 from server.schemas.rag import (
@@ -370,19 +367,6 @@ async def re_embed_stream():
         stream_re_embed_progress(),
         media_type="text/event-stream",
     )
-
-
-@router.get("/suggestions")
-async def get_rag_suggestions():
-    """Get specialty-specific RAG chat suggestions."""
-    _check_rag_available()
-    try:
-        suggestions = await generate_specialty_suggestions()
-        return {"suggestions": suggestions}
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error generating suggestions: {str(e)}"
-        ) from e
 
 
 @router.post("/clear-database")

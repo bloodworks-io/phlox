@@ -105,23 +105,6 @@ def test_re_embed(monkeypatch):
     assert data["total_chunks_re_embedded"] == 50
 
 
-def test_get_rag_suggestions(monkeypatch):
-    mock_vsm = MagicMock()
-    _setup_rag_mocks(monkeypatch, mock_vsm)
-
-    async def fake_suggestions():
-        return ["Suggestion 1", "Suggestion 2"]
-
-    monkeypatch.setattr("server.api.rag.generate_specialty_suggestions", fake_suggestions)
-
-    response = client.get("/api/rag/suggestions")
-    assert response.status_code == 200
-    data = response.json()
-    assert "suggestions" in data
-    assert isinstance(data["suggestions"], list)
-    assert "Suggestion 1" in data["suggestions"]
-
-
 def test_clear_database(monkeypatch):
     mock_vsm = MagicMock()
     mock_vsm.reset_database.return_value = True
