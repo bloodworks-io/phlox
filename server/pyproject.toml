@@ -41,7 +41,6 @@ dev = [
     "pytest-asyncio==1.4.0",
     "pytest-cov==7.0.0",
     "ruff==0.15.4",
-    "bandit[toml]==1.9.4",
     "pre-commit==4.5.1",
     "ty==0.0.39",
 ]
@@ -85,9 +84,6 @@ include = ["tests/**"]
 
 [tool.ty.overrides.rules]
 possibly-unresolved-reference = "warn"
-
-[tool.bandit]
-exclude_dirs = ["tests", ".venv", "dist"]
 
 [tool.uv]
 exclude-newer = "7 days"

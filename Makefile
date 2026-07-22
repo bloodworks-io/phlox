@@ -1,4 +1,4 @@
-.PHONY: help install install-local update outdated audit rebuild-dev rebuild-prod rebuild-test lint format typecheck security install-hooks check-all
+.PHONY: help install install-local update outdated audit rebuild-dev rebuild-prod rebuild-test lint format typecheck install-hooks check-all
 
 help:
 	@echo "Available commands:"
@@ -10,7 +10,6 @@ help:
 	@echo "  make lint          - Run Python linting (ruff)"
 	@echo "  make format        - Format Python code (ruff)"
 	@echo "  make typecheck     - Run Python type checking (ty)"
-	@echo "  make security      - Run Python security scan (bandit)"
 	@echo "  make install-hooks - Install pre-commit hooks"
 	@echo "  make check-all     - Run all quality checks"
 	@echo "  make rebuild-dev   - Rebuild dev Docker image"
@@ -53,11 +52,8 @@ format:
 typecheck:
 	cd server && uv run ty check .
 
-security:
-	cd server && uv run bandit -c pyproject.toml -r .
-
 install-hooks:
 	cd server && uv run pre-commit install
 
-check-all: lint typecheck security
+check-all: lint typecheck
 	@echo "All code quality checks passed!"

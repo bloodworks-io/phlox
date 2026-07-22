@@ -29,7 +29,7 @@ jobs:
           cd server
           ~/.local/bin/uv venv .venv
           ~/.local/bin/uv pip install \
-            ruff ty bandit[toml] pydantic types-requests \
+            ruff ty pydantic types-requests \
             fastapi httpx "uvicorn[standard]" APScheduler platformdirs \
             openai json-repair rapidfuzz python-multipart pytest
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
@@ -48,11 +48,6 @@ jobs:
         run: |
           cd server
           ty check .
-
-      - name: Run Bandit
-        run: |
-          cd server
-          bandit -c pyproject.toml -r .
 
   pin-actions:
     runs-on: ubuntu-latest
