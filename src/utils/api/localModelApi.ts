@@ -1,5 +1,6 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl, isTauri } from "../helpers/apiConfig";
+import { invoke } from "@tauri-apps/api/core";
 
 export const localModelApi = {
   // Streaming download helper for SSE
@@ -111,7 +112,6 @@ export const localModelApi = {
     handleApiRequest({
       apiCall: async () => {
         if (isTauri()) {
-          const { invoke } = await import("@tauri-apps/api/core");
           return await invoke("restart_llama");
         }
         throw new Error("Llama restart is only available in Tauri builds");
@@ -207,7 +207,6 @@ export const localModelApi = {
     handleApiRequest({
       apiCall: async () => {
         if (isTauri()) {
-          const { invoke } = await import("@tauri-apps/api/core");
           return await invoke("restart_whisper");
         }
         throw new Error("Whisper restart is only available in Tauri builds");
@@ -236,7 +235,6 @@ export const localModelApi = {
     handleApiRequest({
       apiCall: async () => {
         if (isTauri()) {
-          const { invoke } = await import("@tauri-apps/api/core");
           return await invoke("restart_embedding");
         }
         throw new Error("Embedding restart is only available in Tauri builds");

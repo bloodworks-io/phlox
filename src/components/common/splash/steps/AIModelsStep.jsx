@@ -12,6 +12,7 @@ import {
   Grid,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { localModelApi } from "@/utils/api/localModelApi";
 import {
   InfoIcon,
   DownloadIcon,
@@ -95,18 +96,14 @@ export const AIModelsStep = ({ llm, transcription }) => {
 
   useEffect(() => {
     if (isDesktop && isLocal) {
-      import("../../../../utils/api/localModelApi").then(
-        ({ localModelApi }) => {
-          localModelApi
-            .fetchEmbeddingStatus()
-            .then((res) => {
-              const has = !!res?.downloaded;
-              setEmbeddingDownloaded(has);
-              setEmbeddingReady(has);
-            })
-            .catch(() => {});
-        },
-      );
+      localModelApi
+        .fetchEmbeddingStatus()
+        .then((res) => {
+          const has = !!res?.downloaded;
+          setEmbeddingDownloaded(has);
+          setEmbeddingReady(has);
+        })
+        .catch(() => {});
     }
   }, [isDesktop, isLocal]);
 

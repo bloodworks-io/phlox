@@ -13,6 +13,7 @@ import {
     setEmbeddingReady,
 } from "../../utils/helpers/featureFlags";
 import { encryptionApi } from "../../utils/api/encryptionApi";
+import { localModelApi } from "../../utils/api/localModelApi";
 
 export const useAppBootstrap = () => {
     const [showSplashScreen, setShowSplashScreen] = useState(undefined);
@@ -152,14 +153,12 @@ export const useAppBootstrap = () => {
 
         // Sync embedding model status for RAG feature flag (Tauri only)
         if (isTauri()) {
-            import("../../utils/api/localModelApi").then(({ localModelApi }) => {
-                localModelApi.fetchEmbeddingStatus()
-                    .then((res) => {
-                        const has = !!res?.downloaded;
-                        setEmbeddingReady(has);
-                    })
-                    .catch(() => {});
-            });
+            localModelApi.fetchEmbeddingStatus()
+                .then((res) => {
+                    const has = !!res?.downloaded;
+                    setEmbeddingReady(has);
+                })
+                .catch(() => {});
         }
 
         setTimeout(() => {

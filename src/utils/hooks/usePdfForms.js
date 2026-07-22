@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../api/pdfFormsApi";
 import { chatApi } from "../api/chatApi";
+import { loadPdfDocument } from "../helpers/pdfVisionHelpers";
 import { renderRulerOverlay } from "../pdf/renderGridOverlay";
 
 const VALID_FIELD_TYPES = ["text", "checkbox", "date", "number"];
@@ -138,7 +139,6 @@ export const usePdfForms = () => {
       const pdfData = await pdfFormsApi.fetchTemplatePdf(selectedTemplate.id);
 
       // 2. Render pages to canvases with ruler overlay
-      const { loadPdfDocument } = await import("../helpers/pdfVisionHelpers");
       const doc = await loadPdfDocument({ data: pdfData });
 
       const rulerPages = [];
