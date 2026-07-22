@@ -38,7 +38,6 @@ export default tseslint.config(
         rules: {
             "no-undef": "off",
             "no-control-regex": "off",
-            "no-useless-assignment": "off",
             "@typescript-eslint/no-explicit-any": "off",
             "@typescript-eslint/no-empty-object-type": "off",
             "@typescript-eslint/ban-ts-comment": "off",
@@ -57,10 +56,6 @@ export default tseslint.config(
             ],
             ...reactHooks.configs.recommended.rules,
             "react-hooks/set-state-in-effect": "off",
-            "react-hooks/immutability": "off",
-            "react-hooks/static-components": "off",
-            "react-hooks/preserve-manual-memoization": "off",
-            "react-hooks/purity": "off",
         },
     },
 );
