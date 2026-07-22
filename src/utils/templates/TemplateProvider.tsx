@@ -23,8 +23,6 @@ const initialState = {
   status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
 };
 
-const MIN_LOADING_TIME = 300;
-
 // Reducer function
 function templateReducer(state, action) {
   switch (action.type) {
@@ -148,25 +146,20 @@ export const TemplateProvider = ({ children }) => {
 
   // Set active template
   const setActiveTemplate = useCallback(
-    async (templateKey= "unspecified") => {
+    async (templateKey = "unspecified") => {
+      const cached = templateService.getCachedTemplate(templateKey);
+      if (cached) {
+        dispatch({ type: "SET_CURRENT_TEMPLATE", payload: cached });
+        return cached;
+      }
+
       dispatch({ type: "START_LOADING" });
-      const loadingStartTime = Date.now();
 
       try {
-        const template = await templateApi.getTemplateByKey(templateKey);
+        const template = await templateService.getTemplateByKey(templateKey);
 
         dispatch({ type: "SET_CURRENT_TEMPLATE", payload: template });
         dispatch({ type: "FINISH_LOADING" });
-
-        // Calculate remaining time to meet minimum loading duration
-        const loadingEndTime = Date.now();
-        const loadingDuration = loadingEndTime - loadingStartTime;
-        const remainingTime = Math.max(0, MIN_LOADING_TIME - loadingDuration);
-
-        // Keep visual loading state for remaining time
-        if (remainingTime > 0) {
-          await new Promise((resolve) => setTimeout(resolve, remainingTime));
-        }
         dispatch({ type: "SET_VISUAL_LOADING", payload: false });
 
         return template;

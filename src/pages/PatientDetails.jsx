@@ -372,7 +372,7 @@ const PatientDetails = ({
         <Box
             px={[2, 4, 5]}
             pt={[1, 2, 3]}
-            pb="100px"
+            pb={[1, 2, 3]}
             borderRadius="sm"
             w="100%"
         >

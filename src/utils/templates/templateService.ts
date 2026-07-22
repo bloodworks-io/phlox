@@ -52,6 +52,8 @@ export const templateService = {
     }
   },
 
+  getCachedTemplate: (templateKey) => templateCache.get(templateKey) ?? null,
+
   async getTemplateByKey(templateKey) {
     // Check cache first
     if (templateCache.has(templateKey)) {

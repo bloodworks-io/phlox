@@ -29,11 +29,6 @@ export const usePatientTemplate = ({
 
     const { refreshTemplates } = useTemplate();
 
-    // Refresh templates for new patients
-    useEffect(() => {
-        refreshTemplates();
-    }, [refreshTemplates]);
-
     // Handle template errors
     useEffect(() => {
         if (templateError) {
