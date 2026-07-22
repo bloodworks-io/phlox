@@ -8,6 +8,9 @@ on:
         branches:
             - main
 
+permissions:
+    contents: read
+
 jobs:
     test:
         runs-on: ubuntu-latest
@@ -25,27 +28,11 @@ jobs:
             - name: Run Tests in Docker Container
               run: |
                   docker run --name test-container phlox-test
-                  docker cp test-container:/usr/src/app/coverage.xml ./coverage.xml
                   docker cp test-container:/usr/src/app/coverage.lcov ./coverage.lcov
+                  docker rm test-container
 
             - name: Coveralls
               uses: coverallsapp/github-action@cfd0633edbd2411b532b808ba7a8b5e04f76d2c8 # v2.3.4
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   file: coverage.lcov
-                  parallel: true
-                  flag-name: run-${{ matrix.python-version }}
-
-            - name: Cleanup
-              run: docker rm test-container
-
-    finish:
-        needs: test
-        if: ${{ always() }}
-        runs-on: ubuntu-latest
-        steps:
-            - name: Coveralls Finished
-              uses: coverallsapp/github-action@cfd0633edbd2411b532b808ba7a8b5e04f76d2c8 # v2.3.4
-              with:
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-                  parallel-finished: true

@@ -22,32 +22,22 @@ jobs:
           python-version: "3.12"
 
       - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: "server/uv.lock"
 
       - name: Install dependencies
-        run: |
-          cd server
-          ~/.local/bin/uv venv .venv
-          ~/.local/bin/uv pip install \
-            ruff ty pydantic types-requests \
-            fastapi httpx "uvicorn[standard]" APScheduler platformdirs \
-            openai json-repair rapidfuzz python-multipart pytest
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+        run: cd server && uv sync --locked
 
       - name: Run Ruff
-        run: |
-          cd server
-          ruff check . --output-format=github
+        run: cd server && uv run ruff check . --output-format=github
 
       - name: Run Ruff Format Check
-        run: |
-          cd server
-          ruff format --check .
+        run: cd server && uv run ruff format --check .
 
       - name: Run ty
-        run: |
-          cd server
-          ty check .
+        run: cd server && uv run ty check .
 
   pin-actions:
     runs-on: ubuntu-latest
@@ -77,3 +67,6 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+      - name: Run Typecheck
+        run: npm run typecheck
