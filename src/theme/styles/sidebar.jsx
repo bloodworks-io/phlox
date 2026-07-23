@@ -1,13 +1,13 @@
 import { colors } from "../colors";
 import { darkenColor } from "../utils";
 
-export const sidebarStyles = (props) => ({
+const sidebarStyles = (props) => ({
     ".sidebar": {
         position: "fixed",
         top: 0,
         left: 0,
         width: "200px",
-        height: "100vh",
+        height: "100dvh",
         background:
             props.colorMode === "light"
                 ? colors.light.sidebar.background
@@ -66,27 +66,6 @@ export const sidebarStyles = (props) => ({
         color: colors.light.invertedText,
         transform: "translateY(-1px)",
         boxShadow: "sm",
-    },
-    ".new-patient": {
-        padding: "2px 8px",
-        borderRadius: "lg !important",
-        background: `${colors.light.tertiaryButton} !important`,
-        marginTop: "6px",
-        marginBottom: "6px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        height: "36px",
-        fontWeight: "500",
-        fontSize: "0.9rem",
-        transition: "all 0.2s ease",
-        border: `1px solid ${darkenColor(colors.light.tertiaryButton, 0.15)} !important`,
-    },
-    ".new-patient:hover": {
-        background: `${colors.light.buttonHover.tertiary} !important`,
-        cursor: "pointer !important",
-        transform: "translateY(-1px)",
-        boxShadow: "md",
     },
     ".patient": {
         padding: "2px 8px",
@@ -155,19 +134,17 @@ export const sidebarStyles = (props) => ({
     },
     // Patient list items styling - consistent in both modes
     ".patient-list-item": {
-        backgroundColor: `${colors.dark.sidebar.item} !important`,
         color: `${colors.dark.textPrimary} !important`,
         transition: "all 0.2s ease",
-        _hover: {
-            backgroundColor: `${colors.dark.sidebar.hover} !important`,
-        },
     },
 
     // Sidebar section labels
     ".sidebar-section-label": {
         color: `${colors.dark.textSecondary} !important`,
-        fontSize: "xs",
-        fontWeight: "medium",
+        fontSize: "10px",
+        fontWeight: "700",
+        letterSpacing: "0.15em",
+        textTransform: "uppercase",
     },
 
     // Consistent text color for sidebar elements
@@ -188,3 +165,13 @@ export const sidebarStyles = (props) => ({
         },
     },
 });
+
+const _lightOut = sidebarStyles({ colorMode: "light" });
+const _darkOut = sidebarStyles({ colorMode: "dark" });
+export const sidebarGlobalCss = {};
+for (const selector of Object.keys(_lightOut)) {
+    sidebarGlobalCss[selector] = {
+        _light: _lightOut[selector],
+        _dark: _darkOut[selector],
+    };
+}

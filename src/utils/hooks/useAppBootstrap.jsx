@@ -1,25 +1,32 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import { invoke } from "@tauri-apps/api/core";
 import SplashScreen from "../../components/common/SplashScreen";
 import EncryptionSetup from "../../components/setup/EncryptionSetup";
 import EncryptionUnlock from "../../components/setup/EncryptionUnlock";
 import ServerStartupLoader from "../../components/setup/ServerStartupLoader";
-import { settingsService } from "../../utils/settings/settingsUtils";
+import { settingsApi } from "../api/settingsApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import {
+    isForceSplashEnabled,
+    setEmbeddingReady,
+} from "../../utils/helpers/featureFlags";
 import { encryptionApi } from "../../utils/api/encryptionApi";
+import { localModelApi } from "../../utils/api/localModelApi";
 
 export const useAppBootstrap = () => {
     const [showSplashScreen, setShowSplashScreen] = useState(undefined);
-    const [isLoadingSplashCheck, setIsLoadingSplashCheck] = useState(true);
+    const [, setIsLoadingSplashCheck] = useState(!isTauri());
     const [, setEncryptionStatus] = useState(null);
     const [showEncryptionSetup, setShowEncryptionSetup] = useState(false);
     const [showEncryptionUnlock, setShowEncryptionUnlock] = useState(false);
-    const [, setIsLoadingEncryptionCheck] = useState(true);
+    const [, setIsLoadingEncryptionCheck] = useState(!isTauri());
+    const [isCheckingEncryptionStatus, setIsCheckingEncryptionStatus] =
+        useState(isTauri());
     const [showServerStartupLoader, setShowServerStartupLoader] =
         useState(false);
-    const [isInGracePeriod, setIsInGracePeriod] = useState(true);
-    const toast = useToast();
+    const [isInGracePeriod, setIsInGracePeriod] = useState(isTauri());
 
     // App initialization state - true when server is not ready yet.
     const isInitializing =
@@ -30,24 +37,30 @@ export const useAppBootstrap = () => {
 
     const checkSplashStatus = useCallback(async (options = {}) => {
         const { maxRetries = 5, retryDelay = 500 } = options;
+
+        if (isForceSplashEnabled()) {
+            setShowSplashScreen(true);
+            setIsLoadingSplashCheck(false);
+            return;
+        }
+
         let lastError;
         let success = false;
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
-                await settingsService.fetchUserSettings((userData) => {
-                    if (
-                        userData &&
-                        typeof userData.has_completed_splash_screen ===
-                            "boolean"
-                    ) {
-                        setShowSplashScreen(
-                            !userData.has_completed_splash_screen,
-                        );
-                    } else {
-                        setShowSplashScreen(true); // Default to showing splash if flag is missing/invalid
-                    }
-                });
+                const userData = await settingsApi.fetchUserSettings();
+                if (
+                    userData &&
+                    typeof userData.has_completed_splash_screen ===
+                        "boolean"
+                ) {
+                    setShowSplashScreen(
+                        !userData.has_completed_splash_screen,
+                    );
+                } else {
+                    setShowSplashScreen(true); // Default to showing splash if flag is missing/invalid
+                }
                 // Success - exit the retry loop
                 success = true;
                 break;
@@ -83,18 +96,8 @@ export const useAppBootstrap = () => {
     useEffect(() => {
         if (!isTauri()) {
             checkSplashStatus();
-        } else {
-            setIsLoadingSplashCheck(false);
         }
     }, [checkSplashStatus]);
-
-    // In non-Tauri environments, disable grace period immediately since the server is already running
-    useEffect(() => {
-        if (!isTauri()) {
-            console.log("Non-Tauri environment detected");
-            setIsInGracePeriod(false);
-        }
-    }, []);
 
     const handleSplashComplete = () => {
         setShowSplashScreen(false);
@@ -102,7 +105,6 @@ export const useAppBootstrap = () => {
 
     useEffect(() => {
         if (!isTauri()) {
-            setIsLoadingEncryptionCheck(false);
             return;
         }
 
@@ -128,6 +130,7 @@ export const useAppBootstrap = () => {
                 console.error("Error checking encryption status:", error);
             } finally {
                 setIsLoadingEncryptionCheck(false);
+                setIsCheckingEncryptionStatus(false);
             }
         };
 
@@ -147,6 +150,17 @@ export const useAppBootstrap = () => {
     const handleServerReady = () => {
         setShowServerStartupLoader(false);
         checkSplashStatus({ maxRetries: 3, retryDelay: 300 });
+
+        // Sync embedding model status for RAG feature flag (Tauri only)
+        if (isTauri()) {
+            localModelApi.fetchEmbeddingStatus()
+                .then((res) => {
+                    const has = !!res?.downloaded;
+                    setEmbeddingReady(has);
+                })
+                .catch(() => {});
+        }
+
         setTimeout(() => {
             setIsInGracePeriod(false);
         }, 2000); // 2 second grace period
@@ -156,20 +170,19 @@ export const useAppBootstrap = () => {
         console.error("Server startup error:", error);
         setShowServerStartupLoader(false);
         // Show error toast
-        toast({
+        toaster.create({
             title: "Server Error",
             description: error.message || "Failed to start the server",
-            status: "error",
+            type: "error",
             duration: 5000,
-            isClosable: true,
         });
         // Go back to unlock screen
         setShowEncryptionUnlock(true);
     };
 
     let gate = null;
-    if (isLoadingSplashCheck) {
-        gate = null;
+    if (isCheckingEncryptionStatus) {
+        gate = <Box className="splash-bg" w="100vw" h="100dvh" />;
     } else if (showEncryptionSetup) {
         gate = <EncryptionSetup onComplete={handleEncryptionSetupComplete} />;
     } else if (showEncryptionUnlock) {

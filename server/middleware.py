@@ -1,6 +1,7 @@
 """FastAPI middleware classes."""
 
 import asyncio
+import ipaddress
 import logging
 import secrets
 import time
@@ -13,11 +14,11 @@ logger = logging.getLogger(__name__)
 # Centralized path skip rules - add new React routes here
 PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
 REACT_ROUTES = {
-    "/new-patient",
+    "/new-note",
     "/settings",
     "/rag",
     "/clinic-summary",
-    "/outstanding-tasks",
+    "/outstanding-jobs",
 }
 STATIC_EXTENSIONS = (
     ".js",
@@ -55,7 +56,7 @@ def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
     # Static assets (check /assets/ prefix and common extensions)
     if path.startswith("/assets/"):
         return True
-    if any(path.endswith(ext) for ext in STATIC_EXTENSIONS):
+    if not path.startswith("/api/") and any(path.endswith(ext) for ext in STATIC_EXTENSIONS):
         return True
 
     # React routes (SPA pages)
@@ -64,6 +65,14 @@ def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
 
     # For rate limiting: skip non-API paths entirely
     return bool(check_api and not path.startswith("/api/"))
+
+
+def _is_private_ip(ip_str: str) -> bool:
+    """Check if an IP belongs to a private network (Docker/Localhost)."""
+    try:
+        return ipaddress.ip_address(ip_str).is_private
+    except ValueError:
+        return False
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -77,9 +86,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Restrict resources to same origin, allow inline scripts for React
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "script-src 'self'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: blob:; "
+            "media-src 'self' blob:; "
             "font-src 'self' data:; "
             "connect-src 'self'; "
             "frame-ancestors 'none'; "
@@ -97,21 +107,12 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
     from spoofing the header directly.
     """
 
-    def _is_private_ip(self, ip_str: str) -> bool:
-        """Check if an IP belongs to a private network (Docker/Localhost)."""
-        import ipaddress
-
-        try:
-            return ipaddress.ip_address(ip_str).is_private
-        except ValueError:
-            return False
-
     async def dispatch(self, request, call_next):
         client_host = request.client.host if request.client else "unknown"
         forwarded_for = request.headers.get("x-forwarded-for")
 
         # Only trust X-Forwarded-For if the direct connection is from a private IP
-        if forwarded_for and client_host != "unknown" and self._is_private_ip(client_host):
+        if forwarded_for and client_host != "unknown" and _is_private_ip(client_host):
             # Take the first IP in the chain (original client)
             request.state.client_ip = forwarded_for.split(",")[0].strip()
         else:
@@ -148,9 +149,11 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
         # Get expected token
         expected_token = get_request_token()
         if not expected_token:
-            logger.warning(f"Auth bypassed - no request token set (path: {path})")
-            # Server not fully initialized yet, allow through
-            return await call_next(request)
+            logger.error(f"Auth fail-closed - no request token set (path: {path})")
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Service not initialized"},
+            )
 
         # Verify Authorization header
         auth_header = request.headers.get("Authorization", "")
@@ -177,17 +180,8 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
 
     Only trusts the auth header when the direct connection is from a private IP
     (e.g., a reverse proxy on the same Docker network). This prevents clients
-    from spoofing the header directly.
+        from spoofing the header directly.
     """
-
-    def _is_private_ip(self, ip_str: str) -> bool:
-        """Check if an IP belongs to a private network (Docker/Localhost)."""
-        import ipaddress
-
-        try:
-            return ipaddress.ip_address(ip_str).is_private
-        except ValueError:
-            return False
 
     async def dispatch(self, request, call_next):
         from server.constants import (
@@ -208,7 +202,7 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
 
         # Only trust auth header if coming from a trusted proxy (private IP)
         client_host = request.client.host if request.client else "unknown"
-        if client_host == "unknown" or not self._is_private_ip(client_host):
+        if client_host == "unknown" or not _is_private_ip(client_host):
             # Direct connection from public IP - reject or fall through
             # Since proxy auth is enabled, we require the header
             logger.warning(f"Proxy auth header received from non-private IP: {client_host}")
@@ -238,6 +232,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     # Endpoint-specific limits: (requests_per_minute, burst_multiplier)
     # Burst multiplier allows 2x rate in first 10 seconds of window
+    # Tauri mode multiplies rate_limit by RATE_LIMIT_DESKTOP_MULTIPLIER
     RATE_LIMITS = {
         "/api/transcribe": (10, 2),
         "/api/chat": (30, 2),
@@ -262,18 +257,28 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _get_limit_for_path(self, path: str) -> tuple[int, int]:
         """Get rate limit for a given path."""
+        from server.constants import IS_DOCKER, RATE_LIMIT_DESKTOP_MULTIPLIER
+
         # Check for patient list vs detail
         if path == "/api/note" or path == "/api/note/":
-            return self.PATIENT_LIST_LIMIT
-        if path.startswith("/api/note/"):
-            return self.PATIENT_DETAIL_LIMIT
+            rate, burst = self.PATIENT_LIST_LIMIT
+        elif path.startswith("/api/note/"):
+            rate, burst = self.PATIENT_DETAIL_LIMIT
+        else:
+            # Check other endpoints
+            matched = False
+            for prefix, limit in self.RATE_LIMITS.items():
+                if path.startswith(prefix):
+                    rate, burst = limit
+                    matched = True
+                    break
+            if not matched:
+                rate, burst = self.DEFAULT_LIMIT
 
-        # Check other endpoints
-        for prefix, limit in self.RATE_LIMITS.items():
-            if path.startswith(prefix):
-                return limit
+        if not IS_DOCKER:
+            rate = rate * RATE_LIMIT_DESKTOP_MULTIPLIER
 
-        return self.DEFAULT_LIMIT
+        return rate, burst
 
     def _get_endpoint_key(self, path: str) -> str:
         """Get endpoint key for rate limiting (groups related paths)."""

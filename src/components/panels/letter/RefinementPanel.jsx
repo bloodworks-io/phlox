@@ -1,13 +1,5 @@
 import React from "react";
-import {
-    Box,
-    Flex,
-    IconButton,
-    Text,
-    Textarea,
-    Button,
-    Spinner,
-} from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Textarea, Button, Spinner } from "@chakra-ui/react";
 import { EditIcon, CloseIcon } from "../../common/icons";
 
 const RefinementPanel = ({
@@ -58,13 +50,11 @@ const RefinementPanel = ({
                 </Text>
             </Flex>
             <IconButton
-                icon={<CloseIcon boxSize="12px" />}
                 onClick={() => setIsRefining(false)}
                 aria-label="Close refinement"
                 variant="ghost"
                 size="sm"
-                className="collapse-toggle"
-            />
+                className="collapse-toggle"><CloseIcon boxSize="12px" /></IconButton>
         </Flex>
 
         <Box p="3">
@@ -74,7 +64,7 @@ const RefinementPanel = ({
                         key={suggestion}
                         size="xs"
                         onClick={() => setRefinementInput(suggestion)}
-                        className="chat-suggestions"
+                        className="refinement-suggestions"
                     >
                         {suggestion}
                     </Button>
@@ -96,14 +86,11 @@ const RefinementPanel = ({
             <Flex justify="center">
                 <Button
                     onClick={handleRefinement}
-                    isLoading={loading}
+                    loading={loading}
                     loadingText="Refining..."
                     size="sm"
-                    className="refinement-submit-button"
-                    leftIcon={<EditIcon />}
-                >
-                    Refine
-                </Button>
+                    className="refinement-submit-button"><EditIcon />Refine
+                                    </Button>
             </Flex>
         </Box>
     </Box>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useToast } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import { useTemplate } from "../templates/templateContext";
 import {
     findPatients,
@@ -11,7 +11,6 @@ export const usePatientSession = () => {
     const [selectedDate, setSelectedDate] = useState(
         new Date().toISOString().split("T")[0],
     );
-    const toast = useToast();
     const { defaultTemplate, loadDefaultTemplate } = useTemplate();
 
     const createNewPatient = async () => {
@@ -52,13 +51,12 @@ export const usePatientSession = () => {
             return newPatient;
         } catch (error) {
             console.error("Error creating new patient:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description:
                     "Failed to create new patient: No default template available",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             throw error;
         }

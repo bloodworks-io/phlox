@@ -1,36 +1,43 @@
 import asyncio
 import json
 import logging
-import traceback
 
-from fastapi import APIRouter, BackgroundTasks, Body
+from fastapi import APIRouter, BackgroundTasks
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from server.database.entities.analysis import generate_previous_visit_summary
-from server.database.entities.jobs import (
+from server.database.repositories.analysis import generate_previous_visit_summary
+from server.database.repositories.encounter import (
+    delete_patient_by_id,
+    get_patient_by_id,
+    get_patient_history,
+    get_patients_by_date,
+    save_patient,
+    update_patient,
+    update_patient_reasoning,
+    update_patient_summary,
+)
+from server.database.repositories.jobs import (
     count_incomplete_jobs,
     generate_jobs_list_from_plan,
     get_patients_with_outstanding_jobs,
     update_patient_jobs_list,
 )
-from server.database.entities.patient import (
-    delete_patient_by_id,
-    get_patient_by_id,
-    get_patient_history,
-    get_patients_by_date,
+from server.database.repositories.patient import (
     get_scribe_consent,
-    save_patient,
-    search_patients,
     set_scribe_consent,
-    update_patient,
-    update_patient_reasoning,
-    update_patient_summary,
 )
-from server.database.entities.templates import (
+from server.database.repositories.patient_search import search_patients
+from server.database.repositories.templates import (
     get_template_by_key,
     update_field_adaptive_instructions,
 )
+from server.nlp_tools.adaptive_refinement import (
+    generate_adaptive_refinement_suggestions,
+)
+from server.nlp_tools.jobs import extract_jobs_from_plan
+from server.nlp_tools.summarisation import summarise_encounter
+from server.nlp_tools.summarization_manager import summarization_manager
 from server.schemas.patient import (
     JobExtractionRequest,
     JobsListUpdate,
@@ -38,12 +45,6 @@ from server.schemas.patient import (
     SavePatientRequest,
     ScribeConsentRequest,
 )
-from server.utils.nlp_tools.adaptive_refinement import (
-    generate_adaptive_refinement_suggestions,
-)
-from server.utils.nlp_tools.jobs import extract_jobs_from_plan
-from server.utils.nlp_tools.summarisation import summarise_encounter
-from server.utils.nlp_tools.summarization_manager import summarization_manager
 
 router = APIRouter()
 
@@ -62,7 +63,7 @@ async def get_consent(ur_number: str):
         return JSONResponse(content=consent)
     except Exception as e:
         logging.error(f"Error fetching scribe consent: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/consent")
@@ -73,7 +74,7 @@ async def set_consent(request: ScribeConsentRequest):
         return JSONResponse(content=consent)
     except Exception as e:
         logging.error(f"Error setting scribe consent: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/save")
@@ -124,7 +125,7 @@ async def save_patient_data(request: SavePatientRequest, background_tasks: Backg
         return {"id": note_id}
     except Exception as e:
         logging.error(f"Error processing patient data: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 async def process_encounter_summarization(
@@ -282,7 +283,7 @@ async def get_patients(
 
     except Exception as e:
         logging.error(f"Error fetching patients: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/id/{id}")
@@ -318,7 +319,7 @@ async def get_patient_history_endpoint(id: int):
         return JSONResponse(content=history)
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/search")
@@ -333,7 +334,7 @@ async def search_patient(q: str | None = None, ur_number: str | None = None):
         return JSONResponse(content=patients)
     except Exception as e:
         logging.error(f"Error searching patients: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/history")
@@ -344,7 +345,7 @@ async def get_history_by_ur_number(ur_number: str, template_key: str | None = No
         return JSONResponse(content=history)
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/summary/{id}")
@@ -360,7 +361,7 @@ async def get_patient_summary(id: int):
         return JSONResponse(content={"summary": summary})
     except Exception as e:
         logging.error(f"Error getting patient summary: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/id/{id}")
@@ -373,7 +374,7 @@ async def delete_patient(id: int):
         raise HTTPException(status_code=404, detail="Patient not found")
     except Exception as e:
         logging.error(f"Error deleting patient: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/update-jobs-list")
@@ -386,7 +387,7 @@ async def update_jobs_list(update: JobsListUpdate):
         return {"id": update.noteId}
     except Exception as e:
         logging.error(f"Error processing to-do list update: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/extract-jobs")
@@ -427,34 +428,6 @@ async def extract_jobs(request: JobExtractionRequest):
         }
 
 
-@router.post("/update-jobs")
-async def update_jobs(
-    note_id: int,
-    jobs_list: list[dict] = Body(..., description="Updated jobs list"),
-):
-    """Update a patient's jobs list."""
-    try:
-        update_patient_jobs_list(note_id, jobs_list)
-        return JSONResponse(content={"message": "Jobs list updated successfully"})
-    except Exception as e:
-        logging.error(f"Error updating jobs list: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/update-jobs/{note_id}")
-async def update_patient_jobs(
-    note_id: int,
-    jobs_list: list[dict] = Body(...),
-):
-    """Update a patient's jobs list."""
-    try:
-        update_patient_jobs_list(note_id, jobs_list)
-        return JSONResponse(content={"message": "Jobs updated successfully"})
-    except Exception as e:
-        logging.error(f"Error updating patient jobs: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
 @router.get("/outstanding-jobs")
 async def get_patients_with_jobs():
     """Get all patients with outstanding jobs."""
@@ -477,7 +450,7 @@ async def get_patients_with_jobs():
         )
     except Exception as e:
         logging.error(f"Error fetching patients with jobs: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/incomplete-jobs-count")
@@ -488,8 +461,7 @@ async def get_incomplete_jobs_count():
         return JSONResponse(content={"incomplete_jobs_count": incomplete_jobs_count})
     except Exception as e:
         logging.error(f"Error counting incomplete jobs: {e}")
-        print("TRACEBACK:", traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/{note_id}/reasoning/stream")
@@ -501,9 +473,9 @@ async def generate_reasoning_stream(note_id: int):
             raise HTTPException(status_code=404, detail="Patient not found")
 
         async def generate():
-            from server.utils.nlp_tools.reasoning import stream_clinical_reasoning_with_tools
+            from server.nlp_tools.reasoning import stream_chart_insights_with_tools
 
-            async for event in stream_clinical_reasoning_with_tools(
+            async for event in stream_chart_insights_with_tools(
                 patient["template_data"],
                 patient["dob"],
                 patient["encounter_date"],
@@ -518,4 +490,4 @@ async def generate_reasoning_stream(note_id: int):
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         logging.error(f"Reasoning stream error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e

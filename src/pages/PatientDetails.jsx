@@ -1,17 +1,12 @@
-import {
-    Box,
-    VStack,
-    useClipboard,
-    useDisclosure,
-    useToast,
-    Spinner,
-    Center,
-} from "@chakra-ui/react";
+import { Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
+import { useClipboard } from "../utils/hooks/useClipboard";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
 import NewNoteStartCard from "../components/patient/NewNoteStartCard";
-import Scribe, { useScribe } from "../components/patient/Scribe";
+import { useScribe } from "../components/patient/Scribe";
 import Summary from "../components/patient/Summary";
 import Chat from "../components/panels/chat/Chat";
 import Letter from "../components/panels/letter/Letter";
@@ -29,12 +24,15 @@ import WrapUpModal from "../components/modals/WrapUpModal";
 import DemographicsModal from "../components/modals/DemographicsModal";
 import ScribeConsentModal from "../components/modals/ScribeConsentModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
-import { useChat } from "../utils/hooks/useChat";
-import { useLetter } from "../utils/hooks/useLetter";
+import { useLetterOrchestration } from "../utils/hooks/useLetterOrchestration";
 import { useActivePanel } from "../utils/hooks/useActivePanel";
+import { useTranscriptionCapture } from "../utils/hooks/useTranscriptionCapture";
+import { useModificationFlags } from "../utils/hooks/useModificationFlags";
+import { useSearchFlow } from "../utils/hooks/useSearchFlow";
+import { useScribeConsent } from "../utils/hooks/useScribeConsent";
+import { useWrapUp } from "../utils/hooks/useWrapUp";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
-import { DEFAULT_TOAST_CONFIG } from "../utils/constants";
 
 const PatientDetails = ({
     patient: initialPatient,
@@ -43,50 +41,34 @@ const PatientDetails = ({
     refreshSidebar,
     setIsModified: setParentIsModified,
     onResetLetter,
-    onStartNewNote,
+    onOpenNewNoteModal,
 }) => {
     const location = useLocation();
     const isNewPatient = location.pathname === "/new-note";
     const { viaModal, cameFromSearch } = location.state || {};
-    const toast = useToast();
     const summaryRef = useRef(null);
-    const [loading, setLoading] = useState(false);
-    const [isSearchLoading, setIsSearchLoading] = useState(false);
-    const [isSearchedPatient, setIsSearchedPatient] = useState(
-        Boolean(cameFromSearch),
-    );
-    const [searchResult, setSearchResult] = useState(null);
-    const [startCardDismissed, setStartCardDismissed] = useState(
-        Boolean(viaModal),
-    );
-    const showStartCard =
-        isNewPatient && !isSearchedPatient && !startCardDismissed;
+    const [, setLoading] = useState(false);
     const navigate = useNavigate();
     const [saveLoading, setSaveLoading] = useState(false);
-    const [wrapUpLoading, setWrapUpLoading] = useState(false);
-    const [isWrapUpOpen, setIsWrapUpOpen] = useState(false);
     const {
-        isOpen: isDemographicsOpen,
+        open: isDemographicsOpen,
         onOpen: onOpenDemographics,
         onClose: onCloseDemographics,
     } = useDisclosure();
+
     const {
-        isOpen: isConsentOpen,
-        onOpen: onOpenConsent,
-        onClose: onCloseConsent,
-    } = useDisclosure();
-    const [scribeConsent, setScribeConsent] = useState({
-        scribe_consent_at: null,
-        scribe_consent_declined_at: null,
-    });
-    const [isLetterModified, setIsLetterModified] = useState(false);
-    const [isSummaryModified, setIsSummaryModified] = useState(false);
+        hasTranscriptionOccurred,
+        initialTranscriptionContent,
+        capture: captureTranscription,
+        reset: resetTranscription,
+    } = useTranscriptionCapture();
+
     const previousTranscriptionRef = useRef(null);
 
-    const [initialTranscriptionContent, setInitialTranscriptionContent] =
-        useState({});
-    const [hasTranscriptionOccurred, setHasTranscriptionOccurred] =
-        useState(false);
+    const { setIsLetterModified, setIsSummaryModified } = useModificationFlags(
+        initialPatient?.id,
+        setParentIsModified,
+    );
 
     const [hasViewedPreviousVisit, setHasViewedPreviousVisit] = useState(false);
 
@@ -97,17 +79,46 @@ const PatientDetails = ({
         setIsModified,
         savePatient,
         savePatientCore,
-        searchPatient,
+        loadCandidate,
     } = usePatientEditor(initialPatient);
+
+    const summary = useCollapse(false);
+
+    const searchFlow = useSearchFlow({
+        isNewPatient,
+        viaModal,
+        cameFromSearch,
+        pathname: location.pathname,
+        summarySetIsCollapsed: summary.setIsCollapsed,
+    });
 
     const { currentTemplate, templates, selectTemplate } = usePatientTemplate({
         patient,
         setPatient,
         isNewPatient,
-        isSearchedPatient,
+        isSearchedPatient: searchFlow.isSearchedPatient,
         initialPatient,
-        isSearchLoading,
+        isSearchLoading: searchFlow.isSearchLoading,
     });
+
+    useEffect(() => {
+        if (!searchFlow.searchResult) return;
+        const candidate = searchFlow.searchResult;
+        const preservedTemplateData = candidate.template_data || {};
+
+        setPatient((prev) => ({
+            ...prev,
+            ...candidate,
+            template_data: { ...preservedTemplateData },
+            isNewEncounter: true,
+        }));
+
+        if (candidate.template_key) {
+            selectTemplate(candidate.template_key);
+        }
+
+        searchFlow.clearSearchResult();
+    }, [searchFlow.searchResult, setPatient, selectTemplate, searchFlow]);
 
     const {
         extractedDocData,
@@ -117,11 +128,19 @@ const PatientDetails = ({
         handleDocumentComplete,
         toggleDocumentField,
         resetDocumentState,
-    } = useDocumentExtraction({ patient, setPatient, setIsModified, toast });
+    } = useDocumentExtraction({ patient, setPatient, setIsModified });
 
     const requiredDemographicsMet = areRequiredDemographicsMet(patient);
 
     const { open, toggle, close, closeAll, isOpen } = useActivePanel();
+
+    const letter = useLetterOrchestration({
+        patient,
+        setIsModified: setIsLetterModified,
+        onResetLetter,
+        openLetter: () => open("letter"),
+        toast,
+    });
 
     // Scribe hook for recording controls
     const scribeControls = useScribe({
@@ -136,135 +155,28 @@ const PatientDetails = ({
         onSendStart: () => close("transcription"),
     });
 
-    const hasConsented = Boolean(scribeConsent?.scribe_consent_at);
-    const hasDeclined =
-        Boolean(scribeConsent?.scribe_consent_declined_at) && !hasConsented;
-    const requireConsent =
-        scribeControls.isAmbient && scribeControls.requireConsent;
-    const canRecord =
-        requiredDemographicsMet && !(requireConsent && !hasConsented);
+    const scribeConsent = useScribeConsent({
+        urNumber: patient?.ur_number,
+        isAmbient: scribeControls.isAmbient,
+        requiresConsentConfig: scribeControls.requireConsent,
+        requiredDemographicsMet,
+        startRecording: scribeControls.startRecording,
+        onRequireDemographics: onOpenDemographics,
+    });
 
-    useEffect(() => {
-        const ur = patient?.ur_number;
-        if (!ur) {
-            setScribeConsent({
-                scribe_consent_at: null,
-                scribe_consent_declined_at: null,
-            });
-            return;
-        }
-        let active = true;
-        setScribeConsent({
-            scribe_consent_at: null,
-            scribe_consent_declined_at: null,
-        });
-        patientApi
-            .fetchScribeConsent(ur)
-            .then((data) => {
-                if (active) setScribeConsent(data);
-            })
-            .catch((error) =>
-                console.error("Error fetching scribe consent:", error),
-            );
-        return () => {
-            active = false;
-        };
-    }, [patient?.ur_number]);
-
-    const handleBlockedRecord = () => {
-        if (!requiredDemographicsMet) {
-            onOpenDemographics();
-            return;
-        }
-        onOpenConsent();
-    };
-
-    const handleConsentGranted = async () => {
-        const ur = patient?.ur_number;
-        if (!ur) return;
-        try {
-            const data = await patientApi.saveScribeConsent(ur, true);
-            setScribeConsent(data);
-            onCloseConsent();
-            await scribeControls.startRecording();
-        } catch (error) {
-            toast({
-                title: "Could not record consent",
-                description: error.message,
-                status: "error",
-                ...DEFAULT_TOAST_CONFIG,
-            });
-        }
-    };
-
-    const handleConsentDeclined = async () => {
-        const ur = patient?.ur_number;
-        if (!ur) return;
-        try {
-            const data = await patientApi.saveScribeConsent(ur, false);
-            setScribeConsent(data);
-            onCloseConsent();
-        } catch (error) {
-            toast({
-                title: "Could not record decision",
-                description: error.message,
-                status: "error",
-                ...DEFAULT_TOAST_CONFIG,
-            });
-        }
-    };
-
-    const summary = useCollapse(false);
-    const letterHook = useLetter(setIsModified);
-    const chat = useChat();
-
-    useEffect(() => {
-        if (cameFromSearch) summary.setIsCollapsed(false);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Effect to handle search results
-    useEffect(() => {
-        if (searchResult) {
-            const preservedTemplateData = searchResult.template_data || {};
-
-            setPatient((prev) => ({
-                ...prev,
-                ...searchResult,
-                template_data: {
-                    ...preservedTemplateData,
-                },
-                isNewEncounter: true,
-            }));
-
-            if (searchResult.template_key) {
-                selectTemplate(searchResult.template_key);
-            }
-
-            setIsSearchedPatient(true);
-            setSearchResult(null);
-        }
-    }, [searchResult, setPatient, selectTemplate]);
-
-    useEffect(() => {
-        if (viaModal) return;
-        if (!isNewPatient) {
-            setIsSearchedPatient(false);
-            console.log(
-                "Resetting isSearchedPatient - viewing historical patient",
-            );
-        }
-        setStartCardDismissed(false);
-    }, [location.pathname]);
-
-    useEffect(() => {
-        if (viaModal) return;
-        if (isNewPatient && !patient?.id) {
-            setIsSearchedPatient(false);
-            setStartCardDismissed(false);
-            console.log("Resetting isSearchedPatient - new patient");
-        }
-    }, [isNewPatient, patient?.id]);
+    const wrapUp = useWrapUp({
+        patient,
+        savePatientCore,
+        resetTranscription,
+        setIsSummaryModified,
+        resetSearchFlow: searchFlow.reset,
+        onOpenNewNoteModal,
+        refreshSidebar,
+        selectedDate,
+        toast,
+        hasTranscriptionOccurred,
+        initialTranscriptionContent,
+    });
 
     const textToCopy =
         patient && currentTemplate?.fields
@@ -284,38 +196,21 @@ const PatientDetails = ({
     );
 
     useEffect(() => {
-        // Reset component states when patient changes
+        // Reset component states when patient changes.
+        // (chat is self-reset by Chat.jsx via internal effect on patientData?.id)
         summary.setIsCollapsed(false);
         closeAll();
-        chat.clearChat();
         resetDocumentState();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- summary/closeAll/resetDocumentState come from hooks that return fresh object literals each render; this effect intentionally fires only on patient/template/isNewPatient changes
     }, [patient?.id, currentTemplate, isNewPatient]);
 
     useEffect(() => {
-        if (patient?.id) {
-            letterHook.loadLetter(patient.id, toast);
-        }
-    }, [patient?.id]);
-
-    useEffect(() => {
-        if (onResetLetter) {
-            onResetLetter(letterHook.resetLetter);
-        }
-    }, [onResetLetter, letterHook.resetLetter]);
-
-    useEffect(() => {
-        setParentIsModified(isLetterModified || isSummaryModified);
-    }, [isLetterModified, isSummaryModified, setParentIsModified]);
-
-    useEffect(() => {
-        toast.closeAll();
-    }, [toast]);
+        toaster.remove();
+    }, []);
 
     const handleTranscriptionComplete = (data, triggerResize = false) => {
-        const isReprocessing = !!patient?.raw_transcription;
         const isRestoration = data.isRestoration === true;
         previousTranscriptionRef.current = patient?.raw_transcription;
-        console.log("Transcription complete!");
 
         if (
             !hasTranscriptionOccurred &&
@@ -323,19 +218,13 @@ const PatientDetails = ({
             Object.keys(data.fields).length > 0 &&
             !isRestoration
         ) {
-            console.log(
-                "Storing initial transcription content for adaptive refinement:",
-                data.fields,
-            );
-            setInitialTranscriptionContent({ ...data.fields });
-            setHasTranscriptionOccurred(true);
+            captureTranscription(data.fields);
         }
 
         handleProcessingComplete(data, {
             setLoading,
             setters: {
-                template_data: (value) => {
-                    console.log("Setting template_data with:", data.fields);
+                template_data: (_value) => {
                     setPatient((prev) => ({
                         ...prev,
                         template_data: {
@@ -344,17 +233,17 @@ const PatientDetails = ({
                         },
                     }));
                 },
-                rawTranscription: (value) =>
+                rawTranscription: (_value) =>
                     setPatient((prev) => ({
                         ...prev,
                         raw_transcription: data.rawTranscription,
                     })),
-                transcriptionDuration: (value) =>
+                transcriptionDuration: (_value) =>
                     setPatient((prev) => ({
                         ...prev,
                         transcription_duration: data.transcriptionDuration,
                     })),
-                processDuration: (value) =>
+                processDuration: (_value) =>
                     setPatient((prev) => ({
                         ...prev,
                         process_duration: data.processDuration,
@@ -365,19 +254,6 @@ const PatientDetails = ({
             triggerResize,
             summaryRef,
         });
-    };
-
-    const handleGenerateLetterClick = async (additionalInstructions) => {
-        if (!patient) return;
-
-        open("letter");
-
-        await letterHook.generateLetter(
-            patient,
-            additionalInstructions,
-            toast,
-            letterHook.setFinalCorrespondence,
-        );
     };
 
     const handleSavePatientData = async (e) => {
@@ -395,8 +271,7 @@ const PatientDetails = ({
                 );
                 if (savedPatient?.id) {
                     setIsSummaryModified(false);
-                    setInitialTranscriptionContent({});
-                    setHasTranscriptionOccurred(false);
+                    resetTranscription();
                     navigate(`/note/${savedPatient.id}`);
                 }
             } else {
@@ -409,87 +284,11 @@ const PatientDetails = ({
                         : null,
                 );
                 setIsSummaryModified(false);
-                setInitialTranscriptionContent({});
-                setHasTranscriptionOccurred(false);
+                resetTranscription();
             }
         } finally {
             setSaveLoading(false);
         }
-    };
-
-    const handleOpenWrapUp = () => {
-        const missingFields = [];
-        if (!patient?.name) missingFields.push("Name");
-        if (!patient?.dob) missingFields.push("Date of Birth");
-        if (!patient?.ur_number) missingFields.push("UR Number");
-        if (!patient?.gender) missingFields.push("Gender");
-
-        if (missingFields.length > 0) {
-            toast({
-                title: "Missing Required Fields",
-                description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-        setIsWrapUpOpen(true);
-    };
-
-    const handleWrapUpConfirm = async (curatedJobs) => {
-        setWrapUpLoading(true);
-        try {
-            const saved = await savePatientCore(
-                refreshSidebar,
-                selectedDate,
-                toast,
-                hasTranscriptionOccurred ? initialTranscriptionContent : null,
-            );
-            if (!saved) {
-                return;
-            }
-            const noteId = saved.id ?? patient.id;
-
-            try {
-                await patientApi.updateJobsList(noteId, curatedJobs);
-            } catch (jobsErr) {
-                console.error("Failed to write curated jobs:", jobsErr);
-                toast({
-                    title: "Jobs not saved",
-                    description:
-                        "The note was saved, but the curated jobs couldn't be written. Please try again.",
-                    status: "warning",
-                    duration: 5000,
-                    isClosable: true,
-                });
-                return;
-            }
-            setIsSummaryModified(false);
-            setInitialTranscriptionContent({});
-            setHasTranscriptionOccurred(false);
-            setIsWrapUpOpen(false);
-            setIsSearchedPatient(false);
-            setStartCardDismissed(false);
-            await onStartNewNote();
-            navigate("/new-note");
-        } catch (error) {
-            console.error("Error during wrap up:", error);
-            // savePatientCore surfaces its own toast on save failure; keep modal open.
-        } finally {
-            setWrapUpLoading(false);
-        }
-    };
-
-    const handleLetterChange = (newValue) => {
-        letterHook.setFinalCorrespondence(newValue);
-        setIsModified(true);
-        setParentIsModified(true);
-    };
-
-    const handleLetterSave = async () => {
-        await letterHook.saveLetter(patient.id);
-        setIsLetterModified(false);
     };
 
     const handleDemographicsSave = async (updatedPatient) => {
@@ -502,47 +301,12 @@ const PatientDetails = ({
         );
     };
 
-    const handleSearch = async (urNumber) => {
-        const query = (urNumber || "").trim();
-        if (!query) {
-            toast({
-                title: "Enter a UR number",
-                description:
-                    "Type a UR number, then click search to find an existing patient.",
-                status: "warning",
-                ...DEFAULT_TOAST_CONFIG,
-            });
-            return;
-        }
-
-        setIsSearchLoading(true);
-        try {
-            const result = await searchPatient(query, selectedDate);
-            if (result) {
-                setSearchResult(result);
-                setIsSearchedPatient(true);
-                summary.setIsCollapsed(false);
-                console.log(
-                    "Setting isSearchedPatient to true - search successful",
-                );
-            } else {
-                toast({
-                    title: "No patient found",
-                    description: `No patient matches UR number "${query}". Fill in their details to create a new record.`,
-                    status: "info",
-                    ...DEFAULT_TOAST_CONFIG,
-                });
-            }
-        } finally {
-            setIsSearchLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        setIsLetterModified(false);
-        setIsSummaryModified(false);
-        setParentIsModified(false);
-    }, [initialPatient?.id, setParentIsModified]);
+    const handleConfirmCandidate = (candidate) =>
+        searchFlow.handleConfirmCandidate(
+            candidate,
+            selectedDate,
+            loadCandidate,
+        );
 
     // Functions for the Floating Action Menu
     const handleOpenLetter = () => toggle("letter");
@@ -583,58 +347,63 @@ const PatientDetails = ({
 
     if (!patient) {
         return (
-            <Center h="100vh">
+            <Center h="100dvh">
                 <Spinner size="xl" />
             </Center>
         );
     }
 
-    if (showStartCard) {
+    if (searchFlow.showStartCard) {
         return (
             <NewNoteStartCard
-                onFind={handleSearch}
+                onFind={searchFlow.handleSearch}
+                onConfirmCandidate={handleConfirmCandidate}
                 onNewPatient={() => {
-                    setStartCardDismissed(true);
+                    searchFlow.dismissStartCard();
                     onOpenDemographics();
                 }}
-                isSearchLoading={isSearchLoading}
+                isSearchLoading={searchFlow.isSearchLoading}
             />
         );
     }
 
     return (
-        <Box p={[2, 4, 5]} borderRadius="sm" w="100%" pb="100px">
-            <VStack spacing={[3, 4, 5]} align="stretch">
+        <Box
+            px={[2, 4, 5]}
+            pt={[1, 2, 3]}
+            pb={[1, 2, 3]}
+            borderRadius="sm"
+            w="100%"
+        >
+            <VStack gap={[3, 4, 5]} align="stretch">
                 <PatientInfoBar patient={patient} onEdit={onOpenDemographics} />
 
                 <Summary
                     ref={summaryRef}
                     isSummaryCollapsed={summary.isCollapsed}
-                    toggleSummaryCollapse={summary.toggle}
                     patient={patient}
                     setPatient={setPatient}
-                    handleGenerateLetterClick={handleGenerateLetterClick}
+                    handleGenerateLetterClick={letter.handleGenerateLetterClick}
                     handleSavePatientData={handleSavePatientData}
-                    onWrapUp={handleOpenWrapUp}
+                    onWrapUp={wrapUp.openWrapUp}
                     saveLoading={saveLoading}
-                    wrapUpLoading={wrapUpLoading}
+                    wrapUpLoading={wrapUp.wrapUpLoading}
                     setIsModified={setIsSummaryModified}
-                    setParentIsModified={setIsSummaryModified}
-                    template={currentTemplate}
                     selectTemplate={selectTemplate}
                     isNewPatient={isNewPatient}
-                    isSearchedPatient={isSearchedPatient}
+                    isSearchedPatient={searchFlow.isSearchedPatient}
                     onCopy={handleCopy}
                     recentlyCopied={recentlyCopied}
                     isEncounterSaved={Boolean(patient?.id)}
                 />
 
                 <WrapUpModal
-                    isOpen={isWrapUpOpen}
-                    onClose={() => setIsWrapUpOpen(false)}
-                    onConfirm={handleWrapUpConfirm}
+                    key={String(wrapUp.isWrapUpOpen)}
+                    isOpen={wrapUp.isWrapUpOpen}
+                    onClose={wrapUp.closeWrapUp}
+                    onConfirm={wrapUp.confirmWrapUp}
                     planText={patient?.template_data?.plan || ""}
-                    submitting={wrapUpLoading}
+                    submitting={wrapUp.wrapUpLoading}
                 />
 
                 <DemographicsModal
@@ -646,31 +415,27 @@ const PatientDetails = ({
                 />
 
                 <ScribeConsentModal
-                    isOpen={isConsentOpen}
-                    onClose={onCloseConsent}
-                    onConsent={handleConsentGranted}
-                    onDecline={handleConsentDeclined}
-                    hasDeclined={hasDeclined}
-                    declinedDate={scribeConsent?.scribe_consent_declined_at}
+                    isOpen={scribeConsent.isConsentOpen}
+                    onClose={scribeConsent.onCloseConsent}
+                    onConsent={scribeConsent.handleConsentGranted}
+                    onDecline={scribeConsent.handleConsentDeclined}
+                    hasDeclined={scribeConsent.hasDeclined}
+                    declinedDate={
+                        scribeConsent.consent?.scribe_consent_declined_at
+                    }
                     patientName={patient?.name}
                 />
 
                 <Letter
                     isOpen={isOpen("letter")}
                     onClose={() => close("letter")}
-                    finalCorrespondence={letterHook.finalCorrespondence}
-                    handleSaveLetter={handleLetterSave}
-                    setFinalCorrespondence={(value) => {
-                        letterHook.setFinalCorrespondence(value);
-                        setIsLetterModified(true);
-                    }}
-                    handleRefineLetter={(params) =>
-                        letterHook.refineLetter(params)
-                    }
-                    loading={letterHook.loading}
-                    handleGenerateLetterClick={handleGenerateLetterClick}
-                    setIsModified={setIsLetterModified}
-                    toast={toast}
+                    finalCorrespondence={letter.finalCorrespondence}
+                    handleSaveLetter={letter.handleLetterSave}
+                    setFinalCorrespondence={letter.setFinalCorrespondence}
+                    handleRefineLetter={letter.handleRefineLetter}
+                    loading={letter.loading}
+                    handleGenerateLetterClick={letter.handleGenerateLetterClick}
+                    setIsModified={letter.setIsModified}
                     patient={patient}
                     setLoading={setLoading}
                 />
@@ -678,36 +443,18 @@ const PatientDetails = ({
                 <Chat
                     isOpen={isOpen("chat")}
                     onClose={() => close("chat")}
-                    chatLoading={chat.loading}
-                    messages={chat.messages}
-                    setMessages={chat.setMessages}
-                    userInput={chat.userInput}
-                    setUserInput={chat.setUserInput}
-                    handleChat={(userInput) => {
-                        open("chat");
-                        return chat.sendMessage(
-                            userInput,
-                            patient,
-                            currentTemplate,
-                            patient.raw_transcription,
-                        );
-                    }}
-                    showSuggestions={chat.showSuggestions}
-                    setShowSuggestions={chat.setShowSuggestions}
-                    rawTranscription={patient.raw_transcription}
-                    currentTemplate={currentTemplate}
                     patientData={patient}
+                    currentTemplate={currentTemplate}
+                    rawTranscription={patient.raw_transcription}
                 />
 
                 <ReasoningPanel
                     isOpen={isOpen("reasoning")}
-                    onClose={() => close("reasoning")}
                     noteId={patient?.id}
                     initialReasoning={patient?.reasoning_output}
                     onReasoningGenerated={handleReasoningGenerated}
                 />
             </VStack>
-
             {/* Scribe Pill Box - centered at bottom */}
             <ScribePillBox
                 isRecording={scribeControls.isRecording}
@@ -724,14 +471,13 @@ const PatientDetails = ({
                 isTranscriptionOpen={isOpen("transcription")}
                 hasRawTranscription={!!patient.raw_transcription}
                 onAudioDrop={scribeControls.handleAudioDrop}
-                canRecord={canRecord}
-                onBlockedRecord={handleBlockedRecord}
+                canRecord={scribeConsent.canRecord}
+                onBlockedRecord={scribeConsent.handleBlockedRecord}
                 sendError={scribeControls.sendError}
                 onRetry={scribeControls.retrySend}
                 onDownload={scribeControls.downloadLastRecording}
                 onDismiss={scribeControls.dismissSendError}
             />
-
             {/* Floating Action Menu - always expanded on right side */}
             <FloatingActionMenu
                 onOpenChat={handleOpenChat}
@@ -751,7 +497,6 @@ const PatientDetails = ({
                 showPreviousVisitDot={showPreviousVisitDot}
                 isEncounterSaved={Boolean(patient?.id)}
             />
-
             {/* Transcription Panel */}
             <TranscriptionPanel
                 isOpen={isOpen("transcription")}
@@ -759,7 +504,6 @@ const PatientDetails = ({
                 rawTranscription={patient.raw_transcription}
                 transcriptionDuration={patient.transcription_duration}
                 processDuration={patient.process_duration}
-                isTranscribing={loading}
                 onReprocess={handleTranscriptionComplete}
                 isAmbient={scribeControls.isAmbient}
                 name={patient.name}
@@ -768,11 +512,9 @@ const PatientDetails = ({
                 templateKey={currentTemplate?.template_key}
                 noteId={patient?.id}
             />
-
             {/* Document Panel */}
             <DocumentPanel
                 isOpen={isOpen("document")}
-                onClose={() => close("document")}
                 handleDocumentComplete={handleDocumentComplete}
                 toggleDocumentField={toggleDocumentField}
                 replacedFields={replacedFields}
@@ -786,11 +528,9 @@ const PatientDetails = ({
                 docFileName={docFileName}
                 setDocFileName={setDocFileName}
             />
-
             {/* Previous Visit Panel */}
             <PreviousVisitPanel
                 isOpen={isOpen("previous-visit")}
-                onClose={() => close("previous-visit")}
                 previousVisitSummary={patient.previous_visit_summary}
                 previousVisitTemplateData={patient.previous_visit_template_data}
                 previousVisitTemplateKey={patient.previous_visit_template_key}

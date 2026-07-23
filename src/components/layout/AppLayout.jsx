@@ -2,11 +2,11 @@ import { Box, Flex, IconButton } from "@chakra-ui/react";
 import Sidebar from "../sidebar/Sidebar";
 import CollapseIcon from "../common/icons/CollapseIcon";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import { sidebarOffset } from "../../theme/dimensions";
 
 const AppLayout = ({
     isSmallScreen,
     isCollapsed,
-    colorMode,
     toggleSidebar,
     sidebarProps,
     children,
@@ -16,7 +16,6 @@ const AppLayout = ({
             {/* Floating hamburger button for small screens */}
             {isSmallScreen && isCollapsed && (
                 <IconButton
-                    icon={<CollapseIcon />}
                     onClick={toggleSidebar}
                     position="fixed"
                     top="6"
@@ -24,23 +23,17 @@ const AppLayout = ({
                     zIndex="101"
                     aria-label="Toggle sidebar"
                     className="dark-toggle"
-                />
+                >
+                    <CollapseIcon />
+                </IconButton>
             )}
-
             <Sidebar {...sidebarProps} />
-
             <Box
                 flex="1"
-                ml={isSmallScreen ? "0" : isCollapsed ? "96px" : "236px"}
-                minH="100vh"
+                ml={isSmallScreen ? "0" : sidebarOffset(isCollapsed, isTauri())}
+                minH="100dvh"
                 transition="margin-left 0.3s ease"
-                bg={
-                    isTauri()
-                        ? colorMode === "light"
-                            ? "#232634"
-                            : "#1e2030"
-                        : "transparent"
-                }
+                bg={isTauri() ? "base" : "transparent"}
                 display="flex"
                 flexDirection="column"
             >
@@ -52,9 +45,7 @@ const AppLayout = ({
                         position="fixed"
                         top="0"
                         right="0"
-                        left={
-                            isSmallScreen ? "0" : isCollapsed ? "96px" : "236px"
-                        }
+                        left={isSmallScreen ? "0" : sidebarOffset(isCollapsed, true)}
                         zIndex="1000"
                         transition="left 0.3s ease"
                     />
@@ -63,16 +54,14 @@ const AppLayout = ({
                 <Box
                     m="0px"
                     borderRadius="0px"
-                    p={isTauri() ? "6" : "0"}
+                    p="0"
                     pt={
                         isSmallScreen && isTauri()
                             ? "50px"
-                            : isTauri()
-                              ? "6"
-                              : "0"
+                            : "0"
                     }
                     className="main-bg"
-                    height="100vh"
+                    height="100dvh"
                     overflowY="auto"
                     position="relative"
                 >

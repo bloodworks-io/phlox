@@ -1,14 +1,6 @@
 // Panel component for the Form Templates tab — sidebar, builder canvas, and field editor.
 import React from "react";
-import {
-  Box,
-  Text,
-  VStack,
-  HStack,
-  Select,
-  Flex,
-  useColorModeValue,
-} from "@chakra-ui/react";
+import { Box, Text, VStack, HStack, NativeSelect, Flex } from "@chakra-ui/react";
 import { AddIcon } from "../common/icons";
 import { FaPencilAlt, FaMagic, FaSave } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
@@ -32,6 +24,7 @@ const FormTemplatesPanel = ({
   onSetFieldType,
   onAutoDetect,
   onOpenUpload,
+  onReplaceTemplate,
   onSelectTemplate,
   onDeleteTemplate,
   onFieldsChange,
@@ -40,11 +33,8 @@ const FormTemplatesPanel = ({
   onDeleteField,
   onSaveFields,
 }) => {
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-  const mutedColor = useColorModeValue("gray.400", "gray.500");
-
   return (
-    <HStack spacing="4" align="start">
+    <HStack gap="4" align="start">
       {/* Forms sidebar */}
       <Box
         w="240px"
@@ -52,6 +42,8 @@ const FormTemplatesPanel = ({
         borderRadius="sm"
         className="panels-bg"
         p="2"
+        maxH="calc(100vh - 200px)"
+        overflowY="auto"
       >
         <Flex justify="space-between" align="center" mb="2">
           <Text as="h4" fontSize="sm">
@@ -67,9 +59,10 @@ const FormTemplatesPanel = ({
           loading={templatesLoading}
           onSelect={onSelectTemplate}
           onDelete={onDeleteTemplate}
+          onReplace={onReplaceTemplate}
+          selectedTemplateId={selectedTemplate?.id}
         />
       </Box>
-
       {/* Form builder canvas */}
       <Box flex="1" minW="0">
         {selectedTemplate ? (
@@ -90,16 +83,15 @@ const FormTemplatesPanel = ({
             py="16"
             textAlign="center"
             border="1px dashed"
-            borderColor={borderColor}
+            borderColor="border"
             borderRadius="sm"
           >
-            <Text color={mutedColor} fontSize="sm">
+            <Text color="overlay0" fontSize="sm">
               Select a template or upload a new PDF
             </Text>
           </Box>
         )}
       </Box>
-
       {/* Field editor sidebar */}
       <Box
         w="240px"
@@ -114,27 +106,29 @@ const FormTemplatesPanel = ({
             mb="3"
             pb="2"
             borderBottom="1px solid"
-            borderColor={borderColor}
+            borderColor="border"
           >
             {isDrawingMode ? (
-              <VStack spacing="2" align="stretch">
-                <HStack spacing="1">
-                  <Box as={FaPencilAlt} color="blue.400" fontSize="0.7em" />
+              <VStack gap="2" align="stretch">
+                <HStack gap="1">
+                  <Box color="primaryButton" fontSize="0.7em" asChild><FaPencilAlt /></Box>
                   <Text fontSize="xs" fontWeight="bold">
                     Drawing mode
                   </Text>
                 </HStack>
-                <Select
-                  size="xs"
-                  value={activeFieldType}
-                  onChange={(e) => onSetFieldType(e.target.value)}
-                  className="input-style"
-                >
-                  <option value="text">Text</option>
-                  <option value="checkbox">Checkbox</option>
-                  <option value="date">Date</option>
-                  <option value="number">Number</option>
-                </Select>
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    size="xs"
+                    value={activeFieldType}
+                    onChange={(e) => onSetFieldType(e.target.value)}
+                    className="input-style">
+                    <option value="text">Text</option>
+                    <option value="checkbox">Checkbox</option>
+                    <option value="date">Date</option>
+                    <option value="number">Number</option>
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
                 <GreyButton
                   size="xs"
                   width="100%"
@@ -144,7 +138,7 @@ const FormTemplatesPanel = ({
                 </GreyButton>
               </VStack>
             ) : (
-              <VStack spacing="2" align="stretch">
+              <VStack gap="2" align="stretch">
                 <GreyButton
                   size="xs"
                   width="100%"
@@ -159,7 +153,7 @@ const FormTemplatesPanel = ({
                     width="100%"
                     leftIcon={<FaMagic />}
                     onClick={onAutoDetect}
-                    isLoading={detecting}
+                    loading={detecting}
                     loadingText="Detecting..."
                   >
                     Auto-detect
@@ -177,12 +171,12 @@ const FormTemplatesPanel = ({
         />
 
         {selectedTemplate && (
-          <Box mt="3" pt="2" borderTop="1px solid" borderColor={borderColor}>
+          <Box mt="3" pt="2" borderTop="1px solid" borderColor="border">
             <GreenButton
               size="xs"
               width="100%"
               onClick={onSaveFields}
-              isLoading={saving}
+              loading={saving}
               loadingText="Saving"
               leftIcon={saving ? null : <FaSave />}
             >

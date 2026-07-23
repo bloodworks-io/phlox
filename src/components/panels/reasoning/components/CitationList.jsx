@@ -1,5 +1,6 @@
-import React from "react";
-import { Box, Text, VStack, HStack, Tooltip } from "@chakra-ui/react";
+import React, { useState } from "react";
+import { Box, Text, VStack, HStack, Link } from "@chakra-ui/react";
+import { FaChevronRight, FaChevronDown } from "react-icons/fa";
 import {
     FaWikipediaW,
     FaBookMedical,
@@ -8,106 +9,135 @@ import {
     FaGlobe,
 } from "react-icons/fa";
 
-const getCitationIcon = (citation) => {
-    const lower = citation.toLowerCase();
-    if (lower.includes("wikipedia") || lower.includes("wiki:"))
-        return FaWikipediaW;
-    if (lower.includes("pubmed")) return FaBookMedical;
-    if (
-        lower.includes("previous encounter") ||
-        lower.includes("encounter from")
-    )
-        return FaHistory;
-    if (
-        lower.includes("clinical guidelines") ||
-        lower.includes("according to")
-    )
-        return FaDatabase;
-    return FaGlobe; // MCP tools / other
+const TYPE_ICONS = {
+    wiki: FaWikipediaW,
+    pubmed: FaBookMedical,
+    literature: FaDatabase,
+    other: FaGlobe,
 };
 
-export const CitationList = ({ citations, colorMode, inline = false }) => {
+const iconFor = (c) => {
+    if (c.type && TYPE_ICONS[c.type]) return TYPE_ICONS[c.type];
+    const label = (c.label || "").toLowerCase();
+    if (label.includes("wikipedia") || label.includes("wiki:"))
+        return FaWikipediaW;
+    if (label.includes("pubmed")) return FaBookMedical;
+    if (
+        label.includes("previous encounter") ||
+        label.includes("encounter from")
+    )
+        return FaHistory;
+    if (label.includes("clinical guidelines") || label.includes("according to"))
+        return FaDatabase;
+    return FaGlobe;
+};
+
+const normalize = (c) => {
+    if (typeof c === "string") return { type: "string", label: c };
+    return c;
+};
+
+// Collapsible Sources footer.
+export const CitationList = ({ citations, citedOriginals, inline = false }) => {
+    const [open, setOpen] = useState(false);
+
     if (!citations || citations.length === 0) return null;
 
-    const unique = [...new Set(citations)];
+    // Build [{c, num}] — num is the contiguous display number.
+    const entries =
+        citedOriginals && citedOriginals.length > 0
+            ? citedOriginals
+                  .map((orig, i) => ({
+                      c: normalize(citations[orig - 1]),
+                      num: i + 1,
+                      key: orig,
+                  }))
+                  .filter((e) => e.c)
+            : citations.map((c, i) => ({
+                  c: normalize(c),
+                  num: i + 1,
+                  key: i + 1,
+              }));
+
+    if (entries.length === 0) return null;
+    const Chevron = open ? FaChevronDown : FaChevronRight;
 
     return (
         <Box
             mt={inline ? 2 : 4}
             pt={inline ? 2 : 3}
             borderTop="1px solid"
-            borderColor="gray.200"
-            _dark={{
-                borderColor: "gray.700",
-            }}
+            borderColor="border"
+            _dark={{ borderColor: "border" }}
         >
-            <Text
-                fontSize="xs"
-                fontWeight="medium"
-                color="gray.500"
-                _dark={{
-                    color: "gray.400",
-                }}
-                mb={2}
+            <HStack
+                gap={1}
+                cursor="pointer"
+                userSelect="none"
+                onClick={() => setOpen((v) => !v)}
+                _hover={{ opacity: 0.8 }}
             >
-                Sources Used
-            </Text>
-            <VStack
-                align="stretch"
-                spacing={2}
-            >
-                {unique.map(
-                    (citation, i) => {
-                        const Icon = getCitationIcon(
-                            citation,
-                        );
+                <Chevron style={{ fontSize: "0.6em" }} />
+                <Text
+                    fontSize="xs"
+                    fontWeight="medium"
+                    color="overlay0"
+                    _dark={{ color: "overlay0" }}
+                >
+                    Sources ({entries.length})
+                </Text>
+            </HStack>
+
+            {open && (
+                <VStack align="stretch" gap={1} mt={2}>
+                    {entries.map(({ c, num, key }) => {
+                        const Icon = iconFor(c);
+                        const isString = c.type === "string";
+                        const title = isString
+                            ? c.label
+                            : c.title || c.source || "Source";
+                        const isDownload = !!c.url && c.url.startsWith("/");
                         return (
-                            <HStack
-                                key={i}
-                                spacing={2}
-                                align="start"
-                            >
-                                <Icon
-                                    color="blue.500"
-                                    mt="2px"
-                                />
-                                <Tooltip
-                                    label={
-                                        citation
-                                    }
-                                    placement="top"
-                                    hasArrow
+                            <HStack key={key} gap={2} align="start">
+                                <Text
+                                    as="span"
                                     fontSize="xs"
-                                    maxWidth="400px"
+                                    fontWeight="bold"
+                                    color="primaryButton"
+                                    minW="18px"
                                 >
+                                    {num}.
+                                </Text>
+                                <Icon color="primaryButton" mt="1px" />
+                                {isString || !c.url ? (
                                     <Text
-                                        as="span"
                                         fontSize="xs"
-                                        color="gray.600"
-                                        _dark={{
-                                            color: "gray.400",
-                                        }}
-                                        cursor="pointer"
-                                        noOfLines={2}
-                                        title={
-                                            citation
-                                        }
+                                        color="textTertiary"
+                                        _dark={{ color: "overlay0" }}
+                                        lineClamp={1}
                                     >
-                                        {citation.length >
-                                        100
-                                            ? citation.substring(
-                                                  0,
-                                                  100,
-                                              ) +
-                                              "..."
-                                            : citation}
+                                        {title}
                                     </Text>
-                                </Tooltip>
+                                ) : (
+                                    <Link
+                                        href={c.url}
+                                        isExternal={!isDownload}
+                                        fontSize="xs"
+                                        color="primaryButton"
+                                        _dark={{ color: "primaryButton" }}
+                                        _hover={{ textDecoration: "underline" }}
+                                        lineClamp={1}
+                                    >
+                                        {isDownload ? `⬇ ${title}` : title}
+                                    </Link>
+                                )}
                             </HStack>
                         );
-                    },
-                )}
-            </VStack>
+                    })}
+                </VStack>
+            )}
         </Box>
     );
 };
+
+export default CitationList;

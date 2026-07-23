@@ -8,12 +8,31 @@ export const isChatEnabled = () => {
   return true;
 };
 
+// Embedding model status — cached in localStorage for synchronous access.
+// Updated by setEmbeddingReady() when download status changes.
+let embeddingReady = (() => {
+  try {
+    return localStorage.getItem("embedding-model-ready") === "true";
+  } catch {
+    return false;
+  }
+})();
+
+export const setEmbeddingReady = (ready) => {
+  embeddingReady = ready;
+  try {
+    localStorage.setItem("embedding-model-ready", ready ? "true" : "false");
+  } catch {}
+};
+
 /**
  * Check if RAG (document knowledge base) features are enabled.
- * Requires chromadb — currently disabled for Tauri (desktop) builds.
+ * - Web/Docker: always enabled (uses external embedding service).
+ * - Tauri (desktop): enabled only if the local embedding model is downloaded.
  */
 export const isRagEnabled = () => {
-  return !isTauri();
+  if (isTauri()) return embeddingReady;
+  return true;
 };
 
 /**
@@ -22,4 +41,10 @@ export const isRagEnabled = () => {
  */
 export const isPdfFormsEnabled = () => {
   return true;
+};
+
+//Turn off forced splash screen for normal dev work with `VITE_FORCE_SPLASH=false tauri dev`.
+export const isForceSplashEnabled = () => {
+  if (!isTauri() || !import.meta.env.DEV) return false;
+  return import.meta.env.VITE_FORCE_SPLASH !== "false";
 };

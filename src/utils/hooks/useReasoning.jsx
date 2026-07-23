@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useToast } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
+const toast = toaster.create;
 import { patientApi } from "../api/patientApi";
 
 
@@ -10,13 +11,12 @@ export const useReasoning = (options = {}) => {
     const [loading, setLoading] = useState(false);
     const [reasoning, setReasoning] = useState(initialReasoning ?? null);
     const [status, setStatus] = useState(null);
-    const [tabIndex, setTabIndex] = useState(0);
+    const [tabIndex, setTabIndex] = useState("0");
     const [dimensions, setDimensions] = useState({
         width: 500,
         height: 420,
     });
     const resizerRef = useRef(null);
-    const toast = useToast();
 
     // Update reasoning when initialReasoning changes
     useEffect(() => {
@@ -48,7 +48,7 @@ export const useReasoning = (options = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [noteId, toast, onReasoningGenerated]);
+    }, [noteId, onReasoningGenerated]);
 
     const openReasoning = useCallback(() => {
         setIsReasoningOpen(true);
@@ -76,12 +76,6 @@ export const useReasoning = (options = {}) => {
     }, []);
 
     // Resize handlers for drag functionality
-    const handleMouseDown = useCallback((e) => {
-        e.preventDefault();
-        window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("mouseup", handleMouseUp);
-    }, []);
-
     const handleMouseMove = useCallback((e) => {
         setDimensions((prev) => ({
             width: Math.max(
@@ -92,7 +86,7 @@ export const useReasoning = (options = {}) => {
             ),
             height: Math.max(
                 300,
-                prev.height -
+                prev.height +
                     (e.clientY -
                         resizerRef.current.getBoundingClientRect().top),
             ),
@@ -101,8 +95,15 @@ export const useReasoning = (options = {}) => {
 
     const handleMouseUp = useCallback(() => {
         window.removeEventListener("mousemove", handleMouseMove);
+        // eslint-disable-next-line react-hooks/immutability -- self-referencing one-shot listener; binding resolves at call time, not capture time
         window.removeEventListener("mouseup", handleMouseUp);
     }, [handleMouseMove]);
+
+    const handleMouseDown = useCallback((e) => {
+        e.preventDefault();
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+    }, [handleMouseMove, handleMouseUp]);
 
     return {
         // Panel state

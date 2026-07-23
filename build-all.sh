@@ -2,10 +2,9 @@
 # Combined build script for Phlox Tauri application
 # This script builds all required components:
 # 1. Python server (Nuitka)
-# 2. phlox-pm (Process Manager - Rust)
-# 3. whisper.cpp server (for local transcription) [SKIP with --skip-whisper]
-# 4. llama.cpp server (for local LLM) [SKIP with --skip-llama]
-# 5. Copies all binaries to src-tauri/binaries/ for Tauri bundling
+# 2. parakeet.cpp server (Omi Med STT, for local transcription) [SKIP with --skip-whisper]
+# 3. llama.cpp server (for local LLM) [SKIP with --skip-llama]
+# 4. Copies all binaries to src-tauri/binaries/ for Tauri bundling
 #
 # Use --debug for development mode (tauri dev)
 # Use --skip-cpp to skip C++ builds
@@ -102,44 +101,6 @@ if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
 fi
 
 # ========================================
-# Step 1: Build phlox-pm (Process Manager)
-# ========================================
-echo ""
-echo "=========================================="
-echo "Step 1: Building phlox-pm (Process Manager)..."
-echo "=========================================="
-
-cd src-tauri
-if [ "$DEBUG_MODE" = true ]; then
-    cargo build -p phlox-pm
-else
-    cargo build --release -p phlox-pm
-fi
-cd ..
-
-# Verify the binary was built
-if [ "$DEBUG_MODE" = true ]; then
-    if [[ "$PLATFORM" == "windows-"* ]]; then
-        PM_BIN="src-tauri/target/debug/phlox-pm.exe"
-    else
-        PM_BIN="src-tauri/target/debug/phlox-pm"
-    fi
-else
-    if [[ "$PLATFORM" == "windows-"* ]]; then
-        PM_BIN="src-tauri/target/release/phlox-pm.exe"
-    else
-        PM_BIN="src-tauri/target/release/phlox-pm"
-    fi
-fi
-
-if [ ! -f "$PM_BIN" ]; then
-    echo "❌ Error: phlox-pm binary not found at $PM_BIN"
-    exit 1
-fi
-
-echo "✅ phlox-pm built successfully"
-
-# ========================================
 # Step 2: Build Python Server
 # ========================================
 echo ""
@@ -162,15 +123,15 @@ fi
 echo "✅ Python server built successfully"
 
 # ========================================
-# Step 3: Build whisper.cpp
+# Step 3: Build parakeet.cpp
 # ========================================
 echo ""
 echo "=========================================="
-echo "Step 3: Building whisper.cpp..."
+echo "Step 3: Building parakeet.cpp..."
 echo "=========================================="
 
 if [ "$SKIP_WHISPER" = true ]; then
-    echo "⏭️  Skipping whisper.cpp build (--skip-whisper)"
+    echo "⏭️  Skipping parakeet.cpp build (--skip-whisper)"
     WHISPER_BIN="src-tauri/phlox-whisper-server"
     if [[ "$PLATFORM" == "windows-"* ]]; then
         WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
@@ -180,9 +141,9 @@ if [ "$SKIP_WHISPER" = true ]; then
     fi
 else
     if [ "$DEBUG_MODE" = true ]; then
-        bash src-tauri/build-whisper.sh --debug
+        bash src-tauri/build-parakeet.sh --debug
     else
-        bash src-tauri/build-whisper.sh
+        bash src-tauri/build-parakeet.sh
     fi
 
     # Check if whisper-server was built
@@ -193,11 +154,11 @@ else
     fi
 
     if [ ! -f "$WHISPER_BIN" ]; then
-        echo "❌ Error: whisper-server binary not found at $WHISPER_BIN"
+        echo "❌ Error: parakeet-server binary not found at $WHISPER_BIN"
         exit 1
     fi
 
-    echo "✅ whisper.cpp built successfully"
+    echo "✅ parakeet.cpp built successfully"
 fi
 
 # ========================================
@@ -249,15 +210,6 @@ echo "=========================================="
 
 mkdir -p "src-tauri/binaries"
 
-# Copy phlox-pm binary
-if [ -f "$PM_BIN" ]; then
-    cp "$PM_BIN" "src-tauri/binaries/phlox-pm-${PLATFORM}"
-    chmod +x "src-tauri/binaries/phlox-pm-${PLATFORM}"
-    echo "✅ Copied phlox-pm"
-else
-    echo "⚠️  Warning: phlox-pm not found, skipping"
-fi
-
 # Copy llama-server
 if [ -f "$LLAMA_BIN" ]; then
     cp "$LLAMA_BIN" "src-tauri/binaries/phlox-llama-server-${PLATFORM}"
@@ -276,7 +228,7 @@ else
     echo "⚠️  Warning: phlox-whisper-server not found, skipping"
 fi
 
-# In debug mode, also copy C++ servers directly to target/debug/ (not needed for phlox-pm/server - they're already there)
+# In debug mode, also copy C++ servers directly to target/debug/ (not needed for server - already there)
 if [ "$DEBUG_MODE" = true ]; then
     echo ""
     echo "Copying C++ servers to target/debug for dev mode..."
@@ -311,8 +263,7 @@ if [[ "$OSTYPE" == "darwin"* ]] && [ "$DEBUG_MODE" != true ]; then
         echo "Using signing identity: $SIGNING_IDENTITY"
 
         # Sign external binaries
-        for binary in src-tauri/binaries/phlox-pm-${PLATFORM} \
-                     src-tauri/binaries/phlox-llama-server-${PLATFORM} \
+        for binary in src-tauri/binaries/phlox-llama-server-${PLATFORM} \
                      src-tauri/binaries/phlox-whisper-server-${PLATFORM}; do
             if [ -f "$binary" ]; then
                 echo "Signing: $binary"
@@ -340,11 +291,10 @@ echo "=========================================="
 echo ""
 echo "Built components:"
 echo "  • Python server: src-tauri/server_dist/"
-echo "  • phlox-pm: $PM_BIN"
 if [ "$SKIP_WHISPER" != true ]; then
-    echo "  • whisper-server: $WHISPER_BIN"
+    echo "  • parakeet-server: $WHISPER_BIN"
 else
-    echo "  • whisper-server: (skipped)"
+    echo "  • parakeet-server: (skipped)"
 fi
 if [ "$SKIP_LLAMA" != true ]; then
     echo "  • llama-server: $LLAMA_BIN"

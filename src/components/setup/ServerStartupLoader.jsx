@@ -1,22 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Box,
-  Button,
-  Heading,
-  VStack,
-  Text,
-  Flex,
-  Spinner,
-  Icon,
-  useColorMode,
-} from "@chakra-ui/react";
+import { useState, useEffect, useRef } from "react";
+import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
 import { FaServer } from "react-icons/fa";
-import { motion } from "framer-motion";
-import { colors } from "../../theme/colors";
-import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
-import { universalFetch } from "../../utils/helpers/apiHelpers";
-
-const MotionBox = motion(Box);
+import { settingsApi } from "../../utils/api/settingsApi";
+import { isTauri } from "../../utils/helpers/apiConfig";
 
 const LOADING_MESSAGES = [
   "Reticulating splines...",
@@ -40,8 +26,6 @@ const POLL_INTERVAL = 2000; // ms - increased to reduce CPU load
 const TIMEOUT = 60000; // 60 seconds - increased for slower systems
 
 const ServerStartupLoader = ({ onReady, onError }) => {
-  const { colorMode } = useColorMode();
-  const currentColors = colors[colorMode];
 
   const [messageIndex, setMessageIndex] = useState(0);
   const [isTimedOut, setIsTimedOut] = useState(false);
@@ -80,16 +64,11 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       // Check refs instead of state to avoid stale closures
       if (shouldPollRef.current && !isTimedOutRef.current) {
         try {
-          const baseUrl = isTauri() ? await buildApiUrl("") : "";
-          const response = await universalFetch(`${baseUrl}/api/config/status`, {
-            signal: AbortSignal.timeout(5000),
-          });
-          if (response.ok) {
-            shouldPollRef.current = false;
-            setShouldPoll(false);
-            onReadyRef.current();
-          }
-        } catch (error) {
+          await settingsApi.fetchServerStatus(AbortSignal.timeout(5000));
+          shouldPollRef.current = false;
+          setShouldPoll(false);
+          onReadyRef.current();
+        } catch {
           // Server not ready yet, continue polling
         }
       }
@@ -121,7 +100,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       clearInterval(messageInterval);
       clearTimeout(timeoutId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [shouldPoll]);
 
   const handleRetry = () => {
@@ -135,7 +114,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       <Flex
         align="center"
         justify="center"
-        minH="100vh"
+        minH="100dvh"
         className="splash-bg"
         px={4}
         py={8}
@@ -153,53 +132,49 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             zIndex="1000"
           />
         )}
-
-        <MotionBox
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+        <Box
+          className="anim-fade-slide-up panels-bg splash-panel"
           p={8}
           borderRadius="2xl"
           boxShadow="2xl"
-          className="panels-bg"
-          border={`1px solid ${currentColors.surface}`}
+          border={`1px solid ${"surface"}`}
           w="100%"
           maxW="450px"
           textAlign="center"
         >
-          <VStack spacing={6}>
-            <Icon as={FaServer} boxSize={12} color="red.500" />
+          <VStack gap={6}>
+            <Icon boxSize={12} color="dangerButton" asChild><FaServer /></Icon>
             <Heading
               as="h1"
-              color={currentColors.textPrimary}
-              sx={{
+              color={"textPrimary"}
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: "1.5rem",
-                fontWeight: "700",
+                fontWeight: "700"
               }}
             >
               Server Taking Too Long
             </Heading>
-            <Text color={currentColors.textSecondary}>
+            <Text color={"textSecondary"}>
               The server is taking longer than expected to start. This might be
               due to system resources or other factors.
             </Text>
-            <Text color={currentColors.textSecondary} fontSize="sm">
+            <Text color={"textSecondary"} fontSize="sm">
               Waited {Math.floor(elapsed / 1000)} seconds
             </Text>
             <Button
               onClick={handleRetry}
               size="lg"
-              className="switch-mode"
-              sx={{
+              className="green-button"
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
-                fontWeight: "600",
+                fontWeight: "600"
               }}
             >
               Try Again
             </Button>
           </VStack>
-        </MotionBox>
+        </Box>
       </Flex>
     );
   }
@@ -208,7 +183,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
     <Flex
       align="center"
       justify="center"
-      minH="100vh"
+      minH="100dvh"
       className="splash-bg"
       px={4}
       py={8}
@@ -226,44 +201,40 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           zIndex="1000"
         />
       )}
-
-      <MotionBox
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <Box
+        className="anim-fade-slide-up panels-bg splash-panel"
         p={8}
-        borderRadius="2xl !important"
+        borderRadius="2xl"
         boxShadow="2xl"
-        className="panels-bg"
-        border={`1px solid ${currentColors.surface}`}
+        border={`1px solid ${"surface"}`}
         w="100%"
         maxW="450px"
         textAlign="center"
       >
-        <VStack spacing={6}>
+        <VStack gap={6}>
           <Spinner
             size="xl"
-            color={currentColors.accent}
-            thickness="4px"
-            speed="0.8s"
+            color={"accent"}
+            borderWidth="4px"
+            animationDuration="0.8s"
           />
           <Heading
             as="h1"
-            color={currentColors.textPrimary}
-            sx={{
+            color={"textPrimary"}
+            css={{
               fontFamily: '"Space Grotesk", sans-serif',
               fontSize: "1.5rem",
-              fontWeight: "700",
+              fontWeight: "700"
             }}
           >
             Starting Server
           </Heading>
-          <Text color={currentColors.textSecondary} fontSize="lg" minH="2rem">
+          <Text color={"textSecondary"} fontSize="lg" minH="2rem">
             {LOADING_MESSAGES[messageIndex]}
           </Text>
         </VStack>
-      </MotionBox>
-    </Flex>
+        </Box>
+      </Flex>
   );
 };
 

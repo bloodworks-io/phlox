@@ -38,11 +38,12 @@ PRECONFIGURED_MODELS = {
     "qwen3.5-0.8b": {
         "repo_id": "unsloth/Qwen3.5-0.8B-GGUF",
         "filename": "Qwen3.5-0.8B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 1500,
         "description": "Fast but limited quality",
         "category": "tiny",
         "min_ram_gb": 1,
-        "recommended_ram_gb": 2,
+        "recommended_ram_gb": 8,
         "simple_name": "Tiny",
         "tier": [],
         "parameters_billions": 0.8,
@@ -50,63 +51,68 @@ PRECONFIGURED_MODELS = {
     "qwen3.5-2b": {
         "repo_id": "unsloth/Qwen3.5-2B-GGUF",
         "filename": "Qwen3.5-2B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 1700,
         "description": "Fast and capable for everyday tasks",
         "category": "small",
         "min_ram_gb": 2,
-        "recommended_ram_gb": 4,
+        "recommended_ram_gb": 8,
         "simple_name": "Small",
-        "tier": [1],
+        "tier": [1, 2],
         "parameters_billions": 2.0,
     },
     "qwen3.5-4b": {
         "repo_id": "unsloth/Qwen3.5-4B-GGUF",
         "filename": "Qwen3.5-4B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 2740,
         "description": "A great balance of speed and quality",
         "category": "medium",
         "min_ram_gb": 4,
-        "recommended_ram_gb": 8,
+        "recommended_ram_gb": 12,
         "simple_name": "Balanced",
-        "tier": [1, 2],
+        "tier": [2],
         "parameters_billions": 4.0,
     },
     "qwen3.5-9b": {
         "repo_id": "unsloth/Qwen3.5-9B-GGUF",
         "filename": "Qwen3.5-9B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 5500,
         "description": "High quality, good for most users",
         "category": "medium",
         "min_ram_gb": 6,
-        "recommended_ram_gb": 12,
+        "recommended_ram_gb": 20,
         "simple_name": "Large",
-        "tier": [1, 2, 3],
-        "parameters_billions": 9.0,
-    },
-    "qwen3.5-27b": {
-        "repo_id": "unsloth/Qwen3.5-27B-GGUF",
-        "filename": "Qwen3.5-27B-Q4_K_M.gguf",
-        "size_mb": 16000,
-        "description": "Excellent quality, slower responses",
-        "category": "large",
-        "min_ram_gb": 16,
-        "recommended_ram_gb": 24,
-        "simple_name": "Extra Large",
         "tier": [2, 3],
-        "parameters_billions": 27.0,
+        "parameters_billions": 9.0,
     },
     "qwen3.5-35b-a3b": {
         "repo_id": "unsloth/Qwen3.5-35B-A3B-GGUF",
         "filename": "Qwen3.5-35B-A3B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
         "size_mb": 19000,
         "description": "Fast and excellent quality (MoE)",
         "category": "large",
         "min_ram_gb": 24,
-        "recommended_ram_gb": 32,
+        "recommended_ram_gb": 28,
         "simple_name": "Premium",
         "tier": [3],
         "parameters_billions": 35.0,
         "active_parameters_billions": 3.0,  # A3B architecture - only ~3B active
+    },
+    "qwen3.5-27b": {
+        "repo_id": "unsloth/Qwen3.5-27B-GGUF",
+        "filename": "Qwen3.5-27B-Q4_K_M.gguf",
+        "mmproj_filename": "mmproj-BF16.gguf",
+        "size_mb": 16000,
+        "description": "Excellent quality, slower responses",
+        "category": "large",
+        "min_ram_gb": 16,
+        "recommended_ram_gb": 32,
+        "simple_name": "Extra Large",
+        "tier": [3],
+        "parameters_billions": 27.0,
     },
 }
 
@@ -144,67 +150,61 @@ class LlamaModelManager:
         ]
 
     def get_downloaded_models(self) -> list[dict]:
-        """Get list of downloaded models (should be max 1)."""
+        """Get list of downloaded pre-configured models (should be max 1)."""
         models = []
 
-        # First, check if we have a model selection file
+        # Check if we have a model selection file
         selection_file = self._get_model_selection_file_path()
         selected_filename = None
         if selection_file.exists():
             selected_filename = selection_file.read_text().strip()
 
         for model_file in self.models_dir.glob("*.gguf"):
-            size_mb = round(model_file.stat().st_size / (1024 * 1024), 1)
             filename = model_file.name
 
-            # Check if this is a pre-configured model (case-insensitive match)
-            model_info = None
-            matched_filename = None
-            for _model_id, info in PRECONFIGURED_MODELS.items():
-                if str(info["filename"]).lower() == filename.lower():
-                    model_info = info
-                    matched_filename = str(info["filename"])  # Use the canonical filename
-                    break
-
-            if model_info:
-                # Find the model_id by matching filename
-                model_id = next(
-                    k
+            # Only surface pre-configured models; ignore any other files in the dir.
+            matched = next(
+                (
+                    (k, v)
                     for k, v in PRECONFIGURED_MODELS.items()
                     if str(v["filename"]).lower() == filename.lower()
-                )
-                models.append(
-                    {
-                        "id": model_id,
-                        "name": model_id,  # Use model_id as name for display
-                        "filename": matched_filename,  # Canonical filename for matching
-                        "size_mb": size_mb,
-                        "description": model_info["description"],
-                        "path": str(model_file),
-                        "category": model_info["category"],
-                        "is_selected": selected_filename in (filename, matched_filename),
-                    }
-                )
-            else:
-                # Custom model
-                models.append(
-                    {
-                        "id": filename,
-                        "name": filename,
-                        "filename": filename,
-                        "size_mb": size_mb,
-                        "description": "Custom model",
-                        "path": str(model_file),
-                        "category": "custom",
-                        "is_selected": selected_filename == filename,
-                    }
-                )
+                ),
+                None,
+            )
+            if not matched:
+                continue
+
+            model_id, model_info = matched
+            canonical = str(model_info["filename"])
+            size_mb = round(model_file.stat().st_size / (1024 * 1024), 1)
+            models.append(
+                {
+                    "id": model_id,
+                    "name": model_id,
+                    "filename": canonical,
+                    "size_mb": size_mb,
+                    "description": model_info["description"],
+                    "path": str(model_file),
+                    "category": model_info["category"],
+                    "is_selected": selected_filename in (filename, canonical),
+                }
+            )
 
         return sorted(models, key=lambda m: m["size_mb"])
 
     def get_model_path(self, filename: str) -> Path | None:
-        """Get the file path for a model."""
-        model_file = self.models_dir / filename
+        """Get the file path for a pre-configured model by filename."""
+        info = next(
+            (
+                v
+                for v in PRECONFIGURED_MODELS.values()
+                if str(v["filename"]).lower() == filename.lower()
+            ),
+            None,
+        )
+        if not info:
+            return None
+        model_file = self.models_dir / info["filename"]
         if model_file.exists():
             return model_file
         return None
@@ -218,50 +218,25 @@ class LlamaModelManager:
             except Exception as e:
                 logger.warning(f"Failed to delete {model_file.name}: {e}")
 
-    async def download_model(self, model_id: str, progress_callback=None) -> str:
-        """Download a model. Deletes existing model first.
-
-        Args:
-            model_id: Either a pre-configured model ID (e.g., "qwen3-4b")
-                     or a custom "repo_id/filename.gguf" string
-            progress_callback: Optional async callback for progress updates
-
-        Returns:
-            Path to the downloaded model file
-        """
-        repo_id = None
-        filename = None
-
-        # Check if it's a pre-configured model
-        if model_id in PRECONFIGURED_MODELS:
-            model_info = PRECONFIGURED_MODELS[model_id]
-            repo_id = str(model_info["repo_id"])
-            filename = str(model_info["filename"])
-        elif "/" in model_id:
-            # Custom format: "repo_id/filename.gguf"
-            parts = model_id.split("/", 1)
-            if len(parts) == 2:
-                repo_id = parts[0]
-                filename = parts[1]
-            else:
-                raise ValueError("Invalid custom model format. Use 'repo_id/filename.gguf'")
-        else:
-            raise ValueError(f"Unknown model: {model_id}")
-
-        # Delete existing models first (1 model at a time)
-        self._delete_all_models()
-
-        model_file = self.models_dir / filename
+    async def _download_file(
+        self,
+        repo_id: str,
+        filename: str,
+        progress_callback,
+        file_label: str,
+        pct_start: float = 0.0,
+        pct_end: float = 100.0,
+    ) -> Path:
+        """Download a single file from HuggingFace, mapping progress to [pct_start, pct_end]."""
+        dest = self.models_dir / filename
         url = f"https://huggingface.co/{repo_id}/resolve/main/{filename}"
-
         logger.info(f"Downloading {filename} from {repo_id}")
 
         timeout = httpx.Timeout(600.0)
-
-        # Track download speed and ETA
         start_time = time.time()
         last_update_time = start_time
         last_downloaded = 0
+        span = pct_end - pct_start
 
         try:
             async with (
@@ -275,7 +250,7 @@ class LlamaModelManager:
                 response.raise_for_status()
                 total_size = int(response.headers.get("content-length", 0))
 
-                with model_file.open("wb") as f:
+                with dest.open("wb") as f:
                     downloaded = 0
                     async for chunk in response.aiter_bytes(8192):
                         f.write(chunk)
@@ -294,38 +269,65 @@ class LlamaModelManager:
                             eta = (total_size - downloaded) / speed if speed > 0 else None
 
                             progress = DownloadProgress(
-                                percentage=(downloaded / total_size) * 100,
+                                percentage=pct_start + (downloaded / total_size) * span,
                                 downloaded_bytes=downloaded,
                                 total_bytes=total_size,
                                 speed_bytes_per_sec=speed,
                                 eta_seconds=eta,
-                                current_file="model",
+                                current_file=file_label,
                             )
                             await progress_callback(progress)
 
                             last_update_time = current_time
                             last_downloaded = downloaded
 
-            # Send final 100% progress
+            # Send final 100% progress for this file's slice
             if progress_callback and total_size:
                 progress = DownloadProgress(
-                    percentage=100.0,
+                    percentage=pct_end,
                     downloaded_bytes=total_size,
                     total_bytes=total_size,
                     speed_bytes_per_sec=0,
                     eta_seconds=0,
-                    current_file="model",
+                    current_file=file_label,
                 )
                 await progress_callback(progress)
 
-            logger.info(f"Successfully downloaded {filename} to {model_file}")
+            logger.info(f"Successfully downloaded {filename} to {dest}")
 
         except Exception:
             # Clean up partial downloads on failure
-            if model_file.exists():
+            if dest.exists():
                 with suppress(Exception):
-                    model_file.unlink()
+                    dest.unlink()
             raise
+
+        return dest
+
+    async def download_model(self, model_id: str, progress_callback=None) -> str:
+        # Download a pre-configured model (and its multimodal projector if applicable).
+        if model_id not in PRECONFIGURED_MODELS:
+            raise ValueError(f"Unknown model: {model_id}")
+
+        model_info = PRECONFIGURED_MODELS[model_id]
+        repo_id = str(model_info["repo_id"])
+        filename = str(model_info["filename"])
+        mmproj_filename = model_info.get("mmproj_filename")
+
+        # Delete existing models first (1 model at a time)
+        self._delete_all_models()
+
+        # Main model fills 0-90% when a projector follows, else 0-100%.
+        model_pct_end = 90.0 if mmproj_filename else 100.0
+        model_file = await self._download_file(
+            repo_id, filename, progress_callback, "model", 0.0, model_pct_end
+        )
+
+        # Multimodal projector (vision models): 90-100% of the progress bar.
+        if mmproj_filename:
+            await self._download_file(
+                repo_id, str(mmproj_filename), progress_callback, "mmproj", 90.0, 100.0
+            )
 
         # Write the model selection file for Tauri to read
         self._write_model_selection_file(filename)
@@ -333,17 +335,39 @@ class LlamaModelManager:
         return str(model_file)
 
     def delete_model(self, filename: str) -> bool:
-        """Delete a downloaded model."""
-        model_file = self.models_dir / filename
+        """Delete a downloaded pre-configured model and its multimodal projector."""
+        info = next(
+            (
+                v
+                for v in PRECONFIGURED_MODELS.values()
+                if str(v["filename"]).lower() == filename.lower()
+            ),
+            None,
+        )
+        if not info:
+            return False
 
+        model_file = self.models_dir / info["filename"]
+        deleted = False
         if model_file.exists():
             model_file.unlink()
-            logger.info(f"Deleted LLM model {filename}")
+            logger.info(f"Deleted LLM model {info['filename']}")
+            deleted = True
+
+        # Also remove any companion multimodal projector files.
+        for mmproj in self.models_dir.glob("*mmproj*.gguf"):
+            try:
+                mmproj.unlink()
+                logger.info(f"Deleted mmproj file: {mmproj.name}")
+                deleted = True
+            except Exception as e:
+                logger.warning(f"Failed to delete {mmproj.name}: {e}")
+
+        if deleted:
             # Also clean up the model selection file
             self._delete_model_selection_file()
-            return True
 
-        return False
+        return deleted
 
     def _get_model_selection_file_path(self) -> Path:
         """Get the path to the model selection file."""
@@ -386,8 +410,8 @@ class LlamaModelManager:
             if str(info["filename"]).lower() == selected_filename.lower():
                 return model_id
 
-        # For custom models, return the filename (or repo_id/filename format if applicable)
-        return selected_filename
+        # Unknown filename (not a pre-configured model) -> no selection.
+        return None
 
     def ensure_default_model_exists(self) -> bool:
         """Check if any model exists."""
@@ -396,4 +420,3 @@ class LlamaModelManager:
 
 # Singleton instance
 llama_model_manager = LlamaModelManager()
-

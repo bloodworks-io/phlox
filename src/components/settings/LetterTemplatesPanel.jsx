@@ -1,201 +1,248 @@
 import {
-  Box,
-  Flex,
-  IconButton,
-  Text,
-  Collapse,
-  Button,
-  VStack,
-  HStack,
-  useToast,
+    Box,
+    Flex,
+    HStack,
+    IconButton,
+    Text,
+    Button,
+    VStack,
+    Badge,
 } from "@chakra-ui/react";
-import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  AddIcon,
-  DeleteIcon,
-  EditIcon,
-} from "../common/icons";
+import { toaster } from "@/components/ui/toaster";
+
+
+import { AddIcon, DeleteIcon, EditIcon } from "../common/icons";
 import { FaEnvelopeOpenText } from "react-icons/fa";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import LetterTemplateEditModal from "../modals/LetterTemplateEditModal";
 
-const LetterTemplatesPanel = ({ isCollapsed, setIsCollapsed }) => {
-  const [letterTemplates, setLetterTemplates] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTemplate, setEditTemplate] = useState(null);
-  const toast = useToast();
+const LetterTemplatesPanel = () => {
+    const [letterTemplates, setLetterTemplates] = useState([]);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editTemplate, setEditTemplate] = useState(null);
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
+    const fetchTemplates = async () => {
+        try {
+            const response = await settingsService.fetchLetterTemplates();
+            setLetterTemplates(response.templates || []);
+        } catch (error) {
+            console.error("Failed to fetch letter templates", error);
+            toaster.create({
+                title: "Error",
+                description: "Failed to fetch letter templates",
+                type: "error",
+                duration: 3000,
+            });
+        }
+    };
 
-  const fetchTemplates = async () => {
-    try {
-      const response = await settingsService.fetchLetterTemplates();
-      setLetterTemplates(response.templates || []);
-    } catch (error) {
-      console.error("Failed to fetch letter templates", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch letter templates",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
 
-  const handleSave = async (template, closeModal) => {
-    try {
-      await settingsService.saveLetterTemplate(template);
-      // Show success toast
-      toast({
-        title: "Success",
-        description: `Letter template ${template?.id ? "updated" : "created"} successfully`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
+    const handleSave = async (template, closeModal) => {
+        try {
+            await settingsService.saveLetterTemplate(template);
+            toaster.create({
+                title: "Success",
+                description: `Letter template ${template?.id ? "updated" : "created"} successfully`,
+                type: "success",
+                duration: 3000,
+            });
 
-      fetchTemplates();
-      if (closeModal) closeModal();
-      setIsEditing(false);
-      setEditTemplate(null);
-    } catch (error) {
-      console.error("Failed to save letter template", error);
-      // Show error toast
-      toast({
-        title: "Error",
-        description: "Failed to save letter template",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
+            fetchTemplates();
+            if (closeModal) closeModal();
+            setIsEditing(false);
+            setEditTemplate(null);
+        } catch (error) {
+            console.error("Failed to save letter template", error);
+            toaster.create({
+                title: "Error",
+                description: "Failed to save letter template",
+                type: "error",
+                duration: 3000,
+            });
+        }
+    };
 
-  const handleDelete = async (templateId) => {
-    try {
-      await settingsService.deleteLetterTemplate(templateId);
-      toast({
-        title: "Success",
-        description: "Letter template deleted successfully",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-      fetchTemplates();
-    } catch (error) {
-      console.error("Failed to delete letter template", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete letter template",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
+    const handleDelete = async (templateId) => {
+        try {
+            await settingsService.deleteLetterTemplate(templateId);
+            toaster.create({
+                title: "Success",
+                description: "Letter template deleted successfully",
+                type: "success",
+                duration: 3000,
+            });
+            fetchTemplates();
+        } catch (error) {
+            console.error("Failed to delete letter template", error);
+            toaster.create({
+                title: "Error",
+                description: "Failed to delete letter template",
+                type: "error",
+                duration: 3000,
+            });
+        }
+    };
 
-  const handleReset = async () => {
-    try {
-      await settingsService.resetLetterTemplates(toast);
-      fetchTemplates();
-    } catch (error) {
-      console.error("Failed to reset letter templates", error);
-    }
-  };
+    const handleReset = async () => {
+        try {
+            await settingsService.resetLetterTemplates();
+            fetchTemplates();
+        } catch (error) {
+            console.error("Failed to reset letter templates", error);
+        }
+    };
 
-  return (
-    <Box p="4" borderRadius="sm" className="panels-bg">
-      <Flex align="center" justify="space-between">
-        <Flex align="center">
-          <IconButton
-            icon={isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            aria-label="Toggle collapse"
-            variant="outline"
-            size="sm"
-            mr="2"
-            className="collapse-toggle"
-          />
-          <FaEnvelopeOpenText size="1.2em" style={{ marginRight: "5px" }} />
-          <Text as="h3">Letter Templates</Text>
-        </Flex>
-        <HStack>
-          <Button
-            leftIcon={<AddIcon />}
-            onClick={() => {
-              setEditTemplate(null);
-              setIsEditing(true);
-            }}
-            className="grey-button"
-          >
-            New Template
-          </Button>
-          <Button onClick={handleReset} className="red-button">
-            Reset to Defaults
-          </Button>
-        </HStack>
-      </Flex>
-
-      <Collapse in={!isCollapsed} animateOpacity>
-        <VStack spacing={4} mt={4}>
-          {letterTemplates.map((template) => (
-            <Box
-              key={template.id}
-              p={4}
-              border="1px"
-              borderColor="gray.200"
-              borderRadius="sm"
-              width="100%"
-            >
-              <Flex justify="space-between" align="center">
-                <Text fontWeight="bold">{template.name}</Text>
+    return (
+        <VStack gap={3} align="stretch">
+            <Flex justify="space-between" align="center">
+                <Text fontSize="xs" className="pill-box-icons" maxW="55%">
+                    Letter templates define the tone and content of generated
+                    letters.
+                </Text>
                 <HStack>
-                  <IconButton
-                    size="sm"
-                    icon={<EditIcon />}
-                    onClick={() => {
-                      setEditTemplate(template);
-                      setIsEditing(true);
-                    }}
-                    aria-label="Edit"
-                  />
-                  {template.name !== "Dictation" && (
-                    <IconButton
-                      size="sm"
-                      icon={<DeleteIcon />}
-                      onClick={() => handleDelete(template.id)}
-                      colorScheme="red"
-                      aria-label="Delete"
-                    />
-                  )}
+                    <Button
+                        onClick={handleReset}
+                        size="sm"
+                        className="red-button"
+                    >
+                        Reset to Defaults
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setEditTemplate(null);
+                            setIsEditing(true);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="nav-button"
+                    ><AddIcon />New Template
+                    </Button>
                 </HStack>
-              </Flex>
-              <Text mt={2} fontSize="sm" color="gray.600">
-                {template.instructions}
-              </Text>
-            </Box>
-          ))}
-        </VStack>
-      </Collapse>
+            </Flex>
 
-      {/* Edit/New Template Modal */}
-      <LetterTemplateEditModal
-        isOpen={isEditing}
-        onClose={() => {
-          setIsEditing(false);
-          setEditTemplate(null);
-        }}
-        onSave={(template) => handleSave(template)}
-        template={editTemplate}
-        setTemplate={setEditTemplate}
-      />
-    </Box>
-  );
+            {letterTemplates.length === 0 ? (
+                <Box
+                    p={6}
+                    textAlign="center"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="md"
+                >
+                    <FaEnvelopeOpenText
+                        size="1.5em"
+                        style={{ opacity: 0.5, marginBottom: "8px" }}
+                    />
+                    <Text fontSize="sm" className="pill-box-icons">
+                        No letter templates
+                    </Text>
+                    <Text fontSize="xs" className="pill-box-icons" mt={1}>
+                        Create one or reset to defaults
+                    </Text>
+                </Box>
+            ) : (
+                <VStack gap={2} align="stretch">
+                    {letterTemplates.map((template) => {
+                        const isDefault = template.name === "Dictation";
+                        return (
+                            <Box
+                                key={template.id}
+                                p={3}
+                                borderWidth="1px"
+                                borderColor="border"
+                                borderRadius="md"
+                            >
+                                <Flex justify="space-between" align="center">
+                                    <HStack gap={3} align="flex-start">
+                                        <FaEnvelopeOpenText
+                                            style={{
+                                                opacity: 0.5,
+                                                marginTop: "2px",
+                                            }}
+                                        />
+                                        <Box>
+                                            <HStack>
+                                                <Text
+                                                    fontWeight="bold"
+                                                    fontSize="sm"
+                                                >
+                                                    {template.name}
+                                                </Text>
+                                                <Badge
+                                                    colorPalette={
+                                                        isDefault
+                                                            ? "green"
+                                                            : "gray"
+                                                    }
+                                                    fontSize="xs"
+                                                >
+                                                    {isDefault
+                                                        ? "Default"
+                                                        : "Custom"}
+                                                </Badge>
+                                            </HStack>
+                                            {template.instructions && (
+                                                <Text
+                                                    fontSize="xs"
+                                                    className="pill-box-icons"
+                                                    mt={1}
+                                                >
+                                                    {template.instructions}
+                                                </Text>
+                                            )}
+                                        </Box>
+                                    </HStack>
+                                    <HStack gap={1}>
+                                        <Tooltip content="Edit template">
+                                            <IconButton
+                                                variant="ghost"
+                                                size="sm"
+                                                aria-label="Edit template"
+                                                onClick={() => {
+                                                    setEditTemplate(template);
+                                                    setIsEditing(true);
+                                                }}
+                                            ><EditIcon /></IconButton>
+                                        </Tooltip>
+                                        {!isDefault && (
+                                            <Tooltip content="Delete template">
+                                                <IconButton
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    colorPalette="red"
+                                                    aria-label="Delete template"
+                                                    onClick={() =>
+                                                        handleDelete(
+                                                            template.id,
+                                                        )
+                                                    }
+                                                ><DeleteIcon /></IconButton>
+                                            </Tooltip>
+                                        )}
+                                    </HStack>
+                                </Flex>
+                            </Box>
+                        );
+                    })}
+                </VStack>
+            )}
+
+            <LetterTemplateEditModal
+                isOpen={isEditing}
+                onClose={() => {
+                    setIsEditing(false);
+                    setEditTemplate(null);
+                }}
+                onSave={(template) => handleSave(template)}
+                template={editTemplate}
+                setTemplate={setEditTemplate}
+            />
+        </VStack>
+    );
 };
 
 export default LetterTemplatesPanel;

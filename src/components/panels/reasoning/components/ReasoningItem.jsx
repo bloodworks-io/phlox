@@ -1,8 +1,7 @@
 import React from "react";
 import { Box, Text, Badge, HStack, VStack } from "@chakra-ui/react";
-import { colors } from "../../../../theme/colors";
 
-export const ReasoningItem = ({ item, section, colorMode }) => {
+export const ReasoningItem = ({ item, section }) => {
     // Check if item is in legacy format (string) or new format (object)
     const isLegacyFormat = typeof item === "string";
 
@@ -10,13 +9,13 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
     const getAccentColor = (section) => {
         switch (section) {
             case "differentials":
-                return colors.light.primaryButton;
+                return "primaryButton";
             case "investigations":
-                return colors.light.successButton;
+                return "successButton";
             case "considerations":
-                return colors.light.secondaryButton;
+                return "secondaryButton";
             default:
-                return colors.light.neutralButton;
+                return "neutralButton";
         }
     };
 
@@ -26,15 +25,11 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
         <Box
             p={2}
             borderRadius="sm"
-            bg={
-                colorMode === "light"
-                    ? "white"
-                    : colors.dark.surface
-            }
+            bg="cardBg"
             borderLeft="3px solid"
             borderColor={
                 isCritical
-                    ? "red.500"
+                    ? "dangerButton"
                     : getAccentColor(section)
             }
             shadow="sm"
@@ -43,7 +38,7 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
                 <Text fontSize="sm">{item}</Text>
             ) : (
                 <>
-                    <HStack spacing={2} align="start">
+                    <HStack gap={2} align="start">
                         <Text
                             fontWeight="medium"
                             fontSize="sm"
@@ -53,11 +48,11 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
                         </Text>
                         {isCritical && (
                             <Badge
-                                colorScheme="red"
+                                colorPalette="red"
                                 fontSize="xs"
                                 textTransform="uppercase"
                             >
-                                Critical
+                                Priority
                             </Badge>
                         )}
                     </HStack>
@@ -65,7 +60,7 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
                         item.rationale.length > 0 && (
                             <VStack
                                 align="stretch"
-                                spacing={0}
+                                gap={0}
                                 mt={1}
                             >
                                 {item.rationale.map(
@@ -73,12 +68,7 @@ export const ReasoningItem = ({ item, section, colorMode }) => {
                                         <Text
                                             key={j}
                                             fontSize="xs"
-                                            color={
-                                                colorMode ===
-                                                "light"
-                                                    ? "gray.600"
-                                                    : "gray.400"
-                                            }
+                                            color="textTertiary"
                                             pl={2}
                                         >
                                             • {point}

@@ -9,7 +9,7 @@ Phlox is an open-source, local-first clinical tool with the following features:
 - **Task Management:** Extracts action items from clinical notes and tracks their completion
 - **Agentic Tool-Calling:** Built-in tools for PubMed search, Wikipedia lookup, patient note search, transcript search, job management, and note creation — with interleaved thinking for complex multi-step queries
 - **MCP Server Support:** Connect external tool servers via the Model Context Protocol (SSE transport) with optional PHI filtering
-- **AI Assistant:** RAG system using ChromaDB for querying medical literature and guidelines alongside your notes. Encounter summarization interface with inline citations from tool responses.
+- **AI Assistant:** RAG system using sqlite-vec for querying medical literature and guidelines alongside your notes. Encounter summarization interface with inline citations from tool responses.
 - **Agent Dashboard:** Chat-driven clinic management hub with built-in todo panel, outstanding jobs view, and clinic summary by date
 - **Vision-Enhanced Document Processing:** Hybrid PDF processing with automatic capability probing — uses vision models directly when available, falling back to OCR
 

@@ -33,7 +33,7 @@ The chat interface includes a built-in tool-calling system that allows the AI to
 
 ### Built-in Tools
 - **Transcript Search:** Search the current patient's transcript for relevant information
-- **Literature Search:** Query local document collections stored in ChromaDB
+- **Literature Search:** Query local document collections stored in sqlite-vec
 - **PubMed Search:** Search PubMed for medical literature (disabled by default — may expose PHI to external API)
 - **Wikipedia Search:** Look up medical terms and topics (disabled by default — may expose PHI)
 - **Patient Note Search:** Search through a patient's historical notes
@@ -64,10 +64,10 @@ For complex queries, the AI can perform multiple rounds of thinking and tool-cal
 - Chain tool calls (e.g., search notes → find a patient → list their outstanding jobs)
 - Reason about which tools to use and when
 
-## Educational Case Review (Clinical Reasoning)
+## Chart Insights
 Generate a simulated peer-review and literature correlation for the current encounter. This feature acts as a dynamic textbook or "curbside consult" to broaden your consideration set:
 
-1. After creating a clinical note, click "Generate Reasoning"
+1. After creating a clinical note, click "Generate Chart Insights"
 2. The LLM acts as an educational sounding board, analyzing the text to provide:
    - **Case Summary:** A brief synthesis of the documented encounter.
    - **Literature Correlations (Differentials):** A list of conditions commonly associated with the documented symptoms in medical literature.
@@ -79,7 +79,7 @@ Generate a simulated peer-review and literature correlation for the current enco
 **Note:** This feature is strictly an educational and documentation-quality tool. It is NOT a diagnostic tool and does not provide clinical decision support.
 
 <p align="center">
-<img src="../images/reasoning.png" width="500px" alt="Educational Case Review"/>
+<img src="../images/reasoning.png" width="500px" alt="Chart Insights"/>
 </p>
 
 ## Adaptive Refinement

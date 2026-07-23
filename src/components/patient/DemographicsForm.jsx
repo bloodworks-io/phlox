@@ -1,19 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import {
-    HStack,
-    VStack,
-    Box,
-    Text,
-    Input,
-    Select,
-    Button,
-    Icon,
-    Spinner,
-    useColorMode,
-    useToast,
-} from "@chakra-ui/react";
+import { useRef, useState } from "react";
+import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import { FaFileUpload } from "react-icons/fa";
-import { colors } from "../../theme/colors";
 import { transcriptionApi } from "../../utils/api/transcriptionApi";
 import { extractFromFile } from "../../utils/helpers/documentExtraction";
 import { areRequiredDemographicsMet } from "../../utils/helpers/validationHelpers";
@@ -23,7 +11,7 @@ const Field = ({ label, required, children }) => (
         <Text fontSize="sm" fontWeight="bold" mb={1}>
             {label}
             {required && (
-                <Text as="span" color="red.400" ml={1}>
+                <Text as="span" color="dangerButton" ml={1}>
                     *
                 </Text>
             )}
@@ -42,19 +30,8 @@ const DemographicsForm = ({
     cancelLabel = "Cancel",
     cancelIcon = null,
 }) => {
-    const { colorMode } = useColorMode();
-    const c = colors[colorMode];
-    const toast = useToast();
-    const [form, setForm] = useState({});
-    const [isDragOver, setIsDragOver] = useState(false);
-    const [isExtracting, setIsExtracting] = useState(false);
-    const [extractError, setExtractError] = useState(null);
-    const [isSaving, setIsSaving] = useState(false);
-    const fileInputRef = useRef(null);
-
-    useEffect(() => {
-        if (!patient) return;
-        setForm({
+    const [form, setForm] = useState(() => patient
+        ? {
             first_name: patient.first_name || "",
             last_name: patient.last_name || "",
             dob: patient.dob || "",
@@ -62,11 +39,13 @@ const DemographicsForm = ({
             ur_number: patient.ur_number || "",
             address: patient.address || "",
             phone: patient.phone || "",
-        });
-        setIsDragOver(false);
-        setIsExtracting(false);
-        setExtractError(null);
-    }, [patient]);
+        }
+        : {});
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [isExtracting, setIsExtracting] = useState(false);
+    const [extractError, setExtractError] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const fileInputRef = useRef(null);
 
     const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -89,8 +68,11 @@ const DemographicsForm = ({
             if (data && typeof data === "object") {
                 setForm((prev) => ({ ...prev, ...data }));
             }
-        } catch (e) {
-            setExtractError("Couldn't read demographics from that document.");
+        } catch (error) {
+            setExtractError(
+                error?.message ||
+                    "Couldn't read demographics from that document.",
+            );
         } finally {
             setIsExtracting(false);
             if (fileInputRef.current) fileInputRef.current.value = "";
@@ -137,13 +119,12 @@ const DemographicsForm = ({
             setIsSaving(true);
             try {
                 await onSave(updated);
-            } catch (e) {
-                toast({
+            } catch {
+                toaster.create({
                     title: "Couldn't save demographics",
                     description: "Please try again.",
-                    status: "error",
+                    type: "error",
                     duration: 3000,
-                    isClosable: true,
                 });
                 setIsSaving(false);
                 return;
@@ -159,13 +140,13 @@ const DemographicsForm = ({
     };
 
     return (
-        <VStack spacing={4} align="stretch">
+        <VStack gap={4} align="stretch">
             {/* Document drop zone — auto-fills fields from a referral/ID/etc. */}
             <Box
                 position="relative"
                 borderRadius="md"
                 border="2px dashed"
-                borderColor={isDragOver ? "blue.400" : c.surface}
+                borderColor={isDragOver ? "accent" : "surface"}
                 bg={isDragOver ? "rgba(66, 153, 225, 0.15)" : "transparent"}
                 p={3}
                 textAlign="center"
@@ -184,12 +165,12 @@ const DemographicsForm = ({
                     display="none"
                 />
                 <HStack
-                    spacing={2}
+                    gap={2}
                     justify="center"
-                    color={c.textSecondary}
+                    color={"textSecondary"}
                     fontSize="sm"
                 >
-                    <Icon as={FaFileUpload} />
+                    <Icon asChild><FaFileUpload /></Icon>
                     <Text>
                         {isExtracting
                             ? "Reading document…"
@@ -198,13 +179,12 @@ const DemographicsForm = ({
                     {isExtracting && <Spinner size="xs" />}
                 </HStack>
                 {extractError && (
-                    <Text fontSize="xs" color="red.400" mt={1}>
+                    <Text fontSize="xs" color="dangerButton" mt={1}>
                         {extractError}
                     </Text>
                 )}
             </Box>
-
-            <HStack spacing={3} align="flex-start">
+            <HStack gap={3} align="flex-start">
                 <Field label="First name" required>
                     <Input
                         className="input-style"
@@ -225,7 +205,7 @@ const DemographicsForm = ({
                     />
                 </Field>
             </HStack>
-            <HStack spacing={3} align="flex-start">
+            <HStack gap={3} align="flex-start">
                 <Field label="Date of birth" required>
                     <Input
                         type="date"
@@ -236,27 +216,40 @@ const DemographicsForm = ({
                     />
                 </Field>
                 <Field label="Gender">
-                    <Select
-                        className="input-style"
-                        size="sm"
-                        value={form.gender || ""}
-                        onChange={(e) => set("gender", e.target.value)}
-                    >
-                        <option value="">M/F</option>
-                        <option value="M">M</option>
-                        <option value="F">F</option>
-                    </Select>
+                    <NativeSelect.Root>
+                        <NativeSelect.Field
+                            className="input-style"
+                            size="sm"
+                            value={form.gender || ""}
+                            onChange={(e) => set("gender", e.target.value)}>
+                            <option value="">M/F</option>
+                            <option value="M">M</option>
+                            <option value="F">F</option>
+                        </NativeSelect.Field>
+                        <NativeSelect.Indicator />
+                    </NativeSelect.Root>
                 </Field>
             </HStack>
-            <Field label="UR number" required>
-                <Input
-                    className="input-style"
-                    size="sm"
-                    placeholder="UR number"
-                    value={form.ur_number || ""}
-                    onChange={(e) => set("ur_number", e.target.value)}
-                />
-            </Field>
+            <HStack gap={3} align="flex-start">
+                <Field label="UR number" required>
+                    <Input
+                        className="input-style"
+                        size="sm"
+                        placeholder="UR number"
+                        value={form.ur_number || ""}
+                        onChange={(e) => set("ur_number", e.target.value)}
+                    />
+                </Field>
+                <Field label="Phone">
+                    <Input
+                        className="input-style"
+                        size="sm"
+                        placeholder="Phone"
+                        value={form.phone || ""}
+                        onChange={(e) => set("phone", e.target.value)}
+                    />
+                </Field>
+            </HStack>
             <Field label="Address">
                 <Input
                     className="input-style"
@@ -266,37 +259,23 @@ const DemographicsForm = ({
                     onChange={(e) => set("address", e.target.value)}
                 />
             </Field>
-            <Field label="Phone">
-                <Input
-                    className="input-style"
-                    size="sm"
-                    placeholder="Phone"
-                    value={form.phone || ""}
-                    onChange={(e) => set("phone", e.target.value)}
-                />
-            </Field>
-
             <HStack justify="space-between" width="100%" mt={2}>
                 {onCancel && (
                     <Button
                         onClick={onCancel}
-                        leftIcon={cancelIcon || undefined}
                         size="md"
-                        borderRadius="2xl !important"
+                        borderRadius="2xl"
                         className="switch-mode"
-                        sx={btnSx}
-                    >
-                        {cancelLabel}
-                    </Button>
+                        css={btnSx}>{cancelIcon || undefined}{cancelLabel}</Button>
                 )}
                 <Button
                     onClick={handleSave}
-                    isDisabled={!requiredMet}
-                    isLoading={isSaving}
+                    disabled={!requiredMet}
+                    loading={isSaving}
                     size="md"
-                    borderRadius="2xl !important"
-                    className="switch-mode"
-                    sx={btnSx}
+                    borderRadius="2xl"
+                    className="green-button"
+                    css={btnSx}
                 >
                     {saveLabel}
                 </Button>

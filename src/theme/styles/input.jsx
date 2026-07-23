@@ -2,7 +2,7 @@
 import { colors } from "../colors";
 import { lightenColor, darkenColor } from "../utils"; // adjust path as needed
 
-export const inputStyles = (props) => ({
+const inputStyles = (props) => ({
     ".textarea-style": {
         backgroundColor:
             props.colorMode === "light"
@@ -36,23 +36,6 @@ export const inputStyles = (props) => ({
     ".letter-editor-textarea": {
         overflow: "auto !important",
     },
-    ".input-style": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `${colors.dark.textTertiary} !important`,
-        padding: "7px 8px !important",
-        borderRadius: "sm !important",
-        fontSize: "0.9rem !important",
-    },
     ".chat-input": {
         backgroundColor:
             props.colorMode === "light"
@@ -81,29 +64,6 @@ export const inputStyles = (props) => ({
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
                 : `1px solid ${colors.dark.surface} !important`,
-    },
-    ".search-button": {
-        borderLeft: "none !important",
-        borderTopLeftRadius: "0 !important",
-        borderBottomLeftRadius: "0 !important",
-        borderTopRightRadius: "md !important",
-        borderBottomRightRadius: "md !important",
-        marginLeft: "-5px",
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface2} !important`
-                : `${colors.dark.base} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface2} !important`
-                : `${colors.dark.textTertiary} !important`,
-        color: "#575279 !important",
-    },
-    ".search-button:hover": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface} !important`
-                : `${colors.dark.surface2} !important`,
     },
     ".template-field-container": {
         backgroundColor:
@@ -180,6 +140,7 @@ export const inputStyles = (props) => ({
         padding: "0 !important",
         fontSize: "1rem !important",
         lineHeight: "1.5 !important",
+        fontWeight: "400 !important",
         width: "100% !important",
         resize: "none !important",
         "&:focus": {
@@ -208,12 +169,12 @@ export const inputStyles = (props) => ({
         color: `${colors.light.invertedText} !important`,
         border:
             props.colorMode === "light"
-                ? `1px solid ${darkenColor(colors.light.extraButton, 0.15)} !important`
+                ? `1px solid ${darkenColor(colors.light.chatIcon, 0.15)} !important`
                 : `none !important`,
         backgroundColor: `${
             props.colorMode === "light"
-                ? colors.light.extraButton
-                : colors.light.extraButton
+                ? colors.light.chatIcon
+                : colors.dark.chatIcon
         } !important`,
         opacity: 0,
         transition: "opacity 0.2s ease-in-out",
@@ -223,8 +184,8 @@ export const inputStyles = (props) => ({
         "&:hover": {
             backgroundColor: `${
                 props.colorMode === "light"
-                    ? lightenColor(colors.light.extraButton)
-                    : lightenColor(colors.light.extraButton)
+                    ? lightenColor(colors.light.chatIcon)
+                    : lightenColor(colors.dark.chatIcon)
             } !important`,
         },
     },
@@ -233,18 +194,18 @@ export const inputStyles = (props) => ({
         color: `${colors.light.invertedText} !important`,
         backgroundColor: `${
             props.colorMode === "light"
-                ? colors.light.extraButton
-                : colors.light.extraButton
+                ? colors.light.chatIcon
+                : colors.dark.chatIcon
         } !important`,
         border:
             props.colorMode === "light"
-                ? `1px solid ${darkenColor(colors.light.extraButton, 0.15)} !important`
+                ? `1px solid ${darkenColor(colors.light.chatIcon, 0.15)} !important`
                 : `none !important`,
         "&:hover": {
             backgroundColor: `${
                 props.colorMode === "light"
-                    ? lightenColor(colors.light.extraButton)
-                    : lightenColor(colors.light.extraButton)
+                    ? lightenColor(colors.light.chatIcon)
+                    : lightenColor(colors.dark.chatIcon)
             } !important`,
         },
     },
@@ -277,7 +238,7 @@ export const inputStyles = (props) => ({
     },
     ".reason-button-active-patient-table": {
         backgroundColor: `${
-            props.colorMode === "light" ? colors.light.crust : colors.dark.crust
+            props.colorMode === "light" ? colors.light.surface : colors.dark.surface
         } !important`,
     },
     ".transcription-style": {
@@ -372,3 +333,13 @@ export const inputStyles = (props) => ({
         maxHeight: "200px !important",
     },
 });
+
+const _lightOut = inputStyles({ colorMode: "light" });
+const _darkOut = inputStyles({ colorMode: "dark" });
+export const inputGlobalCss = {};
+for (const selector of Object.keys(_lightOut)) {
+    inputGlobalCss[selector] = {
+        _light: _lightOut[selector],
+        _dark: _darkOut[selector],
+    };
+}

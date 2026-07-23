@@ -1,5 +1,5 @@
-import { createContext, useContext, useMemo, useRef } from "react";
-import { useToast } from "@chakra-ui/react";
+import { createContext, useContext, useEffect, useMemo } from "react";
+import { toaster } from "@/components/ui/toaster";
 import { useAppInit } from "../context/appInit";
 
 // Store the current isInitializing state in a module-level ref
@@ -14,41 +14,30 @@ const ApiToastContext = createContext(null);
  * Success, warning, and info toasts are always shown.
  */
 export const ApiToastProvider = ({ children }) => {
-  const toast = useToast();
   const { isInitializing } = useAppInit();
 
   // Keep the ref in sync with the current state
-  isInitializingRef.current = isInitializing;
+  useEffect(() => {
+    isInitializingRef.current = isInitializing;
+  }, [isInitializing]);
 
-  // Create an apiToast function that has the same methods as Chakra's toast
-  const apiToast = useMemo(() => {
-    const fn = (options) => {
-      // Check the ref for current isInitializing value
-      if (isInitializingRef.current && options?.status === "error") {
-        console.log(
-          "[ApiToast] Error toast suppressed - isInitializing:",
-          isInitializingRef.current,
-          "options:",
-          options,
-        );
-        return;
-      }
-      console.log(
-        "[ApiToast] Toast shown - isInitializing:",
-        isInitializingRef.current,
-        "options:",
-        options,
-      );
-      return toast(options);
-    };
-
-    // Copy all methods from Chakra's toast to our apiToast
-    fn.closeAll = toast.closeAll.bind(toast);
-    fn.close = toast.close.bind(toast);
-    fn.isActive = toast.isActive.bind(toast);
-
-    return fn;
-  }, [toast]);
+  const apiToast = useMemo(
+    () =>
+      Object.assign(
+        (options) => {
+          if (isInitializingRef.current && options?.type === "error") {
+            return;
+          }
+          return toaster.create(options);
+        },
+        {
+          closeAll: () => toaster.remove(),
+          close: (id) => toaster.remove(id),
+          isActive: (id) => toaster.isVisible(id),
+        },
+      ),
+    [],
+  );
 
   return (
     <ApiToastContext.Provider value={apiToast}>

@@ -1,146 +1,84 @@
-import { useState, useCallback, useMemo } from "react";
-import {
-  Box,
-  Button,
-  Heading,
-  VStack,
-  useToast,
-  Text,
-  Flex,
-  Image,
-  useColorMode,
-  HStack,
-  Icon,
-  Progress,
-  Badge,
-} from "@chakra-ui/react";
-import { motion } from "framer-motion";
-import { FaArrowRight, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
-import { colors } from "../../theme/colors";
-import { settingsService } from "../../utils/settings/settingsUtils";
+import { useState, useMemo } from "react";
+import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Progress } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
+import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
+import { settingsApi } from "../../utils/api/settingsApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
-import { isChatEnabled } from "../../utils/helpers/featureFlags";
 import {
   SPLASH_STEPS,
   STEP_TITLES,
   STEP_DESCRIPTIONS,
-  getStepIcon,
-  containerVariants,
-  itemVariants,
 } from "./splash/constants";
-import { usePersonalStep, PersonalStep } from "./splash/steps/PersonalStep";
-import { useLLMStep, LLMStep } from "./splash/steps/LLMStep";
-import {
-  useTranscriptionStep,
-  TranscriptionStep,
-} from "./splash/steps/TranscriptionStep";
-import { useTemplatesStep, TemplatesStep } from "./splash/steps/TemplatesStep";
-import { useQuickChatStep, QuickChatStep } from "./splash/steps/QuickChatStep";
-import { useLettersStep, LettersStep } from "./splash/steps/LettersStep";
-
-const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
-const MotionFlex = motion(Flex);
-const MotionHeading = motion(Heading);
-const MotionText = motion(Text);
+import { usePersonalStep, AboutYouStep } from "./splash/steps/AboutYouStep";
+import { AIModelsStep } from "./splash/steps/AIModelsStep";
+import { TemplatesStep } from "./splash/steps/TemplatesStep";
+import { useLLMStep } from "../../utils/hooks/splash/useLLMStep";
+import { useTranscriptionStep } from "../../utils/hooks/splash/useTranscriptionStep";
+import { useTemplatesStep } from "../../utils/hooks/splash/useTemplatesStep";
+import { useLettersStep } from "../../utils/hooks/splash/useLettersStep";
 
 const SplashScreen = ({ onComplete }) => {
-  const { colorMode } = useColorMode();
-  const currentColors = colors[colorMode];
-  const toast = useToast();
 
-  // Step management
-  const [currentStep, setCurrentStep] = useState(SPLASH_STEPS.PERSONAL);
-  const [completedSteps, setCompletedSteps] = useState(new Set());
+  const [currentStep, setCurrentStep] = useState(SPLASH_STEPS.ABOUT_YOU);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Determine which steps are visible based on chat enabled status
-  const visibleSteps = useMemo(() => {
-    const steps = [
-      SPLASH_STEPS.PERSONAL,
-      SPLASH_STEPS.LLM,
-      SPLASH_STEPS.TRANSCRIPTION,
-      SPLASH_STEPS.TEMPLATES,
-    ];
-    if (isChatEnabled()) {
-      steps.push(SPLASH_STEPS.QUICK_CHAT);
-    }
-    steps.push(SPLASH_STEPS.LETTERS);
-    return steps;
-  }, []);
+  const visibleSteps = useMemo(
+    () => [SPLASH_STEPS.ABOUT_YOU, SPLASH_STEPS.TEMPLATES, SPLASH_STEPS.AI_MODELS],
+    [],
+  );
 
-  // Total steps includes encryption step in Tauri (which runs before this screen)
-  const totalSteps = visibleSteps.length + (isTauri() ? 1 : 0); // +1 for encryption step in Tauri
-  const actualStepIndex = visibleSteps.indexOf(currentStep); // 0-based index for array navigation
-  const currentStepIndex = actualStepIndex + (isTauri() ? 1 : 0); // Account for encryption being step 1 in Tauri
+  const totalSteps = visibleSteps.length + (isTauri() ? 1 : 0);
+  const actualStepIndex = visibleSteps.indexOf(currentStep);
+  const currentStepIndex = actualStepIndex + (isTauri() ? 1 : 0);
 
-  // Step hooks
+  // Hooks
   const personal = usePersonalStep();
   const llm = useLLMStep(currentStep);
-  // Pass inferenceMode to transcription step to ensure no mixed configurations
   const transcription = useTranscriptionStep(currentStep, llm.inferenceMode);
   const templates = useTemplatesStep(currentStep);
-  const quickChat = useQuickChatStep();
   const letters = useLettersStep(currentStep);
 
-  // Get current validator
   const getCurrentValidator = () => {
     switch (currentStep) {
-      case SPLASH_STEPS.PERSONAL:
+      case SPLASH_STEPS.ABOUT_YOU:
         return personal.validate;
-      case SPLASH_STEPS.LLM:
-        return llm.validate;
-      case SPLASH_STEPS.TRANSCRIPTION:
-        return transcription.validate;
+      case SPLASH_STEPS.AI_MODELS:
+        return () => llm.validate() && transcription.validate();
       case SPLASH_STEPS.TEMPLATES:
         return templates.validate;
-      case SPLASH_STEPS.QUICK_CHAT:
-        return quickChat.validate;
-      case SPLASH_STEPS.LETTERS:
-        return letters.validate;
       default:
         return () => false;
     }
   };
 
-  // Get validation message
   const getValidationMessage = () => {
     switch (currentStep) {
-      case SPLASH_STEPS.PERSONAL:
+      case SPLASH_STEPS.ABOUT_YOU:
         return "Please enter your name and select your specialty.";
-      case SPLASH_STEPS.LLM:
-        // Dynamic message based on inference mode
+      case SPLASH_STEPS.AI_MODELS:
         if (llm.inferenceMode === "local") {
-          return "Please select and download a local model before proceeding.";
+          if (!llm.validate()) return "Please download and select a model.";
+          return "Please download the transcription model.";
         }
         return "Please select a primary model.";
-      case SPLASH_STEPS.TRANSCRIPTION:
-        return "Please configure the Whisper model if you've entered a URL.";
       case SPLASH_STEPS.TEMPLATES:
         return "Please select a default template.";
-      case SPLASH_STEPS.QUICK_CHAT:
-        return "Please fill in all quick chat button titles and prompts.";
-      case SPLASH_STEPS.LETTERS:
-        return "Please select a default letter template.";
       default:
         return "Please complete all required fields.";
     }
   };
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     const validator = getCurrentValidator();
     if (!validator()) {
-      toast({
+      toaster.create({
         title: "Missing Information",
         description: getValidationMessage(),
-        status: "warning",
+        type: "warning",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
-
-    setCompletedSteps((prev) => new Set([...prev, currentStep]));
 
     const nextIndex = actualStepIndex + 1;
     if (nextIndex < visibleSteps.length) {
@@ -148,23 +86,19 @@ const SplashScreen = ({ onComplete }) => {
     } else {
       handleComplete();
     }
-  }, [currentStep, actualStepIndex, visibleSteps, getCurrentValidator, getValidationMessage, toast]);
+  };
 
-  const handlePrevious = useCallback(() => {
+  const handlePrevious = () => {
     const prevIndex = actualStepIndex - 1;
     if (prevIndex >= 0) {
       setCurrentStep(visibleSteps[prevIndex]);
     }
-  }, [actualStepIndex, visibleSteps]);
+  };
 
-  const handleComplete = useCallback(async () => {
+  const handleComplete = async () => {
     setIsLoading(true);
     try {
-      // Save user settings
-      let currentUserSettings = {};
-      await settingsService.fetchUserSettings((data) => {
-        currentUserSettings = data;
-      });
+      const currentUserSettings = await settingsApi.fetchUserSettings();
 
       const personalData = personal.getData();
       const llmData = llm.getData();
@@ -180,113 +114,76 @@ const SplashScreen = ({ onComplete }) => {
           : null,
       };
 
-      // Only include quick chat data if chat is enabled
-      if (isChatEnabled()) {
-        const quickChatData = quickChat.getData();
-        Object.assign(userSettingsToSave, quickChatData);
-      }
-      await settingsService.saveUserSettings(userSettingsToSave);
+      await settingsApi.saveUserSettings(userSettingsToSave);
 
-      // Save global config
-      const currentGlobalConfig = await settingsService.fetchConfig();
+      const currentGlobalConfig = await settingsApi.fetchConfig();
       const configToSave = {
         ...currentGlobalConfig,
         LLM_PROVIDER: llmData.llmProvider,
         LLM_BASE_URL: llmData.llmBaseUrl,
+        LLM_API_KEY: llmData.llmApiKey || "",
         PRIMARY_MODEL: llmData.primaryModel,
         WHISPER_BASE_URL: transcriptionData.whisperBaseUrl,
         WHISPER_MODEL: transcriptionData.whisperModel,
       };
 
-      if (settingsService.saveGlobalConfig) {
-        await settingsService.saveGlobalConfig(configToSave);
-      } else {
-        console.warn(
-          "settingsService.saveGlobalConfig is not defined, falling back to updateConfig.",
-        );
-        await settingsService.updateConfig(configToSave);
-      }
+      await settingsApi.saveConfig(configToSave);
 
-      // Set default template
       if (templatesData.selectedTemplate) {
-        await settingsService.setDefaultTemplate(
-          templatesData.selectedTemplate,
-          toast,
-        );
+        await settingsApi.setDefaultTemplate(templatesData.selectedTemplate);
       }
 
-      await settingsService.markSplashCompleted();
-      toast({
+      await settingsApi.markSplashCompleted();
+      toaster.create({
         title: "Setup Complete!",
-        description:
-          "Your initial settings have been saved. You can change any of these settings later in the Settings panel.",
-        status: "success",
+        description: "You're ready to start using Phlox.",
+        type: "success",
         duration: 5000,
-        isClosable: true,
       });
       onComplete();
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Error Saving Settings",
         description: error.message || "An unexpected error occurred.",
-        status: "error",
+        type: "error",
         duration: 5000,
-        isClosable: true,
       });
     } finally {
       setIsLoading(false);
     }
-  }, [
-    personal,
-    llm,
-    transcription,
-    templates,
-    quickChat,
-    letters,
-    onComplete,
-    toast,
-  ]);
-
-  const canProceedToNext = () => {
-    return getCurrentValidator()();
   };
+
+  const canProceedToNext = () => getCurrentValidator()();
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case SPLASH_STEPS.PERSONAL:
-        return <PersonalStep currentColors={currentColors} {...personal} />;
-      case SPLASH_STEPS.LLM:
-        return <LLMStep currentColors={currentColors} {...llm} />;
-      case SPLASH_STEPS.TRANSCRIPTION:
+      case SPLASH_STEPS.ABOUT_YOU:
         return (
-          <TranscriptionStep
-            currentColors={currentColors}
-            inferenceMode={llm.inferenceMode}
-            {...transcription}
+          <AboutYouStep
+            {...personal}
+            letters={letters}
           />
         );
+      case SPLASH_STEPS.AI_MODELS:
+        return <AIModelsStep llm={llm} transcription={transcription} />;
       case SPLASH_STEPS.TEMPLATES:
-        return <TemplatesStep currentColors={currentColors} {...templates} />;
-      case SPLASH_STEPS.QUICK_CHAT:
-        return <QuickChatStep currentColors={currentColors} {...quickChat} />;
-      case SPLASH_STEPS.LETTERS:
-        return <LettersStep currentColors={currentColors} {...letters} />;
+        return <TemplatesStep {...templates} />;
       default:
         return null;
     }
   };
 
+
   return (
     <Flex
       align="center"
       justify="center"
-      minH="100vh"
+      minH="100dvh"
       className="splash-bg"
       px={4}
       py={8}
       position="relative"
     >
-      {/* Tauri titlebar drag region - full window width */}
       {isTauri() && (
         <Box
           data-tauri-drag-region
@@ -298,22 +195,20 @@ const SplashScreen = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-
-      <MotionBox
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+      <Box
+        className="anim-fade-scale panels-bg splash-panel"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl !important"
         boxShadow="2xl"
-        className="panels-bg"
-        border={`1px solid ${currentColors.surface}`}
-        w={{ base: "100%", sm: "90%", md: "700px" }}
-        maxW="700px"
+        borderWidth="1px"
+        borderColor="surface"
+        w={{ base: "100%", sm: "90%", md: "600px" }}
+        maxW="600px"
+        h="600px"
+        maxH="85vh"
         position="relative"
         overflow="hidden"
-        maxH="90vh"
-        overflowY="auto"
+        display="flex"
+        flexDirection="column"
       >
         <Box
           position="absolute"
@@ -321,153 +216,91 @@ const SplashScreen = ({ onComplete }) => {
           left="0"
           right="0"
           height="120px"
-          bgGradient={`linear(to b, ${currentColors.sidebar.background}15, transparent)`}
-          borderRadius="2xl"
+          bgGradient="linear(to b, sidebarBackgroundFaint, transparent)"
           zIndex="0"
         />
 
-        <MotionVStack
-          spacing={6}
-          align="stretch"
-          position="relative"
-          zIndex="1"
-        >
-          <MotionFlex
-            variants={itemVariants}
-            direction="column"
-            align="center"
-            mb={4}
-          >
-            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
-            <MotionHeading
-              as="h1"
-              textAlign="center"
-              color={currentColors.textPrimary}
-              sx={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontSize: ["1.5rem", "1.75rem"],
-                fontWeight: "700",
-                lineHeight: "1.2",
-                marginBottom: "0.5rem",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Welcome to Phlox
-            </MotionHeading>
-            <MotionText
-              textAlign="center"
-              fontSize="sm"
-              color={currentColors.textSecondary}
-              maxW="400px"
-              lineHeight="1.6"
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
-            >
-              Let's set up your AI-powered medical assistant
-            </MotionText>
-          </MotionFlex>
-
-          <MotionBox variants={itemVariants}>
-            <Progress
+        {/* Header — logo, title, description, progress */}
+        <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
+          <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
+          <Heading as="h2" size="md" color="textPrimary" textAlign="center">
+            {STEP_TITLES[currentStep]}
+          </Heading>
+          <Text fontSize="sm" color="textSecondary" textAlign="center" maxW="420px" lineHeight="1.5">
+            {STEP_DESCRIPTIONS[currentStep]}
+          </Text>
+          <HStack w="100%" justify="space-between" mt={1}>
+            <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
-              colorScheme="blue"
+              colorPalette="blue"
               borderRadius="full"
               size="sm"
-              mb={2}
-            />
-            <Text
-              fontSize="xs"
-              color={currentColors.textSecondary}
-              textAlign="center"
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
+              flex="1"
             >
-              Step {currentStepIndex + 1} of {totalSteps}
+              <Progress.Track>
+                <Progress.Range />
+              </Progress.Track>
+            </Progress.Root>
+            <Text fontSize="xs" color="textSecondary" whiteSpace="nowrap" ml={3}>
+              {currentStepIndex + 1} of {totalSteps}
             </Text>
-          </MotionBox>
+          </HStack>
+        </VStack>
 
-          <MotionBox variants={itemVariants}>
-            <HStack mb={4} align="center" justify="center">
-              <Icon
-                as={getStepIcon(currentStep)}
-                className="pill-box-icons"
-                boxSize={5}
-              />
-              <Heading
-                as="h2"
-                color={currentColors.textPrimary}
-                sx={{
-                  fontFamily: '"Space Grotesk", sans-serif',
-                  fontSize: ["1.25rem", "1.5rem"],
-                  fontWeight: "600",
-                  lineHeight: "1.2",
-                }}
-              >
-                {STEP_TITLES[currentStep]}
-              </Heading>
-              {completedSteps.has(currentStep) && (
-                <Badge colorScheme="green" variant="solid">
-                  <Icon as={FaCheckCircle} mr={1} />
-                  Complete
-                </Badge>
-              )}
-            </HStack>
-            <Text
-              textAlign="center"
-              fontSize="sm"
-              color={currentColors.textSecondary}
-              mb={6}
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
-            >
-              {STEP_DESCRIPTIONS[currentStep]}
-            </Text>
-          </MotionBox>
+        {/* Content area */}
+        <Box
+          flex="1"
+          overflowY="auto"
+          position="relative"
+          zIndex={1}
+          className="custom-scrollbar"
+          mt={4}
+        >
+          {renderCurrentStep()}
+        </Box>
 
-          <Box>{renderCurrentStep()}</Box>
-
-          <MotionFlex
-            variants={itemVariants}
-            justify="space-between"
-            align="center"
-            mt={6}
+        {/* Footer */}
+        <Flex
+          justify="space-between"
+          align="center"
+          flexShrink={0}
+          position="relative"
+          zIndex={1}
+          mt={4}
+        >
+          <Button
+            onClick={handlePrevious}
+            disabled={currentStepIndex === 0}
+            variant="outline"
+            size="md"
+            borderRadius="2xl"
+            className="switch-mode"
           >
-            <Button
-              leftIcon={<FaArrowLeft />}
-              onClick={handlePrevious}
-              isDisabled={currentStepIndex === 0}
-              variant="outline"
-              size="md"
-              borderRadius="2xl !important"
-              className="switch-mode"
-            >
-              Previous
-            </Button>
+            <FaArrowLeft />Back
+          </Button>
 
-            <Button
-              rightIcon={
-                currentStepIndex === totalSteps - 1 ? undefined : (
-                  <FaArrowRight />
-                )
-              }
-              onClick={handleNext}
-              isLoading={isLoading}
-              loadingText={
-                currentStepIndex === totalSteps - 1
-                  ? "Completing setup..."
-                  : "Processing..."
-              }
-              isDisabled={!canProceedToNext()}
-              size="md"
-              borderRadius="2xl !important"
-              className="switch-mode"
-              sx={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontWeight: "600",
-              }}
-            >
-              {currentStepIndex === totalSteps - 1 ? "Complete Setup" : "Next"}
-            </Button>
-          </MotionFlex>
-        </MotionVStack>
-      </MotionBox>
+          <Button
+            onClick={handleNext}
+            loading={isLoading}
+            loadingText={
+              currentStepIndex === totalSteps - 1
+                ? "Completing setup..."
+                : "Processing..."
+            }
+            disabled={!canProceedToNext()}
+            size="md"
+            borderRadius="2xl"
+            className="green-button"
+            css={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontWeight: "600",
+            }}
+          >
+            {currentStepIndex === totalSteps - 1 ? "Start Using Phlox" : "Continue"}
+            {currentStepIndex !== totalSteps - 1 && <FaArrowRight />}
+          </Button>
+        </Flex>
+      </Box>
     </Flex>
   );
 };

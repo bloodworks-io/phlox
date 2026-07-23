@@ -5,25 +5,22 @@ import { FaAtom } from "react-icons/fa";
 // Empty state component shown when no reasoning has been generated yet
 export const EmptyState = ({ loading, status, onGenerate }) => {
     return (
-        <VStack spacing={3} p={4} flex="1" justify="center">
+        <VStack gap={3} p={4} flex="1" justify="center">
             <Text
                 textAlign="center"
                 fontSize="sm"
-                color="gray.500"
+                color="overlay0"
             >
                 Generate an analysis of the case using your
                 model's reasoning capabilities.
             </Text>
             <Button
-                leftIcon={<FaAtom />}
                 onClick={onGenerate}
-                isLoading={loading}
+                loading={loading}
                 loadingText={status || "Generating"}
                 size="sm"
-                className="green-button"
-            >
-                Generate Clinical Reasoning
-            </Button>
+                className="green-button"><FaAtom />Generate Chart Insights
+                            </Button>
         </VStack>
     );
 };

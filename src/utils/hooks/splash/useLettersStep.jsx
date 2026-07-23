@@ -1,54 +1,41 @@
-import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@chakra-ui/react";
+import { useState, useEffect } from "react";
+import useSWR from "swr";
+import { toaster } from "@/components/ui/toaster";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLettersStep } from "../../../utils/splash/validators";
 import { settingsService } from "../../../utils/settings/settingsUtils";
+import { KEYS } from "../../cache/keys";
 
 export const useLettersStep = (currentStep) => {
-  const toast = useToast();
-  const [availableLetterTemplates, setAvailableLetterTemplates] = useState([]);
   const [selectedLetterTemplate, setSelectedLetterTemplate] = useState("");
-  const [isFetchingLetterTemplates, setIsFetchingLetterTemplates] =
-    useState(false);
 
-  const fetchLetterTemplates = useCallback(async () => {
-    if (
-      currentStep === SPLASH_STEPS.LETTERS &&
-      availableLetterTemplates.length === 0
-    ) {
-      setIsFetchingLetterTemplates(true);
-      try {
-        const response = await settingsService.fetchLetterTemplates();
-        setAvailableLetterTemplates(response.templates || []);
-        if (
-          !selectedLetterTemplate &&
-          response.templates &&
-          response.templates.length > 0
-        ) {
-          setSelectedLetterTemplate(response.templates[0].id.toString());
-        }
-      } catch (error) {
-        toast({
-          title: "Error fetching letter templates",
-          description: error.message || "Could not load letter templates",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsFetchingLetterTemplates(false);
-      }
-    }
-  }, [
-    currentStep,
-    availableLetterTemplates.length,
-    selectedLetterTemplate,
-    toast,
-  ]);
+  const shouldFetch = currentStep === SPLASH_STEPS.ABOUT_YOU;
+  const {
+    data: availableLetterTemplates = [],
+    isValidating: isFetchingLetterTemplates,
+    error,
+  } = useSWR(shouldFetch ? KEYS.LETTER_TEMPLATES : null, async () => {
+    const response = await settingsService.fetchLetterTemplates();
+    return response.templates || [];
+  });
 
   useEffect(() => {
-    fetchLetterTemplates();
-  }, [fetchLetterTemplates]);
+    if (error) {
+      toaster.create({
+        title: "Error fetching letter templates",
+        description: error.message || "Could not load letter templates",
+        type: "error",
+        duration: 3000,
+      });
+    }
+  }, [error]);
+
+  // Auto-select first option when data arrives and nothing is selected
+  useEffect(() => {
+    if (availableLetterTemplates.length > 0 && !selectedLetterTemplate) {
+      setSelectedLetterTemplate(availableLetterTemplates[0].id.toString());
+    }
+  }, [availableLetterTemplates, selectedLetterTemplate]);
 
   return {
     availableLetterTemplates,

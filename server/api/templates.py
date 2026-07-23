@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
-from server.database.entities.templates import (
+from server.database.repositories.templates import (
     get_all_templates,
     get_default_template,
     get_template_by_key,
@@ -13,8 +13,8 @@ from server.database.entities.templates import (
     template_exists,
     update_template,
 )
+from server.nlp_tools.templates import generate_template_from_note
 from server.schemas.templates import ClinicalTemplate
-from server.utils.nlp_tools.templates import generate_template_from_note
 
 router = APIRouter()
 
@@ -27,7 +27,7 @@ async def set_default_template_endpoint(template_key: str):
         return JSONResponse(content={"message": f"Set {template_key} as default template"})
     except Exception as e:
         logging.error(f"Error setting default template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/default")
@@ -42,7 +42,7 @@ async def get_default_template_endpoint():
         raise he
     except Exception as e:
         logging.error(f"Error getting default template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/{template_key}")
@@ -55,7 +55,7 @@ async def get_template(template_key: str):
         return JSONResponse(content=template)
     except Exception as e:
         logging.error(f"Error fetching template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/{template_key}")
@@ -73,7 +73,7 @@ async def delete_template(template_key: str):
         raise he
     except Exception as e:
         logging.error(f"Error deleting template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/{template_key}/fields/{field_key}/adaptive-instructions/reset")
@@ -81,7 +81,7 @@ async def reset_adaptive_instructions(template_key: str, field_key: str):
     """
     Reset (clear) the adaptive refinement instructions for a given field in a template.
     """
-    from server.database.entities.templates import (
+    from server.database.repositories.templates import (
         update_field_adaptive_instructions,
     )
 
@@ -105,11 +105,11 @@ async def consolidate_adaptive_instructions_endpoint(template_key: str, field_ke
     Consolidate the adaptive refinement instructions for a given field in a template.
     This resolves contradictions, merges redundancy, and simplifies complex instructions.
     """
-    from server.database.entities.templates import (
+    from server.database.repositories.templates import (
         get_template_by_key,
         update_field_adaptive_instructions,
     )
-    from server.utils.nlp_tools.adaptive_refinement import (
+    from server.nlp_tools.adaptive_refinement import (
         consolidate_adaptive_instructions,
     )
 
@@ -185,7 +185,7 @@ async def get_templates():
         return JSONResponse(content=templates_list)
     except Exception as e:
         logging.error(f"Error fetching templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("")
@@ -220,7 +220,7 @@ async def save_templates(
         )
     except Exception as e:
         logging.error(f"Error saving templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/generate")
@@ -236,4 +236,4 @@ async def generate_template(request_body: dict):
         return JSONResponse(content=generated_template.model_dump())
     except Exception as e:
         logging.error(f"Error generating template from example: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e

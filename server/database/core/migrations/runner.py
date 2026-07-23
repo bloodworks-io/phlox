@@ -45,7 +45,6 @@ def run_migrations(patient_db):
                     raise RuntimeError(f"Missing migration: v{version}")
 
                 logging.info(f"Running migration to version {version}")
-                print(f"Running migration to version {version}")
 
                 cursor.execute(f"SAVEPOINT v{version}")
                 try:

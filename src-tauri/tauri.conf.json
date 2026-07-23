@@ -16,14 +16,15 @@
         "height": 800,
         "resizable": true,
         "fullscreen": false,
-        "titleBarStyle": "Overlay"
+        "titleBarStyle": "Overlay",
+        "dragDropEnabled": false
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' http://localhost:* http://127.0.0.1:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     },
     "macOSPrivateApi": true,
-    "withGlobalTauri": true
+    "withGlobalTauri": false
   },
   "bundle": {
     "active": true,
@@ -62,14 +63,8 @@
     "copyright": "",
     "externalBin": [
       "binaries/phlox-server",
-      "binaries/phlox-pm",
       "binaries/phlox-llama-server",
       "binaries/phlox-whisper-server"
     ]
-  },
-  "plugins": {
-    "shell": {
-      "open": true
-    }
   }
 }

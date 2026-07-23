@@ -1,48 +1,20 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Box,
-  Button,
-  Heading,
-  VStack,
-  useToast,
-  useColorMode,
-  Text,
-  Input,
-  Flex,
-  Image,
-  Progress,
-  HStack,
-  Icon,
-} from "@chakra-ui/react";
-import { FaEye, FaEyeSlash, FaExclamationTriangle, FaLock } from "react-icons/fa";
-import { motion } from "framer-motion";
-import { colors } from "../../theme/colors";
+import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon, Alert } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import {
   encryptionApi,
   calculatePassphraseStrength,
 } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
-import { isChatEnabled } from "../../utils/helpers/featureFlags";
 import {
   SPLASH_STEPS,
   STEP_TITLES,
   STEP_DESCRIPTIONS,
-  getStepIcon,
-  containerVariants,
-  itemVariants,
 } from "../common/splash/constants";
 
-const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
-const MotionFlex = motion(Flex);
-const MotionHeading = motion(Heading);
-const MotionText = motion(Text);
-
 const EncryptionSetup = ({ onComplete }) => {
-  const { colorMode } = useColorMode();
-  const currentColors = colors[colorMode];
-  const toast = useToast();
 
   const [passphrase, setPassphrase] = useState("");
   const [confirmPassphrase, setConfirmPassphrase] = useState("");
@@ -51,15 +23,8 @@ const EncryptionSetup = ({ onComplete }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [strength, setStrength] = useState(calculatePassphraseStrength(""));
 
-  // Calculate total steps including encryption as step 1
-  const totalSteps = useMemo(() => {
-    // Base steps from SplashScreen: Personal, LLM, Transcription, Templates, Letters = 5
-    // Plus optional QuickChat if enabled
-    // Plus encryption step = 1
-    const baseSteps = 5;
-    const chatSteps = isChatEnabled() ? 1 : 0;
-    return 1 + baseSteps + chatSteps; // encryption + splash steps
-  }, []);
+  // Encryption + 3 splash steps (About You, Templates, AI Models)
+  const totalSteps = 4;
 
   const currentStepIndex = 0; // Encryption is always step 1 (index 0)
 
@@ -77,7 +42,7 @@ const EncryptionSetup = ({ onComplete }) => {
 
   const handleSubmit = useCallback(async () => {
     if (!isValid()) {
-      toast({
+      toaster.create({
         title: "Invalid Passphrase",
         description:
           passphrase.length < 12
@@ -85,9 +50,8 @@ const EncryptionSetup = ({ onComplete }) => {
             : passphrase !== confirmPassphrase
               ? "Passphrases do not match"
               : "Please use a stronger passphrase",
-        status: "warning",
+        type: "warning",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -117,38 +81,41 @@ const EncryptionSetup = ({ onComplete }) => {
         } catch (whisperError) {
           console.warn("Whisper service did not start (no model downloaded yet):", whisperError);
         }
+
+        try {
+          await invoke("start_embedding_service");
+        } catch (embeddingError) {
+          console.warn("Embedding service did not start (no model downloaded yet):", embeddingError);
+        }
       } catch (serverError) {
         console.error("Server start failed:", serverError);
-        toast({
+        toaster.create({
           title: "Server Warning",
           description: serverError.toString(),
-          status: "warning",
+          type: "warning",
           duration: 5000,
-          isClosable: true,
         });
       }
 
-      toast({
+      toaster.create({
         title: "Encryption Setup Complete",
         description:
           "Your encryption key has been created. Your data is now secure.",
-        status: "success",
+        type: "success",
         duration: 5000,
-        isClosable: true,
       });
       onComplete();
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Setup Failed",
         description: error.toString() || "An error occurred during setup",
-        status: "error",
+        type: "error",
         duration: 5000,
-        isClosable: true,
       });
     } finally {
       setIsSubmitting(false);
     }
-  }, [passphrase, confirmPassphrase, strength, isValid, onComplete, toast]);
+  }, [passphrase, confirmPassphrase, isValid, onComplete]);
 
   const getStrengthColor = () => {
     if (strength.score <= 1) return "red";
@@ -161,11 +128,12 @@ const EncryptionSetup = ({ onComplete }) => {
     return (strength.score / 4) * 100;
   };
 
+
   return (
     <Flex
       align="center"
       justify="center"
-      minH="100vh"
+      minH="100dvh"
       className="splash-bg"
       px={4}
       py={8}
@@ -183,20 +151,20 @@ const EncryptionSetup = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-
-      <MotionBox
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+      <Box
+        className="anim-fade-scale panels-bg splash-panel"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl !important"
         boxShadow="2xl"
-        className="panels-bg"
-        border={`1px solid ${currentColors.surface}`}
-        w={{ base: "100%", sm: "90%", md: "500px" }}
-        maxW="500px"
+        borderWidth="1px"
+        borderColor="surface"
+        w={{ base: "100%", sm: "90%", md: "600px" }}
+        maxW="600px"
+        h="600px"
+        maxH="85vh"
         position="relative"
         overflow="hidden"
+        display="flex"
+        flexDirection="column"
       >
         <Box
           position="absolute"
@@ -204,127 +172,57 @@ const EncryptionSetup = ({ onComplete }) => {
           left="0"
           right="0"
           height="120px"
-          bgGradient={`linear(to b, ${currentColors.sidebar.background}15, transparent)`}
-          borderRadius="2xl"
+          bgGradient="linear(to b, sidebarBackgroundFaint, transparent)"
           zIndex="0"
         />
 
-        <MotionVStack
-          spacing={6}
-          align="stretch"
-          position="relative"
-          zIndex="1"
-        >
-          <MotionFlex
-            variants={itemVariants}
-            direction="column"
-            align="center"
-            mb={4}
-          >
-            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
-            <MotionHeading
-              as="h1"
-              textAlign="center"
-              color={currentColors.textPrimary}
-              sx={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontSize: ["1.5rem", "1.75rem"],
-                fontWeight: "700",
-                lineHeight: "1.2",
-                marginBottom: "0.5rem",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Welcome to Phlox
-            </MotionHeading>
-            <MotionText
-              textAlign="center"
-              fontSize="sm"
-              color={currentColors.textSecondary}
-              maxW="400px"
-              lineHeight="1.6"
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
-            >
-              Let's set up your AI-powered medical assistant
-            </MotionText>
-          </MotionFlex>
-
-          <MotionBox variants={itemVariants}>
-            <Progress
+        <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
+          <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
+          <Heading as="h2" size="md" color="textPrimary" textAlign="center">
+            {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
+          </Heading>
+          <Text fontSize="sm" color="textSecondary" textAlign="center" maxW="420px" lineHeight="1.5">
+            {STEP_DESCRIPTIONS[SPLASH_STEPS.ENCRYPTION]}
+          </Text>
+          <HStack w="100%" justify="space-between" mt={1}>
+            <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
-              colorScheme="blue"
+              colorPalette="blue"
               borderRadius="full"
               size="sm"
-              mb={2}
-            />
-            <Text
-              fontSize="xs"
-              color={currentColors.textSecondary}
-              textAlign="center"
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
+              flex="1"
             >
-              Step {currentStepIndex + 1} of {totalSteps}
+              <Progress.Track>
+                <Progress.Range />
+              </Progress.Track>
+            </Progress.Root>
+            <Text fontSize="xs" color="textSecondary" whiteSpace="nowrap" ml={3}>
+              {currentStepIndex + 1} of {totalSteps}
             </Text>
-          </MotionBox>
+          </HStack>
+        </VStack>
 
-          <MotionBox variants={itemVariants}>
-            <HStack mb={4} align="center" justify="center">
-              <Icon
-                as={getStepIcon(SPLASH_STEPS.ENCRYPTION)}
-                className="pill-box-icons"
-                boxSize={5}
-              />
-              <Heading
-                as="h2"
-                color={currentColors.textPrimary}
-                sx={{
-                  fontFamily: '"Space Grotesk", sans-serif',
-                  fontSize: ["1.25rem", "1.5rem"],
-                  fontWeight: "600",
-                  lineHeight: "1.2",
-                }}
-              >
-                {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
-              </Heading>
-            </HStack>
-            <Text
-              textAlign="center"
-              fontSize="sm"
-              color={currentColors.textSecondary}
-              mb={4}
-              sx={{ fontFamily: '"Roboto", sans-serif' }}
-            >
-              {STEP_DESCRIPTIONS[SPLASH_STEPS.ENCRYPTION]}
-            </Text>
-          </MotionBox>
-
-          {/* Warning alert with better legibility */}
-          <MotionBox variants={itemVariants}>
-            <Box
-              bg="orange.100"
-              borderLeft="4px solid"
-              borderColor="orange.400"
-              p={3}
-              borderRadius="md"
-            >
-              <HStack align="start">
-                <Icon as={FaExclamationTriangle} color="orange.500" mt={0.5} />
-                <Text color="gray.700" fontSize="sm" lineHeight="1.5">
-                  <strong>Important:</strong> If you forget your passphrase, your
-                  data cannot be recovered. Store it securely.
-                </Text>
-              </HStack>
-            </Box>
-          </MotionBox>
-
-          <VStack spacing={4} align="stretch">
+        {/* Content area — scrolls independently */}
+        <Box
+          flex="1"
+          overflowY="auto"
+          minH="340px"
+          position="relative"
+          zIndex={1}
+          className="custom-scrollbar"
+        >
+          <Alert.Root status="warning" borderRadius="md">
+            <Alert.Indicator />
             <Box>
-              <Text
-                mb={1}
-                fontSize="sm"
-                fontWeight="500"
-                color={currentColors.textPrimary}
-              >
+              <Alert.Description>
+                If you forget your passphrase, your data cannot be recovered.
+              </Alert.Description>
+            </Box>
+          </Alert.Root>
+
+          <VStack gap={4} align="stretch" mt={4}>
+            <Box>
+              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
                 Passphrase
               </Text>
               <HStack>
@@ -333,57 +231,49 @@ const EncryptionSetup = ({ onComplete }) => {
                   placeholder="Enter a secure passphrase (min 12 characters)"
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
-                  size="md"
-                  bg={currentColors.surface}
-                  border={`1px solid ${currentColors.border}`}
-                  color={currentColors.textPrimary}
-                  _placeholder={{ color: currentColors.textSecondary }}
-                  _focus={{
-                    borderColor: currentColors.accent,
-                    boxShadow: `0 0 0 1px ${currentColors.accent}`,
-                  }}
+                  size="sm"
+                  className="input-style"
                 />
                 <Button
-                  size="md"
+                  size="sm"
                   variant="ghost"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label="Toggle password visibility"
                 >
-                  <Icon as={showPassword ? FaEyeSlash : FaEye} />
+                  <Icon asChild>{showPassword ? <FaEyeSlash /> : <FaEye />}</Icon>
                 </Button>
               </HStack>
 
               {passphrase.length > 0 && (
                 <Box mt={2}>
                   <HStack justify="space-between" mb={1}>
-                    <Text fontSize="xs" color={currentColors.textSecondary}>
+                    <Text fontSize="xs" color="textSecondary">
                       Strength
                     </Text>
                     <Text
                       fontSize="xs"
                       fontWeight="600"
-                      color={currentColors[getStrengthColor()] || "gray"}
+                      color={getStrengthColor() + ".400"}
                     >
                       {strength.strength}
                     </Text>
                   </HStack>
-                  <Progress
+                  <Progress.Root
                     value={getStrengthPercent()}
-                    colorScheme={getStrengthColor()}
+                    colorPalette={getStrengthColor()}
                     size="xs"
                     borderRadius="full"
-                  />
+                  >
+                    <Progress.Track>
+                      <Progress.Range />
+                    </Progress.Track>
+                  </Progress.Root>
                 </Box>
               )}
             </Box>
 
             <Box>
-              <Text
-                mb={1}
-                fontSize="sm"
-                fontWeight="500"
-                color={currentColors.textPrimary}
-              >
+              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
                 Confirm Passphrase
               </Text>
               <HStack>
@@ -392,15 +282,8 @@ const EncryptionSetup = ({ onComplete }) => {
                   placeholder="Confirm your passphrase"
                   value={confirmPassphrase}
                   onChange={(e) => setConfirmPassphrase(e.target.value)}
-                  size="md"
-                  bg={currentColors.surface}
-                  border={`1px solid ${currentColors.border}`}
-                  color={currentColors.textPrimary}
-                  _placeholder={{ color: currentColors.textSecondary }}
-                  _focus={{
-                    borderColor: currentColors.accent,
-                    boxShadow: `0 0 0 1px ${currentColors.accent}`,
-                  }}
+                  size="sm"
+                  className="input-style"
                   onKeyPress={(e) => {
                     if (e.key === "Enter" && isValid()) {
                       handleSubmit();
@@ -408,48 +291,53 @@ const EncryptionSetup = ({ onComplete }) => {
                   }}
                 />
                 <Button
-                  size="md"
+                  size="sm"
                   variant="ghost"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label="Toggle confirm password visibility"
                 >
-                  <Icon as={showConfirmPassword ? FaEyeSlash : FaEye} />
+                  <Icon asChild>
+                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                  </Icon>
                 </Button>
               </HStack>
 
               {confirmPassphrase.length > 0 &&
                 passphrase !== confirmPassphrase && (
-                  <Text mt={1} fontSize="xs" color="red.400">
+                  <Text mt={1} fontSize="xs" color="dangerButton">
                     Passphrases do not match
                   </Text>
                 )}
             </Box>
           </VStack>
+        </Box>
 
-          <MotionFlex
-            variants={itemVariants}
-            justify="flex-end"
-            align="center"
-            mt={2}
+        {/* Footer */}
+        <Flex
+          justify="flex-end"
+          align="center"
+          flexShrink={0}
+          position="relative"
+          zIndex={1}
+          pt={4}
+        >
+          <Button
+            onClick={handleSubmit}
+            loading={isSubmitting}
+            loadingText="Setting up encryption..."
+            disabled={!isValid()}
+            size="md"
+            borderRadius="2xl"
+            className="green-button"
+            css={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontWeight: "600",
+            }}
           >
-            <Button
-              onClick={handleSubmit}
-              isLoading={isSubmitting}
-              loadingText="Setting up encryption..."
-              isDisabled={!isValid()}
-              size="md"
-              borderRadius="2xl !important"
-              className="switch-mode"
-              sx={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontWeight: "600",
-              }}
-            >
-              Continue
-            </Button>
-          </MotionFlex>
-        </MotionVStack>
-      </MotionBox>
+            Continue
+          </Button>
+        </Flex>
+      </Box>
     </Flex>
   );
 };

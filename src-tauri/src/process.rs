@@ -1,64 +1,11 @@
 use std::path::PathBuf;
-use std::process::Child;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use tauri::Manager;
 
-use crate::services;
+/// Get the PID file path for a service.
 
-pub struct ServerProcess(pub Mutex<Option<Child>>);
-pub struct LlamaProcess(pub Mutex<Option<Child>>);
-pub struct WhisperProcess(pub Mutex<Option<Child>>);
-
-/// Coordinates restarts to prevent conflicts between manual restarts and monitor loop
-pub struct RestartCoordinator {
-    #[allow(dead_code)]
-    pub server_restarting: AtomicBool,
-    pub llama_restarting: AtomicBool,
-    pub whisper_restarting: AtomicBool,
-}
-
-impl RestartCoordinator {
-    pub fn new() -> Self {
-        Self {
-            server_restarting: AtomicBool::new(false),
-            llama_restarting: AtomicBool::new(false),
-            whisper_restarting: AtomicBool::new(false),
-        }
-    }
-}
-
-impl Default for RestartCoordinator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// Get the PID file path for a service
 fn pid_file_for_service(service: &str) -> Option<PathBuf> {
-    dirs::data_dir().map(|data_dir| data_dir.join("phlox").join(format!("{}.pid", service)))
-}
-
-/// Write a PID file after successful process spawn
-pub fn write_pid_file(service: &str, pid: u32) {
-    if let Some(pid_file) = pid_file_for_service(service) {
-        if let Some(data_dir) = dirs::data_dir() {
-            let phlox_dir = data_dir.join("phlox");
-            std::fs::create_dir_all(&phlox_dir).ok();
-        }
-        if let Err(e) = std::fs::write(&pid_file, pid.to_string()) {
-            log::warn!("Failed to write PID file for {}: {}", service, e);
-        } else {
-            log::debug!(
-                "Wrote PID file for {}: PID {} at {:?}",
-                service,
-                pid,
-                pid_file
-            );
-        }
-    }
+    crate::pm::phlox_dir().map(|dir| dir.join(format!("{}.pid", service)))
 }
 
 /// Check if a specific PID is alive
@@ -153,44 +100,42 @@ fn kill_process_by_pid(pid: u32, service_name: &str) {
     }
 }
 
-/// Kill a process by name pattern and wait for it to exit
+/// Kill a process by name pattern. Only sleeps when at least one process
+/// was actually signalled (skips the 500ms wait in the common no-op case).
 fn kill_process_by_name(pattern: &str, service_name: &str) {
-    #[cfg(target_os = "macos")]
-    {
-        log::info!("Killing {} processes matching: {}", service_name, pattern);
-        let _ = std::process::Command::new("pkill")
-            .arg("-f")
-            .arg(pattern)
-            .output();
+    if kill_by_name_inner(pattern, service_name) {
+        thread::sleep(Duration::from_millis(500));
     }
+}
 
-    #[cfg(target_os = "linux")]
-    {
-        log::info!("Killing {} processes matching: {}", service_name, pattern);
-        let _ = std::process::Command::new("pkill")
-            .arg("-f")
-            .arg(pattern)
-            .output();
-    }
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
+    log::info!("Killing {} processes matching: {}", service_name, pattern);
+    std::process::Command::new("pkill")
+        .arg("-f")
+        .arg(pattern)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
 
-    #[cfg(target_os = "windows")]
-    {
-        log::info!("Killing {} processes matching: {}", service_name, pattern);
-        let _ = std::process::Command::new("taskkill")
-            .arg("/F")
-            .arg("/IM")
-            .arg(pattern)
-            .output();
-    }
-
-    thread::sleep(Duration::from_millis(500));
+#[cfg(target_os = "windows")]
+fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
+    log::info!("Killing {} processes matching: {}", service_name, pattern);
+    std::process::Command::new("taskkill")
+        .arg("/F")
+        .arg("/IM")
+        .arg(pattern)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
 }
 
 pub fn kill_all_processes() {
     log::info!("Killing all existing processes...");
 
     // First, kill any processes tracked by PID files
-    let services = ["llama", "whisper", "server"];
+    let services = ["llama", "whisper", "server", "embedding"];
 
     for service in &services {
         if let Some(pid) = is_process_running_from_pid(service) {
@@ -202,7 +147,9 @@ pub fn kill_all_processes() {
         }
     }
 
-    // Fallback: kill by name pattern for any orphaned processes
+    // Fallback: kill by name pattern for any orphaned processes.
+    // The embedding server uses the same binary as the LLM server, so
+    // phlox-llama-server covers both.
     kill_process_by_name("phlox-llama-server", "phlox-llama-server");
     kill_process_by_name("phlox-whisper-server", "phlox-whisper-server");
     kill_process_by_name("phlox-server", "phlox-server");
@@ -214,146 +161,13 @@ pub fn kill_all_processes() {
 }
 
 pub fn cleanup_stale_files() {
-    if let Some(data_dir) = dirs::data_dir() {
-        let phlox_dir = data_dir.join("phlox");
-
-        // Clean up port files
-        let port_file = phlox_dir.join("server_port.txt");
-        if port_file.exists() {
-            let _ = std::fs::remove_file(&port_file);
-        }
-
-        let llm_port_file = phlox_dir.join("llm_port.txt");
-        if llm_port_file.exists() {
-            let _ = std::fs::remove_file(&llm_port_file);
-        }
-
-        let whisper_port_file = phlox_dir.join("whisper_port.txt");
-        if whisper_port_file.exists() {
-            let _ = std::fs::remove_file(&whisper_port_file);
-        }
-
+    if let Some(phlox_dir) = crate::pm::phlox_dir() {
         // Clean up PID files
-        for service in ["llama", "whisper", "server"] {
+        for service in ["llama", "whisper", "server", "embedding"] {
             let pid_file = phlox_dir.join(format!("{}.pid", service));
             if pid_file.exists() {
                 let _ = std::fs::remove_file(&pid_file);
             }
         }
     }
-}
-
-pub fn monitor_processes(app_handle: tauri::AppHandle, monitor_whisper: bool) {
-    thread::spawn(move || {
-        log::info!("Starting process monitor thread");
-
-        // Get coordinator once at the start
-        let coordinator = match app_handle.try_state::<RestartCoordinator>() {
-            Some(c) => c,
-            None => {
-                log::error!("Failed to get RestartCoordinator state");
-                return;
-            }
-        };
-
-        loop {
-            thread::sleep(Duration::from_secs(10));
-
-            // Check server process
-            if let Ok(mut process_guard) = app_handle.state::<ServerProcess>().0.lock() {
-                if let Some(ref mut child) = *process_guard {
-                    match child.try_wait() {
-                        Ok(Some(exit_status)) => {
-                            log::error!("Server process exited with status: {:?}", exit_status);
-                            *process_guard = None;
-                            // Note: With no keychain caching, we cannot auto-restart the server
-                            // User will need to unlock again on next app launch
-                            log::warn!("Server cannot be auto-restarted (no cached passphrase)");
-                        }
-                        Ok(None) => {
-                            // Process is still running
-                        }
-                        Err(e) => {
-                            log::error!("Error checking server process: {}", e);
-                        }
-                    }
-                }
-            }
-
-            // Check Llama process
-            if let Ok(mut process_guard) = app_handle.state::<LlamaProcess>().0.lock() {
-                if let Some(ref mut child) = *process_guard {
-                    match child.try_wait() {
-                        Ok(Some(exit_status)) => {
-                            log::error!("Llama process exited with status: {:?}", exit_status);
-                            *process_guard = None;
-
-                            // Only restart if not already being restarted manually
-                            if !coordinator.llama_restarting.load(Ordering::SeqCst) {
-                                match services::start_llama() {
-                                    Ok(new_child) => {
-                                        log::info!("Llama restarted with PID: {}", new_child.id());
-                                        *process_guard = Some(new_child);
-                                    }
-                                    Err(e) => {
-                                        log::error!("Failed to restart Llama: {}", e);
-                                        log::info!("Llama will restart after model download");
-                                    }
-                                }
-                            } else {
-                                log::debug!("Llama restart in progress, skipping monitor restart");
-                            }
-                        }
-                        Ok(None) => {
-                            // Process is still running
-                        }
-                        Err(e) => {
-                            log::error!("Error checking Llama process: {}", e);
-                        }
-                    }
-                }
-            }
-
-            // Check Whisper process (only if we started it successfully)
-            if monitor_whisper {
-                if let Ok(mut process_guard) = app_handle.state::<WhisperProcess>().0.lock() {
-                    if let Some(ref mut child) = *process_guard {
-                        match child.try_wait() {
-                            Ok(Some(exit_status)) => {
-                                log::error!(
-                                    "Whisper process exited with status: {:?}",
-                                    exit_status
-                                );
-                                *process_guard = None;
-
-                                // Only restart if not already being restarted manually
-                                if !coordinator.whisper_restarting.load(Ordering::SeqCst) {
-                                    match services::start_whisper() {
-                                        Ok(new_child) => {
-                                            log::info!(
-                                                "Whisper restarted with PID: {}",
-                                                new_child.id()
-                                            );
-                                            *process_guard = Some(new_child);
-                                        }
-                                        Err(e) => log::error!("Failed to restart Whisper: {}", e),
-                                    }
-                                } else {
-                                    log::debug!(
-                                        "Whisper restart in progress, skipping monitor restart"
-                                    );
-                                }
-                            }
-                            Ok(None) => {
-                                // Process is still running
-                            }
-                            Err(e) => {
-                                log::error!("Error checking Whisper process: {}", e);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    });
 }

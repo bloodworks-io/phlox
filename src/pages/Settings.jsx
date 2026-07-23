@@ -3,36 +3,33 @@ import {
     Box,
     Text,
     VStack,
-    useToast,
-    Button,
-    useDisclosure,
+    Center,
+    Spinner,
 } from "@chakra-ui/react";
-import { useState, useEffect, useCallback } from "react";
+import { toaster } from "@/components/ui/toaster";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
+import { settingsApi } from "../utils/api/settingsApi";
+import { settingsHelpers } from "../utils/helpers/settingsHelpers";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
-import LetterTemplatesPanel from "../components/settings/LetterTemplatesPanel";
-import SettingsActions from "../components/settings/SettingsActions";
-import { SPECIALTIES } from "../utils/constants/index.jsx";
-import TemplateSettingsPanel from "../components/settings/TemplateSettingsPanel";
-import ChatSettingsPanel from "../components/settings/ChatSettingsPanel";
-import { isChatEnabled } from "../utils/helpers/featureFlags";
+import { SPECIALTIES } from "../utils/constants";
 import { templateService } from "../utils/services/templateService";
-import LocalModelManagerModal from "../components/modals/LocalModelManagerModal";
 import { localModelApi } from "../utils/api/localModelApi";
 import { useDebounce } from "../utils/hooks/useDebounce";
+import { useAutosave } from "../utils/hooks/useAutosave";
 
 const Settings = () => {
     const [userSettings, setUserSettings] = useState({
         name: "",
         specialty: "",
-        quick_chat_1_title: "Critique my plan",
-        quick_chat_1_prompt: "Critique my plan",
-        quick_chat_2_title: "Any additional investigations",
-        quick_chat_2_prompt: "Any additional investigations",
-        quick_chat_3_title: "Any differentials to consider",
-        quick_chat_3_prompt: "Any differentials to consider",
+        quick_chat_1_title: "Review my plan",
+        quick_chat_1_prompt: "Review my plan",
+        quick_chat_2_title: "Additional points to review",
+        quick_chat_2_prompt: "Additional points to review",
+        quick_chat_3_title: "Other conditions worth reviewing",
+        quick_chat_3_prompt: "Other conditions worth reviewing",
     });
     const [prompts, setPrompts] = useState(null);
     const [options, setOptions] = useState({
@@ -45,38 +42,36 @@ const Settings = () => {
 
     const [config, setConfig] = useState(null);
     const [coreLoading, setCoreLoading] = useState(true);
+    const [showSpinner, setShowSpinner] = useState(false);
     const [llmModelsLoading, setLlmModelsLoading] = useState(false);
     const [whisperModelsLoading, setWhisperModelsLoading] = useState(false);
     const [modelOptions, setModelOptions] = useState([]);
-    const [selectedLocalModel, setSelectedLocalModel] = useState("");
     const [whisperModelOptions, setWhisperModelOptions] = useState([]);
     const [whisperModelListAvailable, setWhisperModelListAvailable] =
         useState(false);
 
-    const toast = useToast();
     const [urlStatus, setUrlStatus] = useState({
         whisper: false,
         llm: false,
     });
-    const localModelsDisclosure = useDisclosure();
-    const [modelManagerRefreshKey, setModelManagerRefreshKey] = useState(0);
     const [collapseStates, setCollapseStates] = useState({
         userSettings: false,
         modelSettings: true,
         promptSettings: true,
-        letterTemplates: true,
-        templates: true,
-        chatSettings: true,
         localModels: true,
     });
+
+    // Track default_template separately — it persists via a different endpoint
+    const lastDefaultTemplateRef = useRef(null);
+
     const fetchCoreSettings = useCallback(async () => {
         try {
             setCoreLoading(true);
-            const configData = await settingsService.fetchConfig();
+            const configData = await settingsApi.fetchConfig();
             setConfig(configData);
 
             // Letter templates fetched here instead of a separate useEffect
-            const [letterResponse] = await Promise.all([
+            const [letterResponse, prompts, optionsData, userSettings, templates] = await Promise.all([
                 settingsService.fetchLetterTemplates().catch((error) => {
                     console.error(
                         "Failed to fetch letter templates:",
@@ -84,20 +79,26 @@ const Settings = () => {
                     );
                     return { templates: [], default_template_id: null };
                 }),
-                settingsService.fetchPrompts(setPrompts),
-                // Only fetch model options if NOT using local models
+                settingsApi.fetchPrompts(),
                 configData?.LLM_PROVIDER !== "local"
-                    ? settingsService.fetchOptions(setOptions)
-                    : Promise.resolve(
-                          setOptions({
-                              general: { num_ctx: 0 },
-                              secondary: { num_ctx: 0 },
-                              letter: { temperature: 0 },
-                          }),
-                      ),
-                settingsService.fetchUserSettings(setUserSettings),
-                settingsService.fetchTemplates(setTemplates),
+                    ? settingsApi.fetchOptions()
+                    : Promise.resolve(null),
+                settingsApi.fetchUserSettings(),
+                settingsApi.fetchTemplates(),
             ]);
+
+            setPrompts(prompts);
+            if (optionsData) {
+                setOptions(settingsHelpers.processOptionsData(optionsData));
+            } else {
+                setOptions({
+                    general: { num_ctx: 0 },
+                    secondary: { num_ctx: 0 },
+                    letter: { temperature: 0 },
+                });
+            }
+            setUserSettings(userSettings);
+            setTemplates(templates);
 
             // Set letter templates from parallel fetch
             if (letterResponse) {
@@ -117,19 +118,19 @@ const Settings = () => {
                 ...prev,
                 default_template: defaultTemplate.template_key,
             }));
+            lastDefaultTemplateRef.current = defaultTemplate.template_key;
         } catch (error) {
             console.error("Error loading settings:", error);
-            toast({
+            toaster.create({
                 title: "Error loading settings",
                 description: error.message,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setCoreLoading(false);
         }
-    }, [toast]);
+    }, []);
 
     useEffect(() => {
         fetchCoreSettings();
@@ -138,11 +139,12 @@ const Settings = () => {
     const debouncedWhisperUrl = useDebounce(config?.WHISPER_BASE_URL, 500);
     const debouncedLlmBaseUrl = useDebounce(config?.LLM_BASE_URL, 500);
     const debouncedLlmProvider = useDebounce(config?.LLM_PROVIDER, 500);
+    const debouncedLlmApiKey = useDebounce(config?.LLM_API_KEY, 500);
 
     useEffect(() => {
         const validateUrls = async () => {
             if (debouncedWhisperUrl) {
-                const whisperValid = await settingsService.validateUrl(
+                const whisperValid = await settingsApi.validateUrl(
                     "whisper",
                     debouncedWhisperUrl,
                 );
@@ -154,7 +156,7 @@ const Settings = () => {
             if (debouncedLlmBaseUrl) {
                 // Use provider type from config for URL validation
                 const providerType = debouncedLlmProvider || "openai";
-                const llmValid = await settingsService.validateUrl(
+                const llmValid = await settingsApi.validateUrl(
                     providerType,
                     debouncedLlmBaseUrl,
                 );
@@ -211,7 +213,7 @@ const Settings = () => {
                     {
                         LLM_PROVIDER: debouncedLlmProvider || "openai",
                         LLM_BASE_URL: debouncedLlmBaseUrl,
-                        LLM_API_KEY: config?.LLM_API_KEY || "",
+                        LLM_API_KEY: debouncedLlmApiKey,
                     },
                     setModelOptions,
                 );
@@ -227,8 +229,8 @@ const Settings = () => {
     }, [
         debouncedLlmBaseUrl,
         debouncedLlmProvider,
+        debouncedLlmApiKey,
         config?.LLM_PROVIDER,
-        config?.LLM_API_KEY,
     ]);
 
     // Load local models when provider is "local"
@@ -243,12 +245,6 @@ const Settings = () => {
                     (m) => m.name || m.filename,
                 );
                 setModelOptions(modelNames);
-                const selectedLocal = localModels.models.find(
-                    (m) => m.is_selected,
-                );
-                setSelectedLocalModel(
-                    selectedLocal?.name || selectedLocal?.filename || "",
-                );
             } catch (error) {
                 console.error("Error loading local models:", error);
                 setModelOptions([]);
@@ -267,59 +263,117 @@ const Settings = () => {
         }));
     };
 
-    const handleSaveChanges = async () => {
-        try {
-            await settingsService.saveSettings({
-                prompts,
-                config,
-                options,
-                userSettings,
-                toast,
-            });
-
-            // Fetch settings again after saving
-            await fetchCoreSettings();
-
-            toast({
-                title: "Settings saved and refreshed",
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-            });
-        } catch (error) {
-            toast({
-                title: "Error saving settings",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-            });
+    const saveUserSettingsFn = async (newSettings) => {
+        const { disabled_tools: _dt, default_template, ...rest } = newSettings;
+        await settingsApi.saveUserSettings({
+            ...rest,
+            default_letter_template_id:
+                newSettings.default_letter_template_id || null,
+        });
+        if (
+            default_template &&
+            default_template !== lastDefaultTemplateRef.current
+        ) {
+            await templateService.setDefaultTemplate(default_template);
+            lastDefaultTemplateRef.current = default_template;
         }
     };
 
-    const handleRestoreDefaults = async () => {
-        await settingsService.resetToDefaults(fetchCoreSettings, toast);
+    const savePromptsFn = async (newPrompts) => {
+        if (newPrompts) await settingsApi.savePrompts(newPrompts);
     };
+
+    const saveConfigFn = async (newConfig) => {
+        if (newConfig) await settingsApi.saveConfig(newConfig);
+    };
+
+    const saveOptionsFn = async (newOptions) => {
+        for (const [category, categoryOptions] of Object.entries(newOptions)) {
+            await settingsApi.saveOptions(category, categoryOptions);
+        }
+    };
+
+    const autosaveEnabled = !coreLoading;
+    const userAutosave = useAutosave(
+        userSettings,
+        saveUserSettingsFn,
+        800,
+        autosaveEnabled,
+    );
+    const promptsAutosave = useAutosave(
+        prompts,
+        savePromptsFn,
+        1200,
+        autosaveEnabled,
+    );
+    const configAutosave = useAutosave(
+        config,
+        saveConfigFn,
+        800,
+        autosaveEnabled,
+    );
+    const optionsAutosave = useAutosave(
+        options,
+        saveOptionsFn,
+        800,
+        autosaveEnabled,
+    );
+
+    const isDirty =
+        userAutosave.isDirty ||
+        promptsAutosave.isDirty ||
+        configAutosave.isDirty ||
+        optionsAutosave.isDirty;
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = "";
+            }
+        };
+        window.addEventListener("beforeunload", handler);
+        return () => window.removeEventListener("beforeunload", handler);
+    }, [isDirty]);
 
     const handlePromptReset = async (promptType) => {
         try {
             const updatedPrompts =
                 await settingsService.resetIndividualPrompt(promptType);
             setPrompts(updatedPrompts);
-            toast({
+            toaster.create({
                 title: "Success",
                 description: `${promptType} prompt reset to default`,
-                status: "success",
+                type: "success",
                 duration: 3000,
-                isClosable: true,
             });
-        } catch (error) {
-            toast({
+        } catch {
+            toaster.create({
                 title: "Error",
                 description: "Failed to reset prompt",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
+            });
+        }
+    };
+
+    const handleOptionsReset = async () => {
+        try {
+            await settingsService.resetOptionsToDefaults();
+            const optionsData = await settingsApi.fetchOptions();
+            setOptions(settingsHelpers.processOptionsData(optionsData));
+            toaster.create({
+                title: "Success",
+                description: "Advanced options reset to defaults",
+                type: "success",
+                duration: 3000,
+            });
+        } catch {
+            toaster.create({
+                title: "Error",
+                description: "Failed to reset advanced options",
+                type: "error",
+                duration: 3000,
             });
         }
     };
@@ -344,34 +398,41 @@ const Settings = () => {
         }));
     };
     const handleConfigChange = (key, value) => {
-        // Update local config state only
         setConfig((prev) => ({
             ...prev,
             [key]: value,
         }));
     };
 
-    const handleClearDatabase = async (newEmbeddingModel) => {
-        await settingsService.clearDatabase(newEmbeddingModel, config, toast);
-        // Refresh settings after database clear
+    const handleReEmbed = async (newEmbeddingModel, onProgress = null) => {
+        await settingsService.reEmbed(
+            newEmbeddingModel,
+            config,
+            true,
+            onProgress,
+        );
         await fetchCoreSettings();
     };
 
-    const handleReEmbed = async (newEmbeddingModel, onProgress = null) => {
-        await settingsService.reEmbed(newEmbeddingModel, config, toast, onProgress);
-        // Refresh settings after re-embed
-        await fetchCoreSettings();
-    };
+    useEffect(() => {
+        if (!coreLoading) return;
+        const t = setTimeout(() => setShowSpinner(true), 150);
+        return () => clearTimeout(t);
+    }, [coreLoading]);
 
     if (coreLoading) {
-        return <Box>Loading...</Box>;
+        return (
+            <Center h="100dvh">
+                {showSpinner && <Spinner size="xl" />}
+            </Center>
+        );
     }
     return (
         <Box p="5" borderRadius="sm" w="100%">
             <Text as="h2" mb="4">
                 Settings
             </Text>
-            <VStack spacing="5" align="stretch">
+            <VStack gap="5" align="stretch">
                 <UserSettingsPanel
                     isCollapsed={collapseStates.userSettings}
                     setIsCollapsed={() => toggleCollapse("userSettings")}
@@ -380,7 +441,7 @@ const Settings = () => {
                     specialties={SPECIALTIES}
                     templates={templates}
                     letterTemplates={letterTemplates}
-                    toast={toast}
+                    setTemplates={setTemplates}
                 />
 
                 <ModelSettingsPanel
@@ -389,17 +450,12 @@ const Settings = () => {
                     config={config}
                     handleConfigChange={handleConfigChange}
                     modelOptions={modelOptions}
-                    selectedLocalModel={selectedLocalModel}
                     embeddingModelOptions={modelOptions}
                     whisperModelOptions={whisperModelOptions}
                     whisperModelListAvailable={whisperModelListAvailable}
                     whisperModelsLoading={whisperModelsLoading}
                     llmModelsLoading={llmModelsLoading}
                     urlStatus={urlStatus}
-                    onOpenLocalModelManager={localModelsDisclosure.onOpen}
-                    showLocalManagerButton
-                    modelManagerRefreshKey={modelManagerRefreshKey}
-                    handleClearDatabase={handleClearDatabase}
                     handleReEmbed={handleReEmbed}
                 />
 
@@ -411,62 +467,10 @@ const Settings = () => {
                     handlePromptReset={handlePromptReset}
                     options={options}
                     handleOptionChange={handleOptionChange}
+                    handleOptionsReset={handleOptionsReset}
                     config={config}
                 />
-
-                <TemplateSettingsPanel
-                    isCollapsed={collapseStates.templates}
-                    setIsCollapsed={() => toggleCollapse("templates")}
-                    templates={templates}
-                    setTemplates={setTemplates}
-                />
-
-                <LetterTemplatesPanel
-                    isCollapsed={collapseStates.letterTemplates}
-                    setIsCollapsed={() => toggleCollapse("letterTemplates")}
-                />
-
-                {isChatEnabled() && (
-                    <ChatSettingsPanel
-                        isCollapsed={collapseStates.chatSettings}
-                        setIsCollapsed={() => toggleCollapse("chatSettings")}
-                        userSettings={userSettings}
-                        setUserSettings={setUserSettings}
-                    />
-                )}
-
-                <SettingsActions
-                    onSave={handleSaveChanges}
-                    onRestoreDefaults={handleRestoreDefaults}
-                />
             </VStack>
-
-            <LocalModelManagerModal
-                isOpen={localModelsDisclosure.isOpen}
-                onClose={async () => {
-                    localModelsDisclosure.onClose();
-                    // Refresh model list based on provider
-                    if (config?.LLM_PROVIDER === "local") {
-                        try {
-                            const localModels =
-                                await localModelApi.fetchLocalModels();
-                            const modelNames = localModels.models.map(
-                                (m) => m.name || m.filename,
-                            );
-                            setModelOptions(modelNames);
-                        } catch (error) {
-                            console.error("Error loading local models:", error);
-                        }
-                    } else if (config?.LLM_BASE_URL) {
-                        await settingsService.fetchLLMModels(
-                            config,
-                            setModelOptions,
-                        );
-                    }
-                    // Trigger refresh in ModelSettingsPanel for Whisper model
-                    setModelManagerRefreshKey((prev) => prev + 1);
-                }}
-            />
         </Box>
     );
 };

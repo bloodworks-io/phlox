@@ -1,21 +1,20 @@
-version: "3"
 services:
   app:
-    image: phlox:latest
+    image: ghcr.io/bloodworks-io/phlox:latest
     container_name: phlox
+    restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000" # Use "5000:5000" only behind a reverse proxy
     environment:
-      - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY}
-      - ALLOWED_ORIGINS=* # Comma-separated list of allowed CORS origins (e.g., https://phlox.example.com)
-      - TZ= # Replace with your timezone
+      - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY} # Required: generate a strong random key
+      - ALLOWED_ORIGINS= # e.g. https://phlox.example.com (comma-separated); do NOT use "*" in production
+      - TZ=${TZ} # e.g. America/New_York
       - LLM_EXTRA_BODY= # Optional: JSON string for extra_body params (e.g., '{"chat_template_kwargs": {"thinking": true}}'); does not apply to streaming requests
-      # Proxy auth (for reverse proxy deployments like Traefik, Caddy, Nginx)
-      # - PROXY_AUTH_ENABLED=true # Disabled by default
-      # - PROXY_AUTH_USER_HEADER= # Header containing authenticated username
+      # Proxy auth (recommended when behind a reverse proxy)
+      # - PROXY_AUTH_ENABLED=true
+      # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
       # - PROXY_AUTH_ALLOWED_USERS= # Comma-separated list of allowed users (empty = any authenticated user)
       # Rate limiting
-      # - RATE_LIMIT_ENABLED=true # Disabled by default
+      # - RATE_LIMIT_ENABLED=true
     volumes:
-      - ./data:/usr/src/app/data # Only for persistent data
-      - ./logs:/usr/src/app/logs # Optional: Persist logs
+      - ./data:/usr/src/app/data # Persistent data (database, vectors)

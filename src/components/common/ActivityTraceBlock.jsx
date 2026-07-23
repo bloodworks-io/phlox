@@ -1,13 +1,5 @@
-import React, { useRef, useState, useEffect } from "react";
-import {
-    Box,
-    Flex,
-    Text,
-    HStack,
-    IconButton,
-    Collapse,
-    Spinner,
-} from "@chakra-ui/react";
+import React, { useState, useEffect } from "react";
+import { Box, Flex, Text, HStack, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "./icons";
 import {
     getToolName,
@@ -50,21 +42,17 @@ const ActivityTraceBlock = ({
     const stepCount = traceBlocks.length;
 
     // Timer: track how long thinking/tool use took
-    const startedAtRef = useRef(null);
+    const [startedAt] = useState(() => Date.now());
     const [elapsedSeconds, setElapsedSeconds] = useState(null);
 
-    if (startedAtRef.current === null) {
-        startedAtRef.current = Date.now();
-    }
-
     useEffect(() => {
-        if (!currentActivity.isOngoing && startedAtRef.current) {
+        if (!currentActivity.isOngoing) {
             const seconds = Math.round(
-                (Date.now() - startedAtRef.current) / 1000,
+                (Date.now() - startedAt) / 1000,
             );
             setElapsedSeconds(seconds);
         }
-    }, [currentActivity.isOngoing]);
+    }, [currentActivity.isOngoing, startedAt]);
 
     const formatDuration = (secs) => {
         if (secs < 60) return `${secs}s`;
@@ -100,7 +88,7 @@ const ActivityTraceBlock = ({
                         )}
                     </>
                 ) : (
-                    <Text mr="2" fontWeight="medium" fontSize="xs" color="gray.500">
+                    <Text mr="2" fontWeight="medium" fontSize="xs" color="overlay0">
                         {stepCount} {stepCount === 1 ? "step" : "steps"}
                     </Text>
                 )}
@@ -108,188 +96,175 @@ const ActivityTraceBlock = ({
                     aria-label={
                         isTraceExpanded ? "Collapse trace" : "Expand trace"
                     }
-                    icon={
-                        isTraceExpanded ? (
-                            <ChevronUpIcon />
-                        ) : (
-                            <ChevronDownIcon />
-                        )
-                    }
                     variant="ghost"
                     size="xs"
-                    className="chat-disclosure-icon"
-                />
+                    className="chat-disclosure-icon">{isTraceExpanded ? (
+                        <ChevronUpIcon />
+                    ) : (
+                        <ChevronDownIcon />
+                    )}</IconButton>
             </Flex>
-
             {/* Expanded — full trace of all steps */}
-            <Collapse in={isTraceExpanded} animateOpacity>
-                <Box ml={1}>
-                    {traceBlocks.map((block, blockIndex) => {
-                        if (block.type === "think") {
-                            const isExpanded = getThinkingBlockState
-                                ? getThinkingBlockState(message, blockIndex)
-                                : Boolean(message?.isThinkingExpanded);
+            <Collapsible.Root open={isTraceExpanded}>
+                <Collapsible.Content>
+                    <Box ml={1}>
+                        {traceBlocks.map((block, blockIndex) => {
+                            if (block.type === "think") {
+                                const isExpanded = getThinkingBlockState
+                                    ? getThinkingBlockState(message, blockIndex)
+                                    : Boolean(message?.isThinkingExpanded);
 
-                            return (
-                                <Box
-                                    key={`trace-think-${blockIndex}`}
-                                    my={0.5}
-                                >
-                                    <Flex
-                                        align="center"
-                                        onClick={() =>
-                                            toggleThinkingVisibility(
-                                                messageIndex,
-                                                blockIndex,
-                                            )
-                                        }
-                                        cursor="pointer"
-                                        p={0.5}
-                                        borderRadius="sm"
-                                        className="thinking-toggle"
+                                return (
+                                    <Box
+                                        key={`trace-think-${blockIndex}`}
+                                        my={0.5}
                                     >
-                                        <Text
-                                            mr="1.5"
-                                            fontSize="xs"
-                                            fontWeight="medium"
-                                        >
-                                            Thinking
-                                            {block.isPartial ? "..." : ""}
-                                        </Text>
-                                        <IconButton
-                                            aria-label={
-                                                isExpanded
-                                                    ? "Collapse thinking"
-                                                    : "Expand thinking"
+                                        <Flex
+                                            align="center"
+                                            onClick={() =>
+                                                toggleThinkingVisibility(
+                                                    messageIndex,
+                                                    blockIndex,
+                                                )
                                             }
-                                            icon={
-                                                isExpanded ? (
+                                            cursor="pointer"
+                                            p={0.5}
+                                            borderRadius="sm"
+                                            className="thinking-toggle"
+                                        >
+                                            <Text
+                                                mr="1.5"
+                                                fontSize="xs"
+                                                fontWeight="medium"
+                                            >
+                                                Thinking
+                                                {block.isPartial ? "..." : ""}
+                                            </Text>
+                                            <IconButton
+                                                aria-label={
+                                                    isExpanded
+                                                        ? "Collapse thinking"
+                                                        : "Expand thinking"
+                                                }
+                                                variant="ghost"
+                                                size="xs"
+                                                className="chat-disclosure-icon">{isExpanded ? (
                                                     <ChevronUpIcon />
                                                 ) : (
                                                     <ChevronDownIcon />
+                                                )}</IconButton>
+                                        </Flex>
+                                        <Collapsible.Root open={isExpanded}>
+                                            <Collapsible.Content>
+                                                <Box
+                                                    className="thinking-block"
+                                                    mt={1}
+                                                    p={1}
+                                                    borderLeftWidth="3px"
+                                                    borderColor="accent"
+                                                    bg="blackAlpha.50"
+                                                    borderRadius="sm"
+                                                >
+                                                    <Text
+                                                        whiteSpace="pre-wrap"
+                                                        fontSize="xs"
+                                                        className="thinking-block-text"
+                                                    >
+                                                        {block.content}
+                                                    </Text>
+                                                </Box>
+                                            </Collapsible.Content>
+                                        </Collapsible.Root>
+                                    </Box>
+                                );
+                            }
+
+                            if (block.type === "tool") {
+                                const toolKey = `${messageIndex}:${blockIndex}`;
+                                const isExpanded = expandedToolBlocks
+                                    ? Boolean(expandedToolBlocks[toolKey])
+                                    : false;
+                                const toolName = getToolName(block);
+                                const presentation =
+                                    getToolPresentation(toolName);
+                                const ToolIcon = presentation.icon;
+                                const toolContent = formatToolContent(
+                                    block.content,
+                                );
+
+                                return (
+                                    <Box
+                                        key={`trace-tool-${blockIndex}`}
+                                        my={0.5}
+                                    >
+                                        <Flex
+                                            align="center"
+                                            onClick={() =>
+                                                toggleToolExpanded(
+                                                    messageIndex,
+                                                    blockIndex,
                                                 )
                                             }
-                                            variant="ghost"
-                                            size="xs"
-                                            className="chat-disclosure-icon"
-                                        />
-                                    </Flex>
-                                    <Collapse
-                                        in={isExpanded}
-                                        animateOpacity
-                                    >
-                                        <Box
-                                            className="thinking-block"
-                                            mt={1}
-                                            p={1}
-                                            borderLeftWidth="3px"
-                                            borderColor="blue.300"
-                                            bg="blackAlpha.50"
+                                            cursor="pointer"
+                                            p={0.5}
                                             borderRadius="sm"
+                                            className="thinking-toggle"
                                         >
-                                            <Text
-                                                whiteSpace="pre-wrap"
-                                                fontSize="xs"
-                                                className="thinking-block-text"
-                                            >
-                                                {block.content}
-                                            </Text>
-                                        </Box>
-                                    </Collapse>
-                                </Box>
-                            );
-                        }
-
-                        if (block.type === "tool") {
-                            const toolKey = `${messageIndex}:${blockIndex}`;
-                            const isExpanded = expandedToolBlocks
-                                ? Boolean(expandedToolBlocks[toolKey])
-                                : false;
-                            const toolName = getToolName(block);
-                            const presentation =
-                                getToolPresentation(toolName);
-                            const ToolIcon = presentation.icon;
-                            const toolContent = formatToolContent(
-                                block.content,
-                            );
-
-                            return (
-                                <Box
-                                    key={`trace-tool-${blockIndex}`}
-                                    my={0.5}
-                                >
-                                    <Flex
-                                        align="center"
-                                        onClick={() =>
-                                            toggleToolExpanded(
-                                                messageIndex,
-                                                blockIndex,
-                                            )
-                                        }
-                                        cursor="pointer"
-                                        p={0.5}
-                                        borderRadius="sm"
-                                        className="thinking-toggle"
-                                    >
-                                        <HStack spacing={1.5} mr="1">
-                                            <ToolIcon size="0.75em" />
-                                            <Text
-                                                fontSize="xs"
-                                                fontWeight="bold"
-                                            >
-                                                {presentation.label}
-                                            </Text>
-                                        </HStack>
-                                        <IconButton
-                                            aria-label={
-                                                isExpanded
-                                                    ? "Collapse tool output"
-                                                    : "Expand tool output"
-                                            }
-                                            icon={
-                                                isExpanded ? (
+                                            <HStack gap={1.5} mr="1">
+                                                <ToolIcon size="0.75em" />
+                                                <Text
+                                                    fontSize="xs"
+                                                    fontWeight="bold"
+                                                >
+                                                    {presentation.label}
+                                                </Text>
+                                            </HStack>
+                                            <IconButton
+                                                aria-label={
+                                                    isExpanded
+                                                        ? "Collapse tool output"
+                                                        : "Expand tool output"
+                                                }
+                                                variant="ghost"
+                                                size="xs"
+                                                className="chat-disclosure-icon">{isExpanded ? (
                                                     <ChevronUpIcon />
                                                 ) : (
                                                     <ChevronDownIcon />
-                                                )
-                                            }
-                                            variant="ghost"
-                                            size="xs"
-                                            className="chat-disclosure-icon"
-                                        />
-                                    </Flex>
-                                    <Collapse
-                                        in={isExpanded}
-                                        animateOpacity
-                                    >
-                                        <Box
-                                            mt={1}
-                                            p={1}
-                                            borderLeftWidth="3px"
-                                            borderColor={
-                                                presentation.borderColor
-                                            }
-                                            bg={presentation.bg}
-                                            borderRadius="sm"
-                                        >
-                                            <Text
-                                                fontSize="xs"
-                                                color="gray.500"
-                                                mb={1}
-                                            >
-                                                {toolContent ||
-                                                    "(No tool output)"}
-                                            </Text>
-                                        </Box>
-                                    </Collapse>
-                                </Box>
-                            );
-                        }
+                                                )}</IconButton>
+                                        </Flex>
+                                        <Collapsible.Root open={isExpanded}>
+                                            <Collapsible.Content>
+                                                <Box
+                                                    mt={1}
+                                                    p={1}
+                                                    borderLeftWidth="3px"
+                                                    borderColor={
+                                                        presentation.borderColor
+                                                    }
+                                                    bg={presentation.bg}
+                                                    borderRadius="sm"
+                                                >
+                                                    <Text
+                                                        fontSize="xs"
+                                                        color="overlay0"
+                                                        mb={1}
+                                                    >
+                                                        {toolContent ||
+                                                            "(No tool output)"}
+                                                    </Text>
+                                                </Box>
+                                            </Collapsible.Content>
+                                        </Collapsible.Root>
+                                    </Box>
+                                );
+                            }
 
-                        return null;
-                    })}
-                </Box>
-            </Collapse>
+                            return null;
+                        })}
+                    </Box>
+                </Collapsible.Content>
+            </Collapsible.Root>
         </Box>
     );
 };

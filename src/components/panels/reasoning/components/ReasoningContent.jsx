@@ -1,18 +1,9 @@
-import React, { useState } from "react";
-import {
-    Text,
-    Tabs,
-    TabList,
-    TabPanels,
-    TabPanel,
-    Tab,
-    VStack,
-    Box,
-    Badge,
-    Button,
-} from "@chakra-ui/react";
+import React, { useState, useMemo } from "react";
+import { Text, Tabs, VStack, Box, Badge, Button } from "@chakra-ui/react";
 import { ReasoningItem } from "./ReasoningItem";
 import { CitationList } from "./CitationList";
+import MarkdownRenderer from "../../../common/MarkdownRenderer";
+import { buildCitationRemap } from "../../../../utils/chat/messageParser";
 
 const getReasoningKey = (section) => {
     if (section === "considerations") {
@@ -27,14 +18,14 @@ const renderItems = (section, reasoning, colorMode) => {
 
     if (!items || items.length === 0) {
         return (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="sm" color="overlay0">
                 No items available
             </Text>
         );
     }
 
     return (
-        <VStack align="stretch" spacing={2}>
+        <VStack align="stretch" gap={2}>
             {items.map((item, i) => (
                 <ReasoningItem
                     key={i}
@@ -143,7 +134,7 @@ const truncateText = (text, maxChars) => {
     return `${text.slice(0, maxChars)}...`;
 };
 
-const ThinkingCard = ({ step, index, colorMode }) => {
+const ThinkingCard = ({ step, index }) => {
     const isResultCard = step.type === "tool_result";
     const [isResultCollapsed, setIsResultCollapsed] = useState(isResultCard);
 
@@ -163,16 +154,14 @@ const ThinkingCard = ({ step, index, colorMode }) => {
             borderRadius="md"
             borderLeftWidth="4px"
             borderLeftColor={getCardAccent(step.type)}
-            bg={colorMode === "dark" ? "whiteAlpha.100" : "gray.50"}
+            bg="surfaceMuted"
         >
-            <Badge mb={2} colorScheme="gray" variant="subtle">
+            <Badge mb={2} colorPalette="gray" variant="subtle">
                 {getCardBadge(step.type)}
             </Badge>
-
             <Text fontSize="sm" whiteSpace="pre-wrap">
                 {displayedContent}
             </Text>
-
             {isResultCard && (
                 <Button
                     mt={3}
@@ -192,14 +181,14 @@ const renderThinkingCards = (thinking, colorMode) => {
 
     if (!steps.length) {
         return (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="sm" color="overlay0">
                 No thinking trace available
             </Text>
         );
     }
 
     return (
-        <VStack align="stretch" spacing={3}>
+        <VStack align="stretch" gap={3}>
             {steps.map((step, i) => (
                 <ThinkingCard
                     key={`${step.type}-${i}`}
@@ -218,80 +207,126 @@ export const ReasoningContent = ({
     setTabIndex,
     colorMode,
 }) => {
+    const { remap, citedOriginals } = useMemo(() => {
+        const citations = reasoning?.citations;
+        if (!citations || citations.length === 0) {
+            return { remap: new Map(), citedOriginals: [] };
+        }
+        const parts = [];
+        if (reasoning?.summary) parts.push(String(reasoning.summary));
+        if (reasoning?.thinking) parts.push(String(reasoning.thinking));
+        for (const key of [
+            "differentials",
+            "investigations",
+            "clinical_considerations",
+        ]) {
+            const items = reasoning?.[key];
+            if (Array.isArray(items)) {
+                for (const it of items) {
+                    if (Array.isArray(it?.rationale)) {
+                        parts.push(...it.rationale.map(String));
+                    }
+                    if (it?.suggestion) parts.push(String(it.suggestion));
+                }
+            }
+        }
+        return buildCitationRemap(parts.join("\n"));
+    }, [reasoning]);
+
     return (
-        <Tabs
+        <Tabs.Root
             variant="enclosed"
-            index={tabIndex}
-            onChange={(index) => setTabIndex(index)}
+            value={tabIndex}
+            onValueChange={({ value }) => setTabIndex(value)}
             display="flex"
             flexDirection="column"
             height="100%"
         >
-            <TabList>
-                <Tab className="tab-style">Summary</Tab>
-                <Tab className="tab-style">Differentials</Tab>
-                <Tab className="tab-style">Investigations</Tab>
-                <Tab className="tab-style">Considerations</Tab>
-                <Tab className="tab-style">Thinking</Tab>
-            </TabList>
-
-            <TabPanels flex="1" overflow="hidden" minHeight="0">
-                {/* Summary Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                    display="flex"
-                    flexDirection="column"
+            <Tabs.List>
+                <Tabs.Trigger className="tab-style" value="0">
+                    Summary
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="1">
+                    Possible Conditions
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="2">
+                    Suggested Workup
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="3">
+                    Considerations
+                </Tabs.Trigger>
+                <Tabs.Trigger className="tab-style" value="4">
+                    Thinking
+                </Tabs.Trigger>
+            </Tabs.List>
+            {/* Summary Tab */}
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                display="flex"
+                flexDirection="column"
+                value="0"
+            >
+                <MarkdownRenderer
+                    citations={reasoning?.citations}
+                    citationRemap={remap}
                 >
-                    <Text fontSize="sm">{reasoning.summary}</Text>
-                </TabPanel>
+                    {reasoning.summary || ""}
+                </MarkdownRenderer>
+            </Tabs.Content>
 
-                {/* Differentials Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("differentials", reasoning, colorMode)}
-                </TabPanel>
+            {/* Possible Conditions Tab */}
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                value="1"
+            >
+                {renderItems("differentials", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Investigations Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("investigations", reasoning, colorMode)}
-                </TabPanel>
+            {/* Suggested Workup Tab */}
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                value="2"
+            >
+                {renderItems("investigations", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Considerations Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderItems("considerations", reasoning, colorMode)}
-                </TabPanel>
+            {/* Considerations Tab */}
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                value="3"
+            >
+                {renderItems("considerations", reasoning, colorMode)}
+            </Tabs.Content>
 
-                {/* Thinking Tab */}
-                <TabPanel
-                    className="floating-main"
-                    height="100%"
-                    minHeight="0"
-                    overflowY="auto"
-                >
-                    {renderThinkingCards(reasoning?.thinking, colorMode)}
-                    <CitationList
-                        citations={reasoning?.citations}
-                        colorMode={colorMode}
-                    />
-                </TabPanel>
-            </TabPanels>
-        </Tabs>
+            {/* Thinking Tab */}
+            <Tabs.Content
+                className="floating-main"
+                flex="1"
+                minHeight="0"
+                overflowY="auto"
+                value="4"
+            >
+                {renderThinkingCards(reasoning?.thinking, colorMode)}
+                <CitationList
+                    citations={reasoning?.citations}
+                    citedOriginals={
+                        citedOriginals.length > 0 ? citedOriginals : null
+                    }
+                    colorMode={colorMode}
+                />
+            </Tabs.Content>
+        </Tabs.Root>
     );
 };

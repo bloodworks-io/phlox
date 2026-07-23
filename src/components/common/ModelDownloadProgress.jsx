@@ -8,16 +8,14 @@ export const ModelDownloadProgress = ({ progress }) => {
 
   return (
     <Box>
-      <Text fontSize="xs" color="gray.600" mb={1}>
+      <Text fontSize="xs" color="textTertiary" mb={1}>
         {Math.round(percentage)}%
       </Text>
-      <Progress
-        value={percentage}
-        colorScheme="blue"
-        size="sm"
-        hasStripe
-        isAnimated
-      />
+      <Progress.Root value={percentage} colorPalette="blue" size="sm" striped animated>
+        <Progress.Track>
+          <Progress.Range />
+        </Progress.Track>
+      </Progress.Root>
     </Box>
   );
 };

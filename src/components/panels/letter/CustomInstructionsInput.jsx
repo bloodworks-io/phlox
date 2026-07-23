@@ -17,11 +17,11 @@ const CustomInstructionsInput = ({
                 value={additionalInstructions}
                 onChange={(e) => setAdditionalInstructions(e.target.value)}
                 className="chat-input"
-                sx={{
+                css={{
                     paddingY: "2",
                     paddingX: "4",
                     minHeight: "40px",
-                    resize: "none",
+                    resize: "none"
                 }}
             />
         </Box>

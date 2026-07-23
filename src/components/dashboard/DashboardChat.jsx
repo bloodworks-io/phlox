@@ -5,9 +5,9 @@ import { useChat } from "../../utils/hooks/useChat";
 import DashboardChatInput from "./DashboardChatInput";
 import DashboardTodoPanel from "./DashboardTodoPanel";
 import DashboardMessageList from "./DashboardMessageList";
-import { universalFetch } from "../../utils/helpers/apiHelpers";
-import { buildApiUrl } from "../../utils/helpers/apiConfig";
 import { chatApi } from "../../utils/api/chatApi";
+import { settingsApi } from "../../utils/api/settingsApi";
+import { SPECIALTY_SUGGESTIONS } from "../../utils/constants";
 import { useDashboardTodos } from "../../utils/hooks/useDashboardTodos";
 import {
     convertFileToDataUrl,
@@ -21,6 +21,13 @@ const normalizeProcessingMode = (value) => {
         .toLowerCase();
     if (mode === "vision" || mode === "ocr" || mode === "auto") return mode;
     return "auto";
+};
+
+const pickSuggestions = (specialty) => {
+    const pool =
+        SPECIALTY_SUGGESTIONS[String(specialty || "").trim().toLowerCase()] ||
+        SPECIALTY_SUGGESTIONS["general practice"];
+    return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
 };
 
 const DashboardChat = () => {
@@ -84,16 +91,16 @@ const DashboardChat = () => {
     useEffect(() => {
         const fetchInitialChatSettings = async () => {
             try {
-                const [settingsResponse, globalConfigResponse] =
-                    await Promise.all([
-                        universalFetch(await buildApiUrl("/api/config/user")),
-                        universalFetch(await buildApiUrl("/api/config/global")),
-                    ]);
+                const [userSettings, globalConfig] = await Promise.all([
+                    settingsApi.fetchUserSettings(),
+                    settingsApi.fetchConfig(),
+                ]);
 
-                const userSettings = await settingsResponse.json();
+                if (userSettings.specialty) {
+                    setRagSuggestions(pickSuggestions(userSettings.specialty));
+                }
 
-                if (globalConfigResponse.ok) {
-                    const globalConfig = await globalConfigResponse.json();
+                if (globalConfig) {
                     setDocumentImageMode(
                         normalizeProcessingMode(
                             globalConfig?.DOCUMENT_IMAGE_PROCESSING_MODE,
@@ -113,16 +120,6 @@ const DashboardChat = () => {
                             Boolean(globalConfig?.VISION_MODEL_CAPABLE),
                         );
                     }
-                }
-
-                if (userSettings.specialty) {
-                    const response = await universalFetch(
-                        await buildApiUrl(`/api/rag/suggestions`),
-                    );
-                    if (!response.ok)
-                        throw new Error("Failed to fetch suggestions");
-                    const data = await response.json();
-                    setRagSuggestions(data.suggestions);
                 }
             } catch (error) {
                 console.error("Error fetching initial chat settings:", error);
@@ -370,28 +367,38 @@ const DashboardChat = () => {
                     isIntroFading && !isProcessingImage ? "none" : "auto"
                 }
             >
-                <VStack spacing={8} w="100%" maxW="800px">
+                <VStack gap={8} w="100%" maxW="800px">
                     {/* Greeting */}
-                    <VStack spacing={2}>
+                    <VStack gap={2}>
                         <Text
                             fontSize="2xl"
                             fontWeight="bold"
+                            fontFamily="heading"
                             className="dashboard-chat-greeting"
                         >
                             How can I help you today?
                         </Text>
-                        <Text fontSize="md" color="gray.500">
+                        <Text fontSize="md" color="overlay0">
                             Ask about patients, evidence, or outstanding jobs
                         </Text>
                     </VStack>
 
                     {/* Suggestions */}
                     {showSuggestions && ragSuggestions.length > 0 && (
-                        <Flex wrap="wrap" justify="center" gap={3}>
+                        <Flex
+                            wrap="wrap"
+                            justify="center"
+                            gap={3}
+                            className="anim-stagger"
+                        >
                             {ragSuggestions.map((suggestion, index) => (
                                 <Button
                                     key={index}
-                                    leftIcon={
+                                    onClick={() =>
+                                        handleSendMessage(suggestion)
+                                    }
+                                    className="dashboard-chat-suggestions"
+                                    size="sm">{
                                         index === 0 ? (
                                             <InfoIcon />
                                         ) : index === 1 ? (
@@ -399,15 +406,7 @@ const DashboardChat = () => {
                                         ) : (
                                             <QuestionIcon />
                                         )
-                                    }
-                                    onClick={() =>
-                                        handleSendMessage(suggestion)
-                                    }
-                                    className="dashboard-chat-suggestions"
-                                    size="sm"
-                                >
-                                    {suggestion}
-                                </Button>
+                                    }{suggestion}</Button>
                             ))}
                         </Flex>
                     )}

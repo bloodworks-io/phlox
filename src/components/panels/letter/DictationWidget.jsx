@@ -1,24 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  IconButton,
-  Box,
-  Tooltip,
-  useToast,
-  Flex,
-  Text,
-  useTheme,
-  useColorMode,
-  Spinner,
-} from "@chakra-ui/react";
+import { colors } from "../../../theme/colors";
+import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaMicrophone, FaStop } from "react-icons/fa";
-import { universalFetch } from "../../../utils/helpers/apiHelpers";
-import { buildApiUrl } from "../../../utils/helpers/apiConfig";
+import { transcriptionApi } from "../../../utils/api/transcriptionApi";
 import { letterApi } from "../../../utils/api/letterApi";
-import { convertAudioToWav } from "../../../utils/hooks/useTranscription";
+import { AudioRecorder } from "../../../utils/audioRecorder";
 
 const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
-  const theme = useTheme();
-  const { colorMode } = useColorMode();
   const barCount = 8; // Smaller for widget
 
   const [bars] = useState(() =>
@@ -59,7 +49,7 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
           mx="1.5px"
           borderRadius="full"
           bg={
-            theme.colors[colorMode === "light" ? "light" : "dark"].primaryButton
+            colors.light.primaryButton
           }
           opacity={isPaused ? "0.5" : "1"}
           animation={
@@ -67,11 +57,11 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
               ? `barAnimation ${bar.frequency}s infinite ease-in-out`
               : "none"
           }
-          sx={{
-            "@keyframes barAnimation": {
+          css={{
+            '& @keyframes barAnimation': {
               "0%, 100%": { height: "8px" },
               "50%": { height: "24px" },
-            },
+            }
           }}
           style={{
             animationDelay: `${bar.delay}s`,
@@ -81,13 +71,12 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
           }}
         />
       ))}
-
       <Text
         ml={3}
         fontSize="md"
         fontWeight="bold"
         color={
-          theme.colors[colorMode === "light" ? "light" : "dark"].primaryButton
+          colors.light.primaryButton
         }
       >
         {formattedTime}
@@ -100,54 +89,40 @@ const DictationWidget = ({
   patient,
   setFinalCorrespondence,
   letterTemplates,
-  setIsRefining,
+  _setIsRefining,
   setLoading,
   isDisabled,
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [timer, setTimer] = useState(0);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
+  const audioRecorderRef = useRef(null);
   const timerIntervalRef = useRef(null);
-  const toast = useToast();
 
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state === "recording"
-      ) {
-        mediaRecorderRef.current.stop();
+      if (audioRecorderRef.current) {
+        audioRecorderRef.current.stop().catch(() => {});
       }
     };
   }, []);
 
   const startRecording = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast({
+      toaster.create({
         title: "Error",
         description: "Audio recording is not supported in this browser.",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-      });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorderRef.current.start();
+      const recorder = new AudioRecorder();
+      await recorder.start();
+      audioRecorderRef.current = recorder;
       setIsRecording(true);
       setTimer(0);
 
@@ -156,55 +131,38 @@ const DictationWidget = ({
       }, 1000);
     } catch (error) {
       console.error("Error starting recording:", error);
-      toast({
+      toaster.create({
         title: "Error",
         description:
           "Failed to start recording. Please check microphone permissions.",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };
 
   const stopRecording = async () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (audioRecorderRef.current && isRecording) {
+      const recorder = audioRecorderRef.current;
+      audioRecorderRef.current = null;
       setIsRecording(false);
       clearInterval(timerIntervalRef.current);
-
-      mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/wav",
-        });
-        await processRecording(audioBlob);
-      };
+      const wavBlob = await recorder.stop();
+      await processRecording(wavBlob);
     }
   };
 
-  const processRecording = async (audioBlob) => {
+  const processRecording = async (wavBlob) => {
     setIsProcessing(true);
     if (setLoading) setLoading(true);
 
     try {
-      // Convert audio to WAV format if in Tauri (macOS)
-      const wavBlob = await convertAudioToWav(audioBlob);
-
       // 1. Transcribe
       const formData = new FormData();
       formData.append("file", wavBlob, "dictation.wav");
 
-      const transcribeUrl = await buildApiUrl("/api/transcribe/dictate");
-      const transcribeResponse = await universalFetch(transcribeUrl, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!transcribeResponse.ok) {
-        throw new Error("Transcription failed");
-      }
-
-      const transcribeData = await transcribeResponse.json();
+      const transcribeData =
+          await transcriptionApi.transcribeDictation(formData);
       const transcription = transcribeData.transcription;
 
       if (!transcription) {
@@ -237,24 +195,22 @@ const DictationWidget = ({
 
       if (letterResponse && letterResponse.letter) {
         setFinalCorrespondence(letterResponse.letter);
-        toast({
+        toaster.create({
           title: "Success",
           description: "Letter generated from dictation",
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
         });
       } else {
         throw new Error("Failed to generate letter content");
       }
     } catch (error) {
       console.error("Error processing dictation:", error);
-      toast({
+      toaster.create({
         title: "Error",
         description: "Failed to process dictation",
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setIsProcessing(false);
@@ -270,40 +226,40 @@ const DictationWidget = ({
         timer={timer}
       />
       <Tooltip
-        label={isRecording ? "Stop Dictation" : "Start Dictation"}
-        placement="left"
-        isDisabled={isDisabled || isProcessing}
+        content={isRecording ? "Stop Dictation" : "Start Dictation"}
+        disabled={isDisabled || isProcessing}
+        positioning={{
+          placement: "left"
+        }}
       >
         <IconButton
-          icon={
-            isProcessing ? (
-              <Spinner size="sm" />
-            ) : isRecording ? (
-              <FaStop />
-            ) : (
-              <FaMicrophone />
-            )
-          }
           onClick={isRecording ? stopRecording : startRecording}
-          isDisabled={isDisabled || isProcessing}
-          colorScheme={isRecording ? "red" : "gray"}
+          disabled={isDisabled || isProcessing}
+          colorPalette={isRecording ? "red" : "gray"}
           aria-label="Dictate"
           position="absolute"
           bottom={4}
-          right="60px" // Positioned to the left of the refinement button (which is at right: 4 = 16px)
+          // Positioned to the left of the refinement button (which is at right: 4 = 16px)
+          right="60px"
           width="40px"
           height="40px"
           borderRadius="full"
           zIndex={2}
           className="dictation-fab"
-          sx={{
+          css={{
             transition: "transform 0.2s",
+
             "&:hover": !isDisabled &&
               !isProcessing && {
                 transform: "scale(1.1)",
-              },
-          }}
-        />
+              }
+          }}>{isProcessing ? (
+            <Spinner size="sm" />
+          ) : isRecording ? (
+            <FaStop />
+          ) : (
+            <FaMicrophone />
+          )}</IconButton>
       </Tooltip>
     </>
   );

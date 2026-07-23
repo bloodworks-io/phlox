@@ -1,0 +1,305 @@
+diff --git a/examples/server/main.cpp b/examples/server/main.cpp
+index 0e4cbad..06d2523 100644
+--- a/examples/server/main.cpp
++++ b/examples/server/main.cpp
+@@ -8,8 +8,11 @@
+ #include "ggml_graph.hpp"     // pk::set_num_threads, pk::shutdown_backend
+ #include "dr_wav.h"           // declarations only; impl lives in libparakeet
+ 
++#include <algorithm>
++#include <cctype>
+ #include <csignal>
+ #include <cstdio>
++#include <cstdlib>
+ #include <memory>
+ #include <mutex>
+ #include <string>
+@@ -45,13 +48,93 @@ bool decode_wav_mem(const std::string& bytes, std::vector<float>& mono,
+     return true;
+ }
+ 
++// --- Long-audio chunking + merge helpers (ported from omi-med-stt-runtime)
++std::string normalize_ws(const std::string& s) {
++    std::string out;
++    out.reserve(s.size());
++    bool in_ws = true;  // suppresses leading spaces
++    for (unsigned char c : s) {
++        if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f') {
++            if (!in_ws) { out.push_back(' '); in_ws = true; }
++        } else {
++            out.push_back((char)c);
++            in_ws = false;
++        }
++    }
++    if (!out.empty() && out.back() == ' ') out.pop_back();
++    return out;
++}
++
++std::vector<std::string> split_words(const std::string& s) {
++    std::vector<std::string> words;
++    std::string cur;
++    for (unsigned char c : s) {
++        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
++            if (!cur.empty()) { words.push_back(cur); cur.clear(); }
++        } else {
++            cur.push_back((char)c);
++        }
++    }
++    if (!cur.empty()) words.push_back(cur);
++    return words;
++}
++
++std::string to_lower_word(const std::string& s) {
++    std::string o = s;
++    for (auto& c : o) c = (char)std::tolower((unsigned char)c);
++    return o;
++}
++
++std::string merge_overlap(const std::string& existing_in, const std::string& addition_in,
++                          size_t* overlap_words, size_t max_overlap_words = 80) {
++    if (overlap_words) *overlap_words = 0;
++    std::string existing = normalize_ws(existing_in);
++    std::string addition = normalize_ws(addition_in);
++    if (existing.empty()) return addition;
++    if (addition.empty()) return existing;
++
++    std::vector<std::string> a = split_words(existing);
++    std::vector<std::string> b = split_words(addition);
++    size_t max_n = std::min(std::min(max_overlap_words, a.size()), b.size());
++    for (size_t n = max_n; n >= 1; --n) {
++        bool match = true;
++        for (size_t i = 0; i < n; ++i) {
++            if (to_lower_word(a[a.size() - n + i]) != to_lower_word(b[i])) {
++                match = false;
++                break;
++            }
++        }
++        if (match) {
++            if (overlap_words) *overlap_words = n;
++            std::string out;
++            for (size_t i = 0; i < a.size(); ++i) { if (i) out += ' '; out += a[i]; }
++            for (size_t i = n; i < b.size(); ++i) { out += ' '; out += b[i]; }
++            return out;
++        }
++    }
++    return existing + " " + addition;
++}
++
+ void usage() {
+     std::fprintf(stderr,
+         "usage:\n"
+         "  parakeet-server --model <path|url|alias> [--host 127.0.0.1] "
+         "[--port 8080] [--threads N] [--cache-dir <dir>]\n"
++        "                  [--max-seconds S] [--chunk-seconds S] [--overlap S]\n"
++        "\n"
++        "Serves POST /v1/audio/transcriptions (OpenAI-compatible) for one model.\n"
+         "\n"
+-        "Serves POST /v1/audio/transcriptions (OpenAI-compatible) for one model.\n");
++        "Long-audio chunking (bounds memory): when an upload is longer than\n"
++        "--max-seconds, it is split into --chunk-seconds pieces overlapping by\n"
++        "--overlap seconds, transcribed separately, and merged. 0 disables (default).\n");
+ }
+ 
+ } // namespace
+@@ -59,6 +142,7 @@ void usage() {
+ int main(int argc, char** argv) {
+     std::string model_arg, host = "127.0.0.1", cache_dir;
+     int port = 8080, threads = 0;
++    double max_seconds = 0.0, chunk_seconds = 240.0, overlap = 5.0;
+ 
+     for (int i = 1; i < argc; ++i) {
+         std::string a = argv[i];
+@@ -71,6 +155,9 @@ int main(int argc, char** argv) {
+         else if (a == "--port")    port = std::atoi(next("--port").c_str());
+         else if (a == "--threads") threads = std::atoi(next("--threads").c_str());
+         else if (a == "--cache-dir") cache_dir = next("--cache-dir");
++        else if (a == "--max-seconds")   max_seconds = std::strtod(next("--max-seconds").c_str(), nullptr);
++        else if (a == "--chunk-seconds") chunk_seconds = std::strtod(next("--chunk-seconds").c_str(), nullptr);
++        else if (a == "--overlap")       overlap = std::strtod(next("--overlap").c_str(), nullptr);
+         else if (a == "-h" || a == "--help") { usage(); return 0; }
+         else if (a == "--version" || a == "-V") {
+             std::printf("parakeet-server %s\n", parakeet_version());
+@@ -79,6 +166,10 @@ int main(int argc, char** argv) {
+         else { std::fprintf(stderr, "unknown arg: %s\n", a.c_str()); usage(); return 2; }
+     }
+     if (model_arg.empty()) { usage(); return 2; }
++    if (max_seconds > 0.0 && overlap >= chunk_seconds) {
++        std::fprintf(stderr, "parakeet-server: --overlap must be smaller than --chunk-seconds\n");
++        return 2;
++    }
+     if (cache_dir.empty()) cache_dir = pkserver::default_cache_dir();
+ 
+     // Resolve and fetch the model before binding the socket.
+@@ -150,9 +241,53 @@ int main(int argc, char** argv) {
+ 
+         try {
+             pk::Transcription tr;
++            const bool chunk = (max_seconds > 0.0) && (duration_sec > max_seconds) && (sr > 0);
+             {
+                 std::lock_guard<std::mutex> lock(infer_mu);
+-                tr = model->transcribe_with_timestamps(pcm, sr, pk::Decoder::kDefault);
++                if (!chunk) {
++                    tr = model->transcribe_with_timestamps(pcm, sr, pk::Decoder::kDefault);
++                } else {
++                    // Long-audio path: split into overlapping chunks, transcribe each,
++                    // and merge. Bounds the persistent gallocr's peak to a single chunk
++                    // (a 240s chunk is ~Tp 3000 -> full O(T^2) attention at ~1.3GB,
++                    // instead of ~8GB for a 10-min file in one pass).
++                    const size_t total = pcm.size();
++                    const size_t step = (size_t)((chunk_seconds - overlap) * (double)sr + 0.5);
++                    const size_t chunk_len = (size_t)(chunk_seconds * (double)sr + 0.5);
++                    if (step == 0 || chunk_len == 0) {
++                        tr = model->transcribe_with_timestamps(pcm, sr, pk::Decoder::kDefault);
++                    } else {
++                        size_t start = 0;
++                        std::string merged_text;
++                        std::vector<pk::Word> merged_words;
++                        while (start < total) {
++                            size_t end = std::min(total, start + chunk_len);
++                            std::vector<float> chunk_pcm(pcm.begin() + (long)start,
++                                                         pcm.begin() + (long)end);
++                            pk::Transcription ctr =
++                                model->transcribe_with_timestamps(chunk_pcm, sr,
++                                                                  pk::Decoder::kDefault);
++                            const double off = (double)start / (double)sr;
++                            size_t ow = 0;
++                            merged_text = merge_overlap(merged_text, ctr.text, &ow);
++                            // Keep the word list consistent with the text merge: the
++                            // merged text drops the first `ow` words of this chunk (they
++                            // duplicate the running tail), so skip them here and offset
++                            // the remainder by this chunk's PCM start time.
++                            size_t skip = std::min(ow, ctr.words.size());
++                            for (size_t wi = skip; wi < ctr.words.size(); ++wi) {
++                                pk::Word ww = ctr.words[wi];
++                                ww.start = (float)(ww.start + off);
++                                ww.end = (float)(ww.end + off);
++                                merged_words.push_back(ww);
++                            }
++                            if (end >= total) break;
++                            start += step;
++                        }
++                        tr.text = std::move(merged_text);
++                        tr.words = std::move(merged_words);
++                    }
++                }
+             }
+             Response out = format_transcription(tr, fmt, duration_sec, include_words);
+             res.set_content(out.body, out.content_type.c_str());
+diff --git a/src/conformer.cpp b/src/conformer.cpp
+index 0622f05..a31ada5 100644
+--- a/src/conformer.cpp
++++ b/src/conformer.cpp
+@@ -276,6 +276,8 @@ ConformerLayer::ConformerLayer(const ModelLoader& ml, int layer_idx)
+     conv_kernel_ = (int)ml.config().conv_kernel;
+     conv_norm_type_ = ml.config().conv_norm_type;
+     conv_causal_    = ml.config().conv_causal;
++    omi_med_adapter_ = ml.config().omi_med_adapter;
++    omi_med_adapter_name_ = ml.config().omi_med_adapter_name;
+     assert((conv_norm_type_ == "batch_norm" || conv_norm_type_ == "layer_norm") &&
+            "ConformerLayer supports conv_norm_type in {batch_norm, layer_norm}");
+     assert(n_heads_ > 0 && d_model_ % n_heads_ == 0);
+@@ -325,6 +327,21 @@ ggml_tensor* ConformerLayer::build_graph_batched(ggml_context* ctx,
+         h = linear(h, ff + ".linear2", /*bias*/true);               // [D, T, B]
+         return h;
+     };
++    auto omi_med_adapter = [&](ggml_tensor* in) {
++        if (!omi_med_adapter_) return in;
++        const std::string ap = pre + "omi_adapter.";
++        ggml_tensor* g = clone_weight(ctx, ml, ap + "norm.weight");
++        ggml_tensor* b = clone_weight(ctx, ml, ap + "norm.bias");
++        ggml_tensor* w_down = clone_weight(ctx, ml, ap + "down.weight");
++        ggml_tensor* w_up = clone_weight(ctx, ml, ap + "up.weight");
++        ggml_tensor* y = ggml_norm(ctx, in, ln_eps);
++        y = ggml_mul(ctx, y, g);
++        y = ggml_add(ctx, y, b);
++        y = ggml_mul_mat(ctx, w_down, y);
++        y = ggml_silu(ctx, y);
++        y = ggml_mul_mat(ctx, w_up, y);
++        return ggml_add(ctx, in, y);
++    };
+ 
+     // === Stage A: r = x + 0.5 * FFN1(norm_ff1(x)). ===
+     ggml_tensor* h1 = layer_norm(xt, "norm_feed_forward1");
+@@ -354,6 +371,7 @@ ggml_tensor* ConformerLayer::build_graph_batched(ggml_context* ctx,
+     h2 = ggml_scale(ctx, h2, 0.5f);
+     r = ggml_add(ctx, r, h2);
+     r = layer_norm(r, "norm_out");
++    r = omi_med_adapter(r);
+     return r; // [D, T, B] -> per item row-major [T, D]
+ }
+ 
+@@ -402,6 +420,21 @@ ggml_tensor* ConformerLayer::build_graph(ggml_context* ctx, ggml_tensor* xt,
+         h = linear(h, ff + ".linear2", /*bias*/true);               // [D, T]
+         return h;
+     };
++    auto omi_med_adapter = [&](ggml_tensor* in) {
++        if (!omi_med_adapter_) return in;
++        const std::string ap = pre + "omi_adapter.";
++        ggml_tensor* g = clone_weight(ctx, ml, ap + "norm.weight");
++        ggml_tensor* b = clone_weight(ctx, ml, ap + "norm.bias");
++        ggml_tensor* w_down = clone_weight(ctx, ml, ap + "down.weight");
++        ggml_tensor* w_up = clone_weight(ctx, ml, ap + "up.weight");
++        ggml_tensor* y = ggml_norm(ctx, in, ln_eps);
++        y = ggml_mul(ctx, y, g);
++        y = ggml_add(ctx, y, b);
++        y = ggml_mul_mat(ctx, w_down, y);
++        y = ggml_silu(ctx, y);
++        y = ggml_mul_mat(ctx, w_up, y);
++        return ggml_add(ctx, in, y);
++    };
+ 
+     // === Stage A: r = x + 0.5 * FFN1(norm_ff1(x)). ===
+     ggml_tensor* h1 = layer_norm(xt, "norm_feed_forward1");
+@@ -430,6 +463,7 @@ ggml_tensor* ConformerLayer::build_graph(ggml_context* ctx, ggml_tensor* xt,
+     h2 = ggml_scale(ctx, h2, 0.5f);
+     r = ggml_add(ctx, r, h2);
+     r = layer_norm(r, "norm_out");
++    r = omi_med_adapter(r);
+     return r; // [D, T] -> row-major [T, D]
+ }
+ 
+diff --git a/src/conformer.hpp b/src/conformer.hpp
+index 5fafc0b..c14d781 100644
+--- a/src/conformer.hpp
++++ b/src/conformer.hpp
+@@ -107,6 +107,8 @@ private:
+     int conv_kernel_;
+     std::string conv_norm_type_;  // "batch_norm" (offline) or "layer_norm" (streaming)
+     bool conv_causal_ = false;    // causal depthwise conv pad (left k-1, right 0)
++    bool omi_med_adapter_ = false;
++    std::string omi_med_adapter_name_;
+ };
+ 
+ } // namespace pk
+diff --git a/src/model_loader.cpp b/src/model_loader.cpp
+index a1a0d66..cb3a62e 100644
+--- a/src/model_loader.cpp
++++ b/src/model_loader.cpp
+@@ -137,6 +137,10 @@ bool ModelLoader::load(const std::string& path){
+     cfg_.subsampling_conv_channels = kv_u32(gguf_, "parakeet.encoder.subsampling_conv_channels");
+     cfg_.xscaling    = kv_bool(gguf_, "parakeet.encoder.xscaling", true);
+     cfg_.pos_emb_max_len = kv_u32(gguf_, "parakeet.encoder.pos_emb_max_len", 5000);
++    cfg_.omi_med_adapter = kv_bool(gguf_, "parakeet.omi_med_adapter.enabled", false);
++    cfg_.omi_med_adapter_rank = kv_u32(gguf_, "parakeet.omi_med_adapter.rank", 0);
++    cfg_.omi_med_adapter_name = kv_str(
++        gguf_, "parakeet.omi_med_adapter.name", "medical_v1d_rank128");
+     // cache-aware streaming / causal config (Phase 5). Absent for offline models
+     // -> offline-safe defaults (regular style, no causal, streaming.present=false).
+     cfg_.att_context_left  = kv_i32(gguf_, "parakeet.encoder.att_context_left", -1);
+diff --git a/src/model_loader.hpp b/src/model_loader.hpp
+index f181f24..f3ab4f4 100644
+--- a/src/model_loader.hpp
++++ b/src/model_loader.hpp
+@@ -51,6 +51,12 @@ struct ParakeetConfig {
+     std::string conv_norm_type;
+     uint32_t subsampling_factor=0, subsampling_conv_channels=0, pos_emb_max_len=5000;
+     bool xscaling=true;
++    // Optional Omi Med STT post-Conformer adapter. Absent/false for upstream
++    // Parakeet checkpoints; enabled only when the GGUF declares it and carries
++    // the adapter tensors.
++    bool omi_med_adapter=false;
++    uint32_t omi_med_adapter_rank=0;
++    std::string omi_med_adapter_name;
+     // cache-aware streaming / causal config (Phase 5; offline-safe defaults)
+     int32_t att_context_left=-1, att_context_right=-1; // [-1,-1] = full context
+     std::string att_context_style="regular";            // or "chunked_limited"

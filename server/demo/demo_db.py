@@ -14,21 +14,13 @@ from server.database.core.connection import (
 from server.database.core.connection import (
     initialize_database,
 )
-from server.database.entities.patient import _split_name, upsert_patient_profile
-from server.database.entities.templates import save_template
+from server.database.repositories.patient import upsert_patient_profile
+from server.database.repositories.templates import save_template
 from server.schemas.templates import ClinicalTemplate, TemplateField
+from server.utils.helpers import split_name
 
 # Get the directory of the current script
 current_dir = Path(__file__).resolve().parent
-
-
-def generate_jobs_list_from_plan(plan: str) -> list[dict]:
-    """Generate a jobs list from a numbered plan."""
-    jobs = [item.strip() for item in plan.split("\n") if item.strip() and item.strip()[0].isdigit()]
-    jobs_list = [
-        {"id": index + 1, "job": job, "completed": False} for index, job in enumerate(jobs)
-    ]
-    return jobs_list
 
 
 def clear_database():
@@ -80,8 +72,11 @@ def initialize_fake_patients():
             "plan": patient_data["plan"],
         }
 
-        # Generate jobs list from the plan in template data
-        jobs_list = generate_jobs_list_from_plan(template_data["plan"])
+        jobs_list = [
+            {"id": index + 1, "job": job["job"], "completed": job["completed"]}
+            for index, job in enumerate(patient_data["jobs"])
+        ]
+        all_jobs_completed = bool(jobs_list) and all(job["completed"] for job in jobs_list)
 
         patient = {
             "name": patient_data["name"],
@@ -91,15 +86,15 @@ def initialize_fake_patients():
             "encounter_date": encounter_date.strftime("%Y-%m-%d"),
             "template_key": "phlox_01",  # Using Phlox template for example patients
             "template_data": json.dumps(template_data),
-            "raw_transcription": f"Raw transcription for {patient_data['name']}",
+            "raw_transcription": patient_data["transcript"],
             "transcription_duration": round(random.uniform(5.0, 15.0), 2),  # nosec B311
             "process_duration": round(random.uniform(10.0, 30.0), 2),  # nosec B311
-            "final_letter": f"Final letter for {patient_data['name']}'s appointment",
+            "final_letter": patient_data["letter"],
             "primary_condition": patient_data.get("encounter_summary", "")
             .split(" with ")[-1]
             .strip("."),  # Extract primary condition from summary
             "jobs_list": json.dumps(jobs_list),
-            "all_jobs_completed": False,
+            "all_jobs_completed": all_jobs_completed,
             "encounter_summary": patient_data["encounter_summary"],
         }
 
@@ -133,7 +128,7 @@ def initialize_fake_patients():
             ),
         )
 
-        first_name, last_name = _split_name(str(patient["name"]))
+        first_name, last_name = split_name(str(patient["name"]))
         upsert_patient_profile(
             str(patient["ur_number"]),
             first_name,
@@ -160,6 +155,26 @@ def main():
         raise
     finally:
         patient_db().close()
+
+
+def seed_demo_data_desktop():
+    """Seed demo data in the desktop (Tauri) app.
+
+    Unlike ``main``/``clear_database`` (which re-initialise the DB without a
+    passphrase for Docker), this assumes the encrypted DB is already open via
+    ``get_db()``. It wipes encounters/profiles/templates and re-seeds the demo
+    patients, so every ``tauri dev`` launch starts from a clean, fullsome state.
+    """
+    db = patient_db()
+    print("Clearing existing data for demo seed...")
+    db.cursor.execute("DELETE FROM encounters")
+    db.cursor.execute("DELETE FROM patient_profiles")
+    db.cursor.execute("DELETE FROM clinical_templates")
+    db.commit()
+    print("Seeding demo templates and patients...")
+    initialize_templates()
+    initialize_fake_patients()
+    print("Demo data seeded.")
 
 
 if __name__ == "__main__":

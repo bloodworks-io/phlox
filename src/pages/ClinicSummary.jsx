@@ -1,51 +1,43 @@
 // Page component that renders a summary of patients for a selected date.
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import PatientTable from "../components/patient/PatientTable";
-import { buildApiUrl } from "../utils/helpers/apiConfig";
-import { universalFetch } from "../utils/helpers/apiHelpers";
+import { patientApi } from "../utils/api/patientApi";
+import { KEYS } from "../utils/cache/keys";
+
+const clinicSummaryFetcher = (date, detailed) => async () => {
+    const data = await patientApi.fetchNoteList({ date, detailed });
+    return data.map((patient) => ({
+        ...patient,
+        activeSection: "summary",
+        jobs_list: JSON.parse(patient.jobs_list || "[]"),
+    }));
+};
 
 const ClinicSummary = ({
-  selectedDate,
-  handleSelectPatient,
-  refreshSidebar,
+    selectedDate,
+    handleSelectPatient,
+    refreshSidebar,
 }) => {
-  const [patients, setPatients] = useState([]);
+    const { data, mutate } = useSWR(
+        KEYS.noteList(selectedDate, true),
+        clinicSummaryFetcher(selectedDate, true),
+        { revalidateOnMount: true },
+    );
+    const patients = data || [];
 
-  const fetchPatients = async (date, detailed = true) => {
-    try {
-      const url = await buildApiUrl(
-        `/api/note/list?date=${date}&detailed=${detailed}`,
-      );
-      const response = await universalFetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
-      setPatients(
-        data.map((patient) => ({
-          ...patient,
-          activeSection: "summary",
-          jobs_list: JSON.parse(patient.jobs_list || "[]"),
-        })),
-      );
-    } catch (error) {
-      console.error("Error fetching patients:", error);
-    }
-  };
+    // SWR-backed setter so PatientTable can do local row edits without
+    // triggering a revalidation round-trip.
+    const setPatients = (updater) => mutate(updater, { revalidate: false });
 
-  useEffect(() => {
-    fetchPatients(selectedDate);
-  }, [selectedDate]);
-
-  return (
-    <PatientTable
-      patients={patients}
-      setPatients={setPatients}
-      handleSelectPatient={handleSelectPatient}
-      refreshSidebar={refreshSidebar}
-      title={`Clinic Summary for ${selectedDate}`}
-    />
-  );
+    return (
+        <PatientTable
+            patients={patients}
+            setPatients={setPatients}
+            handleSelectPatient={handleSelectPatient}
+            refreshSidebar={refreshSidebar}
+            title={`Clinic Summary for ${selectedDate}`}
+        />
+    );
 };
 
 export default ClinicSummary;

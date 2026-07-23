@@ -1,13 +1,7 @@
 // Chat artifact renderer for form_fill type.
 import React, { useState } from "react";
-import {
-    Box,
-    HStack,
-    Text,
-    Button,
-    useColorModeValue,
-    useToast,
-} from "@chakra-ui/react";
+import { Box, HStack, Text, Button } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import { DownloadIcon } from "../common/icons";
 import { FaFilePdf } from "react-icons/fa";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
@@ -15,10 +9,6 @@ import { fillPdf } from "../../utils/pdf/fillForm";
 
 const FormFillArtifact = ({ artifact }) => {
     const [loading, setLoading] = useState(false);
-    const toast = useToast();
-
-    const borderColor = useColorModeValue("gray.200", "gray.600");
-    const bgColor = useColorModeValue("gray.50", "gray.750");
 
     const { template_id, template_name } = artifact;
     const filename = `${template_name || "form"}_filled.pdf`;
@@ -47,12 +37,11 @@ const FormFillArtifact = ({ artifact }) => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch (error) {
-            toast({
+            toaster.create({
                 title: "Error",
                 description: `Failed to generate PDF: ${error.message}`,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
         } finally {
             setLoading(false);
@@ -64,31 +53,28 @@ const FormFillArtifact = ({ artifact }) => {
             p={2}
             borderWidth="1px"
             borderRadius="md"
-            borderColor={borderColor}
-            bg={bgColor}
+            borderColor="border"
+            bg="surfaceInset"
             maxW="320px"
         >
-            <HStack spacing={2} mb={1}>
+            <HStack gap={2} mb={1}>
                 <FaFilePdf size="1.2em" color="gray" />
                 <Text fontSize="xs" fontWeight="semibold" isTruncated flex={1}>
                     {filename}
                 </Text>
             </HStack>
-            <HStack spacing={2} justify="space-between">
-                <Text fontSize="xs" color="gray.500">
+            <HStack gap={2} justify="space-between">
+                <Text fontSize="xs" color="overlay0">
                     PDF form · filled
                 </Text>
                 <Button
                     size="xs"
                     variant="ghost"
-                    colorScheme="blue"
-                    leftIcon={<DownloadIcon />}
+                    colorPalette="blue"
                     aria-label="Download filled PDF"
                     onClick={handleDownload}
-                    isLoading={loading}
-                >
-                    Save
-                </Button>
+                    loading={loading}><DownloadIcon />Save
+                                    </Button>
             </HStack>
         </Box>
     );

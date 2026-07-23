@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useToast } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import {
     useTemplateSelection,
     useTemplate,
@@ -14,7 +14,6 @@ export const usePatientTemplate = ({
     initialPatient,
     isSearchLoading,
 }) => {
-    const toast = useToast();
     const { showWarningToast } = useToastMessage();
     const hasDefaultTemplateBeenSet = useRef(false);
 
@@ -30,23 +29,17 @@ export const usePatientTemplate = ({
 
     const { refreshTemplates } = useTemplate();
 
-    // Refresh templates for new patients
-    useEffect(() => {
-        refreshTemplates();
-    }, [refreshTemplates]);
-
     // Handle template errors
     useEffect(() => {
         if (templateError) {
-            toast({
+            toaster.create({
                 title: "Template Error",
                 description: templateError,
-                status: "error",
+                type: "error",
                 duration: 5000,
-                isClosable: true,
             });
         }
-    }, [templateError, toast]);
+    }, [templateError]);
 
     // Handle template consistency for already saved (historical) encounters
     useEffect(() => {
@@ -88,12 +81,11 @@ export const usePatientTemplate = ({
                         }));
                     } catch (error) {
                         console.error("Failed to set default template:", error);
-                        toast({
+                        toaster.create({
                             title: "Error",
                             description: "Failed to set default template",
-                            status: "error",
+                            type: "error",
                             duration: 3000,
-                            isClosable: true,
                         });
                     }
                 }
@@ -106,7 +98,6 @@ export const usePatientTemplate = ({
         patient,
         selectTemplate,
         setPatient,
-        toast,
     ]);
 
     // Handle template data for historical patients

@@ -2,13 +2,14 @@
 import { colors } from "../colors";
 import { typography } from "../typography";
 
-export const baseStyles = (props) => ({
+const baseStyles = (props) => ({
     body: {
         bg: props.colorMode === "light" ? colors.light.base : colors.dark.base,
         color:
             props.colorMode === "light"
                 ? colors.light.textPrimary
                 : colors.dark.textPrimary,
+        fontFamily: '"Roboto", sans-serif',
     },
     ".headings": {
         color:
@@ -21,29 +22,29 @@ export const baseStyles = (props) => ({
         ...typography.styles.h1,
         color:
             props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+                ? `${colors.light.textPrimary} !important`
+                : `${colors.dark.textPrimary} !important`,
     },
     h2: {
         ...typography.styles.h2,
         color:
             props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+                ? `${colors.light.textPrimary} !important`
+                : `${colors.dark.textPrimary} !important`,
     },
     h3: {
         ...typography.styles.h3,
         color:
             props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+                ? `${colors.light.textPrimary} !important`
+                : `${colors.dark.textPrimary} !important`,
     },
     h4: {
         ...typography.styles.h4,
         color:
             props.colorMode === "light"
                 ? colors.light.sidebar.text
-                : colors.light.sidebar.text,
+                : colors.dark.sidebar.text,
     },
     h5: {
         ...typography.styles.h5,
@@ -70,5 +71,13 @@ export const baseStyles = (props) => ({
         fontFamily: '"Roboto", sans-serif',
         fontSize: "1rem",
         lineHeight: "1.5",
+        textWrap: "pretty",
     },
 });
+
+const _lo = baseStyles({ colorMode: "light" });
+const _do = baseStyles({ colorMode: "dark" });
+export const baseGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    baseGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

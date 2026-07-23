@@ -1,5 +1,6 @@
 import React from "react";
-import { Box, Flex, Tooltip, Text, useColorMode } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaMicrophone,
     FaPause,
@@ -18,6 +19,20 @@ import PillBox from "../common/PillBox";
 import { colors } from "../../theme/colors";
 import { LavaBlobs, InternalGlow } from "./scribeVisuals";
 
+
+const PILL = {
+    danger: colors.dark.dangerButton, // #ed8796
+    success: colors.dark.successButton, // #a6da95
+    warning: colors.dark.secondaryButton, // #eed49f
+    info: colors.dark.primaryButton, // #8bd5ca
+    muted: colors.dark.textSecondary, // #a5adcb
+    dangerFill: colors.light.dangerButton, // #d20f39
+    successFill: colors.light.successButton, // #40a02b
+    warningFill: colors.light.secondaryButton, // #df8e1d
+    infoFill: colors.light.primaryButton, // #179299
+    onFill: "#ffffff",
+};
+
 // Main record button with states
 export const RecordButton = ({
     isRecording,
@@ -29,20 +44,19 @@ export const RecordButton = ({
     canStart = true,
     onBlockedClick,
 }) => {
-    const { colorMode } = useColorMode();
     const [isHovered, setIsHovered] = React.useState(false);
 
     const getButtonStyles = () => {
         if (isRecording && !isPaused) {
             return {
-                bg: "#E53E3E",
-                color: "white",
-                boxShadow: "0 0 0 0 rgba(229, 62, 62, 0.4)",
+                bg: PILL.dangerFill,
+                color: PILL.onFill,
+                boxShadow: "0 0 0 0 rgba(210, 15, 57, 0.4)",
             };
         } else if (isPaused) {
             return {
-                bg: "#DD6B20",
-                color: "white",
+                bg: PILL.warningFill,
+                color: PILL.onFill,
                 boxShadow: "none",
             };
         } else {
@@ -95,15 +109,18 @@ export const RecordButton = ({
     };
 
     return (
-        <Tooltip label={getLabel()} hasArrow placement="top">
+        <Tooltip content={getLabel()} showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 position="relative"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
                 w={`${size}px`}
                 h={`${size}px`}
+                p={0}
+                flexShrink={0}
                 borderRadius="full"
                 border="none"
                 cursor="pointer"
@@ -112,40 +129,46 @@ export const RecordButton = ({
                 overflow="hidden"
                 boxShadow="xl"
                 {...styles}
-                onClick={handleClick}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                {/* Idle state: lava blobs (muted when recording is locked) */}
-                {!isRecording && !isPaused && (
+                asChild><button
+                    onClick={handleClick}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}>
+                    {/* Idle state: lava blobs (muted when recording is locked) */}
+                    {!isRecording && !isPaused && (
+                        <Box
+                            opacity={canStart ? 1 : 0.4}
+                            filter={canStart ? "none" : "grayscale(1)"}
+                        >
+                            <LavaBlobs />
+                        </Box>
+                    )}
+                    {/* Recording state: internal pulsing glow */}
+                    {isRecording && !isPaused && <InternalGlow />}
+                    {/* Inner highlight border */}
                     <Box
-                        opacity={canStart ? 1 : 0.4}
-                        filter={canStart ? "none" : "grayscale(1)"}
+                        position="absolute"
+                        top="2px"
+                        left="2px"
+                        right="2px"
+                        bottom="2px"
+                        borderRadius="full"
+                        border="1px solid rgba(255,255,255,0.3)"
+                        pointerEvents="none"
+                    />
+                    {/* Icon */}
+                    <Box
+                        position="absolute"
+                        top="50%"
+                        left="50%"
+                        transform="translate(-50%, -50%)"
+                        zIndex={1}
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
                     >
-                        <LavaBlobs />
+                        {getIcon()}
                     </Box>
-                )}
-
-                {/* Recording state: internal pulsing glow */}
-                {isRecording && !isPaused && <InternalGlow />}
-
-                {/* Inner highlight border */}
-                <Box
-                    position="absolute"
-                    top="2px"
-                    left="2px"
-                    right="2px"
-                    bottom="2px"
-                    borderRadius="full"
-                    border="1px solid rgba(255,255,255,0.3)"
-                    pointerEvents="none"
-                />
-
-                {/* Icon */}
-                <Box position="relative" zIndex={1}>
-                    {getIcon()}
-                </Box>
-            </Box>
+                </button></Box>
         </Tooltip>
     );
 };
@@ -157,37 +180,37 @@ export const ModeResetButton = ({
     onModeToggle,
     onReset,
 }) => {
-    const { colorMode } = useColorMode();
     const [isHovered, setIsHovered] = React.useState(false);
 
     if (isRecording) {
         // Reset button state
         return (
-            <Tooltip label="Reset" hasArrow placement="top">
+            <Tooltip content="Reset" showArrow positioning={{
+                placement: "top"
+            }}>
                 <Box
-                    as="button"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
                     w="40px"
                     h="40px"
                     borderRadius="full"
-                    border="1px solid #ECC94B"
+                    border={`1px solid ${isHovered ? PILL.warningFill : PILL.warning}`}
                     cursor="pointer"
                     transition="all 0.2s ease"
                     outline="none"
-                    bg={isHovered ? "#ECC94B" : "transparent"}
-                    color={isHovered ? "white" : "#ECC94B"}
+                    bg={isHovered ? PILL.warningFill : "transparent"}
+                    color={isHovered ? PILL.onFill : PILL.warning}
                     boxShadow="md"
                     _hover={{
                         transform: "scale(1.05)",
                     }}
-                    onClick={onReset}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                >
-                    <FaTimes size={16} />
-                </Box>
+                    asChild><button
+                        onClick={onReset}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}>
+                        <FaTimes size={16} />
+                    </button></Box>
             </Tooltip>
         );
     }
@@ -199,9 +222,10 @@ export const ModeResetButton = ({
         : "Dictate mode - click for Ambient";
 
     return (
-        <Tooltip label={label} hasArrow placement="top">
+        <Tooltip content={label} showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -220,10 +244,9 @@ export const ModeResetButton = ({
                     bg: colors.dark.surface,
                     transform: "scale(1.05)",
                 }}
-                onClick={onModeToggle}
-            >
-                <Icon size={16} />
-            </Box>
+                asChild><button onClick={onModeToggle}>
+                    <Icon size={16} />
+                </button></Box>
         </Tooltip>
     );
 };
@@ -236,37 +259,37 @@ export const TranscriptSendButton = ({
     isTranscriptionOpen,
     hasRawTranscription,
 }) => {
-    const { colorMode } = useColorMode();
     const [isHovered, setIsHovered] = React.useState(false);
 
     if (isRecording) {
         // Send button state
         return (
-            <Tooltip label="Stop and send" hasArrow placement="top">
+            <Tooltip content="Stop and send" showArrow positioning={{
+                placement: "top"
+            }}>
                 <Box
-                    as="button"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
                     w="40px"
                     h="40px"
                     borderRadius="full"
-                    border="1px solid #48BB78"
+                    border={`1px solid ${isHovered ? PILL.successFill : PILL.success}`}
                     cursor="pointer"
                     transition="all 0.2s ease"
                     outline="none"
-                    bg={isHovered ? "#48BB78" : "transparent"}
-                    color={isHovered ? "white" : "#48BB78"}
+                    bg={isHovered ? PILL.successFill : "transparent"}
+                    color={isHovered ? PILL.onFill : PILL.success}
                     boxShadow="md"
                     _hover={{
                         transform: "scale(1.05)",
                     }}
-                    onClick={onSend}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                >
-                    <FaPaperPlane size={14} />
-                </Box>
+                    asChild><button
+                        onClick={onSend}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}>
+                        <FaPaperPlane size={14} />
+                    </button></Box>
             </Tooltip>
         );
     }
@@ -276,9 +299,10 @@ export const TranscriptSendButton = ({
     const label = isDisabled ? "No transcript available" : "Transcript";
 
     return (
-        <Tooltip label={label} hasArrow placement="top">
+        <Tooltip content={label} showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -298,10 +322,9 @@ export const TranscriptSendButton = ({
                         : { bg: colors.dark.surface, transform: "scale(1.05)" }
                 }
                 pointerEvents={isDisabled ? "none" : "auto"}
-                onClick={onOpenTranscription}
-            >
-                <FaFileAlt size={14} />
-            </Box>
+                asChild><button onClick={onOpenTranscription}>
+                    <FaFileAlt size={14} />
+                </button></Box>
         </Tooltip>
     );
 };
@@ -322,74 +345,79 @@ export const TranscriptionFailurePill = ({
         gap={2}
     >
         <Tooltip
-            label={sendError?.message || "Transcription failed"}
-            hasArrow
-            placement="top"
+            content={sendError?.message || "Transcription failed"}
+            showArrow
+            positioning={{
+                placement: "top"
+            }}
         >
-            <Flex align="center" gap={2} color="#E53E3E" pr={1}>
+            <Flex align="center" gap={2} color={PILL.danger} pr={1}>
                 <FaExclamationTriangle size={15} />
                 <Text fontSize="xs" fontWeight="700">
                     Transcription failed
                 </Text>
             </Flex>
         </Tooltip>
-        <Tooltip label="Retry sending" hasArrow placement="top">
+        <Tooltip content="Retry sending" showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
                 w="32px"
                 h="32px"
                 borderRadius="full"
-                border="1px solid #48BB78"
+                border={`1px solid ${PILL.success}`}
                 cursor="pointer"
                 outline="none"
-                color="#48BB78"
+                color={PILL.success}
                 bg="transparent"
                 transition="all 0.2s ease"
                 _hover={{
-                    bg: "#48BB78",
-                    color: "white",
+                    bg: PILL.successFill,
+                    borderColor: PILL.successFill,
+                    color: PILL.onFill,
                     transform: "scale(1.05)",
                 }}
-                onClick={onRetry}
-            >
-                <FaRedoAlt size={13} />
-            </Box>
+                asChild><button onClick={onRetry}>
+                    <FaRedoAlt size={13} />
+                </button></Box>
         </Tooltip>
-        <Tooltip label="Download audio to retry later" hasArrow placement="top">
+        <Tooltip content="Download audio to retry later" showArrow positioning={{
+            placement: "top"
+        }}>
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
                 w="32px"
                 h="32px"
                 borderRadius="full"
-                border="1px solid #4299E1"
+                border={`1px solid ${PILL.info}`}
                 cursor="pointer"
                 outline="none"
-                color="#4299E1"
+                color={PILL.info}
                 bg="transparent"
                 transition="all 0.2s ease"
                 _hover={{
-                    bg: "#4299E1",
-                    color: "white",
+                    bg: PILL.infoFill,
+                    borderColor: PILL.infoFill,
+                    color: PILL.onFill,
                     transform: "scale(1.05)",
                 }}
-                onClick={onDownload}
-            >
-                <FaDownload size={13} />
-            </Box>
+                asChild><button onClick={onDownload}>
+                    <FaDownload size={13} />
+                </button></Box>
         </Tooltip>
         <Tooltip
-            label="Dismiss — download first to keep the audio"
-            hasArrow
-            placement="top"
+            content="Dismiss — download first to keep the audio"
+            showArrow
+            positioning={{
+                placement: "top"
+            }}
         >
             <Box
-                as="button"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -399,15 +427,14 @@ export const TranscriptionFailurePill = ({
                 border="none"
                 cursor="pointer"
                 outline="none"
-                color="#A0AEC0"
+                color={PILL.muted}
                 bg="transparent"
                 className="pill-box-icons"
                 transition="all 0.2s ease"
-                _hover={{ color: "#E53E3E", transform: "scale(1.05)" }}
-                onClick={onDismiss}
-            >
-                <FaTimes size={13} />
-            </Box>
+                _hover={{ color: PILL.danger, transform: "scale(1.05)" }}
+                asChild><button onClick={onDismiss}>
+                    <FaTimes size={13} />
+                </button></Box>
         </Tooltip>
     </PillBox>
 );

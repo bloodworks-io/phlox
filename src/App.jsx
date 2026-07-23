@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
-import { useColorMode, useToast } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
+import { mutate } from "swr";
+import { useColorMode } from "./components/ui/color-mode";
+import { useLocation } from "react-router";
 
 import { TemplateProvider } from "./utils/templates/templateContext";
 import { ApiToastProvider } from "./utils/helpers/apiToastContext";
@@ -19,7 +21,6 @@ import { useNewNoteFlow } from "./utils/hooks/useNewNoteFlow";
 
 function AppContent({ setIsInitializing }) {
     const [isModified, setIsModified] = useState(false);
-    const [refreshKey, setRefreshKey] = useState(0);
     const [isFromOutstandingJobs, setIsFromOutstandingJobs] = useState(false);
 
     // App-level patient "session": briefcase patient + shared selectedDate +
@@ -37,13 +38,11 @@ function AppContent({ setIsInitializing }) {
     const bootstrap = useAppBootstrap();
     const nav = useNavigationGuard(isModified, setIsModified);
     const newNote = useNewNoteFlow({
-        createNewPatient,
         guardedNavigate: nav.guardedNavigate,
     });
     const { isSidebarCollapsed, toggleSidebar, isSmallScreen } =
         useSidebarState();
     const { colorMode, toggleColorMode } = useColorMode();
-    const toast = useToast();
     const location = useLocation();
 
     useEffect(() => {
@@ -62,10 +61,10 @@ function AppContent({ setIsInitializing }) {
                     setIsFromOutstandingJobs,
                 });
             } catch (error) {
-                handleError(error, toast);
+                handleError(error);
             }
         },
-        [isFromOutstandingJobs, toast, setPatient, setSelectedDate],
+        [isFromOutstandingJobs, setPatient, setSelectedDate],
     );
 
     useEffect(() => {
@@ -76,7 +75,12 @@ function AppContent({ setIsInitializing }) {
     }, [location, fetchPatientDetailsWrapper]);
 
     const refreshSidebar = useCallback(() => {
-        setRefreshKey((prev) => prev + 1);
+        // Invalidate SWR-cached sidebar lists; matches the keys Sidebar subscribes to
+        mutate(
+            (key) =>
+                Array.isArray(key) &&
+                (key[0] === "noteList" || key[0] === "incompleteJobsCount"),
+        );
     }, []);
 
     const handleSelectPatient = (
@@ -91,6 +95,10 @@ function AppContent({ setIsInitializing }) {
         return bootstrap.gate;
     }
 
+    if (bootstrap.isInitializing) {
+        return <Box className="splash-bg" w="100vw" h="100dvh" />;
+    }
+
     return (
         <>
             <AppLayout
@@ -101,9 +109,11 @@ function AppContent({ setIsInitializing }) {
                 sidebarProps={{
                     onNewPatient: newNote.openNewNoteModal,
                     onSelectPatient: handleSelectPatient,
+                    selectedPatientId: location.pathname.startsWith("/note/")
+                        ? patient?.id
+                        : undefined,
                     selectedDate,
                     setSelectedDate,
-                    refreshKey,
                     handleNavigation: nav.guardedNavigate,
                     isCollapsed: isSidebarCollapsed,
                     toggleSidebar,
@@ -119,12 +129,13 @@ function AppContent({ setIsInitializing }) {
                     refreshSidebar={refreshSidebar}
                     setIsModified={setIsModified}
                     onResetLetter={newNote.setResetLetter}
-                    onStartNewNote={newNote.startNewNote}
+                    onOpenNewNoteModal={newNote.openNewNoteModal}
                     newNoteKey={newNote.newNoteKey}
                     handleSelectPatient={handleSelectPatient}
                 />
             </AppLayout>
             <NewNoteModal
+                key={String(newNote.isNewNoteOpen)}
                 isOpen={newNote.isNewNoteOpen}
                 onClose={newNote.closeNewNoteModal}
                 patient={patient}

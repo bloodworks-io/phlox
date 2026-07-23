@@ -1,8 +1,9 @@
 // Hook for managing PDF form templates, fields, and auto-detection.
 import { useState, useEffect } from "react";
-import { useToast } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../api/pdfFormsApi";
 import { chatApi } from "../api/chatApi";
+import { loadPdfDocument } from "../helpers/pdfVisionHelpers";
 import { renderRulerOverlay } from "../pdf/renderGridOverlay";
 
 const VALID_FIELD_TYPES = ["text", "checkbox", "date", "number"];
@@ -14,6 +15,7 @@ export const usePdfForms = () => {
   const [fields, setFields] = useState([]);
   const [selectedFieldId, setSelectedFieldId] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [showFillModal, setShowFillModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -21,7 +23,6 @@ export const usePdfForms = () => {
   const [visionCapable, setVisionCapable] = useState(false);
   const [detecting, setDetecting] = useState(false);
 
-  const toast = useToast();
 
   const selectedField = fields.find((f) => f.id === selectedFieldId);
 
@@ -32,12 +33,11 @@ export const usePdfForms = () => {
         const data = await pdfFormsApi.fetchTemplates();
         setTemplates(data);
       } catch (error) {
-        toast({
+        toaster.create({
           title: "Error",
           description: error.message,
-          status: "error",
+          type: "error",
           duration: 3000,
-          isClosable: true,
         });
       } finally {
         setTemplatesLoading(false);
@@ -67,12 +67,11 @@ export const usePdfForms = () => {
       setFields(template.fields || []);
       setSelectedFieldId(null);
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Error",
         description: error.message,
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     }
   };
@@ -85,25 +84,36 @@ export const usePdfForms = () => {
     }
   };
 
+  const handlePdfReplaced = (updated) => {
+    setTemplates((prev) =>
+      prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+    );
+    setSelectedTemplate(updated);
+    setFields(updated.fields || []);
+  };
+
+  const handleOpenReplace = (tmpl) => {
+    setSelectedTemplate(tmpl);
+    setShowReplaceModal(true);
+  };
+
   const handleSaveFields = async () => {
     if (!selectedTemplate) return;
     setSaving(true);
     try {
       await pdfFormsApi.saveFields(selectedTemplate.id, fields);
-      toast({
+      toaster.create({
         title: "Saved",
         description: "Field definitions saved",
-        status: "success",
+        type: "success",
         duration: 2000,
-        isClosable: true,
       });
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Error",
         description: error.message,
-        status: "error",
+        type: "error",
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setSaving(false);
@@ -129,12 +139,7 @@ export const usePdfForms = () => {
       const pdfData = await pdfFormsApi.fetchTemplatePdf(selectedTemplate.id);
 
       // 2. Render pages to canvases with ruler overlay
-      const pdfjsModule = await import("../helpers/pdfVisionHelpers").then(
-        (m) => m.getPdfJs()
-      );
-      const pdfjsLib = await pdfjsModule;
-      const loadingTask = pdfjsLib.getDocument({ data: pdfData });
-      const doc = await loadingTask.promise;
+      const doc = await loadPdfDocument({ data: pdfData });
 
       const rulerPages = [];
       for (let i = 1; i <= Math.min(doc.numPages, 6); i++) {
@@ -200,22 +205,20 @@ export const usePdfForms = () => {
       }
 
       // 6. Auto-save (strip id — storage generates its own)
-      const savePayload = detectedFields.map(({ id, ...rest }) => rest);
+      const savePayload = detectedFields.map(({ _id, ...rest }) => rest);
       await pdfFormsApi.saveFields(selectedTemplate.id, savePayload);
-      toast({
+      toaster.create({
         title: "Fields detected",
         description: `Found ${detectedFields.length} fields`,
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Detection failed",
         description: error.message,
-        status: "error",
+        type: "error",
         duration: 4000,
-        isClosable: true,
       });
     } finally {
       setDetecting(false);
@@ -235,8 +238,10 @@ export const usePdfForms = () => {
     visionCapable,
     detecting,
     showUploadModal,
+    showReplaceModal,
     showFillModal,
     setShowUploadModal,
+    setShowReplaceModal,
     setShowFillModal,
     setSelectedFieldId,
     setIsDrawingMode,
@@ -245,6 +250,8 @@ export const usePdfForms = () => {
     handleTemplateCreated,
     handleTemplateSelected,
     handleTemplateDeleted,
+    handlePdfReplaced,
+    handleOpenReplace,
     handleSaveFields,
     handleUpdateField,
     handleDeleteField,

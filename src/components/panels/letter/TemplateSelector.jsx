@@ -11,7 +11,7 @@ const TemplateSelector = ({
       <Text mb="2" fontSize="sm" fontWeight="bold">
         Letter Template:
       </Text>
-      <HStack spacing="2" overflowX="auto" pb="2">
+      <HStack gap="2" overflowX="auto" pb="2">
         {letterTemplates
           .filter((t) => t.name !== "Dictation")
           .map((template) => (
@@ -24,7 +24,7 @@ const TemplateSelector = ({
                   : "outline"
               }
               onClick={() => onTemplateSelect(template)}
-              className="grey-button"
+              className="grey-button grey-button-sm"
               minWidth="auto"
               flexShrink={0}
             >
@@ -35,7 +35,7 @@ const TemplateSelector = ({
           size="sm"
           variant={selectedTemplate === "custom" ? "solid" : "outline"}
           onClick={() => onTemplateSelect("custom")}
-          className="grey-button"
+          className="grey-button grey-button-sm"
           minWidth="auto"
           flexShrink={0}
         >

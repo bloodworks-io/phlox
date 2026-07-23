@@ -11,6 +11,8 @@ export const typography = {
             fontWeight: "700",
             lineHeight: "1.2",
             marginBottom: "1rem",
+            textWrap: "balance",
+            letterSpacing: "-0.02em",
         },
         h2: {
             fontFamily: '"Space Grotesk", sans-serif',
@@ -18,12 +20,14 @@ export const typography = {
             fontWeight: "700",
             lineHeight: "1.2",
             marginBottom: "0.5rem",
+            textWrap: "balance",
         },
         h3: {
             fontFamily: '"Space Grotesk", sans-serif',
             fontSize: ["1rem", "1.275rem"],
             fontWeight: "700",
             lineHeight: "1.2",
+            textWrap: "balance",
         },
         h4: {
             fontFamily: '"Space Grotesk", sans-serif',

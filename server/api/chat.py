@@ -8,21 +8,15 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from server.chat import ChatEngine
+from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
+from server.llm_client.client import AsyncLLMClient, get_llm_client
+from server.nlp_tools.document_processing import extract_text_from_document
 from server.schemas.chat import ChatRequest, ChatResponse
-from server.utils.chat import ChatEngine
-from server.utils.llm_client.client import AsyncLLMClient, get_llm_client
-from server.utils.nlp_tools.document_processing import extract_text_from_document
+from server.schemas.documents import VisualDocumentPage
 
 router = APIRouter()
-
-
-class VisualDocumentPage(BaseModel):
-    page_number: int
-    data_url: str
-    mime_type: str | None = None
-    width: int | None = None
-    height: int | None = None
 
 
 class VisualDocumentRequest(BaseModel):
@@ -81,6 +75,13 @@ def _build_vision_cache_key(provider: str, base_url: str, model: str) -> str:
     normalized_base = (base_url or "").strip().lower().rstrip("/")
     normalized_model = (model or "").strip().lower()
     return f"{normalized_provider}|{normalized_base}|{normalized_model}"
+
+
+def _is_local_vision_capable(config: dict) -> bool:
+    """Local (Tauri) builds always run vision-capable VLMs with a projector."""
+    if config.get("LLM_BASE_URL"):
+        return False  # remote mode — use the normal probe/cache path
+    return any((DATA_DIR / "llm_models").glob("*mmproj*.gguf"))
 
 
 def _get_vision_capability_cache(config: dict) -> dict:
@@ -188,7 +189,7 @@ async def chat(
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         logging.error(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/upload-image")
@@ -217,10 +218,10 @@ async def upload_image(file: UploadFile = File(...)):
     except RuntimeError as e:
         # OCR dependencies not available
         logging.error(f"OCR not available: {e}")
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        raise HTTPException(status_code=503, detail="OCR dependencies not available") from e
     except Exception as e:
         logging.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/analyze-document-visual", response_model=VisualDocumentResponse)
@@ -305,7 +306,7 @@ async def analyze_document_visual(payload: VisualDocumentRequest):
         raise
     except Exception as e:
         logging.error(f"Error analyzing visual document payload: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/vision-capability/current", response_model=VisionCurrentCapabilityResponse)
@@ -319,6 +320,17 @@ async def get_current_vision_capability():
     cache_key = _build_vision_cache_key(provider, base_url, model)
     cache = _get_vision_capability_cache(config)
     cached_result = cache.get(cache_key)
+
+    # Local (Tauri) builds ship VLMs with a projector — vision is always available.
+    if _is_local_vision_capable(config):
+        return {
+            "vision_capable": True,
+            "status_code": 200,
+            "detail": "Local vision model with projector loaded.",
+            "cache_key": cache_key,
+            "source": "local_assumed",
+            "probed_at": None,
+        }
 
     if cached_result:
         return {

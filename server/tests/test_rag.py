@@ -35,7 +35,10 @@ def test_get_files(monkeypatch):
 
 def test_get_collection_files(monkeypatch):
     mock_vsm = MagicMock()
-    mock_vsm.get_files_for_collection.return_value = ["file1", "file2"]
+    mock_vsm.get_files_for_collection_with_pdf_flag.return_value = [
+        {"filename": "file1", "has_pdf": True},
+        {"filename": "file2", "has_pdf": False},
+    ]
     _setup_rag_mocks(monkeypatch, mock_vsm)
 
     response = client.get("/api/rag/collection_files/test_collection")
@@ -100,23 +103,6 @@ def test_re_embed(monkeypatch):
     data = response.json()
     assert "collections_processed" in data
     assert data["total_chunks_re_embedded"] == 50
-
-
-def test_get_rag_suggestions(monkeypatch):
-    mock_vsm = MagicMock()
-    _setup_rag_mocks(monkeypatch, mock_vsm)
-
-    async def fake_suggestions():
-        return ["Suggestion 1", "Suggestion 2"]
-
-    monkeypatch.setattr("server.api.rag.generate_specialty_suggestions", fake_suggestions)
-
-    response = client.get("/api/rag/suggestions")
-    assert response.status_code == 200
-    data = response.json()
-    assert "suggestions" in data
-    assert isinstance(data["suggestions"], list)
-    assert "Suggestion 1" in data["suggestions"]
 
 
 def test_clear_database(monkeypatch):

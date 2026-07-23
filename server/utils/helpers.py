@@ -43,6 +43,32 @@ def calculate_age(dob: str, encounter_date: str | None = None) -> int:
     return age
 
 
+def format_name(first_name: str | None, last_name: str | None) -> str:
+    """Format a display name as 'Last, First'"""
+    first = (first_name or "").strip()
+    last = (last_name or "").strip()
+    if last and first:
+        return f"{last}, {first}"
+    return last or first
+
+
+def split_name(name: str | None) -> tuple[str, str]:
+    """Split a legacy display name into (first_name, last_name).
+
+    Handles "Last, First", "First Last", and bare names.
+    """
+    if not name:
+        return "", ""
+    name = name.strip()
+    if ", " in name:
+        last, first = name.split(", ", 1)
+        return first.strip(), last.strip()
+    if " " in name:
+        first, last = name.rsplit(" ", 1)
+        return first.strip(), last.strip()
+    return "", name
+
+
 def _remove_think_blocks(text: str) -> str:
     """Remove reasoning-tag blocks from *text* in linear time.
 

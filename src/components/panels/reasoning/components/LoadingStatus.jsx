@@ -1,6 +1,5 @@
 import React from "react";
 import { Flex, Spinner, Text, VStack } from "@chakra-ui/react";
-import { colors } from "../../../../theme/colors";
 import {
     FaWikipediaW,
     FaBookMedical,
@@ -25,7 +24,7 @@ const getStatusIcon = (status) => {
 export const LoadingStatus = ({ status, colorMode }) => {
     if (!status) return null;
 
-    const Icon = getStatusIcon(status);
+    const icon = getStatusIcon(status);
 
     return (
         <Flex
@@ -45,15 +44,15 @@ export const LoadingStatus = ({ status, colorMode }) => {
             flexDirection="column"
             gap={4}
         >
-            <VStack spacing={4}>
-                <Spinner size="lg" color="orange.500" thickness="3px" />
+            <VStack gap={4}>
+                <Spinner size="lg" color="secondaryButton" borderWidth="3px" />
                 <Flex align="center" gap={3}>
-                    <Icon size="1.2em" color="gray.500" />
+                    {React.createElement(icon, { size: "1.2em", color: "overlay0" })}
                     <Text
                         fontSize="sm"
                         fontWeight="medium"
-                        color="gray.700"
-                        _dark={{ color: "gray.300" }}
+                        color="textPrimary"
+                        _dark={{ color: "textTertiary" }}
                     >
                         {status}
                     </Text>

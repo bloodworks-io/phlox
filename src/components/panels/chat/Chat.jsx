@@ -1,24 +1,20 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ChatPanel from "./ChatPanel";
 import FloatingPanel from "../../common/FloatingPanel";
+import { useChat } from "../../../utils/hooks/useChat";
 
-const Chat = ({
-  isOpen,
-  onClose,
-  chatLoading,
-  messages,
-  setMessages,
-  userInput,
-  setUserInput,
-  handleChat,
-  showSuggestions,
-  setShowSuggestions,
-  rawTranscription,
-  currentTemplate,
-  patientData,
-}) => {
+const Chat = ({ isOpen, onClose, patientData, currentTemplate, rawTranscription }) => {
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
   const resizerRef = useRef(null);
+
+  // Chat state lives here now — no parent orchestration.
+  const { clearChat, ...chat } = useChat();
+
+  // Self-reset on patient change. Same pattern Letter.jsx uses for
+  // useLetterTemplates(patient?.id). clearChat is a no-op on initial mount.
+  useEffect(() => {
+    clearChat();
+  }, [patientData?.id, clearChat]);
 
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -46,6 +42,9 @@ const Chat = ({
     window.removeEventListener("mouseup", handleMouseUp);
   };
 
+  const handleChat = (userInput) =>
+    chat.sendMessage(userInput, patientData, currentTemplate, rawTranscription);
+
   return (
     <FloatingPanel
       isOpen={isOpen}
@@ -61,14 +60,14 @@ const Chat = ({
         resizerRef={resizerRef}
         handleMouseDown={handleMouseDown}
         onClose={onClose}
-        chatLoading={chatLoading}
-        messages={messages}
-        setMessages={setMessages}
-        userInput={userInput}
-        setUserInput={setUserInput}
+        chatLoading={chat.loading}
+        messages={chat.messages}
+        setMessages={chat.setMessages}
+        userInput={chat.userInput}
+        setUserInput={chat.setUserInput}
         handleChat={handleChat}
-        showSuggestions={showSuggestions}
-        setShowSuggestions={setShowSuggestions}
+        showSuggestions={chat.showSuggestions}
+        setShowSuggestions={chat.setShowSuggestions}
         rawTranscription={rawTranscription}
         currentTemplate={currentTemplate}
         patientData={patientData}

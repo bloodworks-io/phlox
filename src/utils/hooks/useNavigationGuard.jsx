@@ -1,17 +1,17 @@
 import { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useDisclosure, useToast } from "@chakra-ui/react";
+import { useNavigate } from "react-router";
+import { useDisclosure } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 
 // Guards navigation when there are unsaved changes (isModified).
 export const useNavigationGuard = (isModified, setIsModified) => {
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { open, onOpen, onClose } = useDisclosure();
     const [pendingNavigation, setPendingNavigation] = useState(null);
     const navigate = useNavigate();
-    const toast = useToast();
 
     const guardedNavigate = useCallback(
         (path, state) => {
-            toast.closeAll();
+            toaster.remove();
             if (isModified) {
                 setPendingNavigation({ path, state });
                 onOpen();
@@ -20,7 +20,7 @@ export const useNavigationGuard = (isModified, setIsModified) => {
                 navigate(path, state ? { state } : undefined);
             }
         },
-        [isModified, navigate, toast, onOpen, setIsModified],
+        [isModified, navigate, onOpen, setIsModified],
     );
 
     const confirmNavigation = useCallback(() => {
@@ -56,6 +56,6 @@ export const useNavigationGuard = (isModified, setIsModified) => {
         guardedNavigate,
         confirmNavigation,
         cancelNavigation,
-        isLeaveOpen: isOpen,
+        isLeaveOpen: open,
     };
 };

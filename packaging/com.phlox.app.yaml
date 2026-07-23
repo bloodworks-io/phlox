@@ -1,0 +1,150 @@
+# Flatpak manifest for Phlox
+
+id: com.phlox.app
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+command: phlox
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node22
+  - org.freedesktop.Sdk.Extension.rust-stable
+
+finish-args:
+  - --share=network
+  - --socket=pulseaudio
+  - --device=all
+  - --filesystem=home
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --env=XDG_CACHE_HOME=/app/cache
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /share/man
+  - /share/doc
+  - '*.a'
+  - '*.la'
+
+modules:
+  - name: patchelf
+    buildsystem: autotools
+    sources:
+      - type: git
+        url: https://github.com/NixOS/patchelf.git
+        tag: '0.19.1'
+        commit: 7688b17c18d16f67fa8d5a82a2404c2e3a18648d
+
+  - name: spirv_headers
+    buildsystem: cmake-ninja
+    no-make-install: false
+    sources:
+      - type: git
+        url: https://github.com/KhronosGroup/SPIRV-Headers.git
+        tag: vulkan-sdk-1.4.350.1
+        commit: ad9184e76a66b1001c29db9b0a3e87f646c64de0
+
+
+  - name: parakeet_cpp
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DPARAKEET_BUILD_SERVER=ON
+      - -DPARAKEET_BUILD_CLI=OFF
+      - -DPARAKEET_BUILD_TESTS=OFF
+      - -DPARAKEET_GGML_VULKAN=ON
+      - -DGGML_NATIVE=OFF
+    sources:
+      - type: git
+        url: https://github.com/mudler/parakeet.cpp.git
+        commit: e8acc6172a94e20a952cf1843decace5d771a94b
+      - type: file
+        path: ../src-tauri/parakeet-cpp-omi-adapter.patch
+        dest-filename: omi-adapter.patch
+      - type: shell
+        commands:
+          - git submodule update --init --recursive
+          - git apply --recount omi-adapter.patch
+    post-install:
+      - install -Dm755 examples/server/parakeet-server
+          /app/bin/phlox-whisper-server-x86_64-unknown-linux-gnu
+
+  - name: llama_cpp
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DGGML_VULKAN=ON
+      - -DGGML_NATIVE=OFF
+      - -DLLAMA_CURL=OFF
+      - -DLLAMA_OPENSSL=OFF
+      - -DLLAMA_BUILD_SERVER=ON
+      - -DLLAMA_BUILD_UI=OFF
+      - -DLLAMA_BUILD_APP=OFF
+      - -DLLAMA_BUILD_EXAMPLES=OFF
+      - -DLLAMA_BUILD_TESTS=OFF
+    sources:
+      - type: git
+        url: https://github.com/ggml-org/llama.cpp.git
+        commit: aa46bda89b9a8378ae76bb15fc2ce2f571f0983c
+    post-install:
+      # llama-server is at <build-dir>/bin/llama-server (per llama.cpp CMake).
+      - install -Dm755 bin/llama-server
+          /app/bin/phlox-llama-server-x86_64-unknown-linux-gnu
+
+  - name: python_server
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app uv nuitka
+      - cd server && UV_PYTHON=/usr/bin/python3.12 /app/bin/uv sync --extra rag
+      - bash src-tauri/build-server.sh
+      - install -d /app/bin/server_dist
+      - cp -a src-tauri/server_dist/. /app/bin/server_dist/
+      - install -Dm755 src-tauri/binaries/phlox-server-x86_64-unknown-linux-gnu
+          /app/bin/phlox-server-x86_64-unknown-linux-gnu
+    sources:
+      - type: dir
+        path: ..
+    build-options:
+      build-args:
+        - --share=network
+      append-path: /app/bin
+
+
+  - name: phlox
+    buildsystem: simple
+    build-commands:
+      - install -d src-tauri/binaries
+      - ln -sf /app/bin/phlox-server-x86_64-unknown-linux-gnu src-tauri/binaries/
+      - ln -sf /app/bin/phlox-llama-server-x86_64-unknown-linux-gnu src-tauri/binaries/
+      - ln -sf /app/bin/phlox-whisper-server-x86_64-unknown-linux-gnu src-tauri/binaries/
+      - ln -sf phlox-server-x86_64-unknown-linux-gnu /app/bin/phlox-server
+      - ln -sf phlox-llama-server-x86_64-unknown-linux-gnu /app/bin/phlox-llama-server
+      - ln -sf phlox-whisper-server-x86_64-unknown-linux-gnu /app/bin/phlox-whisper-server
+      - npm ci
+      - npx tauri build --no-bundle
+      - install -Dm755 src-tauri/target/release/phlox /app/bin/phlox
+      - install -Dm644 packaging/com.phlox.app.desktop
+          /app/share/applications/com.phlox.app.desktop
+      - install -Dm644 packaging/com.phlox.app.metainfo.xml
+          /app/share/metainfo/com.phlox.app.metainfo.xml
+      - install -Dm644 src-tauri/icons/32x32.png
+          /app/share/icons/hicolor/32x32/apps/com.phlox.app.png
+      - install -Dm644 src-tauri/icons/128x128.png
+          /app/share/icons/hicolor/128x128/apps/com.phlox.app.png
+      - install -Dm644 src-tauri/icons/128x128@2x.png
+          /app/share/icons/hicolor/128x128@2/apps/com.phlox.app.png
+    sources:
+      - type: dir
+        path: ..
+    build-options:
+      build-args:
+        - --share=network
+      append-path: /usr/lib/sdk/node22/bin:/usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/phlox/cargo
+        npm_config_cache: /run/build/phlox/npm-cache

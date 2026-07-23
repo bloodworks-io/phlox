@@ -12,17 +12,15 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from server.constants import TEMP_DIR
+from server.rag.progress import stream_re_embed_progress
+from server.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 from server.schemas.rag import (
     BulkCommitRequest,
     CommitRequest,
     DeleteFileRequest,
     ModifyCollectionRequest,
+    UpdateDocumentMetadataRequest,
 )
-from server.utils.rag.processing import (
-    generate_specialty_suggestions,
-)
-from server.utils.rag.progress import stream_re_embed_progress
-from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 
 router = APIRouter()
 
@@ -47,26 +45,26 @@ async def _extract_rag_metadata_from_text(
     logger.debug(f"Text extracted. Length: {len(extracted_text)}. Storing temporarily.")
     vector_store_manager.set_extracted_text(extracted_text)
 
-    logger.info("Attempting to determine disease name...")
-    disease_name = await vector_store_manager.get_disease_name(extracted_text)
-    logger.info(f"Disease name determined: '{disease_name}'")
-
-    logger.debug("Attempting to determine focus area...")
-    focus_area = await vector_store_manager.get_focus_area(extracted_text)
-    logger.debug(f"Focus area determined: '{focus_area}'")
-
-    logger.debug("Attempting to determine document source...")
-    document_source = await vector_store_manager.get_document_source(extracted_text)
-    logger.debug(f"Document source determined: '{document_source}'")
-
+    logger.info("Classifying document (disease / focus / source / title)...")
+    classification = await vector_store_manager.get_document_classification(extracted_text)
+    disease_name = classification.disease_name
+    focus_area = classification.focus_area
+    document_source = classification.document_source
+    title = classification.title
     logger.info(
-        f"PDF processing complete for '{filename}': disease='{disease_name}', focus='{focus_area}', source='{document_source}'"
+        "Classification complete for '%s': disease='%s' focus='%s' source='%s' title='%s'",
+        filename,
+        disease_name,
+        focus_area,
+        document_source,
+        title,
     )
 
     return {
         "disease_name": disease_name,
         "focus_area": focus_area,
         "document_source": document_source,
+        "title": title,
         "filename": filename,
         "message": "PDF information extracted. Ready for commit.",
     }
@@ -152,6 +150,29 @@ async def delete_file_endpoint(request: DeleteFileRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error deleting file from collection: {str(e)}",
+        ) from e
+
+
+@router.patch("/update-document-metadata")
+async def update_document_metadata(request: UpdateDocumentMetadataRequest):
+    """Update a document's title / source / focus_area (partial)."""
+    _check_rag_available()
+    try:
+        vector_store_manager = get_vector_store_manager()
+        success = vector_store_manager.update_document_metadata(
+            request.collection_name,
+            request.filename,
+            title=request.title,
+            source=request.source,
+            focus_area=request.focus_area,
+        )
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update document metadata")
+        return {"message": "Document metadata updated successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error updating document metadata: {str(e)}",
         ) from e
 
 
@@ -279,6 +300,7 @@ async def commit_to_db(request: CommitRequest):
             request.focus_area,
             request.document_source,
             request.filename,
+            title=request.title,
         )
 
         return {"message": "Data committed to the database successfully"}
@@ -308,6 +330,7 @@ async def commit_direct(request: BulkCommitRequest):
             focus_area=request.focus_area,
             document_source=request.document_source,
             filename=request.filename,
+            title=request.title,
             pdf_bytes=pdf_bytes,
         )
         return {
@@ -344,19 +367,6 @@ async def re_embed_stream():
         stream_re_embed_progress(),
         media_type="text/event-stream",
     )
-
-
-@router.get("/suggestions")
-async def get_rag_suggestions():
-    """Get specialty-specific RAG chat suggestions."""
-    _check_rag_available()
-    try:
-        suggestions = await generate_specialty_suggestions()
-        return {"suggestions": suggestions}
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error generating suggestions: {str(e)}"
-        ) from e
 
 
 @router.post("/clear-database")

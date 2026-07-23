@@ -33,6 +33,22 @@ export async function getPdfJs() {
     return pdfjs;
 }
 
+const WASM_URL = `${import.meta.env.BASE_URL}wasm/`;
+const CMAP_URL = `${import.meta.env.BASE_URL}cmaps/`;
+const STANDARD_FONT_URL = `${import.meta.env.BASE_URL}standard_fonts/`;
+
+export async function loadPdfDocument(options) {
+    const pdfjs = await getPdfJs();
+    const loadingTask = pdfjs.getDocument({
+        wasmUrl: WASM_URL,
+        cMapUrl: CMAP_URL,
+        cMapPacked: true,
+        standardFontDataUrl: STANDARD_FONT_URL,
+        ...options,
+    });
+    return loadingTask.promise;
+}
+
 function normalizeText(input) {
     return String(input ?? "")
         .replace(/\u0000/g, " ")
@@ -170,15 +186,11 @@ export async function extractPdfText(file, options = {}) {
     }
 
     const cfg = { ...DEFAULT_TEXT_OPTIONS, ...options };
-    const pdfjs = await getPdfJs();
     const buffer = await file.arrayBuffer();
 
-    const loadingTask = pdfjs.getDocument({
+    const doc = await loadPdfDocument({
         data: buffer,
-        disableWorker: false,
     });
-
-    const doc = await loadingTask.promise;
     const pageCount = doc.numPages;
     const pagesToProcess = clamp(cfg.maxPages, 1, pageCount);
 
@@ -231,15 +243,11 @@ export async function renderPdfPagesToImages(file, options = {}) {
     }
 
     const cfg = { ...DEFAULT_RENDER_OPTIONS, ...options };
-    const pdfjs = await getPdfJs();
     const buffer = await file.arrayBuffer();
 
-    const loadingTask = pdfjs.getDocument({
+    const doc = await loadPdfDocument({
         data: buffer,
-        disableWorker: false,
     });
-
-    const doc = await loadingTask.promise;
     const pageCount = doc.numPages;
     const pagesToRender = clamp(cfg.maxPages, 1, pageCount);
 

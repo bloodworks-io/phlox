@@ -1,11 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import {
-    Box,
-    Flex,
-    Textarea,
-    IconButton,
-    useColorMode,
-} from "@chakra-ui/react";
+import { Box, Flex, Textarea, IconButton } from "@chakra-ui/react";
 import { ArrowUpIcon } from "../../common/icons";
 
 const MIN_HEIGHT = 32;
@@ -17,8 +11,6 @@ const ChatInput = ({
     handleSendMessage,
     chatLoading,
 }) => {
-    const { colorMode } = useColorMode();
-    const isLight = colorMode === "light";
     const textareaRef = useRef(null);
 
     const canSend = Boolean(userInput.trim()) && !chatLoading;
@@ -71,57 +63,31 @@ const ChatInput = ({
                     px="3"
                     fontSize="sm"
                     lineHeight="1.35"
-                    color={isLight ? "gray.800" : "white"}
-                    _placeholder={{
-                        color: isLight
-                            ? "gray.500"
-                            : "rgba(255, 255, 255, 0.6)",
-                    }}
+                    color="textPrimary"
+                    _placeholder={{ color: "textQuaternary" }}
                     _focusVisible={{
                         boxShadow: "none",
                     }}
-                    isDisabled={chatLoading}
+                    disabled={chatLoading}
                 />
 
                 <IconButton
-                    icon={<ArrowUpIcon />}
                     onClick={() => handleSendMessage(userInput)}
-                    isDisabled={!canSend}
-                    isLoading={chatLoading}
+                    disabled={!canSend}
+                    loading={chatLoading}
                     aria-label="Send message"
                     size="sm"
                     alignSelf="center"
                     borderRadius="full"
-                    bg={
-                        canSend
-                            ? isLight
-                                ? "gray.700"
-                                : "white"
-                            : isLight
-                              ? "gray.200"
-                              : "rgba(255, 255, 255, 0.2)"
-                    }
-                    color={
-                        canSend
-                            ? isLight
-                                ? "white"
-                                : "gray.800"
-                            : isLight
-                              ? "gray.400"
-                              : "rgba(255, 255, 255, 0.5)"
-                    }
+                    bg={canSend ? "sendButton" : "sendButtonDisabled"}
+                    color={canSend ? "sendButtonText" : "sendButtonTextDisabled"}
                     _hover={{
                         bg: canSend
-                            ? isLight
-                                ? "gray.600"
-                                : "gray.100"
-                            : isLight
-                              ? "gray.300"
-                              : "rgba(255, 255, 255, 0.3)",
+                            ? "sendButtonHover"
+                            : "sendButtonHoverDisabled",
                         transform: "scale(1.05)",
                     }}
-                    transition="all 0.2s ease"
-                />
+                    transition="all 0.2s ease"><ArrowUpIcon /></IconButton>
             </Flex>
         </Box>
     );

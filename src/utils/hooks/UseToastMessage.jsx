@@ -1,45 +1,44 @@
 // Custom hook for managing toast notifications.
 import { useCallback, useMemo } from "react";
-import { useToast } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import { DEFAULT_TOAST_CONFIG } from "../constants";
 
 export const useToastMessage = () => {
-    const toast = useToast();
 
     const showSuccessToast = useCallback(
         (message) => {
-            toast({
+            toaster.create({
                 title: "Success",
                 description: message,
-                status: "success",
+                type: "success",
                 ...DEFAULT_TOAST_CONFIG,
             });
         },
-        [toast],
+        [],
     );
 
     const showErrorToast = useCallback(
         (message) => {
-            toast({
+            toaster.create({
                 title: "Error",
                 description: message,
-                status: "error",
+                type: "error",
                 ...DEFAULT_TOAST_CONFIG,
             });
         },
-        [toast],
+        [],
     );
 
     const showWarningToast = useCallback(
         (message) => {
-            toast({
+            toaster.create({
                 title: "Warning",
                 description: message,
-                status: "warning",
+                type: "warning",
                 ...DEFAULT_TOAST_CONFIG,
             });
         },
-        [toast],
+        [],
     );
 
     return useMemo(

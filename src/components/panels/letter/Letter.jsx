@@ -1,11 +1,5 @@
-import {
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-  useState,
-  useEffect,
-} from "react";
-import { useClipboard } from "@chakra-ui/react";
+import { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import { useClipboard } from "../../../utils/hooks/useClipboard";
 
 import LetterPanel from "./LetterPanel";
 import { useLetterTemplates } from "../../../utils/hooks/useLetterTemplates";
@@ -23,7 +17,7 @@ const Letter = forwardRef(
       handleGenerateLetterClick,
       handleRefineLetter,
       setIsModified,
-      toast,
+      
       patient,
       setLoading: setGeneralLoading,
     },
@@ -50,7 +44,6 @@ const Letter = forwardRef(
       selectedTemplate,
       additionalInstructions,
       setAdditionalInstructions,
-      options,
       selectTemplate,
       getInstructions,
     } = useLetterTemplates(patient?.id);
@@ -110,7 +103,6 @@ const Letter = forwardRef(
         patient,
         additionalInstructions: getInstructions(),
         refinementInput,
-        options,
         onSuccess: () => {
           setRefinementInput("");
           setIsRefining(false);

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import { localModelApi } from "../api/localModelApi";
 import { invoke } from "@tauri-apps/api/core";
-import { downloadLlmModel as downloadLlmService, downloadWhisperModel as downloadWhisperService } from "../services/localModelService.jsx";
+import { downloadLlmModel as downloadLlmService, downloadWhisperModel as downloadWhisperService } from "../services/localModelService";
 
 export const useLocalModels = () => {
   const [models, setModels] = useState([]);
@@ -30,7 +30,6 @@ export const useLocalModels = () => {
   const [whisperRecommendations, setWhisperRecommendations] = useState([]);
   const [whisperStatus, setWhisperStatus] = useState(null);
 
-  const toast = useToast();
 
   // Fetch system specifications
   const fetchSystemSpecs = useCallback(async () => {
@@ -40,16 +39,15 @@ export const useLocalModels = () => {
       return specs;
     } catch (error) {
       console.error("Error getting system specs:", error);
-      toast({
+      toaster.create({
         title: "Warning",
         description: "Could not retrieve system specifications",
-        status: "warning",
+        type: "warning",
         duration: 3000,
-        isClosable: true,
       });
       return null;
     }
-  }, [toast]);
+  }, []);
 
   // Fetch downloaded local models
   const fetchLocalModels = useCallback(async () => {
@@ -76,11 +74,6 @@ export const useLocalModels = () => {
       return [];
     }
   }, []);
-
-  // Fetch model recommendations (same as available models now)
-  const fetchModelRecommendations = useCallback(async () => {
-    return await fetchAvailableModels();
-  }, [fetchAvailableModels]);
 
   // Check local status
   const checkLocalStatus = useCallback(async () => {
@@ -123,7 +116,6 @@ export const useLocalModels = () => {
               },
             }));
           },
-          toast,
         });
 
         // Refresh models after successful download
@@ -134,7 +126,7 @@ export const useLocalModels = () => {
         setDownloadProgress((prev) => ({ ...prev, llm: null }));
       }
     },
-    [fetchLocalModels, toast],
+    [fetchLocalModels],
   );
 
   // Delete LLM model
@@ -143,25 +135,23 @@ export const useLocalModels = () => {
       try {
         await localModelApi.deleteLlmModel(filename);
         await fetchLocalModels();
-        toast({
+        toaster.create({
           title: "Success",
           description: `Model deleted successfully`,
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
         });
       } catch (error) {
         console.error("Error deleting model:", error);
-        toast({
+        toaster.create({
           title: "Error",
           description: `Failed to delete model: ${error.message}`,
-          status: "error",
+          type: "error",
           duration: 5000,
-          isClosable: true,
         });
       }
     },
-    [fetchLocalModels, toast],
+    [fetchLocalModels],
   );
 
   // ========== Whisper Model Functions ==========
@@ -233,7 +223,6 @@ export const useLocalModels = () => {
               },
             }));
           },
-          toast,
         });
 
         // Refresh models after successful download
@@ -244,7 +233,7 @@ export const useLocalModels = () => {
         setDownloadProgress((prev) => ({ ...prev, whisper: null }));
       }
     },
-    [fetchWhisperModels, toast],
+    [fetchWhisperModels],
   );
 
   // Delete Whisper model
@@ -253,25 +242,23 @@ export const useLocalModels = () => {
       try {
         await localModelApi.deleteWhisperModel(modelId);
         await fetchWhisperModels();
-        toast({
+        toaster.create({
           title: "Success",
           description: `Whisper model ${modelId} deleted successfully`,
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
         });
       } catch (error) {
         console.error("Error deleting Whisper model:", error);
-        toast({
+        toaster.create({
           title: "Error",
           description: `Failed to delete Whisper model: ${error.message}`,
-          status: "error",
+          type: "error",
           duration: 5000,
-          isClosable: true,
         });
       }
     },
-    [fetchWhisperModels, toast],
+    [fetchWhisperModels],
   );
 
   // Initialize data on mount

@@ -1,40 +1,14 @@
 // Styles for the chat interface.
-import { MinusIcon } from "../../components/common/icons";
 import { colors } from "../colors";
-import { WiDayThunderstorm } from "react-icons/wi";
 
 const CHAT_UI_TOKENS = {
     chevron: {
         light: "#9ca3af",
         dark: "#9ca3af",
     },
-    userBubble: {
-        light: {
-            gradient:
-                "linear-gradient(180deg, rgba(247, 147, 30, 0.88), rgba(230, 95, 35, 0.82)) !important",
-            border: "1px solid rgba(255, 255, 255, 0.32) !important",
-            shadow: "0 6px 18px rgba(230, 95, 35, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important",
-        },
-        dark: {
-            gradient:
-                "linear-gradient(180deg, rgba(247, 147, 30, 0.34), rgba(230, 95, 35, 0.26)) !important",
-            border: "1px solid rgba(255, 167, 102, 0.28) !important",
-            shadow: "0 6px 20px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important",
-        },
-    },
 };
 
-export const floatingStyles = (props) => ({
-    ".chat-icon": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.chatIcon} !important`
-                : `${colors.dark.chatIcon} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.invertedText} !important`
-                : `${colors.dark.invertedText} !important`,
-    },
+const floatingStyles = (props) => ({
     ".floating-panel": {
         backgroundColor:
             props.colorMode === "light"
@@ -60,7 +34,11 @@ export const floatingStyles = (props) => ({
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textSecondary} !important`,
         fontWeight: "normal",
-        borderRadius: "none !important",
+
+        borderTopLeftRadius: "0 !important",
+        borderTopRightRadius: "md !important",
+        borderBottomLeftRadius: "md !important",
+        borderBottomRightRadius: "md !important",
         fontSize: "0.7rem !important",
     },
     ".chat-suggestions": {
@@ -69,6 +47,30 @@ export const floatingStyles = (props) => ({
                 ? `${colors.light.crust} !important`
                 : `${colors.dark.overlay0} !important`,
         borderRadius: "xl !important",
+        border:
+            props.colorMode === "light"
+                ? `1px solid ${colors.light.surface} !important`
+                : `1px solid ${colors.dark.surface1} !important`,
+        fontWeight: "500 !important",
+        fontSize: "0.9rem !important",
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textSecondary} !important`
+                : `${colors.dark.textTertiary} !important`,
+        _hover: {
+            transform: "translateY(-1px)",
+            boxShadow: "sm",
+        },
+    },
+    ".refinement-suggestions": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.crust} !important`
+                : `${colors.dark.overlay0} !important`,
+        borderRadius: "xl !important",
+        height: "25px !important",
+        fontSize: "0.8rem !important",
+        fontWeight: "500 !important",
         border:
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
@@ -124,9 +126,9 @@ export const floatingStyles = (props) => ({
     ".message-box.user": {
         background:
             props.colorMode === "light"
-                ? "#f7931ecc !important"
-                : "#f7931e66 !important",
-        color: "#fff !important",
+                ? `${colors.light.brandFaint} !important`
+                : `${colors.dark.brandFaint} !important`,
+        color: `${colors.light.invertedText} !important`,
         borderRadius: "2xl !important",
     },
     ".message-box ul, .message-box ol": {
@@ -154,7 +156,7 @@ export const floatingStyles = (props) => ({
         borderLeftColor:
             props.colorMode === "light"
                 ? `${colors.light.secondaryButton} !important`
-                : `${colors.light.secondaryButton} !important`,
+                : `${colors.dark.secondaryButton} !important`,
     },
     ".thinking-block-text": {
         fontSize: "0.9rem !important",
@@ -232,7 +234,7 @@ export const floatingStyles = (props) => ({
         color: colors.light.sidebar.text,
         border: "1px solid rgba(0, 0, 0, 0.2) !important",
         boxShadow:
-            "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important",
+            "0 8px 32px rgba(20, 20, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -247,9 +249,13 @@ export const floatingStyles = (props) => ({
                 ? `1px solid ${colors.light.surface} !important`
                 : `1px solid ${colors.dark.surface} !important`,
     },
+    ".floating-action-menu .chakra-button svg": {
+        width: "14px !important",
+        height: "14px !important",
+    },
     // Dashboard chat styles
     ".dashboard-chat-container": {
-        height: "calc(100vh - 60px)",
+        height: "calc(100dvh - 60px)",
         display: "flex",
         flexDirection: "column",
         width: "100%",
@@ -267,15 +273,15 @@ export const floatingStyles = (props) => ({
         padding: "10px 16px !important",
     },
     ".dashboard-chat-messages": {
-        height: "calc(100vh - 160px)",
+        height: "calc(100dvh - 160px)",
         overflowY: "auto",
         paddingBottom: "100px", // Space for fixed input
     },
     ".dashboard-chat-greeting": {
         color:
             props.colorMode === "light"
-                ? `${colors.light.textPrimary} !important`
-                : `${colors.dark.textPrimary} !important`,
+                ? `${colors.light.textSecondary} !important`
+                : `${colors.dark.textSecondary} !important`,
     },
     ".dashboard-chat-suggestions": {
         backgroundColor:
@@ -283,13 +289,26 @@ export const floatingStyles = (props) => ({
                 ? `${colors.light.crust} !important`
                 : `${colors.dark.overlay0} !important`,
         borderRadius: "xl !important",
+        fontWeight: "500 !important",
+        fontSize: "0.9rem !important",
         border:
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
-                : "none !important",
+                : `1px solid ${colors.dark.surface1} !important`,
         color:
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textTertiary} !important`,
+        _hover: {
+            transform: "translateY(-1px)",
+            boxShadow: "sm",
+        },
     },
 });
+
+const _lo = floatingStyles({ colorMode: "light" });
+const _do = floatingStyles({ colorMode: "dark" });
+export const floatingGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    floatingGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

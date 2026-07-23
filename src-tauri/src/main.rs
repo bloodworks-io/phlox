@@ -1,8 +1,7 @@
 mod commands;
 mod encryption;
-mod pm_client;
+mod pm;
 mod process;
-mod services;
 
 use log::LevelFilter;
 use std::thread;
@@ -11,38 +10,29 @@ use tauri::{Emitter, Manager};
 use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{
-    change_passphrase, clear_keychain, convert_audio_to_wav, get_encryption_status,
-    get_request_token, get_service_status, get_system_specs, has_database, has_encryption_setup,
-    has_keychain_entry, restart_llama, restart_whisper, send_passphrase_command, setup_encryption,
+    change_passphrase, clear_keychain, get_encryption_status, get_service_status, get_system_specs,
+    has_database, has_encryption_setup, has_keychain_entry, restart_embedding, restart_llama,
+    restart_whisper, send_passphrase_command, setup_encryption, start_embedding_service,
     start_llama_service, start_server_command, start_whisper_service, unlock_with_passphrase,
     CachedServiceStatus,
 };
-use pm_client::ProcessManagerClient;
-use process::{
-    cleanup_stale_files, kill_all_processes, LlamaProcess, RestartCoordinator, ServerProcess,
-    WhisperProcess,
-};
+use process::{cleanup_stale_files, kill_all_processes};
 
 /// Position the traffic light buttons (close, minimize, maximize) with custom offset
 #[cfg(target_os = "macos")]
-fn position_traffic_light_buttons(ns_window: cocoa::base::id) {
-    use cocoa::appkit::{NSWindow, NSWindowButton};
-    use cocoa::base::{id, nil};
-    use cocoa::foundation::{NSPoint, NSRect};
-    use objc::{msg_send, sel, sel_impl};
+fn position_traffic_light_buttons(ns_window: &objc2_app_kit::NSWindow) {
+    use objc2_app_kit::NSWindowButton;
+    use objc2_foundation::{NSPoint, NSRect};
 
-    unsafe {
-        let close_button = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
-        if close_button != nil {
-            let superview: id = msg_send![close_button, superview];
-            if superview != nil {
-                let frame: NSRect = msg_send![superview, frame];
-                let new_frame = NSRect::new(
-                    NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
-                    frame.size,
-                );
-                let _: () = msg_send![superview, setFrame: new_frame];
-            }
+    if let Some(close_button) = ns_window.standardWindowButton(NSWindowButton::CloseButton) {
+        // superview() is unsafe (not retained internally)
+        if let Some(superview) = unsafe { close_button.superview() } {
+            let frame = superview.frame();
+            let new_frame = NSRect::new(
+                NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
+                frame.size,
+            );
+            superview.setFrame(new_frame);
         }
     }
 }
@@ -61,26 +51,25 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(log_plugin)
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
-        .manage(ServerProcess(std::sync::Mutex::new(None)))
-        .manage(LlamaProcess(std::sync::Mutex::new(None)))
-        .manage(WhisperProcess(std::sync::Mutex::new(None)))
-        .manage(RestartCoordinator::default())
         .manage(CachedServiceStatus(std::sync::Mutex::new(None)))
+        .manage(pm::PmState(std::sync::Mutex::new(
+            pm::ProcessManagerState::default(),
+        )))
         .invoke_handler(tauri::generate_handler![
             commands::get_server_port,
             commands::get_llm_port,
             commands::get_whisper_port,
+            commands::get_embedding_port,
             commands::get_request_token,
             get_service_status,
             get_system_specs,
             restart_whisper,
             restart_llama,
+            restart_embedding,
             start_llama_service,
             start_whisper_service,
-            convert_audio_to_wav,
+            start_embedding_service,
             start_server_command,
             send_passphrase_command,
             // Encryption commands
@@ -97,62 +86,48 @@ pub fn run() {
             // Set transparent titlebar with custom dark background color on macOS
             #[cfg(target_os = "macos")]
             {
-                use cocoa::appkit::{NSColor, NSWindow};
-                use cocoa::base::{id, nil};
+                use objc2_app_kit::{NSColor, NSWindow, NSWindowTitleVisibility};
 
                 if let Some(window) = app.get_webview_window("main") {
-                    let ns_window = window.ns_window().unwrap() as id;
-                    unsafe {
-                        // Convert #1e2030 to RGB: (30, 32, 48)
-                        let bg_color = NSColor::colorWithRed_green_blue_alpha_(
-                            nil,
-                            30.0 / 255.0,
-                            32.0 / 255.0,
-                            48.0 / 255.0,
-                            1.0,
-                        );
-                        ns_window.setBackgroundColor_(bg_color);
-                        // Hide the title text while keeping the title bar buttons visible
-                        ns_window.setTitleVisibility_(
-                            cocoa::appkit::NSWindowTitleVisibility::NSWindowTitleHidden,
-                        );
+                    let theme = window.theme().unwrap_or(tauri::Theme::Light);
+                    let (r, g, b) = match theme {
+                        tauri::Theme::Dark => (30.0, 32.0, 48.0),
+                        _ => (230.0, 233.0, 239.0),
+                    };
+                    let ns_window_ptr = window.ns_window().unwrap();
+                    let ns_window: &NSWindow = unsafe { &*(ns_window_ptr as *mut NSWindow) };
+                    let bg_color = NSColor::colorWithRed_green_blue_alpha(
+                        r / 255.0,
+                        g / 255.0,
+                        b / 255.0,
+                        1.0,
+                    );
+                    ns_window.setBackgroundColor(Some(&bg_color));
+                    // Hide the title text while keeping the title bar buttons visible
+                    ns_window.setTitleVisibility(NSWindowTitleVisibility::Hidden);
 
-                        // Position traffic light buttons
-                        position_traffic_light_buttons(ns_window);
-                    }
+                    // Position traffic light buttons
+                    position_traffic_light_buttons(ns_window);
                 }
             }
 
             let app_handle = app.handle().clone();
             log::info!("App setup started");
 
-            // Clean up any existing processes and files from previous runs
+            #[cfg(target_os = "linux")]
+            grant_webview_permissions(&app_handle);
+
+            // Clean up orphans from a previous crashed session
             kill_all_processes();
             cleanup_stale_files();
 
-            // Launch the process manager
-            log::info!("Launching process manager...");
-            if let Err(e) = launch_process_manager() {
-                log::error!("Failed to launch process manager: {}", e);
-                // Continue anyway - we'll show an error to the user
-            }
+            // Install cleanup hooks for abnormal exits (panic, SIGTERM/SIGINT)
+            install_cleanup_hooks();
 
-            // Wait for process manager socket to be ready
-            let pm_ready = wait_for_process_manager(Duration::from_secs(5));
-
-            if !pm_ready {
-                log::error!("Process manager failed to start. This is a critical error.");
-                // We could emit an event to the frontend here to show an error
-            } else {
-                log::info!("Process manager is ready");
-                // Llama and whisper will be started after the Python server is up
-                // and has allocated the ports (triggered by frontend)
-            }
-
-            // Spawn a thread to monitor PM health
+            // Spawn liveness watcher for managed sidecar processes
             let app_handle_for_monitor = app_handle.clone();
             thread::spawn(move || {
-                monitor_process_manager(app_handle_for_monitor);
+                monitor_service_health(app_handle_for_monitor);
             });
 
             Ok(())
@@ -161,142 +136,104 @@ pub fn run() {
             // Re-apply traffic light button positioning on resize
             #[cfg(target_os = "macos")]
             if let tauri::WindowEvent::Resized { .. } = event {
-                if let Ok(ns_window) = window.ns_window() {
-                    position_traffic_light_buttons(ns_window as cocoa::base::id);
+                if let Ok(ns_window_ptr) = window.ns_window() {
+                    let ns_window: &objc2_app_kit::NSWindow =
+                        unsafe { &*(ns_window_ptr as *mut objc2_app_kit::NSWindow) };
+                    position_traffic_light_buttons(ns_window);
                 }
             }
 
             if let tauri::WindowEvent::CloseRequested { .. } = event {
-                log::info!("Window close requested. Shutting down process manager.");
+                log::info!("Window close requested. Shutting down managed processes.");
 
-                // Tell PM to shutdown - it will clean up all processes
-                if let Ok(client) = ProcessManagerClient::new() {
-                    let _ = client.shutdown();
-                }
+                // Kill all managed sidecar processes directly (no separate PM)
+                let pm_state = window.app_handle().state::<pm::PmState>();
+                pm_state.0.lock().unwrap().shutdown();
 
                 // Clean up local files
                 cleanup_stale_files();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| match event {
+            tauri::RunEvent::ExitRequested { .. } => {
+                log::info!("RunEvent::ExitRequested — graceful shutdown via PmState");
+                let pm_state = app_handle.state::<pm::PmState>();
+                pm_state.0.lock().unwrap().shutdown();
+                cleanup_stale_files();
+            }
+            tauri::RunEvent::Exit => {
+                log::info!("RunEvent::Exit — last-chance cleanup via PmState");
+                let pm_state = app_handle.state::<pm::PmState>();
+                let mut state = pm_state.0.lock().unwrap_or_else(|e| e.into_inner());
+                state.shutdown();
+                drop(state);
+                cleanup_stale_files();
+            }
+            _ => {}
+        });
 }
 
-/// Launch the process manager as a child process
-fn launch_process_manager() -> Result<(), Box<dyn std::error::Error>> {
-    use std::process::Command;
-
-    let current_exe = std::env::current_exe()?;
-    let exe_dir = current_exe
-        .parent()
-        .ok_or("Failed to get executable directory")?;
-
-    // Look for phlox-pm in the same directory
-    let pm_path = exe_dir.join("phlox-pm");
-
-    #[cfg(target_os = "windows")]
-    let pm_path = pm_path.with_extension("exe");
-
-    log::info!("Launching process manager from: {:?}", pm_path);
-
-    // Check if PM binary exists
-    if !pm_path.exists() {
-        // For development, try to find it in the target directory
-        // Check both debug and release paths
-        let dev_pm_paths = [
-            exe_dir
-                .parent()
-                .and_then(|p| p.parent())
-                .map(|p| p.join("target").join("debug").join("phlox-pm")),
-            exe_dir
-                .parent()
-                .and_then(|p| p.parent())
-                .map(|p| p.join("target").join("release").join("phlox-pm")),
-        ];
-
-        for dev_path in dev_pm_paths.iter().filter_map(|p| p.as_ref()) {
-            if dev_path.exists() {
-                log::info!("Using dev PM path: {:?}", dev_path);
-                return spawn_pm(dev_path);
-            }
-        }
-
-        return Err(format!("Process manager binary not found at {:?}", pm_path).into());
+/// Install cleanup hooks for abnormal process termination.
+fn install_cleanup_hooks() {
+    extern "C" fn on_signal(_sig: libc::c_int) {
+        crate::process::kill_all_processes();
+        std::process::exit(130);
     }
 
-    spawn_pm(&pm_path)
-}
-
-#[cfg(unix)]
-fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    use std::os::unix::process::CommandExt;
-    use std::process::Command;
-
-    Command::new(path).process_group(0).spawn()?;
-
-    Ok(())
-}
-
-#[cfg(windows)]
-fn spawn_pm(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    use std::process::Command;
-
-    Command::new(path).spawn()?;
-
-    Ok(())
-}
-
-/// Wait for the process manager socket to be ready
-fn wait_for_process_manager(timeout: Duration) -> bool {
-    let start = std::time::Instant::now();
-    let socket_path = pm_client::socket_path();
-
-    while start.elapsed() < timeout {
-        // Just check if the socket file exists and we can connect - don't ping yet
-        // This avoids blocking the PM server with health checks during startup
-        if socket_path.exists() {
-            // Try to connect once to verify it's actually accepting connections
-            if std::os::unix::net::UnixStream::connect(&socket_path).is_ok() {
-                return true;
-            }
-        }
-        std::thread::sleep(Duration::from_millis(100));
+    #[cfg(unix)]
+    unsafe {
+        libc::signal(libc::SIGTERM, on_signal as *const () as libc::sighandler_t);
+        libc::signal(libc::SIGINT, on_signal as *const () as libc::sighandler_t);
     }
 
-    false
+    // Panic hook: kill children before unwinding so we don't orphan sidecars.
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        crate::process::kill_all_processes();
+        prev_hook(info);
+    }));
 }
 
-/// Monitor the process manager and emit an event if it dies
-fn monitor_process_manager(app_handle: tauri::AppHandle) {
-    let mut consecutive_failures = 0;
-    const MAX_FAILURES: u32 = 3; // Allow some transient failures
-
+fn monitor_service_health(app_handle: tauri::AppHandle) {
     loop {
-        // Check every 30 seconds instead of 10 - less aggressive
-        std::thread::sleep(Duration::from_secs(30));
+        thread::sleep(Duration::from_secs(30));
 
-        if !ProcessManagerClient::is_alive() {
-            consecutive_failures += 1;
-            log::warn!(
-                "Process manager health check failed (attempt {}/{})",
-                consecutive_failures,
-                MAX_FAILURES
-            );
+        let pm_state = app_handle.state::<pm::PmState>();
+        let mut state = pm_state.0.lock().unwrap();
+        let died = state.check_liveness();
+        drop(state);
 
-            if consecutive_failures >= MAX_FAILURES {
-                log::error!("Process manager is not responding after multiple checks!");
-                log::error!("Please restart the application to restore functionality.");
-
-                // Emit an event to the frontend
-                let _ = app_handle.emit("process-manager-died", ());
-
-                // We can't recover from this, so stop monitoring
-                break;
-            }
-        } else {
-            // Reset on success
-            consecutive_failures = 0;
+        for service in died {
+            log::warn!("Emitting service-died event for: {}", service);
+            let _ = app_handle.emit("service-died", service);
         }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn grant_webview_permissions(app_handle: &tauri::AppHandle) {
+    use tauri::Manager;
+
+    let Some(window) = app_handle.get_webview_window("main") else {
+        log::warn!("grant_webview_permissions: main webview window not found");
+        return;
+    };
+
+    let result = window.with_webview(|webview| {
+        use webkit2gtk::{PermissionRequestExt, WebViewExt};
+
+        let wk = webview.inner();
+        wk.connect_permission_request(|_webview, request| {
+            log::info!("Granting WebKit permission request");
+            request.allow();
+            true
+        });
+    });
+
+    if let Err(e) = result {
+        log::warn!("grant_webview_permissions: with_webview failed: {}", e);
     }
 }
 

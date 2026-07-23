@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@chakra-ui/react";
+import { useNavigate } from "react-router";
+import { toaster } from "@/components/ui/toaster";
 import { useTemplateSelection } from "../templates/templateContext";
 import { patientApi } from "../api/patientApi";
-import {
-    findPatients,
-    buildEncounterFromCandidate,
-} from "../patient/patientLoaders";
+import { buildEncounterFromCandidate } from "../patient/patientLoaders";
 
 const filterTemplateData = (templateData, template) => {
     if (!template || !template.fields) return {};
@@ -69,8 +66,7 @@ const buildAdaptiveRefinementData = (
 
 export const usePatientEditor = (initialPatient = null) => {
     const [patient, setPatient] = useState(initialPatient);
-    const [isModified, setIsModified] = useState(false);
-    const toast = useToast();
+    const [, setIsModified] = useState(false);
     const navigate = useNavigate();
     const { currentTemplate } = useTemplateSelection();
 
@@ -88,12 +84,11 @@ export const usePatientEditor = (initialPatient = null) => {
         if (!patient?.ur_number) missingFields.push("UR Number");
 
         if (missingFields.length > 0) {
-            toast({
+            toaster.create({
                 title: "Missing Required Fields",
                 description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             return null; // Return null to indicate save failed
         }
@@ -151,12 +146,11 @@ export const usePatientEditor = (initialPatient = null) => {
             return response;
         } catch (error) {
             console.error("Error saving patient:", error);
-            toast({
+            toaster.create({
                 title: "Error",
                 description: "Failed to save patient data",
-                status: "error",
+                type: "error",
                 duration: 3000,
-                isClosable: true,
             });
             throw error;
         }
@@ -180,37 +174,18 @@ export const usePatientEditor = (initialPatient = null) => {
         return response;
     };
 
-    const searchPatient = async (urNumber, selectedDate) => {
-        try {
-            const list = await findPatients(urNumber);
-            const hit = list[0];
-            if (!hit) return null;
-            const loaded = await buildEncounterFromCandidate(hit, selectedDate);
-            setPatient(loaded);
-            toast({
-                title: "Patient Found",
-                description:
-                    "Patient data pre-filled from the latest encounter.",
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-            });
-            return loaded;
-        } catch (error) {
-            console.error("Error searching patient:", error);
-            toast({
-                title: "Error",
-                description: `Error searching for patient: ${error.message}`,
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-            });
-            throw error;
-        }
+    const loadCandidate = async (candidate, selectedDate) => {
+        const loaded = await buildEncounterFromCandidate(
+            candidate,
+            selectedDate,
+        );
+        setPatient(loaded);
+        return loaded;
     };
 
     useEffect(() => {
         if (initialPatient) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate sync of enclosed state to prop change; remounting consumer would lose chat/document state
             setPatient(initialPatient);
         }
     }, [initialPatient]);
@@ -221,6 +196,6 @@ export const usePatientEditor = (initialPatient = null) => {
         setIsModified,
         savePatient,
         savePatientCore,
-        searchPatient,
+        loadCandidate,
     };
 };

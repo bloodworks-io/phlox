@@ -1,7 +1,7 @@
 // Styles specifically for the document explorer user interface.
 import { colors } from "../colors";
 
-export const documentExplorerStyles = (props) => ({
+const documentExplorerStyles = (props) => ({
     ".documentExplorer-style": {
         backgroundColor:
             props.colorMode === "light"
@@ -37,3 +37,10 @@ export const documentExplorerStyles = (props) => ({
                 : `${colors.dark.textTertiary} !important`,
     },
 });
+
+const _lo = documentExplorerStyles({ colorMode: "light" });
+const _do = documentExplorerStyles({ colorMode: "dark" });
+export const documentExplorerGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    documentExplorerGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

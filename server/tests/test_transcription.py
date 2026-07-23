@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 # Import the public functions from the transcription module
-from server.utils.transcription import (
+from server.transcription import (
     _detect_audio_format,
     process_transcription,
     transcribe_audio,
@@ -42,7 +42,7 @@ async def test_transcribe_audio():
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("server.utils.transcription.audio._detect_audio_format") as mock_detect,
+            patch("server.transcription.audio._detect_audio_format") as mock_detect,
             patch("httpx.AsyncClient", return_value=mock_client),
         ):
             mock_detect.return_value = ("recording.mp3", "audio/mpeg")
@@ -62,7 +62,7 @@ async def test_process_transcription_no_fields():
     template_fields = []  # no fields to process
     patient_context = {"name": "Doe, John", "dob": "1990-01-01", "gender": "M"}
     # Mock the LLM call layer since even empty fields triggers config/LLM access
-    with patch("server.utils.transcription.text.process_all_fields_concurrently", return_value={}):
+    with patch("server.transcription.text.process_all_fields_concurrently", return_value={}):
         result = await process_transcription(transcript_text, template_fields, patient_context)  # ty: ignore
     # Expect fields dict to be empty, and process_duration present
     assert "fields" in result
@@ -128,7 +128,7 @@ async def test_transcribe_audio_api_error():
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("server.utils.transcription.audio._detect_audio_format") as mock_detect,
+            patch("server.transcription.audio._detect_audio_format") as mock_detect,
             patch("httpx.AsyncClient", return_value=mock_client),
         ):
             mock_detect.return_value = ("recording.wav", "audio/wav")

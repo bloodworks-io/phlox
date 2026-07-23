@@ -126,13 +126,15 @@ pip install -r requirements.txt
 
 ## Post-Installation Notes
 
--   **Data Persistence:**  Your application data (database, ChromaDB data) is stored in the `./data` directory relative to your `docker-compose.yml` file.
+-   **Data Persistence:**  Your application data (database, vector data) is stored in the `./data` directory relative to your `docker-compose.yml` file.
 -   **HTTPS for Browser Recording:**  To use the browser-based audio recording feature, you will need a secure context (HTTPS). For local development with `localhost`, most browsers allow exceptions for microphone access over `http://localhost`, but for any other network access, you'll need HTTPS. Consider setting up a reverse proxy with SSL termination (e.g., using Caddy or Nginx) if you need HTTPS access.
 
 
 ## Critical Security Warning
 
-⚠️ **By default, Phlox binds to 0.0.0.0 (all network interfaces) for development convenience.**
+⚠️ **The default `docker-compose.yml` publishes port 5000 on all host interfaces.**
+
+Inside the container Phlox correctly binds to `0.0.0.0` (required for Docker port forwarding), but the compose `ports: ["5000:5000"]` directive exposes that port on every network interface of the host by default. To restrict to localhost only, change it to `"127.0.0.1:5000:5000"`.
 
 **If exposed to the internet without protection:**
    - Anyone can access your instance

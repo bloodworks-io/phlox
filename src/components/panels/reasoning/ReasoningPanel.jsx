@@ -1,5 +1,7 @@
 import React, { forwardRef } from "react";
-import { Box, Flex, Text, Button, useColorMode, Tooltip } from "@chakra-ui/react";
+import { useColorMode } from "../../ui/color-mode";
+import { Box, Flex, Text, Button } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { FaAtom, FaSync } from "react-icons/fa";
 
 import FloatingPanel from "../../common/FloatingPanel";
@@ -10,8 +12,8 @@ import { EmptyState } from "./components/EmptyState";
 
 const ReasoningPanel = forwardRef(
     (
-        { isOpen, onClose, noteId, initialReasoning, onReasoningGenerated },
-        ref,
+        { isOpen, _onClose, noteId, initialReasoning, onReasoningGenerated },
+        _ref,
     ) => {
         const { colorMode } = useColorMode();
         const {
@@ -33,7 +35,7 @@ const ReasoningPanel = forwardRef(
         return (
             <FloatingPanel
                 isOpen={isOpen}
-                position="left-of-fab"
+                position="left-of-fab-grow-down"
                 showArrow={true}
                 triggerId="fab-reasoning"
                 width={`${dimensions.width}px`}
@@ -51,25 +53,22 @@ const ReasoningPanel = forwardRef(
                     <Flex
                         align="center"
                         justify="space-between"
-                        p="4"
+                        p="3"
                         className="panel-header"
                         flexShrink={0}
                     >
                         <Flex align="center">
                             <FaAtom size="1em" style={{ marginRight: "8px" }} />
-                            <Text fontWeight="bold">Clinical Reasoning</Text>
+                            <Text fontWeight="bold">Chart Insights</Text>
                         </Flex>
                         {reasoning && (
-                            <Tooltip label="Regenerate reasoning">
+                            <Tooltip content="Regenerate reasoning">
                                 <Button
-                                    leftIcon={<FaSync size="10px" />}
                                     onClick={handleGenerateReasoning}
-                                    isLoading={loading}
+                                    loading={loading}
                                     size="xs"
-                                    className="orange-button"
-                                >
-                                    Regenerate
-                                </Button>
+                                    className="orange-button"><FaSync size="10px" />Regenerate
+                                                                    </Button>
                             </Tooltip>
                         )}
                     </Flex>
@@ -101,12 +100,12 @@ const ReasoningPanel = forwardRef(
                     <Box
                         ref={resizerRef}
                         position="absolute"
-                        top="0"
+                        bottom="0"
                         left="0"
                         width="20px"
                         height="20px"
                         bg="transparent"
-                        cursor="nwse-resize"
+                        cursor="nesw-resize"
                         onMouseDown={handleMouseDown}
                     />
 

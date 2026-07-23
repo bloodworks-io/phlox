@@ -1,21 +1,14 @@
 import React, { useState } from "react";
-import {
-    Box,
-    Flex,
-    VStack,
-    HStack,
-    Text,
-    Spinner,
-    Badge,
-    Icon,
-    Image,
-    useColorMode,
-} from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { Box, Flex, VStack, HStack, Text, Spinner, Badge, Icon, Image } from "@chakra-ui/react";
 import { AttachmentIcon } from "../common/icons";
 import { FaFilePdf, FaFileImage } from "react-icons/fa";
 import MarkdownRenderer from "../common/MarkdownRenderer";
 import ArtifactCard from "../common/ArtifactCard";
-import { parseMessageContent } from "../../utils/chat/messageParser";
+import {
+    parseMessageContent,
+    buildCitationRemap,
+} from "../../utils/chat/messageParser";
 import { groupActivityTrace } from "../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../common/ActivityTraceBlock";
 import { CitationList } from "../panels/reasoning/components/CitationList";
@@ -42,7 +35,7 @@ const DashboardMessageList = ({
                 if (idx !== messageIndex) return msg;
 
                 const currentMap = msg.thinkingExpandedBlocks || {};
-                const nextExpanded = !Boolean(currentMap[blockIndex]);
+                const nextExpanded = !currentMap[blockIndex];
 
                 return {
                     ...msg,
@@ -59,9 +52,6 @@ const DashboardMessageList = ({
         );
     };
 
-    const getToolExpanded = (messageIndex, blockIndex) =>
-        Boolean(expandedToolBlocks[`${messageIndex}:${blockIndex}`]);
-
     const toggleToolExpanded = (messageIndex, blockIndex) => {
         const key = `${messageIndex}:${blockIndex}`;
         setExpandedToolBlocks((prev) => ({
@@ -72,7 +62,7 @@ const DashboardMessageList = ({
 
     return (
         <VStack
-            spacing={2}
+            gap={2}
             align="stretch"
             w="100%"
             maxW="800px"
@@ -87,6 +77,15 @@ const DashboardMessageList = ({
                         : [{ type: "text", content: message.content || "" }];
 
                 const blocks = groupActivityTrace(rawBlocks);
+
+                const allCitations = Object.values(
+                    message.context || {},
+                ).filter(Boolean);
+                const { remap, citedOriginals } = buildCitationRemap(
+                    parsed?.visibleText || "",
+                );
+                const footerOriginals =
+                    citedOriginals.length > 0 ? citedOriginals : null;
 
                 return (
                     <Flex
@@ -110,9 +109,9 @@ const DashboardMessageList = ({
                             {message.loading ? (
                                 <Spinner size="sm" />
                             ) : (
-                                <VStack align="start" spacing={0.5} width="100%">
+                                <VStack align="start" gap={0.5} width="100%">
                                     {message.role === "assistant" && (
-                                        <HStack spacing={2} mb={0.5}>
+                                        <HStack gap={2} mb={0.5}>
                                             <Image
                                                 src="/logo.webp"
                                                 alt="Phlox Logo"
@@ -123,7 +122,7 @@ const DashboardMessageList = ({
                                             <Text
                                                 fontSize="xs"
                                                 fontWeight="semibold"
-                                                color="gray.500"
+                                                color="overlay0"
                                             >
                                                 Phlox Assistant
                                             </Text>
@@ -132,7 +131,7 @@ const DashboardMessageList = ({
 
                                     {message.role === "user" &&
                                         message.attachments?.length > 0 && (
-                                            <HStack spacing={1} mb={1} flexWrap="wrap">
+                                            <HStack gap={1} mb={1} flexWrap="wrap">
                                                 {message.attachments.map((att, i) => {
                                                     const isPdf =
                                                         att.type === "application/pdf";
@@ -144,7 +143,7 @@ const DashboardMessageList = ({
                                                             key={i}
                                                             size="sm"
                                                             variant="subtle"
-                                                            colorScheme={
+                                                            colorPalette={
                                                                 isPdf
                                                                     ? "red"
                                                                     : isImage
@@ -193,11 +192,14 @@ const DashboardMessageList = ({
 
                                         return (
                                             <Box
-                                                fontSize="sm !important"
+                                                fontSize="sm"
                                                 key={`text-${messageIndex}-${blockIndex}`}
                                                 width="100%"
                                             >
-                                                <MarkdownRenderer>
+                                                <MarkdownRenderer
+                                                    citations={allCitations}
+                                                    citationRemap={remap}
+                                                >
                                                     {block.content}
                                                 </MarkdownRenderer>
                                             </Box>
@@ -207,9 +209,8 @@ const DashboardMessageList = ({
                                     {message.role === "assistant" &&
                                         message.context && (
                                             <CitationList
-                                                citations={Object.values(
-                                                    message.context,
-                                                ).filter(Boolean)}
+                                                citations={allCitations}
+                                                citedOriginals={footerOriginals}
                                                 colorMode={colorMode}
                                                 inline
                                             />
@@ -220,7 +221,7 @@ const DashboardMessageList = ({
                                         message.artifacts.length > 0 && (
                                             <VStack
                                                 align="start"
-                                                spacing={1}
+                                                gap={1}
                                                 mt={1}
                                                 width="100%"
                                             >

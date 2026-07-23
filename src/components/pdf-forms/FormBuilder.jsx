@@ -1,20 +1,10 @@
 // Canvas-based PDF form field builder.
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-    Box,
-    Flex,
-    HStack,
-    IconButton,
-    Text,
-    Spinner,
-    useColorModeValue,
-} from "@chakra-ui/react";
+import { Box, Flex, HStack, IconButton, Text, Spinner } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
-import { getPdfJs } from "../../utils/helpers/pdfVisionHelpers";
-import { FIELD_COLORS } from "./FieldEditor";
+import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 
-const FIELD_TYPES = ["text", "checkbox", "date", "number"];
 
 // Canvas-safe colors mapped from field types (can't use Chakra tokens in canvas)
 const FIELD_CANVAS_COLORS = {
@@ -48,9 +38,9 @@ const FormBuilder = ({
     onSelectField,
     onUpdateField,
     isDrawing = false,
-    onToggleDrawing,
+    _onToggleDrawing,
     activeFieldType = "text",
-    onFieldTypeChange,
+    _onFieldTypeChange,
 }) => {
     const containerRef = useRef(null);
     const pdfCanvasRef = useRef(null);
@@ -75,7 +65,7 @@ const FormBuilder = ({
     const [resizeFieldId, setResizeFieldId] = useState(null);
     const [resizeOrigin, setResizeOrigin] = useState(null); // { canvasX, canvasY, fieldW, fieldH }
 
-    const overlayBg = useColorModeValue("whiteAlpha.600", "blackAlpha.600");
+    const overlayBg = "var(--chakra-colors-hover-overlay)";
     const renderTaskRef = useRef(null);
     const isRenderingRef = useRef(false);
 
@@ -88,9 +78,7 @@ const FormBuilder = ({
             setRendering(true);
             try {
                 const pdfData = await pdfFormsApi.fetchTemplatePdf(template.id);
-                const pdfjsLib = await getPdfJs();
-                const doc = await pdfjsLib.getDocument({ data: pdfData })
-                    .promise;
+                const doc = await loadPdfDocument({ data: pdfData });
                 if (!cancelled) {
                     setPdfDoc(doc);
                 }
@@ -115,12 +103,12 @@ const FormBuilder = ({
         if (renderTaskRef.current) {
             try {
                 renderTaskRef.current.cancel();
-            } catch (_) {
+            } catch {
                 /* already finished */
             }
             try {
                 await renderTaskRef.current.promise;
-            } catch (_) {
+            } catch {
                 /* RenderingCancelledException */
             }
             renderTaskRef.current = null;
@@ -169,7 +157,7 @@ const FormBuilder = ({
             isRenderingRef.current = false;
             setRendering(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [pdfDoc, currentPage]);
 
     useEffect(() => {
@@ -477,23 +465,20 @@ const FormBuilder = ({
     return (
         <Box>
             {/* Toolbar — just page navigation */}
-            <HStack spacing="2" mb="2" justify="flex-end">
-                <HStack spacing="1">
+            <HStack gap="2" mb="2" justify="flex-end">
+                <HStack gap="1">
                     <IconButton
-                        icon={<ChevronLeftIcon />}
                         size="sm"
                         variant="ghost"
                         onClick={() =>
                             setCurrentPage((p) => Math.max(1, p - 1))
                         }
-                        isDisabled={currentPage <= 1}
-                        aria-label="Previous page"
-                    />
+                        disabled={currentPage <= 1}
+                        aria-label="Previous page"><ChevronLeftIcon /></IconButton>
                     <Text fontSize="sm">
                         {currentPage} / {template?.page_count || 1}
                     </Text>
                     <IconButton
-                        icon={<ChevronRightIcon />}
                         size="sm"
                         variant="ghost"
                         onClick={() =>
@@ -501,12 +486,10 @@ const FormBuilder = ({
                                 Math.min(template?.page_count || 1, p + 1),
                             )
                         }
-                        isDisabled={currentPage >= (template?.page_count || 1)}
-                        aria-label="Next page"
-                    />
+                        disabled={currentPage >= (template?.page_count || 1)}
+                        aria-label="Next page"><ChevronRightIcon /></IconButton>
                 </HStack>
             </HStack>
-
             {/* Canvas area */}
             <Flex justify="center">
                 <Box

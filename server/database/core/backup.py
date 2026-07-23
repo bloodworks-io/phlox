@@ -16,11 +16,6 @@ MAX_BACKUPS = 3  # Keep last 3 backups
 BACKUP_SUBDIR = "backups"  # Subdirectory name within data directory
 
 
-def _get_app_version() -> str:
-    """Get the current app version."""
-    return __version__
-
-
 def create_backup(db_path: str, db_dir: Path) -> str | None:
     """
     Create a backup of the database file before migrations.
@@ -45,7 +40,7 @@ def create_backup(db_path: str, db_dir: Path) -> str | None:
         # Generate backup filename with version and timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         db_name = Path(db_path).name
-        version = _get_app_version()
+        version = __version__
         backup_name = f"{db_name}.v{version}.{timestamp}.bak"
         backup_path = backup_dir / backup_name
 
@@ -89,4 +84,3 @@ def _rotate_backups(backup_dir: Path, db_name: str) -> None:
 
     except Exception as e:
         logging.warning(f"Failed to rotate backups: {e}")
-

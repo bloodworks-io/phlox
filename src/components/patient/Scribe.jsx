@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranscription } from "../../utils/hooks/useTranscription";
 import { settingsService } from "../../utils/settings/settingsUtils";
+import { settingsApi } from "../../utils/api/settingsApi";
+import { AudioRecorder } from "../../utils/audioRecorder";
 
 // Hook to manage scribe state and logic
 // This can be used by ScribePillBox to control recording
@@ -19,9 +21,7 @@ export const useScribe = ({
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [timer, setTimer] = useState(0);
-    const mediaRecorderRef = useRef(null);
-    const audioChunksRef = useRef([]);
-    const completeRecordingRef = useRef([]);
+    const audioRecorderRef = useRef(null);
     const timerIntervalRef = useRef(null);
 
     const [sendError, setSendError] = useState(null); // null = ok, else { message }
@@ -42,14 +42,13 @@ export const useScribe = ({
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                await settingsService.fetchUserSettings((data) => {
-                    if (data && typeof data.scribe_is_ambient === "boolean") {
-                        setIsAmbient(data.scribe_is_ambient);
-                    }
-                    setRequireConsent(
-                        Boolean(data?.advanced_options?.require_scribe_consent),
-                    );
-                });
+                const data = await settingsApi.fetchUserSettings();
+                if (data && typeof data.scribe_is_ambient === "boolean") {
+                    setIsAmbient(data.scribe_is_ambient);
+                }
+                setRequireConsent(
+                    Boolean(data?.advanced_options?.require_scribe_consent),
+                );
             } catch (error) {
                 console.error("Error fetching user settings:", error);
             }
@@ -69,26 +68,22 @@ export const useScribe = ({
         return () => clearInterval(timerIntervalRef.current);
     }, [isRecording, isPaused]);
 
-    // Reset when patient changes
-    useEffect(() => {
-        resetRecordingState();
-    }, [name, dob, gender]);
-
     const resetRecordingState = useCallback(() => {
         setIsRecording(false);
         setIsPaused(false);
         setTimer(0);
-        audioChunksRef.current = [];
-        completeRecordingRef.current = [];
         setSendError(null);
         lastFailedRef.current = { blob: null, meta: null, isAmbient: null };
-        if (mediaRecorderRef.current) {
-            mediaRecorderRef.current.stream
-                ?.getTracks()
-                .forEach((track) => track.stop());
+        if (audioRecorderRef.current) {
+            audioRecorderRef.current.stop().catch(() => {});
         }
-        mediaRecorderRef.current = null;
+        audioRecorderRef.current = null;
     }, []);
+
+    // Reset when patient changes
+    useEffect(() => {
+        resetRecordingState();
+    }, [name, dob, gender, resetRecordingState]);
 
     const clearLastFailed = useCallback(() => {
         lastFailedRef.current = { blob: null, meta: null, isAmbient: null };
@@ -154,44 +149,25 @@ export const useScribe = ({
     }, [clearLastFailed]);
 
     const startRecording = useCallback(async () => {
-        if (!navigator.mediaDevices?.getUserMedia) {
-            alert("Microphone access is not supported in this browser.");
-            return;
-        }
-
-        completeRecordingRef.current = [];
-
-        setSendError(null);
-        lastFailedRef.current = { blob: null, meta: null, isAmbient: null };
-
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true,
-            });
-            mediaRecorderRef.current = new MediaRecorder(stream);
-
-            mediaRecorderRef.current.ondataavailable = (event) => {
-                audioChunksRef.current.push(event.data);
-            };
-
-            mediaRecorderRef.current.start();
+            const recorder = new AudioRecorder();
+            await recorder.start();
+            audioRecorderRef.current = recorder;
             setIsRecording(true);
             setTimer(0);
         } catch (error) {
             console.error("Error starting recording:", error);
-            alert(
-                "Could not access microphone. Please check your permissions.",
-            );
+            alert("Could not access microphone. Please check your permissions.");
         }
     }, []);
 
     const pauseRecording = useCallback(() => {
-        mediaRecorderRef.current?.pause();
+        audioRecorderRef.current?.pause();
         setIsPaused(true);
     }, []);
 
     const resumeRecording = useCallback(() => {
-        mediaRecorderRef.current?.resume();
+        audioRecorderRef.current?.resume();
         setIsPaused(false);
     }, []);
 
@@ -200,35 +176,22 @@ export const useScribe = ({
         if (onSendStart) {
             onSendStart();
         }
-        return new Promise((resolve) => {
-            if (isRecording && mediaRecorderRef.current) {
-                mediaRecorderRef.current.onstop = async () => {
-                    completeRecordingRef.current = [
-                        ...completeRecordingRef.current,
-                        ...audioChunksRef.current,
-                    ];
-                    const blob = new Blob(completeRecordingRef.current, {
-                        type: "audio/wav",
-                    });
-                    audioChunksRef.current = [];
-                    setIsRecording(false);
-                    setIsPaused(false);
-
-                    await sendForTranscription(blob, {
-                        name,
-                        gender,
-                        dob,
-                        templateKey: template?.template_key,
-                        noteId,
-                    });
-
-                    resolve(blob);
-                };
-                mediaRecorderRef.current.stop();
-            } else {
-                resolve(null);
-            }
+        if (!isRecording || !audioRecorderRef.current) {
+            return null;
+        }
+        const recorder = audioRecorderRef.current;
+        audioRecorderRef.current = null;
+        setIsRecording(false);
+        setIsPaused(false);
+        const blob = await recorder.stop();
+        await sendForTranscription(blob, {
+            name,
+            gender,
+            dob,
+            templateKey: template?.template_key,
+            noteId,
         });
+        return blob;
     }, [
         isRecording,
         sendForTranscription,
@@ -241,8 +204,9 @@ export const useScribe = ({
     ]);
 
     const resetRecording = useCallback(() => {
-        if (isRecording) {
-            mediaRecorderRef.current?.stop();
+        if (isRecording && audioRecorderRef.current) {
+            audioRecorderRef.current.stop().catch(() => {});
+            audioRecorderRef.current = null;
         }
         resetRecordingState();
     }, [isRecording, resetRecordingState]);

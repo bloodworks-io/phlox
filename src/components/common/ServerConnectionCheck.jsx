@@ -37,14 +37,14 @@ export const ServerConnectionCheck = ({ children }) => {
   if (serverStatus === "checking") {
     return (
       <Box
-        height="100vh"
+        height="100dvh"
         display="flex"
         alignItems="center"
         justifyContent="center"
-        bg="gray.50"
+        bg="surfaceInset"
       >
-        <VStack spacing={4}>
-          <Spinner size="xl" color="blue.500" />
+        <VStack gap={4}>
+          <Spinner size="xl" color="primaryButton" />
           <Text fontSize="lg" fontWeight="medium">
             Initializing...
           </Text>

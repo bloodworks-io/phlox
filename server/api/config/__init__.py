@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from .embedding_models import router as embedding_models_router
 from .global_config import router as global_router
 from .local_models import router as local_models_router
 from .mcp import router as mcp_router
@@ -21,4 +22,5 @@ router.include_router(user_router)
 router.include_router(system_router)
 router.include_router(local_models_router)
 router.include_router(whisper_models_router)
+router.include_router(embedding_models_router)
 router.include_router(mcp_router)

@@ -1,5 +1,5 @@
 # Stage 1: Node.js stage
-FROM node:lts-slim as node-stage
+FROM node:24-slim as node-stage
 
 # Set the working directory
 WORKDIR /usr/src/app

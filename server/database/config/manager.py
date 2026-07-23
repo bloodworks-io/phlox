@@ -2,6 +2,7 @@ import json
 from threading import Lock
 
 import sqlcipher3 as sqlite3
+from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.core.connection import get_db, is_db_initialized
 
 
@@ -159,15 +160,26 @@ class ConfigManager:
         self.db.commit()
         self._load_configs()
 
-    def reset_to_defaults(self):
-        """Resets prompts and options to their default values."""
+    def reset_options_to_defaults(self):
+        """Resets options to their default values. Preserves prompts and config."""
         self.refresh_db()
-        # Clear existing data for prompts and options
-        self.db.cursor.execute("DELETE FROM prompts")
         self.db.cursor.execute("DELETE FROM options")
         self.db.commit()
 
-        self._initialize_database()
+        # Re-seed default options from DEFAULT_PROMPTS
+        default_options = DEFAULT_PROMPTS["options"].get("general", {})
+        for category, options in DEFAULT_PROMPTS["options"].items():
+            if category != "reasoning":
+                for key, _value in options.items():
+                    actual_value = options.get(key, default_options.get(key))
+                    if actual_value is not None:
+                        self.db.cursor.execute(
+                            "INSERT OR REPLACE INTO options (category, key, value) VALUES (?, ?, ?)",
+                            (category, key, json.dumps(actual_value)),
+                        )
+
+        self.db.commit()
+        self._load_configs()
 
     def _initialize_database(self):
         """Initialize database if empty (now just a check)"""
@@ -216,12 +228,12 @@ class ConfigManager:
         return {
             "name": "",
             "specialty": "",
-            "quick_chat_1_title": "Critique my plan",
-            "quick_chat_1_prompt": "Critique my plan",
-            "quick_chat_2_title": "Any additional investigations",
-            "quick_chat_2_prompt": "Any additional investigations",
-            "quick_chat_3_title": "Any differentials to consider",
-            "quick_chat_3_prompt": "Any differentials to consider",
+            "quick_chat_1_title": "Review my plan",
+            "quick_chat_1_prompt": "Review my plan",
+            "quick_chat_2_title": "Additional points to review",
+            "quick_chat_2_prompt": "Additional points to review",
+            "quick_chat_3_title": "Other conditions worth reviewing",
+            "quick_chat_3_prompt": "Other conditions worth reviewing",
             "default_template_key": None,
             "default_letter_template_id": None,
             "has_completed_splash_screen": False,
@@ -232,6 +244,8 @@ class ConfigManager:
 
     def update_user_settings(self, settings: dict):
         self.refresh_db()
+        existing = self.get_user_settings()
+        settings = {**existing, **settings}
         self.db.cursor.execute("DELETE FROM user_settings")
         self.db.cursor.execute(
             """
@@ -251,12 +265,12 @@ class ConfigManager:
             (
                 settings.get("name", ""),
                 settings.get("specialty", ""),
-                settings.get("quick_chat_1_title", "Critique my plan"),
-                settings.get("quick_chat_1_prompt", "Critique my plan"),
-                settings.get("quick_chat_2_title", "Any additional investigations"),
-                settings.get("quick_chat_2_prompt", "Any additional investigations"),
-                settings.get("quick_chat_3_title", "Any differentials to consider"),
-                settings.get("quick_chat_3_prompt", "Any differentials to consider"),
+                settings.get("quick_chat_1_title", "Review my plan"),
+                settings.get("quick_chat_1_prompt", "Review my plan"),
+                settings.get("quick_chat_2_title", "Additional points to review"),
+                settings.get("quick_chat_2_prompt", "Additional points to review"),
+                settings.get("quick_chat_3_title", "Other conditions worth reviewing"),
+                settings.get("quick_chat_3_prompt", "Other conditions worth reviewing"),
                 settings.get("default_template_key"),
                 settings.get("default_letter_template_id"),
                 bool(settings.get("has_completed_splash_screen", False)),

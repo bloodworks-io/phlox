@@ -5,8 +5,6 @@ import {
     Textarea,
     IconButton,
     Text,
-    useColorMode,
-    useColorModeValue,
     Image,
     HStack,
     Spinner,
@@ -40,8 +38,6 @@ const DashboardChatInput = ({
     onImageRemove,
     isProcessingImage,
 }) => {
-    const { colorMode } = useColorMode();
-    const isLight = colorMode === "light";
     const [isDragOver, setIsDragOver] = useState(false);
 
     const fileInputRef = useRef(null);
@@ -143,24 +139,19 @@ const DashboardChatInput = ({
                     bottom={0}
                     align="center"
                     justify="center"
-                    bg={
-                        isLight
-                            ? "rgba(49, 130, 206, 0.1)"
-                            : "rgba(99, 179, 237, 0.1)"
-                    }
+                    bg="primaryButtonFaint"
                     borderWidth="2px"
                     borderStyle="dashed"
-                    borderColor="blue.400"
+                    borderColor="accent"
                     borderRadius="lg"
                     zIndex={20}
                     pointerEvents="none"
                 >
-                    <Text fontWeight="bold" color="blue.400">
+                    <Text fontWeight="bold" color="primaryButton">
                         Drop image or PDF here
                     </Text>
                 </Flex>
             )}
-
             <Box
                 className="dashboard-chat-input-container"
                 w="100%"
@@ -172,12 +163,12 @@ const DashboardChatInput = ({
             >
                 {pendingImage && (
                     <HStack
-                        spacing={2}
+                        gap={2}
                         mb={2}
                         px={2}
                         py={1.5}
                         borderRadius="md"
-                        bg={useColorModeValue("gray.100", "gray.700")}
+                        bg="surfaceMuted"
                         maxW="33%"
                     >
                         {pendingImage.type.startsWith("image/") ? (
@@ -191,11 +182,13 @@ const DashboardChatInput = ({
                             />
                         ) : (
                             <Icon
-                                as={FaFilePdf}
                                 boxSize={3.5}
-                                color={useColorModeValue("red.500", "red.300")}
+                                color="dangerButton"
                                 flexShrink={0}
-                            />
+                                asChild
+                            >
+                                <FaFilePdf />
+                            </Icon>
                         )}
                         <Text fontSize="xs" flex="1" isTruncated>
                             {pendingImage.name}
@@ -204,17 +197,18 @@ const DashboardChatInput = ({
                             <Spinner size="xs" flexShrink={0} />
                         )}
                         <IconButton
-                            icon={<CloseIcon />}
                             size="xs"
                             variant="ghost"
                             aria-label="Remove file"
                             onClick={onImageRemove}
-                            isDisabled={isProcessingImage}
+                            disabled={isProcessingImage}
                             flexShrink={0}
                             minW="auto"
                             h="auto"
                             p={0.5}
-                        />
+                        >
+                            <CloseIcon />
+                        </IconButton>
                     </HStack>
                 )}
 
@@ -233,37 +227,30 @@ const DashboardChatInput = ({
                     py="1.5"
                     px="3"
                     lineHeight="1.35"
-                    color={isLight ? "gray.800" : "white"}
+                    color="textPrimary"
                     _placeholder={{
-                        color: isLight
-                            ? "gray.500"
-                            : "rgba(255, 255, 255, 0.6)",
+                        color: "textQuaternary",
                     }}
                     fontSize="md"
-                    isDisabled={isLoading || isProcessingImage}
+                    disabled={isLoading || isProcessingImage}
                     _focusVisible={{ boxShadow: "none" }}
                 />
 
                 <Flex align="center" justify="space-between" mt={1}>
-                    <HStack spacing={1}>
+                    <HStack gap={1}>
                         <IconButton
-                            icon={<AttachmentIcon />}
                             onClick={() => fileInputRef.current?.click()}
-                            isDisabled={isLoading || isProcessingImage}
+                            disabled={isLoading || isProcessingImage}
                             aria-label="Attach image or PDF"
                             size="sm"
                             variant="ghost"
-                            color={
-                                isLight
-                                    ? "gray.500"
-                                    : "rgba(255, 255, 255, 0.6)"
-                            }
+                            color="textQuaternary"
                             _hover={{
-                                bg: isLight
-                                    ? "gray.100"
-                                    : "rgba(255, 255, 255, 0.1)",
+                                bg: "hoverOverlay",
                             }}
-                        />
+                        >
+                            <AttachmentIcon />
+                        </IconButton>
                         <Input
                             type="file"
                             ref={fileInputRef}
@@ -274,52 +261,32 @@ const DashboardChatInput = ({
                     </HStack>
 
                     <IconButton
-                        icon={<ArrowUpIcon />}
                         onClick={onSend}
-                        isDisabled={!canSend}
-                        isLoading={isLoading}
+                        disabled={!canSend}
+                        loading={isLoading}
                         aria-label="Send message"
                         size="sm"
                         alignSelf="center"
                         borderRadius="full"
-                        bg={
-                            canSend
-                                ? isLight
-                                    ? "gray.700"
-                                    : "white"
-                                : isLight
-                                  ? "gray.200"
-                                  : "rgba(255, 255, 255, 0.2)"
-                        }
-                        color={
-                            canSend
-                                ? isLight
-                                    ? "white"
-                                    : "gray.800"
-                                : isLight
-                                  ? "gray.400"
-                                  : "rgba(255, 255, 255, 0.5)"
-                        }
+                        bg={canSend ? "sendButton" : "sendButtonDisabled"}
+                        color={canSend ? "sendButtonText" : "sendButtonTextDisabled"}
                         _hover={{
                             bg: canSend
-                                ? isLight
-                                    ? "gray.600"
-                                    : "gray.100"
-                                : isLight
-                                  ? "gray.300"
-                                  : "rgba(255, 255, 255, 0.3)",
+                                ? "sendButtonHover"
+                                : "sendButtonHoverDisabled",
                             transform: "scale(1.05)",
                         }}
                         transition="all 0.2s ease"
-                    />
+                    >
+                        <ArrowUpIcon />
+                    </IconButton>
                 </Flex>
             </Box>
-
             {showDisclaimer && (
                 <Text
                     textAlign="center"
                     fontSize="xs"
-                    color="gray.500"
+                    color="overlay0"
                     mt={2}
                     opacity={0.8}
                 >

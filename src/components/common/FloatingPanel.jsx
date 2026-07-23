@@ -1,14 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Box, useColorMode } from "@chakra-ui/react";
-import styled from "@emotion/styled";
-import { emergeFromButton } from "../../theme/animations";
+import { useColorMode } from "../ui/color-mode";
+import { Box } from "@chakra-ui/react";
 import { colors } from "../../theme/colors";
-
-// Animation only (no positioning transform)
-const AnimatedBox = styled(Box)`
-    animation: ${emergeFromButton} 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)
-        forwards;
-`;
 
 /**
  * Shared floating panel wrapper with consistent positioning and optional speech bubble arrow.
@@ -52,45 +45,45 @@ const FloatingPanel = ({
 
         const updateArrowPosition = () => {
             const triggerEl = document.getElementById(triggerId);
-            if (triggerEl) {
-                const triggerRect = triggerEl.getBoundingClientRect();
+            if (!triggerEl || !panelRef.current) return;
+            const triggerRect = triggerEl.getBoundingClientRect();
+            const panelRect = panelRef.current.getBoundingClientRect();
 
-                if (position === "left-of-fab") {
-                    const menuEl = triggerEl.closest(".floating-action-menu");
-                    if (menuEl) {
-                        const menuRect = menuEl.getBoundingClientRect();
-                        setMinPanelHeight(`${menuRect.height}px`);
-
-                        const offset =
-                            triggerRect.top +
-                            triggerRect.height / 2 -
-                            (menuRect.top + menuRect.height / 2);
-                        setArrowTop(`calc(50% + ${offset}px)`);
-                    }
-                } else if (
-                    position === "bottom-center" ||
-                    position === "above-transcript-button"
-                ) {
-                    const menuEl =
-                        triggerEl.closest(".pill-box-scribe") || triggerEl;
-                    if (menuEl) {
-                        const menuRect = menuEl.getBoundingClientRect();
-                        const offset =
-                            triggerRect.left +
-                            triggerRect.width / 2 -
-                            (menuRect.left + menuRect.width / 2);
-                        setArrowLeft(`calc(50% + ${offset}px)`);
-                    }
+            if (
+                position === "left-of-fab" ||
+                position === "left-of-fab-grow-down"
+            ) {
+                const menuEl = triggerEl.closest(".floating-action-menu");
+                if (menuEl) {
+                    setMinPanelHeight(
+                        `${menuEl.getBoundingClientRect().height}px`,
+                    );
                 }
+                setArrowTop(
+                    `${triggerRect.top + triggerRect.height / 2 - panelRect.top}px`,
+                );
+            } else if (
+                position === "bottom-center" ||
+                position === "above-transcript-button"
+            ) {
+                setArrowLeft(
+                    `${triggerRect.left + triggerRect.width / 2 - panelRect.left}px`,
+                );
             }
         };
 
         const frameId = requestAnimationFrame(updateArrowPosition);
         window.addEventListener("resize", updateArrowPosition);
+        let resizeObserver;
+        if (panelRef.current && typeof ResizeObserver !== "undefined") {
+            resizeObserver = new ResizeObserver(() => updateArrowPosition());
+            resizeObserver.observe(panelRef.current);
+        }
 
         return () => {
             cancelAnimationFrame(frameId);
             window.removeEventListener("resize", updateArrowPosition);
+            resizeObserver?.disconnect();
         };
     }, [isOpen, showArrow, triggerId, position, height, width]);
 
@@ -103,6 +96,11 @@ const FloatingPanel = ({
                     right: "110px",
                     top: "50%",
                     transform: "translateY(-50%)",
+                };
+            case "left-of-fab-grow-down":
+                return {
+                    right: "110px",
+                    top: "calc(50% - 110px)",
                 };
             case "above-transcript-button":
                 return {
@@ -142,7 +140,8 @@ const FloatingPanel = ({
             display="flex"
             flexDirection="column"
         >
-            <AnimatedBox
+            <Box
+                className="anim-emerge-spring"
                 width="100%"
                 height="100%"
                 flex="1"
@@ -160,41 +159,44 @@ const FloatingPanel = ({
                 </Box>
 
                 {/* Isthmus / Arrow */}
-                {showArrow && position === "left-of-fab" && (
+                {showArrow &&
+                    (position === "left-of-fab" ||
+                        position === "left-of-fab-grow-down") && (
                     <Box
-                        as="svg"
                         position="absolute"
                         right="-12px"
                         top={arrowTop}
                         transform="translateY(-50%)"
                         width="13px"
                         height="24px"
-                        viewBox="0 0 14 24"
+                        viewBox="4 0 6 24"
                         zIndex="1"
+                        asChild
                     >
-                        <path
-                            d="M 0 0.5 Q 7 8 14 0.5 L 14 23.5 Q 7 16 0 23.5 Z"
-                            fill={bgColor}
-                        />
-                        <path
-                            d="M 0 0.5 Q 7 8 14 0.5"
-                            fill="none"
-                            stroke={borderColor}
-                            strokeWidth="1"
-                        />
-                        <path
-                            d="M 0 23.5 Q 7 16 14 23.5"
-                            fill="none"
-                            stroke={borderColor}
-                            strokeWidth="1"
-                        />
+                        <svg>
+                            <path
+                                d="M 0 0.5 Q 7 8 14 0.5 L 14 23.5 Q 7 16 0 23.5 Z"
+                                fill={bgColor}
+                            />
+                            <path
+                                d="M 0 0.5 Q 7 8 14 0.5"
+                                fill="none"
+                                stroke={borderColor}
+                                strokeWidth="1"
+                            />
+                            <path
+                                d="M 0 23.5 Q 7 16 14 23.5"
+                                fill="none"
+                                stroke={borderColor}
+                                strokeWidth="1"
+                            />
+                        </svg>
                     </Box>
                 )}
                 {showArrow &&
                     (position === "bottom-center" ||
                         position === "above-transcript-button") && (
                         <Box
-                            as="svg"
                             position="absolute"
                             bottom="-15px"
                             left={arrowLeft}
@@ -203,26 +205,29 @@ const FloatingPanel = ({
                             height="16px"
                             viewBox="0 0 24 16"
                             zIndex="1"
+                            asChild
                         >
-                            <path
-                                d="M 0.5 0 Q 8 8 0.5 16 L 23.5 16 Q 16 8 23.5 0 Z"
-                                fill={bgColor}
-                            />
-                            <path
-                                d="M 0.5 0 Q 8 8 0.5 16"
-                                fill="none"
-                                stroke={borderColor}
-                                strokeWidth="1"
-                            />
-                            <path
-                                d="M 23.5 0 Q 16 8 23.5 16"
-                                fill="none"
-                                stroke={borderColor}
-                                strokeWidth="1"
-                            />
+                            <svg>
+                                <path
+                                    d="M 0.5 0 Q 8 8 0.5 16 L 23.5 16 Q 16 8 23.5 0 Z"
+                                    fill={bgColor}
+                                />
+                                <path
+                                    d="M 0.5 0 Q 8 8 0.5 16"
+                                    fill="none"
+                                    stroke={borderColor}
+                                    strokeWidth="1"
+                                />
+                                <path
+                                    d="M 23.5 0 Q 16 8 23.5 16"
+                                    fill="none"
+                                    stroke={borderColor}
+                                    strokeWidth="1"
+                                />
+                            </svg>
                         </Box>
                     )}
-            </AnimatedBox>
+            </Box>
         </Box>
     );
 };

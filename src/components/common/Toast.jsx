@@ -1,85 +1,91 @@
-// Custom toast component for displaying notifications with different statuses.
+import { Box, Flex } from "@chakra-ui/react";
+import { useColorMode } from "../ui/color-mode";
+import { colors } from "../../theme/colors";
+import { FaTimes } from "react-icons/fa";
 import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
-  Box,
-  CloseButton,
-  Flex,
-} from "@chakra-ui/react";
-import {
-  CheckCircleIcon,
-  InfoIcon,
-  WarningIcon,
-  WarningTwoIcon,
+    CheckCircleIcon,
+    InfoIcon,
+    WarningIcon,
+    WarningTwoIcon,
 } from "./icons";
 
 export function CustomToast(props) {
-  const {
-    status,
-    variant = "solid",
-    id,
-    title,
-    description,
-    isClosable,
-    onClose,
-    colorScheme,
-  } = props;
+    const { status, title, description, onClose } = props;
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "success":
-        return <CheckCircleIcon boxSize={5} className="green-icon" />;
-      case "error":
-        return <WarningTwoIcon boxSize={5} className="red-icon" />;
-      case "warning":
-        return <WarningIcon boxSize={5} className="yellow-icon" />;
-      case "info":
-        return <InfoIcon boxSize={5} className="blue-icon" />;
-      default:
-        return null;
-    }
-  };
+    const { colorMode } = useColorMode();
+    const c = colors[colorMode];
 
-  const ids = id
-    ? {
-        root: `toast-${id}`,
-        title: `toast-${id}-title`,
-        description: `toast-${id}-description`,
-      }
-    : undefined;
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case "success":
+                return <CheckCircleIcon boxSize={5} className="green-icon" />;
+            case "error":
+                return <WarningTwoIcon boxSize={5} className="red-icon" />;
+            case "warning":
+                return <WarningIcon boxSize={5} className="yellow-icon" />;
+            case "info":
+                return <InfoIcon boxSize={5} className="blue-icon" />;
+            default:
+                return null;
+        }
+    };
 
-  return (
-    <Alert
-      addRole={false}
-      status={status}
-      variant={variant}
-      id={ids?.root}
-      colorScheme={colorScheme}
-      marginTop="-5px"
-      marginBottom="10px"
-    >
-      <Flex align="center" gap={3}>
-        {getStatusIcon(status)}
-        <Box flex="1">
-          {title && <AlertTitle id={ids?.title}>{title}</AlertTitle>}
-          {description && (
-            <AlertDescription id={ids?.description}>
-              {description}
-            </AlertDescription>
-          )}
+    return (
+        <Box
+            position="relative"
+            width={{ md: "sm" }}
+            backgroundColor={c.base}
+            border="1px solid"
+            borderColor={c.surface}
+            borderRadius="lg"
+            boxShadow="none"
+            px="4"
+            py="3"
+            marginTop="-5px"
+            marginBottom="10px"
+            pointerEvents="auto"
+        >
+            <Flex align="center" gap={3}>
+                {getStatusIcon(status)}
+                <Box flex="1">
+                    {title && (
+                        <Box
+                            fontWeight="600"
+                            color={c.textPrimary}
+                            fontSize="md"
+                            css={{ fontFamily: '"Roboto", sans-serif' }}
+                        >
+                            {title}
+                        </Box>
+                    )}
+                    {description && (
+                        <Box
+                            color={c.textSecondary}
+                            fontSize="sm"
+                            css={{ fontFamily: '"Roboto", sans-serif' }}
+                        >
+                            {description}
+                        </Box>
+                    )}
+                </Box>
+            </Flex>
+            <Box
+                as="button"
+                position="absolute"
+                top="2"
+                right="2"
+                onClick={onClose}
+                background="none"
+                border="none"
+                cursor="pointer"
+                padding="2px"
+                color={c.textSecondary}
+                opacity={0.6}
+                _hover={{ opacity: 1 }}
+                aria-label="Close"
+            >
+                <FaTimes size={12} />
+            </Box>
         </Box>
-      </Flex>
-      {isClosable && (
-        <CloseButton
-          size="sm"
-          onClick={onClose}
-          position="absolute"
-          top={2}
-          right={2}
-          className="dark-toggle"
-        />
-      )}
-    </Alert>
-  );
+    );
 }

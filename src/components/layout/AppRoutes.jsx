@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router";
 import LandingPage from "../../pages/LandingPage";
 import PatientDetails from "../../pages/PatientDetails";
 import Settings from "../../pages/Settings";
@@ -13,7 +13,7 @@ const AppRoutes = ({
     refreshSidebar,
     setIsModified,
     onResetLetter,
-    onStartNewNote,
+    onOpenNewNoteModal,
     newNoteKey,
     handleSelectPatient,
 }) => (
@@ -29,7 +29,7 @@ const AppRoutes = ({
                     refreshSidebar={refreshSidebar}
                     setIsModified={setIsModified}
                     onResetLetter={onResetLetter}
-                    onStartNewNote={onStartNewNote}
+                    onOpenNewNoteModal={onOpenNewNoteModal}
                 />
             }
         />
@@ -42,7 +42,7 @@ const AppRoutes = ({
                     selectedDate={selectedDate}
                     refreshSidebar={refreshSidebar}
                     setIsModified={setIsModified}
-                    onStartNewNote={onStartNewNote}
+                    onOpenNewNoteModal={onOpenNewNoteModal}
                 />
             }
         />

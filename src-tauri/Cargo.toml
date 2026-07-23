@@ -1,24 +1,20 @@
 [workspace]
-members = ["process-manager"]
 resolver = "2"
 
 [package]
 name = "phlox"
 version = "2.0.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+description = "Open-source AI scribe with patient management"
+authors = ["bloodworks-io"]
+license = "MIT"
+repository = "https://github.com/bloodworks-io/phlox"
 edition = "2021"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-phlox-pm = { path = "process-manager" }
 tauri = { version = "2", features = ["macos-private-api"] }
-tauri-plugin-shell = "2"
-tauri-plugin-fs = "2"
 tauri-plugin-http = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -36,18 +32,31 @@ hex = "0.4"
 thiserror = "2"
 
 
-[target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
-tauri-plugin-shell = "2"
-
 [target."cfg(target_os = \"macos\")".dependencies]
-cocoa = "0.26"
-objc = "0.2"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3.2", features = [
+    "NSWindow",
+    "NSView",
+    "NSResponder",
+    "NSColor",
+    "NSButton",
+    "NSControl",
+    "objc2-core-foundation",
+] }
+objc2-foundation = { version = "0.3.2", features = [
+    "NSGeometry",
+    "objc2-core-foundation",
+] }
 
 [target."cfg(unix)".dependencies]
 libc = "0.2"
 
+
+[target."cfg(target_os = \"linux\")".dependencies]
+webkit2gtk = { version = "2", features = ["v2_40"] }
+
 [target."cfg(windows)".dependencies]
-windows = { version = "0.58", features = ["Win32_Foundation", "Win32_System_Threading"] }
+windows = { version = "0.58", features = ["Win32_Foundation", "Win32_System_Threading", "Win32_System_Console"] }
 
 [[bin]]
 name = "phlox"

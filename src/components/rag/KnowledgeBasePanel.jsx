@@ -12,7 +12,7 @@ const KnowledgeBasePanel = ({
   loading,
   setItemToDelete,
 }) => (
-  <VStack spacing="5" align="stretch">
+  <VStack gap="5" align="stretch">
     <DocumentExplorer
       isCollapsed={collapseExplorer.isCollapsed}
       setIsCollapsed={collapseExplorer.toggle}

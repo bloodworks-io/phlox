@@ -1,15 +1,10 @@
 import React, { useMemo, useState } from "react";
+import { useColorMode } from "../../ui/color-mode";
+import { Flex, Box, Text, HStack, VStack, Spinner, Image } from "@chakra-ui/react";
 import {
-    Flex,
-    Box,
-    Text,
-    HStack,
-    VStack,
-    Spinner,
-    Image,
-    useColorMode,
-} from "@chakra-ui/react";
-import { parseMessageContent } from "../../../utils/chat/messageParser";
+    parseMessageContent,
+    buildCitationRemap,
+} from "../../../utils/chat/messageParser";
 import { groupActivityTrace } from "../../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../../common/ActivityTraceBlock";
 import MarkdownRenderer from "../../common/MarkdownRenderer";
@@ -32,9 +27,6 @@ const ChatMessages = ({
                 .filter(({ message }) => message.role !== "system"),
         [messages],
     );
-
-    const getToolExpanded = (messageIndex, blockIndex) =>
-        Boolean(expandedToolBlocks[`${messageIndex}:${blockIndex}`]);
 
     const toggleToolExpanded = (messageIndex, blockIndex) => {
         const key = `${messageIndex}:${blockIndex}`;
@@ -60,6 +52,15 @@ const ChatMessages = ({
                         : [{ type: "text", content: message.content || "" }];
 
                 const blocks = groupActivityTrace(rawBlocks);
+
+                const allCitations = Object.values(
+                    message.context || {},
+                ).filter(Boolean);
+                const { remap, citedOriginals } = buildCitationRemap(
+                    parsed?.visibleText || "",
+                );
+                const footerOriginals =
+                    citedOriginals.length > 0 ? citedOriginals : null;
 
                 return (
                     <Flex
@@ -99,11 +100,11 @@ const ChatMessages = ({
                             ) : (
                                 <VStack
                                     align="start"
-                                    spacing={0.25}
+                                    gap={0.25}
                                     width="100%"
                                 >
                                     {message.role === "assistant" && (
-                                        <HStack spacing={1.5} mb={0.5}>
+                                        <HStack gap={1.5} mb={0.5}>
                                             <Image
                                                 src="/logo.webp"
                                                 alt="Phlox Assistant"
@@ -113,7 +114,7 @@ const ChatMessages = ({
                                             <Text
                                                 fontSize="xs"
                                                 fontWeight="semibold"
-                                                color="gray.500"
+                                                color="overlay0"
                                                 lineHeight="1"
                                             >
                                                 Phlox Assistant
@@ -162,7 +163,10 @@ const ChatMessages = ({
                                                 key={`text-${messageIndex}-${blockIndex}`}
                                                 width="100%"
                                             >
-                                                <MarkdownRenderer>
+                                                <MarkdownRenderer
+                                                    citations={allCitations}
+                                                    citationRemap={remap}
+                                                >
                                                     {block.content}
                                                 </MarkdownRenderer>
                                             </Box>
@@ -172,9 +176,8 @@ const ChatMessages = ({
                                     {message.role === "assistant" &&
                                         message.context && (
                                             <CitationList
-                                                citations={Object.values(
-                                                    message.context,
-                                                ).filter(Boolean)}
+                                                citations={allCitations}
+                                                citedOriginals={footerOriginals}
                                                 colorMode={colorMode}
                                                 inline
                                             />
@@ -185,7 +188,7 @@ const ChatMessages = ({
                                         message.artifacts.length > 0 && (
                                             <VStack
                                                 align="start"
-                                                spacing={1}
+                                                gap={1}
                                                 mt={1}
                                                 width="100%"
                                             >

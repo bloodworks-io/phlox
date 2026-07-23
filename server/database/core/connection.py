@@ -93,10 +93,14 @@ class PatientDatabase:
             # Set busy timeout to prevent "database is locked" errors (30 seconds)
             self.cursor.execute("PRAGMA busy_timeout = 30000")
 
+            assert self.encryption_key is not None  # nosec B101
+            escaped_key = self.encryption_key.replace("'", "''")
+            pragma = f"PRAGMA key='{escaped_key}'"
+
             if db_exists:
                 logging.info("Database exists, attempting to decrypt...")
                 try:
-                    self.cursor.execute(f"PRAGMA key='{self.encryption_key}'")
+                    self.cursor.execute(pragma)
                     logging.info("Database decrypted successfully")
                     self.cursor.execute("SELECT count(*) FROM sqlite_master")
                 except sqlite3.DatabaseError:
@@ -105,7 +109,7 @@ class PatientDatabase:
             else:
                 # New database - set up encryption
                 logging.info("No existing database, creating new database...")
-                self.cursor.execute(f"PRAGMA key='{self.encryption_key}'")
+                self.cursor.execute(pragma)
 
             logging.info("Database connection established successfully")
         except Exception as e:
@@ -185,16 +189,6 @@ class PatientDatabase:
         run_migrations(self)  # Run migrations first to create tables
         self.ensure_default_templates()  # Then ensure default templates
         set_initial_default_template(self.cursor, self.db)  # Set phlox as default template
-
-    def test_database(self):
-        """Test database functionality with sample data.
-
-        Returns:
-            True if test successful
-        """
-        from server.database.testing import run_database_test
-
-        return run_database_test(self.cursor, self.db)
 
     def commit(self):
         """Commit current transaction."""

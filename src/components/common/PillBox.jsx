@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Flex, useColorMode } from "@chakra-ui/react";
+import { Box, Flex } from "@chakra-ui/react";
 
 /**
  * Shared PillBox container component with consistent styling
@@ -21,7 +21,6 @@ const PillBox = ({
   py = 3,
   ...rest
 }) => {
-  const { colorMode } = useColorMode();
 
   return (
     <Box

@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from server.constants import (
     APP_NAME,
     BUILD_DIR,
+    IS_DEMO_MODE,
     IS_DOCKER,
     IS_TESTING,
     PROXY_AUTH_ENABLED,
@@ -92,6 +93,15 @@ def initialize_and_get_app():
 
     logger.info("Database initialized")
 
+    if IS_DEMO_MODE:
+        try:
+            from server.demo.demo_db import seed_demo_data_desktop
+
+            seed_demo_data_desktop()
+            logger.info("Demo data seeded (PHLOX_DEMO_MODE).")
+        except Exception as e:  # pragma: no cover - never block startup
+            logger.warning("Demo seeding skipped/failed: %s", e)
+
     app = FastAPI(
         title=APP_NAME,
         lifespan=lifespan,  # Add the lifespan context manager
@@ -151,7 +161,7 @@ def initialize_and_get_app():
         transcribe,
     )
     from server.api.config import router as config_router
-    from server.utils.rag.vector_store import VECTOR_STORE_AVAILABLE
+    from server.rag.vector_store import VECTOR_STORE_AVAILABLE
 
     # Only create test endpoint in testing environment
     if IS_TESTING and test_database is not None:
@@ -199,7 +209,7 @@ def initialize_and_get_app():
     @app.get("/settings")
     @app.get("/rag")
     @app.get("/clinic-summary")
-    @app.get("/outstanding-tasks")
+    @app.get("/outstanding-jobs")
     @app.get("/note/{note_id}")
     async def serve_react_app():
         return FileResponse(BUILD_DIR / "index.html")
@@ -248,7 +258,7 @@ def start_server_for_desktop():
     # Generate cryptographically secure request token
     token = secrets.token_hex(32)  # 64 character hex string (256 bits)
     set_request_token(token)
-    logger.info(token)
+    logger.info("Request token generated (256 bits)")
 
     # Signal that we're waiting for passphrase
     print("WAITING_FOR_PASSPHRASE", flush=True)
@@ -273,19 +283,20 @@ def start_server_for_desktop():
     # Now initialize the app
     app = initialize_and_get_app()
 
-    # Find 3 ports - one for each service
+    # Find ports - one for each service
     server_port = find_free_port()
     llama_port = find_free_port()
     whisper_port = find_free_port()
+    embedding_port = find_free_port()
 
     # Store in global state for other modules to access
     from server.utils.allocated_ports import set_ports
 
-    set_ports(server_port, llama_port, whisper_port)
+    set_ports(server_port, llama_port, whisper_port, embedding_port)
 
     # Write ports and token to stdout so process manager can read them
     print(
-        f"PORTS:{server_port},{llama_port},{whisper_port}|TOKEN:{get_request_token()}",
+        f"PORTS:{server_port},{llama_port},{whisper_port},{embedding_port}|TOKEN:{get_request_token()}",
         flush=True,
     )
 

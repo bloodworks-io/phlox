@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
-from server.database.entities.letter import (
+from server.database.repositories.letter import (
     delete_letter_template,
     fetch_patient_letter,
     get_letter_template_by_id,
@@ -13,8 +13,8 @@ from server.database.entities.letter import (
     update_letter_template,
     update_patient_letter,
 )
+from server.nlp_tools.letter import generate_letter_content
 from server.schemas.letter import LetterRequest, LetterSave, LetterTemplate
-from server.utils.nlp_tools.letter import generate_letter_content
 
 router = APIRouter()
 
@@ -24,7 +24,7 @@ async def generate_letter(request: LetterRequest):
     """Generates a letter."""
 
     try:
-        letter_content = await generate_letter_content(
+        result = await generate_letter_content(
             request.patientName,
             request.gender,
             request.dob,
@@ -32,7 +32,7 @@ async def generate_letter(request: LetterRequest):
             request.additional_instruction,
             request.context,
         )
-        return JSONResponse(content={"letter": letter_content})
+        return JSONResponse(content=result)
     except HTTPException as he:
         raise he
     except Exception as e:
@@ -84,7 +84,7 @@ async def get_templates():
         )
     except Exception as e:
         logging.error(f"Error fetching letter templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/templates/{template_id}")
@@ -99,7 +99,7 @@ async def get_template(template_id: int):
         raise
     except Exception as e:
         logging.error(f"Error fetching letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/templates")
@@ -115,7 +115,7 @@ async def create_template(template: LetterTemplate = Body(...)):
         )
     except Exception as e:
         logging.error(f"Error creating letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/templates/reset")
@@ -126,7 +126,7 @@ async def reset_templates():
         return JSONResponse(content={"message": "Templates reset to defaults"})
     except Exception as e:
         logging.error(f"Error resetting letter templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.put("/templates/{template_id}")
@@ -141,7 +141,7 @@ async def update_template(template_id: int, template: LetterTemplate = Body(...)
         raise
     except Exception as e:
         logging.error(f"Error updating letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/templates/{template_id}")
@@ -156,4 +156,4 @@ async def delete_template(template_id: int):
         raise
     except Exception as e:
         logging.error(f"Error deleting letter template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e

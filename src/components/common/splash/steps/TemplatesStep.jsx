@@ -1,118 +1,96 @@
 import {
   VStack,
   SimpleGrid,
-  Card,
-  CardBody,
-  CardHeader,
-  Heading,
   Text,
   HStack,
   Icon,
   Flex,
   Spinner,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Box,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import { FaCheckCircle } from "react-icons/fa";
-import { stepVariants } from "../constants";
 import { TEMPLATE_DESCRIPTIONS } from "../constants";
-import { useTemplatesStep } from "../../../../utils/hooks/splash/useTemplatesStep";
 
-const MotionVStack = motion(VStack);
-
-export { useTemplatesStep };
+const TEMPLATE_COLORS = [
+  "primaryButton",
+  "successButton",
+  "secondaryButton",
+  "neutralButton",
+  "tertiaryButton",
+];
 
 export const TemplatesStep = ({
   availableTemplates,
   selectedTemplate,
   setSelectedTemplate,
   isFetchingTemplates,
-  currentColors,
 }) => (
-  <MotionVStack
+  <VStack
     key="templates"
-    variants={stepVariants}
-    initial="hidden"
-    animate="visible"
-    exit="exit"
-    spacing={6}
+    className="anim-fade-slide-right"
+    gap={3}
     w="100%"
   >
-    <Alert status="info" borderRadius="md">
-      <AlertIcon />
-      <Box>
-        <AlertTitle>Choose Your Default Template</AlertTitle>
-        <AlertDescription>
-          Select a clinical note template that best fits your workflow. You can
-          create custom templates and change this setting later in the Settings
-          panel.
-        </AlertDescription>
-      </Box>
-    </Alert>
-
     {isFetchingTemplates ? (
       <Flex align="center" justify="center" py={8}>
-        <Spinner size="lg" color={currentColors.primaryButton} />
-        <Text ml={4} color={currentColors.textSecondary}>
-          Loading templates...
-        </Text>
+        <Spinner size="lg" color="primaryButton" />
+        <Text ml={4} color="textSecondary">Loading templates...</Text>
       </Flex>
     ) : (
-      <SimpleGrid columns={1} spacing={4} w="100%">
-        {availableTemplates.map((template) => (
-          <Card
-            key={template.template_key}
-            cursor="pointer"
-            onClick={() => setSelectedTemplate(template.template_key)}
-            borderWidth="2px"
-            borderColor={
-              selectedTemplate === template.template_key
-                ? currentColors.primaryButton
-                : "transparent"
-            }
-            bg={
-              selectedTemplate === template.template_key
-                ? currentColors.surface + "40"
-                : currentColors.surface
-            }
-            _hover={{
-              borderColor: currentColors.primaryButton + "80",
-              transform: "translateY(-2px)",
-            }}
-            transition="all 0.2s"
-          >
-            <CardHeader pb={2}>
-              <HStack justify="space-between">
-                <Heading size="md" color={currentColors.textPrimary}>
+      <SimpleGrid columns={{ base: 1, md: 2 }} gap={3} w="100%">
+        {availableTemplates.map((template, index) => {
+          const isSelected = selectedTemplate === template.template_key;
+          const accent = TEMPLATE_COLORS[index % TEMPLATE_COLORS.length];
+
+          return (
+            <Box
+              key={template.template_key}
+              position="relative"
+              overflow="hidden"
+              cursor="pointer"
+              onClick={() => setSelectedTemplate(template.template_key)}
+              p={3}
+              pl={4}
+              borderRadius="xl"
+              borderWidth="1px"
+              borderColor={isSelected ? accent : "border"}
+              bg={isSelected ? "primaryButtonFaint" : "secondary"}
+              _hover={{
+                borderColor: accent,
+                shadow: "sm",
+              }}
+              transition="all 0.2s ease"
+            >
+              {/* Colored accent strip */}
+              <Box
+                position="absolute"
+                left={0}
+                top={0}
+                bottom={0}
+                width="4px"
+                bg={accent}
+                opacity={isSelected ? 1 : 0.5}
+                transition="opacity 0.2s ease"
+              />
+
+              <HStack justify="space-between" mb={1}>
+                <Text fontSize="sm" fontWeight="bold" color="textPrimary">
                   {template.template_name}
-                </Heading>
-                {selectedTemplate === template.template_key && (
-                  <Icon as={FaCheckCircle} color="green.500" />
+                </Text>
+                {isSelected && (
+                  <Icon color={accent} boxSize={4} asChild>
+                    <FaCheckCircle />
+                  </Icon>
                 )}
               </HStack>
-            </CardHeader>
-            <CardBody pt={0}>
-              <Text fontSize="sm" color={currentColors.textSecondary} mb={3}>
+              <Text fontSize="xs" color="textSecondary" lineHeight="1.4">
                 {TEMPLATE_DESCRIPTIONS[template.template_key] ||
                   "A custom template for clinical documentation."}
               </Text>
-              <Text
-                fontSize="xs"
-                color={currentColors.textSecondary}
-                fontWeight="medium"
-              >
-                Fields:{" "}
-                {template.fields?.map((f) => f.field_name).join(", ") ||
-                  "Loading..."}
-              </Text>
-            </CardBody>
-          </Card>
-        ))}
+            </Box>
+          );
+        })}
       </SimpleGrid>
     )}
-  </MotionVStack>
+  </VStack>
 );

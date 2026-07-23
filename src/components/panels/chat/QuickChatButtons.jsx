@@ -1,13 +1,13 @@
 import React from "react";
-import { Tooltip, Button, Box } from "@chakra-ui/react";
+import { Button, Box, HStack } from "@chakra-ui/react";
+import { Tooltip } from '@/components/ui/tooltip';
 import { QuestionIcon } from "../../common/icons";
-import { emergeFromButton, AnimatedHStack } from "../../../theme/animations";
 
 const QuickChatButtons = ({ userSettings, handleSendMessage }) => {
     if (!userSettings) return null;
 
     return (
-        <AnimatedHStack spacing="2" mb="2" width="100%">
+        <HStack spacing="2" mb="2" width="100%" className="anim-fade-slide-up">
             {[1, 2, 3].map((n) => {
                 const title = userSettings[`quick_chat_${n}_title`];
                 const prompt = userSettings[`quick_chat_${n}_prompt`];
@@ -16,22 +16,21 @@ const QuickChatButtons = ({ userSettings, handleSendMessage }) => {
                 return (
                     <Tooltip
                         key={n}
-                        label={title}
-                        placement="top"
-                        isDisabled={!showTip}
-                        hasArrow
+                        content={title}
+                        disabled={!showTip}
+                        showArrow
                         fontSize="xs"
+                        positioning={{
+                            placement: "top"
+                        }}
                     >
                         <Button
-                            leftIcon={<QuestionIcon />}
                             size="sm"
                             variant="outline"
                             onClick={() => handleSendMessage(prompt)}
                             className="quick-chat-buttons-collapsed"
                             flex="1"
-                            minWidth="0"
-                        >
-                            <Box
+                            minWidth="0"><QuestionIcon /><Box
                                 as="span"
                                 overflow="hidden"
                                 textOverflow="ellipsis"
@@ -40,12 +39,11 @@ const QuickChatButtons = ({ userSettings, handleSendMessage }) => {
                                 textAlign="left"
                             >
                                 {title}
-                            </Box>
-                        </Button>
+                            </Box></Button>
                     </Tooltip>
                 );
             })}
-        </AnimatedHStack>
+        </HStack>
     );
 };
 

@@ -1,7 +1,7 @@
 // Styles for the mode selector components.
 import { colors } from "../colors";
 
-export const modeSelectorStyles = (props) => ({
+const modeSelectorStyles = (props) => ({
     ".mode-selector": {
         position: "relative",
         backgroundColor:
@@ -11,11 +11,12 @@ export const modeSelectorStyles = (props) => ({
         border: props.colorMode === "light" ? "none !important" : `none`,
         borderRadius: "full !important",
         overflow: "hidden",
-        width: "300px",
-        height: "40px",
+        width: "240px",
+        height: "34px",
         ".chakra-button": {
             transition: "color 0.3s ease",
-            height: "38px",
+            height: "32px",
+            fontSize: "xs",
             "&:hover": {
                 backgroundColor: "transparent !important",
             },
@@ -108,3 +109,10 @@ export const modeSelectorStyles = (props) => ({
         },
     },
 });
+
+const _lo = modeSelectorStyles({ colorMode: "light" });
+const _do = modeSelectorStyles({ colorMode: "dark" });
+export const modeSelectorGlobalCss = {};
+for (const sel of Object.keys(_lo)) {
+    modeSelectorGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };
+}

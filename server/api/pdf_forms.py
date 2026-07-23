@@ -7,9 +7,9 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 
 from server.database.config.manager import config_manager
+from server.llm_client.client import get_llm_client
+from server.pdf_forms.storage import PDFFormStore
 from server.schemas.pdf_forms import DetectFieldsRequest, UpdateFieldsRequest
-from server.utils.llm_client.client import get_llm_client
-from server.utils.pdf_forms.storage import PDFFormStore
 
 router = APIRouter()
 
@@ -105,6 +105,64 @@ async def get_template_pdf(template_id: str):
         media_type="application/pdf",
         headers={"Content-Disposition": 'inline; filename="template.pdf"'},
     )
+
+
+@router.put("/templates/{template_id}/pdf")
+async def replace_template_pdf(
+    template_id: str,
+    pdf: UploadFile = File(...),
+    page_count: int = Form(...),
+    page_heights: str = Form("[]"),
+):
+    """Replace a template's PDF while keeping its field definitions.
+
+    The replacement must have identical page geometry.
+    """
+    if not pdf.filename or not pdf.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted")
+
+    pdf_data = await pdf.read()
+    if len(pdf_data) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="PDF file too large (max 50 MB)")
+
+    if page_count <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="page_count must be a positive integer (extracted by frontend)",
+        )
+
+    try:
+        heights = json.loads(page_heights)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(
+            status_code=400, detail="page_heights must be a valid JSON array"
+        ) from exc
+
+    store = _get_store()
+    existing = store.get_template(template_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    if existing["page_count"] != page_count or existing["page_heights"] != heights:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Replacement PDF must match the original page geometry: expected "
+                f"{existing['page_count']} page(s) with heights {existing['page_heights']}, "
+                f"got {page_count} page(s) with heights {heights}."
+            ),
+        )
+
+    updated = store.replace_pdf(
+        template_id=template_id,
+        pdf_file_name=pdf.filename,
+        pdf_data=pdf_data,
+        page_count=page_count,
+        page_heights=heights,
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return updated
 
 
 @router.put("/templates/{template_id}/fields")

@@ -1,35 +1,12 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Box,
-  Button,
-  Heading,
-  HStack,
-  VStack,
-  useToast,
-  useColorMode,
-  Text,
-  Input,
-  Flex,
-  Image,
-  Icon,
-  Alert,
-  AlertIcon,
-} from "@chakra-ui/react";
+import { Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { motion } from "framer-motion";
-import { colors } from "../../theme/colors";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
 
-const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
-const MotionFlex = motion(Flex);
-
 const EncryptionUnlock = ({ onComplete }) => {
-  const { colorMode } = useColorMode();
-  const currentColors = colors[colorMode];
-  const toast = useToast();
 
   const [passphrase, setPassphrase] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -39,12 +16,11 @@ const EncryptionUnlock = ({ onComplete }) => {
 
   const handleSubmit = useCallback(async () => {
     if (passphrase.length < 1) {
-      toast({
+      toaster.create({
         title: "Passphrase Required",
         description: "Please enter your passphrase to unlock.",
-        status: "warning",
+        type: "warning",
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -89,12 +65,20 @@ const EncryptionUnlock = ({ onComplete }) => {
         );
       }
 
-      toast({
+      try {
+        await invoke("start_embedding_service");
+      } catch (embeddingError) {
+        console.warn(
+          "Embedding service did not start (no model downloaded yet):",
+          embeddingError,
+        );
+      }
+
+      toaster.create({
         title: "Unlocked",
         description: "Your database has been unlocked successfully.",
-        status: "success",
+        type: "success",
         duration: 3000,
-        isClosable: true,
       });
       onComplete();
     } catch (error) {
@@ -106,16 +90,15 @@ const EncryptionUnlock = ({ onComplete }) => {
         /wrong key|wrong encryption key|cannot decrypt database/i.test(errStr);
       setLastWasPassphrase(isPassphraseError);
 
-      toast({
+      toaster.create({
         title: isPassphraseError
           ? "Incorrect Passphrase"
           : "Server Failed to Start",
         description: isPassphraseError
           ? "The passphrase you entered is incorrect. Please try again."
           : "The server couldn't start (this isn't a passphrase problem). Click Unlock to retry — it will re-launch the server.",
-        status: "error",
+        type: "error",
         duration: 6000,
-        isClosable: true,
       });
 
       if (isPassphraseError) {
@@ -124,7 +107,7 @@ const EncryptionUnlock = ({ onComplete }) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [passphrase, attempts, onComplete, toast]);
+  }, [passphrase, attempts, onComplete]);
 
   const handleKeyPress = useCallback(
     (e) => {
@@ -139,7 +122,7 @@ const EncryptionUnlock = ({ onComplete }) => {
     <Flex
       align="center"
       justify="center"
-      minH="100vh"
+      minH="100dvh"
       className="splash-bg"
       px={4}
       py={8}
@@ -157,16 +140,12 @@ const EncryptionUnlock = ({ onComplete }) => {
           zIndex="1000"
         />
       )}
-
-      <MotionBox
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <Box
+        className="anim-fade-slide-up panels-bg splash-panel"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl !important"
+        borderRadius="2xl"
         boxShadow="2xl"
-        className="panels-bg"
-        border={`1px solid ${currentColors.surface}`}
+        border={`1px solid ${"surface"}`}
         w={{ base: "100%", sm: "90%", md: "450px" }}
         maxW="450px"
         position="relative"
@@ -178,16 +157,15 @@ const EncryptionUnlock = ({ onComplete }) => {
           left="0"
           right="0"
           height="120px"
-          bgGradient={`linear(to b, ${currentColors.sidebar.background}15, transparent)`}
+          bgGradient={`linear(to b, "sidebarBackgroundFaint", transparent)`}
           borderRadius="2xl"
           zIndex="0"
         />
 
-        <VStack spacing={6} align="stretch" position="relative" zIndex="1">
-          <MotionFlex
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+        <VStack gap={6} align="stretch" position="relative" zIndex="1">
+          <Flex
+            className="anim-fade-slide-up"
+            css={{ animationDelay: "80ms" }}
             direction="column"
             align="center"
             mb={2}
@@ -196,13 +174,13 @@ const EncryptionUnlock = ({ onComplete }) => {
             <Heading
               as="h1"
               textAlign="center"
-              color={currentColors.textPrimary}
-              sx={{
+              color={"textPrimary"}
+              css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
                 fontWeight: "700",
                 lineHeight: "1.2",
-                marginBottom: "0.5rem",
+                marginBottom: "0.5rem"
               }}
             >
               Unlock Your Data
@@ -210,31 +188,31 @@ const EncryptionUnlock = ({ onComplete }) => {
             <Text
               textAlign="center"
               fontSize="sm"
-              color={currentColors.textSecondary}
+              color={"textSecondary"}
               maxW="350px"
               lineHeight="1.6"
             >
               Enter your passphrase to decrypt and access your patient data.
             </Text>
-          </MotionFlex>
+          </Flex>
 
           {attempts > 0 && lastWasPassphrase && (
-            <Alert status="warning" borderRadius="md" fontSize="sm">
-              <AlertIcon />
+            <Alert.Root status="warning" borderRadius="md" fontSize="sm">
+              <Alert.Indicator />
               <Text fontSize="xs">
                 Incorrect passphrase. Please try again. ({attempts} attempt
                 {attempts > 1 ? "s" : ""})
               </Text>
-            </Alert>
+            </Alert.Root>
           )}
 
-          <VStack spacing={4} align="stretch">
+          <VStack gap={4} align="stretch">
             <Box>
               <Text
                 mb={1}
                 fontSize="sm"
                 fontWeight="500"
-                color={currentColors.textPrimary}
+                color={"textPrimary"}
               >
                 Passphrase
               </Text>
@@ -246,14 +224,16 @@ const EncryptionUnlock = ({ onComplete }) => {
                   onChange={(e) => setPassphrase(e.target.value)}
                   onKeyPress={handleKeyPress}
                   size="md"
+                  fontWeight="400"
                   autoFocus
-                  bg={currentColors.surface}
-                  border={`1px solid ${currentColors.border}`}
-                  color={currentColors.textPrimary}
-                  _placeholder={{ color: currentColors.textSecondary }}
+                  borderRadius="lg"
+                  bg={"surface"}
+                  border={`1px solid ${"border"}`}
+                  color={"textPrimary"}
+                  _placeholder={{ color: "textSecondary" }}
                   _focus={{
-                    borderColor: currentColors.accent,
-                    boxShadow: `0 0 0 1px ${currentColors.accent}`,
+                    borderColor: "accent",
+                    boxShadow: `0 0 0 1px ${"accent"}`,
                   }}
                 />
                 <Button
@@ -270,22 +250,22 @@ const EncryptionUnlock = ({ onComplete }) => {
 
           <Button
             onClick={handleSubmit}
-            isLoading={isSubmitting}
+            loading={isSubmitting}
             loadingText="Unlocking..."
-            isDisabled={passphrase.length < 1}
-            borderRadius="2xl !important"
+            disabled={passphrase.length < 1}
+            borderRadius="2xl"
             size="lg"
-            className="switch-mode"
-            sx={{
+            className="green-button"
+            css={{
               fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: "600",
+              fontWeight: "600"
             }}
             mt={2}
           >
             Unlock
           </Button>
         </VStack>
-      </MotionBox>
+      </Box>
     </Flex>
   );
 };

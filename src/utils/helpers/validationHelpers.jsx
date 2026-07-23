@@ -11,7 +11,7 @@ export const areRequiredDemographicsMet = (patient) =>
 export const validateLetterData = (letterData) => {
     const validations = {
         patientName: (val) => typeof val === "string" && val.length > 0,
-        gender: (val) => ["M", "F"],
+        gender: (_val) => ["M", "F"],
     };
 
     Object.entries(validations).forEach(([field, validator]) => {

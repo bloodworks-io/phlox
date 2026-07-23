@@ -3,38 +3,31 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-# RAG Chat Items:
-class ClinicalSuggestion(BaseModel):
-    question: str
-
-
-class ClinicalSuggestionList(BaseModel):
-    suggestions: list[ClinicalSuggestion]
-
-
 # RAG Collection Management
-class DiseaseNameResponse(BaseModel):
+class DocumentClassification(BaseModel):
     """
-    Structured model for disease name identification.
-    """
-
-    disease_name: str
-
-
-class FocusAreaResponse(BaseModel):
-    """
-    Structured model for document focus area.
+    Single-pass classification of an uploaded RAG document: disease area,
+    focus area, source, and a readable title.
     """
 
-    focus_area: str
-
-
-class DocumentSourceResponse(BaseModel):
-    """
-    Structured model for document source identification.
-    """
-
-    source: str
+    disease_name: str = Field(
+        ..., description="Main disease in natural casing, e.g. 'Systemic AL Amyloidosis'"
+    )
+    focus_area: str = Field(
+        ...,
+        description=(
+            "Document category — one of: guidelines, diagnosis, treatment, "
+            "monitoring, prognosis, pathology, overview, other"
+        ),
+    )
+    document_source: str = Field(
+        ...,
+        description="Publishing source in natural casing, e.g. 'NCCN Guidelines', 'EHA Consensus'",
+    )
+    title: str = Field(
+        ...,
+        description="The document's own title as it appears in the text, e.g. '2024 EHA Consensus Guidelines on AL Amyloidosis'",
+    )
 
 
 # Transcription Processing
@@ -80,16 +73,6 @@ class NarrativeResponse(BaseModel):
 
 
 # Patient Analysis
-class PatientAnalysis(BaseModel):
-    """
-    Structured model for generating a patient analysis digest.
-    """
-
-    analysis: str = Field(
-        description="A concise 3-4 sentence narrative digest of the most pressing patient tasks that need attention"
-    )
-
-
 class PreviousVisitSummary(BaseModel):
     """
     Structured model for generating a summary of a patient's previous visit.
@@ -102,23 +85,23 @@ class PreviousVisitSummary(BaseModel):
 
 # Reasoning
 class ReasoningItem(BaseModel):
-    """A clinical reasoning suggestion with justification."""
+    """A chart insights suggestion with justification."""
 
     suggestion: str = Field(description="The main suggestion or finding")
     rationale: list[str] = Field(description="1-2 brief bullet points justifying this suggestion")
     critical: bool = Field(
         default=False,
-        description="Set to true ONLY for potentially fatal or serious misses that require immediate attention",
+        description="Set to true for items the clinician may wish to review promptly",
     )
 
 
-class ClinicalReasoning(BaseModel):
+class ChartInsights(BaseModel):
     thinking: str
     summary: str
     differentials: list[ReasoningItem]
     investigations: list[ReasoningItem]
     clinical_considerations: list[ReasoningItem]
-    citations: list[str] = Field(
+    citations: list[str | dict] = Field(
         default_factory=list,
         description="Tool citations from sources used in reasoning (PubMed, Wikipedia, etc.)",
     )
@@ -131,27 +114,6 @@ class LetterDraft(BaseModel):
     """
 
     content: str = Field(description="The complete formatted letter content ready for display")
-
-
-# RSS News Digests
-class ItemDigest(BaseModel):
-    """
-    Structured model for individual RSS item digest.
-    """
-
-    digest: str = Field(
-        description="A 1-2 sentence summary highlighting the key finding or clinical implication of the article"
-    )
-
-
-class NewsDigest(BaseModel):
-    """
-    Structured model for combined news digest.
-    """
-
-    digest: str = Field(
-        description="A concise 3-4 sentence digest summarizing multiple medical news articles with focus on clinical implications"
-    )
 
 
 class ConsolidatedInstructions(BaseModel):

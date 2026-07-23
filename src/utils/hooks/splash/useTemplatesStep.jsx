@@ -1,42 +1,40 @@
-import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@chakra-ui/react";
+import { useState, useEffect } from "react";
+import useSWR from "swr";
+import { toaster } from "@/components/ui/toaster";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTemplatesStep } from "../../../utils/splash/validators";
-import { settingsService } from "../../../utils/settings/settingsUtils";
+import { settingsApi } from "../../../utils/api/settingsApi";
+import { KEYS } from "../../cache/keys";
 
 export const useTemplatesStep = (currentStep) => {
-  const toast = useToast();
-  const [availableTemplates, setAvailableTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [isFetchingTemplates, setIsFetchingTemplates] = useState(false);
 
-  const fetchTemplates = useCallback(async () => {
-    if (currentStep === SPLASH_STEPS.TEMPLATES && availableTemplates.length === 0) {
-      setIsFetchingTemplates(true);
-      try {
-        await settingsService.fetchTemplates((templates) => {
-          setAvailableTemplates(templates);
-          if (!selectedTemplate && templates.length > 0) {
-            setSelectedTemplate(templates[0].template_key);
-          }
-        });
-      } catch (error) {
-        toast({
-          title: "Error fetching templates",
-          description: error.message || "Could not load templates",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsFetchingTemplates(false);
-      }
-    }
-  }, [currentStep, availableTemplates.length, selectedTemplate, toast]);
+  const shouldFetch = currentStep === SPLASH_STEPS.TEMPLATES;
+  const {
+    data: availableTemplates = [],
+    isValidating: isFetchingTemplates,
+    error,
+  } = useSWR(shouldFetch ? KEYS.TEMPLATES : null, () =>
+    settingsApi.fetchTemplates(),
+  );
 
   useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
+    if (error) {
+      toaster.create({
+        title: "Error fetching templates",
+        description: error.message || "Could not load templates",
+        type: "error",
+        duration: 3000,
+      });
+    }
+  }, [error]);
+
+  // Auto-select first option when data arrives and nothing is selected
+  useEffect(() => {
+    if (availableTemplates.length > 0 && !selectedTemplate) {
+      setSelectedTemplate(availableTemplates[0].template_key);
+    }
+  }, [availableTemplates, selectedTemplate]);
 
   return {
     availableTemplates,

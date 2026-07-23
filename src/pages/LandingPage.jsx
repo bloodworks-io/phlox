@@ -29,7 +29,7 @@ const LandingPage = () => {
   };
 
   return (
-    <Box h="calc(100vh - 60px)" position="relative" overflow="hidden">
+    <Box h="calc(100dvh - 60px)" position="relative" overflow="hidden">
       <DisclaimerModal isOpen={showDisclaimer} onClose={handleDisclaimerClose} />
       <DashboardChat />
     </Box>

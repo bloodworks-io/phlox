@@ -5,8 +5,7 @@ import ChatMessages from "./ChatMessages";
 import ChatInput from "./ChatInput";
 import ChatSuggestions from "./ChatSuggestions";
 import QuickChatButtons from "./QuickChatButtons";
-import { buildApiUrl } from "../../../utils/helpers/apiConfig";
-import { universalFetch } from "../../../utils/helpers/apiHelpers";
+import { settingsApi } from "../../../utils/api/settingsApi";
 
 const ChatPanel = ({
     dimensions,
@@ -43,7 +42,7 @@ const ChatPanel = ({
                 if (i !== messageIndex) return msg;
 
                 const currentMap = msg.thinkingExpandedBlocks || {};
-                const nextExpanded = !Boolean(currentMap[blockIndex]);
+                const nextExpanded = !currentMap[blockIndex];
 
                 return {
                     ...msg,
@@ -64,11 +63,7 @@ const ChatPanel = ({
     useEffect(() => {
         const fetchUserSettings = async () => {
             try {
-                const response = await universalFetch(
-                    await buildApiUrl("/api/config/user"),
-                );
-                if (!response.ok) throw new Error();
-                const data = await response.json();
+                const data = await settingsApi.fetchUserSettings();
                 setUserSettings(data);
             } catch (error) {
                 console.error(error);
@@ -114,7 +109,7 @@ const ChatPanel = ({
                 flex="1"
                 overflowY="auto"
                 p="4"
-                className="floating-main"
+                className="floating-main sidebar-scroll-overlay"
                 onScroll={() => {
                     const el = scrollContainerRef.current;
                     if (el) {
@@ -156,7 +151,7 @@ const ChatPanel = ({
                     chatLoading={chatLoading}
                 />
 
-                <Text textAlign="center" fontSize="xs" color="gray.500">
+                <Text textAlign="center" fontSize="xs" color="overlay0">
                     Phlox may make mistakes. Always verify critical information.
                 </Text>
             </Box>

@@ -69,13 +69,11 @@ async def get_downloaded_llm_models():
 
 @router.post("/local/models/download")
 async def download_llm_model(
-    request: dict = Body(..., description="Model ID or repo_id/filename.gguf"),
+    request: dict = Body(..., description="Pre-configured model ID"),
 ):
     """Download a model. Replaces any existing model (1 model at a time).
 
-    model_id can be:
-    - A pre-configured model ID like "qwen3-4b"
-    - A custom model in format "repo_id/filename.gguf"
+    model_id must be a pre-configured model ID like "qwen3.5-4b".
     """
     if IS_DOCKER:
         raise HTTPException(
@@ -107,16 +105,14 @@ async def download_llm_model(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logging.error(f"Error downloading model {model_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to download model: {str(e)}") from e
+        raise HTTPException(status_code=500, detail="Failed to download model") from e
 
 
 @router.get("/local/models/download/stream")
 async def download_llm_model_stream(model_id: str):
     """Stream download progress for LLM model using SSE.
 
-    model_id can be:
-    - A pre-configured model ID like "qwen3-4b"
-    - A custom model in format "repo_id/filename.gguf" (URL encoded)
+    model_id must be a pre-configured model ID like "qwen3.5-4b".
     """
     if IS_DOCKER:
         raise HTTPException(
