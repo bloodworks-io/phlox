@@ -4,7 +4,7 @@ version = "2.0.0"
 requires-python = ">=3.12"
 dependencies = [
     "APScheduler==3.11.2",
-    "fastapi==0.138.0",
+    "fastapi==0.139.1",
     "httpx==0.28.1",
     "json-repair==0.60.1",
     "openai==2.14.0",
