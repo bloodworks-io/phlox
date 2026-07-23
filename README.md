@@ -2,7 +2,7 @@
 > Phlox is an experimental project. For full details on limitations and risks, please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
 
 <p align="center">
-  <img src="/docs/images/readme_logo.png" width="300" alt="Phlox Logo">
+  <img src="/docs/images/readme_dark.png" width="300" alt="Phlox Logo">
 </p>
 
 <div align="center">
