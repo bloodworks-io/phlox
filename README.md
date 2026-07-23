@@ -1,5 +1,5 @@
 > [!WARNING]
-> Phlox is an experimental project. For full details on limitations and risks, please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
+> Phlox is an experimental project. Please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
 
 <p align="center">
   <img src="/docs/images/phlox_icon.png" width="150" alt="Phlox Logo">
