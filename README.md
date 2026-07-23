@@ -110,4 +110,4 @@ Third-party models, runtimes, and library attributions: [Credits](docs/credits.m
 
 [Contributing Guidelines](.github/CONTRIBUTING.md)
 
-This repo has made extensive use of AI development tools - as a solo hobby developer I would simply have not been able to make Phlox otherwise. All AI generated code has been vetted by me and I ask that any contributors do the same prior to submitting PRs.
+This repo has made extensive use of AI development tools. All AI generated code has been vetted by me and I ask that any contributors do the same prior to submitting PRs.
