@@ -3,7 +3,7 @@ resolver = "2"
 
 [package]
 name = "phlox"
-version = "2.0.0"
+version = "2.1.0"
 description = "Open-source AI scribe with patient management"
 authors = ["bloodworks-io"]
 license = "MIT"
