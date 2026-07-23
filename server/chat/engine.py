@@ -61,7 +61,13 @@ class ChatEngine:
 
         # Initialize VectorStoreManager if RAG dependencies are available
         if VECTOR_STORE_AVAILABLE:
-            self.vector_store_manager = VectorStoreManager()
+            try:
+                self.vector_store_manager = VectorStoreManager()
+            except Exception:
+                self.vector_store_manager = None
+                self.logger.exception(
+                    "VectorStoreManager init failed; disabling literature search."
+                )
         else:
             self.vector_store_manager = None
             self.logger.warning("RAG dependencies not available. Literature search disabled.")
