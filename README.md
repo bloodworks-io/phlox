@@ -2,7 +2,7 @@
 > Phlox is an experimental project. For full details on limitations and risks, please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
 
 <p align="center">
-  <img src="/docs/images/readme_dark.png" width="300" alt="Phlox Logo">
+  <img src="/docs/images/phlox_icon.png" width="150" alt="Phlox Logo">
 </p>
 
 <div align="center">
@@ -29,7 +29,7 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 - **📄 Document Processing:** Fill-in forms, extract demographics, and more using local Vision Language Models.
 
 <p align="center">
-  <img src="/docs/images/readme_screenshot.png" width="500" alt="Phlox Screenshot">
+  <img src="/docs/images/readme_screenshot.png" width="600" alt="Phlox Screenshot">
 </p>
 
 ## Getting Started
@@ -82,10 +82,6 @@ Note quality benefits from speaker diarization. [parakeet-diarized](https://gith
 Ambient scribing is a relatively simple task for LLMs. In particular, large frontier models are very adept at one-shotting a decent note given a transcript and a style example. Smaller models capable of running on consumer hardware are able to summarise medical consultations reasonably well; however, they often struggle with replicating specific note styles.
 
 Phlox approaches this by chunking transcripts per template field and constraining outputs to structured JSON. After getting the model to make a targeted summary for a given field, a dedicated refinement pass then allows the model to focus on matching output to the users personal style example. Finally an adaptive-refinement feedback loop allows the model to improve note quality as it is used more.
-
-<p align="center">
-<img src="docs/images/architecture.png" width="500px" alt="Phlox Architecture"/>
-</p>
 
 ### Technical Stack
 
