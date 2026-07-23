@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useDisclosure } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 
-export const useNewNoteFlow = ({ createNewPatient, guardedNavigate }) => {
+export const useNewNoteFlow = ({ guardedNavigate }) => {
     const [newNoteKey, setNewNoteKey] = useState(0);
     const {
         open: isNewNoteOpen,
@@ -10,14 +10,6 @@ export const useNewNoteFlow = ({ createNewPatient, guardedNavigate }) => {
         onClose: onCloseNewNote,
     } = useDisclosure();
     const [resetLetter, setResetLetter] = useState(null);
-
-    const startNewNote = useCallback(async () => {
-        await createNewPatient();
-        setNewNoteKey((k) => k + 1);
-        if (resetLetter) {
-            resetLetter();
-        }
-    }, [createNewPatient, resetLetter]);
 
     const openNewNoteModal = useCallback(() => {
         toaster.remove();
@@ -44,7 +36,6 @@ export const useNewNoteFlow = ({ createNewPatient, guardedNavigate }) => {
         isNewNoteOpen,
         openNewNoteModal,
         closeNewNoteModal: onCloseNewNote,
-        startNewNote,
         completeNewNote,
         resetLetter,
         setResetLetter,

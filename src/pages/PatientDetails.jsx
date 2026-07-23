@@ -41,7 +41,7 @@ const PatientDetails = ({
     refreshSidebar,
     setIsModified: setParentIsModified,
     onResetLetter,
-    onStartNewNote,
+    onOpenNewNoteModal,
 }) => {
     const location = useLocation();
     const isNewPatient = location.pathname === "/new-note";
@@ -170,10 +170,9 @@ const PatientDetails = ({
         resetTranscription,
         setIsSummaryModified,
         resetSearchFlow: searchFlow.reset,
-        onStartNewNote,
+        onOpenNewNoteModal,
         refreshSidebar,
         selectedDate,
-        navigate,
         toast,
         hasTranscriptionOccurred,
         initialTranscriptionContent,

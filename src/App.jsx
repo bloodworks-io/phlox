@@ -38,7 +38,6 @@ function AppContent({ setIsInitializing }) {
     const bootstrap = useAppBootstrap();
     const nav = useNavigationGuard(isModified, setIsModified);
     const newNote = useNewNoteFlow({
-        createNewPatient,
         guardedNavigate: nav.guardedNavigate,
     });
     const { isSidebarCollapsed, toggleSidebar, isSmallScreen } =
@@ -130,7 +129,7 @@ function AppContent({ setIsInitializing }) {
                     refreshSidebar={refreshSidebar}
                     setIsModified={setIsModified}
                     onResetLetter={newNote.setResetLetter}
-                    onStartNewNote={newNote.startNewNote}
+                    onOpenNewNoteModal={newNote.openNewNoteModal}
                     newNoteKey={newNote.newNoteKey}
                     handleSelectPatient={handleSelectPatient}
                 />

@@ -16,10 +16,9 @@ export const useWrapUp = ({
     resetTranscription,
     setIsSummaryModified,
     resetSearchFlow,
-    onStartNewNote,
+    onOpenNewNoteModal,
     refreshSidebar,
     selectedDate,
-    navigate,
     toast,
     hasTranscriptionOccurred,
     initialTranscriptionContent,
@@ -81,8 +80,7 @@ export const useWrapUp = ({
                 resetTranscription();
                 closeWrapUp();
                 resetSearchFlow();
-                await onStartNewNote();
-                navigate("/new-note");
+                onOpenNewNoteModal();
             } catch (error) {
                 console.error("Error during wrap up:", error);
                 // savePatientCore surfaces its own toast on save failure; keep modal open.
@@ -102,8 +100,7 @@ export const useWrapUp = ({
             resetTranscription,
             closeWrapUp,
             resetSearchFlow,
-            onStartNewNote,
-            navigate,
+            onOpenNewNoteModal,
         ],
     );
 
