@@ -24,7 +24,7 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 - **📝 Flexible Template System:**  Including automated template generation from example notes you provide.
 - **🤖 AI-agent:** Your local assistant with access to literature in your own local knowledge base.
 - **🔌 MCP Server Support:** Connect external tool servers to give your agent new capabilties.
-- **✅ Task Manager:**  Parse clinical plans into actionable to-do lists to keep up-to-date with your outstanding tasks.
+- **✅ Task Manager:**  Parse clinical plans into to-do lists to keep up-to-date with your outstanding tasks.
 - **✉️  Correspondence Generation:**  One-click generation of patient letters based on clinical notes.
 - **📄 Document Processing:** Fill-in forms, extract demographics, and more using local Vision Language Models.
 
