@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/bloodworks-io/phlox/compare/v2.1.0...v2.1.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* **tauri:** sqlite extensions not enabled ([9aadc47](https://github.com/bloodworks-io/phlox/commit/9aadc479da35e11f8448dade2c96c4da44b8922d))
+
 ## [2.1.0](https://github.com/bloodworks-io/phlox/compare/v2.0.0...v2.1.0) (2026-07-23)
 
 
