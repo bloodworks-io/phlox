@@ -252,7 +252,7 @@ const Summary = forwardRef(
                   <Tooltip
                     content={
                       isEncounterSaved
-                        ? ""
+                        ? "Generate a letter from this note"
                         : "Save the encounter first to generate a letter"
                     }
                     positioning={{
@@ -272,23 +272,41 @@ const Summary = forwardRef(
                   </Tooltip>
                 </Flex>
                 <Flex>
-                  <GreyButton
-                    onClick={onCopy}
-                    width="190px"
-                    leftIcon={recentlyCopied ? <CheckIcon /> : <CopyIcon />}
-                    mr="2"
+                  <Tooltip
+                    content="Copy the full note to your clipboard"
+                    positioning={{
+                      placement: "top"
+                    }}
                   >
-                    {recentlyCopied ? "Copied!" : "Copy to Clipboard"}
-                  </GreyButton>
-                  <GreyButton
-                    onClick={handleSavePatientData}
-                    loading={saveLoading}
-                    loadingText="Saving"
-                    width="190px"
-                    leftIcon={saveLoading ? null : <FaSave />}
+                    <Box>
+                      <GreyButton
+                        onClick={onCopy}
+                        width="190px"
+                        leftIcon={recentlyCopied ? <CheckIcon /> : <CopyIcon />}
+                        mr="2"
+                      >
+                        {recentlyCopied ? "Copied!" : "Copy to Clipboard"}
+                      </GreyButton>
+                    </Box>
+                  </Tooltip>
+                  <Tooltip
+                    content="Save the current encounter"
+                    positioning={{
+                      placement: "top"
+                    }}
                   >
-                    {saveLoading ? "Saving..." : "Save Encounter"}
-                  </GreyButton>
+                    <Box>
+                      <GreyButton
+                        onClick={handleSavePatientData}
+                        loading={saveLoading}
+                        loadingText="Saving"
+                        width="190px"
+                        leftIcon={saveLoading ? null : <FaSave />}
+                      >
+                        {saveLoading ? "Saving..." : "Save Encounter"}
+                      </GreyButton>
+                    </Box>
+                  </Tooltip>
                   <Tooltip
                     content="Review AI-extracted jobs, then finish and move to a new note"
                     positioning={{

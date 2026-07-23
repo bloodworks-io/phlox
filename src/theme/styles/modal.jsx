@@ -19,6 +19,10 @@ const modalStyles = (props) => ({
         padding: "0px !important",
         borderRadius: "xl !important",
         marginBlock: "auto !important",
+        boxShadow:
+            props.colorMode === "light"
+                ? "0 24px 60px rgba(76, 79, 105, 0.25) !important"
+                : "0 24px 60px rgba(0, 0, 0, 0.45) !important",
     },
 });
 

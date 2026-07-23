@@ -127,7 +127,7 @@ const NewTemplateFromExampleModal = ({
                                     loadingText="Creating..."
                                     size="md"
                                     borderRadius="2xl"
-                                    className="switch-mode"
+                                    className="green-button"
                                     css={{
                                         fontFamily: '"Space Grotesk", sans-serif',
                                         fontWeight: "600"

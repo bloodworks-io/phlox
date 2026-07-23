@@ -141,8 +141,10 @@ const sidebarStyles = (props) => ({
     // Sidebar section labels
     ".sidebar-section-label": {
         color: `${colors.dark.textSecondary} !important`,
-        fontSize: "xs",
-        fontWeight: "medium",
+        fontSize: "10px",
+        fontWeight: "700",
+        letterSpacing: "0.15em",
+        textTransform: "uppercase",
     },
 
     // Consistent text color for sidebar elements

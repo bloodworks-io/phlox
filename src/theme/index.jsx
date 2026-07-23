@@ -60,10 +60,16 @@ globalCss[".blue-icon"] = { color: "primaryButton !important" };
 globalCss[".chakra-button"] = {
     fontWeight: "600 !important",
     fontSize: "16px !important",
-    transition: "transform 0.1s ease, background 0.15s ease !important",
+    transition:
+        "transform 0.1s ease, background 0.15s ease, box-shadow 0.2s ease !important",
 };
 globalCss[".chakra-button:active"] = {
     transform: "scale(0.97)",
+};
+// Keyboard-only focus ring — clicks stay ring-free
+globalCss[".chakra-button:focus-visible"] = {
+    outline: "2px solid var(--chakra-colors-accent)",
+    outlineOffset: "2px",
 };
 
 // Slightly smaller icons inside buttons (rendered as <svg> children in v3).

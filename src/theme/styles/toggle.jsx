@@ -20,7 +20,7 @@ const toggleStyles = (props) => ({
     ".switch-mode": {
         display: "inline-flex",
         height: "35px !important",
-        borderRadius: "xl !important",
+        borderRadius: "full !important",
         justifyContent: "center",
         alignItems: "center",
         backgroundColor:
@@ -35,6 +35,14 @@ const toggleStyles = (props) => ({
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textSecondary} !important`,
+    },
+    ".switch-mode:hover": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.secondary} !important`
+                : `${colors.dark.secondary} !important`,
+        transform: "translateY(-1px)",
+        boxShadow: "md",
     },
     ".dark-toggle": {
         backgroundColor:

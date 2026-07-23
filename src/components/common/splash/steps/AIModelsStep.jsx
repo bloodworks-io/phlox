@@ -10,6 +10,7 @@ import {
   Progress,
   Spinner,
   Grid,
+  IconButton,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { localModelApi } from "@/utils/api/localModelApi";

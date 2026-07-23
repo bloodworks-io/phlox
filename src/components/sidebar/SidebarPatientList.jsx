@@ -65,12 +65,14 @@ const SidebarPatientList = ({
                     transition="transform 0.1s ease, background 0.15s ease"
                 >
                     <Text
-                        fontSize="xs"
-                        fontWeight="medium"
+                        fontSize="10px"
+                        fontWeight="700"
+                        letterSpacing="0.15em"
+                        textTransform="uppercase"
                         color={labelColor}
                         whiteSpace="nowrap"
                     >
-                        PATIENT LIST
+                        Patient List
                     </Text>
                     <IconButton
                         variant="ghost"

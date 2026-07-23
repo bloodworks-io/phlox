@@ -12,6 +12,8 @@ import {
 } from "@chakra-ui/react";
 import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
 import { toaster } from "@/components/ui/toaster";
+import { useColorMode } from "../ui/color-mode";
+import { colors } from "../../theme/colors";
 import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
 import { formatDate } from "../../utils/helpers/formatHelpers";
 import UrSearchField from "./UrSearchField";
@@ -23,44 +25,62 @@ export const PathHalf = ({
     accent,
     tileBg,
     onClick,
-}) => (
-    <Flex
-        flex="1"
-        direction="column"
-        align="center"
-        justify="center"
-        textAlign="center"
-        py={10}
-        px={4}
-        cursor="pointer"
-        transition="transform 0.1s ease, background 0.15s ease"
-        bg={tileBg}
-        borderRadius="xl"
-        _hover={{
-            bg: "rgba(184, 192, 224, 0.12)",
-            "& svg": { transform: "scale(1.12)" },
-        }}
-        _active={{ transform: "scale(0.98)" }}
-        _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
-        asChild
-    >
-        <button onClick={onClick}>
-            <Icon
-                as={icon}
-                boxSize={12}
-                color={accent}
-                mb={4}
-                transition="transform 0.2s"
-            />
-            <Text fontWeight="600" color="textPrimary" fontSize="md">
-                {title}
-            </Text>
-            <Text fontSize="xs" color="textSecondary" mt={1}>
-                {subtitle}
-            </Text>
-        </button>
-    </Flex>
-);
+}) => {
+    const { colorMode } = useColorMode();
+    const accentHex = colors[colorMode]?.[accent] ?? colors.dark.primaryButton;
+
+    return (
+        <Flex
+            flex="1"
+            direction="column"
+            align="center"
+            justify="center"
+            textAlign="center"
+            py={10}
+            px={4}
+            cursor="pointer"
+            transition="transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease"
+            bg={tileBg}
+            borderRadius="xl"
+            border="1px solid"
+            borderColor="surface"
+            _hover={{
+                bg: "rgba(184, 192, 224, 0.12)",
+                borderColor: `${accentHex}66`,
+                transform: "translateY(-2px)",
+                boxShadow: "md",
+                "& .path-icon-tile": { transform: "scale(1.08)" },
+            }}
+            _active={{ transform: "scale(0.98)" }}
+            _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
+            asChild
+        >
+            <button onClick={onClick}>
+                <Flex
+                    className="path-icon-tile"
+                    align="center"
+                    justify="center"
+                    boxSize="56px"
+                    borderRadius="xl"
+                    bg={`${accentHex}1f`}
+                    border="1px solid"
+                    borderColor={`${accentHex}40`}
+                    mb={4}
+                    mx="auto"
+                    transition="transform 0.2s"
+                >
+                    <Icon as={icon} boxSize={6} color={accent} />
+                </Flex>
+                <Text fontWeight="600" color="textPrimary" fontSize="md">
+                    {title}
+                </Text>
+                <Text fontSize="xs" color="textSecondary" mt={1}>
+                    {subtitle}
+                </Text>
+            </button>
+        </Flex>
+    );
+};
 
 const candidateMeta = (cand) =>
     [cand.gender, cand.dob, cand.ur_number && `UR ${cand.ur_number}`]

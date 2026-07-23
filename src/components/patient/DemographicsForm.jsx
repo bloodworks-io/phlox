@@ -274,7 +274,7 @@ const DemographicsForm = ({
                     loading={isSaving}
                     size="md"
                     borderRadius="2xl"
-                    className="switch-mode"
+                    className="green-button"
                     css={btnSx}
                 >
                     {saveLabel}

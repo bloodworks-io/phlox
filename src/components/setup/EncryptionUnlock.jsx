@@ -255,7 +255,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             disabled={passphrase.length < 1}
             borderRadius="2xl"
             size="lg"
-            className="switch-mode"
+            className="green-button"
             css={{
               fontFamily: '"Space Grotesk", sans-serif',
               fontWeight: "600"

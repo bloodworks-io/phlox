@@ -23,6 +23,8 @@ import {
     FaArrowRight,
 } from "react-icons/fa";
 import { RepeatIcon } from "../common/icons";
+import { useColorMode } from "../ui/color-mode";
+import { colors } from "../../theme/colors";
 import {
     resetJobsItems,
     debouncedUpdateJobsList,
@@ -39,6 +41,7 @@ const PatientTable = ({
     summaryOnly = false,
 }) => {
     const pendingJobsUpdates = useRef(new Map());
+    const { colorMode } = useColorMode();
 
     useEffect(() => {
         return () => {
@@ -82,19 +85,25 @@ const PatientTable = ({
         </Box>
     );
 
-    const getTagColorScheme = (section) => {
-        switch (section) {
-            case "differentials":
-                return { bg: "primaryButton", color: "invertedText" };
-            case "investigations":
-                return { bg: "successButton", color: "invertedText" };
-            case "considerations":
-                return { bg: "secondaryButton", color: "invertedText" };
-            case "thinking":
-                return { bg: "neutralButton", color: "invertedText" };
-            default:
-                return { bg: "surface", color: "textPrimary" };
-        }
+    const getTagStyle = (section) => {
+        const token =
+            section === "differentials"
+                ? "primaryButton"
+                : section === "investigations"
+                  ? "successButton"
+                  : section === "considerations"
+                    ? "secondaryButton"
+                    : section === "thinking"
+                      ? "neutralButton"
+                      : null;
+        if (!token) return { bg: "surface", color: "textPrimary" };
+        const hex = colors[colorMode]?.[token] ?? colors.dark.surface2;
+        return {
+            bg: `${hex}1f`,
+            color: hex,
+            border: "1px solid",
+            borderColor: `${hex}40`,
+        };
     };
 
     const sfxVolume = 0.3;
@@ -115,6 +124,8 @@ const PatientTable = ({
         <Table.Row
             key={patient.id}
             backgroundColor={getRowBackgroundColor(index)}
+            transition="background-color 0.15s ease"
+            _hover={{ backgroundColor: "surfaceQuartile" }}
             opacity={
                 summaryOnly &&
                 (patient.jobs_list?.length || 0) > 0 &&
@@ -189,7 +200,7 @@ const PatientTable = ({
                 {summaryOnly ? (
                     <Box
                         p={2}
-                        borderRadius="md"
+                        borderRadius="lg"
                         bg="surface"
                     >
                         <Text fontSize="sm">
@@ -331,9 +342,9 @@ const PatientTable = ({
                                                                 <Box
                                                                     px={2}
                                                                     py={0.5}
-                                                                    borderRadius="sm"
+                                                                    borderRadius="full"
                                                                     fontSize="sm"
-                                                                    {...getTagColorScheme(
+                                                                    {...getTagStyle(
                                                                         patient.activeSection,
                                                                     )}
                                                                 >
@@ -489,7 +500,7 @@ const PatientTable = ({
     );
 
     return (
-        <Box p="5" borderRadius="sm" w="100%">
+        <Box p="5" borderRadius="xl" w="100%">
             <Text as="h2">{title}</Text>
             {groupByDate ? (
                 Object.entries(
@@ -506,7 +517,12 @@ const PatientTable = ({
                             <Text as="h3" mb={2}>
                                 {new Date(date).toLocaleDateString()}
                             </Text>
-                            <Box overflowX="auto">
+                            <Box
+                                overflowX="auto"
+                                border="1px solid"
+                                borderColor="surface"
+                                borderRadius="xl"
+                            >
                                 <Table.Root
                                     variant="simple"
                                     borderRadius="lg"
@@ -546,7 +562,12 @@ const PatientTable = ({
                         </Box>
                     ))
             ) : (
-                <Box overflowX="auto">
+                <Box
+                    overflowX="auto"
+                    border="1px solid"
+                    borderColor="surface"
+                    borderRadius="xl"
+                >
                     <Table.Root
                         variant="simple"
                         borderRadius="lg"

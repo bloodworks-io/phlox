@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
 import { FaServer } from "react-icons/fa";
 import { settingsApi } from "../../utils/api/settingsApi";
+import { isTauri } from "../../utils/helpers/apiConfig";
 
 const LOADING_MESSAGES = [
   "Reticulating splines...",
@@ -164,7 +165,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             <Button
               onClick={handleRetry}
               size="lg"
-              className="switch-mode"
+              className="green-button"
               css={{
                 fontFamily: '"Space Grotesk", sans-serif',
                 fontWeight: "600"

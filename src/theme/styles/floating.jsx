@@ -50,13 +50,17 @@ const floatingStyles = (props) => ({
         border:
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
-                : "none !important",
+                : `1px solid ${colors.dark.surface1} !important`,
         fontWeight: "500 !important",
         fontSize: "0.9rem !important",
         color:
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textTertiary} !important`,
+        _hover: {
+            transform: "translateY(-1px)",
+            boxShadow: "sm",
+        },
     },
     ".refinement-suggestions": {
         backgroundColor:
@@ -290,11 +294,15 @@ const floatingStyles = (props) => ({
         border:
             props.colorMode === "light"
                 ? `1px solid ${colors.light.surface} !important`
-                : "none !important",
+                : `1px solid ${colors.dark.surface1} !important`,
         color:
             props.colorMode === "light"
                 ? `${colors.light.textSecondary} !important`
                 : `${colors.dark.textTertiary} !important`,
+        _hover: {
+            transform: "translateY(-1px)",
+            boxShadow: "sm",
+        },
     },
 });
 
