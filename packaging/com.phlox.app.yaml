@@ -119,6 +119,7 @@ modules:
     buildsystem: simple
     build-commands:
       - install -d src-tauri/binaries
+      - ln -s /app/bin/server_dist src-tauri/server_dist
       - ln -sf /app/bin/phlox-server-x86_64-unknown-linux-gnu src-tauri/binaries/
       - ln -sf /app/bin/phlox-llama-server-x86_64-unknown-linux-gnu src-tauri/binaries/
       - ln -sf /app/bin/phlox-whisper-server-x86_64-unknown-linux-gnu src-tauri/binaries/
