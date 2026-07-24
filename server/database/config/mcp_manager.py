@@ -18,6 +18,7 @@ class McpConfigManager:
 
     _instance = None
     _lock = Lock()
+    _cache_lock = Lock()
 
     def __new__(cls):
         with cls._lock:
@@ -33,54 +34,66 @@ class McpConfigManager:
             return
 
         try:
-            self.db.cursor.execute("SELECT 1")
+            with self.db.read() as cursor:
+                cursor.execute("SELECT 1")
         except (sqlite3.ProgrammingError, sqlite3.OperationalError):
             self.db = get_db()
 
     def _load_configs(self):
-        """Load MCP server configurations from the database."""
-        self.refresh_db()
-        self.servers = []
+        """Load MCP server configurations from the database.
 
+        Builds a local list and swaps it in atomically.
+        """
+        self.refresh_db()
+        servers = []
         try:
-            self.db.cursor.execute(
-                """
-                SELECT id, name, url, description, server_version, enabled, allow_sensitive_data, created_at, updated_at
-                FROM mcp_servers
-                ORDER BY created_at DESC
-                """
-            )
-            for row in self.db.cursor.fetchall():
-                self.servers.append(
-                    {
-                        "id": row["id"],
-                        "name": row["name"],
-                        "url": row["url"],
-                        "description": row["description"] or "",
-                        "server_version": row["server_version"] or "",
-                        "enabled": bool(row["enabled"]),
-                        "allow_sensitive_data": bool(row["allow_sensitive_data"]),
-                        "created_at": row["created_at"],
-                        "updated_at": row["updated_at"],
-                    }
+            with self.db.read() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, name, url, description, server_version, enabled, allow_sensitive_data, created_at, updated_at
+                    FROM mcp_servers
+                    ORDER BY created_at DESC
+                    """
                 )
+                for row in cursor.fetchall():
+                    servers.append(
+                        {
+                            "id": row["id"],
+                            "name": row["name"],
+                            "url": row["url"],
+                            "description": row["description"] or "",
+                            "server_version": row["server_version"] or "",
+                            "enabled": bool(row["enabled"]),
+                            "allow_sensitive_data": bool(row["allow_sensitive_data"]),
+                            "created_at": row["created_at"],
+                            "updated_at": row["updated_at"],
+                        }
+                    )
+
+                with self._cache_lock:
+                    self.servers = servers
         except sqlite3.OperationalError:
             # Table doesn't exist yet, will be created by migration
             logger.warning("mcp_servers table does not exist yet")
+            with self._cache_lock:
+                self.servers = servers
 
     def get_servers(self) -> list[dict[str, Any]]:
         """Return all configured MCP servers."""
-        return self.servers.copy()
+        with self._cache_lock:
+            return self.servers.copy()
 
     def get_enabled_servers(self) -> list[dict[str, Any]]:
         """Return only enabled MCP servers."""
-        return [s for s in self.servers if s.get("enabled", True)]
+        with self._cache_lock:
+            return [s for s in self.servers if s.get("enabled", True)]
 
     def get_server(self, server_id: int) -> dict[str, Any] | None:
         """Get a specific server by ID."""
-        for server in self.servers:
-            if server["id"] == server_id:
-                return server.copy()
+        with self._cache_lock:
+            for server in self.servers:
+                if server["id"] == server_id:
+                    return server.copy()
         return None
 
     def add_server(
@@ -111,16 +124,16 @@ class McpConfigManager:
 
         self.refresh_db()
 
-        self.db.cursor.execute(
-            """
-            INSERT INTO mcp_servers (name, url, description, server_version, allow_sensitive_data)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (name, url, description, server_version, 1 if allow_sensitive_data else 0),
-        )
-        # Capture lastrowid before commit (it may be reset after commit)
-        new_id = self.db.cursor.lastrowid
-        self.db.commit()
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO mcp_servers (name, url, description, server_version, allow_sensitive_data)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (name, url, description, server_version, 1 if allow_sensitive_data else 0),
+            )
+            # Capture lastrowid from this cursor before commit.
+            new_id = cursor.lastrowid
 
         # Reload configs
         self._load_configs()
@@ -174,11 +187,11 @@ class McpConfigManager:
             params.append(server_id)
 
             self.refresh_db()
-            self.db.cursor.execute(
-                f"UPDATE mcp_servers SET {', '.join(updates)} WHERE id = ?",  # nosec B608
-                params,
-            )
-            self.db.commit()
+            with self.db.transaction() as cursor:
+                cursor.execute(
+                    f"UPDATE mcp_servers SET {', '.join(updates)} WHERE id = ?",  # nosec B608
+                    params,
+                )
 
             # Reload configs
             self._load_configs()
@@ -196,8 +209,8 @@ class McpConfigManager:
             return False
 
         self.refresh_db()
-        self.db.cursor.execute("DELETE FROM mcp_servers WHERE id = ?", (server_id,))
-        self.db.commit()
+        with self.db.transaction() as cursor:
+            cursor.execute("DELETE FROM mcp_servers WHERE id = ?", (server_id,))
 
         # Reload configs
         self._load_configs()
@@ -215,11 +228,11 @@ class McpConfigManager:
             return False
 
         self.refresh_db()
-        self.db.cursor.execute(
-            "UPDATE mcp_servers SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (1 if enabled else 0, server_id),
-        )
-        self.db.commit()
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "UPDATE mcp_servers SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (1 if enabled else 0, server_id),
+            )
 
         # Reload configs
         self._load_configs()

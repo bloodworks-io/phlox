@@ -143,34 +143,35 @@ async def search_patient_notes(
 
     try:
         # Build query to get all encounters for this patient
-        if ur_number:
-            get_db().cursor.execute(
-                """
-                SELECT e.id, e.ur_number, e.encounter_date,
-                       e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
-                       p.first_name, p.last_name, p.dob
-                FROM encounters e
-                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                WHERE e.ur_number = ?
-                ORDER BY e.encounter_date DESC
-                """,
-                (ur_number,),
-            )
-        else:
-            get_db().cursor.execute(
-                """
-                SELECT e.id, e.ur_number, e.encounter_date,
-                       e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
-                       p.first_name, p.last_name, p.dob
-                FROM encounters e
-                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
-                ORDER BY e.encounter_date DESC
-                """,
-                (f"%{patient_name}%",),
-            )
+        with get_db().read() as cursor:
+            if ur_number:
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ur_number, e.encounter_date,
+                           e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
+                           p.first_name, p.last_name, p.dob
+                    FROM encounters e
+                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                    WHERE e.ur_number = ?
+                    ORDER BY e.encounter_date DESC
+                    """,
+                    (ur_number,),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ur_number, e.encounter_date,
+                           e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
+                           p.first_name, p.last_name, p.dob
+                    FROM encounters e
+                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                    ORDER BY e.encounter_date DESC
+                    """,
+                    (f"%{patient_name}%",),
+                )
 
-        rows = get_db().cursor.fetchall()
+            rows = cursor.fetchall()
 
         if not rows:
             return {

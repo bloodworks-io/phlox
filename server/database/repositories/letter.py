@@ -15,16 +15,16 @@ def update_patient_letter(note_id: int, letter: str) -> None:
         letter (str): The letter content.
     """
     try:
-        get_db().cursor.execute(
-            """
-            UPDATE encounters
-            SET final_letter = ?,
-                updated_at = ?
-            WHERE id = ?
-            """,
-            (letter, datetime.now().isoformat(), note_id),
-        )
-        get_db().commit()
+        with get_db().transaction() as cursor:
+            cursor.execute(
+                """
+                UPDATE encounters
+                SET final_letter = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (letter, datetime.now().isoformat(), note_id),
+            )
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")
         raise
@@ -41,9 +41,10 @@ async def fetch_patient_letter(note_id: int) -> str | None:
         Optional[str]: The letter content if found.
     """
     try:
-        get_db().cursor.execute("SELECT final_letter FROM encounters WHERE id = ?", (note_id,))
-        row = get_db().cursor.fetchone()
-        return row["final_letter"] if row else None
+        with get_db().read() as cursor:
+            cursor.execute("SELECT final_letter FROM encounters WHERE id = ?", (note_id,))
+            row = cursor.fetchone()
+            return row["final_letter"] if row else None
     except Exception as e:
         logging.error(f"Error fetching patient letter: {e}")
         raise
@@ -57,12 +58,13 @@ def get_letter_templates() -> list[dict[str, Any]]:
         List[Dict[str, Any]]: List of letter templates.
     """
     try:
-        get_db().cursor.execute("""
-            SELECT id, name, instructions, created_at
-            FROM letter_templates
-            ORDER BY name
-            """)
-        return [dict(row) for row in get_db().cursor.fetchall()]
+        with get_db().read() as cursor:
+            cursor.execute("""
+                SELECT id, name, instructions, created_at
+                FROM letter_templates
+                ORDER BY name
+                """)
+            return [dict(row) for row in cursor.fetchall()]
     except Exception as e:
         logging.error(f"Error fetching letter templates: {e}")
         raise
@@ -79,16 +81,17 @@ def get_letter_template_by_id(template_id: int) -> dict[str, Any] | None:
         Optional[Dict[str, Any]]: Template data if found.
     """
     try:
-        get_db().cursor.execute(
-            """
-            SELECT id, name, instructions, created_at
-            FROM letter_templates
-            WHERE id = ?
-            """,
-            (template_id,),
-        )
-        row = get_db().cursor.fetchone()
-        return dict(row) if row else None
+        with get_db().read() as cursor:
+            cursor.execute(
+                """
+                SELECT id, name, instructions, created_at
+                FROM letter_templates
+                WHERE id = ?
+                """,
+                (template_id,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
     except Exception as e:
         logging.error(f"Error fetching letter template: {e}")
         raise
@@ -105,15 +108,15 @@ def save_letter_template(template: LetterTemplate) -> int:
         int: ID of the newly created template.
     """
     try:
-        get_db().cursor.execute(
-            """
-            INSERT INTO letter_templates (name, instructions)
-            VALUES (?, ?)
-            """,
-            (template.name, template.instructions),
-        )
-        get_db().commit()
-        return get_db().cursor.lastrowid
+        with get_db().transaction() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO letter_templates (name, instructions)
+                VALUES (?, ?)
+                """,
+                (template.name, template.instructions),
+            )
+            return cursor.lastrowid
     except Exception as e:
         logging.error(f"Error saving letter template: {e}")
         raise
@@ -131,17 +134,17 @@ def update_letter_template(template_id: int, template: LetterTemplate) -> bool:
         bool: True if updated successfully.
     """
     try:
-        get_db().cursor.execute(
-            """
-            UPDATE letter_templates
-            SET name = ?,
-                instructions = ?
-            WHERE id = ?
-            """,
-            (template.name, template.instructions, template_id),
-        )
-        get_db().commit()
-        return get_db().cursor.rowcount > 0
+        with get_db().transaction() as cursor:
+            cursor.execute(
+                """
+                UPDATE letter_templates
+                SET name = ?,
+                    instructions = ?
+                WHERE id = ?
+                """,
+                (template.name, template.instructions, template_id),
+            )
+            return cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error updating letter template: {e}")
         raise
@@ -158,9 +161,9 @@ def delete_letter_template(template_id: int) -> bool:
         bool: True if deleted successfully.
     """
     try:
-        get_db().cursor.execute("DELETE FROM letter_templates WHERE id = ?", (template_id,))
-        get_db().commit()
-        return get_db().cursor.rowcount > 0
+        with get_db().transaction() as cursor:
+            cursor.execute("DELETE FROM letter_templates WHERE id = ?", (template_id,))
+            return cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error deleting letter template: {e}")
         raise
@@ -171,34 +174,34 @@ def reset_default_templates() -> None:
     Reset to default letter templates by clearing and reinserting defaults.
     """
     try:
-        # Clear existing templates
-        get_db().cursor.execute("DELETE FROM letter_templates")
+        with get_db().transaction() as cursor:
+            # Clear existing templates
+            cursor.execute("DELETE FROM letter_templates")
 
-        # Insert defaults
-        default_templates = [
-            (
-                "GP Letter",
-                "Write a brief letter to the patient's general practitioner summarizing the consultation",
-            ),
-            (
-                "Specialist Referral",
-                "Write a detailed referral letter to a specialist including relevant history and examination findings",
-            ),
-            (
-                "Discharge Summary",
-                "Write a comprehensive discharge summary including admission details, treatment, and follow-up plan",
-            ),
-            (
-                "Brief Update",
-                "Write a short update letter focusing only on recent changes and current plan",
-            ),
-        ]
+            # Insert defaults
+            default_templates = [
+                (
+                    "GP Letter",
+                    "Write a brief letter to the patient's general practitioner summarizing the consultation",
+                ),
+                (
+                    "Specialist Referral",
+                    "Write a detailed referral letter to a specialist including relevant history and examination findings",
+                ),
+                (
+                    "Discharge Summary",
+                    "Write a comprehensive discharge summary including admission details, treatment, and follow-up plan",
+                ),
+                (
+                    "Brief Update",
+                    "Write a short update letter focusing only on recent changes and current plan",
+                ),
+            ]
 
-        get_db().cursor.executemany(
-            "INSERT INTO letter_templates (name, instructions) VALUES (?, ?)",
-            default_templates,
-        )
-        get_db().commit()
+            cursor.executemany(
+                "INSERT INTO letter_templates (name, instructions) VALUES (?, ?)",
+                default_templates,
+            )
     except Exception as e:
         logging.error(f"Error resetting letter templates: {e}")
         raise

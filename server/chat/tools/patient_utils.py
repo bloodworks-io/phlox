@@ -34,15 +34,16 @@ async def find_ur_by_name(patient_name: str, threshold: int = 70) -> PatientMatc
     """
     try:
         # Get all patients with their names and UR numbers
-        get_db().cursor.execute(
-            """
-            SELECT DISTINCT e.ur_number, p.first_name, p.last_name
-            FROM encounters e
-            LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-            WHERE e.ur_number IS NOT NULL AND e.ur_number != ''
-            """
-        )
-        rows = get_db().cursor.fetchall()
+        with get_db().read() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT e.ur_number, p.first_name, p.last_name
+                FROM encounters e
+                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                WHERE e.ur_number IS NOT NULL AND e.ur_number != ''
+                """
+            )
+            rows = cursor.fetchall()
 
         if not rows:
             logger.info("No patients found in database")
