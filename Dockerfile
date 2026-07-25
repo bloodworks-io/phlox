@@ -27,6 +27,8 @@ WORKDIR /usr/src/app
 
 # Set environment variable
 ENV DOCKER_CONTAINER=true
+# Use the uv-locked project venv at runtime
+ENV PATH=/usr/src/app/server/.venv/bin:$PATH
 
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
@@ -47,7 +49,7 @@ RUN mkdir -p /usr/src/app/data \
     chown -R phlox:phlox /usr/src/app
 
 # Install Python dependencies
-RUN uv pip install --system --no-cache ./server[docker]
+RUN uv sync --directory server --locked --no-dev --extra docker
 
 # Pre-cache tiktoken encodings so they don't need to be fetched at runtime
 RUN python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"

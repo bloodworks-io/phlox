@@ -65,7 +65,7 @@ echo "Compiling with Nuitka (this may take a while on first run)..."
 
 cd "$PROJECT_DIR"
 
-uv sync --extra rag --directory "$SERVER_DIR"
+uv sync --locked --extra rag --directory "$SERVER_DIR"
 
 # Use .venv python if available (local dev), otherwise fall back to uv run (CI)
 if [ -f "$SERVER_DIR/.venv/bin/python" ]; then
@@ -73,7 +73,7 @@ if [ -f "$SERVER_DIR/.venv/bin/python" ]; then
     NUITKA_CMD="$PYTHON -m nuitka"
 else
     echo "No .venv found, using uv run for Nuitka..."
-    NUITKA_CMD="uv run --extra rag --directory $SERVER_DIR python -m nuitka"
+    NUITKA_CMD="uv run --locked --extra rag --directory $SERVER_DIR python -m nuitka"
 fi
 
 SQLITE_VEC_DIR="$("$PYTHON" -c 'import sqlite_vec, os; print(os.path.dirname(sqlite_vec.__file__))' 2>/dev/null)"

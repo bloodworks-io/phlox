@@ -99,8 +99,8 @@ modules:
   - name: python_server
     buildsystem: simple
     build-commands:
-      - pip3 install --prefix=/app uv nuitka
-      - cd server && UV_PYTHON=/usr/bin/python3.12 /app/bin/uv sync --extra rag
+      - pip3 install --prefix=/app uv==0.10.7
+      - cd server && UV_PYTHON=/usr/bin/python3.12 /app/bin/uv sync --locked --extra rag
       - bash src-tauri/build-server.sh
       - install -d /app/bin/server_dist
       - cp -a src-tauri/server_dist/. /app/bin/server_dist/
@@ -127,7 +127,7 @@ modules:
       - ln -sf phlox-llama-server-x86_64-unknown-linux-gnu /app/bin/phlox-llama-server
       - ln -sf phlox-whisper-server-x86_64-unknown-linux-gnu /app/bin/phlox-whisper-server
       - npm ci
-      - npx tauri build --no-bundle
+      - npx tauri build --no-bundle -- --locked
       - install -Dm755 src-tauri/target/release/phlox /app/bin/phlox
       - install -Dm644 packaging/com.phlox.app.desktop
           /app/share/applications/com.phlox.app.desktop

@@ -2,7 +2,7 @@
 FROM python:3.12-slim
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv@sha256:03bdc89bb9798628846e60c3a9ad19006c8c3c724ccd2985a33145c039a0577b /uv /usr/local/bin/uv
 
 # Set the working directory inside the image
 WORKDIR /usr/src/app
@@ -17,8 +17,8 @@ RUN useradd -m -u 1000 phlox
 # First copy dependency files to leverage Docker cache
 COPY server/pyproject.toml server/uv.lock /usr/src/app/server/
 
-# Install Python dependencies
-RUN uv pip install --system --no-cache /usr/src/app/server[docker] pytest pytest-asyncio pytest-cov
+# Install Python dependencies from the locked project venv (dev group has pytest)
+RUN uv sync --directory server --locked --extra docker
 
 # Then copy the rest of the application
 COPY server/ /usr/src/app/server/
@@ -28,6 +28,7 @@ ENV PYTHONPATH=/usr/src/app
 ENV TESTING=true
 ENV DB_ENCRYPTION_KEY=test_key_12345
 ENV DOCKER_CONTAINER=true
+ENV PATH=/usr/src/app/server/.venv/bin:$PATH
 
 # Create directories and set ownership
 RUN mkdir -p /usr/src/app/build /usr/src/app/data && \

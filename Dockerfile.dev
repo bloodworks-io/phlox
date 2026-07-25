@@ -17,13 +17,15 @@ COPY . .
 FROM python:3.12-slim
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv@sha256:03bdc89bb9798628846e60c3a9ad19006c8c3c724ccd2985a33145c039a0577b /uv /usr/local/bin/uv
 
 # Set the working directory
 WORKDIR /usr/src/app
 
 # Set environment variable
 ENV DOCKER_CONTAINER=true
+# Use the uv-locked project venv
+ENV PATH=/usr/src/app/server/.venv/bin:$PATH
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -48,8 +50,8 @@ RUN mkdir -p /usr/src/app/data \
     /usr/src/app/temp \
     /usr/src/app/build
 
-# Install Python dependencies using uv
-RUN uv pip install --system --break-system-packages ./server[docker] pytest-asyncio
+# Install Python dependencies from the locked project venv
+RUN uv sync --directory server --locked --extra docker
 
 # Make a shell script to initialize the database and start both React and FastAPI
 RUN printf '%s\n' \

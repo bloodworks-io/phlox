@@ -109,7 +109,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "24"
+          node-version: "24.18.0"
           cache: "npm"
 
       - name: Install uv
@@ -131,8 +131,7 @@ jobs:
       - name: Set up Python venv with uv
         run: |
           cd server
-          uv sync --extra rag --python /opt/homebrew/bin/python3.12
-          uv pip install nuitka
+          uv sync --locked --extra rag --python /opt/homebrew/bin/python3.12
 
       - name: Install dependencies
         run: npm ci
@@ -152,7 +151,7 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          npm run tauri -- build --target aarch64-apple-darwin
+          npm run tauri -- build --target aarch64-apple-darwin -- --locked
 
       - name: Upload DMG
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
