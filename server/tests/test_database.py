@@ -24,8 +24,10 @@ def test_db(tmp_path_factory):
     # Cleanup: clear test database and remove temporary file
     db.clear_test_database()
     db.close()
-    if Path(db.db_path).exists():
-        Path(db.db_path).unlink()
+    for suffix in ("", "-wal", "-shm"):
+        p = Path(f"{db.db_path}{suffix}")
+        if p.exists():
+            p.unlink()
 
 
 def test_database_initialization(test_db):
@@ -154,6 +156,9 @@ def test_database_connection(test_db):
 
     assert isinstance(test_db.db, dbapi2.Connection)
     assert test_db.db.isolation_level is not None
+    with test_db.read() as cursor:
+        cursor.execute("PRAGMA journal_mode")
+        assert cursor.fetchone()[0].lower() == "wal"
 
 
 def test_concurrent_transactions_are_isolated(test_db):

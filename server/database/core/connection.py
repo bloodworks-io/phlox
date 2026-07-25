@@ -188,6 +188,9 @@ class PatientDatabase:
                     # New database - set up encryption
                     logging.info("No existing database, creating new database...")
                     setup_cursor.execute(pragma)
+
+                # WAL must be set after keying
+                setup_cursor.execute("PRAGMA journal_mode=WAL")
                 self.db.commit()
             finally:
                 setup_cursor.close()
