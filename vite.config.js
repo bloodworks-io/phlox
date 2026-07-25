@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, normalizePath } from "vite";
 import react from "@vitejs/plugin-react";
 import { readFileSync } from "fs";
@@ -48,6 +49,11 @@ export default defineConfig({
     // Build output directory must be 'build' for Tauri compatibility
     outDir: "build",
     emptyOutDir: true,
+  },
+
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.js"],
   },
 
 
