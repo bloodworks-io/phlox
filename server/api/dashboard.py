@@ -22,7 +22,7 @@ async def health_check():
 
 
 @router.post("/todos")
-async def add_todo(todo: TodoItem):
+def add_todo(todo: TodoItem):
     """Add a todo item."""
     try:
         new_todo = add_todo_item(todo.task)
@@ -33,7 +33,7 @@ async def add_todo(todo: TodoItem):
 
 
 @router.get("/todos")
-async def get_todos():
+def get_todos():
     """Get all todo items."""
     try:
         todos = get_todo_items()
@@ -44,7 +44,7 @@ async def get_todos():
 
 
 @router.put("/todos/{todo_id}")
-async def update_todo(todo_id: int, todo: TodoItem):
+def update_todo(todo_id: int, todo: TodoItem):
     """Update a todo item."""
     try:
         updated_todo = update_todo_item(todo_id, todo.task, todo.completed)
@@ -55,7 +55,7 @@ async def update_todo(todo_id: int, todo: TodoItem):
 
 
 @router.delete("/todos/{todo_id}")
-async def delete_todo(todo_id: int):
+def delete_todo(todo_id: int):
     """Delete a todo item."""
     try:
         delete_todo_item(todo_id)

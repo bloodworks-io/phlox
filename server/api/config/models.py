@@ -13,21 +13,21 @@ router = APIRouter()
 
 
 @router.get("/options")
-async def get_options():
+def get_options():
     """Retrieve all options configuration."""
     prompts_and_options = config_manager.get_prompts_and_options()
     return JSONResponse(content=prompts_and_options["options"])
 
 
 @router.post("/options/reset-to-defaults")
-async def reset_options_to_defaults():
+def reset_options_to_defaults():
     """Reset all model configuration options to their default values."""
     config_manager.reset_options_to_defaults()
     return {"message": "Options reset to defaults successfully"}
 
 
 @router.post("/options/{category}")
-async def update_options(category: str, data: dict = Body(...)):
+def update_options(category: str, data: dict = Body(...)):
     """Update options for a specific category."""
     config_manager.update_options(category, data)
     return {"message": f"{category} options updated successfully"}

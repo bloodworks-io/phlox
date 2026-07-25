@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get("/prompts")
-async def get_prompts():
+def get_prompts():
     """Retrieve the current prompts configuration."""
     return JSONResponse(content=config_manager.get_prompts())
 
@@ -20,7 +20,7 @@ async def get_default_prompts():
 
 
 @router.post("/prompts")
-async def update_prompts(data: dict):
+def update_prompts(data: dict):
     """Update prompts configuration with provided data."""
     config_manager.update_prompts(data)
     return {"message": "prompts.js updated successfully"}

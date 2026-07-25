@@ -41,7 +41,7 @@ async def generate_letter(request: LetterRequest):
 
 
 @router.post("/save")
-async def save_letter(request: LetterSave):
+def save_letter(request: LetterSave):
     """Saves a letter."""
     try:
         update_patient_letter(request.noteId, request.letter)
@@ -53,10 +53,10 @@ async def save_letter(request: LetterSave):
 
 
 @router.get("/fetch-letter")
-async def fetch_letter(noteId: int):
+def fetch_letter(noteId: int):
     """Fetches a letter by note ID."""
     try:
-        letter = await fetch_patient_letter(noteId)
+        letter = fetch_patient_letter(noteId)
         return JSONResponse(content={"letter": letter or "No letter attached to encounter"})
     except Exception as e:
         logging.error(f"Error fetching letter: {e}")
@@ -64,7 +64,7 @@ async def fetch_letter(noteId: int):
 
 
 @router.get("/templates")
-async def get_templates():
+def get_templates():
     """Get all letter templates."""
     try:
         templates = get_letter_templates()
@@ -88,7 +88,7 @@ async def get_templates():
 
 
 @router.get("/templates/{template_id}")
-async def get_template(template_id: int):
+def get_template(template_id: int):
     """Get a letter template by ID."""
     try:
         template = get_letter_template_by_id(template_id)
@@ -103,7 +103,7 @@ async def get_template(template_id: int):
 
 
 @router.post("/templates")
-async def create_template(template: LetterTemplate = Body(...)):
+def create_template(template: LetterTemplate = Body(...)):
     """Create a letter template."""
     try:
         template_id = save_letter_template(template)
@@ -119,7 +119,7 @@ async def create_template(template: LetterTemplate = Body(...)):
 
 
 @router.post("/templates/reset")
-async def reset_templates():
+def reset_templates():
     """Reset letter templates to default."""
     try:
         reset_default_templates()
@@ -130,7 +130,7 @@ async def reset_templates():
 
 
 @router.put("/templates/{template_id}")
-async def update_template(template_id: int, template: LetterTemplate = Body(...)):
+def update_template(template_id: int, template: LetterTemplate = Body(...)):
     """Update a letter template."""
     try:
         success = update_letter_template(template_id, template)
@@ -145,7 +145,7 @@ async def update_template(template_id: int, template: LetterTemplate = Body(...)
 
 
 @router.delete("/templates/{template_id}")
-async def delete_template(template_id: int):
+def delete_template(template_id: int):
     """Delete a letter template."""
     try:
         success = delete_letter_template(template_id)

@@ -80,7 +80,7 @@ def _check_rag_available():
 
 
 @router.get("/files")
-async def get_files():
+def get_files():
     """API endpoint to retrieve the list of document collections."""
     _check_rag_available()
     try:
@@ -92,7 +92,7 @@ async def get_files():
 
 
 @router.get("/collection_files/{collection_name}")
-async def get_collection_files(collection_name: str):
+def get_collection_files(collection_name: str):
     """API endpoint to retrieve files for a specific collection."""
     _check_rag_available()
     try:
@@ -107,7 +107,7 @@ async def get_collection_files(collection_name: str):
 
 
 @router.post("/modify")
-async def modify_collection(request: ModifyCollectionRequest):
+def modify_collection(request: ModifyCollectionRequest):
     """API endpoint to modify the name of a collection."""
     _check_rag_available()
     try:
@@ -121,7 +121,7 @@ async def modify_collection(request: ModifyCollectionRequest):
 
 
 @router.delete("/delete-collection/{name}")
-async def delete_collection_endpoint(name: str):
+def delete_collection_endpoint(name: str):
     """API endpoint to delete a collection."""
     _check_rag_available()
     try:
@@ -135,7 +135,7 @@ async def delete_collection_endpoint(name: str):
 
 
 @router.delete("/delete-file")
-async def delete_file_endpoint(request: DeleteFileRequest):
+def delete_file_endpoint(request: DeleteFileRequest):
     """API endpoint to delete a file from a collection."""
     _check_rag_available()
     try:
@@ -154,7 +154,7 @@ async def delete_file_endpoint(request: DeleteFileRequest):
 
 
 @router.patch("/update-document-metadata")
-async def update_document_metadata(request: UpdateDocumentMetadataRequest):
+def update_document_metadata(request: UpdateDocumentMetadataRequest):
     """Update a document's title / source / focus_area (partial)."""
     _check_rag_available()
     try:
@@ -177,7 +177,7 @@ async def update_document_metadata(request: UpdateDocumentMetadataRequest):
 
 
 @router.get("/download-pdf/{collection_name}/{filename}")
-async def download_pdf(collection_name: str, filename: str):
+def download_pdf(collection_name: str, filename: str):
     """Download the original PDF stored for a file in a collection."""
     _check_rag_available()
     try:
@@ -290,7 +290,7 @@ async def extract_pdf_info_from_text(payload: ExtractTextPayload):
 
 
 @router.post("/commit-to-vectordb")
-async def commit_to_db(request: CommitRequest):
+def commit_to_db(request: CommitRequest):
     """API endpoint to commit data to the database."""
     _check_rag_available()
     try:
@@ -312,7 +312,7 @@ async def commit_to_db(request: CommitRequest):
 
 
 @router.post("/commit-direct")
-async def commit_direct(request: BulkCommitRequest):
+def commit_direct(request: BulkCommitRequest):
     """API endpoint to commit a document with pre-extracted text in a single call.
 
     Used by the bulk upload path.
@@ -345,7 +345,7 @@ async def commit_direct(request: BulkCommitRequest):
 
 
 @router.post("/re-embed")
-async def re_embed():
+def re_embed():
     """API endpoint to re-embed all collections with the current embedding model."""
     _check_rag_available()
     try:
@@ -370,7 +370,7 @@ async def re_embed_stream():
 
 
 @router.post("/clear-database")
-async def clear_database():
+def clear_database():
     """API endpoint to clear the entire RAG database."""
     _check_rag_available()
     try:

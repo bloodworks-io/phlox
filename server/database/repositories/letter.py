@@ -30,7 +30,7 @@ def update_patient_letter(note_id: int, letter: str) -> None:
         raise
 
 
-async def fetch_patient_letter(note_id: int) -> str | None:
+def fetch_patient_letter(note_id: int) -> str | None:
     """
     Fetch a patient's final letter.
 

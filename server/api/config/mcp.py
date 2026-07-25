@@ -32,21 +32,21 @@ class McpServerUpdate(BaseModel):
 
 
 @router.get("/mcp")
-async def list_mcp_servers():
+def list_mcp_servers():
     """List all configured MCP servers."""
     servers = mcp_config_manager.get_servers()
     return JSONResponse(content={"servers": servers})
 
 
 @router.get("/mcp/enabled")
-async def list_enabled_mcp_servers():
+def list_enabled_mcp_servers():
     """List only enabled MCP servers."""
     servers = mcp_config_manager.get_enabled_servers()
     return JSONResponse(content={"servers": servers})
 
 
 @router.get("/mcp/{server_id}")
-async def get_mcp_server(server_id: int):
+def get_mcp_server(server_id: int):
     """Get a specific MCP server by ID."""
     server = mcp_config_manager.get_server(server_id)
     if not server:
@@ -55,7 +55,7 @@ async def get_mcp_server(server_id: int):
 
 
 @router.post("/mcp")
-async def add_mcp_server(data: McpServerCreate):
+def add_mcp_server(data: McpServerCreate):
     """Add a new MCP server configuration."""
     try:
         server = mcp_config_manager.add_server(
@@ -73,7 +73,7 @@ async def add_mcp_server(data: McpServerCreate):
 
 
 @router.put("/mcp/{server_id}")
-async def update_mcp_server(server_id: int, data: McpServerUpdate):
+def update_mcp_server(server_id: int, data: McpServerUpdate):
     """Update an existing MCP server configuration."""
     server = mcp_config_manager.update_server(
         server_id=server_id,
@@ -89,7 +89,7 @@ async def update_mcp_server(server_id: int, data: McpServerUpdate):
 
 
 @router.delete("/mcp/{server_id}")
-async def delete_mcp_server(server_id: int):
+def delete_mcp_server(server_id: int):
     """Delete an MCP server configuration."""
     success = mcp_config_manager.remove_server(server_id)
     if not success:
@@ -98,7 +98,7 @@ async def delete_mcp_server(server_id: int):
 
 
 @router.post("/mcp/{server_id}/toggle")
-async def toggle_mcp_server(server_id: int, enabled: bool = Body(..., embed=True)):
+def toggle_mcp_server(server_id: int, enabled: bool = Body(..., embed=True)):
     """Enable or disable an MCP server."""
     success = mcp_config_manager.toggle_server(server_id, enabled)
     if not success:

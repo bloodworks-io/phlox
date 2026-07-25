@@ -51,7 +51,7 @@ async def test_save_letter(monkeypatch):
 
 
 def test_fetch_letter(monkeypatch):
-    async def fake_fetch_patient_letter(_noteId):
+    def fake_fetch_patient_letter(_noteId):
         return "Fetched letter content."
 
     monkeypatch.setattr("server.api.letter.fetch_patient_letter", fake_fetch_patient_letter)

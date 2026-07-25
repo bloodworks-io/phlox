@@ -54,7 +54,7 @@ _adaptive_refinement_running = False
 
 
 @router.get("/consent")
-async def get_consent(ur_number: str):
+def get_consent(ur_number: str):
     """Return the ambient-scribe consent state for a patient (keyed by ur_number)."""
     try:
         consent = get_scribe_consent(ur_number)
@@ -67,7 +67,7 @@ async def get_consent(ur_number: str):
 
 
 @router.post("/consent")
-async def set_consent(request: ScribeConsentRequest):
+def set_consent(request: ScribeConsentRequest):
     """Record a patient's ambient-scribe consent decision and return the new state."""
     try:
         consent = set_scribe_consent(request.ur_number, request.consented)
@@ -96,11 +96,11 @@ async def save_patient_data(request: SavePatientRequest, background_tasks: Backg
 
         # Save or update the patient immediately (no LLM call)
         if patient.id:
-            update_patient(patient)
+            await asyncio.to_thread(update_patient, patient)
             logging.info(f"Patient updated with ID: {patient.id}")
             note_id = patient.id
         else:
-            note_id = save_patient(patient)
+            note_id = await asyncio.to_thread(save_patient, patient)
             logging.info(f"Patient saved with ID: {note_id}")
 
         # Queue background summarization
@@ -155,8 +155,10 @@ async def process_encounter_summarization(
         # Perform the actual summarization (LLM calls)
         encounter_summary, primary_condition = await summarise_encounter(patient=patient_data)
 
-        # Update the patient record with the summary
-        update_patient_summary(note_id, encounter_summary, primary_condition)
+        # Persist the summary off the event loop.
+        await asyncio.to_thread(
+            update_patient_summary, note_id, encounter_summary, primary_condition
+        )
 
         logging.info(f"Completed summarization for patient {note_id}")
     except Exception as e:
@@ -182,7 +184,7 @@ async def process_adaptive_refinement(template_key: str, refinement_data: dict):
         )
 
         # Get the template to validate it exists
-        template_data = get_template_by_key(template_key, exact_match=False)
+        template_data = await asyncio.to_thread(get_template_by_key, template_key, False)
         if not template_data:
             logging.warning(f"Template '{template_key}' not found for adaptive refinement")
             return
@@ -216,10 +218,11 @@ async def process_adaptive_refinement(template_key: str, refinement_data: dict):
                 )
 
                 # Save the updated instructions
-                save_success = update_field_adaptive_instructions(
-                    template_key=template_data["template_key"],
-                    field_key=field_key,
-                    new_instructions=updated_instructions,
+                save_success = await asyncio.to_thread(
+                    update_field_adaptive_instructions,
+                    template_data["template_key"],
+                    field_key,
+                    updated_instructions,
                 )
 
                 if save_success:
@@ -239,7 +242,7 @@ async def process_adaptive_refinement(template_key: str, refinement_data: dict):
 
 
 @router.get("/list")
-async def get_patients(
+def get_patients(
     date: str,
     template_key: str | None = None,
     detailed: str | None = None,
@@ -287,7 +290,7 @@ async def get_patients(
 
 
 @router.get("/id/{id}")
-async def get_patient(id: int, include_history: bool = False):
+def get_patient(id: int, include_history: bool = False):
     """Get patient by ID with option to include history."""
     try:
         patient = get_patient_by_id(id)
@@ -308,7 +311,7 @@ async def get_patient(id: int, include_history: bool = False):
 
 
 @router.get("/id/{id}/history")
-async def get_patient_history_endpoint(id: int):
+def get_patient_history_endpoint(id: int):
     """Get patient's historical encounters with persistent fields."""
     try:
         patient = get_patient_by_id(id)
@@ -323,7 +326,7 @@ async def get_patient_history_endpoint(id: int):
 
 
 @router.get("/search")
-async def search_patient(q: str | None = None, ur_number: str | None = None):
+def search_patient(q: str | None = None, ur_number: str | None = None):
     """Search patients by UR number (exact) or name (substring). Accepts a
     generic `q` (UR or name) or, for backward compatibility, `ur_number`."""
     query = q if q is not None else ur_number
@@ -338,7 +341,7 @@ async def search_patient(q: str | None = None, ur_number: str | None = None):
 
 
 @router.get("/history")
-async def get_history_by_ur_number(ur_number: str, template_key: str | None = None):
+def get_history_by_ur_number(ur_number: str, template_key: str | None = None):
     """Get patient's historical encounters by UR number, optionally filtered by template type."""
     try:
         history = get_patient_history(ur_number, template_key)
@@ -365,7 +368,7 @@ async def get_patient_summary(id: int):
 
 
 @router.delete("/id/{id}")
-async def delete_patient(id: int):
+def delete_patient(id: int):
     """Delete a patient record."""
     try:
         success = delete_patient_by_id(id)
@@ -378,7 +381,7 @@ async def delete_patient(id: int):
 
 
 @router.post("/update-jobs-list")
-async def update_jobs_list(update: JobsListUpdate):
+def update_jobs_list(update: JobsListUpdate):
     """Update a patient's job list."""
 
     try:
@@ -429,7 +432,7 @@ async def extract_jobs(request: JobExtractionRequest):
 
 
 @router.get("/outstanding-jobs")
-async def get_patients_with_jobs():
+def get_patients_with_jobs():
     """Get all patients with outstanding jobs."""
     try:
         patients = get_patients_with_outstanding_jobs()
@@ -454,7 +457,7 @@ async def get_patients_with_jobs():
 
 
 @router.get("/incomplete-jobs-count")
-async def get_incomplete_jobs_count():
+def get_incomplete_jobs_count():
     """Get the count of incomplete jobs."""
     try:
         incomplete_jobs_count = count_incomplete_jobs()
@@ -468,7 +471,7 @@ async def get_incomplete_jobs_count():
 async def generate_reasoning_stream(note_id: int):
     """Run reasoning analysis with streaming status updates via Server-Sent Events."""
     try:
-        patient = get_patient_by_id(note_id)
+        patient = await asyncio.to_thread(get_patient_by_id, note_id)
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
@@ -484,7 +487,7 @@ async def generate_reasoning_stream(note_id: int):
             ):
                 if event["type"] == "result":
                     # Save to database before sending
-                    update_patient_reasoning(note_id, event["data"])
+                    await asyncio.to_thread(update_patient_reasoning, note_id, event["data"])
                 yield f"data: {json.dumps(event)}\n\n"
 
         return StreamingResponse(generate(), media_type="text/event-stream")
