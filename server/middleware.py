@@ -422,3 +422,53 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Reset"] = str(int(now + self.WINDOW_SECONDS))
 
         return response
+
+
+class AuditMiddleware(BaseHTTPMiddleware):
+    """Record every API request to the audit_log table.
+
+    Runs after TrustedProxy (so ``client_ip`` is populated) and wraps the auth
+    middlewares, so authenticated requests, auth denials, and rate-limited
+    responses are all recorded. Stores request identifiers only — never bodies
+    or PHI content. Audit failures never propagate: logging is best-effort.
+    """
+
+    async def dispatch(self, request, call_next):
+        from server.database.repositories.audit import log_event
+
+        path = request.url.path
+
+        # Only audit real API traffic. Skip:
+        #  - the audit endpoints themselves (write-on-read loop)
+        #  - the frontend config-status poller (fires every ~15s, would dominate
+        #    the log and drown out real access events)
+        if not path.startswith("/api/") or path.startswith("/api/audit"):
+            return await call_next(request)
+        if path == "/api/config/status" and request.method == "GET":
+            return await call_next(request)
+
+        start = time.monotonic()
+        try:
+            response = await call_next(request)
+            status = response.status_code
+        except Exception:
+            # Request never produced a response; record as 500 and re-raise.
+            log_event(
+                method=request.method,
+                path=path,
+                status=500,
+                actor=getattr(request.state, "user", "local"),
+                client_ip=getattr(request.state, "client_ip", None),
+                duration_ms=int((time.monotonic() - start) * 1000),
+            )
+            raise
+
+        log_event(
+            method=request.method,
+            path=path,
+            status=status,
+            actor=getattr(request.state, "user", "local"),
+            client_ip=getattr(request.state, "client_ip", None),
+            duration_ms=int((time.monotonic() - start) * 1000),
+        )
+        return response
