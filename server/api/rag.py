@@ -11,7 +11,6 @@ from fastapi import (
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from server.constants import TEMP_DIR
 from server.rag.progress import stream_re_embed_progress
 from server.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 from server.schemas.rag import (
@@ -208,28 +207,22 @@ async def extract_pdf_info(file: UploadFile = File(...)):
     _check_rag_available()
     vector_store_manager = get_vector_store_manager()
     logger.info(f"Request received for /extract-pdf-info: filename='{file.filename}'")
-    temp_dir = TEMP_DIR
-    temp_dir.mkdir(parents=True, exist_ok=True)  # Ensure temp dir exists
-    file_location = temp_dir / file.filename
 
     if not file.filename:
         logger.error("Received /extract-pdf-info request with no filename.")
         raise HTTPException(status_code=400, detail="No filename provided in upload.")
 
     try:
-        # Save the uploaded file temporarily
-        logger.debug(f"Saving uploaded file to '{file_location}'")
-        with file_location.open("wb") as f:
-            content = await file.read()
-            f.write(content)
-        logger.debug(f"File saved successfully. Size: {len(content)} bytes.")
+        # Read bytes directly — no temp file.
+        content = await file.read()
+        logger.debug(f"Received upload: {len(content)} bytes")
 
         # Stage raw PDF bytes for optional storage
         vector_store_manager.set_extracted_pdf(content)
 
-        # Extract text from the PDF (synchronous)
-        logger.info(f"Extracting text from '{file_location}'")
-        extracted_text = vector_store_manager.extract_text_from_pdf(file_location)
+        # Extract text directly from bytes (no disk write)
+        logger.info(f"Extracting text from upload ({len(content)} bytes)")
+        extracted_text = vector_store_manager.extract_text_from_pdf(content)
         if not extracted_text:
             logger.warning(
                 f"No text extracted from PDF '{file.filename}'. It might be empty or image-based."
@@ -246,17 +239,6 @@ async def extract_pdf_info(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Error processing PDF '{file.filename}': {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}") from e
-    finally:
-        # Ensure the temporary file is always removed
-        if file_location.exists():
-            try:
-                logger.debug(f"Removing temporary file '{file_location}'")
-                file_location.unlink()
-            except OSError as e:
-                logger.error(
-                    f"Error removing temporary file '{file_location}': {e}",
-                    exc_info=True,
-                )
 
 
 @router.post("/extract-pdf-info-from-text")
