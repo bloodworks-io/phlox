@@ -35,6 +35,7 @@ from server.middleware import (
     SecurityHeadersMiddleware,
     TrustedProxyMiddleware,
 )
+from server.utils.parent_watchdog import start_parent_watchdog
 
 logging.basicConfig(
     level=logging.INFO,
@@ -299,6 +300,14 @@ def start_server_for_desktop():
         f"PORTS:{server_port},{llama_port},{whisper_port},{embedding_port}|TOKEN:{get_request_token()}",
         flush=True,
     )
+
+    # Start parent-PID watchdog
+    parent_pid = os.environ.get("PHLOX_PARENT_PID")
+    if parent_pid:
+        try:
+            start_parent_watchdog(int(parent_pid))
+        except ValueError:
+            logger.warning("Invalid PHLOX_PARENT_PID: %r", parent_pid)
 
     config = uvicorn.Config(
         app,
