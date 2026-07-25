@@ -2,7 +2,7 @@
 > Phlox is an experimental project. Please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
 
 <p align="center">
-  <img src="/docs/images/phlox_icon.png" width="150" alt="Phlox Logo">
+  <img src="/assets/phlox_icon.png" width="150" alt="Phlox Logo">
 </p>
 
 <div align="center">
@@ -12,6 +12,7 @@
 [![CodeQL](https://github.com/bloodworks-io/phlox/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/bloodworks-io/phlox/actions/workflows/github-code-scanning/codeql)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docs](https://img.shields.io/badge/docs-phlox.bloodworks.io-blue)](https://phlox.bloodworks.io/docs)
 
 </div>
 
@@ -29,7 +30,7 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 - **📄 Document Processing:** Fill-in forms, extract demographics, and more using local Vision Language Models.
 
 <p align="center">
-  <img src="/docs/images/readme_screenshot.png" width="600" alt="Phlox Screenshot">
+  <img src="/assets/readme_screenshot.png" width="600" alt="Phlox Screenshot">
 </p>
 
 ## Getting Started
@@ -61,7 +62,7 @@ services:
       - DB_ENCRYPTION_KEY=          # Required: generate a strong random key
       - TZ=                         # e.g. America/New_York
       - ALLOWED_ORIGINS=*           # Or your origin, e.g. https://phlox.example.com
-      # Optional — proxy auth + rate limiting (see docs/setup.md#critical-security-warning)
+      # Optional — proxy auth + rate limiting (see https://phlox.bloodworks.io/docs/setup#critical-security-warning)
       # - PROXY_AUTH_ENABLED=true
       # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
       # - PROXY_AUTH_ALLOWED_USERS=user1,user2
@@ -71,7 +72,7 @@ services:
       - ./logs:/usr/src/app/logs    # Optional: persist logs
 ```
 
-Then `docker compose up -d`. See the [Setup guide](docs/setup.md) for full instructions including `.env` configuration.
+Then `docker compose up -d`. See the [Setup guide](https://phlox.bloodworks.io/docs/setup) for full instructions including `.env` configuration.
 
 The Docker image does not have any inference or transcription capability built-in. OpenAI compatible endpoints are required for transcription and note generation. 
 
@@ -104,7 +105,7 @@ AI outputs can be unreliable. Always verify AI-generated content and use profess
 
 [MIT License](LICENSE)
 
-Third-party models, runtimes, and library attributions: [Credits](docs/credits.md).
+Third-party models, runtimes, and library attributions: [Credits](https://phlox.bloodworks.io/docs/credits).
 
 ## Contributing 
 
