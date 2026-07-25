@@ -43,7 +43,7 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-    versioning-strategy: increase-if-necessary
+    versioning-strategy: auto
     cooldown:
       default-days: 3
 

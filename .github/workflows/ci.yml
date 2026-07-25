@@ -81,7 +81,10 @@ jobs:
       - run: npm ci
       - name: Verify npm honors min-release-age cooldown
         run: test "$(npm config get min-release-age)" = "3"
-      - run: npm audit --audit-level=high
+      - name: npm audit
+        id: npm-audit
+        continue-on-error: true
+        run: npm audit --audit-level=high
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -93,10 +96,20 @@ jobs:
           cache-dependency-glob: "server/uv.lock"
 
       - run: cd server && uv sync --locked --extra docker
-      - run: cd server && uv run pip-audit --local --strict --skip-editable
+      - name: pip-audit
+        id: pip-audit
+        continue-on-error: true
+        run: cd server && uv run pip-audit --local --strict --skip-editable
 
       - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
-      - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+      - name: cargo audit
+        id: cargo-audit
+        continue-on-error: true
+        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: src-tauri
+
+      - name: Fail if an audit found vulnerabilities
+        if: always() && (steps.npm-audit.outcome == 'failure' || steps.pip-audit.outcome == 'failure' || steps.cargo-audit.outcome == 'failure')
+        run: exit 1
