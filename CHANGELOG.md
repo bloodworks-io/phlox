@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.3](https://github.com/bloodworks-io/phlox/compare/v2.2.2...v2.2.3) (2026-07-27)
+
+
+### Bug Fixes
+
+* **ci:** Cargo lockfile drift corrected (again) ([0a3c0b7](https://github.com/bloodworks-io/phlox/commit/0a3c0b73df3bf5c267b42084dd7354e3cc4ad8dd))
+
 ## [2.2.2](https://github.com/bloodworks-io/phlox/compare/v2.2.1...v2.2.2) (2026-07-27)
 
 
