@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/bloodworks-io/phlox/compare/v2.2.0...v2.2.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* lockfile update for build ([165f0d8](https://github.com/bloodworks-io/phlox/commit/165f0d8de53e2f7cd0dfb42aaee8049e30ccae2a))
+
 ## [2.2.0](https://github.com/bloodworks-io/phlox/compare/v2.1.1...v2.2.0) (2026-07-27)
 
 
