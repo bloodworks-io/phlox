@@ -14,6 +14,11 @@
                     "jsonpath": "$.package.version"
                 },
                 {
+                    "type": "toml",
+                    "path": "src-tauri/Cargo.lock",
+                    "jsonpath": "$.package[?(@.name=='phlox')].version"
+                },
+                {
                     "type": "json",
                     "path": "src-tauri/tauri.conf.json",
                     "jsonpath": "$.version"
