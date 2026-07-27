@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.2](https://github.com/bloodworks-io/phlox/compare/v2.2.1...v2.2.2) (2026-07-27)
+
+
+### Bug Fixes
+
+* **ci:** keep Cargo.lock in sync on release ([08300ba](https://github.com/bloodworks-io/phlox/commit/08300ba57f6afb272e2c5a648e99232b02ed0b80))
+* **dev:** anonymous volume for python in dev container ([f1a1bc4](https://github.com/bloodworks-io/phlox/commit/f1a1bc4591b51d25c3ba398ffef278835d0f3854))
+
 ## [2.2.1](https://github.com/bloodworks-io/phlox/compare/v2.2.0...v2.2.1) (2026-07-27)
 
 

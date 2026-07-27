@@ -889,7 +889,7 @@ wheels = [
 
 [[package]]
 name = "phlox-server"
-version = "2.2.1"
+version = "2.2.2"
 source = { virtual = "." }
 dependencies = [
     { name = "apscheduler" },
