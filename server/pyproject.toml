@@ -19,7 +19,7 @@ dependencies = [
 [project.optional-dependencies]
 rag = [
     "mcp==1.28.1",
-    "numpy==2.4.2",
+    "numpy==2.5.1",
     "pypdf==6.14.2",
     "sqlite-vec==0.1.9",
     "tiktoken==0.12.0",
