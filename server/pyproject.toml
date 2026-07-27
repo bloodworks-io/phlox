@@ -6,7 +6,7 @@ dependencies = [
     "APScheduler==3.11.3",
     "fastapi==0.139.1",
     "httpx==0.28.1",
-    "json-repair==0.60.1",
+    "json-repair==0.61.7",
     "openai==2.48.0",
     "platformdirs==4.10.0",
     "pydantic==2.12.5",
