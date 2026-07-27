@@ -8,7 +8,7 @@
     },
     "packageManager": "npm@11.16.0",
     "dependencies": {
-        "@chakra-ui/react": "3.36.0",
+        "@chakra-ui/react": "3.36.1",
         "@emotion/react": "11.14.0",
         "@fontsource/roboto": "5.2.10",
         "@fontsource/space-grotesk": "5.3.0",
