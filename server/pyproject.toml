@@ -87,4 +87,5 @@ include = ["tests/**"]
 possibly-unresolved-reference = "warn"
 
 [tool.uv]
+required-version = "==0.11.32"
 exclude-newer = "3 days"

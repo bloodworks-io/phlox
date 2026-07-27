@@ -26,6 +26,11 @@
                     "type": "toml",
                     "path": "server/pyproject.toml",
                     "jsonpath": "$.project.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "server/uv.lock",
+                    "jsonpath": "$.package[?(@.source.virtual)].version"
                 }
             ]
         }
