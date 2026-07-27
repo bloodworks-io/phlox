@@ -310,7 +310,7 @@ async def analyze_document_visual(payload: VisualDocumentRequest):
 
 
 @router.get("/vision-capability/current", response_model=VisionCurrentCapabilityResponse)
-async def get_current_vision_capability():
+def get_current_vision_capability():
     """Return cached vision capability for the currently selected provider/base_url/model."""
     config = config_manager.get_config()
     provider = config.get("LLM_PROVIDER", "openai")

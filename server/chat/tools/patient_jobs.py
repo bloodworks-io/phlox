@@ -32,38 +32,39 @@ async def get_patient_jobs(
         Dict with patient info and their jobs list
     """
     try:
-        if ur_number:
-            # Search by UR number
-            get_db().cursor.execute(
-                """
-                SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
-                       p.first_name, p.last_name, p.dob
-                FROM encounters e
-                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                WHERE e.ur_number = ?
-                ORDER BY e.encounter_date DESC
-                LIMIT 1
-                """,
-                (ur_number,),
-            )
-        elif patient_name:
-            # Search by name (case-insensitive partial match)
-            get_db().cursor.execute(
-                """
-                SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
-                       p.first_name, p.last_name, p.dob
-                FROM encounters e
-                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
-                ORDER BY e.encounter_date DESC
-                LIMIT 1
-                """,
-                (f"%{patient_name}%",),
-            )
-        else:
-            return {"success": False, "error": "Either ur_number or patient_name is required"}
+        with get_db().read() as cursor:
+            if ur_number:
+                # Search by UR number
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+                           p.first_name, p.last_name, p.dob
+                    FROM encounters e
+                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                    WHERE e.ur_number = ?
+                    ORDER BY e.encounter_date DESC
+                    LIMIT 1
+                    """,
+                    (ur_number,),
+                )
+            elif patient_name:
+                # Search by name (case-insensitive partial match)
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+                           p.first_name, p.last_name, p.dob
+                    FROM encounters e
+                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                    ORDER BY e.encounter_date DESC
+                    LIMIT 1
+                    """,
+                    (f"%{patient_name}%",),
+                )
+            else:
+                return {"success": False, "error": "Either ur_number or patient_name is required"}
 
-        row = get_db().cursor.fetchone()
+            row = cursor.fetchone()
         if not row:
             return {
                 "success": False,

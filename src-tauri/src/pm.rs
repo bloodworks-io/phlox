@@ -744,6 +744,8 @@ fn start_server() -> Result<ManagedProcess, String> {
     cmd.stdin(Stdio::piped());
     cmd.stdout(Stdio::piped());
     cmd.env("RATE_LIMIT_ENABLED", "true");
+    // Tell Python which PID to watch so it self-terminates if we die
+    cmd.env("PHLOX_PARENT_PID", std::process::id().to_string());
 
     if cfg!(debug_assertions) {
         cmd.env("PHLOX_DEMO_MODE", "true");

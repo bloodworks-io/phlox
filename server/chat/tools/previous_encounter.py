@@ -33,29 +33,30 @@ async def get_previous_encounter(
     """
     try:
         # Fetch full patient record, filtering out same-date encounters
-        if current_encounter_date:
-            get_db().cursor.execute(
-                """
-                SELECT id, encounter_date, template_key, template_data, encounter_summary
-                FROM encounters
-                WHERE ur_number = ? AND encounter_date < ?
-                ORDER BY encounter_date DESC
-                LIMIT 1
-                """,
-                (ur_number, current_encounter_date),
-            )
-        else:
-            get_db().cursor.execute(
-                """
-                SELECT id, encounter_date, template_key, template_data, encounter_summary
-                FROM encounters
-                WHERE ur_number = ?
-                ORDER BY encounter_date DESC
-                LIMIT 1
-                """,
-                (ur_number,),
-            )
-        row = get_db().cursor.fetchone()
+        with get_db().read() as cursor:
+            if current_encounter_date:
+                cursor.execute(
+                    """
+                    SELECT id, encounter_date, template_key, template_data, encounter_summary
+                    FROM encounters
+                    WHERE ur_number = ? AND encounter_date < ?
+                    ORDER BY encounter_date DESC
+                    LIMIT 1
+                    """,
+                    (ur_number, current_encounter_date),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT id, encounter_date, template_key, template_data, encounter_summary
+                    FROM encounters
+                    WHERE ur_number = ?
+                    ORDER BY encounter_date DESC
+                    LIMIT 1
+                    """,
+                    (ur_number,),
+                )
+            row = cursor.fetchone()
         if row:
             return dict(row)
         return None

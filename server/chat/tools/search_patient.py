@@ -72,8 +72,9 @@ async def search_patients(
         query += " ORDER BY last_encounter DESC"
         query += f" LIMIT {limit}"
 
-        get_db().cursor.execute(query, params)
-        rows = get_db().cursor.fetchall()
+        with get_db().read() as cursor:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
 
         patients = []
         for row in rows:

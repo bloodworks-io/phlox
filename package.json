@@ -3,8 +3,10 @@
     "version": "2.1.1",
     "private": true,
     "engines": {
-        "node": ">=24 <25"
+        "node": ">=24 <25",
+        "npm": ">=11.12.1"
     },
+    "packageManager": "npm@11.16.0",
     "dependencies": {
         "@chakra-ui/react": "3.36.0",
         "@emotion/react": "11.14.0",
@@ -57,6 +59,8 @@
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@tauri-apps/cli": "^2.10.1",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
         "@types/node": "^25.9.3",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",
@@ -65,9 +69,11 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "eslint-plugin-unused-imports": "^4.4.1",
         "globals": "^17.7.0",
+        "jsdom": "^29.1.1",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.62.0",
         "vite": "^8.1.0",
-        "vite-plugin-static-copy": "^4.1.1"
+        "vite-plugin-static-copy": "^4.1.1",
+        "vitest": "^4.1.10"
     }
 }

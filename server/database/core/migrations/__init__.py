@@ -7,6 +7,7 @@ from server.database.core.migrations import (
     v4_user_settings_and_cleanup,
     v5_mcp_servers,
     v6_patient_profiles,
+    v7_audit_log,
 )
 from server.database.core.migrations.runner import run_migrations
 
@@ -17,6 +18,7 @@ MIGRATIONS = {
     4: v4_user_settings_and_cleanup.migrate,
     5: v5_mcp_servers.migrate,
     6: v6_patient_profiles.migrate,
+    7: v7_audit_log.migrate,
 }
 
 __all__ = ["run_migrations", "MIGRATIONS"]

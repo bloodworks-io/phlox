@@ -72,13 +72,13 @@ async def create_template(
 
 
 @router.get("/templates")
-async def list_templates():
+def list_templates():
     """List all form templates (without PDF data)."""
     return _get_store().list_templates()
 
 
 @router.get("/templates/{template_id}")
-async def get_template(template_id: str):
+def get_template(template_id: str):
     """Get a template with its field definitions."""
     template = _get_store().get_template(template_id)
     if template is None:
@@ -87,7 +87,7 @@ async def get_template(template_id: str):
 
 
 @router.delete("/templates/{template_id}")
-async def delete_template(template_id: str):
+def delete_template(template_id: str):
     """Delete a template and all its fields."""
     if not _get_store().delete_template(template_id):
         raise HTTPException(status_code=404, detail="Template not found")
@@ -95,7 +95,7 @@ async def delete_template(template_id: str):
 
 
 @router.get("/templates/{template_id}/pdf")
-async def get_template_pdf(template_id: str):
+def get_template_pdf(template_id: str):
     """Serve the raw PDF for a template."""
     pdf_data = _get_store().get_template_pdf(template_id)
     if pdf_data is None:
@@ -166,7 +166,7 @@ async def replace_template_pdf(
 
 
 @router.put("/templates/{template_id}/fields")
-async def update_fields(template_id: str, body: UpdateFieldsRequest):
+def update_fields(template_id: str, body: UpdateFieldsRequest):
     """Replace all field definitions for a template."""
     try:
         fields = _get_store().update_fields(template_id, [f.model_dump() for f in body.fields])

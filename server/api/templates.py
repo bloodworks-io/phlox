@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/default/{template_key}")
-async def set_default_template_endpoint(template_key: str):
+def set_default_template_endpoint(template_key: str):
     """Set the default template."""
     try:
         set_default_template(template_key)
@@ -31,7 +31,7 @@ async def set_default_template_endpoint(template_key: str):
 
 
 @router.get("/default")
-async def get_default_template_endpoint():
+def get_default_template_endpoint():
     """Get the default template key."""
     try:
         template = get_default_template()
@@ -46,7 +46,7 @@ async def get_default_template_endpoint():
 
 
 @router.get("/{template_key}")
-async def get_template(template_key: str):
+def get_template(template_key: str):
     """Get a specific template by its key."""
     try:
         template = get_template_by_key(template_key)
@@ -59,7 +59,7 @@ async def get_template(template_key: str):
 
 
 @router.delete("/{template_key}")
-async def delete_template(template_key: str):
+def delete_template(template_key: str):
     """Delete a template if it's not a default template."""
     try:
         if template_key.startswith(("phlox_", "soap_", "progress_")):
@@ -77,7 +77,7 @@ async def delete_template(template_key: str):
 
 
 @router.post("/{template_key}/fields/{field_key}/adaptive-instructions/reset")
-async def reset_adaptive_instructions(template_key: str, field_key: str):
+def reset_adaptive_instructions(template_key: str, field_key: str):
     """
     Reset (clear) the adaptive refinement instructions for a given field in a template.
     """
@@ -177,7 +177,7 @@ async def consolidate_adaptive_instructions_endpoint(template_key: str, field_ke
 
 
 @router.get("")
-async def get_templates():
+def get_templates():
     """Get all available templates."""
     try:
         templates = get_all_templates()
@@ -189,7 +189,7 @@ async def get_templates():
 
 
 @router.post("")
-async def save_templates(
+def save_templates(
     templates: list[dict] = Body(..., description="List of templates to save"),
 ):
     """Save or update multiple templates."""

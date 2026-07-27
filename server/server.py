@@ -29,12 +29,14 @@ from server.constants import (
     RATE_LIMIT_ENABLED,
 )
 from server.middleware import (
+    AuditMiddleware,
     LocalTokenMiddleware,
     ProxyAuthMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
     TrustedProxyMiddleware,
 )
+from server.utils.parent_watchdog import start_parent_watchdog
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +78,10 @@ async def lifespan(_app: FastAPI):
         "interval",
         minutes=5,
     )
+    # Purge expired audit log rows once per day
+    from server.database.repositories.audit import purge_old_events
+
+    scheduler.add_job(purge_old_events, "interval", hours=24)
 
     yield
 
@@ -148,7 +154,7 @@ def initialize_and_get_app():
         app.add_middleware(RateLimitMiddleware)
         logger.info("Rate limiting enabled")
 
-    # TrustedProxy must be added after RateLimit so it runs BEFORE RateLimit
+    app.add_middleware(AuditMiddleware)
     app.add_middleware(TrustedProxyMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
 
@@ -200,8 +206,9 @@ def initialize_and_get_app():
     app.include_router(templates.router, prefix="/api/templates")
     app.include_router(letter.router, prefix="/api/letter")
 
-    from server.api import pdf_forms
+    from server.api import audit, pdf_forms
 
+    app.include_router(audit.router, prefix="/api/audit")
     app.include_router(pdf_forms.router, prefix="/api/pdf-forms")
 
     # React app routes
@@ -299,6 +306,14 @@ def start_server_for_desktop():
         f"PORTS:{server_port},{llama_port},{whisper_port},{embedding_port}|TOKEN:{get_request_token()}",
         flush=True,
     )
+
+    # Start parent-PID watchdog
+    parent_pid = os.environ.get("PHLOX_PARENT_PID")
+    if parent_pid:
+        try:
+            start_parent_watchdog(int(parent_pid))
+        except ValueError:
+            logger.warning("Invalid PHLOX_PARENT_PID: %r", parent_pid)
 
     config = uvicorn.Config(
         app,

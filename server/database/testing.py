@@ -6,29 +6,28 @@ This module provides utilities for testing database functionality.
 import logging
 
 
-def clear_test_database(db, cursor, is_test):
+def clear_test_database(patient_db):
     """Clear all test data from database.
 
     Args:
-        db: Database connection
-        cursor: Database cursor
-        is_test: Whether this is a test database
+        patient_db: PatientDatabase instance (only cleared when in test mode)
     """
-    if is_test:
-        tables = [
-            "encounters",
-            "patient_profiles",
-            "clinical_templates",
-            "todos",
-            "config",
-            "prompts",
-            "options",
-            "schema_version",
-        ]
-        try:
+    if not patient_db.is_test:
+        return
+    tables = [
+        "encounters",
+        "patient_profiles",
+        "clinical_templates",
+        "todos",
+        "config",
+        "prompts",
+        "options",
+        "schema_version",
+    ]
+    try:
+        with patient_db.transaction() as cursor:
             for table in tables:
                 cursor.execute(f"DELETE FROM {table}")  # nosec B608
-            db.commit()
-        except Exception as e:
-            logging.error(f"Failed to clear test database: {str(e)}")
-            raise
+    except Exception as e:
+        logging.error(f"Failed to clear test database: {str(e)}")
+        raise

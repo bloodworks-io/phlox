@@ -14,7 +14,7 @@ from server.chat.streaming.response import (
     status_message,
 )
 from server.database.core.connection import get_db
-from server.database.repositories.jobs import update_patient_jobs_list
+from server.database.repositories.jobs import _update_jobs_list_with_cursor
 
 logger = logging.getLogger(__name__)
 
@@ -22,79 +22,80 @@ logger = logging.getLogger(__name__)
 async def complete_job(note_id: int, job_id: int) -> dict:
     """Mark a job as completed for a patient."""
     try:
-        # Get the patient record
-        get_db().cursor.execute(
-            """
-            SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
-                   p.first_name, p.last_name
-            FROM encounters e
-            LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-            WHERE e.id = ?
-            """,
-            (note_id,),
-        )
+        # Read-modify-write in one transaction so two concurrent completions can't lose each other's update.
+        with get_db().transaction() as cursor:
+            cursor.execute(
+                """
+                SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+                       p.first_name, p.last_name
+                FROM encounters e
+                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                WHERE e.id = ?
+                """,
+                (note_id,),
+            )
 
-        row = get_db().cursor.fetchone()
+            row = cursor.fetchone()
 
-        if not row:
-            return {"success": False, "error": f"No patient record found with ID: {note_id}"}
+            if not row:
+                return {"success": False, "error": f"No patient record found with ID: {note_id}"}
 
-        patient = dict(row)
-        first = patient.get("first_name")
-        last = patient.get("last_name")
-        patient_name = f"{last}, {first}" if (last and first) else (last or first or "")
+            patient = dict(row)
+            first = patient.get("first_name")
+            last = patient.get("last_name")
+            patient_name = f"{last}, {first}" if (last and first) else (last or first or "")
 
-        # Parse jobs list
-        jobs_list = []
-        if patient.get("jobs_list"):
-            try:
-                jobs_list = (
-                    json.loads(patient["jobs_list"])
-                    if isinstance(patient["jobs_list"], str)
-                    else patient["jobs_list"]
-                )
-            except json.JSONDecodeError:
-                jobs_list = []
+            # Parse jobs list
+            jobs_list = []
+            if patient.get("jobs_list"):
+                try:
+                    jobs_list = (
+                        json.loads(patient["jobs_list"])
+                        if isinstance(patient["jobs_list"], str)
+                        else patient["jobs_list"]
+                    )
+                except json.JSONDecodeError:
+                    jobs_list = []
 
-        if not jobs_list:
-            return {"success": False, "error": f"No jobs found for patient record {note_id}"}
+            if not jobs_list:
+                return {"success": False, "error": f"No jobs found for patient record {note_id}"}
 
-        # Find and update the job
-        job_found = False
-        job_description = None
-        already_completed = False
+            # Find and update the job
+            job_found = False
+            job_description = None
+            already_completed = False
 
-        for job in jobs_list:
-            if job.get("id") == job_id:
-                job_found = True
-                job_description = job.get("job", job.get("task", "Unknown task"))
-                if job.get("completed", False):
-                    already_completed = True
-                else:
-                    job["completed"] = True
-                break
+            for job in jobs_list:
+                if job.get("id") == job_id:
+                    job_found = True
+                    job_description = job.get("job", job.get("task", "Unknown task"))
+                    if job.get("completed", False):
+                        already_completed = True
+                    else:
+                        job["completed"] = True
+                    break
 
-        if not job_found:
-            return {
-                "success": False,
-                "error": f"No job with ID {job_id} found in patient record {note_id}",
-            }
+            if not job_found:
+                return {
+                    "success": False,
+                    "error": f"No job with ID {job_id} found in patient record {note_id}",
+                }
 
-        if already_completed:
-            return {
-                "success": True,
-                "already_completed": True,
-                "patient": {
-                    "name": patient_name,
-                    "ur_number": patient["ur_number"],
-                    "encounter_date": patient["encounter_date"],
-                },
-                "job": {"id": job_id, "description": job_description},
-                "message": f"Job '{job_description}' was already marked as complete.",
-            }
+            if already_completed:
+                return {
+                    "success": True,
+                    "already_completed": True,
+                    "patient": {
+                        "name": patient_name,
+                        "ur_number": patient["ur_number"],
+                        "encounter_date": patient["encounter_date"],
+                    },
+                    "job": {"id": job_id, "description": job_description},
+                    "message": f"Job '{job_description}' was already marked as complete.",
+                }
 
-        # Update the jobs list in the database
-        update_patient_jobs_list(note_id, jobs_list)
+            # Update the jobs list in the database on this transaction's cursor
+            _update_jobs_list_with_cursor(cursor, note_id, jobs_list)
 
         return {
             "success": True,

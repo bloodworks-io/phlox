@@ -5,7 +5,6 @@ VectorStoreManager — backend-agnostic facade for RAG.
 import io
 import logging
 import threading
-from pathlib import Path
 
 # Optional RAG dependencies (core)
 try:
@@ -385,11 +384,14 @@ class VectorStoreManager:
 
     # PDF text extraction
 
-    def extract_text_from_pdf(self, pdf_path: str) -> str:
+    def extract_text_from_pdf(self, pdf_bytes: bytes) -> str:
         """
-        Extract text from a PDF file using pypdf.
+        Extract text from PDF bytes using pypdf.
+
+        Accepts the raw uploaded bytes directly — no temp file is written to disk,
+        which avoids path traversal via attacker-controlled filenames.
         """
-        logger.info("Backend RAG PDF parser invoked for file: %s", pdf_path)
+        logger.info("Backend RAG PDF parser invoked (%d bytes)", len(pdf_bytes))
 
         def _is_text_usable(text: str) -> bool:
             normalized = (text or "").strip()
@@ -397,10 +399,6 @@ class VectorStoreManager:
                 return False
             alnum_count = sum(1 for ch in normalized if ch.isalnum())
             return alnum_count >= 80
-
-        pdf_bytes = b""
-        with Path(pdf_path).open("rb") as pdf_file:
-            pdf_bytes = pdf_file.read()
 
         text_layer_output = ""
 
@@ -412,7 +410,7 @@ class VectorStoreManager:
                     text_parts.append(page.extract_text() or "")
                 text_layer_output = "\n\n".join(text_parts).strip()
             except Exception as e:
-                logger.warning("Failed text-layer extraction for '%s': %s", pdf_path, e)
+                logger.warning("Failed text-layer extraction: %s", e)
                 text_layer_output = ""
 
         if _is_text_usable(text_layer_output):

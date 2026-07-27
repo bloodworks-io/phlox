@@ -11,7 +11,6 @@ from fastapi import (
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from server.constants import TEMP_DIR
 from server.rag.progress import stream_re_embed_progress
 from server.rag.vector_store import VECTOR_STORE_AVAILABLE, get_vector_store_manager
 from server.schemas.rag import (
@@ -80,7 +79,7 @@ def _check_rag_available():
 
 
 @router.get("/files")
-async def get_files():
+def get_files():
     """API endpoint to retrieve the list of document collections."""
     _check_rag_available()
     try:
@@ -92,7 +91,7 @@ async def get_files():
 
 
 @router.get("/collection_files/{collection_name}")
-async def get_collection_files(collection_name: str):
+def get_collection_files(collection_name: str):
     """API endpoint to retrieve files for a specific collection."""
     _check_rag_available()
     try:
@@ -107,7 +106,7 @@ async def get_collection_files(collection_name: str):
 
 
 @router.post("/modify")
-async def modify_collection(request: ModifyCollectionRequest):
+def modify_collection(request: ModifyCollectionRequest):
     """API endpoint to modify the name of a collection."""
     _check_rag_available()
     try:
@@ -121,7 +120,7 @@ async def modify_collection(request: ModifyCollectionRequest):
 
 
 @router.delete("/delete-collection/{name}")
-async def delete_collection_endpoint(name: str):
+def delete_collection_endpoint(name: str):
     """API endpoint to delete a collection."""
     _check_rag_available()
     try:
@@ -135,7 +134,7 @@ async def delete_collection_endpoint(name: str):
 
 
 @router.delete("/delete-file")
-async def delete_file_endpoint(request: DeleteFileRequest):
+def delete_file_endpoint(request: DeleteFileRequest):
     """API endpoint to delete a file from a collection."""
     _check_rag_available()
     try:
@@ -154,7 +153,7 @@ async def delete_file_endpoint(request: DeleteFileRequest):
 
 
 @router.patch("/update-document-metadata")
-async def update_document_metadata(request: UpdateDocumentMetadataRequest):
+def update_document_metadata(request: UpdateDocumentMetadataRequest):
     """Update a document's title / source / focus_area (partial)."""
     _check_rag_available()
     try:
@@ -177,7 +176,7 @@ async def update_document_metadata(request: UpdateDocumentMetadataRequest):
 
 
 @router.get("/download-pdf/{collection_name}/{filename}")
-async def download_pdf(collection_name: str, filename: str):
+def download_pdf(collection_name: str, filename: str):
     """Download the original PDF stored for a file in a collection."""
     _check_rag_available()
     try:
@@ -208,28 +207,22 @@ async def extract_pdf_info(file: UploadFile = File(...)):
     _check_rag_available()
     vector_store_manager = get_vector_store_manager()
     logger.info(f"Request received for /extract-pdf-info: filename='{file.filename}'")
-    temp_dir = TEMP_DIR
-    temp_dir.mkdir(parents=True, exist_ok=True)  # Ensure temp dir exists
-    file_location = temp_dir / file.filename
 
     if not file.filename:
         logger.error("Received /extract-pdf-info request with no filename.")
         raise HTTPException(status_code=400, detail="No filename provided in upload.")
 
     try:
-        # Save the uploaded file temporarily
-        logger.debug(f"Saving uploaded file to '{file_location}'")
-        with file_location.open("wb") as f:
-            content = await file.read()
-            f.write(content)
-        logger.debug(f"File saved successfully. Size: {len(content)} bytes.")
+        # Read bytes directly — no temp file.
+        content = await file.read()
+        logger.debug(f"Received upload: {len(content)} bytes")
 
         # Stage raw PDF bytes for optional storage
         vector_store_manager.set_extracted_pdf(content)
 
-        # Extract text from the PDF (synchronous)
-        logger.info(f"Extracting text from '{file_location}'")
-        extracted_text = vector_store_manager.extract_text_from_pdf(file_location)
+        # Extract text directly from bytes (no disk write)
+        logger.info(f"Extracting text from upload ({len(content)} bytes)")
+        extracted_text = vector_store_manager.extract_text_from_pdf(content)
         if not extracted_text:
             logger.warning(
                 f"No text extracted from PDF '{file.filename}'. It might be empty or image-based."
@@ -246,17 +239,6 @@ async def extract_pdf_info(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Error processing PDF '{file.filename}': {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}") from e
-    finally:
-        # Ensure the temporary file is always removed
-        if file_location.exists():
-            try:
-                logger.debug(f"Removing temporary file '{file_location}'")
-                file_location.unlink()
-            except OSError as e:
-                logger.error(
-                    f"Error removing temporary file '{file_location}': {e}",
-                    exc_info=True,
-                )
 
 
 @router.post("/extract-pdf-info-from-text")
@@ -290,7 +272,7 @@ async def extract_pdf_info_from_text(payload: ExtractTextPayload):
 
 
 @router.post("/commit-to-vectordb")
-async def commit_to_db(request: CommitRequest):
+def commit_to_db(request: CommitRequest):
     """API endpoint to commit data to the database."""
     _check_rag_available()
     try:
@@ -312,7 +294,7 @@ async def commit_to_db(request: CommitRequest):
 
 
 @router.post("/commit-direct")
-async def commit_direct(request: BulkCommitRequest):
+def commit_direct(request: BulkCommitRequest):
     """API endpoint to commit a document with pre-extracted text in a single call.
 
     Used by the bulk upload path.
@@ -345,7 +327,7 @@ async def commit_direct(request: BulkCommitRequest):
 
 
 @router.post("/re-embed")
-async def re_embed():
+def re_embed():
     """API endpoint to re-embed all collections with the current embedding model."""
     _check_rag_available()
     try:
@@ -370,7 +352,7 @@ async def re_embed_stream():
 
 
 @router.post("/clear-database")
-async def clear_database():
+def clear_database():
     """API endpoint to clear the entire RAG database."""
     _check_rag_available()
     try:

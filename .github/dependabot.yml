@@ -13,7 +13,7 @@ updates:
       - "github-actions"
       - "security"
     cooldown:
-      default-days: 7
+      default-days: 3
 
   # Enable version updates for npm
   - package-ecosystem: "npm"
@@ -29,10 +29,10 @@ updates:
       - "javascript"
     versioning-strategy: increase
     cooldown:
-      default-days: 7
+      default-days: 3
 
-  # Enable version updates for npm in src-tauri
-  - package-ecosystem: "npm"
+  # Enable version updates for cargo in src-tauri
+  - package-ecosystem: "cargo"
     directory: "/src-tauri"
     schedule:
       interval: "weekly"
@@ -42,10 +42,10 @@ updates:
       include: "scope"
     labels:
       - "dependencies"
-      - "javascript"
-    versioning-strategy: increase
+      - "rust"
+    versioning-strategy: auto
     cooldown:
-      default-days: 7
+      default-days: 3
 
   - package-ecosystem: "pip"
     directory: "/server"
@@ -63,4 +63,4 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     cooldown:
-      default-days: 7
+      default-days: 3

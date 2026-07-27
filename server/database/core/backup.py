@@ -44,8 +44,12 @@ def create_backup(db_path: str, db_dir: Path) -> str | None:
         backup_name = f"{db_name}.v{version}.{timestamp}.bak"
         backup_path = backup_dir / backup_name
 
-        # Copy the database file (it's already encrypted)
+        # Copy the database and wal file (it's already encrypted)
         shutil.copy2(db_path, backup_path)
+        for suffix in ("-wal", "-shm"):
+            sidecar = Path(f"{db_path}{suffix}")
+            if sidecar.exists():
+                shutil.copy2(sidecar, f"{backup_path}{suffix}")
 
         logging.info(f"Database backup created: {backup_path}")
 
@@ -77,9 +81,13 @@ def _rotate_backups(backup_dir: Path, db_name: str) -> None:
             reverse=True,
         )
 
-        # Remove backups beyond our limit
+        # Remove backups beyond our limit, plus their WAL sidecars.
         for old_backup in backups[MAX_BACKUPS:]:
             old_backup.unlink()
+            for suffix in ("-wal", "-shm"):
+                sidecar = Path(f"{old_backup}{suffix}")
+                if sidecar.exists():
+                    sidecar.unlink()
             logging.info(f"Removed old backup: {old_backup}")
 
     except Exception as e:

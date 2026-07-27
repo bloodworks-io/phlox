@@ -79,12 +79,12 @@ def initialize_templates(cursor, _db):
             logging.info(f"Default template {status}: {template_name}")
 
 
-def set_initial_default_template(cursor, db):
+def set_initial_default_template(cursor, _db):
     """Set the initial default template to the latest Phlox template.
 
     Args:
         cursor: Database cursor
-        db: Database connection
+        _db: Database connection (unused; commit owned by caller's transaction)
     """
     try:
         # Get the latest non-deleted Phlox template
@@ -144,8 +144,6 @@ def set_initial_default_template(cursor, db):
                     (default_template_key, row["id"]),
                 )
                 logging.info(f"Updated default template to: {default_template_key}")
-
-        db.commit()
     except Exception as e:
         logging.error(f"Error setting initial default template: {e}")
         raise

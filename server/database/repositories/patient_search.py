@@ -19,15 +19,16 @@ def get_unique_primary_conditions():
         list: A list of unique primary condition strings, excluding None values.
     """
     try:
-        get_db().cursor.execute("""
-            SELECT DISTINCT primary_condition
-            FROM encounters
-            WHERE primary_condition IS NOT NULL
-            AND primary_condition != ''
-            ORDER BY primary_condition ASC
-            """)
-        results = get_db().cursor.fetchall()
-        return [row["primary_condition"] for row in results]
+        with get_db().read() as cursor:
+            cursor.execute("""
+                SELECT DISTINCT primary_condition
+                FROM encounters
+                WHERE primary_condition IS NOT NULL
+                AND primary_condition != ''
+                ORDER BY primary_condition ASC
+                """)
+            results = cursor.fetchall()
+            return [row["primary_condition"] for row in results]
     except Exception as e:
         logging.error(f"Error getting unique primary conditions: {e}")
         return []
@@ -73,28 +74,30 @@ def search_patients(query: str) -> list[dict[str, Any]]:
         return []
     like = f"%{query}%"
     try:
-        get_db().cursor.execute(
-            """
-            SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender,
-                   p.address, p.phone,
-                   e.id, e.encounter_date, e.template_key, e.template_data
-            FROM patient_profiles p
-            JOIN encounters e ON e.id = (
-                SELECT id FROM encounters
-                WHERE ur_number = p.ur_number
-                ORDER BY encounter_date DESC, id DESC
-                LIMIT 1
+        with get_db().read() as cursor:
+            cursor.execute(
+                """
+                SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender,
+                       p.address, p.phone,
+                       e.id, e.encounter_date, e.template_key, e.template_data
+                FROM patient_profiles p
+                JOIN encounters e ON e.id = (
+                    SELECT id FROM encounters
+                    WHERE ur_number = p.ur_number
+                    ORDER BY encounter_date DESC, id DESC
+                    LIMIT 1
+                )
+                WHERE p.ur_number = ?
+                   OR p.first_name LIKE ?
+                   OR p.last_name LIKE ?
+                ORDER BY (p.last_name LIKE ?) DESC, p.last_name, p.first_name
+                LIMIT 20
+                """,
+                (query, like, like, like),
             )
-            WHERE p.ur_number = ?
-               OR p.first_name LIKE ?
-               OR p.last_name LIKE ?
-            ORDER BY (p.last_name LIKE ?) DESC, p.last_name, p.first_name
-            LIMIT 20
-            """,
-            (query, like, like, like),
-        )
+            rows = cursor.fetchall()
 
-        rows = get_db().cursor.fetchall()
+        # Rows materialised; release the lock before template lookups / parsing.
         candidates = []
         for row in rows:
             candidate = _encounter_row_to_candidate(row)
@@ -136,30 +139,31 @@ def search_patients_by_condition(query: str, limit: int = 20) -> list[dict[str, 
 
     placeholders = ",".join("?" for _ in matched)
     try:
-        get_db().cursor.execute(
-            f"SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender, "
-            f"e.primary_condition, e.encounter_date, e.encounter_summary, "
-            f"e.template_key, cnt.encounter_count "
-            f"FROM patient_profiles p "
-            f"JOIN encounters e ON e.id = ("
-            f"    SELECT id FROM encounters"
-            f"    WHERE ur_number = p.ur_number"
-            f"      AND primary_condition IS NOT NULL"
-            f"    ORDER BY encounter_date DESC, id DESC"
-            f"    LIMIT 1"
-            f") "
-            f"JOIN ("
-            f"    SELECT ur_number, COUNT(*) AS encounter_count"
-            f"    FROM encounters"
-            f"    WHERE primary_condition IS NOT NULL"
-            f"    GROUP BY ur_number"
-            f") cnt ON cnt.ur_number = p.ur_number "
-            f"WHERE e.primary_condition IN ({placeholders}) "  # nosec B608
-            f"ORDER BY p.last_name, p.first_name "
-            f"LIMIT ?",
-            (*matched, limit),
-        )
-        rows = get_db().cursor.fetchall()
+        with get_db().read() as cursor:
+            cursor.execute(
+                f"SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender, "
+                f"e.primary_condition, e.encounter_date, e.encounter_summary, "
+                f"e.template_key, cnt.encounter_count "
+                f"FROM patient_profiles p "
+                f"JOIN encounters e ON e.id = ("
+                f"    SELECT id FROM encounters"
+                f"    WHERE ur_number = p.ur_number"
+                f"      AND primary_condition IS NOT NULL"
+                f"    ORDER BY encounter_date DESC, id DESC"
+                f"    LIMIT 1"
+                f") "
+                f"JOIN ("
+                f"    SELECT ur_number, COUNT(*) AS encounter_count"
+                f"    FROM encounters"
+                f"    WHERE primary_condition IS NOT NULL"
+                f"    GROUP BY ur_number"
+                f") cnt ON cnt.ur_number = p.ur_number "
+                f"WHERE e.primary_condition IN ({placeholders}) "  # nosec B608
+                f"ORDER BY p.last_name, p.first_name "
+                f"LIMIT ?",
+                (*matched, limit),
+            )
+            rows = cursor.fetchall()
 
         patients = []
         for row in rows:

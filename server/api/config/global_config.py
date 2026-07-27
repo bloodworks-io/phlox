@@ -22,7 +22,7 @@ def mask_key(key):
 
 
 @router.get("/global")
-async def get_config():
+def get_config():
     """Retrieve the current global configuration."""
     config = config_manager.get_config()
     masked = dict(config)
@@ -33,7 +33,7 @@ async def get_config():
 
 
 @router.post("/global")
-async def update_config(data: dict = Body(...)):
+def update_config(data: dict = Body(...)):
     """Update other configuration items with provided data.
 
     Sensitive key fields containing mask bullets (•) are stripped to avoid
