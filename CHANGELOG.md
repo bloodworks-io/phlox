@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.2.0](https://github.com/bloodworks-io/phlox/compare/v2.1.1...v2.2.0) (2026-07-27)
+
+
+### Features
+
+* **audit:** add audit log repository and middleware ([e2f7b01](https://github.com/bloodworks-io/phlox/commit/e2f7b01a241c455fbd1785656188b0c5a7fae9cf))
+* **audit:** add read/export endpoints and tests ([6722145](https://github.com/bloodworks-io/phlox/commit/67221451bde30407246f8b75a0c1ad8812a93dea))
+* **db:** add audit_log table and retention config (v7 migration) ([d776f8e](https://github.com/bloodworks-io/phlox/commit/d776f8ef0d3fa2ba7a2aaadd9deba43e4b808a51))
+* **db:** enable WAL mode and back up -wal/-shm sidecars ([4d25f0e](https://github.com/bloodworks-io/phlox/commit/4d25f0e828dc58d67635655a9e8286a193662bf9))
+* **security:** add parent-PID watchdog so server self-terminates if Tauri dies ([07b7e4a](https://github.com/bloodworks-io/phlox/commit/07b7e4a6be50208ef1fe9e5127e31aa5371e36e9))
+
+
+### Bug Fixes
+
+* **deps:** regenerate server/uv.lock, add pip-audit, set 3-day uv cooldown ([4c56daf](https://github.com/bloodworks-io/phlox/commit/4c56dafd6fa2de564aa90c8866153c51d742d95a))
+* **rag:** prevent path traversal in PDF upload via filename ([5402e22](https://github.com/bloodworks-io/phlox/commit/5402e2279ae9bc1132a5db68311868f167da0147))
+
+
+### Performance Improvements
+
+* **api:** run blocking DB handlers in threadpool; offload mixed-handler DB calls ([6fb8191](https://github.com/bloodworks-io/phlox/commit/6fb819183b85f18e7e5646070c6bdf89512dd139))
+
 ## [2.1.1](https://github.com/bloodworks-io/phlox/compare/v2.1.0...v2.1.1) (2026-07-23)
 
 
