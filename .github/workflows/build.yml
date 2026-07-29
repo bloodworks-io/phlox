@@ -248,3 +248,18 @@ jobs:
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  notify-website:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build, build-flatpak, docker]
+    steps:
+      - name: Trigger phlox-website rebuild
+        env:
+          GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/bloodworks-io/phlox-website/dispatches \
+            -d '{"event_type":"phlox-released","client_payload":{"version":"'"${GITHUB_REF_NAME}"'"}}'

@@ -14,5 +14,6 @@ services:
         volumes:
             - .:/usr/src/app
             - /usr/src/app/node_modules
+            - /usr/src/app/server/.venv 
             - ./data:/usr/src/app/data # Optional: Persist test data
             - ./logs:/usr/src/app/logs # Optional: Persist logs
