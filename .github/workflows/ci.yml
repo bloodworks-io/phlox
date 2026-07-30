@@ -32,9 +32,19 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Verify Docker uv versions match pyproject
+        run: |
+          UV_VERSION="$(python -c 'import tomllib; print(tomllib.load(open("server/pyproject.toml", "rb"))["tool"]["uv"]["required-version"].removeprefix("=="))')"
+          for dockerfile in Dockerfile Dockerfile.dev Dockerfile.test; do
+            if ! grep -Fq "ghcr.io/astral-sh/uv:${UV_VERSION}@" "$dockerfile"; then
+              echo "::error file=${dockerfile}::uv image must use version ${UV_VERSION}"
+              exit 1
+            fi
+          done
+
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.11.32"
+          version-file: "server/pyproject.toml"
           enable-cache: true
           cache-dependency-glob: "server/uv.lock"
 
@@ -93,7 +103,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.11.32"
+          version-file: "server/pyproject.toml"
           enable-cache: true
           cache-dependency-glob: "server/uv.lock"
 
