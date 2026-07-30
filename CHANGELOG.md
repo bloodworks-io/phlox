@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.4](https://github.com/bloodworks-io/phlox/compare/v2.2.3...v2.2.4) (2026-07-30)
+
+
+### Bug Fixes
+
+* synchronize uv version across docker, flatpak, and ci ([46f3b15](https://github.com/bloodworks-io/phlox/commit/46f3b15ad6fa5571024c64b9363ab5242f613bcb))
+
 ## [2.2.3](https://github.com/bloodworks-io/phlox/compare/v2.2.2...v2.2.3) (2026-07-27)
 
 
