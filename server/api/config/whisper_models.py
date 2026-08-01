@@ -12,7 +12,7 @@ from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import StreamingResponse
 
 from server.constants import IS_DOCKER
-from server.utils.whisper_models import whisper_model_manager
+from server.utils.whisper_models import PARAKEET_TDT_V3_LANGUAGES, whisper_model_manager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -164,7 +164,8 @@ async def get_whisper_status():
 async def get_whisper_model_recommendations():
     """Get Whisper model recommendations.
 
-    Returns a curated list of models with plain English descriptions.
+    Multilingual model is offered when the user selects a
+    non-English language.
     """
     model_recommendations = [
         {
@@ -175,7 +176,30 @@ async def get_whisper_model_recommendations():
             "description": "English medical speech-to-text, tuned for clinical use",
             "badge": "⭐ Recommended",
             "badge_color": "purple",
+            "languages": ["en"],
+        },
+        {
+            "id": "tdt-0.6b-v3-q8_0",
+            "name": "tdt-0.6b-v3-q8_0",
+            "simple_name": "Parakeet Multilingual",
+            "size": "941MB",
+            "description": "Multilingual speech-to-text (25 European languages)",
+            "badge": "🌐 Multilingual",
+            "badge_color": "blue",
+            "languages": PARAKEET_TDT_V3_LANGUAGES,
         },
     ]
 
     return {"models": model_recommendations}
+
+
+@router.get("/local/whisper/selected-model")
+async def get_selected_whisper_model():
+    """Get the currently selected (active) STT model id, if any."""
+    if IS_DOCKER:
+        raise HTTPException(
+            status_code=400,
+            detail="Whisper models are only available in Tauri builds",
+        )
+
+    return {"selected_model_id": whisper_model_manager.get_selected_model_id()}
