@@ -38,6 +38,15 @@ export const settingsApi = {
             errorMessage: "Failed to fetch config",
         }),
 
+    fetchCapabilities: async () =>
+        handleApiRequest({
+            apiCall: async (signal) => {
+                const url = await buildApiUrl("/api/config/capabilities");
+                return universalFetch(url, { signal });
+            },
+            errorMessage: "Failed to fetch capabilities",
+        }),
+
     fetchOptions: async () =>
         handleApiRequest({
             apiCall: async (signal) => {
