@@ -28,7 +28,7 @@ Phlox uses [i18next](https://www.i18next.com/) with `react-i18next`. UI strings 
 1. Copy `src/locales/en/` to `src/locales/<your-code>/` (ISO 639-1 code, e.g. `es`, `fr`).
 2. Translate the values in `common.json` — keep the keys and `{{interpolation}}` placeholders intact.
 3. Register it in `src/i18n.js` (import the catalog and add it to `resources` and `supportedLngs`), and add the locale to `UI_LANGUAGES` in `src/utils/i18n/languages.js`.
-4. As the codebase changes, run `npm run i18n` (uses `i18next-parser`) to extract new keys, then translate the new entries in your catalog.
+4. As the codebase changes, run `npm run i18n` (uses `i18next-cli`) to extract new keys, then translate the new entries in your catalog.
 
 > The clinic/output language (transcription and note generation) is a separate, broader setting and already works for many languages regardless of whether an interface catalog exists yet.
 

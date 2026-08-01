@@ -1,20 +1,20 @@
 {
     "action": {
-        "save": "Save",
         "cancel": "Cancel",
-        "close": "Close"
-    },
-    "status": {
-        "loading": "Loading…",
-        "error": "Error",
-        "success": "Success"
+        "close": "Close",
+        "save": "Save"
     },
     "language": {
-        "label": "Language",
+        "configureRemote": "Configure a remote transcription endpoint to enable {{language}}",
         "description": "Clinic language used for transcription and note generation.",
-        "uiNote": "The application interface is currently in English. Additional interface translations will be added over time.",
-        "transcriptionUnsupported": "The current transcription model doesn't support {{language}}. Transcription will default to English.",
         "downloadMultilingual": "Download multilingual model ({{size}}) to enable {{language}}",
-        "configureRemote": "Configure a remote transcription endpoint to enable {{language}}"
+        "label": "Language",
+        "transcriptionUnsupported": "The current transcription model doesn't support {{language}}. Transcription will default to English.",
+        "uiNote": "The application interface is currently in English. Additional interface translations will be added over time."
+    },
+    "status": {
+        "error": "Error",
+        "loading": "Loading…",
+        "success": "Success"
     }
 }

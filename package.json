@@ -37,7 +37,7 @@
         "lint:fix": "eslint . --fix",
         "build-server": "bash src-tauri/build-server.sh",
         "test": "vitest",
-        "i18n": "i18next --config i18next-parser.config.mjs",
+        "i18n": "i18next-cli extract",
         "tauri": "tauri",
         "tauri-dev": "bash build-all.sh --debug --skip-cpp && tauri dev",
         "tauri-build": "bash build-all.sh && tauri build"
@@ -72,7 +72,7 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "eslint-plugin-unused-imports": "^4.4.1",
         "globals": "^17.7.0",
-        "i18next-parser": "9.0.2",
+        "i18next-cli": "1.67.3",
         "jsdom": "^29.1.1",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.65.0",
