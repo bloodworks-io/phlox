@@ -464,7 +464,7 @@ class VectorStoreManager:
 Text sample: {sample_text}
 
 Return JSON with these fields:
-- "disease_name": the main disease discussed, in natural written casing (e.g. "Systemic AL Amyloidosis", "Essential Thrombocythemia"). If the text clearly relates to one of these existing collections, reuse that exact name: {collection_names_string}. Otherwise identify the disease in American English (no acronyms unless universally used, e.g. "CLL" is acceptable).
+- "disease_name": the main disease discussed, in natural written casing (e.g. "Systemic AL Amyloidosis", "Essential Thrombocythemia"). If the text clearly relates to one of these existing collections, reuse that exact name: {collection_names_string}. Otherwise identify the disease using natural written casing (no acronyms unless universally used, e.g. "CLL" is acceptable).
 - "focus_area": the document category — exactly one of: guidelines, diagnosis, treatment, epidemiology, pathophysiology, prognosis, clinical_features, prevention, miscellaneous.
 - "document_source": the publishing source in natural casing (e.g. "NCCN Guidelines", "EHA Consensus", "British Society for Haematology"). If it matches an existing source, reuse that exact name: {existing_sources_string}.
 - "title": the document's own title as printed in the text (e.g. "2024 EHA Consensus Guidelines on the Diagnosis and Management of AL Amyloidosis"). If no explicit title is present, write a concise descriptive title.
