@@ -158,3 +158,13 @@ def test_language_directive_injected_only_for_non_english(monkeypatch):
     assert out[0]["role"] == "system"
     assert "Spanish" in out[0]["content"]
     assert out[1:] == base_messages
+
+    # Spanish with an existing leading system message: directive must MERGE into
+    # it (one system message), not prepend a second — provider templates reject
+    # multiple system messages.
+    with_system = [{"role": "system", "content": "original"}, {"role": "user", "content": "hi"}]
+    out = llm._with_language_directive(with_system)
+    assert sum(1 for m in out if m["role"] == "system") == 1
+    assert out[0]["content"].startswith("You are operating in a Spanish-speaking")
+    assert out[0]["content"].endswith("original")
+    assert out[1:] == with_system[1:]

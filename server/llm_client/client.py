@@ -138,8 +138,7 @@ class AsyncLLMClient:
         )
 
     def _with_language_directive(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Prepend an output-language directive when a non-English language is set.
-        """
+        """Prepend an output-language directive when a non-English language is set."""
         try:
             language = config_manager.get_user_settings().get("preferred_language", "en")
         except Exception:
@@ -155,6 +154,10 @@ class AsyncLLMClient:
             f"values) must be written in {name}, regardless of the language of any source "
             "materials. Do not rename JSON keys."
         )
+
+        if messages and messages[0].get("role") == "system":
+            merged = {**messages[0], "content": f"{directive}\n\n{messages[0].get('content', '')}"}
+            return [merged, *messages[1:]]
         return [{"role": "system", "content": directive}, *messages]
 
 
