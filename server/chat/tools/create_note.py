@@ -4,7 +4,6 @@ Create note tool implementation.
 This tool creates a new patient encounter note for a specific date.
 """
 
-import json
 import logging
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -13,6 +12,7 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.chat.tools.patient_utils import find_ur_by_name
 from server.database.repositories.analysis import generate_previous_visit_summary
 from server.database.repositories.encounter import (
@@ -249,15 +249,7 @@ async def execute(
     yield status_message("Creating patient note...")
 
     # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     patient_name = function_arguments.get("patient_name", "")
     encounter_date = function_arguments.get("encounter_date", "")

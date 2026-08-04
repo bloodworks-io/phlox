@@ -5,7 +5,6 @@ This tool searches for patients by name, UR number, DOB, or other criteria.
 Useful for finding existing patient records before creating notes.
 """
 
-import json
 import logging
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -15,6 +14,7 @@ from server.chat.streaming.response import (
     status_message,
     tool_response_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.chat.tools.patient_utils import rank_patients_by_name
 from server.database.repositories.patient_search import search_patients_aggregate
 
@@ -114,16 +114,7 @@ async def execute(
     logger.info("Executing search_patient tool...")
     yield status_message("Searching for patients...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     name = function_arguments.get("name")
     ur_number = function_arguments.get("ur_number")

@@ -13,6 +13,7 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.chat.tools.patient_utils import find_ur_by_name
 from server.database.repositories.encounter import get_latest_encounter
 
@@ -97,16 +98,7 @@ async def execute(
     logger.info("Executing get_previous_encounter tool...")
     yield status_message("Retrieving previous encounter...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     ur_number = function_arguments.get("ur_number")
     patient_name = function_arguments.get("patient_name")

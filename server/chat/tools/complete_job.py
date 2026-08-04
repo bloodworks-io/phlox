@@ -13,6 +13,7 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.database.core.connection import get_db
 from server.database.repositories.jobs import (
     _select_jobs_list_with_cursor,
@@ -155,16 +156,7 @@ async def execute(
     logger.info("Executing complete_job tool...")
     yield status_message("Marking job as complete...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     note_id = function_arguments.get("note_id")
     job_id = function_arguments.get("job_id")

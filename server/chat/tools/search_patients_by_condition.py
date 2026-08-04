@@ -2,7 +2,6 @@
 Search patients by primary condition tool.
 """
 
-import json
 import logging
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -12,6 +11,7 @@ from server.chat.streaming.response import (
     status_message,
     tool_response_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.database.repositories.patient_search import search_patients_by_condition
 
 logger = logging.getLogger(__name__)
@@ -52,15 +52,7 @@ async def execute(
     logger.info("Executing search_patients_by_condition tool...")
     yield status_message("Searching patients by condition...")
 
-    function_arguments: dict[str, Any] = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     condition = function_arguments.get("condition")
     limit = function_arguments.get("limit", 20)
