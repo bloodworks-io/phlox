@@ -215,9 +215,8 @@ class VectorStoreManager:
         # Ensure collection exists (display_name preserves original casing).
         self.backend.create_collection(formatted, self._model_name, dim, display_name=disease_name)
 
-        # Store source document (include raw PDF if config enabled)
-        user_settings = config_manager.get_user_settings()
-        store_pdfs = user_settings.get("advanced_options", {}).get("store_original_pdfs", False)
+        # Store source document (include raw PDF if system policy enables it)
+        store_pdfs = config_manager.get_config().get("STORE_ORIGINAL_PDFS", False)
         stored_pdf = pdf_bytes if store_pdfs else None
         if store_pdfs:
             logger.info(

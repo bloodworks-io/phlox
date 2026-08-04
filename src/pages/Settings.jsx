@@ -269,7 +269,7 @@ const Settings = () => {
     };
 
     const saveUserSettingsFn = async (newSettings) => {
-        const { disabled_tools: _dt, default_template, ...rest } = newSettings;
+        const { default_template, ...rest } = newSettings;
         await settingsApi.saveUserSettings({
             ...rest,
             default_letter_template_id:

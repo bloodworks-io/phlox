@@ -419,9 +419,9 @@ def get_tools_definition(
 
     built_in_tools = _get_built_in_tools(collection_names)
 
-    # Filter out disabled tools based on user settings
-    user_settings = config_manager.get_user_settings()
-    disabled_tools = set(user_settings.get("disabled_tools", ["pubmed_search", "wiki_search"]))
+    # Filter out disabled tools based on system policy (config KV)
+    config = config_manager.get_config()
+    disabled_tools = set(config.get("DISABLED_TOOLS", ["pubmed_search", "wiki_search"]))
 
     enabled_tools = [
         tool for tool in built_in_tools if tool["function"]["name"] not in disabled_tools

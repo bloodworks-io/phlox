@@ -168,3 +168,97 @@ def test_language_directive_injected_only_for_non_english(monkeypatch):
     assert out[0]["content"].startswith("You are operating in a Spanish-speaking")
     assert out[0]["content"].endswith("original")
     assert out[1:] == with_system[1:]
+
+
+def test_policy_keys_present_in_global_config():
+    """Migration v9 backfills the three policy keys into config KV."""
+    data = client.get("/api/config/global").json()
+    assert data["DISABLED_TOOLS"] == ["pubmed_search", "wiki_search"]
+    assert data["STORE_ORIGINAL_PDFS"] is False
+    assert data["REQUIRE_SCRIBE_CONSENT"] is False
+
+
+def test_policy_keys_round_trip_via_global():
+    """Policy keys are read/written via the global config endpoint."""
+    client.post(
+        "/api/config/global",
+        json={
+            "DISABLED_TOOLS": ["pubmed_search"],
+            "STORE_ORIGINAL_PDFS": True,
+            "REQUIRE_SCRIBE_CONSENT": True,
+        },
+    )
+    data = client.get("/api/config/global").json()
+    assert data["DISABLED_TOOLS"] == ["pubmed_search"]
+    assert data["STORE_ORIGINAL_PDFS"] is True
+    assert data["REQUIRE_SCRIBE_CONSENT"] is True
+
+    # Restore defaults so other tests see a known state.
+    client.post(
+        "/api/config/global",
+        json={
+            "DISABLED_TOOLS": ["pubmed_search", "wiki_search"],
+            "STORE_ORIGINAL_PDFS": False,
+            "REQUIRE_SCRIBE_CONSENT": False,
+        },
+    )
+
+
+def test_post_user_filters_migrated_keys():
+    """POST /user must drop disabled_tools/advanced_options (relocated to config)."""
+    client.post(
+        "/api/config/user",
+        json={
+            "disabled_tools": ["should_be_dropped"],
+            "advanced_options": {"store_original_pdfs": True},
+            "name": "FilterCheck",
+        },
+    )
+    settings = client.get("/api/config/user").json()
+    assert "disabled_tools" not in settings
+    assert "advanced_options" not in settings
+    assert settings["name"] == "FilterCheck"
+
+    # The policy keys live in global config, unaffected by the user POST.
+    config = client.get("/api/config/global").json()
+    assert "should_be_dropped" not in config["DISABLED_TOOLS"]
+
+    # Restore.
+    client.post("/api/config/user", json={"name": ""})
+
+
+def test_v8_backfills_policy_keys_from_user_settings():
+    """Migration v8 reads the legacy user_settings columns and writes config KV."""
+    import json
+
+    from server.database.config.manager import config_manager
+    from server.database.core.migrations.v8_preferred_language import migrate
+
+    config_manager.refresh_db()
+    # Plant custom values in the legacy (now-dead) columns.
+    with config_manager.db.transaction() as cursor:
+        cursor.execute(
+            "UPDATE user_settings SET disabled_tools = ?, advanced_options = ?",
+            (
+                json.dumps(["legacy_tool"]),
+                json.dumps({"store_original_pdfs": True, "require_scribe_consent": True}),
+            ),
+        )
+        # Re-run the migration (idempotent INSERT OR REPLACE).
+        migrate(cursor, None)
+
+    config_manager._load_configs()
+    config = config_manager.get_config()
+    assert config["DISABLED_TOOLS"] == ["legacy_tool"]
+    assert config["STORE_ORIGINAL_PDFS"] is True
+    assert config["REQUIRE_SCRIBE_CONSENT"] is True
+
+    # Restore defaults.
+    client.post(
+        "/api/config/global",
+        json={
+            "DISABLED_TOOLS": ["pubmed_search", "wiki_search"],
+            "STORE_ORIGINAL_PDFS": False,
+            "REQUIRE_SCRIBE_CONSENT": False,
+        },
+    )
