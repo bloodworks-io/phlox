@@ -18,6 +18,8 @@ from server.schemas.documents import VisualDocumentPage
 
 router = APIRouter()
 
+_VISION_CACHE: dict[str, dict] = {}
+
 
 class VisualDocumentRequest(BaseModel):
     filename: str | None = None
@@ -84,9 +86,8 @@ def _is_local_vision_capable(config: dict) -> bool:
     return any((DATA_DIR / "llm_models").glob("*mmproj*.gguf"))
 
 
-def _get_vision_capability_cache(config: dict) -> dict:
-    cache = config.get("VISION_CAPABILITY_CACHE", {})
-    return cache if isinstance(cache, dict) else {}
+def _get_vision_capability_cache() -> dict:
+    return _VISION_CACHE
 
 
 def _store_vision_probe_result(
@@ -99,22 +100,12 @@ def _store_vision_probe_result(
     detail: str,
 ):
     cache_key = _build_vision_cache_key(provider, base_url, model)
-    current_config = config_manager.get_config()
-    cache = _get_vision_capability_cache(current_config)
-    cache[cache_key] = {
+    _VISION_CACHE[cache_key] = {
         "vision_capable": bool(vision_capable),
         "status_code": int(status_code),
         "detail": detail,
         "probed_at": datetime.now(UTC).isoformat(),
     }
-
-    config_manager.update_config(
-        {
-            "VISION_CAPABILITY_CACHE": cache,
-            "VISION_CAPABILITY_CACHE_KEY": cache_key,
-            "VISION_MODEL_CAPABLE": bool(vision_capable),
-        }
-    )
 
 
 def _build_visual_user_content(
@@ -318,7 +309,7 @@ def get_current_vision_capability():
     model = config.get("PRIMARY_MODEL", "")
 
     cache_key = _build_vision_cache_key(provider, base_url, model)
-    cache = _get_vision_capability_cache(config)
+    cache = _get_vision_capability_cache()
     cached_result = cache.get(cache_key)
 
     # Local (Tauri) builds ship VLMs with a projector — vision is always available.
@@ -342,13 +333,13 @@ def get_current_vision_capability():
             "probed_at": cached_result.get("probed_at"),
         }
 
-    # Backward compatibility fallback to global flag
+    # In-memory cache is the single source of truth now.)
     return {
-        "vision_capable": bool(config.get("VISION_MODEL_CAPABLE", False)),
+        "vision_capable": False,
         "status_code": 200,
-        "detail": "No cache entry for current model endpoint; using global flag fallback.",
+        "detail": "No cache entry for current model endpoint; probe required.",
         "cache_key": cache_key,
-        "source": "global_flag",
+        "source": "no_cache",
         "probed_at": None,
     }
 
