@@ -121,3 +121,46 @@ def test_generate_template(monkeypatch):
     assert response.status_code == 200
     data = response.json()
     assert data.get("template_key") == "test_generated_01"
+
+
+def test_default_template_key_round_trip_via_config_manager():
+    """get/set default_template_key flow through ConfigManager (the chokepoint)."""
+    from server.database.config.manager import config_manager
+
+    original = config_manager.get_default_template_key()
+    try:
+        config_manager.set_default_template_key("roundtrip_01")
+        assert config_manager.get_default_template_key() == "roundtrip_01"
+    finally:
+        if original is not None:
+            config_manager.set_default_template_key(original)
+
+
+def test_update_default_template_key_version_bump():
+    """The version-bump path moves the pointer only when the old key matches."""
+    from server.database.config.manager import config_manager
+
+    original = config_manager.get_default_template_key()
+    try:
+        config_manager.set_default_template_key("vertest_01")
+        config_manager.update_default_template_key("vertest_01", "vertest_02")
+        assert config_manager.get_default_template_key() == "vertest_02"
+        # A non-matching old key must NOT move the pointer.
+        config_manager.update_default_template_key("does_not_exist", "vertest_03")
+        assert config_manager.get_default_template_key() == "vertest_02"
+    finally:
+        if original is not None:
+            config_manager.set_default_template_key(original)
+
+
+def test_templates_repo_no_longer_references_user_settings():
+    """C2 guarantee: templates.py must not touch the user_settings table directly."""
+    from pathlib import Path
+
+    import server.database.repositories.templates as templates_module
+
+    source = Path(templates_module.__file__).read_text()
+    assert "user_settings" not in source, (
+        "templates.py must route default_template_key access through ConfigManager, "
+        "not touch user_settings directly."
+    )

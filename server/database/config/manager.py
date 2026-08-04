@@ -304,6 +304,27 @@ class ConfigManager:
                 ),
             )
 
+    def get_default_template_key(self) -> str | None:
+        """Return the current default template key, or None if unset."""
+        return self.get_user_settings().get("default_template_key")
+
+    def set_default_template_key(self, key: str) -> None:
+        """Set the default template key via the user_settings read-modify-write path."""
+        self.update_user_settings({"default_template_key": key})
+
+    def update_default_template_key(self, old: str, new: str) -> None:
+        """Bump the default template pointer from old to new (version-bump path).
+
+        Targeted WHERE so it only moves when the current value still matches old,
+        avoiding clobbering a concurrent user change.
+        """
+        self.refresh_db()
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "UPDATE user_settings SET default_template_key = ? WHERE default_template_key = ?",
+                (new, old),
+            )
+
     @staticmethod
     def _read_user_settings(cursor) -> dict:
         cursor.execute("SELECT * FROM user_settings LIMIT 1")
