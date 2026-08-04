@@ -34,7 +34,7 @@ const SplashScreen = ({ onComplete }) => {
   // Hooks
   const personal = usePersonalStep();
   const llm = useLLMStep(currentStep);
-  const transcription = useTranscriptionStep(currentStep, llm.inferenceMode);
+  const transcription = useTranscriptionStep(currentStep, llm.inferenceMode, personal.language);
   const templates = useTemplatesStep(currentStep);
   const letters = useLettersStep(currentStep);
 

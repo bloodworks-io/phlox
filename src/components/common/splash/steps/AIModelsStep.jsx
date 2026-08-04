@@ -38,12 +38,6 @@ import { RemoteModeForm } from "./RemoteModeForm";
 
 const MODELS_PER_PAGE = 3;
 
-const RECOMMENDED_WHISPER = {
-  id: "omi-med-stt-v1-q8_0",
-  name: "Omi Med STT",
-  size_mb: 886,
-};
-
 const RECOMMENDED_EMBEDDING = {
   id: "qwen3-embedding-0.6b",
   name: "Qwen3 Embedding 0.6B",
@@ -86,9 +80,21 @@ export const AIModelsStep = ({ llm, transcription }) => {
     whisperDownloadProgress,
     downloadWhisperModel,
     isWhisperModelDownloaded,
+    localWhisperModel,
   } = transcription;
 
   const isLocal = inferenceMode === "local";
+
+  const RECOMMENDED_WHISPER = useMemo(() => {
+    if (localWhisperModel === "omi-med-stt-v1-q8_0") {
+      return { id: "omi-med-stt-v1-q8_0", name: "Omi Med STT", size_mb: 886 };
+    }
+    return { id: "tdt-0.6b-v3-q8_0", name: "Parakeet Multilingual", size_mb: 941 };
+  }, [localWhisperModel]);
+
+  const whisperTooltipText = RECOMMENDED_WHISPER.id === "omi-med-stt-v1-q8_0"
+    ? `Required for speech-to-text. Omi Med STT is the bundled medical model. (${RECOMMENDED_WHISPER.size_mb}MB)`
+    : `Required for speech-to-text. Parakeet Multilingual supports 25 European languages. (${RECOMMENDED_WHISPER.size_mb}MB)`;
 
   const [systemSpecs, setSystemSpecs] = useState(null);
   const [embeddingDownloaded, setEmbeddingDownloaded] = useState(false);
@@ -370,7 +376,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           Required
                         </Badge>
                         <Tooltip
-                          content={`Required for speech-to-text. Omi Med STT is the bundled medical model. (${RECOMMENDED_WHISPER.size_mb}MB)`}
+                          content={whisperTooltipText}
                           showArrow
                         >
                           <InfoIcon boxSize={3} color="textSecondary" />
