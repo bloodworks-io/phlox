@@ -14,7 +14,7 @@ from server.chat.streaming.response import (
     status_message,
 )
 from server.chat.tools.patient_utils import find_ur_by_name
-from server.database.core.connection import get_db
+from server.database.repositories.encounter import get_latest_encounter
 
 logger = logging.getLogger(__name__)
 
@@ -32,34 +32,8 @@ async def get_previous_encounter(
         The most recent encounter dict or None if not found
     """
     try:
-        # Fetch full patient record, filtering out same-date encounters
-        with get_db().read() as cursor:
-            if current_encounter_date:
-                cursor.execute(
-                    """
-                    SELECT id, encounter_date, template_key, template_data, encounter_summary
-                    FROM encounters
-                    WHERE ur_number = ? AND encounter_date < ?
-                    ORDER BY encounter_date DESC
-                    LIMIT 1
-                    """,
-                    (ur_number, current_encounter_date),
-                )
-            else:
-                cursor.execute(
-                    """
-                    SELECT id, encounter_date, template_key, template_data, encounter_summary
-                    FROM encounters
-                    WHERE ur_number = ?
-                    ORDER BY encounter_date DESC
-                    LIMIT 1
-                    """,
-                    (ur_number,),
-                )
-            row = cursor.fetchone()
-        if row:
-            return dict(row)
-        return None
+        encounter = get_latest_encounter(ur_number, exclude_date=current_encounter_date)
+        return encounter
     except Exception as e:
         logger.error(f"Error fetching previous encounter: {e}")
         return None

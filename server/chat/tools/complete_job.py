@@ -14,7 +14,10 @@ from server.chat.streaming.response import (
     status_message,
 )
 from server.database.core.connection import get_db
-from server.database.repositories.jobs import _update_jobs_list_with_cursor
+from server.database.repositories.jobs import (
+    _select_jobs_list_with_cursor,
+    _update_jobs_list_with_cursor,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,23 +27,10 @@ async def complete_job(note_id: int, job_id: int) -> dict:
     try:
         # Read-modify-write in one transaction so two concurrent completions can't lose each other's update.
         with get_db().transaction() as cursor:
-            cursor.execute(
-                """
-                SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
-                       p.first_name, p.last_name
-                FROM encounters e
-                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                WHERE e.id = ?
-                """,
-                (note_id,),
-            )
+            patient = _select_jobs_list_with_cursor(cursor, note_id)
 
-            row = cursor.fetchone()
-
-            if not row:
+            if not patient:
                 return {"success": False, "error": f"No patient record found with ID: {note_id}"}
-
-            patient = dict(row)
             first = patient.get("first_name")
             last = patient.get("last_name")
             patient_name = f"{last}, {first}" if (last and first) else (last or first or "")

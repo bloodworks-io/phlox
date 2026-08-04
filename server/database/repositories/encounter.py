@@ -496,6 +496,79 @@ def delete_patient_by_id(note_id: int) -> bool:
         raise
 
 
+def get_latest_encounter(ur_number: str, exclude_date: str | None = None) -> dict[str, Any] | None:
+    """Fetch the most recent encounter for a patient."""
+    try:
+        with get_db().read() as cursor:
+            if exclude_date:
+                cursor.execute(
+                    """
+                    SELECT id, encounter_date, template_key, template_data, encounter_summary
+                    FROM encounters
+                    WHERE ur_number = ? AND encounter_date < ?
+                    ORDER BY encounter_date DESC
+                    LIMIT 1
+                    """,
+                    (ur_number, exclude_date),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT id, encounter_date, template_key, template_data, encounter_summary
+                    FROM encounters
+                    WHERE ur_number = ?
+                    ORDER BY encounter_date DESC
+                    LIMIT 1
+                    """,
+                    (ur_number,),
+                )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+    except Exception as e:
+        logging.error(f"Error fetching latest encounter: {e}")
+        raise
+
+
+def get_patient_notes(
+    ur_number: str | None = None, patient_name: str | None = None
+) -> list[dict[str, Any]]:
+    """Fetch all encounters (text columns + demographics) for note-search."""
+    try:
+        with get_db().read() as cursor:
+            if ur_number:
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ur_number, e.encounter_date,
+                           e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
+                           p.first_name, p.last_name, p.dob
+                    FROM encounters e
+                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                    WHERE e.ur_number = ?
+                    ORDER BY e.encounter_date DESC
+                    """,
+                    (ur_number,),
+                )
+            elif patient_name:
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ur_number, e.encounter_date,
+                           e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
+                           p.first_name, p.last_name, p.dob
+                    FROM encounters e
+                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                    ORDER BY e.encounter_date DESC
+                    """,
+                    (f"%{patient_name}%",),
+                )
+            else:
+                return []
+            return [dict(row) for row in cursor.fetchall()]
+    except Exception as e:
+        logging.error(f"Error searching patient notes: {e}")
+        raise
+
+
 def update_patient_summary(
     note_id: int, encounter_summary: str, primary_condition: str | None
 ) -> None:

@@ -1,6 +1,7 @@
 import json
 import logging
 import traceback
+from typing import Any
 
 from server.database.core.connection import get_db
 
@@ -84,6 +85,68 @@ def get_patients_with_outstanding_jobs():
             return patients
     except Exception as e:
         logging.error(f"Error fetching patients with outstanding jobs: {e}")
+        raise
+
+
+def _select_jobs_list_with_cursor(cursor, note_id: int) -> dict[str, Any] | None:
+    """Select an encounter row (with demographics) on an existing cursor."""
+    cursor.execute(
+        """
+        SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+               p.first_name, p.last_name
+        FROM encounters e
+        LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+        WHERE e.id = ?
+        """,
+        (note_id,),
+    )
+    row = cursor.fetchone()
+    return dict(row) if row else None
+
+
+def get_latest_encounter_with_jobs(
+    ur_number: str | None = None, patient_name: str | None = None
+) -> dict[str, Any] | None:
+    """Fetch the latest encounter row (jobs_list + demographics) for a patient.
+
+    Looked up by ``ur_number`` (exact) or ``patient_name`` (case-insensitive
+    substring on "Last, First"). Returns None if neither is provided or no
+    match exists.
+    """
+    try:
+        with get_db().read() as cursor:
+            if ur_number:
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+                           p.first_name, p.last_name, p.dob
+                    FROM encounters e
+                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                    WHERE e.ur_number = ?
+                    ORDER BY e.encounter_date DESC
+                    LIMIT 1
+                    """,
+                    (ur_number,),
+                )
+            elif patient_name:
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
+                           p.first_name, p.last_name, p.dob
+                    FROM encounters e
+                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                    ORDER BY e.encounter_date DESC
+                    LIMIT 1
+                    """,
+                    (f"%{patient_name}%",),
+                )
+            else:
+                return None
+            row = cursor.fetchone()
+            return dict(row) if row else None
+    except Exception as e:
+        logging.error(f"Error fetching latest encounter with jobs: {e}")
         raise
 
 
