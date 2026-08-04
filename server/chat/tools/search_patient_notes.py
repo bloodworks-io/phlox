@@ -16,7 +16,8 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
-from server.database.core.connection import get_db
+from server.chat.tools._helpers import parse_tool_args
+from server.database.repositories.encounter import get_patient_notes
 
 logger = logging.getLogger(__name__)
 
@@ -142,36 +143,7 @@ async def search_patient_notes(
         return {"success": False, "error": "Either ur_number or patient_name is required"}
 
     try:
-        # Build query to get all encounters for this patient
-        with get_db().read() as cursor:
-            if ur_number:
-                cursor.execute(
-                    """
-                    SELECT e.id, e.ur_number, e.encounter_date,
-                           e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
-                           p.first_name, p.last_name, p.dob
-                    FROM encounters e
-                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                    WHERE e.ur_number = ?
-                    ORDER BY e.encounter_date DESC
-                    """,
-                    (ur_number,),
-                )
-            else:
-                cursor.execute(
-                    """
-                    SELECT e.id, e.ur_number, e.encounter_date,
-                           e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
-                           p.first_name, p.last_name, p.dob
-                    FROM encounters e
-                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
-                    ORDER BY e.encounter_date DESC
-                    """,
-                    (f"%{patient_name}%",),
-                )
-
-            rows = cursor.fetchall()
+        rows = get_patient_notes(ur_number=ur_number, patient_name=patient_name)
 
         if not rows:
             return {
@@ -309,16 +281,7 @@ async def execute(
     logger.info("Executing search_patient_notes tool...")
     yield status_message("Searching patient notes...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     ur_number = function_arguments.get("ur_number")
     patient_name = function_arguments.get("patient_name")

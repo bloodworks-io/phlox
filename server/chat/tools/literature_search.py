@@ -2,7 +2,6 @@
 Literature search tool implementation.
 """
 
-import json
 import logging
 import re
 from collections.abc import AsyncGenerator
@@ -12,6 +11,7 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 
 logger = logging.getLogger(__name__)
 
@@ -112,19 +112,10 @@ async def execute(
     yield status_message("Searching medical literature...")
 
     # Parse function arguments
-    function_arguments = None
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
-            function_arguments = {}
+    function_arguments = parse_tool_args(tool_call)
 
-    disease_name = function_arguments.get("disease_name", "") if function_arguments else ""
-    question = function_arguments.get("question", "") if function_arguments else ""
+    disease_name = function_arguments.get("disease_name", "")
+    question = function_arguments.get("question", "")
 
     function_response_list = _get_relevant_literature(
         vector_store_manager=vector_store_manager,

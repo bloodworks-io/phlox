@@ -4,7 +4,6 @@ PubMed search tool implementation.
 This tool searches PubMed for medical literature and research articles.
 """
 
-import json
 import logging
 import xml.etree.ElementTree as ET  # nosec B405
 from collections.abc import AsyncGenerator
@@ -16,6 +15,7 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.chat.tools.sanitization import sanitize_pubmed_query
 
 logger = logging.getLogger(__name__)
@@ -173,16 +173,7 @@ async def execute(
     logger.info("Executing pubmed_search tool...")
     yield status_message("Searching PubMed...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     query = function_arguments.get("query", "")
     max_results = function_arguments.get("max_results", 5)

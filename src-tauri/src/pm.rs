@@ -212,14 +212,17 @@ fn find_llama_mmproj() -> Option<PathBuf> {
     None
 }
 
-/// Find the STT in the models directory.
+/// Find the STT model in the models directory.
 fn find_whisper_model() -> Option<PathBuf> {
     let models_dir = phlox_dir()?.join("whisper_models");
 
-    // Primary: the fixed Omi Med STT q8_0 GGUF.
-    let primary = models_dir.join("omi-med-stt-v1-q8_0.gguf");
-    if primary.exists() {
-        return Some(primary);
+    // Prefer Python's explicit selection file over a directory scan.
+    let model_file = phlox_dir()?.join("whisper_model.txt");
+    if let Ok(model_name) = fs::read_to_string(&model_file) {
+        let model_path = models_dir.join(model_name.trim());
+        if model_path.exists() {
+            return Some(model_path);
+        }
     }
 
     // Fallback: any .gguf file in the models directory.

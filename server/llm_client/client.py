@@ -13,6 +13,7 @@ from collections.abc import AsyncGenerator
 from typing import Any, Union
 
 from server.database.config.manager import config_manager
+from server.utils.languages import get_language_name
 from server.utils.url_utils import normalize_openai_base_url
 
 from .providers.openai import openai_compatible_chat
@@ -123,6 +124,7 @@ class AsyncLLMClient:
         from .utils import ensure_system_messages_first
 
         messages = ensure_system_messages_first(messages)
+        messages = self._with_language_directive(messages)
 
         return await openai_compatible_chat(
             self._client,
@@ -134,6 +136,29 @@ class AsyncLLMClient:
             stream,
             self.extra_body,
         )
+
+    def _with_language_directive(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Prepend an output-language directive when a non-English language is set."""
+        try:
+            language = config_manager.get_user_settings().get("preferred_language", "en")
+        except Exception:
+            return messages
+
+        if not language or language == "en":
+            return messages
+
+        name = get_language_name(language)
+        directive = (
+            f"You are operating in a {name}-speaking clinical setting. "
+            "All output content (notes, letters, summaries, chat responses, and JSON field "
+            f"values) must be written in {name}, regardless of the language of any source "
+            "materials. Do not rename JSON keys."
+        )
+
+        if messages and messages[0].get("role") == "system":
+            merged = {**messages[0], "content": f"{directive}\n\n{messages[0].get('content', '')}"}
+            return [merged, *messages[1:]]
+        return [{"role": "system", "content": directive}, *messages]
 
 
 def get_llm_client(timeout: int = 80):

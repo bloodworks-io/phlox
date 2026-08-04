@@ -13,7 +13,8 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
-from server.database.core.connection import get_db
+from server.chat.tools._helpers import parse_tool_args
+from server.database.repositories.jobs import get_latest_encounter_with_jobs
 
 logger = logging.getLogger(__name__)
 
@@ -32,46 +33,17 @@ async def get_patient_jobs(
         Dict with patient info and their jobs list
     """
     try:
-        with get_db().read() as cursor:
-            if ur_number:
-                # Search by UR number
-                cursor.execute(
-                    """
-                    SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
-                           p.first_name, p.last_name, p.dob
-                    FROM encounters e
-                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                    WHERE e.ur_number = ?
-                    ORDER BY e.encounter_date DESC
-                    LIMIT 1
-                    """,
-                    (ur_number,),
-                )
-            elif patient_name:
-                # Search by name (case-insensitive partial match)
-                cursor.execute(
-                    """
-                    SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
-                           p.first_name, p.last_name, p.dob
-                    FROM encounters e
-                    LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
-                    ORDER BY e.encounter_date DESC
-                    LIMIT 1
-                    """,
-                    (f"%{patient_name}%",),
-                )
-            else:
-                return {"success": False, "error": "Either ur_number or patient_name is required"}
+        if not ur_number and not patient_name:
+            return {"success": False, "error": "Either ur_number or patient_name is required"}
 
-            row = cursor.fetchone()
+        row = get_latest_encounter_with_jobs(ur_number=ur_number, patient_name=patient_name)
         if not row:
             return {
                 "success": False,
                 "error": f"No patient found with {'UR: ' + ur_number if ur_number else 'name: ' + (patient_name or '')}",
             }
 
-        patient = dict(row)
+        patient = row
 
         # Parse jobs list
         jobs_list = []
@@ -165,16 +137,7 @@ async def execute(
     logger.info("Executing get_patient_jobs tool...")
     yield status_message("Retrieving patient jobs...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     ur_number = function_arguments.get("ur_number")
     patient_name = function_arguments.get("patient_name")

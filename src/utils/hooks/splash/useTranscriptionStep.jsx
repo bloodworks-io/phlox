@@ -9,7 +9,7 @@ import { downloadWhisperModel as downloadWhisperService } from "../../services/l
 import { useDebounce } from "../useDebounce";
 import { KEYS } from "../../cache/keys";
 
-export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
+export const useTranscriptionStep = (currentStep, inferenceMode = "remote", language = "en") => {
 
     // Remote mode state
     const [whisperBaseUrl, setWhisperBaseUrl] = useState(
@@ -77,10 +77,17 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
     }, [whisperError]);
 
     // Local mode state
+    // For English, prefer Omi Med STT unless Parakeet is
+    // already downloaded — then keep it to avoid a wasteful re-download.
+    const recommendedLocalWhisperModel =
+        language === "en" &&
+        !downloadedWhisperModels.some((m) => m.id === "tdt-0.6b-v3-q8_0")
+            ? "omi-med-stt-v1-q8_0"
+            : "tdt-0.6b-v3-q8_0";
     const [localWhisperModels, setLocalWhisperModels] = useState([]);
     const [downloadedWhisperModels, setDownloadedWhisperModels] = useState([]);
     const [localWhisperModel, setLocalWhisperModel] = useState(
-        "omi-med-stt-v1-q8_0",
+        recommendedLocalWhisperModel,
     );
     const [isDownloadingWhisper, setIsDownloadingWhisper] = useState(false);
     const [downloadingWhisperModelId, setDownloadingWhisperModelId] =
@@ -200,6 +207,11 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote") => {
             fetchLocalWhisperModels();
         }
     }, [fetchLocalWhisperModels, currentStep, inferenceMode]);
+
+    // Keep the selected local STT model in sync with the preferred language.
+    useEffect(() => {
+        setLocalWhisperModel(recommendedLocalWhisperModel);
+    }, [recommendedLocalWhisperModel]);
 
     return {
         // Remote mode

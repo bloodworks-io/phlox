@@ -5,7 +5,6 @@ This module handles execution of tools from MCP servers.
 """
 
 import base64
-import json
 import logging
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -15,6 +14,7 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.chat.tools.sanitization import sanitize_query_for_external_search
 from server.mcp.client import call_mcp_tool
 
@@ -100,15 +100,7 @@ async def execute(
         yield end_message(function_response={"content": result_content, "citations": citations})
         return
 
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     # Get server config to check allow_sensitive_data flag
     from server.database.config.mcp_manager import mcp_config_manager
