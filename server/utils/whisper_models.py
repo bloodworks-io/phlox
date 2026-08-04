@@ -41,9 +41,31 @@ class ModelInfo(TypedDict):
 
 
 PARAKEET_TDT_V3_LANGUAGES = [
-    "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de",
-    "el", "hu", "it", "lv", "lt", "mt", "pl", "pt", "ro", "sk",
-    "sl", "es", "sv", "ru", "uk",
+    "bg",
+    "hr",
+    "cs",
+    "da",
+    "nl",
+    "en",
+    "et",
+    "fi",
+    "fr",
+    "de",
+    "el",
+    "hu",
+    "it",
+    "lv",
+    "lt",
+    "mt",
+    "pl",
+    "pt",
+    "ro",
+    "sk",
+    "sl",
+    "es",
+    "sv",
+    "ru",
+    "uk",
 ]
 # fmt: on
 
@@ -57,7 +79,6 @@ WHISPER_MODELS: dict[str, ModelInfo] = {
         "category": "omi-med-stt",
         "languages": ["en"],
     },
-
     "tdt-0.6b-v3-q8_0": {
         "url": "https://huggingface.co/mudler/parakeet-cpp-gguf/resolve/main/tdt-0.6b-v3-q8_0.gguf",
         "filename": "tdt-0.6b-v3-q8_0.gguf",

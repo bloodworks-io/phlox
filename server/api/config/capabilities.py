@@ -1,5 +1,4 @@
-"""Capabilities endpoint mostly for language items.
-"""
+"""Capabilities endpoint mostly for language items."""
 
 from fastapi import APIRouter
 
