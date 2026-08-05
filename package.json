@@ -70,7 +70,7 @@
         "eslint-plugin-unused-imports": "^4.4.1",
         "globals": "^17.8.0",
         "jsdom": "^29.1.1",
-        "typescript": "^6.0.3",
+        "typescript": "^7.0.2",
         "typescript-eslint": "^8.65.0",
         "vite": "^8.1.5",
         "vite-plugin-static-copy": "^4.1.1",
