@@ -87,7 +87,8 @@ def get_files():
         collections = vector_store_manager.list_collections()
         return {"files": collections}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching collections: {str(e)}") from e
+        logger.error(f"Error fetching collections: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error fetching collections") from e
 
 
 @router.get("/collection_files/{collection_name}")
@@ -99,9 +100,10 @@ def get_collection_files(collection_name: str):
         files = vector_store_manager.get_files_for_collection_with_pdf_flag(collection_name)
         return {"files": files}
     except Exception as e:
+        logger.error(f"Error fetching files for collection '{collection_name}': {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error fetching files for collection '{collection_name}': {str(e)}",
+            detail=f"Error fetching files for collection '{collection_name}'",
         ) from e
 
 
@@ -116,7 +118,8 @@ def modify_collection(request: ModifyCollectionRequest):
             raise HTTPException(status_code=500, detail="Failed to rename collection")
         return {"message": "Collection renamed successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error renaming collection: {str(e)}") from e
+        logger.error(f"Error renaming collection: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error renaming collection") from e
 
 
 @router.delete("/delete-collection/{name}")
@@ -130,7 +133,8 @@ def delete_collection_endpoint(name: str):
             raise HTTPException(status_code=500, detail="Failed to delete collection")
         return {"message": "Collection deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting collection: {str(e)}") from e
+        logger.error(f"Error deleting collection: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error deleting collection") from e
 
 
 @router.delete("/delete-file")
@@ -146,9 +150,10 @@ def delete_file_endpoint(request: DeleteFileRequest):
             raise HTTPException(status_code=500, detail="Failed to delete file from collection")
         return {"message": "File deleted from collection successfully"}
     except Exception as e:
+        logger.error(f"Error deleting file from collection: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error deleting file from collection: {str(e)}",
+            detail="Error deleting file from collection",
         ) from e
 
 
@@ -169,9 +174,10 @@ def update_document_metadata(request: UpdateDocumentMetadataRequest):
             raise HTTPException(status_code=500, detail="Failed to update document metadata")
         return {"message": "Document metadata updated successfully"}
     except Exception as e:
+        logger.error(f"Error updating document metadata: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error updating document metadata: {str(e)}",
+            detail="Error updating document metadata",
         ) from e
 
 
@@ -195,9 +201,10 @@ def download_pdf(collection_name: str, filename: str):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error retrieving PDF: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error retrieving PDF: {str(e)}",
+            detail="Error retrieving PDF",
         ) from e
 
 
@@ -238,7 +245,7 @@ async def extract_pdf_info(file: UploadFile = File(...)):
         raise http_exc
     except Exception as e:
         logger.error(f"Error processing PDF '{file.filename}': {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}") from e
+        raise HTTPException(status_code=500, detail="Error processing PDF") from e
 
 
 @router.post("/extract-pdf-info-from-text")
@@ -267,7 +274,7 @@ async def extract_pdf_info_from_text(payload: ExtractTextPayload):
             exc_info=True,
         )
         raise HTTPException(
-            status_code=500, detail=f"Error processing extracted text: {str(e)}"
+            status_code=500, detail="Error processing extracted text"
         ) from e
 
 
@@ -287,9 +294,10 @@ def commit_to_db(request: CommitRequest):
 
         return {"message": "Data committed to the database successfully"}
     except Exception as e:
+        logger.error(f"Error committing data to database: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error committing data to database: {str(e)}",
+            detail="Error committing data to database",
         ) from e
 
 
@@ -320,9 +328,10 @@ def commit_direct(request: BulkCommitRequest):
             "filename": request.filename,
         }
     except Exception as e:
+        logger.error(f"Error committing data to database: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error committing data to database: {str(e)}",
+            detail="Error committing data to database",
         ) from e
 
 
@@ -335,9 +344,10 @@ def re_embed():
         result = vector_store_manager.re_embed_all()
         return {"message": "Re-embedding completed successfully", **result}
     except Exception as e:
+        logger.error(f"Error during re-embedding: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error during re-embedding: {str(e)}",
+            detail="Error during re-embedding",
         ) from e
 
 
@@ -362,4 +372,5 @@ def clear_database():
             raise HTTPException(status_code=500, detail="Failed to reset RAG database")
         return {"message": "RAG database cleared successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error clearing RAG database: {str(e)}") from e
+        logger.error(f"Error clearing RAG database: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error clearing RAG database") from e
