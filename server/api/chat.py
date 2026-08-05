@@ -422,6 +422,7 @@ async def probe_vision_capability(payload: VisionCapabilityProbeRequest):
     except Exception as e:
         error_text = str(e)
         lowered = error_text.lower()
+        logging.error("Vision probe failed: %s", error_text, exc_info=True)
 
         looks_like_unsupported_vision = (
             "400" in lowered
@@ -433,7 +434,9 @@ async def probe_vision_capability(payload: VisionCapabilityProbeRequest):
         result_payload = {
             "vision_capable": False,
             "status_code": 400 if looks_like_unsupported_vision else 500,
-            "detail": error_text,
+            "detail": "Vision model not supported"
+            if looks_like_unsupported_vision
+            else "Internal server error",
         }
 
         _store_vision_probe_result(
