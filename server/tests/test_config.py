@@ -227,12 +227,12 @@ def test_post_user_filters_migrated_keys():
     client.post("/api/config/user", json={"name": ""})
 
 
-def test_v8_backfills_policy_keys_from_user_settings():
-    """Migration v8 reads the legacy user_settings columns and writes config KV."""
+def test_v9_backfills_policy_keys_from_user_settings():
+    """Migration v9 reads the legacy user_settings columns and writes config KV."""
     import json
 
     from server.database.config.manager import config_manager
-    from server.database.core.migrations.v8_preferred_language import migrate
+    from server.database.core.migrations.v9_policy_keys import migrate
 
     config_manager.refresh_db()
     # Plant custom values in the legacy (now-dead) columns.
