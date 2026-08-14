@@ -159,7 +159,7 @@ class SqliteVecBackend:
                 (name, embedding_model, embedding_dim, display_name),
             )
             db.execute(
-                f"CREATE VIRTUAL TABLE IF NOT EXISTS vec_{safe} USING vec0("
+                f"CREATE VIRTUAL TABLE IF NOT EXISTS vec_{safe} USING vec0("  # nosec B608
                 f"chunk_id TEXT PRIMARY KEY, embedding float[{embedding_dim}] "
                 f"distance_metric=cosine)"
             )
@@ -171,7 +171,7 @@ class SqliteVecBackend:
         safe = _safe_table_name(name)
         db = self._connect()
         try:
-            db.execute(f"DROP TABLE IF EXISTS vec_{safe}")
+            db.execute(f"DROP TABLE IF EXISTS vec_{safe}")  # nosec B608
             db.execute("DELETE FROM collections WHERE name = ?", (name,))
             db.commit()
             logger.info("Collection '%s' deleted", name)
@@ -189,7 +189,7 @@ class SqliteVecBackend:
         new_safe = _safe_table_name(new_name)
         db = self._connect()
         try:
-            db.execute(f"ALTER TABLE vec_{old_safe} RENAME TO vec_{new_safe}")
+            db.execute(f"ALTER TABLE vec_{old_safe} RENAME TO vec_{new_safe}")  # nosec B608
             db.execute("UPDATE collections SET name = ? WHERE name = ?", (new_name, old_name))
             if display_name is not None:
                 db.execute(
@@ -520,9 +520,9 @@ class SqliteVecBackend:
         safe = _safe_table_name(collection_name)
         db = self._connect()
         try:
-            db.execute(f"DROP TABLE IF EXISTS vec_{safe}")
+            db.execute(f"DROP TABLE IF EXISTS vec_{safe}")  # nosec B608
             db.execute(
-                f"CREATE VIRTUAL TABLE vec_{safe} USING vec0("
+                f"CREATE VIRTUAL TABLE vec_{safe} USING vec0("  # nosec B608
                 f"chunk_id TEXT PRIMARY KEY, embedding float[{dim}] "
                 f"distance_metric=cosine)"
             )
