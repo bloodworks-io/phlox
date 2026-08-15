@@ -168,3 +168,189 @@ def test_language_directive_injected_only_for_non_english(monkeypatch):
     assert out[0]["content"].startswith("You are operating in a Spanish-speaking")
     assert out[0]["content"].endswith("original")
     assert out[1:] == with_system[1:]
+
+
+def test_policy_keys_present_in_global_config():
+    """Migration v9 backfills the three policy keys into config KV."""
+    data = client.get("/api/config/global").json()
+    assert data["DISABLED_TOOLS"] == ["pubmed_search", "wiki_search"]
+    assert data["STORE_ORIGINAL_PDFS"] is False
+    assert data["REQUIRE_SCRIBE_CONSENT"] is False
+
+
+def test_policy_keys_round_trip_via_global():
+    """Policy keys are read/written via the global config endpoint."""
+    client.post(
+        "/api/config/global",
+        json={
+            "DISABLED_TOOLS": ["pubmed_search"],
+            "STORE_ORIGINAL_PDFS": True,
+            "REQUIRE_SCRIBE_CONSENT": True,
+        },
+    )
+    data = client.get("/api/config/global").json()
+    assert data["DISABLED_TOOLS"] == ["pubmed_search"]
+    assert data["STORE_ORIGINAL_PDFS"] is True
+    assert data["REQUIRE_SCRIBE_CONSENT"] is True
+
+    # Restore defaults so other tests see a known state.
+    client.post(
+        "/api/config/global",
+        json={
+            "DISABLED_TOOLS": ["pubmed_search", "wiki_search"],
+            "STORE_ORIGINAL_PDFS": False,
+            "REQUIRE_SCRIBE_CONSENT": False,
+        },
+    )
+
+
+def test_post_user_filters_migrated_keys():
+    """POST /user must drop disabled_tools/advanced_options (relocated to config)."""
+    client.post(
+        "/api/config/user",
+        json={
+            "disabled_tools": ["should_be_dropped"],
+            "advanced_options": {"store_original_pdfs": True},
+            "name": "FilterCheck",
+        },
+    )
+    settings = client.get("/api/config/user").json()
+    assert "disabled_tools" not in settings
+    assert "advanced_options" not in settings
+    assert settings["name"] == "FilterCheck"
+
+    # The policy keys live in global config, unaffected by the user POST.
+    config = client.get("/api/config/global").json()
+    assert "should_be_dropped" not in config["DISABLED_TOOLS"]
+
+    # Restore.
+    client.post("/api/config/user", json={"name": ""})
+
+
+def test_v9_backfills_policy_keys_from_user_settings():
+    """Migration v9 reads the legacy user_settings columns and writes config KV."""
+    import json
+
+    from server.database.config.manager import config_manager
+    from server.database.core.migrations.v9_policy_keys import migrate
+
+    config_manager.refresh_db()
+    # Plant custom values in the legacy (now-dead) columns.
+    with config_manager.db.transaction() as cursor:
+        cursor.execute(
+            "UPDATE user_settings SET disabled_tools = ?, advanced_options = ?",
+            (
+                json.dumps(["legacy_tool"]),
+                json.dumps({"store_original_pdfs": True, "require_scribe_consent": True}),
+            ),
+        )
+        # Re-run the migration (idempotent INSERT OR REPLACE).
+        migrate(cursor, None)
+
+    config_manager._load_configs()
+    config = config_manager.get_config()
+    assert config["DISABLED_TOOLS"] == ["legacy_tool"]
+    assert config["STORE_ORIGINAL_PDFS"] is True
+    assert config["REQUIRE_SCRIBE_CONSENT"] is True
+
+    # Restore defaults.
+    client.post(
+        "/api/config/global",
+        json={
+            "DISABLED_TOOLS": ["pubmed_search", "wiki_search"],
+            "STORE_ORIGINAL_PDFS": False,
+            "REQUIRE_SCRIBE_CONSENT": False,
+        },
+    )
+
+
+def test_normalize_base_url_rejects_non_http_schemes():
+    """Only http/https base URLs are accepted; /v1 + slash normalization intact."""
+    import pytest
+
+    from server.utils.url_utils import normalize_base_url
+
+    assert normalize_base_url("http://a:1/v1/") == "http://a:1"
+    assert normalize_base_url("https://a:1/api/openai/v1") == "https://a:1/api/openai"
+    assert normalize_base_url("http://a:1") == "http://a:1"
+    with pytest.raises(ValueError):
+        normalize_base_url("file:///etc/passwd")
+    with pytest.raises(ValueError):
+        normalize_base_url("gopher://x")
+    with pytest.raises(ValueError):
+        normalize_base_url("")
+
+
+def test_llm_models_stored_key_only_travels_to_stored_url(monkeypatch):
+    """The stored LLM_API_KEY must never be attached to a caller-supplied foreign URL."""
+    from server.database.config.manager import config_manager
+
+    config_manager.update_config(
+        {"LLM_BASE_URL": "http://stored.example/v1", "LLM_API_KEY": "sk-stored-secret"}
+    )
+
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {"data": [{"id": "m"}]}
+
+    class FakeClient:
+        def __init__(self, headers=None, **kwargs):
+            captured["headers"] = headers or {}
+            captured["client_kwargs"] = kwargs
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def get(self, url, timeout=None):
+            captured["url"] = url
+            captured["timeout"] = timeout
+            return FakeResponse()
+
+    monkeypatch.setattr("server.api.config.models.httpx.AsyncClient", FakeClient)
+
+    # Foreign URL, no caller key: no Authorization header at all.
+    r = client.get(
+        "/api/config/llm/models",
+        params={"provider": "openai", "baseUrl": "http://attacker.example/"},
+    )
+    assert r.status_code == 200
+    assert "Authorization" not in captured["headers"]
+
+    # Stored URL (± /v1 and trailing slash): stored key attached.
+    for base in ("http://stored.example", "http://stored.example/", "http://stored.example/v1"):
+        r = client.get("/api/config/llm/models", params={"provider": "openai", "baseUrl": base})
+        assert r.status_code == 200
+        assert captured["headers"].get("Authorization") == "Bearer sk-stored-secret"
+
+    # Caller key with foreign URL: caller key used, stored key never leaks.
+    r = client.get(
+        "/api/config/llm/models",
+        params={"provider": "openai", "baseUrl": "http://attacker.example/", "apiKey": "sk-caller"},
+    )
+    assert r.status_code == 200
+    assert captured["headers"].get("Authorization") == "Bearer sk-caller"
+
+    # Case-different URL is NOT treated as the stored URL (fail closed).
+    r = client.get(
+        "/api/config/llm/models",
+        params={"provider": "openai", "baseUrl": "HTTP://STORED.EXAMPLE/"},
+    )
+    assert r.status_code == 200
+    assert "Authorization" not in captured["headers"]
+
+    # Non-http scheme: rejected with 400, no outbound request.
+    r = client.get(
+        "/api/config/llm/models",
+        params={"provider": "openai", "baseUrl": "file:///etc/passwd"},
+    )
+    assert r.status_code == 400
+
+    # Restore so other tests see a clean config.
+    config_manager.update_config({"LLM_BASE_URL": "", "LLM_API_KEY": ""})

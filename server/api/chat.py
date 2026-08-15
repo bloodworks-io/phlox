@@ -11,12 +11,14 @@ from pydantic import BaseModel, Field
 from server.chat import ChatEngine
 from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
-from server.llm_client.client import AsyncLLMClient, get_llm_client
+from server.llm_client.client import AsyncLLMClient, get_llm_client, resolve_effective_api_key
 from server.nlp_tools.document_processing import extract_text_from_document
 from server.schemas.chat import ChatRequest, ChatResponse
 from server.schemas.documents import VisualDocumentPage
 
 router = APIRouter()
+
+_VISION_CACHE: dict[str, dict] = {}
 
 
 class VisualDocumentRequest(BaseModel):
@@ -84,9 +86,8 @@ def _is_local_vision_capable(config: dict) -> bool:
     return any((DATA_DIR / "llm_models").glob("*mmproj*.gguf"))
 
 
-def _get_vision_capability_cache(config: dict) -> dict:
-    cache = config.get("VISION_CAPABILITY_CACHE", {})
-    return cache if isinstance(cache, dict) else {}
+def _get_vision_capability_cache() -> dict:
+    return _VISION_CACHE
 
 
 def _store_vision_probe_result(
@@ -99,22 +100,12 @@ def _store_vision_probe_result(
     detail: str,
 ):
     cache_key = _build_vision_cache_key(provider, base_url, model)
-    current_config = config_manager.get_config()
-    cache = _get_vision_capability_cache(current_config)
-    cache[cache_key] = {
+    _VISION_CACHE[cache_key] = {
         "vision_capable": bool(vision_capable),
         "status_code": int(status_code),
         "detail": detail,
         "probed_at": datetime.now(UTC).isoformat(),
     }
-
-    config_manager.update_config(
-        {
-            "VISION_CAPABILITY_CACHE": cache,
-            "VISION_CAPABILITY_CACHE_KEY": cache_key,
-            "VISION_MODEL_CAPABLE": bool(vision_capable),
-        }
-    )
 
 
 def _build_visual_user_content(
@@ -219,6 +210,9 @@ async def upload_image(file: UploadFile = File(...)):
         # OCR dependencies not available
         logging.error(f"OCR not available: {e}")
         raise HTTPException(status_code=503, detail="OCR dependencies not available") from e
+    except ValueError as e:
+        # Image exceeded pixel cap
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logging.error(f"Error processing image: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -318,7 +312,7 @@ def get_current_vision_capability():
     model = config.get("PRIMARY_MODEL", "")
 
     cache_key = _build_vision_cache_key(provider, base_url, model)
-    cache = _get_vision_capability_cache(config)
+    cache = _get_vision_capability_cache()
     cached_result = cache.get(cache_key)
 
     # Local (Tauri) builds ship VLMs with a projector — vision is always available.
@@ -342,13 +336,13 @@ def get_current_vision_capability():
             "probed_at": cached_result.get("probed_at"),
         }
 
-    # Backward compatibility fallback to global flag
+    # In-memory cache is the single source of truth now.)
     return {
-        "vision_capable": bool(config.get("VISION_MODEL_CAPABLE", False)),
+        "vision_capable": False,
         "status_code": 200,
-        "detail": "No cache entry for current model endpoint; using global flag fallback.",
+        "detail": "No cache entry for current model endpoint; probe required.",
         "cache_key": cache_key,
-        "source": "global_flag",
+        "source": "no_cache",
         "probed_at": None,
     }
 
@@ -365,7 +359,8 @@ async def probe_vision_capability(payload: VisionCapabilityProbeRequest):
     config = config_manager.get_config()
     model = payload.model or config.get("PRIMARY_MODEL", "")
     base_url = payload.base_url or config.get("LLM_BASE_URL")
-    api_key = payload.api_key or config.get("LLM_API_KEY")
+
+    api_key = resolve_effective_api_key(payload.base_url, payload.api_key)
 
     # 1x1 black PNG
     black_square_data_url = (

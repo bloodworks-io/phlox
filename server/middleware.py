@@ -9,6 +9,8 @@ import time
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from server.api.auth import AUTH_LOGIN_PATH
+
 logger = logging.getLogger(__name__)
 
 # Centralized path skip rules - add new React routes here
@@ -67,12 +69,20 @@ def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
     return bool(check_api and not path.startswith("/api/"))
 
 
-def _is_private_ip(ip_str: str) -> bool:
-    """Check if an IP belongs to a private network (Docker/Localhost)."""
+def _is_trusted_proxy_ip(ip_str: str) -> bool:
+    from server.constants import TRUSTED_PROXY_IPS
+
     try:
-        return ipaddress.ip_address(ip_str).is_private
+        addr = ipaddress.ip_address(ip_str)
     except ValueError:
         return False
+    for net in TRUSTED_PROXY_IPS:
+        try:
+            if addr in ipaddress.ip_network(net, strict=False):
+                return True
+        except ValueError:
+            logger.warning(f"Ignoring invalid TRUSTED_PROXY_IPS entry: {net}")
+    return False
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -100,26 +110,93 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class TrustedProxyMiddleware(BaseHTTPMiddleware):
-    """Extract real client IP from X-Forwarded-For header if from trusted proxy.
+    """Extract real client IP from X-Forwarded-For header if from a trusted proxy.
 
-    Only trusts X-Forwarded-For when the direct connection is from a private IP
-    (e.g., a reverse proxy on the same Docker network). This prevents clients
-    from spoofing the header directly.
+    Only trusts X-Forwarded-For when the direct connection is in TRUSTED_PROXY_IPS.
     """
 
     async def dispatch(self, request, call_next):
         client_host = request.client.host if request.client else "unknown"
         forwarded_for = request.headers.get("x-forwarded-for")
 
-        # Only trust X-Forwarded-For if the direct connection is from a private IP
-        if forwarded_for and client_host != "unknown" and _is_private_ip(client_host):
-            # Take the first IP in the chain (original client)
-            request.state.client_ip = forwarded_for.split(",")[0].strip()
-        else:
-            # Fall back to the actual connecting IP
-            request.state.client_ip = client_host
+        client_ip = client_host
+        if forwarded_for and _is_trusted_proxy_ip(client_host):
+            # Take the first IP in the chain (original client).
+            candidate = forwarded_for.split(",")[0].strip()
+            try:
+                ipaddress.ip_address(candidate)
+                client_ip = candidate
+            except ValueError:
+                logger.warning(
+                    f"Ignoring invalid X-Forwarded-For from trusted proxy: {forwarded_for!r}"
+                )
+        request.state.client_ip = client_ip
 
         return await call_next(request)
+
+
+class _BodyTooLarge(Exception):
+    """Internal signal: request body exceeded the configured cap."""
+
+
+class RequestBodyLimitMiddleware:
+    """Reject request bodies over a size cap (decompression-bomb / OOM protection)."""
+
+    AUDIO_PATHS = ("/api/transcribe/audio", "/api/transcribe/dictate")
+    GUARDED_METHODS = ("POST", "PUT", "PATCH")
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        from server import constants
+
+        if scope["type"] != "http" or scope.get("method") not in self.GUARDED_METHODS:
+            await self.app(scope, receive, send)
+            return
+
+        limit = (
+            constants.MAX_AUDIO_BODY_BYTES
+            if scope.get("path") in self.AUDIO_PATHS
+            else constants.MAX_BODY_BYTES
+        )
+
+        # Fast path: reject an oversized declared Content-Length before reading anything.
+        for name, value in scope.get("headers", []):
+            if name == b"content-length":
+                if value.isdigit() and int(value) > limit:
+                    await self._send_413(scope, receive, send)
+                    return
+                break
+
+        received = 0
+
+        async def capped_receive():
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > limit:
+                    raise _BodyTooLarge
+            return message
+
+        response_started = False
+
+        async def send_wrapper(message):
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, capped_receive, send_wrapper)
+        except _BodyTooLarge:
+            if not response_started:
+                await self._send_413(scope, receive, send)
+
+    async def _send_413(self, scope, receive, send):
+        response = JSONResponse({"detail": "Request body too large"}, status_code=413)
+        await response(scope, receive, send)
 
 
 class LocalTokenMiddleware(BaseHTTPMiddleware):
@@ -137,13 +214,15 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
+        if path == AUTH_LOGIN_PATH:
+            return await call_next(request)
+
         # Skip middleware checks for public/static/React routes
         if should_skip_middleware(path):
             return await call_next(request)
 
-        # In Docker mode, skip token validation
-        if IS_DOCKER:
-            logger.debug(f"Auth skipped - Docker mode (path: {path})")
+        if IS_DOCKER and not get_request_token():
+            logger.debug(f"Auth skipped - Docker mode without token (path: {path})")
             return await call_next(request)
 
         # Get expected token
@@ -178,9 +257,7 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
     For use with Authelia, Traefik, Caddy, etc. that pass authenticated
     user identity via headers after performing authentication.
 
-    Only trusts the auth header when the direct connection is from a private IP
-    (e.g., a reverse proxy on the same Docker network). This prevents clients
-        from spoofing the header directly.
+
     """
 
     async def dispatch(self, request, call_next):
@@ -200,12 +277,10 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
         if should_skip_middleware(path):
             return await call_next(request)
 
-        # Only trust auth header if coming from a trusted proxy (private IP)
+        # Only trust auth header if coming from a trusted proxy
         client_host = request.client.host if request.client else "unknown"
-        if client_host == "unknown" or not _is_private_ip(client_host):
-            # Direct connection from public IP - reject or fall through
-            # Since proxy auth is enabled, we require the header
-            logger.warning(f"Proxy auth header received from non-private IP: {client_host}")
+        if not _is_trusted_proxy_ip(client_host):
+            logger.warning(f"Proxy auth request from untrusted IP: {client_host}")
             return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
         # Get user from header

@@ -57,15 +57,17 @@ services:
     image: ghcr.io/bloodworks-io/phlox:latest
     container_name: phlox
     ports:
-      - "5000:5000"  # Use "127.0.0.1:5000:5000" if not behind a reverse proxy
+      - "5000:5000"
     environment:
-      - DB_ENCRYPTION_KEY=          # Required: generate a strong random key
-      - TZ=                         # e.g. America/New_York
-      - ALLOWED_ORIGINS=*           # Or your origin, e.g. https://phlox.example.com
-      # Optional — proxy auth + rate limiting (see https://phlox.bloodworks.io/docs/setup#critical-security-warning)
+      - PHLOX_PASSPHRASE=    # Will be prompted for in the browser
+      - DB_ENCRYPTION_KEY=   # Required: generate a strong random key
+      - TZ=                  # e.g. America/New_York
+      # Alternative to PHLOX_PASSPHRASE: auth handled by your reverse proxy
+      # (pick one approach - do not combine)
       # - PROXY_AUTH_ENABLED=true
       # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
       # - PROXY_AUTH_ALLOWED_USERS=user1,user2
+      # - TRUSTED_PROXY_IPS=172.16.0.2 # Required with PROXY_AUTH_ENABLED:
       # - RATE_LIMIT_ENABLED=true
     volumes:
       - ./data:/usr/src/app/data    # Persistent data (database, vectors)

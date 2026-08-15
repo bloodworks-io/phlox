@@ -8,7 +8,7 @@ def get_request_token() -> str | None:
     return _REQUEST_TOKEN
 
 
-def set_request_token(token: str) -> None:
+def set_request_token(token: str | None) -> None:
     """Set the request token."""
     global _REQUEST_TOKEN
     _REQUEST_TOKEN = token

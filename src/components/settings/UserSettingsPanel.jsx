@@ -1,9 +1,9 @@
 // Component for configuring user-specific settings.
-import { Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, Switch, Tabs, VStack, Field } from "@chakra-ui/react";
+import { Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, Tabs, VStack, Field } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
-import { FaUser, FaCog, FaFileAlt, FaEnvelopeOpenText, FaComments } from "react-icons/fa";
+import { FaUser, FaFileAlt, FaEnvelopeOpenText, FaComments } from "react-icons/fa";
 import TemplateSettingsPanel from "./TemplateSettingsPanel";
 import LetterTemplatesPanel from "./LetterTemplatesPanel";
 import ChatSettingsPanel from "./ChatSettingsPanel";
@@ -11,25 +11,6 @@ import { isChatEnabled } from "../../utils/helpers/featureFlags";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { syncLanguage } from "../../i18n";
 import { UI_LANGUAGES, getLanguageName } from "../../utils/i18n/languages";
-
-const ADVANCED_OPTIONS_SCHEMA = [
-  {
-    key: "store_original_pdfs",
-    label: "Store Original PDFs",
-    description:
-      "Keep original PDF files in the database after upload. Increases storage usage.",
-    type: "boolean",
-    defaultValue: false,
-  },
-  {
-    key: "require_scribe_consent",
-    label: "Require patient consent for ambient scribing",
-    description:
-      "Prompt each patient for consent before ambient (transcription) recording. Dictation is unaffected; consent is remembered per patient.",
-    type: "boolean",
-    defaultValue: false,
-  },
-];
 
 const UserSettingsPanel = ({
   isCollapsed,
@@ -83,15 +64,6 @@ const UserSettingsPanel = ({
       default_letter_template_id: templateId,
     }));
   };
-  const handleAdvancedOptionChange = (key, value) => {
-    setUserSettings((prev) => ({
-      ...prev,
-      advanced_options: {
-        ...(prev.advanced_options || {}),
-        [key]: value,
-      },
-    }));
-  };
   return (
     <Box className="panels-bg" p="4" borderRadius="sm">
       <Flex align="center" justify="space-between">
@@ -137,12 +109,6 @@ const UserSettingsPanel = ({
                   </HStack>
                 </Tabs.Trigger>
               )}
-              <Tabs.Trigger className="tab-style" value="1">
-                <HStack>
-                  <FaCog />
-                  <Text>Advanced</Text>
-                </HStack>
-              </Tabs.Trigger>
             </Tabs.List>
             
               <Tabs.Content value="0" className="floating-main">
@@ -266,42 +232,7 @@ const UserSettingsPanel = ({
                   </Field.Root>
                 </VStack>
               </Tabs.Content>
-              <Tabs.Content value="1" className="floating-main">
-                <Text fontSize="sm" mb={4} className="pill-box-icons">
-                  These options are intended for advanced users. Changing them may
-                  affect storage or performance.
-                </Text>
-                <VStack gap={3} align="stretch">
-                  {ADVANCED_OPTIONS_SCHEMA.map((option) => (
-                    <Flex key={option.key} justify="space-between" align="center">
-                      <Box>
-                        <Text fontSize="sm" fontWeight="medium">
-                          {option.label}
-                        </Text>
-                        <Text fontSize="xs" className="pill-box-icons">
-                          {option.description}
-                        </Text>
-                      </Box>
-                      <Switch.Root
-                        size="sm"
-                        checked={
-                          userSettings.advanced_options?.[option.key] ??
-                          option.defaultValue
-                        }
-                        onCheckedChange={({ checked }) =>
-                          handleAdvancedOptionChange(option.key, checked)
-                        }
-                      >
-                        <Switch.HiddenInput />
-                        <Switch.Control>
-                          <Switch.Thumb />
-                        </Switch.Control>
-                      </Switch.Root>
-                    </Flex>
-                  ))}
-                </VStack>
-              </Tabs.Content>
-            
+
               <Tabs.Content value="2" className="floating-main">
                 <TemplateSettingsPanel
                   templates={templates}

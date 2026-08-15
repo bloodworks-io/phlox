@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from server.database.config.manager import config_manager
 from server.database.core.connection import get_db
 from server.schemas.templates import (
     ClinicalTemplate,
@@ -189,9 +190,8 @@ def update_template(template: ClinicalTemplate) -> str:
 
             # If we get here, there are changes, so create new version
             # Check if this template is currently the default
-            cursor.execute("SELECT default_template_key FROM user_settings LIMIT 1")
-            settings = cursor.fetchone()
-            is_default = settings and settings["default_template_key"] == template.template_key
+            current_default = config_manager.get_default_template_key()
+            is_default = current_default == template.template_key
 
             # Get the latest version number
             cursor.execute(
@@ -244,14 +244,7 @@ def update_template(template: ClinicalTemplate) -> str:
 
             # If this was the default template, update the default to the new version
             if is_default:
-                cursor.execute(
-                    """
-                    UPDATE user_settings
-                    SET default_template_key = ?
-                    WHERE default_template_key = ?
-                    """,
-                    (new_template_key, template.template_key),
-                )
+                config_manager.update_default_template_key(template.template_key, new_template_key)
                 logging.info(f"Updated default template to new version: {new_template_key}")
 
             return new_template_key
@@ -369,8 +362,8 @@ def set_default_template(template_key: str) -> None:
         template_key (str): The key of the template to set as default
     """
     try:
-        with get_db().transaction() as cursor:
-            # Verify template exists
+        with get_db().read() as cursor:
+            # Verify template exists and is not deleted
             cursor.execute(
                 "SELECT template_key, deleted FROM clinical_templates WHERE template_key = ?",
                 (template_key,),
@@ -378,31 +371,13 @@ def set_default_template(template_key: str) -> None:
             template = cursor.fetchone()
             logging.info(f"Found template: {dict(template) if template else None}")
 
-            if not template:
-                raise ValueError(f"Template with key {template_key} does not exist")
-            if template["deleted"]:
-                raise ValueError(f"Template with key {template_key} is marked as deleted")
+        if not template:
+            raise ValueError(f"Template with key {template_key} does not exist")
+        if template["deleted"]:
+            raise ValueError(f"Template with key {template_key} is marked as deleted")
 
-            # Get the first user settings record or create if none exists
-            cursor.execute("SELECT id FROM user_settings LIMIT 1")
-            row = cursor.fetchone()
-
-            if row:
-                # Update existing settings
-                logging.info(f"Updating default template to {template_key} in database")
-                cursor.execute(
-                    "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
-                    (template_key, row["id"]),
-                )
-            else:
-                # Create new settings record
-
-                cursor.execute(
-                    "INSERT INTO user_settings (default_template_key) VALUES (?)",
-                    (template_key,),
-                )
-
-            logging.info(f"Successfully set default template to {template_key} in database")
+        config_manager.set_default_template_key(template_key)
+        logging.info(f"Successfully set default template to {template_key} in database")
     except Exception as e:
         logging.error(f"Error setting default template: {e}")
         raise
@@ -416,13 +391,10 @@ def get_default_template() -> dict[str, Any] | None:
         Optional[Dict[str, Any]]: The default template if set, None otherwise
     """
     try:
-        with get_db().read() as cursor:
-            cursor.execute("SELECT default_template_key FROM user_settings LIMIT 1")
-            row = cursor.fetchone()
-            logging.info(f"Retrieved user settings row: {dict(row) if row else None}")
+        template_key = config_manager.get_default_template_key()
+        logging.info(f"Retrieved default template key: {template_key}")
 
-        if row and row["default_template_key"]:
-            template_key = row["default_template_key"]
+        if template_key:
             template = get_template_by_key(template_key)
             logging.info(f"Successfully retrieved template {template_key}.")
             return template

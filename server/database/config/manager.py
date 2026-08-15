@@ -216,8 +216,6 @@ class ConfigManager:
                     default_letter_template_id,
                     has_completed_splash_screen,
                     scribe_is_ambient,
-                    disabled_tools,
-                    advanced_options,
                     preferred_language
                 FROM user_settings LIMIT 1
                 """)
@@ -232,14 +230,6 @@ class ConfigManager:
                 )
             if "scribe_is_ambient" in settings:
                 settings["scribe_is_ambient"] = bool(settings["scribe_is_ambient"])
-            if settings.get("disabled_tools"):
-                settings["disabled_tools"] = json.loads(settings["disabled_tools"])
-            else:
-                settings["disabled_tools"] = ["pubmed_search", "wiki_search"]
-            if settings.get("advanced_options"):
-                settings["advanced_options"] = json.loads(settings["advanced_options"])
-            else:
-                settings["advanced_options"] = {}
             if not settings.get("preferred_language"):
                 settings["preferred_language"] = "en"
             return settings
@@ -256,8 +246,6 @@ class ConfigManager:
             "default_letter_template_id": None,
             "has_completed_splash_screen": False,
             "scribe_is_ambient": True,
-            "disabled_tools": ["pubmed_search", "wiki_search"],
-            "advanced_options": {},
             "preferred_language": "en",
         }
 
@@ -280,10 +268,8 @@ class ConfigManager:
                     default_letter_template_id,
                     has_completed_splash_screen,
                     scribe_is_ambient,
-                    disabled_tools,
-                    advanced_options,
                     preferred_language
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     settings.get("name", ""),
@@ -298,10 +284,29 @@ class ConfigManager:
                     settings.get("default_letter_template_id"),
                     bool(settings.get("has_completed_splash_screen", False)),
                     bool(settings.get("scribe_is_ambient", True)),
-                    json.dumps(settings.get("disabled_tools", ["pubmed_search", "wiki_search"])),
-                    json.dumps(settings.get("advanced_options", {})),
                     settings.get("preferred_language", "en"),
                 ),
+            )
+
+    def get_default_template_key(self) -> str | None:
+        """Return the current default template key, or None if unset."""
+        return self.get_user_settings().get("default_template_key")
+
+    def set_default_template_key(self, key: str) -> None:
+        """Set the default template key via the user_settings read-modify-write path."""
+        self.update_user_settings({"default_template_key": key})
+
+    def update_default_template_key(self, old: str, new: str) -> None:
+        """Bump the default template pointer from old to new (version-bump path).
+
+        Targeted WHERE so it only moves when the current value still matches old,
+        avoiding clobbering a concurrent user change.
+        """
+        self.refresh_db()
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "UPDATE user_settings SET default_template_key = ? WHERE default_template_key = ?",
+                (new, old),
             )
 
     @staticmethod
@@ -310,16 +315,7 @@ class ConfigManager:
         result = cursor.fetchone()
         if not result:
             return {}
-        settings = dict(result)
-        if settings.get("disabled_tools"):
-            settings["disabled_tools"] = json.loads(settings["disabled_tools"])
-        else:
-            settings["disabled_tools"] = ["pubmed_search", "wiki_search"]
-        if settings.get("advanced_options"):
-            settings["advanced_options"] = json.loads(settings["advanced_options"])
-        else:
-            settings["advanced_options"] = {}
-        return settings
+        return dict(result)
 
 
 config_manager = ConfigManager()

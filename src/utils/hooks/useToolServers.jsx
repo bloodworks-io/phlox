@@ -20,13 +20,13 @@ export const useToolServers = () => {
     });
 
     const {
-        data: userSettings = {},
-        mutate: mutateUserSettings,
-    } = useSWR(KEYS.USER_SETTINGS, () => settingsApi.fetchUserSettings());
+        data: globalConfig = {},
+        mutate: mutateGlobalConfig,
+    } = useSWR(KEYS.GLOBAL_CONFIG, () => settingsApi.fetchConfig());
 
     const disabledTools = useMemo(
-        () => userSettings.disabled_tools || DEFAULT_DISABLED_TOOLS,
-        [userSettings],
+        () => globalConfig.DISABLED_TOOLS || DEFAULT_DISABLED_TOOLS,
+        [globalConfig],
     );
 
     const refreshServers = useCallback(async () => {
@@ -152,13 +152,10 @@ export const useToolServers = () => {
                 : [...disabledTools, toolName];
 
             try {
-                await settingsApi.saveUserSettings({
-                    ...userSettings,
-                    disabled_tools: newDisabledTools,
-                });
+                await settingsApi.saveConfig({ DISABLED_TOOLS: newDisabledTools });
                 // Optimistic local update; full revalidate via mutate
-                mutateUserSettings(
-                    (prev) => ({ ...prev, disabled_tools: newDisabledTools }),
+                mutateGlobalConfig(
+                    (prev) => ({ ...prev, DISABLED_TOOLS: newDisabledTools }),
                     { revalidate: false },
                 );
                 toastApiSuccess(`${toolName} ${enabled ? "enabled" : "disabled"}`);
@@ -169,7 +166,7 @@ export const useToolServers = () => {
                 return false;
             }
         },
-        [disabledTools, userSettings, mutateUserSettings],
+        [disabledTools, mutateGlobalConfig],
     );
 
     const isToolEnabled = useCallback(
@@ -181,7 +178,6 @@ export const useToolServers = () => {
         toolServers,
         isLoading,
         testingServerId,
-        userSettings,
         disabledTools,
         addServer,
         deleteServer,

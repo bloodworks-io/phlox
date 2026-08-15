@@ -38,19 +38,20 @@ export const useScribe = ({
         });
     }, setLoading);
 
-    // Fetch user settings on mount
+    // Fetch user + system-policy settings on mount
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const data = await settingsApi.fetchUserSettings();
+                const [data, globalConfig] = await Promise.all([
+                    settingsApi.fetchUserSettings(),
+                    settingsApi.fetchConfig(),
+                ]);
                 if (data && typeof data.scribe_is_ambient === "boolean") {
                     setIsAmbient(data.scribe_is_ambient);
                 }
-                setRequireConsent(
-                    Boolean(data?.advanced_options?.require_scribe_consent),
-                );
+                setRequireConsent(Boolean(globalConfig?.REQUIRE_SCRIBE_CONSENT));
             } catch (error) {
-                console.error("Error fetching user settings:", error);
+                console.error("Error fetching settings:", error);
             }
         };
         fetchSettings();

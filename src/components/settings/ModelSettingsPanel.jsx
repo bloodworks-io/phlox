@@ -1,4 +1,4 @@
-import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button, Switch } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
     ChevronRightIcon,
@@ -12,6 +12,7 @@ import {
     FaBrain,
     FaDatabase,
     FaPuzzlePiece,
+    FaShieldAlt,
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
 
@@ -346,6 +347,72 @@ const ModelSettingsPanel = ({
                             </Tabs.Root>
                         )}
                     </VStack>
+
+                    <Box className="floating-main" mt={2}>
+                        <Flex align="center" mb={3}>
+                            <FaShieldAlt size="1em" style={{ marginRight: "8px" }} />
+                            <Text fontSize="md" fontWeight="bold">
+                                System Policy
+                            </Text>
+                        </Flex>
+                        <VStack gap={3} align="stretch">
+                            <Flex justify="space-between" align="center">
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="medium">
+                                        Store Original PDFs
+                                    </Text>
+                                    <Text fontSize="xs" className="pill-box-icons">
+                                        Keep original PDF files in the database
+                                        after upload. Increases storage usage.
+                                    </Text>
+                                </Box>
+                                <Switch.Root
+                                    size="sm"
+                                    checked={!!config?.STORE_ORIGINAL_PDFS}
+                                    onCheckedChange={({ checked }) =>
+                                        handleConfigChange(
+                                            "STORE_ORIGINAL_PDFS",
+                                            checked,
+                                        )
+                                    }
+                                >
+                                    <Switch.HiddenInput />
+                                    <Switch.Control>
+                                        <Switch.Thumb />
+                                    </Switch.Control>
+                                </Switch.Root>
+                            </Flex>
+                            <Flex justify="space-between" align="center">
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="medium">
+                                        Require patient consent for ambient
+                                        scribing
+                                    </Text>
+                                    <Text fontSize="xs" className="pill-box-icons">
+                                        Prompt each patient for consent before
+                                        ambient (transcription) recording.
+                                        Dictation is unaffected; consent is
+                                        remembered per patient.
+                                    </Text>
+                                </Box>
+                                <Switch.Root
+                                    size="sm"
+                                    checked={!!config?.REQUIRE_SCRIBE_CONSENT}
+                                    onCheckedChange={({ checked }) =>
+                                        handleConfigChange(
+                                            "REQUIRE_SCRIBE_CONSENT",
+                                            checked,
+                                        )
+                                    }
+                                >
+                                    <Switch.HiddenInput />
+                                    <Switch.Control>
+                                        <Switch.Thumb />
+                                    </Switch.Control>
+                                </Switch.Root>
+                            </Flex>
+                        </VStack>
+                    </Box>
                 </Collapsible.Content>
             </Collapsible.Root>
         </Box>
