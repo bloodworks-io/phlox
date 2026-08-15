@@ -85,3 +85,22 @@ def test_purge_keeps_recent_events():
     with get_db().read() as cursor:
         cursor.execute("SELECT COUNT(*) AS n FROM audit_log WHERE path = '/api/recent'")
         assert cursor.fetchone()["n"] == 1
+
+
+def test_purge_floors_retention_below_one():
+    """A retention of 0 (or negative) must never mean 'purge everything'."""
+    from server.database.config.manager import config_manager
+
+    original = config_manager.get_config().get("AUDIT_RETENTION_DAYS")
+    log_event(method="GET", path="/api/zero-retention", status=200)
+    try:
+        config_manager.update_config({"AUDIT_RETENTION_DAYS": 0})
+        deleted = purge_old_events()
+        assert deleted == 0
+        with get_db().read() as cursor:
+            cursor.execute("SELECT COUNT(*) AS n FROM audit_log WHERE path = '/api/zero-retention'")
+            assert cursor.fetchone()["n"] == 1
+    finally:
+        config_manager.update_config(
+            {"AUDIT_RETENTION_DAYS": original if original is not None else 90}
+        )

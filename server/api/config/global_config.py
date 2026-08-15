@@ -11,6 +11,9 @@ router = APIRouter()
 SENSITIVE_KEYS = {"LLM_API_KEY", "WHISPER_KEY"}
 MASK_BULLET = "•"
 
+# Audit/compliance keys are operator-managed (DB/env) for now until ACLs
+PROTECTED_CONFIG_KEYS = {"AUDIT_RETENTION_DAYS"}
+
 
 def mask_key(key):
     """Partially mask a secret for display: first 3 + bullets + last 4."""
@@ -43,6 +46,8 @@ def update_config(data: dict = Body(...)):
     for sensitive_key in SENSITIVE_KEYS:
         if sensitive_key in filtered and MASK_BULLET in str(filtered[sensitive_key]):
             del filtered[sensitive_key]
+    for protected_key in PROTECTED_CONFIG_KEYS:
+        filtered.pop(protected_key, None)
 
     config_manager.update_config(filtered)
 

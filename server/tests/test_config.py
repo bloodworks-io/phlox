@@ -67,6 +67,21 @@ def test_update_config():
     assert "message" in data and ("success" in message.lower())
 
 
+def test_update_config_strips_protected_audit_key():
+    """AUDIT_RETENTION_DAYS must never be writable via the API (audit-wipe chain)."""
+    from server.database.config.manager import config_manager
+
+    original = config_manager.get_config().get("AUDIT_RETENTION_DAYS")
+    response = client.post(
+        "/api/config/global",
+        json={"AUDIT_RETENTION_DAYS": 0, "TEST_CONFIG": "audit_strip_probe"},
+    )
+    assert response.status_code == 200
+    config = config_manager.get_config()
+    assert config.get("AUDIT_RETENTION_DAYS") == original
+    assert config.get("TEST_CONFIG") == "audit_strip_probe"
+
+
 def test_update_options():
     new_options = {"TEST_OPTION": "test_option_value"}
     response = client.post("/api/config/options/TEST_CATEGORY", json=new_options)
