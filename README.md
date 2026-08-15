@@ -67,6 +67,7 @@ services:
       # - PROXY_AUTH_ENABLED=true
       # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
       # - PROXY_AUTH_ALLOWED_USERS=user1,user2
+      # - TRUSTED_PROXY_IPS=172.16.0.2 # Required with PROXY_AUTH_ENABLED:
       # - RATE_LIMIT_ENABLED=true
     volumes:
       - ./data:/usr/src/app/data    # Persistent data (database, vectors)

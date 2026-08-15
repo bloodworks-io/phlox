@@ -10,10 +10,12 @@ services:
       - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY} # Required: generate a strong random key
       - TZ=${TZ} # e.g. America/New_York
       - LLM_EXTRA_BODY= # Optional: JSON string for extra_body params (e.g., '{"chat_template_kwargs": {"thinking": true}}'); does not apply to streaming requests
-      # Alternative to PHLOX_PASSPHRASE: reverse-proxy auth (pick one approach - do not combine)
+      # Alternative to PHLOX_PASSPHRASE: auth handled by your reverse proxy
+      # (pick one approach - do not combine)
       # - PROXY_AUTH_ENABLED=true
       # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
       # - PROXY_AUTH_ALLOWED_USERS= # Comma-separated list of allowed users (empty = any authenticated user)
+      # - TRUSTED_PROXY_IPS=172.16.0.2 # Required with PROXY_AUTH_ENABLED: IPs/CIDRs of your reverse proxy. Empty (default) = forwarded headers are never trusted.
       # Rate limiting
       # - RATE_LIMIT_ENABLED=true
     volumes:

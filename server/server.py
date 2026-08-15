@@ -29,6 +29,7 @@ from server.constants import (
     PROXY_AUTH_ENABLED,
     PROXY_AUTH_USER_HEADER,
     RATE_LIMIT_ENABLED,
+    TRUSTED_PROXY_IPS,
 )
 from server.middleware import (
     AuditMiddleware,
@@ -95,12 +96,18 @@ def validate_docker_auth(
     *,
     passphrase: str,
     proxy_auth_enabled: bool,
+    trusted_proxy_ips: list,
     server_host: str,
     allow_unauthenticated: bool,
 ) -> None:
     """Passes when any of: passphrase auth, proxy auth, loopback-only bind,
     or explicit risk acceptance via PHLOX_ALLOW_UNAUTHENTICATED.
     """
+    if proxy_auth_enabled and not trusted_proxy_ips:
+        raise SystemExit(
+            "PROXY_AUTH_ENABLED=true requires TRUSTED_PROXY_IPS (comma-separated\n"
+            "IPs/CIDRs of your reverse proxy, e.g. TRUSTED_PROXY_IPS=172.16.0.2)."
+        )
     loopback = server_host in ("127.0.0.1", "localhost")
     if passphrase or proxy_auth_enabled or loopback or allow_unauthenticated:
         if passphrase and len(passphrase) < 12:
@@ -111,7 +118,7 @@ def validate_docker_auth(
     raise SystemExit(
         "Refusing to start unauthenticated on the network. Configure one of:\n"
         "  - PHLOX_PASSPHRASE=<strong passphrase>   (browser login; recommended for LAN access)\n"
-        "  - PROXY_AUTH_ENABLED=true                (auth handled by a reverse proxy)\n"
+        "  - PROXY_AUTH_ENABLED=true + TRUSTED_PROXY_IPS  (auth handled by a reverse proxy)\n"
         "  - SERVER_HOST=127.0.0.1                  (loopback-only bind)\n"
         "  - PHLOX_ALLOW_UNAUTHENTICATED=true       (explicit risk acceptance)"
     )
@@ -174,7 +181,10 @@ def initialize_and_get_app():
     # Add proxy auth middleware (for Docker deployments behind auth proxy)
     if PROXY_AUTH_ENABLED:
         app.add_middleware(ProxyAuthMiddleware)
-        logger.info(f"Proxy auth enabled, header: {PROXY_AUTH_USER_HEADER}")
+        logger.info(
+            f"Proxy auth enabled, header: {PROXY_AUTH_USER_HEADER}, "
+            f"trusted proxies: {TRUSTED_PROXY_IPS}"
+        )
 
     # Add rate limiting middleware (enabled by default in Docker mode)
     if RATE_LIMIT_ENABLED:
@@ -276,6 +286,7 @@ if IS_DOCKER:
         validate_docker_auth(
             passphrase=PHLOX_PASSPHRASE,
             proxy_auth_enabled=PROXY_AUTH_ENABLED,
+            trusted_proxy_ips=TRUSTED_PROXY_IPS,
             server_host=os.getenv("SERVER_HOST", "0.0.0.0"),
             allow_unauthenticated=PHLOX_ALLOW_UNAUTHENTICATED,
         )

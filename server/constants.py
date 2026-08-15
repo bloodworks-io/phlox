@@ -21,6 +21,10 @@ PROXY_AUTH_ALLOWED_USERS = [
     u.strip() for u in os.getenv("PROXY_AUTH_ALLOWED_USERS", "").split(",") if u.strip()
 ]
 
+TRUSTED_PROXY_IPS = [
+    ip.strip() for ip in os.getenv("TRUSTED_PROXY_IPS", "").split(",") if ip.strip()
+]
+
 PHLOX_PASSPHRASE = os.getenv("PHLOX_PASSPHRASE", "").strip()
 PHLOX_ALLOW_UNAUTHENTICATED = os.getenv("PHLOX_ALLOW_UNAUTHENTICATED", "false").lower() == "true"
 
