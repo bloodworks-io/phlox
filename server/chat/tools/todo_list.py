@@ -2,7 +2,6 @@
 Todo list tool implementation.
 """
 
-import json
 import logging
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -11,6 +10,7 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.database.repositories.todo import (
     add_todo_item,
     delete_todo_item,
@@ -62,16 +62,7 @@ async def execute(
     """
     logger.info("Executing todo_list tool...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     action = function_arguments.get("action", "list")
     task = function_arguments.get("task")

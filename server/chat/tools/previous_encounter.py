@@ -13,8 +13,9 @@ from server.chat.streaming.response import (
     end_message,
     status_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.chat.tools.patient_utils import find_ur_by_name
-from server.database.core.connection import get_db
+from server.database.repositories.encounter import get_latest_encounter
 
 logger = logging.getLogger(__name__)
 
@@ -32,34 +33,8 @@ async def get_previous_encounter(
         The most recent encounter dict or None if not found
     """
     try:
-        # Fetch full patient record, filtering out same-date encounters
-        with get_db().read() as cursor:
-            if current_encounter_date:
-                cursor.execute(
-                    """
-                    SELECT id, encounter_date, template_key, template_data, encounter_summary
-                    FROM encounters
-                    WHERE ur_number = ? AND encounter_date < ?
-                    ORDER BY encounter_date DESC
-                    LIMIT 1
-                    """,
-                    (ur_number, current_encounter_date),
-                )
-            else:
-                cursor.execute(
-                    """
-                    SELECT id, encounter_date, template_key, template_data, encounter_summary
-                    FROM encounters
-                    WHERE ur_number = ?
-                    ORDER BY encounter_date DESC
-                    LIMIT 1
-                    """,
-                    (ur_number,),
-                )
-            row = cursor.fetchone()
-        if row:
-            return dict(row)
-        return None
+        encounter = get_latest_encounter(ur_number, exclude_date=current_encounter_date)
+        return encounter
     except Exception as e:
         logger.error(f"Error fetching previous encounter: {e}")
         return None
@@ -123,16 +98,7 @@ async def execute(
     logger.info("Executing get_previous_encounter tool...")
     yield status_message("Retrieving previous encounter...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     ur_number = function_arguments.get("ur_number")
     patient_name = function_arguments.get("patient_name")

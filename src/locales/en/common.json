@@ -1,0 +1,17 @@
+{
+    "action": {
+        "cancel": "Cancel",
+        "close": "Close",
+        "save": "Save"
+    },
+    "language": {
+        "description": "Language for the interface, transcription, and note and letter generation. Only fully translated languages are listed.",
+        "label": "Language",
+        "transcriptionUnsupported": "The current transcription model doesn't support {{language}}. Transcription will default to English."
+    },
+    "status": {
+        "error": "Error",
+        "loading": "Loading…",
+        "success": "Success"
+    }
+}

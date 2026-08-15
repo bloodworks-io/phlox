@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { BrowserRouter as Router } from "react-router";
 import { SWRConfig } from "swr";
 import App from "./App";
+import "./i18n";
 import "./index.css";
 
 import "@fontsource/roboto/400.css";

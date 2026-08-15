@@ -27,7 +27,7 @@ export const STEP_DESCRIPTIONS = {
   [SPLASH_STEPS.ENCRYPTION]:
     "Create a passphrase to encrypt and protect your patient data.",
   [SPLASH_STEPS.ABOUT_YOU]:
-    "Your name and specialty personalize your notes and letters.",
+    "Your name, specialty, and preferred language personalize your notes and letters.",
   [SPLASH_STEPS.TEMPLATES]:
     "Choose the note template you'll use for patient encounters.",
   [SPLASH_STEPS.AI_MODELS]:

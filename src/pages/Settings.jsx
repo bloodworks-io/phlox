@@ -11,6 +11,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
 import { settingsApi } from "../utils/api/settingsApi";
 import { settingsHelpers } from "../utils/helpers/settingsHelpers";
+import { syncLanguage } from "../i18n";
+import { UI_LANGUAGES } from "../utils/i18n/languages";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
@@ -97,8 +99,17 @@ const Settings = () => {
                     letter: { temperature: 0 },
                 });
             }
+            // Coerce a stored language without a UI locale (pre-localisation
+            // picks) to English so the dropdown never holds an unlisted value.
+            if (!UI_LANGUAGES.some((l) => l.code === userSettings.preferred_language)) {
+                userSettings.preferred_language = "en";
+            }
             setUserSettings(userSettings);
             setTemplates(templates);
+
+            // Sync the preferred language to the localStorage mirror and i18n
+            // so locale-aware formatting tracks the clinic language.
+            syncLanguage(userSettings.preferred_language);
 
             // Set letter templates from parallel fetch
             if (letterResponse) {

@@ -1,21 +1,31 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { VStack, HStack, Input, NativeSelect, Field } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { InfoIcon } from "../../icons";
 import { SPECIALTIES } from "../../../../utils/constants";
 import { validatePersonalStep } from "../../../../utils/splash/validators";
+import { UI_LANGUAGES } from "../../../../utils/i18n/languages";
+import { syncLanguage } from "../../../../i18n";
 
 export const usePersonalStep = () => {
   const [name, setName] = useState("");
   const [specialty, setSpecialty] = useState("");
+  const [language, setLanguageState] = useState("en");
+
+  const setLanguage = useCallback((lang) => {
+    setLanguageState(lang);
+    syncLanguage(lang);
+  }, []);
 
   return {
     name,
     setName,
     specialty,
     setSpecialty,
+    language,
+    setLanguage,
     validate: () => validatePersonalStep(name, specialty),
-    getData: () => ({ name, specialty }),
+    getData: () => ({ name, specialty, preferred_language: language }),
   };
 };
 
@@ -24,6 +34,8 @@ export const AboutYouStep = ({
   setName,
   specialty,
   setSpecialty,
+  language,
+  setLanguage,
   letters,
 }) => (
   <VStack key="about-you" className="anim-fade-slide-right" gap={4} w="100%">
@@ -60,6 +72,30 @@ export const AboutYouStep = ({
         >
           {SPECIALTIES.map((spec) => (
             <option key={spec} value={spec}>{spec}</option>
+          ))}
+        </NativeSelect.Field>
+        <NativeSelect.Indicator />
+      </NativeSelect.Root>
+    </Field.Root>
+
+    <Field.Root>
+      <HStack>
+        <Field.Label fontSize="sm" color="textSecondary">Preferred Language</Field.Label>
+        <Tooltip content="Language for the interface, transcription, and note and letter generation" showArrow>
+          <InfoIcon boxSize={3} color="textSecondary" />
+        </Tooltip>
+      </HStack>
+      <NativeSelect.Root>
+        <NativeSelect.Field
+          value={language}
+          onChange={(e) => setLanguage(e.target.value)}
+          className="input-style"
+          size="sm"
+        >
+          {UI_LANGUAGES.map((lang) => (
+            <option key={lang.code} value={lang.code}>
+              {lang.native} ({lang.name})
+            </option>
           ))}
         </NativeSelect.Field>
         <NativeSelect.Indicator />

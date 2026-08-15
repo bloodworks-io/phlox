@@ -9,7 +9,7 @@ from typing import NamedTuple
 
 from rapidfuzz import fuzz
 
-from server.database.core.connection import get_db
+from server.database.repositories.patient_search import get_patient_name_index
 
 logger = logging.getLogger(__name__)
 
@@ -33,17 +33,7 @@ async def find_ur_by_name(patient_name: str, threshold: int = 70) -> PatientMatc
         PatientMatch if found, None otherwise
     """
     try:
-        # Get all patients with their names and UR numbers
-        with get_db().read() as cursor:
-            cursor.execute(
-                """
-                SELECT DISTINCT e.ur_number, p.first_name, p.last_name
-                FROM encounters e
-                LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                WHERE e.ur_number IS NOT NULL AND e.ur_number != ''
-                """
-            )
-            rows = cursor.fetchall()
+        rows = get_patient_name_index()
 
         if not rows:
             logger.info("No patients found in database")

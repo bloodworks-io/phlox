@@ -5,7 +5,6 @@ This tool searches for patients by name, UR number, DOB, or other criteria.
 Useful for finding existing patient records before creating notes.
 """
 
-import json
 import logging
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -15,8 +14,9 @@ from server.chat.streaming.response import (
     status_message,
     tool_response_message,
 )
+from server.chat.tools._helpers import parse_tool_args
 from server.chat.tools.patient_utils import rank_patients_by_name
-from server.database.core.connection import get_db
+from server.database.repositories.patient_search import search_patients_aggregate
 
 logger = logging.getLogger(__name__)
 
@@ -41,59 +41,16 @@ async def search_patients(
         Dict with success status and list of matching patients
     """
     try:
-        search_name = name
-        query = """
-            SELECT e.ur_number, p.first_name, p.last_name, p.dob, p.gender,
-                   MAX(e.encounter_date) as last_encounter,
-                   COUNT(*) as encounter_count
-            FROM encounters e
-            LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-            WHERE 1=1
-        """
-        params = []
+        patients = search_patients_aggregate(
+            name=name,
+            ur_number=ur_number,
+            dob=dob,
+            encounter_date=encounter_date,
+            limit=limit,
+        )
 
         if name:
-            query += " AND LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)"
-            params.append(f"%{name}%")
-
-        if ur_number:
-            query += " AND e.ur_number LIKE ?"
-            params.append(f"%{ur_number}%")
-
-        if dob:
-            query += " AND p.dob = ?"
-            params.append(dob)
-
-        if encounter_date:
-            query += " AND e.encounter_date = ?"
-            params.append(encounter_date)
-
-        query += " GROUP BY e.ur_number, p.first_name, p.last_name, p.dob, p.gender"
-        query += " ORDER BY last_encounter DESC"
-        query += f" LIMIT {limit}"
-
-        with get_db().read() as cursor:
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-
-        patients = []
-        for row in rows:
-            first = row["first_name"]
-            last = row["last_name"]
-            full_name = f"{last}, {first}" if (last and first) else (last or first or "")
-            patients.append(
-                {
-                    "ur_number": row["ur_number"],
-                    "name": full_name,
-                    "dob": row["dob"],
-                    "gender": row["gender"],
-                    "last_encounter": row["last_encounter"],
-                    "encounter_count": row["encounter_count"],
-                }
-            )
-
-        if search_name:
-            rank_patients_by_name(patients, search_name)
+            rank_patients_by_name(patients, name)
 
         return {
             "success": True,
@@ -157,16 +114,7 @@ async def execute(
     logger.info("Executing search_patient tool...")
     yield status_message("Searching for patients...")
 
-    # Parse function arguments
-    function_arguments = {}
-    if "arguments" in tool_call["function"]:
-        try:
-            if isinstance(tool_call["function"]["arguments"], str):
-                function_arguments = json.loads(tool_call["function"]["arguments"])
-            else:
-                function_arguments = tool_call["function"]["arguments"]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse function arguments JSON")
+    function_arguments = parse_tool_args(tool_call)
 
     name = function_arguments.get("name")
     ur_number = function_arguments.get("ur_number")

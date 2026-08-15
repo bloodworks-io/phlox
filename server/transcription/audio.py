@@ -6,6 +6,7 @@ from typing import Union
 import httpx
 
 from server.database.config.manager import config_manager
+from server.utils.whisper_models import whisper_model_manager
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
     """
     try:
         config = config_manager.get_config()
+        preferred_language = config_manager.get_user_settings().get("preferred_language", "en")
 
         # Determine if using local whisper
         # Local mode is: LLM_PROVIDER is "local" AND WHISPER_BASE_URL is empty
@@ -32,17 +34,25 @@ async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
 
         if is_local_whisper:
             logger.info("Using local STT server for transcription")
-            return await _transcribe_local_whisper(audio_buffer, config)
+            stt_language = preferred_language
+            supported = whisper_model_manager.get_active_model_languages()
+            if preferred_language not in supported:
+                logger.warning(
+                    f"Active local STT model does not support '{preferred_language}'; "
+                    f"falling back to 'en'. Supported: {supported}"
+                )
+                stt_language = "en"
+            return await _transcribe_local_whisper(audio_buffer, stt_language)
         else:
             logger.info("Using external API for transcription")
-            return await _transcribe_external_api(audio_buffer, config)
+            return await _transcribe_external_api(audio_buffer, config, preferred_language)
     except Exception as error:
         logger.error(f"Error in transcribe_audio function: {error}")
         raise
 
 
 async def _transcribe_local_whisper(
-    audio_buffer: bytes, _config: dict
+    audio_buffer: bytes, language: str = "en"
 ) -> dict[str, Union[str, float]]:
     """Transcribe using the local STT server (parakeet.cpp, OpenAI-compatible)."""
     whisper_port = _get_whisper_port()
@@ -56,7 +66,7 @@ async def _transcribe_local_whisper(
         files = {"file": (filename, audio_buffer, content_type)}
         data = {
             "response_format": "verbose_json",
-            "language": "en",
+            "language": language,
             "temperature": "0.0",
         }
 
@@ -98,7 +108,7 @@ async def _transcribe_local_whisper(
 
 
 async def _transcribe_external_api(
-    audio_buffer: bytes, config: dict
+    audio_buffer: bytes, config: dict, language: str = "en"
 ) -> dict[str, Union[str, float]]:
     """Transcribe using external Whisper API (existing logic)."""
     filename, content_type = _detect_audio_format(audio_buffer)
@@ -106,7 +116,7 @@ async def _transcribe_external_api(
         files = {"file": (filename, audio_buffer, content_type)}
         data = {
             "model": config["WHISPER_MODEL"],
-            "language": "en",
+            "language": language,
             "temperature": "0.1",
             "vad_filter": "true",
             "response_format": "verbose_json",

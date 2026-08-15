@@ -217,7 +217,8 @@ class ConfigManager:
                     has_completed_splash_screen,
                     scribe_is_ambient,
                     disabled_tools,
-                    advanced_options
+                    advanced_options,
+                    preferred_language
                 FROM user_settings LIMIT 1
                 """)
             result = cursor.fetchone()
@@ -239,6 +240,8 @@ class ConfigManager:
                 settings["advanced_options"] = json.loads(settings["advanced_options"])
             else:
                 settings["advanced_options"] = {}
+            if not settings.get("preferred_language"):
+                settings["preferred_language"] = "en"
             return settings
         return {
             "name": "",
@@ -255,6 +258,7 @@ class ConfigManager:
             "scribe_is_ambient": True,
             "disabled_tools": ["pubmed_search", "wiki_search"],
             "advanced_options": {},
+            "preferred_language": "en",
         }
 
     def update_user_settings(self, settings: dict):
@@ -277,8 +281,9 @@ class ConfigManager:
                     has_completed_splash_screen,
                     scribe_is_ambient,
                     disabled_tools,
-                    advanced_options
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    advanced_options,
+                    preferred_language
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     settings.get("name", ""),
@@ -295,6 +300,7 @@ class ConfigManager:
                     bool(settings.get("scribe_is_ambient", True)),
                     json.dumps(settings.get("disabled_tools", ["pubmed_search", "wiki_search"])),
                     json.dumps(settings.get("advanced_options", {})),
+                    settings.get("preferred_language", "en"),
                 ),
             )
 

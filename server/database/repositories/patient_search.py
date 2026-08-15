@@ -117,6 +117,87 @@ def search_patient_by_ur_number(ur_number: str) -> list[dict[str, Any]]:
     return search_patients(ur_number)
 
 
+def search_patients_aggregate(
+    name: str | None = None,
+    ur_number: str | None = None,
+    dob: str | None = None,
+    encounter_date: str | None = None,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Aggregate-search patients across encounters."""
+    query = """
+        SELECT e.ur_number, p.first_name, p.last_name, p.dob, p.gender,
+               MAX(e.encounter_date) AS last_encounter,
+               COUNT(*) AS encounter_count
+        FROM encounters e
+        LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
+        WHERE 1=1
+    """
+    params: list[Any] = []
+
+    if name:
+        query += " AND LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)"
+        params.append(f"%{name}%")
+    if ur_number:
+        query += " AND e.ur_number LIKE ?"
+        params.append(f"%{ur_number}%")
+    if dob:
+        query += " AND p.dob = ?"
+        params.append(dob)
+    if encounter_date:
+        query += " AND e.encounter_date = ?"
+        params.append(encounter_date)
+
+    query += " GROUP BY e.ur_number, p.first_name, p.last_name, p.dob, p.gender"
+    query += " ORDER BY last_encounter DESC"
+    query += " LIMIT ?"
+    params.append(limit)
+
+    try:
+        with get_db().read() as cursor:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+        return [
+            {
+                "ur_number": row["ur_number"],
+                "name": format_name(row["first_name"], row["last_name"]),
+                "dob": row["dob"],
+                "gender": row["gender"],
+                "last_encounter": row["last_encounter"],
+                "encounter_count": row["encounter_count"],
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        logging.error(f"Error searching patients (aggregate): {e}")
+        raise
+
+
+def get_patient_name_index() -> list[dict[str, Any]]:
+    """Return (ur_number, first_name, last_name) for every patient profile."""
+    try:
+        with get_db().read() as cursor:
+            cursor.execute(
+                """
+                SELECT ur_number, first_name, last_name
+                FROM patient_profiles
+                WHERE ur_number IS NOT NULL AND ur_number != ''
+                """
+            )
+            return [
+                {
+                    "ur_number": row["ur_number"],
+                    "first_name": row["first_name"],
+                    "last_name": row["last_name"],
+                }
+                for row in cursor.fetchall()
+            ]
+    except Exception as e:
+        logging.error(f"Error loading patient name index: {e}")
+        raise
+
+
 def search_patients_by_condition(query: str, limit: int = 20) -> list[dict[str, Any]]:
     """
     Find patients whose primary condition fuzzy-matches ``query``.
