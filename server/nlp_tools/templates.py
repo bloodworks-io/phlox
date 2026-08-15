@@ -4,6 +4,7 @@ import re
 import time
 from datetime import datetime
 
+from server.constants import PROTECTED_TEMPLATE_PREFIXES
 from server.database.config.defaults.templates import DefaultTemplates
 from server.database.config.manager import config_manager
 from server.database.repositories.templates import template_exists
@@ -207,6 +208,9 @@ def generate_unique_template_key(base_name: str) -> str:
         str: A unique template key with version number
     """
     base_key = generate_field_key(base_name)
+    # LLM-derived names must never yield protected keys
+    if f"{base_key}_".startswith(PROTECTED_TEMPLATE_PREFIXES):
+        base_key = f"custom_{base_key}"
     version = "_1"  # Initial version number
 
     # First try without any suffix - check both active and deleted templates

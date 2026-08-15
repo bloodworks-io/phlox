@@ -34,6 +34,12 @@ MAX_AUDIO_BODY_BYTES = 1024 * 1024 * 1024
 APP_NAME = "Phlox"
 APP_AUTHOR = "bloodworks.io"
 
+PROTECTED_TEMPLATE_PREFIXES = ("phlox_", "soap_", "progress_")
+
+
+def is_protected_template_key(template_key: str) -> bool:
+    return template_key.startswith(PROTECTED_TEMPLATE_PREFIXES)
+
 
 logger = logging.getLogger(__name__)
 

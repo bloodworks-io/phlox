@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
+from server.constants import is_protected_template_key as _is_protected
 from server.database.repositories.templates import (
     get_all_templates,
     get_default_template,
@@ -62,7 +63,7 @@ def get_template(template_key: str):
 def delete_template(template_key: str):
     """Delete a template if it's not a default template."""
     try:
-        if template_key.startswith(("phlox_", "soap_", "progress_")):
+        if _is_protected(template_key):
             raise HTTPException(status_code=403, detail="Cannot delete default templates")
 
         success = soft_delete_template(template_key)
@@ -81,6 +82,9 @@ def reset_adaptive_instructions(template_key: str, field_key: str):
     """
     Reset (clear) the adaptive refinement instructions for a given field in a template.
     """
+    if _is_protected(template_key):
+        raise HTTPException(status_code=403, detail="Cannot modify default templates")
+
     from server.database.repositories.templates import (
         update_field_adaptive_instructions,
     )
@@ -105,6 +109,9 @@ async def consolidate_adaptive_instructions_endpoint(template_key: str, field_ke
     Consolidate the adaptive refinement instructions for a given field in a template.
     This resolves contradictions, merges redundancy, and simplifies complex instructions.
     """
+    if _is_protected(template_key):
+        raise HTTPException(status_code=403, detail="Cannot modify default templates")
+
     from server.database.repositories.templates import (
         get_template_by_key,
         update_field_adaptive_instructions,
@@ -195,6 +202,12 @@ def save_templates(
     """Save or update multiple templates."""
     try:
         template_objects = [ClinicalTemplate(**template) for template in templates]
+        protected = [t.template_key for t in template_objects if _is_protected(t.template_key)]
+        if protected:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Cannot modify default templates: {', '.join(protected)}",
+            )
         results = []
         updated_keys = {}
 
@@ -218,6 +231,8 @@ def save_templates(
                 "updated_keys": updated_keys,
             }
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error saving templates: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e

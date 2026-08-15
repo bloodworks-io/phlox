@@ -91,6 +91,69 @@ def test_save_templates(monkeypatch):
     assert "Templates processed successfully" in data.get("message", "")
 
 
+def _protected_template_payload(key):
+    return [
+        {
+            "template_key": key,
+            "template_name": "Poisoned",
+            "fields": [
+                {
+                    "field_key": "field",
+                    "field_name": "Field",
+                    "field_type": "text",
+                    "persistent": False,
+                    "system_prompt": "PWNED PROMPT",
+                    "initial_prompt": "",
+                    "style_example": "",
+                }
+            ],
+        }
+    ]
+
+
+def test_save_templates_rejects_protected_prefix_on_create(monkeypatch):
+    """Creating a new template with a protected prefix must 403 (version-poison chain)."""
+    monkeypatch.setattr("server.api.templates.template_exists", lambda _key: False)
+    monkeypatch.setattr(
+        "server.api.templates.save_template",
+        lambda _t: (_ for _ in ()).throw(AssertionError("save_template must not be called")),
+    )
+    response = client.post("/api/templates", json=_protected_template_payload("phlox_99"))
+    assert response.status_code == 403
+
+
+def test_save_templates_rejects_protected_prefix_on_update(monkeypatch):
+    """Updating an existing protected template via bulk POST must 403."""
+    monkeypatch.setattr("server.api.templates.template_exists", lambda _key: True)
+    monkeypatch.setattr(
+        "server.api.templates.update_template",
+        lambda _t: (_ for _ in ()).throw(AssertionError("update_template must not be called")),
+    )
+    response = client.post("/api/templates", json=_protected_template_payload("phlox_01"))
+    assert response.status_code == 403
+
+
+def test_adaptive_instructions_reject_protected_template():
+    """Adaptive-instruction writes (prompt-injection channel) must 403 for protected keys."""
+    response = client.post("/api/templates/phlox_01/fields/field/adaptive-instructions/reset")
+    assert response.status_code == 403
+    response = client.post(
+        "/api/templates/soap_01/fields/field/adaptive-instructions/consolidate"
+    )
+    assert response.status_code == 403
+
+
+def test_generate_unique_template_key_never_protected(monkeypatch):
+    """LLM-suggested names must not yield protected keys (version-poison chain)."""
+    from server.nlp_tools.templates import generate_unique_template_key
+
+    monkeypatch.setattr("server.nlp_tools.templates.template_exists", lambda _k, **_kw: False)
+    assert generate_unique_template_key("Phlox") == "custom_phlox_1"
+    assert generate_unique_template_key("SOAP Note") == "custom_soap_note_1"
+    assert generate_unique_template_key("Progress Review") == "custom_progress_review_1"
+    assert generate_unique_template_key("Cardiology") == "cardiology_1"
+
+
 def test_generate_template(monkeypatch):
     # Patch generate_template_from_note and save_template
     async def fake_generate_template_from_note(_note: str):
