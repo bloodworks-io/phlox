@@ -9,6 +9,8 @@ import time
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from server.api.auth import AUTH_LOGIN_PATH
+
 logger = logging.getLogger(__name__)
 
 # Centralized path skip rules - add new React routes here
@@ -137,13 +139,15 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
+        if path == AUTH_LOGIN_PATH:
+            return await call_next(request)
+
         # Skip middleware checks for public/static/React routes
         if should_skip_middleware(path):
             return await call_next(request)
 
-        # In Docker mode, skip token validation
-        if IS_DOCKER:
-            logger.debug(f"Auth skipped - Docker mode (path: {path})")
+        if IS_DOCKER and not get_request_token():
+            logger.debug(f"Auth skipped - Docker mode without token (path: {path})")
             return await call_next(request)
 
         # Get expected token

@@ -24,6 +24,8 @@ from server.constants import (
     IS_DEMO_MODE,
     IS_DOCKER,
     IS_TESTING,
+    PHLOX_ALLOW_UNAUTHENTICATED,
+    PHLOX_PASSPHRASE,
     PROXY_AUTH_ENABLED,
     PROXY_AUTH_USER_HEADER,
     RATE_LIMIT_ENABLED,
@@ -89,6 +91,32 @@ async def lifespan(_app: FastAPI):
     scheduler.shutdown()
 
 
+def validate_docker_auth(
+    *,
+    passphrase: str,
+    proxy_auth_enabled: bool,
+    server_host: str,
+    allow_unauthenticated: bool,
+) -> None:
+    """Passes when any of: passphrase auth, proxy auth, loopback-only bind,
+    or explicit risk acceptance via PHLOX_ALLOW_UNAUTHENTICATED.
+    """
+    loopback = server_host in ("127.0.0.1", "localhost")
+    if passphrase or proxy_auth_enabled or loopback or allow_unauthenticated:
+        if passphrase and len(passphrase) < 12:
+            logger.warning(
+                "PHLOX_PASSPHRASE is shorter than 12 characters - use a stronger passphrase"
+            )
+        return
+    raise SystemExit(
+        "Refusing to start unauthenticated on the network. Configure one of:\n"
+        "  - PHLOX_PASSPHRASE=<strong passphrase>   (browser login; recommended for LAN access)\n"
+        "  - PROXY_AUTH_ENABLED=true                (auth handled by a reverse proxy)\n"
+        "  - SERVER_HOST=127.0.0.1                  (loopback-only bind)\n"
+        "  - PHLOX_ALLOW_UNAUTHENTICATED=true       (explicit risk acceptance)"
+    )
+
+
 def initialize_and_get_app():
     """Initialize database and return the FastAPI app.
 
@@ -140,9 +168,8 @@ def initialize_and_get_app():
     # So we add in reverse order: Token -> Proxy -> RateLimit -> TrustedProxy -> Security
     # This ensures TrustedProxy sets client_ip before RateLimit needs it
 
-    # Add token verification middleware (only for desktop mode)
-    if not IS_DOCKER:
-        app.add_middleware(LocalTokenMiddleware)
+    # Add token verification middleware
+    app.add_middleware(LocalTokenMiddleware)
 
     # Add proxy auth middleware (for Docker deployments behind auth proxy)
     if PROXY_AUTH_ENABLED:
@@ -203,6 +230,13 @@ def initialize_and_get_app():
         logger.warning("RAG features disabled - sqlite-vec not available.")
 
     app.include_router(config_router, prefix="/api/config")
+
+    # Passphrase login (Docker)
+    if IS_DOCKER and PHLOX_PASSPHRASE:
+        from server.api import auth
+
+        app.include_router(auth.router, prefix="/api/auth")
+
     app.include_router(templates.router, prefix="/api/templates")
     app.include_router(letter.router, prefix="/api/letter")
 
@@ -237,6 +271,19 @@ def initialize_and_get_app():
 # For Docker mode, initialize app at module load (backward compatibility)
 if IS_DOCKER:
     from server.database.core.connection import initialize_database
+
+    if not IS_TESTING:
+        validate_docker_auth(
+            passphrase=PHLOX_PASSPHRASE,
+            proxy_auth_enabled=PROXY_AUTH_ENABLED,
+            server_host=os.getenv("SERVER_HOST", "0.0.0.0"),
+            allow_unauthenticated=PHLOX_ALLOW_UNAUTHENTICATED,
+        )
+
+    if PHLOX_PASSPHRASE:
+        from server.api.auth import init_passphrase_auth
+
+        init_passphrase_auth(PHLOX_PASSPHRASE)
 
     initialize_database()  # Uses env/secret
     app = initialize_and_get_app()

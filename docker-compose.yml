@@ -4,13 +4,13 @@ services:
     container_name: phlox
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5000:5000" # Use "5000:5000" only behind a reverse proxy
+      - "5000:5000"
     environment:
+      - PHLOX_PASSPHRASE=${PHLOX_PASSPHRASE} # Required: clients log in with this passphrase
       - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY} # Required: generate a strong random key
-      - ALLOWED_ORIGINS= # e.g. https://phlox.example.com (comma-separated); do NOT use "*" in production
       - TZ=${TZ} # e.g. America/New_York
       - LLM_EXTRA_BODY= # Optional: JSON string for extra_body params (e.g., '{"chat_template_kwargs": {"thinking": true}}'); does not apply to streaming requests
-      # Proxy auth (recommended when behind a reverse proxy)
+      # Alternative to PHLOX_PASSPHRASE: reverse-proxy auth (pick one approach - do not combine)
       # - PROXY_AUTH_ENABLED=true
       # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
       # - PROXY_AUTH_ALLOWED_USERS= # Comma-separated list of allowed users (empty = any authenticated user)

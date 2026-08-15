@@ -21,6 +21,9 @@ PROXY_AUTH_ALLOWED_USERS = [
     u.strip() for u in os.getenv("PROXY_AUTH_ALLOWED_USERS", "").split(",") if u.strip()
 ]
 
+PHLOX_PASSPHRASE = os.getenv("PHLOX_PASSPHRASE", "").strip()
+PHLOX_ALLOW_UNAUTHENTICATED = os.getenv("PHLOX_ALLOW_UNAUTHENTICATED", "false").lower() == "true"
+
 APP_NAME = "Phlox"
 APP_AUTHOR = "bloodworks.io"
 

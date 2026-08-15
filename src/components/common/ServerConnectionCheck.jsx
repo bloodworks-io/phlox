@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
-import { isTauri } from "../../utils/helpers/apiConfig";
+import { clearStoredToken, isTauri } from "../../utils/helpers/apiConfig";
+import { AuthGate } from "./AuthGate";
 
 export const ServerConnectionCheck = ({ children }) => {
   const [serverStatus, setServerStatus] = useState("checking");
@@ -12,9 +13,17 @@ export const ServerConnectionCheck = ({ children }) => {
       console.log("[ServerConnectionCheck] isTauri result:", inTauriEnv);
 
       if (!inTauriEnv) {
-        console.log(
-          "[ServerConnectionCheck] Not in Tauri, setting server status to ready.",
-        );
+
+        try {
+          const response = await fetch("/api/config/status");
+          if (response.status === 401) {
+            clearStoredToken();
+            setServerStatus("needs-auth");
+            return;
+          }
+        } catch {
+          // Server unreachable etc. - let the app's own error handling surface it
+        }
         setServerStatus("ready");
         return;
       }
@@ -51,6 +60,10 @@ export const ServerConnectionCheck = ({ children }) => {
         </VStack>
       </Box>
     );
+  }
+
+  if (serverStatus === "needs-auth") {
+    return <AuthGate onSuccess={() => setServerStatus("ready")} />;
   }
 
   return children;

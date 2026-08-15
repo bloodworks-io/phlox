@@ -273,9 +273,7 @@ async def extract_pdf_info_from_text(payload: ExtractTextPayload):
             f"Error processing extracted text for '{payload.filename}': {e}",
             exc_info=True,
         )
-        raise HTTPException(
-            status_code=500, detail="Error processing extracted text"
-        ) from e
+        raise HTTPException(status_code=500, detail="Error processing extracted text") from e
 
 
 @router.post("/commit-to-vectordb")
