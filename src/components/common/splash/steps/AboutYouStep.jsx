@@ -4,7 +4,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { InfoIcon } from "../../icons";
 import { SPECIALTIES } from "../../../../utils/constants";
 import { validatePersonalStep } from "../../../../utils/splash/validators";
-import { PREFERRED_LANGUAGE_OPTIONS } from "../../../../utils/i18n/languages";
+import { UI_LANGUAGES } from "../../../../utils/i18n/languages";
 import { syncLanguage } from "../../../../i18n";
 
 export const usePersonalStep = () => {
@@ -81,7 +81,7 @@ export const AboutYouStep = ({
     <Field.Root>
       <HStack>
         <Field.Label fontSize="sm" color="textSecondary">Preferred Language</Field.Label>
-        <Tooltip content="Clinic language used for transcription and note generation" showArrow>
+        <Tooltip content="Language for the interface, transcription, and note and letter generation" showArrow>
           <InfoIcon boxSize={3} color="textSecondary" />
         </Tooltip>
       </HStack>
@@ -92,7 +92,7 @@ export const AboutYouStep = ({
           className="input-style"
           size="sm"
         >
-          {PREFERRED_LANGUAGE_OPTIONS.map((lang) => (
+          {UI_LANGUAGES.map((lang) => (
             <option key={lang.code} value={lang.code}>
               {lang.native} ({lang.name})
             </option>

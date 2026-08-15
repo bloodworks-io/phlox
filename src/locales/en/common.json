@@ -5,12 +5,9 @@
         "save": "Save"
     },
     "language": {
-        "configureRemote": "Configure a remote transcription endpoint to enable {{language}}",
-        "description": "Clinic language used for transcription and note generation.",
-        "downloadMultilingual": "Download multilingual model ({{size}}) to enable {{language}}",
+        "description": "Language for the interface, transcription, and note and letter generation. Only fully translated languages are listed.",
         "label": "Language",
-        "transcriptionUnsupported": "The current transcription model doesn't support {{language}}. Transcription will default to English.",
-        "uiNote": "The application interface is currently in English. Additional interface translations will be added over time."
+        "transcriptionUnsupported": "The current transcription model doesn't support {{language}}. Transcription will default to English."
     },
     "status": {
         "error": "Error",

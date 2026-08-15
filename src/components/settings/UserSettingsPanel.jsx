@@ -10,7 +10,7 @@ import ChatSettingsPanel from "./ChatSettingsPanel";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { syncLanguage } from "../../i18n";
-import { PREFERRED_LANGUAGE_OPTIONS, getLanguageName } from "../../utils/i18n/languages";
+import { UI_LANGUAGES, getLanguageName } from "../../utils/i18n/languages";
 
 const UserSettingsPanel = ({
   isCollapsed,
@@ -165,7 +165,7 @@ const UserSettingsPanel = ({
                         value={selectedLanguage}
                         onChange={(e) => handleLanguageChange(e.target.value)}
                         className="input-style">
-                        {PREFERRED_LANGUAGE_OPTIONS.map((lang) => (
+                        {UI_LANGUAGES.map((lang) => (
                           <option key={lang.code} value={lang.code}>
                             {lang.native} ({lang.name})
                           </option>
