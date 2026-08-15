@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.3.0](https://github.com/bloodworks-io/phlox/compare/v2.2.4...v2.3.0) (2026-08-15)
+
+
+### Features
+
+* **api:** add transcription capabilities and language-aware STT ([33e18c2](https://github.com/bloodworks-io/phlox/commit/33e18c2220827f2c56e6cab6bc4890780f158f63))
+* **db:** add preferred_language user setting ([51a8ce5](https://github.com/bloodworks-io/phlox/commit/51a8ce54a3475be9e87b9bccb3bdd4e355af51bb))
+* **i18n:** add localization scaffolding ([1c4321b](https://github.com/bloodworks-io/phlox/commit/1c4321b1d55187395a22eb5728e87d5463fecebf))
+* **llm:** inject output-language directive for non-English locales ([e3ee266](https://github.com/bloodworks-io/phlox/commit/e3ee2660e3267b267bc23effc46c08dd9b4002c5))
+* **settings:** add clinic language selector ([5b40645](https://github.com/bloodworks-io/phlox/commit/5b4064504052c0d765a63a957f1524d7acdf87db))
+* **splash:** add preferred language picker ([1b5bea4](https://github.com/bloodworks-io/phlox/commit/1b5bea47e1fd99c693064c8ba5e5a34dd824541e))
+* **splash:** expose multilingual parakeet STT for non-English languages ([ae9c252](https://github.com/bloodworks-io/phlox/commit/ae9c2526171a4df18eb2bece82d15f5e2526bf78))
+* **stt:** add multilingual transcription model support ([b34bcfd](https://github.com/bloodworks-io/phlox/commit/b34bcfdba36f1251ce4420fe12ad14aaa2383bf2))
+
+
+### Bug Fixes
+
+* system message construction with additional languages ([8f2caaf](https://github.com/bloodworks-io/phlox/commit/8f2caaf76f70d3d52d6aac2a4b8754d189da10ec))
+* **ui:** hide languages without localisation ([3393004](https://github.com/bloodworks-io/phlox/commit/3393004918190dae14ce8ba7f40a0ffb031fa556))
+
 ## [2.2.4](https://github.com/bloodworks-io/phlox/compare/v2.2.3...v2.2.4) (2026-07-30)
 
 
