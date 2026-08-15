@@ -210,6 +210,9 @@ async def upload_image(file: UploadFile = File(...)):
         # OCR dependencies not available
         logging.error(f"OCR not available: {e}")
         raise HTTPException(status_code=503, detail="OCR dependencies not available") from e
+    except ValueError as e:
+        # Image exceeded pixel cap
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logging.error(f"Error processing image: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e

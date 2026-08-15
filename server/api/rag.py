@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 
@@ -229,7 +230,9 @@ async def extract_pdf_info(file: UploadFile = File(...)):
 
         # Extract text directly from bytes (no disk write)
         logger.info(f"Extracting text from upload ({len(content)} bytes)")
-        extracted_text = vector_store_manager.extract_text_from_pdf(content)
+        extracted_text = await asyncio.to_thread(
+            vector_store_manager.extract_text_from_pdf, content
+        )
         if not extracted_text:
             logger.warning(
                 f"No text extracted from PDF '{file.filename}'. It might be empty or image-based."

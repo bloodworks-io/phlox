@@ -135,6 +135,70 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class _BodyTooLarge(Exception):
+    """Internal signal: request body exceeded the configured cap."""
+
+
+class RequestBodyLimitMiddleware:
+    """Reject request bodies over a size cap (decompression-bomb / OOM protection)."""
+
+    AUDIO_PATHS = ("/api/transcribe/audio", "/api/transcribe/dictate")
+    GUARDED_METHODS = ("POST", "PUT", "PATCH")
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        from server import constants
+
+        if scope["type"] != "http" or scope.get("method") not in self.GUARDED_METHODS:
+            await self.app(scope, receive, send)
+            return
+
+        limit = (
+            constants.MAX_AUDIO_BODY_BYTES
+            if scope.get("path") in self.AUDIO_PATHS
+            else constants.MAX_BODY_BYTES
+        )
+
+        # Fast path: reject an oversized declared Content-Length before reading anything.
+        for name, value in scope.get("headers", []):
+            if name == b"content-length":
+                if value.isdigit() and int(value) > limit:
+                    await self._send_413(scope, receive, send)
+                    return
+                break
+
+        received = 0
+
+        async def capped_receive():
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > limit:
+                    raise _BodyTooLarge
+            return message
+
+        response_started = False
+
+        async def send_wrapper(message):
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, capped_receive, send_wrapper)
+        except _BodyTooLarge:
+            if not response_started:
+                await self._send_413(scope, receive, send)
+
+    async def _send_413(self, scope, receive, send):
+        response = JSONResponse({"detail": "Request body too large"}, status_code=413)
+        await response(scope, receive, send)
+
+
 class LocalTokenMiddleware(BaseHTTPMiddleware):
     """Verify local request token on all API requests.
 

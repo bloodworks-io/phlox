@@ -36,6 +36,7 @@ from server.middleware import (
     LocalTokenMiddleware,
     ProxyAuthMiddleware,
     RateLimitMiddleware,
+    RequestBodyLimitMiddleware,
     SecurityHeadersMiddleware,
     TrustedProxyMiddleware,
 )
@@ -174,6 +175,9 @@ def initialize_and_get_app():
     # Add security middleware (order matters: last added runs first)
     # So we add in reverse order: Token -> Proxy -> RateLimit -> TrustedProxy -> Security
     # This ensures TrustedProxy sets client_ip before RateLimit needs it
+
+    # Add request body size limit (innermost - runs after auth, wraps raw ASGI receive)
+    app.add_middleware(RequestBodyLimitMiddleware)
 
     # Add token verification middleware
     app.add_middleware(LocalTokenMiddleware)

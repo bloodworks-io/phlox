@@ -2,7 +2,6 @@
 VectorStoreManager — backend-agnostic facade for RAG.
 """
 
-import io
 import logging
 import threading
 
@@ -402,15 +401,10 @@ class VectorStoreManager:
         text_layer_output = ""
 
         if PDF_TEXT_AVAILABLE:
-            try:
-                reader = PdfReader(io.BytesIO(pdf_bytes))  # ty: ignore
-                text_parts = []
-                for page in reader.pages:
-                    text_parts.append(page.extract_text() or "")
-                text_layer_output = "\n\n".join(text_parts).strip()
-            except Exception as e:
-                logger.warning("Failed text-layer extraction: %s", e)
-                text_layer_output = ""
+            from server.nlp_tools.document_processing import extract_pdf_text_capped
+
+            # Shared capped extraction (page/char limits) — bomb PDFs can't OOM the worker
+            text_layer_output = extract_pdf_text_capped(pdf_bytes)
 
         if _is_text_usable(text_layer_output):
             logger.info("Backend RAG PDF parser used pypdf text-layer output")
