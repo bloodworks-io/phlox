@@ -262,3 +262,95 @@ def test_v9_backfills_policy_keys_from_user_settings():
             "REQUIRE_SCRIBE_CONSENT": False,
         },
     )
+
+
+def test_normalize_base_url_rejects_non_http_schemes():
+    """Only http/https base URLs are accepted; /v1 + slash normalization intact."""
+    import pytest
+
+    from server.utils.url_utils import normalize_base_url
+
+    assert normalize_base_url("http://a:1/v1/") == "http://a:1"
+    assert normalize_base_url("https://a:1/api/openai/v1") == "https://a:1/api/openai"
+    assert normalize_base_url("http://a:1") == "http://a:1"
+    with pytest.raises(ValueError):
+        normalize_base_url("file:///etc/passwd")
+    with pytest.raises(ValueError):
+        normalize_base_url("gopher://x")
+    with pytest.raises(ValueError):
+        normalize_base_url("")
+
+
+def test_llm_models_stored_key_only_travels_to_stored_url(monkeypatch):
+    """The stored LLM_API_KEY must never be attached to a caller-supplied foreign URL."""
+    from server.database.config.manager import config_manager
+
+    config_manager.update_config(
+        {"LLM_BASE_URL": "http://stored.example/v1", "LLM_API_KEY": "sk-stored-secret"}
+    )
+
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {"data": [{"id": "m"}]}
+
+    class FakeClient:
+        def __init__(self, headers=None, **kwargs):
+            captured["headers"] = headers or {}
+            captured["client_kwargs"] = kwargs
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def get(self, url, timeout=None):
+            captured["url"] = url
+            captured["timeout"] = timeout
+            return FakeResponse()
+
+    monkeypatch.setattr("server.api.config.models.httpx.AsyncClient", FakeClient)
+
+    # Foreign URL, no caller key: no Authorization header at all.
+    r = client.get(
+        "/api/config/llm/models",
+        params={"provider": "openai", "baseUrl": "http://attacker.example/"},
+    )
+    assert r.status_code == 200
+    assert "Authorization" not in captured["headers"]
+
+    # Stored URL (± /v1 and trailing slash): stored key attached.
+    for base in ("http://stored.example", "http://stored.example/", "http://stored.example/v1"):
+        r = client.get("/api/config/llm/models", params={"provider": "openai", "baseUrl": base})
+        assert r.status_code == 200
+        assert captured["headers"].get("Authorization") == "Bearer sk-stored-secret"
+
+    # Caller key with foreign URL: caller key used, stored key never leaks.
+    r = client.get(
+        "/api/config/llm/models",
+        params={"provider": "openai", "baseUrl": "http://attacker.example/", "apiKey": "sk-caller"},
+    )
+    assert r.status_code == 200
+    assert captured["headers"].get("Authorization") == "Bearer sk-caller"
+
+    # Case-different URL is NOT treated as the stored URL (fail closed).
+    r = client.get(
+        "/api/config/llm/models",
+        params={"provider": "openai", "baseUrl": "HTTP://STORED.EXAMPLE/"},
+    )
+    assert r.status_code == 200
+    assert "Authorization" not in captured["headers"]
+
+    # Non-http scheme: rejected with 400, no outbound request.
+    r = client.get(
+        "/api/config/llm/models",
+        params={"provider": "openai", "baseUrl": "file:///etc/passwd"},
+    )
+    assert r.status_code == 400
+
+    # Restore so other tests see a clean config.
+    config_manager.update_config({"LLM_BASE_URL": "", "LLM_API_KEY": ""})

@@ -103,5 +103,60 @@ def test_vision_capability_get_returns_no_cache_when_empty():
     assert data["vision_capable"] is False
 
 
+def test_vision_capability_stored_key_only_travels_to_stored_url(monkeypatch):
+    """vision-capability must not attach the stored key to a foreign base_url."""
+    from server.database.config.manager import config_manager
+
+    config_manager.update_config(
+        {"LLM_BASE_URL": "http://stored.example/v1", "LLM_API_KEY": "sk-stored-secret"}
+    )
+
+    captured = {}
+
+    class FakeLLM:
+        def __init__(self, provider_type, base_url, api_key, **kwargs):
+            captured["provider_type"] = provider_type
+            captured["base_url"] = base_url
+            captured["api_key"] = api_key
+            captured["init_kwargs"] = kwargs
+
+        async def chat(self, model, messages, options=None):
+            captured["model"] = model
+            captured["messages"] = messages
+            captured["options"] = options
+            return "ok"
+
+    monkeypatch.setattr("server.api.chat.AsyncLLMClient", FakeLLM)
+
+    # Foreign URL, no caller key: stored key never reaches the client.
+    r = client.post(
+        "/api/chat/vision-capability", json={"base_url": "http://attacker.example/"}
+    )
+    assert r.status_code == 200
+    assert captured["api_key"] is None
+
+    # Stored URL (± /v1, trailing slash), no caller key: stored key used.
+    for base in ("http://stored.example", "http://stored.example/v1"):
+        r = client.post("/api/chat/vision-capability", json={"base_url": base})
+        assert r.status_code == 200
+        assert captured["api_key"] == "sk-stored-secret"
+
+    # Caller supplies both foreign URL and own key: caller key used.
+    r = client.post(
+        "/api/chat/vision-capability",
+        json={"base_url": "http://attacker.example/", "api_key": "sk-caller"},
+    )
+    assert r.status_code == 200
+    assert captured["api_key"] == "sk-caller"
+
+    # No base_url at all: probes the stored config, stored key used.
+    r = client.post("/api/chat/vision-capability", json={})
+    assert r.status_code == 200
+    assert captured["api_key"] == "sk-stored-secret"
+
+    # Restore so other tests see a clean config.
+    config_manager.update_config({"LLM_BASE_URL": "", "LLM_API_KEY": ""})
+
+
 if __name__ == "__main__":
     test_chat_endpoint_streaming()

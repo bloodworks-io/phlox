@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from server.chat import ChatEngine
 from server.constants import DATA_DIR
 from server.database.config.manager import config_manager
-from server.llm_client.client import AsyncLLMClient, get_llm_client
+from server.llm_client.client import AsyncLLMClient, get_llm_client, resolve_effective_api_key
 from server.nlp_tools.document_processing import extract_text_from_document
 from server.schemas.chat import ChatRequest, ChatResponse
 from server.schemas.documents import VisualDocumentPage
@@ -359,7 +359,8 @@ async def probe_vision_capability(payload: VisionCapabilityProbeRequest):
     config = config_manager.get_config()
     model = payload.model or config.get("PRIMARY_MODEL", "")
     base_url = payload.base_url or config.get("LLM_BASE_URL")
-    api_key = payload.api_key or config.get("LLM_API_KEY")
+
+    api_key = resolve_effective_api_key(payload.base_url, payload.api_key)
 
     # 1x1 black PNG
     black_square_data_url = (
