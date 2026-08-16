@@ -102,7 +102,7 @@ modules:
       - >-
         pip3 install --prefix=/app
         "uv$(python3 -c 'import tomllib; print(tomllib.load(open("server/pyproject.toml", "rb"))["tool"]["uv"]["required-version"])')"
-      - cd server && UV_PYTHON=/usr/bin/python3.12 /app/bin/uv sync --locked --extra rag
+      - cd server && UV_PYTHON=/usr/bin/python3 /app/bin/uv sync --locked --extra rag
       - bash src-tauri/build-server.sh
       - install -d /app/bin/server_dist
       - cp -a src-tauri/server_dist/. /app/bin/server_dist/
