@@ -26,7 +26,59 @@ import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
 
-const ModelSettingsPanel = ({
+const PolicyTab = ({ config, handleConfigChange }) => (
+    <VStack gap={3} align="stretch">
+        <Flex justify="space-between" align="center">
+            <Box>
+                <Text fontSize="sm" fontWeight="medium">
+                    Store Original PDFs
+                </Text>
+                <Text fontSize="xs" className="pill-box-icons">
+                    Keep original PDF files in the database after upload.
+                    Increases storage usage.
+                </Text>
+            </Box>
+            <Switch.Root
+                size="sm"
+                checked={!!config?.STORE_ORIGINAL_PDFS}
+                onCheckedChange={({ checked }) =>
+                    handleConfigChange("STORE_ORIGINAL_PDFS", checked)
+                }
+            >
+                <Switch.HiddenInput />
+                <Switch.Control>
+                    <Switch.Thumb />
+                </Switch.Control>
+            </Switch.Root>
+        </Flex>
+        <Flex justify="space-between" align="center">
+            <Box>
+                <Text fontSize="sm" fontWeight="medium">
+                    Require patient consent for ambient scribing
+                </Text>
+                <Text fontSize="xs" className="pill-box-icons">
+                    Prompt each patient for consent before ambient
+                    (transcription) recording. Dictation is unaffected;
+                    consent is remembered per patient.
+                </Text>
+            </Box>
+            <Switch.Root
+                size="sm"
+                checked={!!config?.REQUIRE_SCRIBE_CONSENT}
+                onCheckedChange={({ checked }) =>
+                    handleConfigChange("REQUIRE_SCRIBE_CONSENT", checked)
+                }
+            >
+                <Switch.HiddenInput />
+                <Switch.Control>
+                    <Switch.Thumb />
+                </Switch.Control>
+            </Switch.Root>
+        </Flex>
+    </VStack>
+);
+
+const AdminSettingsPanel = ({
     isCollapsed,
     setIsCollapsed,
     config,
@@ -125,7 +177,7 @@ const ModelSettingsPanel = ({
                         )}
                     </IconButton>
                     <FaCog size="1.2em" style={{ marginRight: "5px" }} />
-                    <Text as="h3">Model Settings</Text>
+                    <Text as="h3">Admin Settings</Text>
                 </Flex>
             </Flex>
             <Collapsible.Root open={!isCollapsed}>
@@ -225,6 +277,17 @@ const ModelSettingsPanel = ({
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
+                                    <Tooltip content="Practice-level system policy">
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="2"
+                                        >
+                                            <HStack>
+                                                <FaShieldAlt />
+                                                <Text>Policy</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
                                 </Tabs.List>
                                 <Tabs.Content
                                     className="floating-main"
@@ -237,6 +300,15 @@ const ModelSettingsPanel = ({
                                     value="1"
                                 >
                                     <ToolsSettingsTab />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="2"
+                                >
+                                    <PolicyTab
+                                        config={config}
+                                        handleConfigChange={handleConfigChange}
+                                    />
                                 </Tabs.Content>
                             </Tabs.Root>
                         ) : (
@@ -288,6 +360,17 @@ const ModelSettingsPanel = ({
                                             <HStack>
                                                 <FaPuzzlePiece />
                                                 <Text>Tools</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    <Tooltip content="Practice-level system policy">
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="4"
+                                        >
+                                            <HStack>
+                                                <FaShieldAlt />
+                                                <Text>Policy</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
@@ -344,79 +427,22 @@ const ModelSettingsPanel = ({
                                 >
                                     <ToolsSettingsTab />
                                 </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="4"
+                                >
+                                    <PolicyTab
+                                        config={config}
+                                        handleConfigChange={handleConfigChange}
+                                    />
+                                </Tabs.Content>
                             </Tabs.Root>
                         )}
                     </VStack>
-
-                    <Box className="floating-main" mt={2}>
-                        <Flex align="center" mb={3}>
-                            <FaShieldAlt size="1em" style={{ marginRight: "8px" }} />
-                            <Text fontSize="md" fontWeight="bold">
-                                System Policy
-                            </Text>
-                        </Flex>
-                        <VStack gap={3} align="stretch">
-                            <Flex justify="space-between" align="center">
-                                <Box>
-                                    <Text fontSize="sm" fontWeight="medium">
-                                        Store Original PDFs
-                                    </Text>
-                                    <Text fontSize="xs" className="pill-box-icons">
-                                        Keep original PDF files in the database
-                                        after upload. Increases storage usage.
-                                    </Text>
-                                </Box>
-                                <Switch.Root
-                                    size="sm"
-                                    checked={!!config?.STORE_ORIGINAL_PDFS}
-                                    onCheckedChange={({ checked }) =>
-                                        handleConfigChange(
-                                            "STORE_ORIGINAL_PDFS",
-                                            checked,
-                                        )
-                                    }
-                                >
-                                    <Switch.HiddenInput />
-                                    <Switch.Control>
-                                        <Switch.Thumb />
-                                    </Switch.Control>
-                                </Switch.Root>
-                            </Flex>
-                            <Flex justify="space-between" align="center">
-                                <Box>
-                                    <Text fontSize="sm" fontWeight="medium">
-                                        Require patient consent for ambient
-                                        scribing
-                                    </Text>
-                                    <Text fontSize="xs" className="pill-box-icons">
-                                        Prompt each patient for consent before
-                                        ambient (transcription) recording.
-                                        Dictation is unaffected; consent is
-                                        remembered per patient.
-                                    </Text>
-                                </Box>
-                                <Switch.Root
-                                    size="sm"
-                                    checked={!!config?.REQUIRE_SCRIBE_CONSENT}
-                                    onCheckedChange={({ checked }) =>
-                                        handleConfigChange(
-                                            "REQUIRE_SCRIBE_CONSENT",
-                                            checked,
-                                        )
-                                    }
-                                >
-                                    <Switch.HiddenInput />
-                                    <Switch.Control>
-                                        <Switch.Thumb />
-                                    </Switch.Control>
-                                </Switch.Root>
-                            </Flex>
-                        </VStack>
-                    </Box>
                 </Collapsible.Content>
             </Collapsible.Root>
         </Box>
     );
 };
 
-export default ModelSettingsPanel;
+export default AdminSettingsPanel;

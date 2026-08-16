@@ -14,7 +14,7 @@ import { settingsHelpers } from "../utils/helpers/settingsHelpers";
 import { syncLanguage } from "../i18n";
 import { UI_LANGUAGES } from "../utils/i18n/languages";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
-import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
+import AdminSettingsPanel from "../components/settings/AdminSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
 import { SPECIALTIES } from "../utils/constants";
 import { templateService } from "../utils/templates/templateService";
@@ -455,7 +455,7 @@ const Settings = () => {
                     setTemplates={setTemplates}
                 />
 
-                <ModelSettingsPanel
+                <AdminSettingsPanel
                     isCollapsed={collapseStates.modelSettings}
                     setIsCollapsed={() => toggleCollapse("modelSettings")}
                     config={config}
