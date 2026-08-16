@@ -34,7 +34,8 @@ MAX_AUDIO_BODY_BYTES = 1024 * 1024 * 1024
 APP_NAME = "Phlox"
 APP_AUTHOR = "bloodworks.io"
 
-PROTECTED_TEMPLATE_PREFIXES = ("phlox_", "soap_", "progress_")
+
+PROTECTED_TEMPLATE_PREFIXES = ("phlox_", "soap_", "progress_", "consult_", "procedure_")
 
 
 def is_protected_template_key(template_key: str) -> bool:

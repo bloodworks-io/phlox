@@ -3,6 +3,25 @@ import { settingsHelpers } from "../helpers/settingsHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 import { universalFetch } from "../helpers/apiHelpers";
 const templateCache = new Map();
+
+export const DEFAULT_TEMPLATE_KEYS = ["phlox_", "soap_", "progress_", "consult_", "procedure_"];
+
+export const isDefaultTemplate = (templateKey) =>
+    DEFAULT_TEMPLATE_KEYS.some((prefix) => templateKey.startsWith(prefix));
+
+export const getTemplateFamilyBase = (templateKey) => {
+    if (!templateKey) return "";
+    const parts = templateKey.split("_");
+    if (parts[0] === "custom" && parts.length >= 3) {
+        const second = parts[1];
+        const rest = parts.slice(2).join("_");
+        if (rest && /^\d+$/.test(rest) && isDefaultTemplate(`${second}_x`)) {
+            return second;
+        }
+    }
+    return parts[0];
+};
+
 export const templateService = {
   fetchTemplates: async () => {
     try {
@@ -79,12 +98,7 @@ export const templateService = {
     }
   },
 
-  isDefaultTemplate: (templateKey) => {
-    const DEFAULT_TEMPLATE_KEYS = ["phlox_", "soap_", "progress_"];
-    return DEFAULT_TEMPLATE_KEYS.some((prefix) =>
-      templateKey.startsWith(prefix),
-    );
-  },
+  isDefaultTemplate,
 
   // Add a function to delete a template
   deleteTemplate: async (templateKey) => {

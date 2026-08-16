@@ -163,39 +163,6 @@ export const settingsApi = {
             errorMessage: "Failed to fetch templates",
         }),
 
-    saveTemplates: async (templates: Record<string, any>) =>
-        handleApiRequest({
-            apiCall: async (signal) => {
-                // Convert templates object to array
-                const templatesArray = Object.values(templates).map(
-                    (template) => ({
-                        template_key: template.template_key,
-                        template_name: template.template_name,
-                        fields: template.fields.map((field) => ({
-                            field_key: field.field_key,
-                            field_name: field.field_name,
-                            field_type: field.field_type,
-                            required: field.required,
-                            persistent: field.persistent,
-                            system_prompt: field.system_prompt,
-                            initial_prompt: field.initial_prompt,
-                            format_schema: field.format_schema,
-                            refinement_rules: field.refinement_rules,
-                        })),
-                    }),
-                );
-
-                const url = await buildApiUrl("/api/templates");
-                return universalFetch(url, {
-                    signal,
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(templatesArray), // Send array directly
-                });
-            },
-            errorMessage: "Failed to save templates",
-        }),
-
     setDefaultTemplate: async (templateKey) =>
         handleApiRequest({
             apiCall: async (signal) => {
