@@ -58,7 +58,7 @@ def get_template_by_key(template_key: str, exact_match: bool = True) -> dict[str
         raise
 
 
-def _fork_base(template_key: str) -> str | None:
+def get_fork_base(template_key: str) -> str | None:
     """Return the protected base if key is a fork: custom_{protected_base}_{digits} only."""
     rest = template_key.removeprefix("custom_")
     if rest == template_key:
@@ -72,13 +72,13 @@ def _fork_base(template_key: str) -> str | None:
 
 def _forked_protected_bases(keys) -> set:
     """Protected template bases that have a live custom_{base}_N fork."""
-    return {b for b in (_fork_base(k) for k in keys) if b}
+    return {b for b in (get_fork_base(k) for k in keys) if b}
 
 
 def get_template_family_patterns(template_key: str) -> list[str]:
     """SQL LIKE patterns matching every key in the template's family."""
     base = get_base_key(template_key)
-    fork_base = _fork_base(template_key)
+    fork_base = get_fork_base(template_key)
     if fork_base is not None:
         base = fork_base
     for prefix in PROTECTED_TEMPLATE_PREFIXES:

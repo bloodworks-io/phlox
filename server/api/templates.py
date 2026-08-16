@@ -9,6 +9,7 @@ from server.database.repositories.templates import (
     get_all_templates,
     get_base_key,
     get_default_template,
+    get_fork_base,
     get_template_by_key,
     save_template,
     set_default_template,
@@ -70,6 +71,15 @@ def delete_template(template_key: str):
 
         success = soft_delete_template(template_key)
         if success:
+            try:
+                fork_base = get_fork_base(template_key)
+                if (
+                    fork_base is not None
+                    and config_manager.get_default_template_key() == template_key
+                ):
+                    set_default_template(f"{fork_base}_01")
+            except Exception as e:  # pragma: no cover - never block the delete
+                logging.warning(f"Default repoint after fork delete failed: {e}")
             return JSONResponse(content={"message": f"Template {template_key} deleted"})
         raise HTTPException(status_code=404, detail="Template not found")
     except HTTPException as he:

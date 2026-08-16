@@ -6,6 +6,8 @@ const DeleteConfirmationModal = ({
   onConfirm,
   itemName,
   title = "Delete",
+  body,
+  confirmLabel = "Delete",
 }) => {
   return (
     <Dialog.Root open={isOpen} size='md' onOpenChange={e => {
@@ -24,8 +26,8 @@ const DeleteConfirmationModal = ({
             <Dialog.CloseTrigger />
             <Dialog.Body>
               <Text>
-                Are you sure you want to delete "{itemName}"? This action cannot be
-                undone.
+                {body ??
+                  `Are you sure you want to delete "${itemName}"? This action cannot be undone.`}
               </Text>
             </Dialog.Body>
             <Dialog.Footer>
@@ -34,7 +36,7 @@ const DeleteConfirmationModal = ({
                   Cancel
                 </Button>
                 <Button className="green-button" onClick={onConfirm}>
-                  Delete
+                  {confirmLabel}
                 </Button>
               </HStack>
             </Dialog.Footer>

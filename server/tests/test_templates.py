@@ -264,8 +264,7 @@ def test_unrelated_custom_prefix_does_not_shadow():
     try:
         with get_db().transaction() as cur:
             cur.execute(
-                "INSERT OR REPLACE INTO clinical_templates "
-                "(template_key, template_name, fields, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                "INSERT OR REPLACE INTO clinical_templates "                "(template_key, template_name, fields, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
                 ("custom_phlox_review_1", "Custom Phlox Review", fields, now, now),
             )
         keys = [t["template_key"] for t in repo.get_all_templates()]
@@ -385,3 +384,93 @@ def test_templates_repo_no_longer_references_user_settings():
         "templates.py must route default_template_key access through ConfigManager, "
         "not touch user_settings directly."
     )
+
+
+def _seed_fork_row(key):
+    import json as jsonlib
+    from datetime import datetime
+
+    from server.database.core.connection import get_db
+
+    now = datetime.now().isoformat()
+    with get_db().transaction() as cur:
+        cur.execute(
+            "INSERT OR REPLACE INTO clinical_templates "
+            "(template_key, template_name, fields, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (key, key, jsonlib.dumps([]), now, now),
+        )
+
+
+def test_reset_fork_repoints_active_default():
+    """DELETE on a fork holding the active default restores the seeded original."""
+    from server.database.config.manager import config_manager
+    from server.database.core.connection import get_db
+    from server.database.repositories import templates as repo
+
+    _seed_fork_row("custom_phlox_1")
+    original = config_manager.get_default_template_key() or "phlox_01"
+    try:
+        config_manager.set_default_template_key("custom_phlox_1")
+        response = client.delete("/api/templates/custom_phlox_1")
+        assert response.status_code == 200
+
+        assert config_manager.get_default_template_key() == "phlox_01"
+        with get_db().read() as cur:
+            cur.execute(
+                "SELECT deleted FROM clinical_templates WHERE template_key = 'custom_phlox_1'"
+            )
+            assert cur.fetchone()["deleted"] == 1  # soft-deleted, history intact
+        keys = [t["template_key"] for t in repo.get_all_templates()]
+        assert "phlox_01" in keys  # un-shadowed
+        assert "custom_phlox_1" not in keys
+    finally:
+        config_manager.set_default_template_key(original)
+        with get_db().transaction() as cur:
+            cur.execute("DELETE FROM clinical_templates WHERE template_key = 'custom_phlox_1'")
+            cur.execute(
+                "UPDATE clinical_templates SET deleted = FALSE WHERE template_key = 'phlox_01'"
+            )
+
+
+def test_reset_fork_not_default_leaves_pointer():
+    """DELETE on a fork that isn't the active default leaves the default alone."""
+    from server.database.config.manager import config_manager
+    from server.database.core.connection import get_db
+
+    _seed_fork_row("custom_consult_1")
+    original = config_manager.get_default_template_key() or "phlox_01"
+    try:
+        config_manager.set_default_template_key("phlox_01")
+        response = client.delete("/api/templates/custom_consult_1")
+        assert response.status_code == 200
+        assert config_manager.get_default_template_key() == "phlox_01"
+        with get_db().read() as cur:
+            cur.execute(
+                "SELECT deleted FROM clinical_templates WHERE template_key = 'custom_consult_1'"
+            )
+            assert cur.fetchone()["deleted"] == 1
+    finally:
+        config_manager.set_default_template_key(original)
+        with get_db().transaction() as cur:
+            cur.execute("DELETE FROM clinical_templates WHERE template_key = 'custom_consult_1'")
+            cur.execute(
+                "UPDATE clinical_templates SET deleted = FALSE WHERE template_key = 'consult_01'"
+            )
+
+
+def test_delete_plain_custom_template_no_repoint():
+    """Deleting an ordinary custom template never touches the default pointer."""
+    from server.database.config.manager import config_manager
+    from server.database.core.connection import get_db
+
+    _seed_fork_row("cardiology_1")
+    original = config_manager.get_default_template_key() or "phlox_01"
+    try:
+        config_manager.set_default_template_key("phlox_01")
+        response = client.delete("/api/templates/cardiology_1")
+        assert response.status_code == 200
+        assert config_manager.get_default_template_key() == "phlox_01"
+    finally:
+        config_manager.set_default_template_key(original)
+        with get_db().transaction() as cur:
+            cur.execute("DELETE FROM clinical_templates WHERE template_key = 'cardiology_1'")

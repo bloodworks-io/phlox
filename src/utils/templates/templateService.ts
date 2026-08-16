@@ -22,6 +22,9 @@ export const getTemplateFamilyBase = (templateKey) => {
     return parts[0];
 };
 
+export const isCustomizedDefault = (templateKey) =>
+    templateKey?.startsWith("custom_") && isDefaultTemplate(`${getTemplateFamilyBase(templateKey)}_x`);
+
 export const templateService = {
   fetchTemplates: async () => {
     try {
