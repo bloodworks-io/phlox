@@ -46,23 +46,12 @@ async def _get(app: FastAPI, peer: str, headers: dict | None = None) -> httpx.Re
 # --- startup guard ------------------------------------------------------------
 
 
-def test_guard_exits_with_no_auth():
-    with pytest.raises(SystemExit):
-        server_module.validate_docker_auth(
-            passphrase="",
-            proxy_auth_enabled=False,
-            trusted_proxy_ips=[],
-            server_host="0.0.0.0",
-            allow_unauthenticated=False,
-        )
-
-
-def test_guard_passes_with_passphrase():
+def test_guard_passes_with_no_auth_config():
+    """Sessions gate every request by construction, so bare config may boot."""
     server_module.validate_docker_auth(
-        passphrase="correct horse battery staple",
+        passphrase="",
         proxy_auth_enabled=False,
         trusted_proxy_ips=[],
-        server_host="0.0.0.0",
         allow_unauthenticated=False,
     )
 
@@ -74,7 +63,6 @@ def test_guard_exits_with_proxy_auth_but_no_trusted_ips():
             passphrase="",
             proxy_auth_enabled=True,
             trusted_proxy_ips=[],
-            server_host="0.0.0.0",
             allow_unauthenticated=False,
         )
 
@@ -84,7 +72,6 @@ def test_guard_passes_with_proxy_auth():
         passphrase="",
         proxy_auth_enabled=True,
         trusted_proxy_ips=["172.16.0.2"],
-        server_host="0.0.0.0",
         allow_unauthenticated=False,
     )
 
@@ -94,7 +81,6 @@ def test_guard_passes_with_loopback_host():
         passphrase="",
         proxy_auth_enabled=False,
         trusted_proxy_ips=[],
-        server_host="127.0.0.1",
         allow_unauthenticated=False,
     )
 
@@ -104,69 +90,31 @@ def test_guard_passes_with_explicit_override():
         passphrase="",
         proxy_auth_enabled=False,
         trusted_proxy_ips=[],
-        server_host="0.0.0.0",
         allow_unauthenticated=True,
     )
 
 
-def test_guard_warns_on_short_passphrase(caplog):
+def test_guard_warns_on_deprecated_passphrase(caplog):
     server_module.validate_docker_auth(
         passphrase="short",
         proxy_auth_enabled=False,
         trusted_proxy_ips=[],
-        server_host="0.0.0.0",
         allow_unauthenticated=False,
     )
     assert any("PHLOX_PASSPHRASE" in r.message for r in caplog.records)
 
 
-# --- login endpoint ------------------------------------------------------------
+# --- login endpoint (session flow covered in test_auth.py) ---------------------
 
 
-def test_login_success_mints_token():
-    client = TestClient(_build_app())
-    auth_module.init_passphrase_auth("correct horse battery staple")
-    resp = client.post("/api/auth/login", json={"passphrase": "correct horse battery staple"})
-    assert resp.status_code == 200
-    assert resp.json()["token"] == get_request_token()
-
-
-def test_login_reachable_without_token_then_notes_blocked():
+def test_login_reachable_without_token(monkeypatch):
     """Login must bypass the token check WITHOUT entering the shared skip list."""
+    monkeypatch.setattr("server.constants.IS_DOCKER", True)
+    monkeypatch.setattr("server.constants.PHLOX_ALLOW_UNAUTHENTICATED", False)
     client = TestClient(_build_app(LocalTokenMiddleware))
-    auth_module.init_passphrase_auth("correct horse battery staple")
-
-    resp = client.post("/api/auth/login", json={"passphrase": "wrong"})
+    resp = client.post("/api/auth/login", json={"username": "nobody", "password": "nope"})
     assert resp.status_code == 401  # from the handler, not middleware
-    assert resp.json()["detail"] == "Invalid passphrase"
-
     assert client.get("/api/note/list").status_code == 401  # middleware
-
-    resp = client.post("/api/auth/login", json={"passphrase": "correct horse battery staple"})
-    assert resp.status_code == 200
-    token = resp.json()["token"]
-    assert (
-        client.get("/api/note/list", headers={"Authorization": f"Bearer {token}"}).status_code
-        == 200
-    )
-
-
-def test_login_lockout_after_repeated_failures():
-    client = TestClient(_build_app())
-    auth_module.init_passphrase_auth("correct horse battery staple")
-    for _ in range(auth_module.MAX_ATTEMPTS):
-        assert client.post("/api/auth/login", json={"passphrase": "nope"}).status_code == 401
-    locked = client.post("/api/auth/login", json={"passphrase": "nope"})
-    assert locked.status_code == 423
-    # Correct passphrase is also refused while locked out
-    good = client.post("/api/auth/login", json={"passphrase": "correct horse battery staple"})
-    assert good.status_code == 423
-
-
-def test_login_not_configured_denies():
-    client = TestClient(_build_app())
-    resp = client.post("/api/auth/login", json={"passphrase": "x"})
-    assert resp.status_code == 503
 
 
 # --- LocalTokenMiddleware matrix ------------------------------------------------
@@ -174,8 +122,16 @@ def test_login_not_configured_denies():
 
 def test_middleware_token_matrix(monkeypatch):
     monkeypatch.setattr("server.constants.IS_DOCKER", False)
+    from server.database.repositories.users import (
+        IMPLICIT_ADMIN_USERNAME,
+        create_user,
+        get_user_by_username,
+    )
+
+    if not get_user_by_username(IMPLICIT_ADMIN_USERNAME):
+        create_user(IMPLICIT_ADMIN_USERNAME, role="admin")
+    set_request_token("matrix-test-token")
     client = TestClient(_build_app(LocalTokenMiddleware))
-    auth_module.init_passphrase_auth("correct horse battery staple")
     token = get_request_token()
 
     assert client.get("/api/note/list").status_code == 401  # missing header
@@ -186,13 +142,16 @@ def test_middleware_token_matrix(monkeypatch):
         client.get("/api/note/list", headers={"Authorization": f"Bearer {token}"}).status_code
         == 200
     )
+    set_request_token(None)
 
 
-def test_middleware_docker_without_token_passthrough(monkeypatch):
+def test_middleware_docker_requires_session(monkeypatch):
+    """Docker mode no longer passes through without a token — 401 instead."""
     monkeypatch.setattr("server.constants.IS_DOCKER", True)
+    monkeypatch.setattr("server.constants.PHLOX_ALLOW_UNAUTHENTICATED", False)
     set_request_token(None)
     client = TestClient(_build_app(LocalTokenMiddleware))
-    assert client.get("/api/note/list").status_code == 200
+    assert client.get("/api/note/list").status_code == 401
 
 
 # --- rate limiting still applies to login (not in shared skip list) ------------
@@ -203,10 +162,10 @@ def test_login_is_rate_limited(monkeypatch):
     monkeypatch.setattr("server.constants.IS_DOCKER", True)
     monkeypatch.setattr(RateLimitMiddleware, "DEFAULT_LIMIT", (2, 1))
     client = TestClient(_build_app(RateLimitMiddleware))
-    auth_module.init_passphrase_auth("correct horse battery staple")
 
     statuses = [
-        client.post("/api/auth/login", json={"passphrase": "x"}).status_code for _ in range(6)
+        client.post("/api/auth/login", json={"username": "x", "password": "y"}).status_code
+        for _ in range(6)
     ]
     assert 429 in statuses
     RateLimitMiddleware._request_history.clear()

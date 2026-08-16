@@ -9,7 +9,7 @@ import time
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from server.api.auth import AUTH_LOGIN_PATH
+from server.api.auth import AUTH_PUBLIC_PATHS
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
 REACT_ROUTES = {
     "/new-note",
     "/settings",
+    "/setup",
     "/rag",
     "/clinic-summary",
     "/outstanding-jobs",
@@ -200,53 +201,65 @@ class RequestBodyLimitMiddleware:
 
 
 class LocalTokenMiddleware(BaseHTTPMiddleware):
-    """Verify local request token on all API requests.
+    """Verify authentication on all API requests.
 
-
-    This middleware protects the API from unauthorized access by other
-    applications running on the same machine. Only requests with a valid
-    Authorization: Bearer <token> header are allowed.
+    Docker: Bearer token resolves to a session row (per-user login).
+    Desktop: Bearer token must match the request token injected by the Tauri
+    host; identity resolves to the implicit 'local' admin.
     """
 
     async def dispatch(self, request, call_next):
-        from server.constants import IS_DOCKER
+        from server.constants import IS_DOCKER, PHLOX_ALLOW_UNAUTHENTICATED
+        from server.database.repositories import users
+        from server.utils.current_user import CurrentUser, set_current_user
         from server.utils.local_request_token import get_request_token
 
         path = request.url.path
 
-        if path == AUTH_LOGIN_PATH:
+        # Unauthenticated auth endpoints (status/login/setup) and public paths
+        if path in AUTH_PUBLIC_PATHS or should_skip_middleware(path):
             return await call_next(request)
 
-        # Skip middleware checks for public/static/React routes
-        if should_skip_middleware(path):
-            return await call_next(request)
-
-        if IS_DOCKER and not get_request_token():
-            logger.debug(f"Auth skipped - Docker mode without token (path: {path})")
-            return await call_next(request)
-
-        # Get expected token
-        expected_token = get_request_token()
-        if not expected_token:
-            logger.error(f"Auth fail-closed - no request token set (path: {path})")
-            return JSONResponse(
-                status_code=503,
-                content={"detail": "Service not initialized"},
-            )
-
-        # Verify Authorization header
         auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
-            logger.debug(f"Missing Bearer header for {path}")
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Missing or invalid Authorization header"},
-            )
+        provided_token = auth_header[7:] if auth_header.startswith("Bearer ") else None
 
-        provided_token = auth_header[7:]  # remove "Bearer " prefix
-        if not secrets.compare_digest(provided_token, expected_token):
-            logger.warning(f"Invalid token for {path} (got {provided_token[:8]}...)")
-            return JSONResponse(status_code=403, content={"detail": "Invalid request token"})
+        if IS_DOCKER:
+            if PHLOX_ALLOW_UNAUTHENTICATED:
+                # Explicit risk acceptance: resolve as implicit admin
+                user = users.ensure_implicit_admin()
+            else:
+                if not provided_token:
+                    return JSONResponse(
+                        status_code=401,
+                        content={"detail": "Missing or invalid Authorization header"},
+                    )
+                user = users.get_user_for_session(provided_token)
+                if user is None:
+                    return JSONResponse(
+                        status_code=401, content={"detail": "Invalid or expired session"}
+                    )
+        else:
+            # Desktop mode: verify the Tauri-injected request token
+            expected_token = get_request_token()
+            if not expected_token:
+                logger.error(f"Auth fail-closed - no request token set (path: {path})")
+                return JSONResponse(
+                    status_code=503,
+                    content={"detail": "Service not initialized"},
+                )
+            if not provided_token:
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Missing or invalid Authorization header"},
+                )
+            if not secrets.compare_digest(provided_token, expected_token):
+                logger.warning(f"Invalid token for {path} (got {provided_token[:8]}...)")
+                return JSONResponse(status_code=403, content={"detail": "Invalid request token"})
+            user = users.get_user_by_username(users.IMPLICIT_ADMIN_USERNAME)
+
+        if user:
+            set_current_user(CurrentUser(user["id"], user["username"], user["role"]))
+            request.state.user = user["username"]
 
         return await call_next(request)
 
