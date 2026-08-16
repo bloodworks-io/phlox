@@ -111,26 +111,170 @@ def _protected_template_payload(key):
     ]
 
 
-def test_save_templates_rejects_protected_prefix_on_create(monkeypatch):
-    """Creating a new template with a protected prefix must 403 (version-poison chain)."""
+def test_save_templates_forks_protected_on_create(monkeypatch):
+    """Saving a protected template creates custom_phlox_1; default pointer follows."""
+    from server.database.config.manager import config_manager
+
+    saved = {}
+
+    def fake_save_template(template):
+        saved["key"] = template.template_key
+
     monkeypatch.setattr("server.api.templates.template_exists", lambda _key: False)
-    monkeypatch.setattr(
-        "server.api.templates.save_template",
-        lambda _t: (_ for _ in ()).throw(AssertionError("save_template must not be called")),
-    )
-    response = client.post("/api/templates", json=_protected_template_payload("phlox_99"))
-    assert response.status_code == 403
+    monkeypatch.setattr("server.api.templates.save_template", fake_save_template)
+
+    original_default = config_manager.get_default_template_key() or "phlox_01"
+    try:
+        config_manager.set_default_template_key("phlox_01")
+        response = client.post("/api/templates", json=_protected_template_payload("phlox_01"))
+        assert response.status_code == 200
+        data = response.json()
+        assert saved["key"] == "custom_phlox_1"
+        assert data["updated_keys"]["phlox_01"] == "custom_phlox_1"
+        assert any("Forked default template" in d for d in data["details"])
+        assert config_manager.get_default_template_key() == "custom_phlox_1"
+    finally:
+        config_manager.set_default_template_key(original_default)
 
 
-def test_save_templates_rejects_protected_prefix_on_update(monkeypatch):
-    """Updating an existing protected template via bulk POST must 403."""
-    monkeypatch.setattr("server.api.templates.template_exists", lambda _key: True)
+def test_save_templates_fork_does_not_move_unrelated_default(monkeypatch):
+    """Forking a non-default protected template leaves the default pointer alone."""
+    from server.database.config.manager import config_manager
+
+    monkeypatch.setattr("server.api.templates.template_exists", lambda _key: False)
+    monkeypatch.setattr("server.api.templates.save_template", lambda _t: None)
+
+    original_default = config_manager.get_default_template_key() or "phlox_01"
+    try:
+        config_manager.set_default_template_key("phlox_01")
+        response = client.post("/api/templates", json=_protected_template_payload("consult_01"))
+        assert response.status_code == 200
+        assert response.json()["updated_keys"]["consult_01"] == "custom_consult_1"
+        assert config_manager.get_default_template_key() == "phlox_01"
+    finally:
+        config_manager.set_default_template_key(original_default)
+
+
+def test_save_templates_fork_update_bumps_lineage(monkeypatch):
+    """Changed re-save of an existing fork version-bumps the fork, not the original."""
     monkeypatch.setattr(
-        "server.api.templates.update_template",
-        lambda _t: (_ for _ in ()).throw(AssertionError("update_template must not be called")),
+        "server.api.templates.template_exists", lambda key: key == "custom_phlox_1"
     )
+    monkeypatch.setattr("server.api.templates.update_template", lambda _t: "custom_phlox_2")
+
     response = client.post("/api/templates", json=_protected_template_payload("phlox_01"))
-    assert response.status_code == 403
+    assert response.status_code == 200
+    data = response.json()
+    assert data["updated_keys"]["phlox_01"] == "custom_phlox_2"
+    assert any("Updated template" in d for d in data["details"])
+
+
+def test_save_templates_fork_of_legacy_version_sibling(monkeypatch):
+    """Editing a legacy user version (phlox_05) forks to custom_phlox_1 with content carried."""
+    from server.database.config.manager import config_manager
+
+    saved = {}
+
+    def fake_save_template(template):
+        saved["key"] = template.template_key
+        saved["fields"] = template.fields
+
+    monkeypatch.setattr("server.api.templates.template_exists", lambda _key: False)
+    monkeypatch.setattr("server.api.templates.save_template", fake_save_template)
+
+    original_default = config_manager.get_default_template_key() or "phlox_01"
+    try:
+        config_manager.set_default_template_key("phlox_05")
+        payload = _protected_template_payload("phlox_05")
+        response = client.post("/api/templates", json=payload)
+        assert response.status_code == 200
+        assert saved["key"] == "custom_phlox_1"  # base-stripped, not custom_phlox_05_1
+        assert response.json()["updated_keys"]["phlox_05"] == "custom_phlox_1"
+        assert config_manager.get_default_template_key() == "custom_phlox_1"
+    finally:
+        config_manager.set_default_template_key(original_default)
+
+
+def test_fork_shadows_original_in_get_all():
+    """A live custom_ fork hides its protected original; deleting it un-shadows."""
+    import json as jsonlib
+    from datetime import datetime
+
+    from server.database.core.connection import get_db
+    from server.database.repositories import templates as repo
+
+    now = datetime.now().isoformat()
+    fields = jsonlib.dumps(
+        [
+            {
+                "field_key": "f",
+                "field_name": "F",
+                "field_type": "text",
+                "persistent": False,
+                "system_prompt": "x",
+                "style_example": "y",
+            }
+        ]
+    )
+
+    def _insert(cur, key):
+        cur.execute(
+            "INSERT OR REPLACE INTO clinical_templates "
+            "(template_key, template_name, fields, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (key, key, fields, now, now),
+        )
+
+    try:
+        with get_db().transaction() as cur:
+            _insert(cur, "soap_01")  # ensure present even if seeding changed
+            _insert(cur, "custom_soap_1")
+
+        keys = [t["template_key"] for t in repo.get_all_templates()]
+        assert "custom_soap_1" in keys
+        assert "soap_01" not in keys  # shadowed
+
+        # Soft-deleting the fork un-shadows the original
+        with get_db().transaction() as cur:
+            cur.execute(
+                "UPDATE clinical_templates SET deleted = TRUE WHERE template_key = 'custom_soap_1'"
+            )
+        keys = [t["template_key"] for t in repo.get_all_templates()]
+        assert "soap_01" in keys
+        assert "custom_soap_1" not in keys
+    finally:
+        with get_db().transaction() as cur:
+            cur.execute(
+                "DELETE FROM clinical_templates WHERE template_key IN ('custom_soap_1')"
+            )
+            cur.execute(
+                "UPDATE clinical_templates SET deleted = FALSE WHERE template_key = 'soap_01'"
+            )
+
+
+def test_unrelated_custom_prefix_does_not_shadow():
+    """custom_phlox_review_1 is not a phlox fork and must not hide phlox_01."""
+    import json as jsonlib
+    from datetime import datetime
+
+    from server.database.core.connection import get_db
+    from server.database.repositories import templates as repo
+
+    now = datetime.now().isoformat()
+    fields = jsonlib.dumps([])
+    try:
+        with get_db().transaction() as cur:
+            cur.execute(
+                "INSERT OR REPLACE INTO clinical_templates "
+                "(template_key, template_name, fields, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                ("custom_phlox_review_1", "Custom Phlox Review", fields, now, now),
+            )
+        keys = [t["template_key"] for t in repo.get_all_templates()]
+        assert "phlox_01" in keys  # not shadowed by the unrelated name
+    finally:
+        with get_db().transaction() as cur:
+            cur.execute(
+                "DELETE FROM clinical_templates WHERE template_key = 'custom_phlox_review_1'"
+            )
 
 
 def test_adaptive_instructions_reject_protected_template():
@@ -152,6 +296,20 @@ def test_generate_unique_template_key_never_protected(monkeypatch):
     assert generate_unique_template_key("SOAP Note") == "custom_soap_note_1"
     assert generate_unique_template_key("Progress Review") == "custom_progress_review_1"
     assert generate_unique_template_key("Cardiology") == "cardiology_1"
+
+
+def test_default_templates_are_protected():
+    """Drift guard: every seeded default's base prefix must be protected."""
+    from server.constants import PROTECTED_TEMPLATE_PREFIXES
+    from server.database.config.defaults.templates import DefaultTemplates
+
+    keys = [t["template_key"] for t in DefaultTemplates.get_default_templates()]
+    assert keys, "no default templates found"
+    for key in keys:
+        assert key.startswith(PROTECTED_TEMPLATE_PREFIXES), (
+            f"Seeded default '{key}' has no protected prefix; add its base to "
+            "PROTECTED_TEMPLATE_PREFIXES in server/constants.py"
+        )
 
 
 def test_generate_template(monkeypatch):

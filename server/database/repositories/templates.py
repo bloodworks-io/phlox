@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from server.constants import PROTECTED_TEMPLATE_PREFIXES, is_protected_template_key
 from server.database.config.manager import config_manager
 from server.database.core.connection import get_db
 from server.schemas.templates import (
@@ -57,6 +58,36 @@ def get_template_by_key(template_key: str, exact_match: bool = True) -> dict[str
         raise
 
 
+def _fork_base(template_key: str) -> str | None:
+    """Return the protected base if key is a fork: custom_{protected_base}_{digits} only."""
+    rest = template_key.removeprefix("custom_")
+    if rest == template_key:
+        return None
+    for prefix in PROTECTED_TEMPLATE_PREFIXES:
+        base = prefix.rstrip("_")
+        if rest.startswith(f"{base}_") and rest[len(base) + 1 :].isdigit():
+            return base
+    return None
+
+
+def _forked_protected_bases(keys) -> set:
+    """Protected template bases that have a live custom_{base}_N fork."""
+    return {b for b in (_fork_base(k) for k in keys) if b}
+
+
+def get_template_family_patterns(template_key: str) -> list[str]:
+    """SQL LIKE patterns matching every key in the template's family."""
+    base = get_base_key(template_key)
+    fork_base = _fork_base(template_key)
+    if fork_base is not None:
+        base = fork_base
+    for prefix in PROTECTED_TEMPLATE_PREFIXES:
+        p = prefix.rstrip("_")
+        if base == p:
+            return [f"{p}\\_%", f"custom\\_{p}\\_%"]
+    return [f"{base}\\_%", base]
+
+
 def get_all_templates() -> list[dict[str, Any]]:
     """
     Retrieve all available templates.
@@ -69,16 +100,22 @@ def get_all_templates() -> list[dict[str, Any]]:
                 WHERE deleted = FALSE
                 ORDER BY template_name
                 """)
-            templates = []
-            for row in cursor.fetchall():
-                templates.append(
-                    {
-                        "template_key": row["template_key"],
-                        "template_name": row["template_name"],
-                        "fields": json.loads(row["fields"]),
-                    }
-                )
-            return templates
+            rows = cursor.fetchall()
+
+        forked_bases = _forked_protected_bases([row["template_key"] for row in rows])
+        templates = []
+        for row in rows:
+            key = row["template_key"]
+            if is_protected_template_key(key) and get_base_key(key) in forked_bases:
+                continue
+            templates.append(
+                {
+                    "template_key": key,
+                    "template_name": row["template_name"],
+                    "fields": json.loads(row["fields"]),
+                }
+            )
+        return templates
     except Exception as e:
         logging.error(f"Error fetching templates: {e}")
         raise

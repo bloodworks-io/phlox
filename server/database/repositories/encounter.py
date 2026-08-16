@@ -15,6 +15,7 @@ from server.database.repositories.patient import (
 from server.database.repositories.templates import (
     get_persistent_fields,
     get_template_by_key,
+    get_template_family_patterns,
 )
 from server.schemas.patient import Patient
 from server.utils.helpers import format_name, split_name
@@ -426,15 +427,18 @@ def get_patient_history(ur_number: str, template_key: str | None = None) -> list
     try:
         with get_db().read() as cursor:
             if template_key:
-                # Filter by template key prefix (handles versions like "soap_01", "soap_02")
+                # Match the whole template family (versions + forks across the
+                # custom_ boundary, e.g. phlox_01 / phlox_05 / custom_phlox_1)
+                patterns = get_template_family_patterns(template_key)
+                clause = " OR ".join("template_key LIKE ? ESCAPE '\\'" for _ in patterns)
                 cursor.execute(
-                    """
+                    f"""
                     SELECT id, encounter_date, template_key, template_data
                     FROM encounters
-                    WHERE ur_number = ? AND template_key LIKE ?
+                    WHERE ur_number = ? AND ({clause})
                     ORDER BY encounter_date DESC
                     """,
-                    (ur_number, f"{template_key}%"),
+                    (ur_number, *patterns),
                 )
             else:
                 cursor.execute(
@@ -451,11 +455,15 @@ def get_patient_history(ur_number: str, template_key: str | None = None) -> list
 
         encounters = []
         for row in rows:
-            template = get_template_by_key(row["template_key"])
+            # Exact template first; else latest version in the same family
+            # (e.g. a phlox_05 note resolves against phlox_01/phlox_02)
+            template = get_template_by_key(row["template_key"]) or get_template_by_key(
+                row["template_key"], exact_match=False
+            )
             if not template:
                 continue
 
-            persistent_fields = get_persistent_fields(row["template_key"])
+            persistent_fields = get_persistent_fields(template["template_key"])
             template_data = json.loads(row["template_data"]) if row["template_data"] else {}
 
             persistent_data = {

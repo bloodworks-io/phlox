@@ -4,8 +4,10 @@ from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
 from server.constants import is_protected_template_key as _is_protected
+from server.database.config.manager import config_manager
 from server.database.repositories.templates import (
     get_all_templates,
+    get_base_key,
     get_default_template,
     get_template_by_key,
     save_template,
@@ -202,27 +204,30 @@ def save_templates(
     """Save or update multiple templates."""
     try:
         template_objects = [ClinicalTemplate(**template) for template in templates]
-        protected = [t.template_key for t in template_objects if _is_protected(t.template_key)]
-        if protected:
-            raise HTTPException(
-                status_code=403,
-                detail=f"Cannot modify default templates: {', '.join(protected)}",
-            )
         results = []
         updated_keys = {}
 
         for template in template_objects:
+            original_key = template.template_key
+            if _is_protected(original_key):
+                template.template_key = f"custom_{get_base_key(original_key)}_1"
             if template_exists(template.template_key):
                 new_key = update_template(template)
                 if new_key == template.template_key:
                     results.append(f"No changes detected for template: {template.template_name}")
                 else:
                     results.append(f"Updated template: {template.template_name}")
-                updated_keys[template.template_key] = new_key
+                updated_keys[original_key] = new_key
             else:
                 save_template(template)
-                results.append(f"Created template: {template.template_name}")
-                updated_keys[template.template_key] = template.template_key
+                if original_key != template.template_key:
+                    config_manager.update_default_template_key(original_key, template.template_key)
+                    results.append(
+                        f"Forked default template: {template.template_name} → {template.template_key}"
+                    )
+                else:
+                    results.append(f"Created template: {template.template_name}")
+                updated_keys[original_key] = template.template_key
 
         return JSONResponse(
             content={
