@@ -27,6 +27,7 @@ except ImportError:
 from server.database.config.manager import config_manager
 from server.database.core.documents_db import DOCUMENTS_DB_PATH
 from server.llm_client.client import get_llm_client
+from server.utils.current_user import current_user_id, is_admin
 from server.utils.url_utils import normalize_openai_base_url
 
 prompts = config_manager.get_prompts_and_options()
@@ -108,24 +109,46 @@ class VectorStoreManager:
         return human_readable_name.lower().replace(" ", "_")
 
     def list_collections(self) -> list[str]:
-        return self.backend.list_collections()
+        uid = None if is_admin() else current_user_id()
+        return self.backend.list_collections(owner_id=uid)
+
+    def _collection_visible(self, formatted_name: str) -> bool:
+        """May the current user see this collection (by slug)?"""
+        if is_admin():
+            return True
+        owner = self.backend.get_collection_owner(formatted_name)
+        return owner is None or owner == current_user_id()
+
+    def _can_manage_collection(self, formatted_name: str) -> bool:
+        """May the current user modify/delete this collection? Shared: admin only."""
+        if is_admin():
+            return True
+        return self.backend.get_collection_owner(formatted_name) == current_user_id()
 
     def get_files_for_collection(self, collection_name: str) -> list[str]:
         formatted = self.format_to_collection_name(collection_name)
+        if not self._collection_visible(formatted):
+            return []
         return self.backend.get_files_for_collection(formatted)
 
     def get_files_for_collection_with_pdf_flag(self, collection_name: str) -> list[dict]:
         """Return files for a collection with a ``has_pdf`` flag per file."""
         formatted = self.format_to_collection_name(collection_name)
+        if not self._collection_visible(formatted):
+            return []
         return self.backend.get_files_for_collection_with_pdf_flag(formatted)
 
     def get_stored_pdf(self, collection_name: str, filename: str) -> bytes | None:
         """Retrieve stored PDF bytes by collection and filename."""
         formatted = self.format_to_collection_name(collection_name)
+        if not self._collection_visible(formatted):
+            return None
         return self.backend.get_stored_pdf(formatted, filename)
 
     def delete_file_from_collection(self, collection_name: str, file_name: str) -> bool:
         formatted = self.format_to_collection_name(collection_name)
+        if not self._can_manage_collection(formatted):
+            return False
         return self.backend.delete_file_from_collection(formatted, file_name)
 
     def update_document_metadata(
@@ -138,6 +161,8 @@ class VectorStoreManager:
     ) -> bool:
         """Partial update of a document's title / source / focus_area."""
         formatted = self.format_to_collection_name(collection_name)
+        if not self._can_manage_collection(formatted):
+            return False
         return self.backend.update_document_metadata(
             formatted, filename, title=title, source=source, focus_area=focus_area
         )
@@ -146,11 +171,15 @@ class VectorStoreManager:
         """Rename a collection. ``new_name`` is the new display name; the
         underlying slug/PK is derived from it."""
         old_formatted = self.format_to_collection_name(old_name)
+        if not self._can_manage_collection(old_formatted):
+            return False
         new_formatted = self.format_to_collection_name(new_name)
         return self.backend.rename_collection(old_formatted, new_formatted, display_name=new_name)
 
     def delete_collection(self, name: str) -> bool:
         formatted = self.format_to_collection_name(name)
+        if not self._can_manage_collection(formatted):
+            return False
         return self.backend.delete_collection(formatted)
 
     def reset_database(self) -> bool:
@@ -196,6 +225,10 @@ class VectorStoreManager:
         )
 
         formatted = self.format_to_collection_name(disease_name)
+        if not self._can_manage_collection(formatted):
+            raise ValueError(
+                f"A collection named '{disease_name}' already exists. Choose a different name."
+            )
 
         # Chunk the text
         chunker = ClusterSemanticChunker(
@@ -212,7 +245,13 @@ class VectorStoreManager:
         logger.info("Embeddings generated: %d vectors, dim=%d", len(embeddings), dim)
 
         # Ensure collection exists (display_name preserves original casing).
-        self.backend.create_collection(formatted, self._model_name, dim, display_name=disease_name)
+        self.backend.create_collection(
+            formatted,
+            self._model_name,
+            dim,
+            display_name=disease_name,
+            owner_id=current_user_id(),
+        )
 
         # Store source document (include raw PDF if system policy enables it)
         store_pdfs = config_manager.get_config().get("STORE_ORIGINAL_PDFS", False)
@@ -312,6 +351,8 @@ class VectorStoreManager:
     def query_similar(self, collection_name: str, query_text: str, n_results: int = 5) -> dict:
         """Search for similar chunks in a collection."""
         formatted = self.format_to_collection_name(collection_name)
+        if not self._collection_visible(formatted):
+            return {"documents": [[]], "metadatas": [[]], "distances": [[]]}
         query_embedding = self.embedding_model([query_text])[0]
 
         results: list[SearchResult] = self.backend.search(formatted, query_embedding, n_results)
