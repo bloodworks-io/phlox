@@ -4,6 +4,7 @@ from typing import Any
 
 from server.database.core.connection import get_db
 from server.schemas.letter import LetterTemplate
+from server.utils.current_user import current_user_id, scoped, scoped_or_shared
 
 
 def update_patient_letter(note_id: int, letter: str) -> None:
@@ -41,8 +42,12 @@ def fetch_patient_letter(note_id: int) -> str | None:
         Optional[str]: The letter content if found.
     """
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().read() as cursor:
-            cursor.execute("SELECT final_letter FROM encounters WHERE id = ?", (note_id,))
+            cursor.execute(
+                f"SELECT final_letter FROM encounters WHERE id = ?{scope_sql}",
+                (note_id, *scope_params),
+            )
             row = cursor.fetchone()
             return row["final_letter"] if row else None
     except Exception as e:
@@ -58,12 +63,17 @@ def get_letter_templates() -> list[dict[str, Any]]:
         List[Dict[str, Any]]: List of letter templates.
     """
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().read() as cursor:
-            cursor.execute("""
+            cursor.execute(
+                f"""
                 SELECT id, name, instructions, created_at
                 FROM letter_templates
+                WHERE 1=1{scope_sql}
                 ORDER BY name
-                """)
+                """,
+                scope_params,
+            )
             return [dict(row) for row in cursor.fetchall()]
     except Exception as e:
         logging.error(f"Error fetching letter templates: {e}")
@@ -81,14 +91,15 @@ def get_letter_template_by_id(template_id: int) -> dict[str, Any] | None:
         Optional[Dict[str, Any]]: Template data if found.
     """
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().read() as cursor:
             cursor.execute(
-                """
+                f"""
                 SELECT id, name, instructions, created_at
                 FROM letter_templates
-                WHERE id = ?
+                WHERE id = ?{scope_sql}
                 """,
-                (template_id,),
+                (template_id, *scope_params),
             )
             row = cursor.fetchone()
             return dict(row) if row else None
@@ -111,10 +122,10 @@ def save_letter_template(template: LetterTemplate) -> int:
         with get_db().transaction() as cursor:
             cursor.execute(
                 """
-                INSERT INTO letter_templates (name, instructions)
-                VALUES (?, ?)
+                INSERT INTO letter_templates (name, instructions, owner_id)
+                VALUES (?, ?, ?)
                 """,
-                (template.name, template.instructions),
+                (template.name, template.instructions, current_user_id()),
             )
             return cursor.lastrowid
     except Exception as e:
@@ -134,15 +145,16 @@ def update_letter_template(template_id: int, template: LetterTemplate) -> bool:
         bool: True if updated successfully.
     """
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().transaction() as cursor:
             cursor.execute(
-                """
+                f"""
                 UPDATE letter_templates
                 SET name = ?,
                     instructions = ?
-                WHERE id = ?
+                WHERE id = ?{scope_sql}
                 """,
-                (template.name, template.instructions, template_id),
+                (template.name, template.instructions, template_id, *scope_params),
             )
             return cursor.rowcount > 0
     except Exception as e:
@@ -161,8 +173,12 @@ def delete_letter_template(template_id: int) -> bool:
         bool: True if deleted successfully.
     """
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().transaction() as cursor:
-            cursor.execute("DELETE FROM letter_templates WHERE id = ?", (template_id,))
+            cursor.execute(
+                f"DELETE FROM letter_templates WHERE id = ?{scope_sql}",
+                (template_id, *scope_params),
+            )
             return cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error deleting letter template: {e}")
