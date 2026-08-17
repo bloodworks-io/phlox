@@ -4,16 +4,17 @@ import {
   Text,
   useDisclosure,
   Badge,
-  Link,
   VStack,
   HStack,
   Center,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaGithub, FaMoon, FaSun } from "react-icons/fa";
+import { FaMoon, FaSun, FaSignOutAlt } from "react-icons/fa";
 import { TbVersions } from "react-icons/tb";
 import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
 import { settingsApi } from "../../utils/api/settingsApi";
+import { authApi } from "../../utils/api/authApi";
+import { isTauri, clearStoredToken } from "../../utils/helpers/apiConfig";
 import ChangelogModal from "../modals/ChangelogModal";
 import { APP_VERSION } from "../../utils/constants/version";
 import changelogContent from "../../../CHANGELOG.md?raw";
@@ -66,6 +67,14 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
   const version = APP_VERSION;
   const changelog = changelogContent;
 
+  // Browser/Docker only: end the session, drop the token, and let the reload
+  // route back through ServerConnectionCheck into the login screen.
+  const handleLogout = async () => {
+    await authApi.logout();
+    clearStoredToken();
+    window.location.reload();
+  };
+
   // Sidebar is always-dark by design; sidebar.text token resolves to a light value in both modes
 
   useEffect(() => {
@@ -108,23 +117,19 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
             </Box>
           </Tooltip>
 
-          <Tooltip
-            content="GitHub Repository"
-            positioning={{
-              placement: "right",
-            }}
-          >
-            <Link
-              href="https://github.com/bloodworks-io/phlox"
-              target="_blank"
-              rel="noopener noreferrer"
-              fontSize="md"
-              color="sidebar.text" // Apply consistent color
-              _hover={{ color: "sidebar.text" }} // Brighten on hover
-            >
-              <FaGithub />
-            </Link>
-          </Tooltip>
+          {!isTauri() && (
+            <Tooltip content="Sign out" positioning={{ placement: "right" }}>
+              <Box
+                onClick={handleLogout}
+                cursor="pointer"
+                fontSize="md"
+                color="sidebar.text"
+                _hover={{ color: "sidebar.text" }}
+              >
+                <FaSignOutAlt />
+              </Box>
+            </Tooltip>
+          )}
 
           <Tooltip
             content={
@@ -180,18 +185,19 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
             </Text>
           </Tooltip>
 
-          <Tooltip content="GitHub Repository">
-            <Link
-              href="https://github.com/bloodworks-io/phlox"
-              target="_blank"
-              rel="noopener noreferrer"
-              fontSize="lg"
-              color="sidebar.text" // Apply consistent color
-              _hover={{ color: "sidebar.text" }} // Brighten on hover
-            >
-              <FaGithub />
-            </Link>
-          </Tooltip>
+          {!isTauri() && (
+            <Tooltip content="Sign out">
+              <Box
+                onClick={handleLogout}
+                cursor="pointer"
+                fontSize="lg"
+                color="sidebar.text"
+                _hover={{ color: "sidebar.text" }}
+              >
+                <FaSignOutAlt />
+              </Box>
+            </Tooltip>
+          )}
 
           <Tooltip
             content={
