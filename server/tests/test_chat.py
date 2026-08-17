@@ -129,9 +129,7 @@ def test_vision_capability_stored_key_only_travels_to_stored_url(monkeypatch):
     monkeypatch.setattr("server.api.chat.AsyncLLMClient", FakeLLM)
 
     # Foreign URL, no caller key: stored key never reaches the client.
-    r = client.post(
-        "/api/chat/vision-capability", json={"base_url": "http://attacker.example/"}
-    )
+    r = client.post("/api/chat/vision-capability", json={"base_url": "http://attacker.example/"})
     assert r.status_code == 200
     assert captured["api_key"] is None
 
