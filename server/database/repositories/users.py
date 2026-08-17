@@ -171,7 +171,10 @@ def _claim_unowned_collections(user_id: int) -> None:
         try:
             cols = [r[1] for r in db.execute("PRAGMA table_info(collections)").fetchall()]
             if "owner_id" not in cols:
-                return  # column added by the vector backend on first RAG use
+                # Vector backend not initialised yet (no RAG use). Add the
+                # column here so the claim still lands; its own guarded add
+                # is a no-op afterwards.
+                db.execute("ALTER TABLE collections ADD COLUMN owner_id INTEGER")
             db.execute("UPDATE collections SET owner_id = ? WHERE owner_id IS NULL", (user_id,))
             db.commit()
         finally:
