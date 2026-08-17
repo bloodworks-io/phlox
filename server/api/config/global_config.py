@@ -4,6 +4,7 @@ from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
 
 from server.database.config.manager import config_manager
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -39,9 +40,11 @@ def get_config():
 def update_config(data: dict = Body(...)):
     """Update other configuration items with provided data.
 
+    Admin only: these are server-wide settings (LLM/Whisper endpoints, keys).
     Sensitive key fields containing mask bullets (•) are stripped to avoid
     overwriting the stored secret with a masked display value.
     """
+    require_admin()
     filtered = dict(data)
     for sensitive_key in SENSITIVE_KEYS:
         if sensitive_key in filtered and MASK_BULLET in str(filtered[sensitive_key]):
