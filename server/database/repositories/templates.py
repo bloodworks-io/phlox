@@ -272,9 +272,9 @@ def update_template(template: ClinicalTemplate) -> str:
                 f"""
                 UPDATE clinical_templates
                 SET deleted = TRUE
-                WHERE template_key LIKE ? AND deleted = FALSE{own_sql}
+                WHERE template_key LIKE ? AND deleted = FALSE{scope_sql}
                 """,
-                (f"{base_key}_%", *own_params),
+                (f"{base_key}_%", *scope_params),
             )
 
             # Insert new version
