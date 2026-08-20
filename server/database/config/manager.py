@@ -5,6 +5,7 @@ from threading import Lock
 import sqlcipher3 as sqlite3
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.core.connection import get_db, is_db_initialized
+from server.utils.current_user import current_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -203,11 +204,20 @@ class ConfigManager:
         if config_count == 0:
             self._load_configs()  # Just load whatever is there
 
+    @staticmethod
+    def _user_settings_where() -> tuple[str, list]:
+        uid = current_user_id()
+        if uid is None:
+            return "user_id IS NULL", []
+        return "user_id = ?", [uid]
+
     def get_user_settings(self):
-        """Retrieves user settings from the database."""
+        """Retrieves user settings for the current user from the database."""
         self.refresh_db()
+        where, params = self._user_settings_where()
         with self.db.read() as cursor:
-            cursor.execute("""
+            cursor.execute(
+                f"""
                 SELECT name, specialty,
                     quick_chat_1_title, quick_chat_1_prompt,
                     quick_chat_2_title, quick_chat_2_prompt,
@@ -217,8 +227,11 @@ class ConfigManager:
                     has_completed_splash_screen,
                     scribe_is_ambient,
                     preferred_language
-                FROM user_settings LIMIT 1
-                """)
+                FROM user_settings
+                WHERE {where}
+                """,
+                params,
+            )
             result = cursor.fetchone()
 
         if result:
@@ -251,12 +264,14 @@ class ConfigManager:
 
     def update_user_settings(self, settings: dict):
         self.refresh_db()
+        uid = current_user_id()
         # Read-modify-write under one transaction so a concurrent update
         # cannot interleave with the DELETE/INSERT below.
         with self.db.transaction() as cursor:
+            where, params = self._user_settings_where()
             existing = self._read_user_settings(cursor)
             settings = {**existing, **settings}
-            cursor.execute("DELETE FROM user_settings")
+            cursor.execute(f"DELETE FROM user_settings WHERE {where}", params)
             cursor.execute(
                 """
                 INSERT INTO user_settings (
@@ -268,8 +283,9 @@ class ConfigManager:
                     default_letter_template_id,
                     has_completed_splash_screen,
                     scribe_is_ambient,
-                    preferred_language
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    preferred_language,
+                    user_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     settings.get("name", ""),
@@ -285,6 +301,7 @@ class ConfigManager:
                     bool(settings.get("has_completed_splash_screen", False)),
                     bool(settings.get("scribe_is_ambient", True)),
                     settings.get("preferred_language", "en"),
+                    uid,
                 ),
             )
 
@@ -303,15 +320,18 @@ class ConfigManager:
         avoiding clobbering a concurrent user change.
         """
         self.refresh_db()
+        where, params = self._user_settings_where()
         with self.db.transaction() as cursor:
             cursor.execute(
-                "UPDATE user_settings SET default_template_key = ? WHERE default_template_key = ?",
-                (new, old),
+                f"UPDATE user_settings SET default_template_key = ? "
+                f"WHERE default_template_key = ? AND {where}",
+                (new, old, *params),
             )
 
     @staticmethod
     def _read_user_settings(cursor) -> dict:
-        cursor.execute("SELECT * FROM user_settings LIMIT 1")
+        where, params = ConfigManager._user_settings_where()
+        cursor.execute(f"SELECT * FROM user_settings WHERE {where}", params)
         result = cursor.fetchone()
         if not result:
             return {}

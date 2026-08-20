@@ -157,9 +157,7 @@ def test_save_templates_fork_does_not_move_unrelated_default(monkeypatch):
 
 def test_save_templates_fork_update_bumps_lineage(monkeypatch):
     """Changed re-save of an existing fork version-bumps the fork, not the original."""
-    monkeypatch.setattr(
-        "server.api.templates.template_exists", lambda key: key == "custom_phlox_1"
-    )
+    monkeypatch.setattr("server.api.templates.template_exists", lambda key: key == "custom_phlox_1")
     monkeypatch.setattr("server.api.templates.update_template", lambda _t: "custom_phlox_2")
 
     response = client.post("/api/templates", json=_protected_template_payload("phlox_01"))
@@ -243,9 +241,7 @@ def test_fork_shadows_original_in_get_all():
         assert "custom_soap_1" not in keys
     finally:
         with get_db().transaction() as cur:
-            cur.execute(
-                "DELETE FROM clinical_templates WHERE template_key IN ('custom_soap_1')"
-            )
+            cur.execute("DELETE FROM clinical_templates WHERE template_key IN ('custom_soap_1')")
             cur.execute(
                 "UPDATE clinical_templates SET deleted = FALSE WHERE template_key = 'soap_01'"
             )
@@ -264,7 +260,8 @@ def test_unrelated_custom_prefix_does_not_shadow():
     try:
         with get_db().transaction() as cur:
             cur.execute(
-                "INSERT OR REPLACE INTO clinical_templates "                "(template_key, template_name, fields, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                "INSERT OR REPLACE INTO clinical_templates "
+                "(template_key, template_name, fields, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
                 ("custom_phlox_review_1", "Custom Phlox Review", fields, now, now),
             )
         keys = [t["template_key"] for t in repo.get_all_templates()]
@@ -280,9 +277,7 @@ def test_adaptive_instructions_reject_protected_template():
     """Adaptive-instruction writes (prompt-injection channel) must 403 for protected keys."""
     response = client.post("/api/templates/phlox_01/fields/field/adaptive-instructions/reset")
     assert response.status_code == 403
-    response = client.post(
-        "/api/templates/soap_01/fields/field/adaptive-instructions/consolidate"
-    )
+    response = client.post("/api/templates/soap_01/fields/field/adaptive-instructions/consolidate")
     assert response.status_code == 403
 
 

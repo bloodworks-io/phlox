@@ -1,85 +1,85 @@
 import { useState, useCallback } from "react";
 import {
+  Alert,
   Box,
   Button,
+  Flex,
   Heading,
   HStack,
-  VStack,
-  Text,
-  Input,
-  Flex,
-  Image,
   Icon,
-  Alert,
+  Image,
+  Input,
+  Text,
+  VStack,
 } from "@chakra-ui/react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { toaster } from "@/components/ui/toaster";
 import { setStoredToken } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 
-export const AuthGate = ({ onSuccess }) => {
+// First-run admin creation. Shown only when /api/auth/status reports
+// needs_setup (no real users exist yet).
+export const SetupWizard = ({ onSuccess }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [lockMessage, setLockMessage] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleSubmit = useCallback(async () => {
-    if (username.length < 1 || password.length < 1) {
-      toaster.create({
-        title: "Credentials Required",
-        description: "Please enter your username and password to sign in.",
-        type: "warning",
-        duration: 3000,
-      });
+    setError(null);
+    if (!username || !password) {
+      setError("Username and password are required.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters (12+ recommended).");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await universalFetch("/api/auth/login", {
+      const response = await universalFetch("/api/auth/setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-
-      if (response.status === 423) {
-        const data = await response.json().catch(() => null);
-        setLockMessage(data?.detail || "Too many failed attempts. Try again shortly.");
-        return;
-      }
-
       if (!response.ok) {
-        setAttempts((n) => n + 1);
-        setLockMessage(null);
-        setPassword("");
+        const data = await response.json().catch(() => null);
+        setError(data?.detail || "Setup failed. Please try again.");
         return;
       }
-
       const data = await response.json();
       setStoredToken(data.token);
+      toaster.create({
+        title: "Welcome to Phlox",
+        description: "Admin account created. You are signed in.",
+        type: "success",
+        duration: 5000,
+      });
       onSuccess();
     } catch {
-      toaster.create({
-        title: "Could Not Reach Server",
-        description: "Check your connection and try again.",
-        type: "error",
-        duration: 6000,
-      });
+      setError("Could not reach the server. Check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
-  }, [username, password, onSuccess]);
+  }, [username, password, confirm, onSuccess]);
 
-  const handleKeyPress = useCallback(
-    (e) => {
-      if (e.key === "Enter" && username.length > 0 && password.length > 0) {
-        handleSubmit();
-      }
-    },
-    [username, password, handleSubmit],
-  );
+  const inputProps = {
+    size: "md",
+    borderRadius: "lg",
+    bg: "surface",
+    border: "1px solid",
+    borderColor: "border",
+    color: "textPrimary",
+    _placeholder: { color: "textSecondary" },
+    _focus: { borderColor: "accent", boxShadow: "0 0 0 1px accent" },
+  };
 
   return (
     <Flex
@@ -89,7 +89,6 @@ export const AuthGate = ({ onSuccess }) => {
       className="splash-bg"
       px={4}
       py={8}
-      position="relative"
     >
       <Box
         className="anim-fade-slide-up panels-bg splash-panel"
@@ -98,30 +97,11 @@ export const AuthGate = ({ onSuccess }) => {
         boxShadow="2xl"
         border="1px solid"
         borderColor="surface"
-        w={{ base: "100%", sm: "90%", md: "450px" }}
-        maxW="450px"
-        position="relative"
-        overflow="hidden"
+        w={{ base: "100%", sm: "90%", md: "480px" }}
+        maxW="480px"
       >
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          height="120px"
-          bgGradient="linear(to b, sidebarBackgroundFaint, transparent)"
-          borderRadius="2xl"
-          zIndex="0"
-        />
-
-        <VStack gap={6} align="stretch" position="relative" zIndex="1">
-          <Flex
-            className="anim-fade-slide-up"
-            css={{ animationDelay: "80ms" }}
-            direction="column"
-            align="center"
-            mb={2}
-          >
+        <VStack gap={6} align="stretch">
+          <Flex direction="column" align="center" mb={2}>
             <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
             <Heading
               as="h1"
@@ -135,60 +115,39 @@ export const AuthGate = ({ onSuccess }) => {
                 marginBottom: "0.5rem",
               }}
             >
-              Sign In
+              Welcome
             </Heading>
             <Text
               textAlign="center"
               fontSize="sm"
               color="textSecondary"
-              maxW="350px"
+              maxW="380px"
               lineHeight="1.6"
             >
-              Sign in with your account to access your patient data.
+              Create the administrator account for this Phlox instance. All
+              existing data will be attached to this account.
             </Text>
           </Flex>
 
-          {lockMessage && (
+          {error && (
             <Alert.Root status="error" borderRadius="md" fontSize="sm">
               <Alert.Indicator />
-              <Text fontSize="xs">{lockMessage}</Text>
-            </Alert.Root>
-          )}
-
-          {attempts > 0 && !lockMessage && (
-            <Alert.Root status="warning" borderRadius="md" fontSize="sm">
-              <Alert.Indicator />
-              <Text fontSize="xs">
-                Incorrect username or password. ({attempts} attempt
-                {attempts > 1 ? "s" : ""})
-              </Text>
+              <Text fontSize="xs">{error}</Text>
             </Alert.Root>
           )}
 
           <VStack gap={4} align="stretch">
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
-                Username
+                Administrator username
               </Text>
               <Input
                 type="text"
-                placeholder="Enter your username"
+                placeholder="e.g. drsmith"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={handleKeyPress}
-                size="md"
-                fontWeight="400"
                 autoFocus
-                borderRadius="lg"
-                bg="surface"
-                border="1px solid"
-                borderColor="border"
-                color="textPrimary"
-                _placeholder={{ color: "textSecondary" }}
-                _focus={{
-                  borderColor: "accent",
-                  boxShadow: "0 0 0 1px accent",
-                }}
+                {...inputProps}
               />
             </Box>
             <Box>
@@ -198,22 +157,10 @@ export const AuthGate = ({ onSuccess }) => {
               <HStack>
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder="At least 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  size="md"
-                  fontWeight="400"
-                  borderRadius="lg"
-                  bg="surface"
-                  border="1px solid"
-                  borderColor="border"
-                  color="textPrimary"
-                  _placeholder={{ color: "textSecondary" }}
-                  _focus={{
-                    borderColor: "accent",
-                    boxShadow: "0 0 0 1px accent",
-                  }}
+                  {...inputProps}
                 />
                 <Button
                   size="md"
@@ -225,13 +172,25 @@ export const AuthGate = ({ onSuccess }) => {
                 </Button>
               </HStack>
             </Box>
+            <Box>
+              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
+                Confirm password
+              </Text>
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Repeat your password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                {...inputProps}
+              />
+            </Box>
           </VStack>
 
           <Button
             onClick={handleSubmit}
             loading={isSubmitting}
-            loadingText="Signing in..."
-            disabled={username.length < 1 || password.length < 1}
+            loadingText="Creating account..."
+            disabled={!username || !password || !confirm}
             borderRadius="2xl"
             size="lg"
             className="green-button"
@@ -241,7 +200,7 @@ export const AuthGate = ({ onSuccess }) => {
             }}
             mt={2}
           >
-            Sign In
+            Create Admin Account
           </Button>
         </VStack>
       </Box>

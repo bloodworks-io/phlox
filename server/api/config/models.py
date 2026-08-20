@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from server.constants import IS_DOCKER
 from server.database.config.manager import config_manager
 from server.llm_client.client import resolve_effective_api_key
+from server.utils.current_user import require_admin
 from server.utils.llama_models import llama_model_manager
 from server.utils.url_utils import build_openai_v1_url, build_whisper_v1_url
 
@@ -22,14 +23,16 @@ def get_options():
 
 @router.post("/options/reset-to-defaults")
 def reset_options_to_defaults():
-    """Reset all model configuration options to their default values."""
+    """Reset all model configuration options to their default values. Admin only."""
+    require_admin()
     config_manager.reset_options_to_defaults()
     return {"message": "Options reset to defaults successfully"}
 
 
 @router.post("/options/{category}")
 def update_options(category: str, data: dict = Body(...)):
-    """Update options for a specific category."""
+    """Update options for a specific category. Admin only."""
+    require_admin()
     config_manager.update_options(category, data)
     return {"message": f"{category} options updated successfully"}
 

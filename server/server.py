@@ -86,6 +86,10 @@ async def lifespan(_app: FastAPI):
     from server.database.repositories.audit import purge_old_events
 
     scheduler.add_job(purge_old_events, "interval", hours=24)
+    # Purge expired login sessions once per day
+    from server.database.repositories.users import purge_expired_sessions
+
+    scheduler.add_job(purge_expired_sessions, "interval", hours=24)
 
     yield
 
@@ -98,31 +102,24 @@ def validate_docker_auth(
     passphrase: str,
     proxy_auth_enabled: bool,
     trusted_proxy_ips: list,
-    server_host: str,
     allow_unauthenticated: bool,
 ) -> None:
-    """Passes when any of: passphrase auth, proxy auth, loopback-only bind,
-    or explicit risk acceptance via PHLOX_ALLOW_UNAUTHENTICATED.
-    """
+    """Validate Docker auth configuration. Login is enforced by construction."""
     if proxy_auth_enabled and not trusted_proxy_ips:
         raise SystemExit(
             "PROXY_AUTH_ENABLED=true requires TRUSTED_PROXY_IPS (comma-separated\n"
             "IPs/CIDRs of your reverse proxy, e.g. TRUSTED_PROXY_IPS=172.16.0.2)."
         )
-    loopback = server_host in ("127.0.0.1", "localhost")
-    if passphrase or proxy_auth_enabled or loopback or allow_unauthenticated:
-        if passphrase and len(passphrase) < 12:
-            logger.warning(
-                "PHLOX_PASSPHRASE is shorter than 12 characters - use a stronger passphrase"
-            )
-        return
-    raise SystemExit(
-        "Refusing to start unauthenticated on the network. Configure one of:\n"
-        "  - PHLOX_PASSPHRASE=<strong passphrase>   (browser login; recommended for LAN access)\n"
-        "  - PROXY_AUTH_ENABLED=true + TRUSTED_PROXY_IPS  (auth handled by a reverse proxy)\n"
-        "  - SERVER_HOST=127.0.0.1                  (loopback-only bind)\n"
-        "  - PHLOX_ALLOW_UNAUTHENTICATED=true       (explicit risk acceptance)"
-    )
+    if passphrase:
+        logger.warning(
+            "PHLOX_PASSPHRASE is deprecated and ignored - user accounts are "
+            "created via first-run setup (/api/auth/setup)"
+        )
+    if allow_unauthenticated:
+        logger.warning(
+            "PHLOX_ALLOW_UNAUTHENTICATED=true - all requests run as admin. "
+            "Explicit risk acceptance."
+        )
 
 
 def initialize_and_get_app():
@@ -246,7 +243,7 @@ def initialize_and_get_app():
     app.include_router(config_router, prefix="/api/config")
 
     # Passphrase login (Docker)
-    if IS_DOCKER and PHLOX_PASSPHRASE:
+    if IS_DOCKER:
         from server.api import auth
 
         app.include_router(auth.router, prefix="/api/auth")
@@ -262,6 +259,7 @@ def initialize_and_get_app():
     # React app routes
     @app.get("/new-note")
     @app.get("/settings")
+    @app.get("/setup")
     @app.get("/rag")
     @app.get("/clinic-summary")
     @app.get("/outstanding-jobs")
@@ -291,16 +289,14 @@ if IS_DOCKER:
             passphrase=PHLOX_PASSPHRASE,
             proxy_auth_enabled=PROXY_AUTH_ENABLED,
             trusted_proxy_ips=TRUSTED_PROXY_IPS,
-            server_host=os.getenv("SERVER_HOST", "0.0.0.0"),
             allow_unauthenticated=PHLOX_ALLOW_UNAUTHENTICATED,
         )
 
-    if PHLOX_PASSPHRASE:
-        from server.api.auth import init_passphrase_auth
-
-        init_passphrase_auth(PHLOX_PASSPHRASE)
-
     initialize_database()  # Uses env/secret
+    if PHLOX_ALLOW_UNAUTHENTICATED:
+        from server.database.repositories.users import ensure_implicit_admin
+
+        ensure_implicit_admin()
     app = initialize_and_get_app()
 else:
     # Desktop mode: app will be initialized after passphrase is received
@@ -348,6 +344,11 @@ def start_server_for_desktop():
         logger.error(f"Failed to initialize database: {e}")
         print(f"ERROR:{e}", flush=True)
         sys.exit(1)
+
+    # Desktop is single-user: implicit admin owns everything, no login screen.
+    from server.database.repositories.users import ensure_implicit_admin
+
+    ensure_implicit_admin()
 
     # Now initialize the app
     app = initialize_and_get_app()

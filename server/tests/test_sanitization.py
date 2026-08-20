@@ -20,10 +20,11 @@ def test_pubmed_query_strips_phi_from_audit_payload():
 
 
 def test_external_search_strips_au_phones():
-    assert sanitize_query_for_external_search("call 0412345678 about diabetes") == "call about diabetes"
     assert (
-        sanitize_query_for_external_search("ring 03 9123 4567 re diabetes") == "ring re diabetes"
+        sanitize_query_for_external_search("call 0412345678 about diabetes")
+        == "call about diabetes"
     )
+    assert sanitize_query_for_external_search("ring 03 9123 4567 re diabetes") == "ring re diabetes"
 
 
 def test_pubmed_query_strips_standalone_years():

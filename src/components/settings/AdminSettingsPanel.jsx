@@ -13,6 +13,7 @@ import {
     FaDatabase,
     FaPuzzlePiece,
     FaShieldAlt,
+    FaUsers,
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
 
@@ -21,6 +22,7 @@ import LocalModelManager from "./LocalModelManager";
 import WhisperTab from "./WhisperTab";
 import LlmTab from "./LlmTab";
 import RagTab from "./RagTab";
+import UsersTab from "./UsersTab";
 import { localModelApi } from "../../utils/api/localModelApi";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
@@ -288,6 +290,19 @@ const AdminSettingsPanel = ({
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
+                                    {!isTauri() && (
+                                        <Tooltip content="Manage user accounts">
+                                            <Tabs.Trigger
+                                                className="tab-style"
+                                                value="3"
+                                            >
+                                                <HStack>
+                                                    <FaUsers />
+                                                    <Text>Users</Text>
+                                                </HStack>
+                                            </Tabs.Trigger>
+                                        </Tooltip>
+                                    )}
                                 </Tabs.List>
                                 <Tabs.Content
                                     className="floating-main"
@@ -310,6 +325,14 @@ const AdminSettingsPanel = ({
                                         handleConfigChange={handleConfigChange}
                                     />
                                 </Tabs.Content>
+                                {!isTauri() && (
+                                    <Tabs.Content
+                                        className="floating-main"
+                                        value="3"
+                                    >
+                                        <UsersTab />
+                                    </Tabs.Content>
+                                )}
                             </Tabs.Root>
                         ) : (
                             <Tabs.Root
@@ -374,6 +397,19 @@ const AdminSettingsPanel = ({
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
+                                    {!isTauri() && (
+                                        <Tooltip content="Manage user accounts">
+                                            <Tabs.Trigger
+                                                className="tab-style"
+                                                value="5"
+                                            >
+                                                <HStack>
+                                                    <FaUsers />
+                                                    <Text>Users</Text>
+                                                </HStack>
+                                            </Tabs.Trigger>
+                                        </Tooltip>
+                                    )}
                                 </Tabs.List>
                                 <Tabs.Content
                                     className="floating-main"
@@ -436,6 +472,14 @@ const AdminSettingsPanel = ({
                                         handleConfigChange={handleConfigChange}
                                     />
                                 </Tabs.Content>
+                                {!isTauri() && (
+                                    <Tabs.Content
+                                        className="floating-main"
+                                        value="5"
+                                    >
+                                        <UsersTab />
+                                    </Tabs.Content>
+                                )}
                             </Tabs.Root>
                         )}
                     </VStack>

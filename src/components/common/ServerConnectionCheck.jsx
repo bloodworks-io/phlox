@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
 import { clearStoredToken, isTauri } from "../../utils/helpers/apiConfig";
+import { authApi } from "../../utils/api/authApi";
 import { AuthGate } from "./AuthGate";
+import { SetupWizard } from "./SetupWizard";
 
 export const ServerConnectionCheck = ({ children }) => {
   const [serverStatus, setServerStatus] = useState("checking");
@@ -18,7 +20,13 @@ export const ServerConnectionCheck = ({ children }) => {
           const response = await fetch("/api/config/status");
           if (response.status === 401) {
             clearStoredToken();
-            setServerStatus("needs-auth");
+            // No users yet -> first-run wizard; otherwise the login screen.
+            try {
+              const status = await authApi.fetchStatus();
+              setServerStatus(status.needs_setup ? "needs-setup" : "needs-auth");
+            } catch {
+              setServerStatus("needs-auth");
+            }
             return;
           }
         } catch {
@@ -60,6 +68,10 @@ export const ServerConnectionCheck = ({ children }) => {
         </VStack>
       </Box>
     );
+  }
+
+  if (serverStatus === "needs-setup") {
+    return <SetupWizard onSuccess={() => setServerStatus("ready")} />;
   }
 
   if (serverStatus === "needs-auth") {

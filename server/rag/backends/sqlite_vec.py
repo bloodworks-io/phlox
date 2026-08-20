@@ -111,6 +111,10 @@ class SqliteVecBackend:
         if not self._has_column(db, "source_documents", "title"):
             db.execute("ALTER TABLE source_documents ADD COLUMN title TEXT")
 
+        # Multi-user ownership (NULL = shared/system collection)
+        if not self._has_column(db, "collections", "owner_id"):
+            db.execute("ALTER TABLE collections ADD COLUMN owner_id INTEGER")
+
         rows = db.execute(
             "SELECT name, display_name FROM collections WHERE display_name IS NOT NULL"
         ).fetchall()
@@ -129,16 +133,33 @@ class SqliteVecBackend:
 
     # Collection lifecycle
 
-    def list_collections(self) -> list[str]:
+    def list_collections(self, owner_id: int | None = None) -> list[str]:
+        """List collection display names; NULL-owned (shared) always visible."""
         db = self._connect()
         try:
-            rows = db.execute(
-                "SELECT COALESCE(display_name, name) AS display FROM collections ORDER BY display"
-            ).fetchall()
+            if owner_id is None:
+                rows = db.execute(
+                    "SELECT COALESCE(display_name, name) AS display FROM collections "
+                    "ORDER BY display"
+                ).fetchall()
+            else:
+                rows = db.execute(
+                    "SELECT COALESCE(display_name, name) AS display FROM collections "
+                    "WHERE owner_id IS NULL OR owner_id = ? ORDER BY display",
+                    (owner_id,),
+                ).fetchall()
             return [r[0] for r in rows]
         except Exception as e:
             logger.error("Error listing collections: %s", e)
             return []
+        finally:
+            db.close()
+
+    def get_collection_owner(self, name: str) -> int | None:
+        db = self._connect()
+        try:
+            row = db.execute("SELECT owner_id FROM collections WHERE name = ?", (name,)).fetchone()
+            return row[0] if row else None
         finally:
             db.close()
 
@@ -148,15 +169,16 @@ class SqliteVecBackend:
         embedding_model: str,
         embedding_dim: int,
         display_name: str | None = None,
+        owner_id: int | None = None,
     ) -> None:
         safe = _safe_table_name(name)
         db = self._connect()
         try:
             db.execute(
                 "INSERT OR IGNORE INTO collections "
-                "(name, embedding_model, embedding_dim, display_name) "
-                "VALUES (?, ?, ?, ?)",
-                (name, embedding_model, embedding_dim, display_name),
+                "(name, embedding_model, embedding_dim, display_name, owner_id) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (name, embedding_model, embedding_dim, display_name, owner_id),
             )
             db.execute(
                 f"CREATE VIRTUAL TABLE IF NOT EXISTS vec_{safe} USING vec0("  # nosec B608
