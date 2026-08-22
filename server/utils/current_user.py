@@ -1,5 +1,6 @@
 """Request-scoped user identity."""
 
+from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any
 
@@ -20,6 +21,19 @@ class CurrentUser:
 
 
 _current_user: ContextVar[CurrentUser | None] = ContextVar("current_user", default=None)
+
+_scope_mine: ContextVar[bool] = ContextVar("scope_mine", default=False)
+
+
+@contextmanager
+def restrict_admin_scope(scope: str | None):
+    """``?scope=mine`` request scope: admins see only their own rows.
+    """
+    token = _scope_mine.set(scope == "mine")
+    try:
+        yield
+    finally:
+        _scope_mine.reset(token)
 
 
 def set_current_user(user: CurrentUser | None) -> None:
@@ -44,10 +58,11 @@ def scoped(column: str) -> tuple[str, list[Any]]:
     """SQL predicate limiting rows to the current user.
 
     Returns ``(" AND col = ?", [uid])`` for a clinician, ``("", [])``
-    (unrestricted) for admins and internal calls.
+    (unrestricted) for admins and internal calls — unless the admin has
+    requested ``?scope=mine``, which scopes them like a clinician.
     """
     user = _current_user.get()
-    if user is None or user.is_admin:
+    if user is None or (user.is_admin and not _scope_mine.get()):
         return "", []
     return f" AND {column} = ?", [user.id]
 
@@ -55,7 +70,7 @@ def scoped(column: str) -> tuple[str, list[Any]]:
 def scoped_or_shared(column: str) -> tuple[str, list[Any]]:
     """Like :func:`scoped` but NULL owner rows (system/shared) stay visible."""
     user = _current_user.get()
-    if user is None or user.is_admin:
+    if user is None or (user.is_admin and not _scope_mine.get()):
         return "", []
     return f" AND ({column} IS NULL OR {column} = ?)", [user.id]
 

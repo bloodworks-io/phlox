@@ -6,12 +6,12 @@ export const KEYS = {
     OPTIONS: ["options"],
     PROMPTS: ["prompts"],
     DEFAULT_TEMPLATE: ["defaultTemplate"],
-    OUTSTANDING_JOBS: ["outstandingJobs"],
-    INCOMPLETE_JOBS_COUNT: ["incompleteJobsCount"],
+    outstandingJobs: (scope) => ["outstandingJobs", scope ?? "all"],
+    incompleteJobsCount: (scope) => ["incompleteJobsCount", scope ?? "all"],
     TODOS: ["todos"],
     TOOL_SERVERS: ["toolServers"],
 
-    noteList: (date, detailed = true) => ["noteList", date, detailed],
+    noteList: (date, detailed = true, scope) => ["noteList", date, detailed, scope ?? "all"],
     scribeConsent: (urNumber) => ["scribeConsent", urNumber],
     llmModels: (mode, baseUrl, provider, hasKey) =>
         ["llmModels", mode, baseUrl, provider, hasKey],

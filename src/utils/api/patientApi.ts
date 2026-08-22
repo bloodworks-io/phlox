@@ -179,9 +179,18 @@ export const patientApi = {
     return response.json();
   },
 
-  fetchNoteList: async ({ date, detailed }: { date: string; detailed?: boolean }) => {
+  fetchNoteList: async ({
+    date,
+    detailed,
+    scope,
+  }: {
+    date: string;
+    detailed?: boolean;
+    scope?: string;
+  }) => {
     const params = new URLSearchParams({ date });
     if (detailed) params.set("detailed", "true");
+    if (scope === "mine") params.set("scope", "mine");
     return handleApiRequest({
       apiCall: async (signal) => {
         const url = await buildApiUrl(`/api/note/list?${params.toString()}`);
@@ -191,10 +200,11 @@ export const patientApi = {
     });
   },
 
-  fetchIncompleteJobsCount: async () => {
+  fetchIncompleteJobsCount: async (scope?: string) => {
+    const qs = scope === "mine" ? "?scope=mine" : "";
     return handleApiRequest({
       apiCall: async (signal) => {
-        const url = await buildApiUrl(`/api/note/incomplete-jobs-count`);
+        const url = await buildApiUrl(`/api/note/incomplete-jobs-count${qs}`);
         return universalFetch(url, { signal });
       },
       errorMessage: "Failed to fetch incomplete jobs count",
@@ -211,10 +221,11 @@ export const patientApi = {
     });
   },
 
-  fetchOutstandingJobs: async () => {
+  fetchOutstandingJobs: async (scope?: string) => {
+    const qs = scope === "mine" ? "?scope=mine" : "";
     return handleApiRequest({
       apiCall: async (signal) => {
-        const url = await buildApiUrl(`/api/note/outstanding-jobs`);
+        const url = await buildApiUrl(`/api/note/outstanding-jobs${qs}`);
         return universalFetch(url, { signal });
       },
       errorMessage: "Failed to fetch outstanding jobs",

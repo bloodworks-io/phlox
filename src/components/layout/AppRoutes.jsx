@@ -16,6 +16,7 @@ const AppRoutes = ({
     onOpenNewNoteModal,
     newNoteKey,
     handleSelectPatient,
+    patientScope,
 }) => (
     <Routes>
         <Route
@@ -67,6 +68,7 @@ const AppRoutes = ({
                         handleSelectPatient(patient, true)
                     }
                     refreshSidebar={refreshSidebar}
+                    patientScope={patientScope}
                 />
             }
         />

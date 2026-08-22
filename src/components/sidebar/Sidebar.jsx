@@ -64,12 +64,18 @@ const Sidebar = ({
   isSmallScreen,
   colorMode,
   toggleColorMode,
+  isAdmin,
+  patientScope,
+  setPatientScope,
 }) => {
   // State declarations remain the same
   const { data: patientsData, mutate: mutatePatients } = useSWR(
-    KEYS.noteList(selectedDate, false),
+    KEYS.noteList(selectedDate, false, patientScope),
     async () => {
-      const data = await patientApi.fetchNoteList({ date: selectedDate });
+      const data = await patientApi.fetchNoteList({
+        date: selectedDate,
+        scope: patientScope,
+      });
       return data.sort((a, b) => a.id - b.id);
     },
   );
@@ -77,9 +83,9 @@ const Sidebar = ({
   const setPatients = (updater) =>
     mutatePatients(updater, { revalidate: false });
   const { data: jobsCountData } = useSWR(
-    KEYS.INCOMPLETE_JOBS_COUNT,
+    KEYS.incompleteJobsCount(patientScope),
     async () => {
-      const data = await patientApi.fetchIncompleteJobsCount();
+      const data = await patientApi.fetchIncompleteJobsCount(patientScope);
       return data.incomplete_jobs_count;
     },
   );
@@ -337,6 +343,11 @@ const Sidebar = ({
           handleNavigation={handleNavigation}
           onNewPatient={handleNewPatient}
           incompleteJobsCount={incompleteJobsCount}
+          isAdmin={isAdmin}
+          patientScope={patientScope}
+          onTogglePatientScope={() =>
+            setPatientScope(patientScope === "mine" ? "all" : "mine")
+          }
         />
 
         {/* Patient List — hidden in collapsed mode */}

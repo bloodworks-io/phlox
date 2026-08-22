@@ -69,6 +69,34 @@ def test_encounters_scoped_by_owner():
         _cleanup(["SCOPEA1", "SCOPEB1"])
 
 
+def test_admin_scope_mine_sees_only_own():
+    from server.utils.current_user import restrict_admin_scope
+
+    a, b = create_user("scope_mine_a"), create_user("scope_mine_b")
+    try:
+        id_a = _save("SCOPMINE1", a)
+        id_b = _save("SCOPMINE2", b)
+
+        # Admin with ?scope=mine -> scoped like a clinician
+        _as(a, role="admin")
+        with restrict_admin_scope("mine"):
+            rows = get_patients_by_date("2026-01-01")
+            assert [r["id"] for r in rows] == [id_a]
+
+        # Same admin without the override still sees both
+        rows = get_patients_by_date("2026-01-01")
+        assert {r["id"] for r in rows} >= {id_a, id_b}
+
+        # Clinician is scoped regardless of the flag
+        _as(b)
+        with restrict_admin_scope("mine"):
+            rows = get_patients_by_date("2026-01-01")
+            assert [r["id"] for r in rows] == [id_b]
+    finally:
+        set_current_user(None)
+        _cleanup(["SCOPMINE1", "SCOPMINE2"])
+
+
 def test_write_stamps_created_by():
     a = create_user("stamp_a")
     try:
