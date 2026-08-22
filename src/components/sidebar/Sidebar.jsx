@@ -343,11 +343,6 @@ const Sidebar = ({
           handleNavigation={handleNavigation}
           onNewPatient={handleNewPatient}
           incompleteJobsCount={incompleteJobsCount}
-          isAdmin={isAdmin}
-          patientScope={patientScope}
-          onTogglePatientScope={() =>
-            setPatientScope(patientScope === "mine" ? "all" : "mine")
-          }
         />
 
         {/* Patient List — hidden in collapsed mode */}
@@ -362,6 +357,11 @@ const Sidebar = ({
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
               onShowSummary={() => handleNavigation("/clinic-summary")}
+              isAdmin={isAdmin}
+              patientScope={patientScope}
+              onTogglePatientScope={() =>
+                setPatientScope(patientScope === "mine" ? "all" : "mine")
+              }
             />
           </Box>
         )}

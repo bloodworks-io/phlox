@@ -1,13 +1,6 @@
-import { Box, VStack, Flex, Icon, Text, Badge, Switch } from "@chakra-ui/react";
+import { Box, VStack, Flex, Icon, Text, Badge } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import {
-    FaTasks,
-    FaNotesMedical,
-    FaBrain,
-    FaCog,
-    FaUser,
-    FaUsers,
-} from "react-icons/fa";
+import { FaTasks, FaNotesMedical, FaBrain, FaCog } from "react-icons/fa";
 import { useLocation } from "react-router";
 import { colors } from "../../theme/colors";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
@@ -132,9 +125,6 @@ const SidebarNavigation = ({
     handleNavigation,
     incompleteJobsCount,
     onNewPatient,
-    isAdmin,
-    patientScope,
-    onTogglePatientScope,
 }) => {
     const location = useLocation();
     const isActive = (to) =>
@@ -207,79 +197,6 @@ const SidebarNavigation = ({
                     />
                 </Box>
             </Tooltip>
-
-            {isAdmin && (
-                <Tooltip
-                    content="Show all users' patients or just your own"
-                    positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
-                >
-                    <Flex
-                        w="100%"
-                        pr="2"
-                        py="1.5"
-                        align="center"
-                        borderRadius="md"
-                        cursor="pointer"
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Toggle between all users' patients and your own"
-                        onClick={onTogglePatientScope}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                onTogglePatientScope();
-                            }
-                        }}
-                        _hover={{ bg: colors.dark.sidebar.hover }}
-                        _active={{ transform: "scale(0.98)" }}
-                        _focusVisible={{
-                            outline: "2px solid",
-                            outlineColor: "accent",
-                            outlineOffset: "2px",
-                        }}
-                        transition="transform 0.1s ease, background 0.15s ease"
-                    >
-                        <Flex
-                            ml="14px"
-                            align="center"
-                            minW="0"
-                            flex="1"
-                            overflow={isCollapsed ? "visible" : "hidden"}
-                        >
-                            <Icon
-                                as={patientScope === "mine" ? FaUser : FaUsers}
-                                color={colors.dark.overlay2}
-                                boxSize={5}
-                                mr={isCollapsed ? 0 : 3}
-                            />
-                            {!isCollapsed && (
-                                <Text
-                                    fontWeight="medium"
-                                    fontSize="sm"
-                                    color={colors.dark.textPrimary}
-                                    whiteSpace="nowrap"
-                                >
-                                    All Patients
-                                </Text>
-                            )}
-                        </Flex>
-                        {!isCollapsed && (
-                            <Switch.Root
-                                size="sm"
-                                mr="2"
-                                checked={patientScope === "all"}
-                                onCheckedChange={onTogglePatientScope}
-                                pointerEvents="none"
-                            >
-                                <Switch.HiddenInput />
-                                <Switch.Control>
-                                    <Switch.Thumb />
-                                </Switch.Control>
-                            </Switch.Root>
-                        )}
-                    </Flex>
-                </Tooltip>
-            )}
         </VStack>
     );
 };

@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useState } from "react";
-import { FaClinicMedical } from "react-icons/fa";
+import { FaClinicMedical, FaUser, FaUsers } from "react-icons/fa";
 import { DeleteIcon, ChevronDownIcon, ChevronUpIcon } from "../common/icons";
 import { getInitials, getAvatarColor } from "./SidebarHelpers";
 import { colors } from "../../theme/colors";
@@ -26,6 +26,9 @@ const SidebarPatientList = ({
     selectedDate,
     setSelectedDate,
     onShowSummary,
+    isAdmin,
+    patientScope,
+    onTogglePatientScope,
 }) => {
     const [isPatientsCollapsed, setIsPatientsCollapsed] = useState(false);
     const [hoveredPatientId, setHoveredPatientId] = useState(null);
@@ -64,16 +67,57 @@ const SidebarPatientList = ({
                     }}
                     transition="transform 0.1s ease, background 0.15s ease"
                 >
-                    <Text
-                        fontSize="10px"
-                        fontWeight="700"
-                        letterSpacing="0.15em"
-                        textTransform="uppercase"
-                        color={labelColor}
-                        whiteSpace="nowrap"
-                    >
-                        Patient List
-                    </Text>
+                    <Flex align="center" gap={1} minW="0">
+                        <Text
+                            fontSize="10px"
+                            fontWeight="700"
+                            letterSpacing="0.15em"
+                            textTransform="uppercase"
+                            color={labelColor}
+                            whiteSpace="nowrap"
+                        >
+                            Patient List
+                        </Text>
+                        {isAdmin && (
+                            <Tooltip
+                                content={
+                                    patientScope === "mine"
+                                        ? "Showing your patients — click to show all users'"
+                                        : "Showing all users' patients — click to show only yours"
+                                }
+                                positioning={{ placement: "top" }}
+                                openDelay={700}
+                            >
+                                <IconButton
+                                    variant="ghost"
+                                    size="xs"
+                                    minW="auto"
+                                    h="auto"
+                                    p={0.5}
+                                    color={labelColor}
+                                    _hover={{
+                                        bg: "rgba(184, 192, 224, 0.1)",
+                                        color: "textPrimary",
+                                    }}
+                                    aria-label="Toggle between all users' patients and your own"
+                                    icon={
+                                        <Icon
+                                            as={
+                                                patientScope === "mine"
+                                                    ? FaUser
+                                                    : FaUsers
+                                            }
+                                            boxSize="12px"
+                                        />
+                                    }
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onTogglePatientScope();
+                                    }}
+                                />
+                            </Tooltip>
+                        )}
+                    </Flex>
                     <IconButton
                         variant="ghost"
                         size="xs"
