@@ -15,7 +15,7 @@ services:
       # - PROXY_AUTH_ENABLED=true
       # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
       # - PROXY_AUTH_ALLOWED_USERS= # Comma-separated list of allowed users (empty = any authenticated user)
-      # - TRUSTED_PROXY_IPS=172.16.0.2 # Required with PROXY_AUTH_ENABLED: IPs/CIDRs of your reverse proxy. Empty (default) = forwarded headers are never trusted.
+      # - TRUSTED_PROXY_IPS=172.16.0.2 # Required with PROXY_AUTH_ENABLED: IPs/CIDRs of EVERY proxy hop between Phlox and clients.
       # Rate limiting
       # - RATE_LIMIT_ENABLED=true
     volumes:

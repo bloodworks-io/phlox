@@ -86,6 +86,42 @@ def _is_trusted_proxy_ip(ip_str: str) -> bool:
     return False
 
 
+def invalid_trusted_proxy_entries(entries: list[str]) -> list[str]:
+    """Return TRUSTED_PROXY_IPS entries that are neither valid IPs nor CIDRs."""
+    invalid = []
+    for entry in entries:
+        try:
+            ipaddress.ip_network(entry, strict=False)
+        except ValueError:
+            invalid.append(entry)
+    return invalid
+
+
+def _extract_client_ip_from_xff(forwarded_for: str) -> str | None:
+    """Return the real client IP from an X-Forwarded-For chain, right-to-left.
+    """
+    candidates = [c.strip() for c in forwarded_for.split(",")]
+    for candidate in reversed(candidates):
+        if not candidate:
+            return None
+        if _is_trusted_proxy_ip(candidate):
+            continue
+        try:
+            return str(ipaddress.ip_address(candidate))
+        except ValueError:
+            # First untrusted entry is forged/garbage - do not guess further left.
+            return None
+    # Every entry trusted: the original client was itself a trusted proxy.
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            return str(ipaddress.ip_address(candidate))
+        except ValueError:
+            continue
+    return None
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses."""
 
@@ -112,8 +148,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 class TrustedProxyMiddleware(BaseHTTPMiddleware):
     """Extract real client IP from X-Forwarded-For header if from a trusted proxy.
-
-    Only trusts X-Forwarded-For when the direct connection is in TRUSTED_PROXY_IPS.
     """
 
     async def dispatch(self, request, call_next):
@@ -122,12 +156,10 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
 
         client_ip = client_host
         if forwarded_for and _is_trusted_proxy_ip(client_host):
-            # Take the first IP in the chain (original client).
-            candidate = forwarded_for.split(",")[0].strip()
-            try:
-                ipaddress.ip_address(candidate)
-                client_ip = candidate
-            except ValueError:
+            extracted = _extract_client_ip_from_xff(forwarded_for)
+            if extracted:
+                client_ip = extracted
+            else:
                 logger.warning(
                     f"Ignoring invalid X-Forwarded-For from trusted proxy: {forwarded_for!r}"
                 )

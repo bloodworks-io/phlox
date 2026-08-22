@@ -30,7 +30,7 @@
     },
     "scripts": {
         "start-react": "rm -rf node_modules/.vite && vite",
-        "dev": "parallel --tag --line-buffer ::: \"npm run start-react\" \"uvicorn server.server:app --reload --host 0.0.0.0 --port 6000\"",
+        "dev": "parallel --tag --line-buffer ::: \"npm run start-react\" \"uvicorn server.server:app --reload --host 0.0.0.0 --port 6000 --no-proxy-headers\"",
         "build": "vite build",
         "typecheck": "tsc --noEmit",
         "lint": "eslint .",

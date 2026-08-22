@@ -39,6 +39,7 @@ from server.middleware import (
     RequestBodyLimitMiddleware,
     SecurityHeadersMiddleware,
     TrustedProxyMiddleware,
+    invalid_trusted_proxy_entries,
 )
 from server.utils.parent_watchdog import start_parent_watchdog
 
@@ -105,6 +106,12 @@ def validate_docker_auth(
     allow_unauthenticated: bool,
 ) -> None:
     """Validate Docker auth configuration. Login is enforced by construction."""
+    invalid_ips = invalid_trusted_proxy_entries(trusted_proxy_ips)
+    if invalid_ips:
+        raise SystemExit(
+            "TRUSTED_PROXY_IPS contains invalid entries (expected IPs/CIDRs): "
+            f"{', '.join(invalid_ips)}"
+        )
     if proxy_auth_enabled and not trusted_proxy_ips:
         raise SystemExit(
             "PROXY_AUTH_ENABLED=true requires TRUSTED_PROXY_IPS (comma-separated\n"
@@ -387,6 +394,7 @@ def start_server_for_desktop():
         loop="asyncio",
         workers=0,
         http="httptools",
+        proxy_headers=False,
     )
     server = uvicorn.Server(config)
     server.run()
@@ -401,7 +409,7 @@ if __name__ == "__main__":
         config = uvicorn.Config(
             app,
             host=os.getenv("SERVER_HOST", "0.0.0.0"),  # nosec B104
-            port=int(os.getenv("PORT", 5000)),
+            port=int(os.getenv("PORT", "5000")),
             timeout_keep_alive=300,
             timeout_graceful_shutdown=10,
             loop="asyncio",
@@ -409,6 +417,7 @@ if __name__ == "__main__":
             http="httptools",
             ws_ping_interval=None,
             ws_ping_timeout=None,
+            proxy_headers=False,
         )
         server = uvicorn.Server(config)
         server.run()

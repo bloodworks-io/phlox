@@ -67,6 +67,26 @@ def test_guard_exits_with_proxy_auth_but_no_trusted_ips():
         )
 
 
+def test_guard_exits_with_invalid_trusted_ips():
+    """Bad TRUSTED_PROXY_IPS entries must fail fast at startup, not per-request."""
+    with pytest.raises(SystemExit):
+        server_module.validate_docker_auth(
+            passphrase="",
+            proxy_auth_enabled=True,
+            trusted_proxy_ips=["172.16.0.2", "not-a-network"],
+            allow_unauthenticated=False,
+        )
+
+
+def test_guard_accepts_ip_and_cidr_trusted_ips():
+    server_module.validate_docker_auth(
+        passphrase="",
+        proxy_auth_enabled=True,
+        trusted_proxy_ips=["172.16.0.2", "10.0.0.0/8", "fd00::/8"],
+        allow_unauthenticated=False,
+    )
+
+
 def test_guard_passes_with_proxy_auth():
     server_module.validate_docker_auth(
         passphrase="",
@@ -281,3 +301,88 @@ async def test_trusted_proxy_never_trusts_xff_by_default(monkeypatch):
     resp = await _get(app, "192.168.1.50", headers={"X-Forwarded-For": "10.99.1.2"})
     assert resp.status_code == 200
     assert resp.json()["client_ip"] == "192.168.1.50"
+
+
+# --- TrustedProxyMiddleware: right-to-left chain walk -----------------------------
+
+
+@pytest.mark.asyncio
+async def test_trusted_proxy_ignores_spoofed_leftmost_xff(monkeypatch):
+    """Append-style proxy: client-forged leftmost entries must never win.
+
+    Client at 198.51.100.7 sends a forged XFF; the trusted proxy appends the
+    address it actually observed. The first untrusted entry from the right is
+    the real client, not the forged 192.0.2.66.
+    """
+    monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["172.16.0.2"])
+    app = _build_app(TrustedProxyMiddleware)
+
+    resp = await _get(app, "172.16.0.2", headers={"X-Forwarded-For": "192.0.2.66, 198.51.100.7"})
+    assert resp.status_code == 200
+    assert resp.json()["client_ip"] == "198.51.100.7"
+
+
+@pytest.mark.asyncio
+async def test_trusted_proxy_walks_multiple_trusted_hops(monkeypatch):
+    """Every proxy hop between Phlox and the client is skipped right-to-left."""
+    monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["10.0.0.0/8"])
+    app = _build_app(TrustedProxyMiddleware)
+
+    resp = await _get(
+        app,
+        "10.0.0.5",
+        headers={"X-Forwarded-For": "192.0.2.66, 198.51.100.7, 10.0.0.4"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["client_ip"] == "198.51.100.7"
+
+
+@pytest.mark.asyncio
+async def test_trusted_proxy_skips_malformed_leftmost(monkeypatch):
+    """A forged/garbage leftmost token must not mask valid entries to its right."""
+    monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["172.16.0.2"])
+    app = _build_app(TrustedProxyMiddleware)
+
+    resp = await _get(app, "172.16.0.2", headers={"X-Forwarded-For": "not-an-ip, 198.51.100.7"})
+    assert resp.status_code == 200
+    assert resp.json()["client_ip"] == "198.51.100.7"
+
+
+@pytest.mark.asyncio
+async def test_trusted_proxy_fails_closed_on_malformed_untrusted_entry(monkeypatch):
+    """If the decisive (first untrusted) entry is garbage, fall back to the peer."""
+    monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["172.16.0.2"])
+    app = _build_app(TrustedProxyMiddleware)
+
+    resp = await _get(app, "172.16.0.2", headers={"X-Forwarded-For": "192.0.2.66, garbage"})
+    assert resp.status_code == 200
+    assert resp.json()["client_ip"] == "172.16.0.2"
+
+
+@pytest.mark.asyncio
+async def test_trusted_proxy_all_trusted_chain_uses_leftmost(monkeypatch):
+    """Chain fully inside the trust boundary: leftmost (original client) wins.
+
+    Matches uvicorn ProxyHeadersMiddleware semantics for all-trusted chains.
+    """
+    monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["10.0.0.0/8"])
+    app = _build_app(TrustedProxyMiddleware)
+
+    resp = await _get(app, "10.0.0.5", headers={"X-Forwarded-For": "10.0.0.4, 10.0.0.9"})
+    assert resp.status_code == 200
+    assert resp.json()["client_ip"] == "10.0.0.4"
+
+
+@pytest.mark.asyncio
+async def test_trusted_proxy_canonicalizes_ipv6(monkeypatch):
+    """Equivalent IPv6 spellings must map to one rate-limit/audit identity."""
+    monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["172.16.0.2"])
+    app = _build_app(TrustedProxyMiddleware)
+
+    resp = await _get(
+        app,
+        "172.16.0.2",
+        headers={"X-Forwarded-For": "2001:0db8:0000:0000:0000:0000:0000:0001"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["client_ip"] == "2001:db8::1"
