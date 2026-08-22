@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
 import { clearStoredToken, isTauri } from "../../utils/helpers/apiConfig";
+import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { authApi } from "../../utils/api/authApi";
 import { AuthGate } from "./AuthGate";
 import { SetupWizard } from "./SetupWizard";
@@ -17,7 +18,7 @@ export const ServerConnectionCheck = ({ children }) => {
       if (!inTauriEnv) {
 
         try {
-          const response = await fetch("/api/config/status");
+          const response = await universalFetch("/api/config/status");
           if (response.status === 401) {
             clearStoredToken();
             // No users yet -> first-run wizard; otherwise the login screen.
