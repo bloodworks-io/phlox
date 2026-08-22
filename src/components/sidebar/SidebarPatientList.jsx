@@ -7,6 +7,7 @@ import {
     Input,
     Icon,
     Collapsible,
+    Switch,
     VStack,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -38,10 +39,6 @@ const SidebarPatientList = ({
         <Box w="100%" h="100%" display="flex" flexDirection="column" minH="0">
             {/* Patient List heading — whole row toggles the section */}
             {!isCollapsed && (
-                <Tooltip
-                    content="Toggle patient list"
-                    positioning={{ placement: "top" }} openDelay={700}
-                >
                 <Flex
                     pt={2}
                     pb={1}
@@ -59,7 +56,13 @@ const SidebarPatientList = ({
                         }
                     }}
                     _hover={{ color: "textTertiary" }}
-                    _active={{ transform: "scale(0.98)" }}
+                    css={{
+                        // Don't scale when the scope switch (or anything else
+                        // nested) is the thing being pressed
+                        "&:active:not(:has(*:active))": {
+                            transform: "scale(0.98)",
+                        },
+                    }}
                     _focusVisible={{
                         outline: "2px solid",
                         outlineColor: "accent",
@@ -78,47 +81,60 @@ const SidebarPatientList = ({
                         >
                             Patient List
                         </Text>
+                    </Flex>
+                    <Flex align="center" gap={1}>
                         {isAdmin && (
                             <Tooltip
-                                content={
-                                    patientScope === "mine"
-                                        ? "Showing your patients — click to show all users'"
-                                        : "Showing all users' patients — click to show only yours"
-                                }
+                                content="Patient scope: yours ↔ all users'"
                                 positioning={{ placement: "top" }}
                                 openDelay={700}
                             >
-                                <IconButton
-                                    variant="ghost"
-                                    size="xs"
-                                    minW="auto"
-                                    h="auto"
-                                    p={0.5}
+                                <Flex
+                                    align="center"
+                                    gap={0.5}
                                     color={labelColor}
-                                    _hover={{
-                                        bg: "rgba(184, 192, 224, 0.1)",
-                                        color: "textPrimary",
-                                    }}
-                                    aria-label="Toggle between all users' patients and your own"
-                                    icon={
-                                        <Icon
-                                            as={
-                                                patientScope === "mine"
-                                                    ? FaUser
-                                                    : FaUsers
-                                            }
-                                            boxSize="12px"
-                                        />
-                                    }
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onTogglePatientScope();
-                                    }}
-                                />
+                                    onClick={(e) => e.stopPropagation()}
+                                    onKeyDown={(e) => e.stopPropagation()}
+                                >
+                                    <FaUser
+                                        size={8}
+                                        color={
+                                            patientScope === "mine"
+                                                ? colors.dark.accent
+                                                : undefined
+                                        }
+                                    />
+                                    <Switch.Root
+                                        size="xs"
+                                        checked={patientScope === "all"}
+                                        onCheckedChange={() =>
+                                            onTogglePatientScope()
+                                        }
+                                        aria-label="Toggle between all users' patients and your own"
+                                    >
+                                        <Switch.HiddenInput />
+                                        <Switch.Control
+                                            bg={colors.dark.surface2}
+                                            _checked={{
+                                                bg: colors.dark.accent,
+                                            }}
+                                            _focusVisible={{ outline: "none" }}
+                                        >
+                                            <Switch.Thumb />
+                                        </Switch.Control>
+                                    </Switch.Root>
+                                    <FaUsers
+                                        size={12}
+                                        color={
+                                            patientScope === "all"
+                                                ? colors.dark.accent
+                                                : undefined
+                                        }
+                                    />
+                                </Flex>
                             </Tooltip>
                         )}
-                    </Flex>
-                    <IconButton
+                        <IconButton
                         variant="ghost"
                         size="xs"
                         minW="auto"
@@ -139,8 +155,8 @@ const SidebarPatientList = ({
                             <ChevronUpIcon />
                         )}
                     </IconButton>
+                    </Flex>
                 </Flex>
-                </Tooltip>
             )}
             <Collapsible.Root
                 open={isCollapsed || !isPatientsCollapsed}
