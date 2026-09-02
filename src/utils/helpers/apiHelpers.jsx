@@ -1,7 +1,15 @@
 import { isTauri, getRequestToken } from "./apiConfig";
 import { toaster } from "@/components/ui/toaster";
+import { handleLocalRequest } from "@/localBackend/router";
+
+// Browser-only demo: every api module is served by the local route table.
+const DEMO_BACKEND = true;
 
 export const universalFetch = async (url, options = {}) => {
+  if (DEMO_BACKEND) {
+    return handleLocalRequest(url, options);
+  }
+
   // Get the request token if in Tauri mode
   const token = await getRequestToken();
 

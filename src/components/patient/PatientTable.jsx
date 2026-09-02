@@ -8,23 +8,11 @@ import {
     IconButton,
     Checkbox,
     VStack,
-    Grid,
-    Wrap,
-    WrapItem,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useRef, useEffect } from "react";
-import { FaUser, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
-import {
-    FaFileAlt,
-    FaSitemap,
-    FaVial,
-    FaBrain,
-    FaArrowRight,
-} from "react-icons/fa";
+import { FaUser, FaCalendarAlt, FaIdBadge, FaArrowRight } from "react-icons/fa";
 import { RepeatIcon } from "../common/icons";
-import { useColorMode } from "../ui/color-mode";
-import { colors } from "../../theme/colors";
 import {
     resetJobsItems,
     debouncedUpdateJobsList,
@@ -41,7 +29,6 @@ const PatientTable = ({
     summaryOnly = false,
 }) => {
     const pendingJobsUpdates = useRef(new Map());
-    const { colorMode } = useColorMode();
 
     useEffect(() => {
         return () => {
@@ -85,26 +72,6 @@ const PatientTable = ({
         </Box>
     );
 
-    const getTagStyle = (section) => {
-        const token =
-            section === "differentials"
-                ? "primaryButton"
-                : section === "investigations"
-                  ? "successButton"
-                  : section === "considerations"
-                    ? "secondaryButton"
-                    : section === "thinking"
-                      ? "neutralButton"
-                      : null;
-        if (!token) return { bg: "surface", color: "textPrimary" };
-        const hex = colors[colorMode]?.[token] ?? colors.dark.surface2;
-        return {
-            bg: `${hex}1f`,
-            color: hex,
-            border: "1px solid",
-            borderColor: `${hex}40`,
-        };
-    };
 
     const sfxVolume = 0.3;
     const SFX = {
@@ -134,7 +101,7 @@ const PatientTable = ({
                     : 1
             }
         >
-            <Table.Cell width="25%" verticalAlign="top">
+            <Table.Cell width="40%" verticalAlign="top">
                 {summaryOnly ? (
                     <Box>
                         <HStack gap="2">
@@ -196,181 +163,8 @@ const PatientTable = ({
                 )}
             </Table.Cell>
 
-            <Table.Cell width="45%" position="relative" verticalAlign="top">
-                {summaryOnly ? (
-                    <Box
-                        p={2}
-                        borderRadius="lg"
-                        bg="surface"
-                    >
-                        <Text fontSize="sm">
-                            {patient.reasoning?.summary ??
-                                patient.encounter_summary}
-                        </Text>
-                    </Box>
-                ) : (
-                    <Box>
-                        <Grid templateColumns="40px 1fr" gap={0} h="120px">
-                            <VStack align="flex-start" gap={0} w="30px">
-                                {[
-                                    {
-                                        section: "summary",
-                                        icon: FaFileAlt,
-                                        tooltip: "Summary",
-                                    },
-                                    {
-                                        section: "differentials",
-                                        icon: FaSitemap,
-                                        tooltip: "Differentials",
-                                    },
-                                    {
-                                        section: "investigations",
-                                        icon: FaVial,
-                                        tooltip: "Investigations",
-                                    },
-                                    {
-                                        section: "considerations",
-                                        icon: FaBrain,
-                                        tooltip: "Clinical Considerations",
-                                    },
-                                ].map(({ section, icon: ReasonIcon, tooltip }) => (
-                                    <Tooltip
-                                        key={section}
-                                        content={tooltip}
-                                        showArrow
-                                        positioning={{
-                                            placement: "right",
-                                        }}
-                                    >
-                                        <Button
-                                            key={section}
-                                            className={`reason-button ${
-                                                (!patient.reasoning &&
-                                                    section === "summary") ||
-                                                patient.activeSection ===
-                                                    section
-                                                    ? "reason-button-active-patient-table"
-                                                    : ""
-                                            }`}
-                                            onClick={() => {
-                                                if (
-                                                    patient.reasoning ||
-                                                    section === "summary"
-                                                ) {
-                                                    const updatedPatients =
-                                                        patients.map((p) =>
-                                                            p.id === patient.id
-                                                                ? {
-                                                                      ...p,
-                                                                      activeSection:
-                                                                          section,
-                                                                  }
-                                                                : p,
-                                                        );
-                                                    setPatients(
-                                                        updatedPatients,
-                                                    );
-                                                }
-                                            }}
-                                            justifyContent="center"
-                                            width="100%"
-                                            height="28px"
-                                            fontSize="xs"
-                                            disabled={
-                                                !patient.reasoning &&
-                                                section !== "summary"
-                                            }
-                                            opacity={
-                                                !patient.reasoning &&
-                                                section !== "summary"
-                                                    ? 0.5
-                                                    : 1
-                                            }
-                                            p={1}
-                                        >
-                                            <Icon asChild>
-                                                <ReasonIcon />
-                                            </Icon>
-                                        </Button>
-                                    </Tooltip>
-                                ))}
-                            </VStack>
 
-                            <Box
-                            overflowY="auto"
-                            className="scroll-container"
-                            p={3}
-                            bg="surface"
-                                borderRadius="lg"
-                                h="100%"
-                                position="relative"
-                            >
-                                <Box
-                                    key={
-                                        patient.reasoning
-                                            ? patient.activeSection
-                                            : "summary"
-                                    }
-                                    className="anim-fade-slide-up"
-                                    css={{ animationDuration: "0.15s" }}
-                                >
-                                        {patient.reasoning ? (
-                                            <>
-                                                {patient.activeSection ===
-                                                    "summary" && (
-                                                    <Text fontSize="sm">
-                                                        {
-                                                            patient.reasoning
-                                                                .summary
-                                                        }
-                                                    </Text>
-                                                )}
-                                                {(patient.activeSection ===
-                                                    "differentials" ||
-                                                    patient.activeSection ===
-                                                        "investigations" ||
-                                                    patient.activeSection ===
-                                                        "considerations") && (
-                                                    <Wrap gap={1}>
-                                                        {patient.reasoning[
-                                                            patient.activeSection ===
-                                                            "considerations"
-                                                                ? "clinical_considerations"
-                                                                : patient.activeSection
-                                                        ]?.map((item, i) => (
-                                                            <WrapItem key={i}>
-                                                                <Box
-                                                                    px={2}
-                                                                    py={0.5}
-                                                                    borderRadius="full"
-                                                                    fontSize="sm"
-                                                                    {...getTagStyle(
-                                                                        patient.activeSection,
-                                                                    )}
-                                                                >
-                                                                    {typeof item ===
-                                                                    "string"
-                                                                        ? item
-                                                                        : item.suggestion}
-                                                                </Box>
-                                                            </WrapItem>
-                                                        ))}
-                                                    </Wrap>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <Text fontSize="sm">
-                                                {patient.encounter_summary}
-                                            </Text>
-                                        )}
-                                    </Box>
-                            </Box>
-                        </Grid>
-                    </Box>
-                )}
-            </Table.Cell>
-
-            <Table.Cell width="30%" verticalAlign="top">
+            <Table.Cell width="60%" verticalAlign="top">
                 <HStack gap={2} alignItems="flex-start">
                     <Tooltip content="Reset jobs" aria-label="Reset jobs">
                         <IconButton
@@ -532,17 +326,12 @@ const PatientTable = ({
                                         borderSpacing: 0,
                                     }}
                                 >
-                                    <Table.Header
-                                        bg="surface"
-                                    >
+                                    <Table.Header bg="surface">
                                         <Table.Row>
-                                            <Table.ColumnHeader width="25%">
+                                            <Table.ColumnHeader width="40%">
                                                 Patient Details
                                             </Table.ColumnHeader>
-                                            <Table.ColumnHeader width="45%">
-                                                Reasoning / Encounter Summary
-                                            </Table.ColumnHeader>
-                                            <Table.ColumnHeader width="30%">
+                                            <Table.ColumnHeader width="60%">
                                                 Jobs
                                             </Table.ColumnHeader>
                                         </Table.Row>
@@ -577,17 +366,12 @@ const PatientTable = ({
                             borderSpacing: 0,
                         }}
                     >
-                        <Table.Header
-                            bg="surface"
-                        >
+                        <Table.Header bg="surface">
                             <Table.Row>
-                                <Table.ColumnHeader width="25%">
+                                <Table.ColumnHeader width="40%">
                                     Patient Details
                                 </Table.ColumnHeader>
-                                <Table.ColumnHeader width="45%">
-                                    Reasoning / Encounter Summary
-                                </Table.ColumnHeader>
-                                <Table.ColumnHeader width="30%">
+                                <Table.ColumnHeader width="60%">
                                     Jobs
                                 </Table.ColumnHeader>
                             </Table.Row>

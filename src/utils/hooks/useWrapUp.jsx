@@ -13,15 +13,12 @@ const REQUIRED_WRAP_UP_FIELDS = [
 export const useWrapUp = ({
     patient,
     savePatientCore,
-    resetTranscription,
     setIsSummaryModified,
     resetSearchFlow,
     onOpenNewNoteModal,
     refreshSidebar,
     selectedDate,
     toast,
-    hasTranscriptionOccurred,
-    initialTranscriptionContent,
 }) => {
     const [wrapUpLoading, setWrapUpLoading] = useState(false);
     const {
@@ -55,9 +52,6 @@ export const useWrapUp = ({
                     refreshSidebar,
                     selectedDate,
                     toast,
-                    hasTranscriptionOccurred
-                        ? initialTranscriptionContent
-                        : null,
                 );
                 if (!saved) return;
                 const noteId = saved.id ?? patient.id;
@@ -77,7 +71,6 @@ export const useWrapUp = ({
                 }
 
                 setIsSummaryModified(false);
-                resetTranscription();
                 closeWrapUp();
                 resetSearchFlow();
                 onOpenNewNoteModal();
@@ -94,21 +87,18 @@ export const useWrapUp = ({
             refreshSidebar,
             selectedDate,
             toast,
-            hasTranscriptionOccurred,
-            initialTranscriptionContent,
             setIsSummaryModified,
-            resetTranscription,
-            closeWrapUp,
             resetSearchFlow,
             onOpenNewNoteModal,
+            closeWrapUp,
         ],
     );
 
     return {
         isWrapUpOpen,
-        wrapUpLoading,
         openWrapUp: handleOpenWrapUp,
         closeWrapUp,
+        wrapUpLoading,
         confirmWrapUp: handleWrapUpConfirm,
     };
 };

@@ -8,7 +8,8 @@ import {
 } from "react-icons/fa";
 import { CheckIcon } from "../../common/icons";
 import { GreyButton } from "../../common/Buttons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { onDocumentProgress } from "../../../localBackend/router";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 import FloatingPanel from "../../common/FloatingPanel";
 
@@ -31,7 +32,10 @@ const DocumentPanel = ({
   const [file, setFile] = useState(null);
   const [processingError, setProcessingError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  useEffect(() => onDocumentProgress((done, total) => setProgress({ done, total })), []);
 
   const { processDocument, isTranscribing } = useTranscription(
     null,
@@ -59,6 +63,8 @@ const DocumentPanel = ({
 
     setIsProcessing(true);
     setProcessingError(null);
+    setProgress(null);
+
 
     try {
       const result = await processDocument(
@@ -248,7 +254,7 @@ const DocumentPanel = ({
         ) : isProcessing || isTranscribing ? (
           <Flex justify="center" align="center" py={8} direction="column">
             <Spinner size="xl" mb={4} />
-            <Text>Processing document...</Text>
+            <Text>Processing document...{progress ? ` ${progress.done}/${progress.total}` : ""}</Text>
           </Flex>
         ) : !extractedDocData ? (
           // Upload UI

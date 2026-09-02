@@ -14,11 +14,11 @@ import {
   CheckIcon,
 } from "../common/icons";
 import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble } from "react-icons/fa";
-import { GreenButton, GreyButton } from "../common/Buttons";
-import { useTemplateSelection } from "../../utils/templates/templateContext";
-import { getTemplateFamilyBase } from "../../utils/templates/templateService";
+import { GreyButton, GreenButton } from "../common/Buttons";
 import { patientApi } from "../../utils/api/patientApi";
 import ConfirmLeaveModal from "../modals/ConfirmLeaveModal";
+import { useTemplateSelection } from "../../utils/templates/templateContext";
+import { getTemplateFamilyBase } from "../../utils/templates/templateService";
 
 const Summary = forwardRef(
   (

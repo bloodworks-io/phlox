@@ -11,7 +11,7 @@ services:
             TZ: Australia/Melbourne
             SERVER_HOST: 0.0.0.0 # Bind to all interfaces
             RATE_LIMIT_ENABLED: false
-            PHLOX_ALLOW_UNAUTHENTICATED: true # Dev only: skip startup auth guard
+#            PHLOX_ALLOW_UNAUTHENTICATED: true # Dev only: skip startup auth guard
         volumes:
             - .:/usr/src/app
             - /usr/src/app/node_modules

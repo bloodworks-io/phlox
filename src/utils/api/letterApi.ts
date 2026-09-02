@@ -81,6 +81,7 @@ export const letterApi = {
     additional_instruction,
   }) => {
     return handleApiRequest({
+      timeout: 600000,
       apiCall: async () => {
         const url = await buildApiUrl("/api/letter/generate");
         return universalFetch(url, {

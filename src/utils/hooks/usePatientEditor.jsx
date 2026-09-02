@@ -24,45 +24,6 @@ const filterTemplateData = (templateData, template) => {
     return filteredData;
 };
 
-const buildAdaptiveRefinementData = (
-    initialContent,
-    currentContent,
-    template,
-) => {
-    const refinementData = {};
-
-    if (!template?.fields) return refinementData;
-
-    template.fields.forEach((field) => {
-        const fieldKey = field.field_key;
-        const initialValue = initialContent[fieldKey];
-        const currentValue = currentContent[fieldKey];
-
-        // Only include fields that have both initial and modified content
-        if (initialValue && currentValue && initialValue !== currentValue) {
-            // Ensure we have meaningful content (not just whitespace differences)
-            const normalizedInitial = (initialValue || "").trim();
-            const normalizedCurrent = (currentValue || "").trim();
-
-            if (
-                normalizedInitial &&
-                normalizedCurrent &&
-                normalizedInitial !== normalizedCurrent
-            ) {
-                refinementData[fieldKey] = {
-                    initial_content: normalizedInitial,
-                    modified_content: normalizedCurrent,
-                };
-                console.log(`Detected change in field '${fieldKey}':`, {
-                    initial: normalizedInitial.substring(0, 100),
-                    modified: normalizedCurrent.substring(0, 100),
-                });
-            }
-        }
-    });
-
-    return refinementData;
-};
 
 export const usePatientEditor = (initialPatient = null) => {
     const [patient, setPatient] = useState(initialPatient);
@@ -70,12 +31,7 @@ export const usePatientEditor = (initialPatient = null) => {
     const navigate = useNavigate();
     const { currentTemplate } = useTemplateSelection();
 
-    const savePatientCore = async (
-        refreshSidebar,
-        selectedDate,
-        toast,
-        initialContent = null,
-    ) => {
+    const savePatientCore = async (refreshSidebar, selectedDate, toast) => {
         const missingFields = [];
 
         if (!patient?.first_name) missingFields.push("First name");
@@ -108,30 +64,8 @@ export const usePatientEditor = (initialPatient = null) => {
                 ),
             };
 
-            // Prepare adaptive refinement data if initial content is provided
-            let adaptiveRefinement = null;
-            if (initialContent && patient.template_data) {
-                console.error("Performing adaptive refinement");
-                adaptiveRefinement = buildAdaptiveRefinementData(
-                    initialContent,
-                    patient.template_data,
-                    currentTemplate,
-                );
-            }
+            const saveRequest = { patientData: patientToSave };
 
-            // Create the save request payload
-            const saveRequest = {
-                patientData: patientToSave,
-                ...(adaptiveRefinement &&
-                    Object.keys(adaptiveRefinement).length > 0 && {
-                        adaptive_refinement: adaptiveRefinement,
-                    }),
-            };
-
-            console.log(
-                "Saving patient with adaptive refinement:",
-                saveRequest,
-            );
 
             const response = await patientApi.savePatientData(
                 saveRequest,
@@ -156,18 +90,8 @@ export const usePatientEditor = (initialPatient = null) => {
         }
     };
 
-    const savePatient = async (
-        refreshSidebar,
-        selectedDate,
-        toast,
-        initialContent = null,
-    ) => {
-        const response = await savePatientCore(
-            refreshSidebar,
-            selectedDate,
-            toast,
-            initialContent,
-        );
+    const savePatient = async (refreshSidebar, selectedDate, toast) => {
+        const response = await savePatientCore(refreshSidebar, selectedDate, toast);
         if (response && !patient.id && response.id) {
             navigate(`/note/${response.id}`);
         }
@@ -185,7 +109,6 @@ export const usePatientEditor = (initialPatient = null) => {
 
     useEffect(() => {
         if (initialPatient) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate sync of enclosed state to prop change; remounting consumer would lose chat/document state
             setPatient(initialPatient);
         }
     }, [initialPatient]);

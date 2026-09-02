@@ -44,7 +44,7 @@ root.render(
         errorRetryCount: 2,
       }}
     >
-      <Router>
+      <Router basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
         <ServerConnectionCheck>
           <App />
         </ServerConnectionCheck>

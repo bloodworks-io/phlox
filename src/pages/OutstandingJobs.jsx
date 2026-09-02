@@ -8,7 +8,6 @@ const outstandingJobsFetcher = async (scope) => {
     const data = await patientApi.fetchOutstandingJobs(scope);
     return data.map((patient) => ({
         ...patient,
-        activeSection: "summary",
         jobs_list: JSON.parse(patient.jobs_list || "[]"),
     }));
 };

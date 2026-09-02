@@ -2,36 +2,31 @@ import { Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
 import { useClipboard } from "../utils/hooks/useClipboard";
 import { toaster } from "@/components/ui/toaster";
 const toast = toaster.create;
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
 import NewNoteStartCard from "../components/patient/NewNoteStartCard";
 import { useScribe } from "../components/patient/Scribe";
 import Summary from "../components/patient/Summary";
-import Chat from "../components/panels/chat/Chat";
 import Letter from "../components/panels/letter/Letter";
-import ReasoningPanel from "../components/panels/reasoning/ReasoningPanel";
 import ScribePillBox from "../components/patient/ScribePillBox";
-import FloatingActionMenu from "../components/common/FloatingActionMenu";
+import WrapUpModal from "../components/modals/WrapUpModal";
 import TranscriptionPanel from "../components/panels/transcription/TranscriptionPanel";
 import DocumentPanel from "../components/panels/document/DocumentPanel";
-import PreviousVisitPanel from "../components/panels/previous-visit/PreviousVisitPanel";
-import { usePatientEditor } from "../utils/hooks/usePatientEditor";
+import FloatingActionMenu from "../components/common/FloatingActionMenu";
 import { usePatientTemplate } from "../utils/hooks/usePatientTemplate";
+import { usePatientEditor } from "../utils/hooks/usePatientEditor";
 import { useDocumentExtraction } from "../utils/hooks/useDocumentExtraction";
 import { patientApi } from "../utils/api/patientApi";
-import WrapUpModal from "../components/modals/WrapUpModal";
 import DemographicsModal from "../components/modals/DemographicsModal";
 import ScribeConsentModal from "../components/modals/ScribeConsentModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useLetterOrchestration } from "../utils/hooks/useLetterOrchestration";
 import { useActivePanel } from "../utils/hooks/useActivePanel";
-import { useTranscriptionCapture } from "../utils/hooks/useTranscriptionCapture";
 import { useModificationFlags } from "../utils/hooks/useModificationFlags";
 import { useSearchFlow } from "../utils/hooks/useSearchFlow";
 import { useScribeConsent } from "../utils/hooks/useScribeConsent";
 import { useWrapUp } from "../utils/hooks/useWrapUp";
-import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
 
 const PatientDetails = ({
@@ -56,13 +51,6 @@ const PatientDetails = ({
         onClose: onCloseDemographics,
     } = useDisclosure();
 
-    const {
-        hasTranscriptionOccurred,
-        initialTranscriptionContent,
-        capture: captureTranscription,
-        reset: resetTranscription,
-    } = useTranscriptionCapture();
-
     const previousTranscriptionRef = useRef(null);
 
     const { setIsLetterModified, setIsSummaryModified } = useModificationFlags(
@@ -70,17 +58,9 @@ const PatientDetails = ({
         setParentIsModified,
     );
 
-    const [hasViewedPreviousVisit, setHasViewedPreviousVisit] = useState(false);
-
     // Custom hooks
-    const {
-        patient,
-        setPatient,
-        setIsModified,
-        savePatient,
-        savePatientCore,
-        loadCandidate,
-    } = usePatientEditor(initialPatient);
+    const { patient, setPatient, savePatient, savePatientCore, loadCandidate } =
+        usePatientEditor(initialPatient);
 
     const summary = useCollapse(false);
 
@@ -92,7 +72,7 @@ const PatientDetails = ({
         summarySetIsCollapsed: summary.setIsCollapsed,
     });
 
-    const { currentTemplate, templates, selectTemplate } = usePatientTemplate({
+    const { currentTemplate, selectTemplate } = usePatientTemplate({
         patient,
         setPatient,
         isNewPatient,
@@ -119,6 +99,7 @@ const PatientDetails = ({
 
         searchFlow.clearSearchResult();
     }, [searchFlow.searchResult, setPatient, selectTemplate, searchFlow]);
+    const requiredDemographicsMet = areRequiredDemographicsMet(patient);
 
     const {
         extractedDocData,
@@ -128,9 +109,7 @@ const PatientDetails = ({
         handleDocumentComplete,
         toggleDocumentField,
         resetDocumentState,
-    } = useDocumentExtraction({ patient, setPatient, setIsModified });
-
-    const requiredDemographicsMet = areRequiredDemographicsMet(patient);
+    } = useDocumentExtraction({ patient, setPatient, setIsModified: setIsSummaryModified });
 
     const { open, toggle, close, closeAll, isOpen } = useActivePanel();
 
@@ -141,6 +120,7 @@ const PatientDetails = ({
         openLetter: () => open("letter"),
         toast,
     });
+
 
     // Scribe hook for recording controls
     const scribeControls = useScribe({
@@ -167,15 +147,12 @@ const PatientDetails = ({
     const wrapUp = useWrapUp({
         patient,
         savePatientCore,
-        resetTranscription,
         setIsSummaryModified,
         resetSearchFlow: searchFlow.reset,
         onOpenNewNoteModal,
         refreshSidebar,
         selectedDate,
         toast,
-        hasTranscriptionOccurred,
-        initialTranscriptionContent,
     });
 
     const textToCopy =
@@ -197,11 +174,10 @@ const PatientDetails = ({
 
     useEffect(() => {
         // Reset component states when patient changes.
-        // (chat is self-reset by Chat.jsx via internal effect on patientData?.id)
         summary.setIsCollapsed(false);
         closeAll();
         resetDocumentState();
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- summary/closeAll/resetDocumentState come from hooks that return fresh object literals each render; this effect intentionally fires only on patient/template/isNewPatient changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- summary/closeAll come from hooks that return fresh object literals each render; this effect intentionally fires only on patient/template/isNewPatient changes
     }, [patient?.id, currentTemplate, isNewPatient]);
 
     useEffect(() => {
@@ -209,17 +185,7 @@ const PatientDetails = ({
     }, []);
 
     const handleTranscriptionComplete = (data, triggerResize = false) => {
-        const isRestoration = data.isRestoration === true;
         previousTranscriptionRef.current = patient?.raw_transcription;
-
-        if (
-            !hasTranscriptionOccurred &&
-            data.fields &&
-            Object.keys(data.fields).length > 0 &&
-            !isRestoration
-        ) {
-            captureTranscription(data.fields);
-        }
 
         handleProcessingComplete(data, {
             setLoading,
@@ -265,26 +231,14 @@ const PatientDetails = ({
                     refreshSidebar,
                     selectedDate,
                     toast,
-                    hasTranscriptionOccurred
-                        ? initialTranscriptionContent
-                        : null,
                 );
                 if (savedPatient?.id) {
                     setIsSummaryModified(false);
-                    resetTranscription();
                     navigate(`/note/${savedPatient.id}`);
                 }
             } else {
-                await savePatient(
-                    refreshSidebar,
-                    selectedDate,
-                    toast,
-                    hasTranscriptionOccurred
-                        ? initialTranscriptionContent
-                        : null,
-                );
+                await savePatient(refreshSidebar, selectedDate, toast);
                 setIsSummaryModified(false);
-                resetTranscription();
             }
         } finally {
             setSaveLoading(false);
@@ -310,40 +264,8 @@ const PatientDetails = ({
 
     // Functions for the Floating Action Menu
     const handleOpenLetter = () => toggle("letter");
-    const handleOpenChat = () => toggle("chat");
-    const handleOpenReasoning = () => toggle("reasoning");
     const handleOpenTranscription = () => toggle("transcription");
     const handleOpenDocument = () => toggle("document");
-    const handleOpenPreviousVisit = () => {
-        if (!isOpen("previous-visit")) {
-            setHasViewedPreviousVisit(true);
-        }
-        toggle("previous-visit");
-    };
-
-    // Handle when reasoning is generated - update patient state for red dot indicator
-    const handleReasoningGenerated = (newReasoning) => {
-        setPatient((prev) => ({
-            ...prev,
-            reasoning_output: newReasoning,
-        }));
-    };
-
-    // Check if reasoning has critical items
-    const hasCriticalReasoning = useMemo(() => {
-        if (!patient?.reasoning_output) return false;
-        const r = patient.reasoning_output;
-        const allItems = [
-            ...(r.differentials || []),
-            ...(r.investigations || []),
-            ...(r.clinical_considerations || []),
-        ];
-        return allItems.some((item) => item.critical === true);
-    }, [patient?.reasoning_output]);
-
-    // Show red dot for previous visit if summary exists and hasn't been viewed
-    const showPreviousVisitDot =
-        Boolean(patient?.previous_visit_summary) && !hasViewedPreviousVisit;
 
     if (!patient) {
         return (
@@ -385,8 +307,8 @@ const PatientDetails = ({
                     setPatient={setPatient}
                     handleGenerateLetterClick={letter.handleGenerateLetterClick}
                     handleSavePatientData={handleSavePatientData}
-                    onWrapUp={wrapUp.openWrapUp}
                     saveLoading={saveLoading}
+                    onWrapUp={wrapUp.openWrapUp}
                     wrapUpLoading={wrapUp.wrapUpLoading}
                     setIsModified={setIsSummaryModified}
                     selectTemplate={selectTemplate}
@@ -395,15 +317,6 @@ const PatientDetails = ({
                     onCopy={handleCopy}
                     recentlyCopied={recentlyCopied}
                     isEncounterSaved={Boolean(patient?.id)}
-                />
-
-                <WrapUpModal
-                    key={String(wrapUp.isWrapUpOpen)}
-                    isOpen={wrapUp.isWrapUpOpen}
-                    onClose={wrapUp.closeWrapUp}
-                    onConfirm={wrapUp.confirmWrapUp}
-                    planText={patient?.template_data?.plan || ""}
-                    submitting={wrapUp.wrapUpLoading}
                 />
 
                 <DemographicsModal
@@ -426,6 +339,15 @@ const PatientDetails = ({
                     patientName={patient?.name}
                 />
 
+                <WrapUpModal
+                    key={String(wrapUp.isWrapUpOpen)}
+                    isOpen={wrapUp.isWrapUpOpen}
+                    onClose={wrapUp.closeWrapUp}
+                    onConfirm={wrapUp.confirmWrapUp}
+                    planText={patient?.template_data?.plan || ""}
+                    submitting={wrapUp.wrapUpLoading}
+                />
+
                 <Letter
                     isOpen={isOpen("letter")}
                     onClose={() => close("letter")}
@@ -438,21 +360,6 @@ const PatientDetails = ({
                     setIsModified={letter.setIsModified}
                     patient={patient}
                     setLoading={setLoading}
-                />
-
-                <Chat
-                    isOpen={isOpen("chat")}
-                    onClose={() => close("chat")}
-                    patientData={patient}
-                    currentTemplate={currentTemplate}
-                    rawTranscription={patient.raw_transcription}
-                />
-
-                <ReasoningPanel
-                    isOpen={isOpen("reasoning")}
-                    noteId={patient?.id}
-                    initialReasoning={patient?.reasoning_output}
-                    onReasoningGenerated={handleReasoningGenerated}
                 />
             </VStack>
             {/* Scribe Pill Box - centered at bottom */}
@@ -480,21 +387,10 @@ const PatientDetails = ({
             />
             {/* Floating Action Menu - always expanded on right side */}
             <FloatingActionMenu
-                onOpenChat={handleOpenChat}
                 onOpenLetter={handleOpenLetter}
-                onOpenReasoning={handleOpenReasoning}
                 onOpenDocument={handleOpenDocument}
-                onOpenPreviousVisit={handleOpenPreviousVisit}
-                isChatOpen={isOpen("chat")}
                 isLetterOpen={isOpen("letter")}
-                isReasoningOpen={isOpen("reasoning")}
                 isDocumentOpen={isOpen("document")}
-                isPreviousVisitOpen={isOpen("previous-visit")}
-                hasCriticalReasoning={hasCriticalReasoning}
-                hasPreviousVisitSummary={Boolean(
-                    patient?.previous_visit_summary,
-                )}
-                showPreviousVisitDot={showPreviousVisitDot}
                 isEncounterSaved={Boolean(patient?.id)}
             />
             {/* Transcription Panel */}
@@ -512,6 +408,7 @@ const PatientDetails = ({
                 templateKey={currentTemplate?.template_key}
                 noteId={patient?.id}
             />
+
             {/* Document Panel */}
             <DocumentPanel
                 isOpen={isOpen("document")}
@@ -527,17 +424,6 @@ const PatientDetails = ({
                 template={currentTemplate}
                 docFileName={docFileName}
                 setDocFileName={setDocFileName}
-            />
-            {/* Previous Visit Panel */}
-            <PreviousVisitPanel
-                isOpen={isOpen("previous-visit")}
-                previousVisitSummary={patient.previous_visit_summary}
-                previousVisitTemplateData={patient.previous_visit_template_data}
-                previousVisitTemplateKey={patient.previous_visit_template_key}
-                previousVisitEncounterDate={
-                    patient.previous_visit_encounter_date
-                }
-                templates={templates}
             />
         </Box>
     );

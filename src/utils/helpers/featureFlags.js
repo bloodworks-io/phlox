@@ -5,7 +5,7 @@ import { isTauri } from "./apiConfig";
  * Chat works without chromadb — always enabled.
  */
 export const isChatEnabled = () => {
-  return true;
+  return false;
 };
 
 // Embedding model status — cached in localStorage for synchronous access.
@@ -31,8 +31,7 @@ export const setEmbeddingReady = (ready) => {
  * - Tauri (desktop): enabled only if the local embedding model is downloaded.
  */
 export const isRagEnabled = () => {
-  if (isTauri()) return embeddingReady;
-  return true;
+  return false;
 };
 
 /**

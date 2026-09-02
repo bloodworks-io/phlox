@@ -4,6 +4,7 @@ import { buildApiUrl } from "../helpers/apiConfig";
 export const transcriptionApi = {
     transcribeAudio: async (formData) => {
         return handleApiRequest({
+            timeout: 600000,
             apiCall: async (signal) => {
                 const url = await buildApiUrl(`/api/transcribe/audio`);
                 return universalFetch(url, {
@@ -26,13 +27,14 @@ export const transcriptionApi = {
                     signal: signal,
                 });
             },
-            timeout: 120000,
+            timeout: 600000,
             errorMessage: "Error reprocessing transcription",
         });
     },
 
     transcribeDictation: async (formData) => {
         return handleApiRequest({
+            timeout: 600000,
             apiCall: async () => {
                 const url = await buildApiUrl(`/api/transcribe/dictate`);
                 return universalFetch(url, {

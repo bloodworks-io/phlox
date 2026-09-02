@@ -1,9 +1,8 @@
 import { Box, VStack, Flex, Icon, Text, Badge } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaTasks, FaNotesMedical, FaBrain, FaCog } from "react-icons/fa";
+import { FaNotesMedical, FaTasks, FaCog } from "react-icons/fa";
 import { useLocation } from "react-router";
 import { colors } from "../../theme/colors";
-import { isRagEnabled } from "../../utils/helpers/featureFlags";
 
 const NavButton = ({
     icon,
@@ -165,24 +164,6 @@ const SidebarNavigation = ({
                     />
                 </Box>
             </Tooltip>
-
-            {isRagEnabled() && (
-                <Tooltip
-                    content="Knowledge base & uploaded documents"
-                    positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
-                >
-                    <Box mb={isCollapsed ? "1px" : "0px"}>
-                        <NavButton
-                            icon={FaBrain}
-                            label="Documents"
-                            onClick={() => handleNavigation("/rag")}
-                            isCollapsed={isCollapsed}
-                            isActive={isActive("/rag")}
-                        />
-                    </Box>
-                </Tooltip>
-            )}
-
             <Tooltip
                 content="Models, templates & preferences"
                 positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}

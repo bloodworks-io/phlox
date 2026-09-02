@@ -2,7 +2,6 @@ import { Routes, Route } from "react-router";
 import LandingPage from "../../pages/LandingPage";
 import PatientDetails from "../../pages/PatientDetails";
 import Settings from "../../pages/Settings";
-import Rag from "../../pages/Rag";
 import ClinicSummary from "../../pages/ClinicSummary";
 import OutstandingJobs from "../../pages/OutstandingJobs";
 
@@ -49,7 +48,6 @@ const AppRoutes = ({
         />
         <Route path="/" element={<LandingPage />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/rag" element={<Rag />} />
         <Route
             path="/clinic-summary"
             element={
@@ -64,8 +62,8 @@ const AppRoutes = ({
             path="/outstanding-jobs"
             element={
                 <OutstandingJobs
-                    handleSelectPatient={(patient) =>
-                        handleSelectPatient(patient, true)
+                    handleSelectPatient={(selectedPatient) =>
+                        handleSelectPatient(selectedPatient, true)
                     }
                     refreshSidebar={refreshSidebar}
                     patientScope={patientScope}

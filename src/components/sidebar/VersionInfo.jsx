@@ -1,231 +1,129 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Text,
-  useDisclosure,
-  Badge,
-  VStack,
-  HStack,
-  Center,
-} from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
+import { Box, VStack, HStack, Center, Badge, Text } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaMoon, FaSun, FaSignOutAlt } from "react-icons/fa";
-import { TbVersions } from "react-icons/tb";
+import { FaMoon, FaSun, FaGithub } from "react-icons/fa";
 import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
-import { settingsApi } from "../../utils/api/settingsApi";
-import { authApi } from "../../utils/api/authApi";
-import { isTauri, clearStoredToken } from "../../utils/helpers/apiConfig";
-import ChangelogModal from "../modals/ChangelogModal";
-import { APP_VERSION } from "../../utils/constants/version";
-import changelogContent from "../../../CHANGELOG.md?raw";
+import { useNavigate } from "react-router";
+import { onStatus } from "../../localBackend/llm";
 
-const StatusIcon = ({ serverStatus, isCollapsed }) => {
-  // embedding is null in Docker/external mode (no distinct embedding server);
-  // only count it when the backend reports it as applicable.
-  const embeddingApplicable =
-    serverStatus.embedding !== null && serverStatus.embedding !== undefined;
-  const allServicesUp =
-    serverStatus.llm &&
-    serverStatus.whisper &&
-    (!embeddingApplicable || serverStatus.embedding);
+const GITHUB_URL = "https://github.com/bloodworks-io/phlox";
 
-  const embeddingLine = embeddingApplicable
-    ? `, ${serverStatus.embedding ? "✓" : "✗"} Embedding`
-    : "";
+const GitHubLink = ({ isCollapsed }) => (
+  <Tooltip content="View on GitHub" positioning={{ placement: isCollapsed ? "right" : "top" }}>
+    <Box
+      as="a"
+      href={GITHUB_URL}
+      target="_blank"
+      rel="noreferrer"
+      cursor="pointer"
+      fontSize={isCollapsed ? "md" : "lg"}
+      color="sidebar.text"
+      _hover={{ color: "sidebar.text" }}
+    >
+      <FaGithub />
+    </Box>
+  </Tooltip>
+);
+
+const ThemeToggle = ({ colorMode, toggleColorMode, isCollapsed }) => (
+  <Tooltip
+    content={colorMode === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+    positioning={{ placement: isCollapsed ? "right" : "top" }}
+  >
+    <Box
+      onClick={toggleColorMode}
+      cursor="pointer"
+      fontSize={isCollapsed ? "md" : "lg"}
+      color="sidebar.text"
+      _hover={{ color: "sidebar.text" }}
+    >
+      {colorMode === "light" ? <FaMoon /> : <FaSun />}
+    </Box>
+  </Tooltip>
+);
+
+// Full-fat StatusIcon treatment (subtle pill + BsCheck2All/BsExclamationTriangle),
+// sidebar-bg fill and border, grey bold label text.
+const STATUS_ICON_COLOR = {
+  idle: "gray.400",
+  loading: "orange.400",
+  ready: "green.400",
+  error: "red.400",
+};
+
+function statusLabel(status) {
+  if (status.state === "loading") {
+    return status.progress !== undefined ? `Downloading model ${status.progress}%` : "Loading model…";
+  }
+  if (status.state === "ready") return `Model ready (${status.device ?? "wasm"})`;
+  if (status.state === "error") return "Model error — check Settings";
+  return "Model not loaded";
+}
+
+function statusWord(status) {
+  if (status.state === "loading") return status.progress !== undefined ? `${status.progress}%` : "…";
+  if (status.state === "ready") return "Ready";
+  if (status.state === "error") return "Error";
+  return "Off";
+}
+
+const ModelStatus = ({ isCollapsed }) => {
+  const [status, setStatus] = useState({ state: "idle" });
+  const navigate = useNavigate();
+
+  useEffect(() => onStatus(setStatus), [setStatus]);
+
+  const well = status.state === "ready";
 
   return (
-    <Tooltip
-      content={
-        allServicesUp
-          ? "All services connected"
-          : `Services: ${serverStatus.llm ? "✓" : "✗"} LLM, ${serverStatus.whisper ? "✓" : "✗"} Transcription${embeddingLine}`
-      }
-      positioning={{
-        placement: isCollapsed ? "right" : "top",
-      }}
-    >
+    <Tooltip content={`${statusLabel(status)} — click to open Settings`} positioning={{ placement: isCollapsed ? "right" : "top" }}>
       <Badge
-        colorPalette={allServicesUp ? "green" : "orange"}
         borderRadius="full"
-        variant="subtle"
         p={1}
+        cursor="pointer"
+        onClick={() => navigate("/settings")}
+        bg="rgba(45, 47, 65, 0.95)"
+        border="1px solid"
+        borderColor="whiteAlpha.200"
+        display="inline-flex"
+        alignItems="center"
+        gap={1}
       >
-        {allServicesUp ? <BsCheck2All /> : <BsExclamationTriangle />}
+        <Box as="span" color={STATUS_ICON_COLOR[status.state] ?? "gray.400"} display="inline-flex">
+          {well ? <BsCheck2All /> : <BsExclamationTriangle />}
+        </Box>
+        {!isCollapsed && (
+          <Text fontSize="2xs" fontWeight="bold" color="sidebar.text" whiteSpace="nowrap">
+            {statusWord(status)}
+          </Text>
+        )}
       </Badge>
     </Tooltip>
   );
 };
 
 const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
-  const { open, onOpen, onClose } = useDisclosure();
-  const [serverStatus, setServerStatus] = useState({
-    whisper: false,
-    llm: false,
-    embedding: null,
-  });
-
-  const version = APP_VERSION;
-  const changelog = changelogContent;
-
-  // Browser/Docker only: end the session, drop the token, and let the reload
-  // route back through ServerConnectionCheck into the login screen.
-  const handleLogout = async () => {
-    await authApi.logout();
-    clearStoredToken();
-    window.location.reload();
-  };
-
-  // Sidebar is always-dark by design; sidebar.text token resolves to a light value in both modes
-
-  useEffect(() => {
-    // Check server status
-    const checkStatus = async () => {
-      try {
-        const data = await settingsApi.fetchServerStatus();
-        setServerStatus(data);
-      } catch (error) {
-        console.error("Error checking server status:", error);
-      }
-    };
-
-    checkStatus();
-    // Set up interval to check status periodically.
-    const intervalId = setInterval(checkStatus, 15000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Display for the collapsed sidebar
   if (isCollapsed) {
     return (
       <Box position="relative" width="100%">
         <VStack gap={2} align="center" width="100%">
-          <Tooltip
-            content="View Version Info"
-            positioning={{
-              placement: "right",
-            }}
-          >
-            <Box
-              onClick={onOpen}
-              cursor="pointer"
-              fontSize="md"
-              color="sidebar.text" // Apply consistent color
-              _hover={{ color: "sidebar.text" }} // Brighten on hover
-            >
-              <TbVersions />
-            </Box>
-          </Tooltip>
-
-          {!isTauri() && (
-            <Tooltip content="Sign out" positioning={{ placement: "right" }}>
-              <Box
-                onClick={handleLogout}
-                cursor="pointer"
-                fontSize="md"
-                color="sidebar.text"
-                _hover={{ color: "sidebar.text" }}
-              >
-                <FaSignOutAlt />
-              </Box>
-            </Tooltip>
-          )}
-
-          <Tooltip
-            content={
-              colorMode === "light"
-                ? "Switch to Dark Mode"
-                : "Switch to Light Mode"
-            }
-            positioning={{
-              placement: "right",
-            }}
-          >
-            <Box
-              onClick={toggleColorMode}
-              cursor="pointer"
-              fontSize="md"
-              color="sidebar.text"
-              _hover={{ color: "sidebar.text" }}
-            >
-              {colorMode === "light" ? <FaMoon /> : <FaSun />}
-            </Box>
-          </Tooltip>
-
-          <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />
+          <ModelStatus isCollapsed={isCollapsed} />
+          <GitHubLink isCollapsed={isCollapsed} />
+          <ThemeToggle colorMode={colorMode} toggleColorMode={toggleColorMode} isCollapsed={isCollapsed} />
         </VStack>
-        <ChangelogModal
-          isOpen={open}
-          onClose={onClose}
-          version={version}
-          changelog={changelog}
-        />
       </Box>
     );
   }
 
-  // Display for the expanded sidebar
   return (
     <Box width="100%">
-      {/* Center the version, GitHub icon, and status icon */}
-      <Center width="100%">
-        <HStack gap={4}>
-          <Tooltip content="View Changelog">
-            <Text
-              fontSize="md"
-              onClick={onOpen}
-              cursor="pointer"
-              color="sidebar.text" // Apply consistent color
-              _hover={{
-                textDecoration: "underline",
-                color: "var(--chakra-colors-sidebar-text)",
-              }}
-            >
-              v{version}
-            </Text>
-          </Tooltip>
-
-          {!isTauri() && (
-            <Tooltip content="Sign out">
-              <Box
-                onClick={handleLogout}
-                cursor="pointer"
-                fontSize="lg"
-                color="sidebar.text"
-                _hover={{ color: "sidebar.text" }}
-              >
-                <FaSignOutAlt />
-              </Box>
-            </Tooltip>
-          )}
-
-          <Tooltip
-            content={
-              colorMode === "light"
-                ? "Switch to Dark Mode"
-                : "Switch to Light Mode"
-            }
-          >
-            <Box
-              onClick={toggleColorMode}
-              cursor="pointer"
-              fontSize="lg"
-              color="sidebar.text"
-              _hover={{ color: "sidebar.text" }}
-            >
-              {colorMode === "light" ? <FaMoon /> : <FaSun />}
-            </Box>
-          </Tooltip>
-
-          <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />
+      <Center width="100%" mb={1}>
+        <HStack gap={3}>
+          <ModelStatus isCollapsed={isCollapsed} />
+          <GitHubLink isCollapsed={isCollapsed} />
+          <ThemeToggle colorMode={colorMode} toggleColorMode={toggleColorMode} isCollapsed={isCollapsed} />
         </HStack>
       </Center>
-      <ChangelogModal
-        isOpen={open}
-        onClose={onClose}
-        version={version}
-        changelog={changelog}
-      />
     </Box>
   );
 };

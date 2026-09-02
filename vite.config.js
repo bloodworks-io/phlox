@@ -17,9 +17,34 @@ const cmapsDir = normalizePath(path.relative(process.cwd(), path.join(pdfjsDistP
 const standardFontsDir = normalizePath(
   path.relative(process.cwd(), path.join(pdfjsDistPath, "standard_fonts")),
 );
+const ortDistDir = normalizePath(
+  path.relative(
+    process.cwd(),
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "node_modules/onnxruntime-web/dist"),
+  ),
+);
+
+// GitHub Pages SPA fallback: serve the app shell for unknown deep links.
+function spa404Fallback() {
+  return {
+    name: "spa-404-fallback",
+    apply: "build",
+    writeBundle(options) {
+      const outDir = options.dir ?? "build";
+      const fs = require("node:fs");
+      const pathMod = require("node:path");
+      const indexPath = pathMod.join(outDir, "index.html");
+      if (fs.existsSync(indexPath)) {
+        fs.copyFileSync(indexPath, pathMod.join(outDir, "404.html"));
+      }
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Hosted at a subpath (e.g. GitHub Pages /<repo>/) — override at build time.
+  base: process.env.GITHUB_PAGES_BASE ?? "/",
   plugins: [
     react(),
     viteStaticCopy({
@@ -31,8 +56,13 @@ export default defineConfig({
           dest: "standard_fonts",
           rename: { stripBase: true },
         },
+        // onnxruntime wasm binaries (transformers.js WebGPU/WASM backends),
+        // served locally instead of the jsdelivr CDN default.
+        { src: `${ortDistDir}/*.wasm`, dest: "ort", rename: { stripBase: true } },
+        { src: `${ortDistDir}/*.mjs`, dest: "ort", rename: { stripBase: true } },
       ],
     }),
+    spa404Fallback(),
   ],
 
   define: {
@@ -77,6 +107,7 @@ export default defineConfig({
       ignored: [
         "**/build-dir/**",
         "**/.flatpak-builder/**",
+        "**/_build/**",
         "**/src-tauri/llama.cpp/**",
         "**/src-tauri/parakeet.cpp/**",
         "**/src-tauri/target/**",
