@@ -185,7 +185,7 @@ jobs:
           submodules: false
 
       - name: Build Flatpak
-        uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb # v6.7
+        uses: flatpak/flatpak-github-actions/flatpak-builder@79327416609af08178ad73b352877e51450790b3 # v6.8
         with:
           bundle: Phlox-linux-x86_64.flatpak
           manifest-path: packaging/com.phlox.app.yaml
