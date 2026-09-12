@@ -94,17 +94,34 @@ export async function ensureModel(): Promise<LoadedModel> {
   if (loadPromise) return loadPromise;
 
   cached = null;
+function dtypeFor(device: "webgpu" | "wasm") {
+  return device === "webgpu"
+    ? ({ embed_tokens: "q4", vision_encoder: "fp16", decoder_model_merged: "q4" } as const)
+    : ({ embed_tokens: "q8", vision_encoder: "q8", decoder_model_merged: "q8" } as const);
+}
+
+/**
+ * "gpu" is not in the installed TS DOM lib. Probe the adapter instead of
+ * trusting navigator.gpu presence: iGPUs with broken WebGPU stacks (e.g.
+ * Twin Lake N350 + Mesa) pass the sniff test, then die on session creation
+ * because the q4 files need the WebGPU-only GatherBlockQuantized kernel and
+ * shader-f16.
+ */
+async function hasUsableWebGpu(): Promise<"webgpu" | "wasm"> {
+  const gpu = (navigator as unknown as { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+  if (!gpu) return "wasm";
+  try {
+    const adapter = (await gpu.requestAdapter()) as { features?: Set<string> } | null;
+    return adapter && adapter.features?.has("shader-f16") ? "webgpu" : "wasm";
+  } catch {
+    return "wasm";
+  }
+}
+
   cachedModelId = null;
 
-  // "gpu" is not in the installed TS DOM lib; WebGPU presence selects the device.
-  const navigatorWithGpu = navigator as unknown as { gpu?: unknown };
-  const device = navigatorWithGpu.gpu ? "webgpu" : "wasm";
-  const dtype =
-    device === "webgpu"
-      ? ({ embed_tokens: "q4", vision_encoder: "fp16", decoder_model_merged: "q4" } as const)
-      : ({ embed_tokens: "q8", vision_encoder: "q8", decoder_model_merged: "q8" } as const);
-
-  emit({ state: "loading", modelId, device });
+  const initialDevice = await hasUsableWebGpu();
+  emit({ state: "loading", modelId, device: initialDevice });
 
   // Aggregate per-file download progress into one 0-100 number.
   const fileProgress = new Map<string, { loaded: number; total: number }>();
@@ -118,7 +135,7 @@ export async function ensureModel(): Promise<LoadedModel> {
       total += file.total;
     }
     if (total > 0) {
-      emit({ state: "loading", modelId, device, progress: Math.min(100, Math.round((loaded / total) * 100)) });
+      emit({ state: "loading", modelId, device: initialDevice, progress: Math.min(100, Math.round((loaded / total) * 100)) });
     }
   };
 
@@ -131,11 +148,26 @@ export async function ensureModel(): Promise<LoadedModel> {
     // instead of onnxruntime-web's jsdelivr CDN default.
     tf.env.backends.onnx.wasm.wasmPaths = `${import.meta.env.BASE_URL}ort/`;
     const processor = await tf.AutoProcessor.from_pretrained(modelId, { progress_callback });
-    const model = await tf.Qwen3_5ForConditionalGeneration.from_pretrained(modelId, {
-      device,
-      dtype,
-      progress_callback,
-    });
+    // ponytail: single webgpu→wasm retry; the probe covers most broken-WebGPU
+    // machines, this catches driver-level session failures the probe misses.
+    let device = initialDevice;
+    let model;
+    try {
+      model = await tf.Qwen3_5ForConditionalGeneration.from_pretrained(modelId, {
+        device,
+        dtype: dtypeFor(device),
+        progress_callback,
+      });
+    } catch (error) {
+      if (device === "wasm") throw error;
+      console.warn(`[llm] webgpu load failed (${String(error).slice(0, 200)}) — retrying on wasm (q8)`);
+      device = "wasm";
+      model = await tf.Qwen3_5ForConditionalGeneration.from_pretrained(modelId, {
+        device,
+        dtype: dtypeFor(device),
+        progress_callback,
+      });
+    }
     // The loaded pair is structurally the LoadedModel surface; TS loses it across
     // the lazy module boundary.
     const loaded = { processor, model, device, RawImage: tf.RawImage } as unknown as LoadedModel;
