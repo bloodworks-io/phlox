@@ -27,6 +27,8 @@ export interface ChatOptions {
   max_new_tokens?: number;
   /** Data-URL images paired with {type:"image"} parts in the messages. */
   images?: string[];
+  /** JSON schema source text; constrains generation via XGrammar when available. */
+  jsonSchema?: string;
 }
 
 export const LLM_PRESETS = [
@@ -44,9 +46,11 @@ interface LoadedModel {
     tokenizer: {
       apply_chat_template: (messages: ChatMessage[], options: Record<string, unknown>) => string;
       decode: (ids: unknown, options: Record<string, unknown>) => string;
+      get_vocab: () => Map<string, number> | Record<string, number>;
     };
   } & CallableFunction;
   model: {
+    config?: { vocab_size?: number; text_config?: { vocab_size?: number } };
     generate: (inputs: Record<string, unknown>) => Promise<{
       sequences: { dims: number[]; [index: number]: { slice: (spec: unknown[]) => unknown } };
     }>;
@@ -84,16 +88,12 @@ export function invalidateModel(): void {
   if (cachedModelId !== getModelId()) {
     cached = null;
     cachedModelId = null;
+    grammarRuntime = null;
+    grammarModelId = null;
     emit({ state: "idle" });
   }
 }
 
-export async function ensureModel(): Promise<LoadedModel> {
-  const modelId = getModelId();
-  if (cached && cachedModelId === modelId) return cached;
-  if (loadPromise) return loadPromise;
-
-  cached = null;
 function dtypeFor(device: "webgpu" | "wasm") {
   return device === "webgpu"
     ? ({ embed_tokens: "q4", vision_encoder: "fp16", decoder_model_merged: "q4" } as const)
@@ -118,6 +118,12 @@ async function hasUsableWebGpu(): Promise<"webgpu" | "wasm"> {
   }
 }
 
+export async function ensureModel(): Promise<LoadedModel> {
+  const modelId = getModelId();
+  if (cached && cachedModelId === modelId) return cached;
+  if (loadPromise) return loadPromise;
+
+  cached = null;
   cachedModelId = null;
 
   const initialDevice = await hasUsableWebGpu();
@@ -177,10 +183,10 @@ async function hasUsableWebGpu(): Promise<"webgpu" | "wasm"> {
   try {
     cached = await loadPromise;
     cachedModelId = modelId;
-    emit({ state: "ready", modelId, device });
+    emit({ state: "ready", modelId, device: cached.device });
     return cached;
   } catch (error) {
-    emit({ state: "error", modelId, device, error: String(error) });
+    emit({ state: "error", modelId, device: cached?.device ?? initialDevice, error: String(error) });
     throw error;
   } finally {
     loadPromise = null;
@@ -197,11 +203,143 @@ export function enqueueModelJob<T>(job: () => Promise<T>): Promise<T> {
   return run;
 }
 
+// --- grammar-constrained decoding (XGrammar) ---
+
+interface GrammarMatcher {
+  acceptToken(tokenId: number): boolean;
+  getNextTokenBitmask(): Promise<Int32Array>;
+  isTerminated(): boolean;
+  dispose(): void;
+}
+
+interface GrammarRuntime {
+  compileJSONSchema(schema: string): Promise<unknown>;
+  createMatcher(compiled: unknown): Promise<GrammarMatcher>;
+}
+
+let grammarRuntime: GrammarRuntime | null = null;
+let grammarModelId: string | null = null;
+
+async function ensureGrammar(): Promise<GrammarRuntime | null> {
+  const modelId = getModelId();
+  if (grammarRuntime && grammarModelId === modelId) return grammarRuntime;
+  try {
+    const { processor, model } = await ensureModel();
+    const xg = await import("@mlc-ai/web-xgrammar");
+    // get_vocab() returns a Map (tokenizers-wasm); VL configs nest vocab_size
+    // under text_config. A vocab of ~1 silently produces an all-rejecting
+    // matcher, so guard before trusting it.
+    const vocabMap = processor.tokenizer.get_vocab() as Map<string, number> | Record<string, number>;
+    const vocab = vocabMap instanceof Map ? Object.fromEntries(vocabMap) : vocabMap;
+    let maxId = 0;
+    for (const id of Object.values(vocab)) maxId = Math.max(maxId, id);
+    const encodedVocab = new Array<string>(maxId + 1).fill("");
+    for (const [token, id] of Object.entries(vocab)) encodedVocab[id] = token;
+    const vocabSize =
+      model.config?.vocab_size ?? model.config?.text_config?.vocab_size ?? encodedVocab.length;
+    const tokenizerInfo = await xg.TokenizerInfo.createTokenizerInfo(encodedVocab, "byte_level", false, vocabSize);
+    if (tokenizerInfo.getVocabSize() < 1000) {
+      throw new Error(`tokenizer vocab parsed as ${tokenizerInfo.getVocabSize()} entries — refusing to constrain`);
+    }
+    console.info(`[llm] xgrammar ready (vocab ${tokenizerInfo.getVocabSize()})`);
+    const compiler = await xg.GrammarCompiler.createGrammarCompiler(tokenizerInfo);
+    grammarRuntime = {
+      // unenforced indentation (shorter output than pretty-printed JSON)
+      compileJSONSchema: (schema) => compiler.compileJSONSchema(schema, true, -1),
+      createMatcher: (compiled) => xg.GrammarMatcher.createGrammarMatcher(compiled as never),
+    };
+    grammarModelId = modelId;
+    return grammarRuntime;
+  } catch (error) {
+    console.warn(`[llm] xgrammar unavailable — falling back to unconstrained generation: ${error}`);
+    grammarRuntime = null;
+    grammarModelId = null;
+    return null;
+  }
+}
+
+async function setupMatcher(schema: string): Promise<GrammarMatcher | null> {
+  const runtime = await ensureGrammar();
+  if (!runtime) return null;
+  try {
+    return await runtime.createMatcher(await runtime.compileJSONSchema(schema));
+  } catch (error) {
+    console.warn(`[llm] schema compile failed — generating unconstrained: ${error}`);
+    return null;
+  }
+}
+
+/**
+ * Per-token -Infinity masking of grammar-disallowed logits. The next-step bitmask
+ * is prefetched: the binding is synchronous under its async wrapper, so the
+ * promise resolves in a microtask — long before generate's next forward pass.
+ * ponytail: bitmask polarity is empirical — set-bit = allowed in
+ * @mlc-ai/web-xgrammar 0.1.27 (contradicts its own .d.ts; see step-0 diag).
+ */
+async function grammarHooks(matcher: GrammarMatcher): Promise<Record<string, unknown>> {
+  const tf = await import("@huggingface/transformers");
+  // Freshness contract: the stopper (called right after each token is sampled)
+  // accepts it into the FSM and refills `mask` via microtask; generate()'s
+  // `await forward(...)` before the next processor call guarantees the refill
+  // has landed — so the mask applied at step k always reflects the state after
+  // token k-1. Keeping the accept+prefetch inside the processor instead leaves
+  // the mask one step stale (the processor list is fully synchronous).
+  let mask = await matcher.getNextTokenBitmask(); // root state
+  let step = 0;
+  const masker = new (class extends tf.LogitsProcessor {
+    _call(inputIds: bigint[][], scores: { data: { length: number; [index: number]: number | bigint } }) {
+      void inputIds;
+      const { data } = scores;
+      // Empirical polarity of @mlc-ai/web-xgrammar 0.1.27: bit SET = allowed
+      // (the .d.ts claims the inverse; field diag proved otherwise). Mask the rest.
+      for (let w = 0; w < mask.length; w++) {
+        const bits = mask[w];
+        if (bits === -1) continue; // all 32 allowed
+        for (let b = 0; b < 32; b++) {
+          if ((bits & (1 << b)) !== 0) continue;
+          const id = w * 32 + b;
+          if (id < data.length) data[id] = -Infinity;
+        }
+      }
+      step += 1;
+      return scores;
+    }
+  })();
+  const processors = new tf.LogitsProcessorList();
+  processors.push(masker);
+  const stopper = new (class extends tf.StoppingCriteria {
+    _call(inputIds: number[][]) {
+      const lastId = Number(inputIds[0].at(-1));
+      if (!matcher.acceptToken(lastId)) {
+        console.warn(`[llm] grammar rejected sampled token ${lastId} (step ${step})`);
+      }
+      // Never prefetch past termination: the C++ CHECK in getNextTokenBitmask
+      // aborts the wasm Module once the stop token has been accepted.
+      if (!matcher.isTerminated()) {
+        // .catch: this microtask can outlive the final generate() call and land
+        // after chat()'s finally disposes the matcher.
+        void matcher
+          .getNextTokenBitmask()
+          .then((next) => {
+            mask = next;
+          })
+          .catch(() => {});
+      }
+      return [matcher.isTerminated()];
+    }
+  })();
+  const criteria = new tf.StoppingCriteriaList();
+  criteria.push(stopper);
+  return { logits_processor: processors, stopping_criteria: criteria };
+}
+
 export async function chat(messages: ChatMessage[], options: ChatOptions): Promise<string> {
-  const { temperature, max_new_tokens = 768, images } = options;
+  const { temperature, max_new_tokens = 768, images, jsonSchema } = options;
   return enqueueModelJob(async () => {
     const started = performance.now();
     const { processor, model, RawImage } = await ensureModel();
+    const grammar = jsonSchema ? await setupMatcher(jsonSchema) : null;
+    if (jsonSchema) console.info(grammar ? "[llm] grammar constraint active" : "[llm] grammar unavailable, unconstrained");
     console.info(
       `[llm] chat start: ${messages.length} messages (${messages.map((m) => `${m.role}:${typeof m.content === "string" ? m.content.length : `${m.content.length} parts`}ch`).join(" ")}${images ? ` +${images.length} image(s)` : ""}) temp=${temperature} max_new=${max_new_tokens}`,
     );
@@ -222,7 +360,19 @@ export async function chat(messages: ChatMessage[], options: ChatOptions): Promi
     if (inputLen === 0) {
       console.error(`[llm] empty prompt after tokenization; template output: ${JSON.stringify(String(prompt).slice(0, 200))}`);
     }
-    const result = await model.generate({ ...inputs, max_new_tokens, do_sample: true, temperature, return_dict_in_generate: true });
+    let result: Awaited<ReturnType<LoadedModel["model"]["generate"]>>;
+    try {
+      result = await model.generate({
+        ...inputs,
+        max_new_tokens,
+        do_sample: true,
+        temperature,
+        return_dict_in_generate: true,
+        ...(grammar ? await grammarHooks(grammar) : null),
+      });
+    } finally {
+      grammar?.dispose();
+    }
     // Decode only the newly generated tokens (everything after the prompt).
     const totalLen = result.sequences.dims.at(-1) ?? 0;
     const newTokenCount = Math.max(0, totalLen - inputLen);

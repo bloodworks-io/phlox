@@ -32,6 +32,7 @@ vi.mock("./asr", () => ({
 }));
 import { handleLocalRequest, onDocumentProgress } from "./router";
 import { buildDemoExport } from "./db";
+import { buildExtractionSchema, parseFieldSummaries } from "./scribe";
 
 interface FieldLike {
   field_key: string;
@@ -393,6 +394,9 @@ describe("local backend route table", () => {
     const [messages, options] = chatMock.mock.calls[0];
     expect(options.temperature).toBe(0.1);
     expect(options.max_new_tokens).toBe(1024);
+    expect(options.jsonSchema).toContain('"clinical_history"');
+    expect(options.jsonSchema).toContain('"plan"');
+    expect(options.jsonSchema).toContain('"additionalProperties":false');
     expect(messages[0].content).toContain(
       "Extract relevant information for each of the following fields from the medical transcript.",
     );
@@ -627,5 +631,37 @@ describe("local backend route table", () => {
     const res = await json("/api/unknown/endpoint");
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ detail: "not implemented" });
+  });
+});
+
+describe("scribe extraction schema and key-drift tolerance", () => {
+  const field = (key: string, name: string) => ({ field_key: key, field_name: name }) as never;
+
+  it("builds a strict schema requiring every field key", () => {
+    const schema = JSON.parse(
+      buildExtractionSchema([field("clinical_history", "Current History"), field("plan", "Plan")] as never),
+    ) as {
+      properties: { field_summaries: Record<string, unknown> };
+      required: string[];
+      additionalProperties: boolean;
+    };
+    const summary = schema.properties.field_summaries;
+    expect(Object.keys(summary.properties as object)).toEqual(["clinical_history", "plan"]);
+    expect(summary.required).toEqual(["clinical_history", "plan"]);
+    expect(summary.additionalProperties).toBe(false);
+    expect(schema.required).toEqual(["field_summaries"]);
+    expect(schema.additionalProperties).toBe(false);
+  });
+
+  it("maps snake_cased field names back to their field keys", () => {
+    const fields = [field("primary_history", "Primary Medical History"), field("clinical_history", "Current History")];
+    const parsed = parseFieldSummaries('{"field_summaries": {"current_history": ["Stable"]}}', fields as never);
+    expect(parsed).toEqual({ clinical_history: ["Stable"] });
+  });
+
+  it("drops keys that resolve to nothing", () => {
+    const fields = [field("plan", "Plan")];
+    const parsed = parseFieldSummaries('{"field_summaries": {"current_history": ["x"], "plan": ["y"]}}', fields as never);
+    expect(parsed).toEqual({ plan: ["y"] });
   });
 });

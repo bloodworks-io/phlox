@@ -79,7 +79,30 @@ ${fieldInstructions}
 Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapping field_key to array of strings).`;
 }
 
-function parseFieldSummaries(content: string, knownKeys: string[]): Record<string, string[]> {
+/** Strict JSON schema for the extraction contract — consumed by XGrammar in llm.ts. */
+export function buildExtractionSchema(fields: TemplateField[]): string {
+  return JSON.stringify({
+    type: "object",
+    properties: {
+      field_summaries: {
+        type: "object",
+        properties: Object.fromEntries(
+          fields.map((field) => [field.field_key, { type: "array", items: { type: "string" } }]),
+        ),
+        required: fields.map((field) => field.field_key),
+        additionalProperties: false,
+      },
+    },
+    required: ["field_summaries"],
+    additionalProperties: false,
+  });
+}
+
+function normalizeKey(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+}
+
+export function parseFieldSummaries(content: string, fields: TemplateField[]): Record<string, string[]> {
   const start = content.indexOf("{");
   const end = content.lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("no JSON object in response");
@@ -96,14 +119,22 @@ function parseFieldSummaries(content: string, knownKeys: string[]): Record<strin
     console.warn("[scribe] response missing field_summaries wrapper; accepting bare mapping");
   }
 
-  const known = new Set(knownKeys);
+  // Keys resolve via field_key or the snake_cased field_name: small models
+  // echo the NAME ("Current History" → current_history) instead of the key.
+  const aliases = new Map<string, string>();
+  for (const field of fields) {
+    aliases.set(normalizeKey(field.field_key), field.field_key);
+    aliases.set(normalizeKey(field.field_name), field.field_key);
+  }
+
   const summaries: Record<string, string[]> = {};
   for (const [key, value] of Object.entries(source)) {
-    if (known.size > 0 && !known.has(key)) continue; // drop junk keys in bare mode
+    const resolved = aliases.get(key) ?? aliases.get(normalizeKey(key));
+    if (!resolved) continue; // drop junk keys
     if (Array.isArray(value)) {
-      summaries[key] = value.map((point) => String(point));
+      summaries[resolved] = [...(summaries[resolved] ?? []), ...value.map((point) => String(point))];
     } else if (typeof value === "string" && value.trim()) {
-      summaries[key] = [value]; // single string instead of array — accept as one point
+      summaries[resolved] = [...(summaries[resolved] ?? []), value]; // single string instead of array — accept as one point
     }
   }
   if (Object.keys(summaries).length === 0) {
@@ -135,10 +166,10 @@ async function attemptExtraction(
           : transcriptText,
       },
     ],
-    { temperature: 0.1, max_new_tokens: 1024, images: options.images },
+    { temperature: 0.1, max_new_tokens: 1024, images: options.images, jsonSchema: buildExtractionSchema(fields) },
   );
 
-  const summaries = parseFieldSummaries(content, fields.map((field) => field.field_key));
+  const summaries = parseFieldSummaries(content, fields);
   console.info(`[scribe] extraction fields: ${Object.keys(summaries).join(", ")}`);
 
   const formatted: Record<string, string> = {};
