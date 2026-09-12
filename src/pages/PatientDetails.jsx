@@ -28,6 +28,7 @@ import { useSearchFlow } from "../utils/hooks/useSearchFlow";
 import { useScribeConsent } from "../utils/hooks/useScribeConsent";
 import { useWrapUp } from "../utils/hooks/useWrapUp";
 import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
+import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 
 const PatientDetails = ({
     patient: initialPatient,
