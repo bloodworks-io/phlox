@@ -111,12 +111,29 @@ export function parseFieldSummaries(content: string, fields: TemplateField[]): R
   // Small models usually honor the "field_summaries" wrapper but sometimes
   // return the bare {field_key: [...]} mapping — accept both.
   const wrapped = parsed.field_summaries;
-  const source: Record<string, unknown> =
+  let source: Record<string, unknown> =
     wrapped && typeof wrapped === "object" && !Array.isArray(wrapped)
       ? (wrapped as Record<string, unknown>)
       : parsed;
   if (wrapped === undefined && Object.keys(parsed).length > 0) {
     console.warn("[scribe] response missing field_summaries wrapper; accepting bare mapping");
+  }
+  // Small models occasionally double-wrap the envelope
+  // ({"field_summaries":{"field_summaries":{...}}} — measured on the fine-tuned
+  // 0.8B: clinically-correct inner JSON, zero recognized fields after a single
+  // unwrap). De-nest bounded levels; arrays/strings fall through.
+  let nestDepth = 0;
+  while (
+    nestDepth < 3 &&
+    source.field_summaries &&
+    typeof source.field_summaries === "object" &&
+    !Array.isArray(source.field_summaries)
+  ) {
+    source = source.field_summaries as Record<string, unknown>;
+    nestDepth += 1;
+  }
+  if (nestDepth > 0) {
+    console.warn(`[scribe] unwrapped ${nestDepth} extra field_summaries wrapper(s)`);
   }
 
   // Keys resolve via field_key or the snake_cased field_name: small models

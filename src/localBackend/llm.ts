@@ -118,6 +118,33 @@ async function hasUsableWebGpu(): Promise<"webgpu" | "wasm"> {
   }
 }
 
+export interface GpuDescription {
+  tier: "webgpu" | "wasm";
+  shaderF16: boolean;
+  /** Adapter vendor/architecture where the browser exposes it (e.g. "apple m3"). */
+  label: string | null;
+}
+
+/** UI-facing variant of hasUsableWebGpu: tier + shader-f16 flag + adapter label. */
+export async function describeGpu(): Promise<GpuDescription> {
+  const gpu = (navigator as unknown as { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+  if (!gpu) return { tier: "wasm", shaderF16: false, label: null };
+  try {
+    const adapter = (await gpu.requestAdapter()) as {
+      features?: Set<string>;
+      info?: { vendor?: string; architecture?: string; description?: string };
+    } | null;
+    if (!adapter) return { tier: "wasm", shaderF16: false, label: null };
+    const shaderF16 = adapter.features?.has("shader-f16") ?? false;
+    const info = adapter.info ?? {};
+    const label =
+      [info.description, info.architecture, info.vendor].find((part) => part && part.trim()) ?? null;
+    return { tier: shaderF16 ? "webgpu" : "wasm", shaderF16, label };
+  } catch {
+    return { tier: "wasm", shaderF16: false, label: null };
+  }
+}
+
 export async function ensureModel(): Promise<LoadedModel> {
   const modelId = getModelId();
   if (cached && cachedModelId === modelId) return cached;

@@ -146,6 +146,18 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                 </Box>
 
                                 <Text color={"textPrimary"} fontSize="sm">
+                                    <strong>Browser-Only Demo:</strong>{" "}
+                                    This build runs entirely inside your
+                                    browser — patients, notes and recordings
+                                    are stored locally and never leave this
+                                    machine. Model weights are downloaded from
+                                    the public Hugging Face CDN on first use
+                                    and run on your device, so nothing you
+                                    type, upload or dictate is sent to any
+                                    server.
+                                </Text>
+
+                                <Text color={"textPrimary"} fontSize="sm">
                                     USE AT YOUR OWN RISK and only for non-clinical,
                                     educational purposes unless you have implemented
                                     robust security measures and undertaken thorough

@@ -101,7 +101,6 @@ export const useTranscription = (onTranscriptionComplete, setLoading) => {
                 file,
                 {
                     fromText: transcriptionApi.processDocumentFromText,
-                    visual: transcriptionApi.processDocumentVisual,
                     legacyFile: (formData) =>
                         transcriptionApi.processDocument(formData),
                 },

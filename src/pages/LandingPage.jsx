@@ -3,45 +3,20 @@
 import React, { useState, useEffect } from "react";
 import { Box, Flex, VStack, Text, Button } from "@chakra-ui/react";
 import { useNavigate } from "react-router";
-import { InfoIcon, SearchIcon, QuestionIcon } from "../components/common/icons";
-import { FaNotesMedical, FaGithub, FaDownload } from "react-icons/fa";
+import { InfoIcon, SearchIcon } from "../components/common/icons";
+import { FaNotesMedical, FaGithub } from "react-icons/fa";
 import DisclaimerModal from "../components/modals/DisclaimerModal";
+import OnboardingCard from "../components/common/OnboardingCard";
 import { useAppInit } from "../utils/context/appInit";
 import { patientApi } from "../utils/api/patientApi";
-import { ensureModel, onStatus, isModelReady } from "../localBackend/llm";
-import { ensureAsr } from "../localBackend/asr";
-import { toaster } from "@/components/ui/toaster";
 
 const GITHUB_URL = "https://github.com/bloodworks-io/phlox";
-
-const downloadModels = async () => {
-  try {
-    await ensureModel();
-    await ensureAsr();
-    toaster.create({
-      title: "Models ready",
-      description: "Letter generation, scribe and document extraction are good to go",
-      type: "success",
-      duration: 4000,
-    });
-  } catch (error) {
-    toaster.create({
-      title: "Model download failed",
-      description: String(error),
-      type: "error",
-      duration: 8000,
-    });
-  }
-};
 
 const LandingPage = () => {
   const { isInitializing } = useAppInit();
   const navigate = useNavigate();
   const [todaysEncounters, setTodaysEncounters] = useState([]);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
-  const [modelStatus, setModelStatus] = useState({ state: "idle" });
-
-  useEffect(() => onStatus(setModelStatus), [setModelStatus]);
 
   useEffect(() => {
     if (isInitializing) return;
@@ -127,42 +102,9 @@ const LandingPage = () => {
           </Button>
         </Flex>
 
-        {/* Input-area panel: docs info + performance disclaimer */}
+        {/* Input-area panel: onboarding + model download */}
         <Box w="100%" maxW="800px" position="relative">
-          <VStack
-            className="panels-bg"
-            borderRadius="lg"
-            p={4}
-            gap={2}
-            align="stretch"
-          >
-            <Text fontSize="md" fontWeight="bold">
-              Getting started
-            </Text>
-            <Text fontSize="sm" color="overlay0">
-              Download the default models to get started — or pick different
-              presets in Settings.
-            </Text>
-            <Text fontSize="sm" color="overlay0">
-              <QuestionIcon /> Heads up: generation can take 30 seconds or
-              longer on this WebGPU version — the desktop app is much quicker.
-            </Text>
-            <Flex justify="flex-end">
-              <Button
-                onClick={downloadModels}
-                disabled={modelStatus.state === "loading" || isModelReady()}
-                className="dashboard-chat-suggestions"
-                size="sm"
-              >
-                <FaDownload />
-                {modelStatus.state === "loading"
-                  ? `Downloading ${modelStatus.progress ?? 0}%`
-                  : isModelReady()
-                    ? "Models ready ✓"
-                    : "Download models"}
-              </Button>
-            </Flex>
-          </VStack>
+          <OnboardingCard />
         </Box>
 
         {/* Today's encounters */}

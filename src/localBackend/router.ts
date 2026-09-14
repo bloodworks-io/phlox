@@ -31,7 +31,7 @@ import { isModelReady, chat } from "./llm";
 import type { ChatMessage } from "./llm";
 import { transcribe, AsrError } from "./asr";
 import { formatPatientDisplayName, processTranscription, TranscriptionProcessingError, extractFields } from "./scribe";
-import { generateLetterContent, calculateAge } from "./letter";
+import { generateLetterContent } from "./letter";
 
 export interface LocalRequestOptions {
   method?: string;
@@ -394,6 +394,7 @@ export async function handleLocalRequest(url: string, options: LocalRequestOptio
     if (path === "/api/config/user" && method === "GET") {
       return jsonResponse(getUserSettings());
     }
+
     if (path === "/api/config/user" && method === "POST") {
       const body = await readJsonBody(options);
       saveUserSettings({ ...getUserSettings(), ...body });
@@ -404,12 +405,13 @@ export async function handleLocalRequest(url: string, options: LocalRequestOptio
       return jsonResponse({ success: true });
     }
     if (path === "/api/config/global" && method === "GET") {
-      // VISION_MODEL_CAPABLE: the loaded Qwen3.5 exports are vision-language
-      // models (vision encoder included), so visual document processing works.
+      // VISION_MODEL_CAPABLE: false — visual document processing removed; the
+      // fine-tuned text model never receives images. Frontend degrades to the
+      // text-layer path via this flag + the capability endpoints below.
       return jsonResponse({
         REQUIRE_SCRIBE_CONSENT: true,
         DOCUMENT_IMAGE_PROCESSING_MODE: "auto",
-        VISION_MODEL_CAPABLE: true,
+        VISION_MODEL_CAPABLE: false,
       });
     }
     if (path === "/api/config/options" && method === "GET") {
@@ -617,59 +619,9 @@ export async function handleLocalRequest(url: string, options: LocalRequestOptio
       });
     }
     if (path === "/api/transcribe/process-document-visual" && method === "POST") {
-      const body = await readJsonBody(options);
-      const pages = Array.isArray(body.pages) ? (body.pages as { data_url?: string }[]) : [];
-      const images = pages.map((page) => page.data_url).filter((url): url is string => typeof url === "string").slice(0, 4);
-      if (images.length === 0) return jsonResponse({ detail: "No visual pages provided" }, 400);
-
-      const fields = fieldsForKey(String(body.templateKey ?? "")).filter((field) => !field.persistent);
-      if (fields.length === 0) return jsonResponse({ detail: "Template fields are required for visual document processing" }, 400);
-
-      const name = formatPatientDisplayName((body.name as string) ?? null);
-      const dob = (body.dob as string) ?? null;
-      const gender = (body.gender as string) ?? null;
-      const contextParts: string[] = [];
-      if (name) contextParts.push(`Patient: ${name}`);
-      if (dob) contextParts.push(`Age: ${calculateAge(dob)}`);
-      if (gender) contextParts.push(`Gender: ${gender === "M" ? "Male" : "Female"}`);
-
-      const fieldInstructions = fields
-        .map(
-          (field) =>
-            `FIELD: ${field.field_key}\nNAME: ${field.field_name}\nINSTRUCTIONS: ${(field.system_prompt || "").trim()}`,
-        )
-        .join("\n");
-      // server/nlp_tools/document_processing.py:process_visual_document_with_template — verbatim.
-      const systemOverride =
-        "Extract relevant information for each field from the provided medical document images.\n" +
-        `${contextParts.join(" | ")}\n\n` +
-        "For each field, extract only the most relevant information. " +
-        "If no relevant information is found for a field, return an empty list for that field.\n\n" +
-        "FIELDS:\n" +
-        fieldInstructions +
-        "\n\n" +
-        'Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapping field_key to array of strings).';
-
-      // One page per call: smaller vision batches (GPU-memory friendlier) and
-      // page-level progress for the panel.
-      const started = performance.now();
-      const merged: Record<string, string> = {};
-      for (const [index, image] of images.entries()) {
-        const result = await extractFields("", fields, { name, dob, gender }, false, null, {
-          systemOverride,
-          images: [image],
-        });
-        for (const [key, value] of Object.entries(result)) {
-          if (value) merged[key] = merged[key] ? `${merged[key]}\n${value}` : value;
-        }
-        documentProgressListener?.(index + 1, images.length);
-      }
-      return jsonResponse({
-        fields: merged,
-        rawTranscription: "",
-        transcriptionDuration: 0,
-        processDuration: Number(((performance.now() - started) / 1000).toFixed(2)),
-      });
+      // Visual document processing removed: localBackend is text-only now
+      // (fine-tuned text model; vision tower unused). Text-layer path above remains.
+      return jsonResponse({ detail: "Visual document processing is not available in this demo" }, 410);
     }
 
     // --- demographics extraction (documentProcessing.py:_extract_demographics_from_text port) ---
@@ -679,10 +631,7 @@ export async function handleLocalRequest(url: string, options: LocalRequestOptio
       return jsonResponse(await extractDemographics(text));
     }
     if (path === "/api/transcribe/extract-demographics-visual" && method === "POST") {
-      const body = await readJsonBody(options);
-      const pages = Array.isArray(body.pages) ? (body.pages as { data_url?: string }[]) : [];
-      const images = pages.map((page) => page.data_url).filter((url): url is string => typeof url === "string").slice(0, 2); // header page carries demographics
-      return jsonResponse(await extractDemographics("", images));
+      return jsonResponse({ detail: "Visual demographics extraction is not available in this demo" }, 410);
     }
     if (path === "/api/transcribe/extract-demographics" && method === "POST" && formBody) {
       const file = (options.body as FormData).get("file");
@@ -696,12 +645,12 @@ export async function handleLocalRequest(url: string, options: LocalRequestOptio
       return jsonResponse(await extractDemographics(await file.text()));
     }
 
-    // --- vision capability (Qwen3.5 exports are vision-language models) ---
+    // --- vision capability (text-only demo: always false) ---
     if (path === "/api/chat/vision-capability/current" && method === "GET") {
-      return jsonResponse({ vision_capable: true, model: getModelId(), probed_at: null });
+      return jsonResponse({ vision_capable: false, model: getModelId(), probed_at: null });
     }
     if (path === "/api/chat/vision-capability" && method === "POST") {
-      return jsonResponse({ vision_capable: true, status_code: 200, detail: "Local Qwen3.5 vision encoder" });
+      return jsonResponse({ vision_capable: false, status_code: 410, detail: "Text-only demo" });
     }
   } catch (error) {
     return errorResponse(error);

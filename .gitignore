@@ -64,3 +64,10 @@ __pycache__/
 *.pyc
 package-lock.old
 package-lock.old
+
+# training pipeline artifacts
+training/.venv/
+training/data/
+
+# fine-tuned model artifacts (large)
+weights/

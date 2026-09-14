@@ -149,7 +149,7 @@ describe("local backend route table", () => {
     expect(global.body).toEqual({
       REQUIRE_SCRIBE_CONSENT: true,
       DOCUMENT_IMAGE_PROCESSING_MODE: "auto",
-      VISION_MODEL_CAPABLE: true,
+      VISION_MODEL_CAPABLE: false,
     });
 
     const auth = await json("/api/auth/me");
@@ -161,11 +161,11 @@ describe("local backend route table", () => {
 
   it("extracts demographics from document text and reports vision capability", async () => {
     expect((await json("/api/chat/vision-capability/current")).body).toMatchObject({
-      vision_capable: true,
+      vision_capable: false,
     });
     expect((await json("/api/chat/vision-capability", { method: "POST", body: "{}" })).body).toMatchObject({
-      vision_capable: true,
-      status_code: 200,
+      vision_capable: false,
+      status_code: 410,
     });
 
     chatMock.mockResolvedValueOnce(
@@ -663,5 +663,33 @@ describe("scribe extraction schema and key-drift tolerance", () => {
     const fields = [field("plan", "Plan")];
     const parsed = parseFieldSummaries('{"field_summaries": {"current_history": ["x"], "plan": ["y"]}}', fields as never);
     expect(parsed).toEqual({ plan: ["y"] });
+  });
+
+  it("unwraps double- and triple-wrapped field_summaries envelopes (fine-tuned 0.8B repetition glitch)", () => {
+    const fields = [field("clinical_history", "Current History"), field("plan", "Plan")];
+    const inner = JSON.stringify({ field_summaries: { clinical_history: ["well"], plan: ["review"] } });
+    const doubleWrapped = `{"field_summaries": ${inner}}`;
+    const parsed2 = parseFieldSummaries(doubleWrapped, fields as never);
+    expect(parsed2).toEqual({ clinical_history: ["well"], plan: ["review"] });
+
+    const tripleWrapped = `{"field_summaries": {"field_summaries": ${inner}}}`;
+    const parsed3 = parseFieldSummaries(tripleWrapped, fields as never);
+    expect(parsed3).toEqual({ clinical_history: ["well"], plan: ["review"] });
+  });
+
+  it("treats an array-valued field_summaries wrapper as a bare mapping (no de-nest)", () => {
+    const fields = [field("plan", "Plan")];
+    // field_summaries is an array → not unwrapped; source = parsed → only key is
+    // "field_summaries" itself → unrecognized → throws (bounded de-nest skips arrays)
+    expect(() => parseFieldSummaries('{"field_summaries": ["not", "a", "dict"]}', fields as never)).toThrow();
+  });
+
+  it("caps de-nesting — the initial unwrap + 3 loop levels tolerate 4 wrappers; a 5-level wrapper still throws", () => {
+    const fields = [field("plan", "Plan")];
+    const four = `{"field_summaries": {"field_summaries": {"field_summaries": {"field_summaries": {"plan": ["x"]}}}}}`;
+    expect(parseFieldSummaries(four, fields as never)).toEqual({ plan: ["x"] });
+
+    const five = `{"field_summaries": ${four}}`;
+    expect(() => parseFieldSummaries(five, fields as never)).toThrow();
   });
 });

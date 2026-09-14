@@ -58,7 +58,6 @@ const DemographicsForm = ({
                 file,
                 {
                     fromText: transcriptionApi.extractDemographicsFromText,
-                    visual: transcriptionApi.extractDemographicsVisual,
                     legacyFile: (formData) =>
                         transcriptionApi.extractDemographics(formData),
                 },

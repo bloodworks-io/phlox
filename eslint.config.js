@@ -12,6 +12,7 @@ export default tseslint.config(
             "node_modules/**",
             "src-tauri/**",
             "server/**",
+            "training/**",
             "src/components/ui/**",
             "build-dir/**",
             ".flatpak-builder/**",

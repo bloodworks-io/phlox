@@ -98,24 +98,6 @@ export const transcriptionApi = {
         });
     },
 
-    extractDemographicsVisual: async (payload) => {
-        return handleApiRequest({
-            apiCall: async (signal) => {
-                const url = await buildApiUrl(
-                    `/api/transcribe/extract-demographics-visual`,
-                );
-                return universalFetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                    signal,
-                });
-            },
-            timeout: 300000,
-            errorMessage: "Error extracting demographics from visual document",
-        });
-    },
-
     processDocumentFromText: async (payload) => {
         return handleApiRequest({
             apiCall: async (signal) => {
@@ -131,24 +113,6 @@ export const transcriptionApi = {
             },
             timeout: 180000,
             errorMessage: "Error processing extracted document text",
-        });
-    },
-
-    processDocumentVisual: async (payload) => {
-        return handleApiRequest({
-            apiCall: async (signal) => {
-                const url = await buildApiUrl(
-                    `/api/transcribe/process-document-visual`,
-                );
-                return universalFetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                    signal,
-                });
-            },
-            timeout: 300000,
-            errorMessage: "Error processing visual document",
         });
     },
 };
