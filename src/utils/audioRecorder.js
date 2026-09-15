@@ -1,5 +1,7 @@
 // Audio capture via WebAudio API.
 
+import { UtteranceSegmenter } from "./audioSegmenter";
+
 const TARGET_SAMPLE_RATE = 16000;
 const PROCESSOR_BUFFER_SIZE = 4096;
 
@@ -12,6 +14,10 @@ export class AudioRecorder {
         this.chunks = [];
         this.isRecording = false;
         this.isPaused = false;
+        // Live-streaming mode: an UtteranceSegmenter drains speech
+        // incrementally and onSegment(blob) fires per utterance.
+        this.onSegment = null;
+        this.segmenter = null;
     }
 
     async start() {
@@ -39,6 +45,12 @@ export class AudioRecorder {
             if (!this.isRecording || this.isPaused) return;
             const input = event.inputBuffer.getChannelData(0);
             this.chunks.push(new Float32Array(input));
+            if (this.segmenter && this.onSegment) {
+                const segment = this.segmenter.process(input);
+                if (segment) {
+                    this._emitSegment(segment);
+                }
+            }
         };
 
         this.source.connect(this.processor);
@@ -46,6 +58,29 @@ export class AudioRecorder {
 
         this.isRecording = true;
         this.isPaused = false;
+    }
+
+    /** Enable live utterance streaming: onSegment receives a WAV blob per utterance. */
+    enableSegmentStreaming(onSegment, segmenterOptions = {}) {
+        this.onSegment = onSegment;
+        this.segmenter = new UtteranceSegmenter(
+            this.audioContext ? this.audioContext.sampleRate : 48000,
+            segmenterOptions,
+        );
+    }
+
+    _emitSegment(samples) {
+        try {
+            const nativeSampleRate = this.audioContext.sampleRate;
+            const resampled =
+                nativeSampleRate === TARGET_SAMPLE_RATE
+                    ? samples
+                    : resampleLinear(samples, nativeSampleRate, TARGET_SAMPLE_RATE);
+            const wav = encodeWav(resampled, TARGET_SAMPLE_RATE);
+            this.onSegment(new Blob([wav], { type: "audio/wav" }));
+        } catch (error) {
+            console.error("Failed to emit audio segment:", error);
+        }
     }
 
     pause() {
@@ -63,6 +98,14 @@ export class AudioRecorder {
         }
         this.isRecording = false;
         this.isPaused = false;
+
+        // Flush any open utterance so the tail of the session is not lost.
+        if (this.segmenter && this.onSegment) {
+            const tail = this.segmenter.flush();
+            if (tail) {
+                this._emitSegment(tail);
+            }
+        }
 
         // Tear down the WebAudio graph before we touch chunks.
         this.processor.onaudioprocess = null;
