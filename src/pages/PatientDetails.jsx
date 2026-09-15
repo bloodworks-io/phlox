@@ -11,6 +11,7 @@ import Summary from "../components/patient/Summary";
 import Chat from "../components/panels/chat/Chat";
 import Letter from "../components/panels/letter/Letter";
 import ReasoningPanel from "../components/panels/reasoning/ReasoningPanel";
+import AgentPanel from "../components/panels/agent/AgentPanel";
 import ScribePillBox from "../components/patient/ScribePillBox";
 import FloatingActionMenu from "../components/common/FloatingActionMenu";
 import TranscriptionPanel from "../components/panels/transcription/TranscriptionPanel";
@@ -30,6 +31,7 @@ import { useTranscriptionCapture } from "../utils/hooks/useTranscriptionCapture"
 import { useModificationFlags } from "../utils/hooks/useModificationFlags";
 import { useSearchFlow } from "../utils/hooks/useSearchFlow";
 import { useScribeConsent } from "../utils/hooks/useScribeConsent";
+import { useLiveAgent } from "../utils/hooks/useLiveAgent";
 import { useWrapUp } from "../utils/hooks/useWrapUp";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
@@ -162,6 +164,15 @@ const PatientDetails = ({
         requiredDemographicsMet,
         startRecording: scribeControls.startRecording,
         onRequireDemographics: onOpenDemographics,
+    });
+
+    // Voice wrap-up funnels into the same handler as the button.
+    const wrapUpRequestRef = useRef(null);
+    const liveAgent = useLiveAgent({
+        patient,
+        setPatient,
+        currentTemplate,
+        onRequestWrapUp: () => wrapUpRequestRef.current?.(),
     });
 
     const wrapUp = useWrapUp({
@@ -314,6 +325,41 @@ const PatientDetails = ({
     const handleOpenReasoning = () => toggle("reasoning");
     const handleOpenTranscription = () => toggle("transcription");
     const handleOpenDocument = () => toggle("document");
+
+    // Live agent controls
+    const handleLiveToggle = () => {
+        if (liveAgent.isLiveActive) {
+            liveAgent.stopLive();
+            return;
+        }
+        if (!scribeConsent.canRecord) {
+            scribeConsent.handleBlockedRecord();
+            return;
+        }
+        liveAgent.startLive().then((started) => {
+            if (started) open("agent");
+        });
+    };
+
+    // Wrap Up: enter tidy mode for hands-free note edits, finalise the
+    // live session before the encounter is saved.
+    const handleWrapUpClick = () => {
+        if (liveAgent.isLiveActive) {
+            liveAgent.enterTidyMode();
+        }
+        wrapUp.openWrapUp();
+    };
+
+    useEffect(() => {
+        wrapUpRequestRef.current = handleWrapUpClick;
+    });
+
+    const handleWrapUpConfirm = async (curatedJobs) => {
+        if (liveAgent.isLiveActive) {
+            await liveAgent.stopLive();
+        }
+        await wrapUp.confirmWrapUp(curatedJobs);
+    };
     const handleOpenPreviousVisit = () => {
         if (!isOpen("previous-visit")) {
             setHasViewedPreviousVisit(true);
@@ -385,7 +431,7 @@ const PatientDetails = ({
                     setPatient={setPatient}
                     handleGenerateLetterClick={letter.handleGenerateLetterClick}
                     handleSavePatientData={handleSavePatientData}
-                    onWrapUp={wrapUp.openWrapUp}
+                    onWrapUp={handleWrapUpClick}
                     saveLoading={saveLoading}
                     wrapUpLoading={wrapUp.wrapUpLoading}
                     setIsModified={setIsSummaryModified}
@@ -395,15 +441,18 @@ const PatientDetails = ({
                     onCopy={handleCopy}
                     recentlyCopied={recentlyCopied}
                     isEncounterSaved={Boolean(patient?.id)}
+                    liveUpdatedFields={liveAgent.fieldFlash}
                 />
 
                 <WrapUpModal
                     key={String(wrapUp.isWrapUpOpen)}
                     isOpen={wrapUp.isWrapUpOpen}
                     onClose={wrapUp.closeWrapUp}
-                    onConfirm={wrapUp.confirmWrapUp}
+                    onConfirm={handleWrapUpConfirm}
                     planText={patient?.template_data?.plan || ""}
                     submitting={wrapUp.wrapUpLoading}
+                    stagedJobs={liveAgent.stagedJobs}
+                    onExtracted={liveAgent.pushExtractedJobs}
                 />
 
                 <DemographicsModal
@@ -467,6 +516,12 @@ const PatientDetails = ({
                 isLoading={scribeControls.isLoading}
                 isAmbient={scribeControls.isAmbient}
                 onModeToggle={scribeControls.toggleAmbientMode}
+                isLive={liveAgent.isLiveActive}
+                isLiveBusy={
+                    liveAgent.status === "connecting" ||
+                    liveAgent.status === "stopping"
+                }
+                onLiveToggle={handleLiveToggle}
                 onOpenTranscription={handleOpenTranscription}
                 isTranscriptionOpen={isOpen("transcription")}
                 hasRawTranscription={!!patient.raw_transcription}
@@ -538,6 +593,16 @@ const PatientDetails = ({
                     patient.previous_visit_encounter_date
                 }
                 templates={templates}
+            />
+            {/* Live Scribe Agent Panel */}
+            <AgentPanel
+                isOpen={isOpen("agent")}
+                status={liveAgent.status}
+                agentState={liveAgent.agentState}
+                transcripts={liveAgent.transcripts}
+                statuses={liveAgent.statuses}
+                artifacts={liveAgent.artifacts}
+                onStop={liveAgent.stopLive}
             />
         </Box>
     );

@@ -14,6 +14,7 @@ import {
     FaRedoAlt,
     FaDownload,
     FaExclamationTriangle,
+    FaBolt,
 } from "react-icons/fa";
 import PillBox from "../common/PillBox";
 import { colors } from "../../theme/colors";
@@ -169,6 +170,53 @@ export const RecordButton = ({
                         {getIcon()}
                     </Box>
                 </button></Box>
+        </Tooltip>
+    );
+};
+
+// Live agent toggle: starts/stops the live scribe session.
+export const LiveToggleButton = ({ isActive, isBusy, onToggle, id }) => {
+    const [isHovered, setIsHovered] = React.useState(false);
+
+    const label = isBusy
+        ? "Live session…"
+        : isActive
+          ? "Live agent running — click to end"
+          : "Live agent — streams and drafts the note as you talk";
+
+    return (
+        <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
+            <Box
+                id={id}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                w="30px"
+                h="30px"
+                borderRadius="full"
+                border={
+                    isActive
+                        ? `1px solid ${PILL.danger}`
+                        : `1px solid ${isHovered ? PILL.infoFill : PILL.info}`
+                }
+                cursor="pointer"
+                transition="all 0.2s ease"
+                outline="none"
+                className="pill-box-icons"
+                color={isActive ? PILL.danger : PILL.info}
+                bg={isActive ? "rgba(237, 135, 150, 0.15)" : "transparent"}
+                _hover={{ transform: "scale(1.05)" }}
+                asChild>
+                <button
+                    onClick={onToggle}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}>
+                    <FaBolt
+                        size={14}
+                        className={isActive ? "live-bolt-pulse" : undefined}
+                    />
+                </button>
+            </Box>
         </Tooltip>
     );
 };

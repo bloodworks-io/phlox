@@ -38,6 +38,7 @@ const Summary = forwardRef(
       selectTemplate,
       isSearchedPatient,
       isEncounterSaved = false,
+      liveUpdatedFields = {},
     },
     ref,
   ) => {
@@ -140,8 +141,15 @@ const Summary = forwardRef(
         </Tooltip>
       ) : null;
 
+      // Live agent update flash: re-mounts on each new timestamp so the
+      // one-shot animation replays when the agent edits the field.
+      const liveFlash = liveUpdatedFields[field.field_key];
+
       return (
-        <Box key={field.field_key} className="cohesive-field">
+        <Box
+          key={`${field.field_key}-${liveFlash || "static"}`}
+          className={`cohesive-field${liveFlash ? " live-field-updated" : ""}`}
+        >
           <Text className="cohesive-field-label">
             {field.field_name}:{persistentMarker}
           </Text>

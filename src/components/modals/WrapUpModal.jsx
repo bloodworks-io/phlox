@@ -31,7 +31,16 @@ const Section = ({ title, children }) => (
     </Box>
 );
 
-const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
+const WrapUpModal = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    planText,
+    submitting,
+    // Live-agent voice curation; no-ops for the manual flow.
+    stagedJobs,
+    onExtracted,
+}) => {
     const [actionItems, setActionItems] = useState([]);
     const [excluded, setExcluded] = useState([]);
     const [fallback, setFallback] = useState(null);
@@ -59,16 +68,26 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
 
     useEffect(() => {
         if (data) {
-            setActionItems(
-                (data.action_items || []).map((j) => ({
-                    text: j.text,
-                    checked: true,
-                })),
-            );
+            const mapped = (data.action_items || []).map((j) => ({
+                text: j.text,
+                checked: true,
+            }));
+            setActionItems(mapped);
             setExcluded((data.excluded || []).map((j) => ({ text: j.text })));
             setFallback(data.fallback || null);
+            onExtracted?.(mapped);
         }
-    }, [data]);
+    }, [data, onExtracted]);
+
+    // Voice curation via set_jobs; last writer wins with hand edits.
+    useEffect(() => {
+        if (isOpen && stagedJobs) {
+            setActionItems(stagedJobs.map((j) => ({
+                text: j.text,
+                checked: j.checked !== false,
+            })));
+        }
+    }, [stagedJobs, isOpen]);
 
     useEffect(() => {
         if (error) {

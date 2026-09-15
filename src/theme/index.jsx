@@ -106,6 +106,16 @@ for (let i = 1; i <= 8; i++) {
     };
 }
 
+// Live scribe agent: one-shot flash on agent-updated note fields, pulsing
+// bolt on the live toggle while a session is running.
+globalCss[".live-field-updated"] = {
+    animation: "phloxLiveFieldFlash 2.5s ease-out both",
+    borderRadius: "6px",
+};
+globalCss[".live-bolt-pulse"] = {
+    animation: "phloxBoltPulse 1.6s ease-in-out infinite",
+};
+
 export const system = createSystem(defaultConfig, {
     globalCss,
     theme: {
@@ -131,6 +141,21 @@ export const system = createSystem(defaultConfig, {
                     opacity: "1",
                     transform: "scale(1) translateX(0)",
                 },
+            },
+            phloxLiveFieldFlash: {
+                from: {
+                    backgroundColor: "rgba(139, 213, 202, 0.28)",
+                    boxShadow: "inset 3px 0 0 0 #8bd5ca",
+                },
+                to: {
+                    backgroundColor: "transparent",
+                    boxShadow: "inset 3px 0 0 0 transparent",
+                },
+            },
+            phloxBoltPulse: {
+                "0%": { opacity: "1" },
+                "50%": { opacity: "0.35" },
+                "100%": { opacity: "1" },
             },
         },
         tokens: {

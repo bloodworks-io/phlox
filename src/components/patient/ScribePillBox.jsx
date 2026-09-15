@@ -7,6 +7,7 @@ import {
     ModeResetButton,
     TranscriptSendButton,
     TranscriptionFailurePill,
+    LiveToggleButton,
 } from "./scribeButtons";
 
 const ScribePillBox = ({
@@ -22,6 +23,10 @@ const ScribePillBox = ({
     // Mode toggle
     isAmbient,
     onModeToggle,
+    // Live agent
+    isLive,
+    isLiveBusy = false,
+    onLiveToggle,
     // Panel handlers
     onOpenTranscription,
     // Panel states
@@ -130,29 +135,41 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Left: Mode toggle / Reset */}
-            <ModeResetButton
-                isRecording={isRecording}
-                isAmbient={isAmbient}
-                onModeToggle={onModeToggle}
-                onReset={onReset}
+            {/* Left: Live agent toggle */}
+            <LiveToggleButton
+                id="live-agent-trigger"
+                isActive={isLive}
+                isBusy={isLiveBusy}
+                onToggle={onLiveToggle}
             />
 
-            {/* Center: Record button */}
-            <RecordButton
-                isRecording={isRecording}
-                isPaused={isPaused}
-                onStart={onStart}
-                onPause={onPause}
-                onResume={onResume}
-                size={46}
-                canStart={canRecord}
-                onBlockedClick={onBlockedRecord}
-            />
+            {/* Left-center: Mode toggle / Reset (hidden while live) */}
+            {!isLive && (
+                <ModeResetButton
+                    isRecording={isRecording}
+                    isAmbient={isAmbient}
+                    onModeToggle={onModeToggle}
+                    onReset={onReset}
+                />
+            )}
+
+            {/* Center: Record button (hidden while live — mic is owned by the session) */}
+            {!isLive && (
+                <RecordButton
+                    isRecording={isRecording}
+                    isPaused={isPaused}
+                    onStart={onStart}
+                    onPause={onPause}
+                    onResume={onResume}
+                    size={46}
+                    canStart={canRecord}
+                    onBlockedClick={onBlockedRecord}
+                />
+            )}
 
             {/* Right: Transcript / Send */}
             <TranscriptSendButton
-                isRecording={isRecording}
+                isRecording={isRecording && !isLive}
                 onOpenTranscription={onOpenTranscription}
                 onSend={onSend}
                 isTranscriptionOpen={isTranscriptionOpen}
