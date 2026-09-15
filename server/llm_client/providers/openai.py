@@ -56,9 +56,15 @@ async def openai_compatible_chat(
 
         # Add stream parameter if needed
         if stream:
-            # Don't apply extra_body to streaming requests
-            pass
             params["stream"] = stream
+
+        # Per-call extra body (options["extra_body"]) is opt-in by the caller
+        # and applied to BOTH streaming and non-streaming requests. The
+        # client-level env extra_body stays non-streaming-only (historical
+        # behaviour: it seemed to break some streaming endpoints).
+        call_extra_body = options.get("extra_body") if options else None
+        if call_extra_body:
+            params.update(call_extra_body)
 
             # For streaming, return an async generator
             async def response_generator():
