@@ -239,6 +239,11 @@ def initialize_and_get_app():
 
     app.include_router(chat.router, prefix="/api/chat")
 
+    # Live scribe agent (streaming consultation sessions)
+    from server.agent_live import router as agent_live_router
+
+    app.include_router(agent_live_router.router, prefix="/api/agent-live")
+
     # Conditionally include RAG router (requires sqlite-vec)
     if VECTOR_STORE_AVAILABLE:
         from server.api import rag
