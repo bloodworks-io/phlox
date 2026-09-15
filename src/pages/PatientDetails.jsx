@@ -326,20 +326,38 @@ const PatientDetails = ({
     const handleOpenTranscription = () => toggle("transcription");
     const handleOpenDocument = () => toggle("document");
 
-    // Live agent controls
-    const handleLiveToggle = () => {
+    // Live agent controls: the pill's mode dial funnels through here. Agent
+    // starts a live session; picking dictate/ambient during one ends it and
+    // switches the capture mode.
+    const [liveView, setLiveView] = useState("bar"); // "bar" | "window"
+
+    const handleModeSelect = (mode) => {
+        if (mode === "agent") {
+            if (liveAgent.isLiveActive) return;
+            if (!scribeConsent.canRecord) {
+                scribeConsent.handleBlockedRecord();
+                return;
+            }
+            liveAgent.startLive().then((started) => {
+                if (started) setLiveView("bar");
+            });
+            return;
+        }
         if (liveAgent.isLiveActive) {
             liveAgent.stopLive();
-            return;
         }
-        if (!scribeConsent.canRecord) {
-            scribeConsent.handleBlockedRecord();
-            return;
-        }
-        liveAgent.startLive().then((started) => {
-            if (started) open("agent");
-        });
+        scribeControls.selectCaptureMode(mode);
     };
+
+    const handleLiveStop = () => {
+        if (liveAgent.isLiveActive) liveAgent.stopLive();
+    };
+
+    const scribeMode = liveAgent.isLiveActive
+        ? "agent"
+        : scribeControls.isAmbient
+          ? "ambient"
+          : "dictate";
 
     // Wrap Up: enter tidy mode for hands-free note edits, finalise the
     // live session before the encounter is saved.
@@ -514,14 +532,15 @@ const PatientDetails = ({
                 onSend={scribeControls.stopAndSendRecording}
                 onReset={scribeControls.resetRecording}
                 isLoading={scribeControls.isLoading}
-                isAmbient={scribeControls.isAmbient}
-                onModeToggle={scribeControls.toggleAmbientMode}
+                mode={scribeMode}
+                onModeSelect={handleModeSelect}
                 isLive={liveAgent.isLiveActive}
                 isLiveBusy={
                     liveAgent.status === "connecting" ||
                     liveAgent.status === "stopping"
                 }
-                onLiveToggle={handleLiveToggle}
+                liveElapsed={liveAgent.elapsedSeconds}
+                onLiveStop={handleLiveStop}
                 onOpenTranscription={handleOpenTranscription}
                 isTranscriptionOpen={isOpen("transcription")}
                 hasRawTranscription={!!patient.raw_transcription}
@@ -594,15 +613,18 @@ const PatientDetails = ({
                 }
                 templates={templates}
             />
-            {/* Live Scribe Agent Panel */}
+            {/* Live Scribe — PiP bar / draggable mini-window */}
             <AgentPanel
-                isOpen={isOpen("agent")}
                 status={liveAgent.status}
                 agentState={liveAgent.agentState}
                 transcripts={liveAgent.transcripts}
                 statuses={liveAgent.statuses}
                 artifacts={liveAgent.artifacts}
-                onStop={liveAgent.stopLive}
+                onStop={handleLiveStop}
+                view={liveView}
+                onExpand={() => setLiveView("window")}
+                onMinimize={() => setLiveView("bar")}
+                hideBar={isOpen("transcription")}
             />
         </Box>
     );

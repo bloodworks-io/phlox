@@ -15,6 +15,7 @@ import {
     FaDownload,
     FaExclamationTriangle,
     FaBolt,
+    FaStop,
 } from "react-icons/fa";
 import PillBox from "../common/PillBox";
 import { colors } from "../../theme/colors";
@@ -174,126 +175,208 @@ export const RecordButton = ({
     );
 };
 
-// Live agent toggle: starts/stops the live scribe session.
-export const LiveToggleButton = ({ isActive, isBusy, onToggle, id }) => {
-    const [isHovered, setIsHovered] = React.useState(false);
+// Capture modes shown on the pill's mode dial.
+const MODES = [
+    {
+        id: "dictate",
+        icon: FaKeyboard,
+        label: "Dictate",
+        hint: "direct speech, processed on send",
+    },
+    {
+        id: "ambient",
+        icon: FaComments,
+        label: "Ambient",
+        hint: "captures the whole consultation",
+    },
+    {
+        id: "agent",
+        icon: FaBolt,
+        label: "Live agent",
+        hint: "streams and drafts the note as you talk",
+    },
+];
 
-    const label = isBusy
-        ? "Live session…"
-        : isActive
-          ? "Live agent running — click to end"
-          : "Live agent — streams and drafts the note as you talk";
+// Slot geometry within the 72x30 dial: left, centre, right.
+const SLOT_DX = [-21, 0, 21];
+const SLOT_TILT = [-32, 0, 32];
+
+// Mode dial: the active mode sits front and centre; the other two sit
+// smaller and tilted in the background, one click away.
+export const ModeTurntable = ({ mode, isLive = false, isBusy = false, onSelect }) => {
+    const activeIndex = MODES.findIndex((m) => m.id === mode);
+    if (activeIndex === -1) return null;
+
+    // Previous mode in the cycle parks left, next parks right, so the dial
+    // keeps a stable layout as the selection rotates.
+    const slotOf = (index) => {
+        const d = (index - activeIndex + MODES.length) % MODES.length;
+        return d === 0 ? 1 : d === 1 ? 2 : 0;
+    };
 
     return (
-        <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
-            <Box
-                id={id}
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                w="30px"
-                h="30px"
-                borderRadius="full"
-                border={
-                    isActive
-                        ? `1px solid ${PILL.danger}`
-                        : `1px solid ${isHovered ? PILL.infoFill : PILL.info}`
-                }
-                cursor="pointer"
-                transition="all 0.2s ease"
-                outline="none"
-                className="pill-box-icons"
-                color={isActive ? PILL.danger : PILL.info}
-                bg={isActive ? "rgba(237, 135, 150, 0.15)" : "transparent"}
-                _hover={{ transform: "scale(1.05)" }}
-                asChild>
-                <button
-                    onClick={onToggle}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}>
-                    <FaBolt
-                        size={14}
-                        className={isActive ? "live-bolt-pulse" : undefined}
-                    />
-                </button>
-            </Box>
-        </Tooltip>
+        <Box
+            position="relative"
+            width="72px"
+            height="30px"
+            flexShrink={0}
+            css={{ perspective: "160px" }}
+            opacity={isBusy ? 0.5 : 1}
+            pointerEvents={isBusy ? "none" : "auto"}
+            role="group"
+            aria-label={`Capture mode: ${MODES[activeIndex].label}`}
+        >
+            {MODES.map((entry, index) => {
+                const slot = slotOf(index);
+                const isActive = slot === 1;
+                const Icon = entry.icon;
+                const label = isActive
+                    ? `${entry.label} — ${entry.hint}`
+                    : `Switch to ${entry.label} — ${entry.hint}${
+                          isLive ? " (ends live session)" : ""
+                      }`;
+                return (
+                    <Tooltip
+                        key={entry.id}
+                        content={label}
+                        showArrow
+                        positioning={{ placement: "top" }}
+                    >
+                        <Box
+                            as={isActive ? "div" : "button"}
+                            position="absolute"
+                            top="4px"
+                            left="25px"
+                            width="22px"
+                            height="22px"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            borderRadius="full"
+                            border="none"
+                            p={0}
+                            bg="transparent"
+                            cursor={isActive ? "default" : "pointer"}
+                            outline="none"
+                            transform={`translateX(${SLOT_DX[slot]}px) rotateY(${SLOT_TILT[slot]}deg)`}
+                            transition="transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.25s ease"
+                            color={
+                                isActive
+                                    ? entry.id === "agent" && isLive
+                                      ? PILL.danger
+                                      : "white"
+                                    : PILL.muted
+                            }
+                            opacity={isActive ? 1 : isLive ? 0.38 : 0.55}
+                            _hover={isActive ? undefined : { opacity: 0.9 }}
+                            aria-label={label}
+                            onClick={() => {
+                                if (!isActive) onSelect?.(entry.id);
+                            }}
+                        >
+                            <Icon
+                                size={isActive ? 15 : 12}
+                                className={
+                                    isActive &&
+                                    entry.id === "agent" &&
+                                    isLive
+                                        ? "live-bolt-pulse"
+                                        : undefined
+                                }
+                            />
+                        </Box>
+                    </Tooltip>
+                );
+            })}
+        </Box>
     );
 };
 
-// Left button: Mode toggle (idle) / Reset (recording)
-export const ModeResetButton = ({
-    isRecording,
-    isAmbient,
-    onModeToggle,
-    onReset,
-}) => {
+const formatElapsed = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+};
+
+// Stands in for the mic while a live session owns it: elapsed time + end.
+export const LiveTimerChip = ({ elapsed = 0, isBusy = false, onStop }) => {
     const [isHovered, setIsHovered] = React.useState(false);
 
-    if (isRecording) {
-        // Reset button state
-        return (
-            <Tooltip content="Reset" showArrow positioning={{
-                placement: "top"
-            }}>
+    return (
+        <Flex align="center" gap={1} flexShrink={0} px={1}>
+            <Text
+                fontSize="sm"
+                fontWeight="700"
+                color="white"
+                fontVariantNumeric="tabular-nums"
+                minW="32px"
+                textAlign="center"
+                aria-label={`Live session ${formatElapsed(elapsed)}`}
+            >
+                {isBusy ? "· · ·" : formatElapsed(elapsed)}
+            </Text>
+            <Tooltip
+                content="End live session"
+                showArrow
+                positioning={{ placement: "top" }}
+            >
                 <Box
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    w="40px"
-                    h="40px"
+                    w="24px"
+                    h="24px"
                     borderRadius="full"
-                    border={`1px solid ${isHovered ? PILL.warningFill : PILL.warning}`}
+                    border={`1px solid ${isHovered ? PILL.dangerFill : PILL.danger}`}
+                    bg={isHovered ? PILL.dangerFill : "rgba(237, 135, 150, 0.15)"}
+                    color={isHovered ? PILL.onFill : PILL.danger}
                     cursor="pointer"
                     transition="all 0.2s ease"
                     outline="none"
-                    bg={isHovered ? PILL.warningFill : "transparent"}
-                    color={isHovered ? PILL.onFill : PILL.warning}
-                    boxShadow="md"
-                    _hover={{
-                        transform: "scale(1.05)",
-                    }}
-                    asChild><button
-                        onClick={onReset}
+                    _hover={{ transform: "scale(1.05)" }}
+                    asChild>
+                    <button
+                        onClick={onStop}
                         onMouseEnter={() => setIsHovered(true)}
                         onMouseLeave={() => setIsHovered(false)}>
-                        <FaTimes size={16} />
-                    </button></Box>
+                        <FaStop size="9px" />
+                    </button>
+                </Box>
             </Tooltip>
-        );
-    }
+        </Flex>
+    );
+};
 
-    // Mode toggle state
-    const Icon = isAmbient ? FaComments : FaKeyboard;
-    const label = isAmbient
-        ? "Ambient mode - click for Dictate"
-        : "Dictate mode - click for Ambient";
+// Reset button shown in the mode slot while a recording is in progress.
+export const ResetButton = ({ onReset }) => {
+    const [isHovered, setIsHovered] = React.useState(false);
 
     return (
-        <Tooltip content={label} showArrow positioning={{
+        <Tooltip content="Reset" showArrow positioning={{
             placement: "top"
         }}>
             <Box
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
-                w="30px"
-                h="30px"
+                w="40px"
+                h="40px"
                 borderRadius="full"
-                border="none"
-                bg="transparent"
+                border={`1px solid ${isHovered ? PILL.warningFill : PILL.warning}`}
                 cursor="pointer"
                 transition="all 0.2s ease"
                 outline="none"
-                className="pill-box-icons"
-                mr={0}
-                boxShadow="none"
+                bg={isHovered ? PILL.warningFill : "transparent"}
+                color={isHovered ? PILL.onFill : PILL.warning}
+                boxShadow="md"
                 _hover={{
-                    bg: colors.dark.surface,
                     transform: "scale(1.05)",
                 }}
-                asChild><button onClick={onModeToggle}>
-                    <Icon size={16} />
+                asChild><button
+                    onClick={onReset}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}>
+                    <FaTimes size={16} />
                 </button></Box>
         </Tooltip>
     );

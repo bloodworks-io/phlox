@@ -21,6 +21,8 @@ export const useLiveAgent = ({
     const [artifacts, setArtifacts] = useState([]);
     const [stagedJobs, setStagedJobs] = useState([]);
     const [fieldFlash, setFieldFlash] = useState({}); // {field_key: timestamp}
+    const [startedAt, setStartedAt] = useState(null);
+    const [clockNow, setClockNow] = useState(0);
 
     const sessionIdRef = useRef(null);
     const recorderRef = useRef(null);
@@ -140,6 +142,7 @@ export const useLiveAgent = ({
                     sessionIdRef.current = null;
                     setStatus((prev) => (prev === "stopping" ? "idle" : "idle"));
                     setAgentState("listening");
+                    setStartedAt(null);
                     break;
                 default:
                     break;
@@ -171,6 +174,7 @@ export const useLiveAgent = ({
                     runningRef.current = false;
                     sessionIdRef.current = null;
                     setStatus("idle");
+                    setStartedAt(null);
                 }
             }
         },
@@ -226,6 +230,8 @@ export const useLiveAgent = ({
             setArtifacts([]);
             setStagedJobs([]);
             setFieldFlash({});
+            setStartedAt(Date.now());
+            setClockNow(Date.now());
             setStatus("live");
             setAgentState("listening");
             consumeEvents(sessionId);
@@ -278,6 +284,7 @@ export const useLiveAgent = ({
             sessionIdRef.current = null;
             setStatus("idle");
             setAgentState("listening");
+            setStartedAt(null);
         }
     }, [setPatient]);
 
@@ -341,7 +348,20 @@ export const useLiveAgent = ({
         };
     }, [patient?.id]);
 
-    const isLiveActive = ["connecting", "live", "tidy", "stopping"].includes(status);
+    const isLiveActive = ["connecting", "live", "tidy", "stopping"].includes(
+        status,
+    );
+
+    // Session clock for the pill's live timer chip.
+    useEffect(() => {
+        if (!startedAt) return undefined;
+        const id = setInterval(() => setClockNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, [startedAt]);
+
+    const elapsedSeconds = startedAt
+        ? Math.max(0, Math.floor((clockNow - startedAt) / 1000))
+        : 0;
 
     return {
         status,
@@ -352,6 +372,7 @@ export const useLiveAgent = ({
         artifacts,
         stagedJobs,
         fieldFlash,
+        elapsedSeconds,
         startLive,
         stopLive,
         enterTidyMode,

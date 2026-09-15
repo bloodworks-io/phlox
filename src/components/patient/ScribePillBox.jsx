@@ -4,10 +4,11 @@ import PillBox from "../common/PillBox";
 import { LoadingOrb } from "./scribeVisuals";
 import {
     RecordButton,
-    ModeResetButton,
+    ResetButton,
     TranscriptSendButton,
     TranscriptionFailurePill,
-    LiveToggleButton,
+    ModeTurntable,
+    LiveTimerChip,
 } from "./scribeButtons";
 
 const ScribePillBox = ({
@@ -20,13 +21,14 @@ const ScribePillBox = ({
     onSend,
     onReset,
     isLoading,
-    // Mode toggle
-    isAmbient,
-    onModeToggle,
+    // Mode dial: "dictate" | "ambient" | "agent"
+    mode,
+    onModeSelect,
     // Live agent
     isLive,
     isLiveBusy = false,
-    onLiveToggle,
+    liveElapsed = 0,
+    onLiveStop,
     // Panel handlers
     onOpenTranscription,
     // Panel states
@@ -135,26 +137,26 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Left: Live agent toggle */}
-            <LiveToggleButton
-                id="live-agent-trigger"
-                isActive={isLive}
-                isBusy={isLiveBusy}
-                onToggle={onLiveToggle}
-            />
-
-            {/* Left-center: Mode toggle / Reset (hidden while live) */}
-            {!isLive && (
-                <ModeResetButton
-                    isRecording={isRecording}
-                    isAmbient={isAmbient}
-                    onModeToggle={onModeToggle}
-                    onReset={onReset}
+            {/* Left: mode dial (Reset while recording) */}
+            {isRecording ? (
+                <ResetButton onReset={onReset} />
+            ) : (
+                <ModeTurntable
+                    mode={mode}
+                    isLive={isLive}
+                    isBusy={isLiveBusy}
+                    onSelect={onModeSelect}
                 />
             )}
 
-            {/* Center: Record button (hidden while live — mic is owned by the session) */}
-            {!isLive && (
+            {/* Center: mic — owned by the live session while one runs */}
+            {isLive ? (
+                <LiveTimerChip
+                    elapsed={liveElapsed}
+                    isBusy={isLiveBusy}
+                    onStop={onLiveStop}
+                />
+            ) : (
                 <RecordButton
                     isRecording={isRecording}
                     isPaused={isPaused}

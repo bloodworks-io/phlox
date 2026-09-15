@@ -212,15 +212,18 @@ export const useScribe = ({
         resetRecordingState();
     }, [isRecording, resetRecordingState]);
 
-    const toggleAmbientMode = useCallback(async () => {
-        const newValue = !isAmbient;
+    // Capture-mode selection for the pill's mode dial. The live agent is a
+    // session (not a persisted preference), so only dictate/ambient land here.
+    const selectCaptureMode = useCallback(async (mode) => {
+        if (mode !== "dictate" && mode !== "ambient") return;
+        const newValue = mode === "ambient";
         setIsAmbient(newValue);
         try {
             await settingsService.saveAmbientMode(newValue);
         } catch (error) {
             console.error("Failed to save ambient mode setting:", error);
         }
-    }, [isAmbient]);
+    }, []);
 
     // Handle audio file drop
     const handleAudioDrop = useCallback(
@@ -256,7 +259,7 @@ export const useScribe = ({
         resumeRecording,
         stopAndSendRecording,
         resetRecording,
-        toggleAmbientMode,
+        selectCaptureMode,
         handleAudioDrop,
         retrySend,
         downloadLastRecording,
