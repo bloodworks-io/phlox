@@ -66,6 +66,7 @@ async def openai_compatible_chat(
         if call_extra_body:
             params.update(call_extra_body)
 
+        if stream:
             # For streaming, return an async generator
             async def response_generator():
                 reasoning_started = False
