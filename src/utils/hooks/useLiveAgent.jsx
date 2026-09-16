@@ -94,6 +94,16 @@ export const useLiveAgent = ({
                     }));
                     pushStatus(`Note updated: ${event.field_key}`, "edit");
                     break;
+                // Replayed state on (re)connect: apply without the flash.
+                case "field_state":
+                    setPatient((prev) => ({
+                        ...prev,
+                        template_data: {
+                            ...prev.template_data,
+                            [event.field_key]: event.content,
+                        },
+                    }));
+                    break;
                 case "agent_status":
                     pushStatus(event.content);
                     break;

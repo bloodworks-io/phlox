@@ -126,7 +126,8 @@ async def stream_events(session_id: str, request: Request):
             for index, segment in enumerate(session.transcript_segments):
                 yield f"data: {json.dumps({'type': 'transcript', 'text': segment, 'index': index})}\n\n"
             for key, content in session.field_drafts.items():
-                yield f"data: {json.dumps({'type': 'field_update', 'field_key': key, 'content': content})}\n\n"
+                # Replay as field_state so reconnect catch-up doesn't flash every field.
+                yield f"data: {json.dumps({'type': 'field_state', 'field_key': key, 'content': content})}\n\n"
             for artifact in session.staged_artifacts:
                 yield f"data: {json.dumps({'type': 'artifact_staged', 'artifact': artifact})}\n\n"
             if session.mode == "tidy":

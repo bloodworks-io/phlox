@@ -379,7 +379,7 @@ def test_events_stream_replays_and_ends():
     payload = response.content.decode()
     assert '"type": "start"' in payload
     assert "already spoken" in payload
-    assert '"field_update"' in payload
+    assert '"field_state"' in payload
     assert '"type": "end"' in payload
 
 
