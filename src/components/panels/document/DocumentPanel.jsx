@@ -323,7 +323,7 @@ const DocumentPanel = ({
                       <Text
                         fontWeight="medium"
                         fontSize="xs"
-                        isTruncated
+                        truncate
                         maxWidth="50%"
                         title={field.field_name}
                       >

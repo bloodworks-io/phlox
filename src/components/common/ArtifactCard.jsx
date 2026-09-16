@@ -31,7 +31,7 @@ const ArtifactCard = ({ artifact }) => {
         >
             <HStack gap={2} mb={1}>
                 {React.createElement(icon, { size: "1.2em", color: "overlay0" })}
-                <Text fontSize="xs" fontWeight="semibold" isTruncated flex={1}>
+                <Text fontSize="xs" fontWeight="semibold" truncate minW="0" flex={1}>
                     {filename}
                 </Text>
             </HStack>

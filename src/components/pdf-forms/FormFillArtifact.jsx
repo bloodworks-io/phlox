@@ -59,7 +59,7 @@ const FormFillArtifact = ({ artifact }) => {
         >
             <HStack gap={2} mb={1}>
                 <FaFilePdf size="1.2em" color="gray" />
-                <Text fontSize="xs" fontWeight="semibold" isTruncated flex={1}>
+                <Text fontSize="xs" fontWeight="semibold" truncate minW="0" flex={1}>
                     {filename}
                 </Text>
             </HStack>

@@ -119,9 +119,9 @@ const LiveBar = ({ status, agentState, transcripts, onExpand }) => {
                 gap={2.5}
                 pl={4}
                 pr={2}
-                py={1.5}
+                py={1}
                 cursor="pointer"
-                width="min(300px, calc(100vw - 48px))"
+                width="min(280px, calc(100vw - 48px))"
                 onClick={onExpand}
             >
                 <StatusDot color={info.color} pulse={info.pulse} />
@@ -129,7 +129,17 @@ const LiveBar = ({ status, agentState, transcripts, onExpand }) => {
                     {info.label}
                 </Text>
                 <Box w="1px" h="14px" bg="surface" flexShrink={0} />
-                <Text fontSize="xs" color="fg.subtle" isTruncated flex="1">
+                <Text
+                    fontSize="xs"
+                    color="fg.subtle"
+                    flex="1"
+                    minW="0"
+                    css={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                    }}
+                >
                     {latest || "Waiting for speech…"}
                 </Text>
                 <Tooltip content="Expand" showArrow positioning={{ placement: "top" }}>

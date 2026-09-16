@@ -190,7 +190,7 @@ const DashboardChatInput = ({
                                 <FaFilePdf />
                             </Icon>
                         )}
-                        <Text fontSize="xs" flex="1" isTruncated>
+                        <Text fontSize="xs" flex="1" minW="0" truncate>
                             {pendingImage.name}
                         </Text>
                         {isProcessingImage && (

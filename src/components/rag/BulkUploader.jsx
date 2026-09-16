@@ -171,7 +171,8 @@ const BulkUploader = ({ setCollections }) => {
                                     fontSize="sm"
                                     fontWeight="medium"
                                     flex="1"
-                                    isTruncated
+                                    minW="0"
+                                    truncate
                                 >
                                     {entry.file.name}
                                 </Text>
