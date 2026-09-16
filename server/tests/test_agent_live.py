@@ -382,6 +382,14 @@ def test_live_tool_definitions_shape():
         assert tool["function"]["strict"] is True
 
 
+def test_engine_routes_all_live_tools():
+    from server.agent_live.engine import _LIVE_TOOL_NAMES
+
+    assert {
+        t["function"]["name"] for t in get_live_tools_definition()
+    } == _LIVE_TOOL_NAMES
+
+
 # ------------------------------------------------------------------ session
 
 

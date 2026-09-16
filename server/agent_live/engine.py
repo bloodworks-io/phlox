@@ -488,12 +488,5 @@ def _clean_tool_call(tool_call: dict) -> dict[str, Any]:
 
 
 _LIVE_TOOL_NAMES = {
-    "get_note_fields",
-    "update_note_field",
-    "append_to_field",
-    "remove_from_field",
-    "stage_artifact",
-    "get_jobs",
-    "set_jobs",
-    "wrap_up",
+    t["function"]["name"] for t in get_live_tools_definition()
 }
