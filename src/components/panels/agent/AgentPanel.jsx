@@ -22,7 +22,7 @@ const ACTIVITY_COLORS = {
 const getStatusInfo = (status, agentState) => {
     switch (status) {
         case "connecting":
-            return { label: "Connecting…", color: "overlay0", pulse: true };
+            return { label: "Loading live agent context…", color: "overlay0", pulse: true };
         case "stopping":
             return { label: "Wrapping up…", color: "overlay0", pulse: false };
         case "tidy":

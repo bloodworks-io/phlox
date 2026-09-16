@@ -28,6 +28,9 @@ router = APIRouter()
 
 SSE_KEEPALIVE_SECONDS = 15
 
+# Covers slow prefill and cold model loads without blocking session creation.
+PREWARM_TIMEOUT_SECONDS = 60
+
 
 class LiveStartRequest(BaseModel):
     note_id: int | None = None
@@ -100,7 +103,18 @@ async def start_session(body: LiveStartRequest, request: Request):
         note_id=body.note_id,
     )
     session.engine = LiveAgentEngine(session)
-    session.track_task(asyncio.create_task(session.engine.prewarm()))
+    # Awaited so the first tick doesn't pay the prefill; the client holds its
+    # loading state until this POST resolves.
+    try:
+        await asyncio.wait_for(
+            session.engine.prewarm(), PREWARM_TIMEOUT_SECONDS
+        )
+    except Exception as exc:
+        logger.warning(
+            "Live session %s: prewarm incomplete; starting anyway (%s)",
+            session.id,
+            exc,
+        )
     logger.info("Live session %s started (owner=%s)", session.id, session.owner)
     return {"session_id": session.id}
 
