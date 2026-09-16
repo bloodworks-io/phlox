@@ -157,15 +157,6 @@ const PatientDetails = ({
         onSendStart: () => close("transcription"),
     });
 
-    const scribeConsent = useScribeConsent({
-        urNumber: patient?.ur_number,
-        isAmbient: scribeControls.isAmbient,
-        requiresConsentConfig: scribeControls.requireConsent,
-        requiredDemographicsMet,
-        startRecording: scribeControls.startRecording,
-        onRequireDemographics: onOpenDemographics,
-    });
-
     // Voice wrap-up funnels into the same handler as the button.
     const wrapUpRequestRef = useRef(null);
     const liveAgent = useLiveAgent({
@@ -379,6 +370,18 @@ const PatientDetails = ({
         }
         scribeControls.startRecording();
     };
+
+    // Must sit below handleRecordStart: consent grant resumes through it,
+    // so the armed capture mode (incl. live agent) is honoured, and agent
+    // mode is consent-gated like ambient since it records the consultation.
+    const scribeConsent = useScribeConsent({
+        urNumber: patient?.ur_number,
+        recordsConsultation: scribeMode !== "dictate",
+        requiresConsentConfig: scribeControls.requireConsent,
+        requiredDemographicsMet,
+        startRecording: handleRecordStart,
+        onRequireDemographics: onOpenDemographics,
+    });
 
     // Wrap Up: enter tidy mode for hands-free note edits, finalise the
     // live session before the encounter is saved.
