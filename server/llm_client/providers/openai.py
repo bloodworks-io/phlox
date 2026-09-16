@@ -39,6 +39,8 @@ async def openai_compatible_chat(
             # Direct mappings
             if "temperature" in options:
                 params["temperature"] = options["temperature"]
+            if "num_predict" in options:
+                params["max_tokens"] = options["num_predict"]
             # Handle stop tokens
             if "stop" in options:
                 params["stop"] = options["stop"]
