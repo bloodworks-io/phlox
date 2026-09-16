@@ -282,6 +282,10 @@ def _normalise_entry(existing: str, entry: str, seed: str | None = None) -> str:
     lines = [line for line in existing.strip().splitlines() if line.strip()]
     sep = "" if not lines or existing.endswith("\n") else "\n"
     marker_match = _ENTRY_MARKER.match(lines[-1]) if lines else None
+    if marker_match or seed:
+        # Drop the entry's own marker when we prepend one, or numbered
+        # fields accumulate "4. 4. ..." doubles.
+        entry = _ENTRY_MARKER.sub("", entry, count=1).strip() or entry
     if marker_match:
         marker = marker_match.group(0).strip()
         if _numbered(marker):

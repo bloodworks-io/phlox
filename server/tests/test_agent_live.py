@@ -109,6 +109,26 @@ async def test_append_to_field_matches_marker_style():
 
 
 @pytest.mark.asyncio
+async def test_append_to_field_strips_echoed_markers():
+    session = _make_session()
+    session.field_drafts["plan"] = "1. Book PET scan\n2. Bloods\n3. GP review"
+    await execute_live_tool(
+        session,
+        "append_to_field",
+        {"field_key": "plan", "entry": "4. Routine follow-up in 4 months"},
+    )
+    assert (
+        session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods\n3. GP review\n4. Routine follow-up in 4 months"
+    )
+
+    session.field_drafts["clinical_history"] = "• Fatigue"
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "clinical_history", "entry": "• Weight loss"}
+    )
+    assert session.field_drafts["clinical_history"] == "• Fatigue\n• Weight loss"
+
+
+@pytest.mark.asyncio
 async def test_remove_from_field_drops_matching_sentence():
     session = _make_session()
     session.field_drafts["clinical_history"] = (
