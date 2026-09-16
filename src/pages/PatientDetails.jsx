@@ -323,26 +323,35 @@ const PatientDetails = ({
     const handleOpenLetter = () => toggle("letter");
     const handleOpenChat = () => toggle("chat");
     const handleOpenReasoning = () => toggle("reasoning");
-    const handleOpenTranscription = () => toggle("transcription");
+
+    const handleTranscriptOpenChange = (nextOpen) => {
+        if (nextOpen) {
+            setModeMenuOpen(false);
+            open("transcription");
+        } else {
+            close("transcription");
+        }
+    };
+
+    const handleModeMenuOpenChange = (open) => {
+        setModeMenuOpen(open);
+        if (open) close("transcription");
+    };
     const handleOpenDocument = () => toggle("document");
 
-    // Live agent controls: the pill's mode dial funnels through here. Agent
-    // starts a live session; picking dictate/ambient during one ends it and
-    // switches the capture mode.
+    // Picking agent arms it — mic click starts the session; other picks end it.
     const [liveView, setLiveView] = useState("bar"); // "bar" | "window"
+    const [agentArmed, setAgentArmed] = useState(false);
+    // Mode popover and transcript panel are mutually exclusive.
+    const [modeMenuOpen, setModeMenuOpen] = useState(false);
 
     const handleModeSelect = (mode) => {
         if (mode === "agent") {
             if (liveAgent.isLiveActive) return;
-            if (!scribeConsent.canRecord) {
-                scribeConsent.handleBlockedRecord();
-                return;
-            }
-            liveAgent.startLive().then((started) => {
-                if (started) setLiveView("bar");
-            });
+            setAgentArmed(true);
             return;
         }
+        setAgentArmed(false);
         if (liveAgent.isLiveActive) {
             liveAgent.stopLive();
         }
@@ -353,11 +362,23 @@ const PatientDetails = ({
         if (liveAgent.isLiveActive) liveAgent.stopLive();
     };
 
-    const scribeMode = liveAgent.isLiveActive
-        ? "agent"
-        : scribeControls.isAmbient
-          ? "ambient"
-          : "dictate";
+    const scribeMode =
+        agentArmed || liveAgent.isLiveActive
+            ? "agent"
+            : scribeControls.isAmbient
+              ? "ambient"
+              : "dictate";
+
+    // Agent mode: mic click starts the live session.
+    const handleRecordStart = () => {
+        if (scribeMode === "agent") {
+            liveAgent.startLive().then((started) => {
+                if (started) setLiveView("bar");
+            });
+            return;
+        }
+        scribeControls.startRecording();
+    };
 
     // Wrap Up: enter tidy mode for hands-free note edits, finalise the
     // live session before the encounter is saved.
@@ -526,13 +547,15 @@ const PatientDetails = ({
             <ScribePillBox
                 isRecording={scribeControls.isRecording}
                 isPaused={scribeControls.isPaused}
-                onStart={scribeControls.startRecording}
+                onStart={handleRecordStart}
                 onPause={scribeControls.pauseRecording}
                 onResume={scribeControls.resumeRecording}
                 onSend={scribeControls.stopAndSendRecording}
                 onReset={scribeControls.resetRecording}
                 isLoading={scribeControls.isLoading}
                 mode={scribeMode}
+                isModeMenuOpen={modeMenuOpen}
+                onModeMenuOpenChange={handleModeMenuOpenChange}
                 onModeSelect={handleModeSelect}
                 isLive={liveAgent.isLiveActive}
                 isLiveBusy={
@@ -541,7 +564,21 @@ const PatientDetails = ({
                 }
                 liveElapsed={liveAgent.elapsedSeconds}
                 onLiveStop={handleLiveStop}
-                onOpenTranscription={handleOpenTranscription}
+                transcriptPanel={
+                    <TranscriptionPanel
+                        rawTranscription={patient.raw_transcription}
+                        transcriptionDuration={patient.transcription_duration}
+                        processDuration={patient.process_duration}
+                        onReprocess={handleTranscriptionComplete}
+                        isAmbient={scribeControls.isAmbient}
+                        name={patient.name}
+                        gender={patient.gender}
+                        dob={patient.dob}
+                        templateKey={currentTemplate?.template_key}
+                        noteId={patient?.id}
+                    />
+                }
+                onTranscriptOpenChange={handleTranscriptOpenChange}
                 isTranscriptionOpen={isOpen("transcription")}
                 hasRawTranscription={!!patient.raw_transcription}
                 onAudioDrop={scribeControls.handleAudioDrop}
@@ -570,21 +607,6 @@ const PatientDetails = ({
                 )}
                 showPreviousVisitDot={showPreviousVisitDot}
                 isEncounterSaved={Boolean(patient?.id)}
-            />
-            {/* Transcription Panel */}
-            <TranscriptionPanel
-                isOpen={isOpen("transcription")}
-                onClose={() => close("transcription")}
-                rawTranscription={patient.raw_transcription}
-                transcriptionDuration={patient.transcription_duration}
-                processDuration={patient.process_duration}
-                onReprocess={handleTranscriptionComplete}
-                isAmbient={scribeControls.isAmbient}
-                name={patient.name}
-                gender={patient.gender}
-                dob={patient.dob}
-                templateKey={currentTemplate?.template_key}
-                noteId={patient?.id}
             />
             {/* Document Panel */}
             <DocumentPanel

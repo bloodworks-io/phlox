@@ -3,11 +3,8 @@ import { Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
-import FloatingPanel from "../../common/FloatingPanel";
 
 const TranscriptionPanel = ({
-  isOpen,
-  _onClose,
   rawTranscription,
   transcriptionDuration,
   processDuration,
@@ -40,28 +37,21 @@ const TranscriptionPanel = ({
   };
 
   return (
-    <FloatingPanel
-      isOpen={isOpen}
-      position="bottom-center"
-      showArrow={false}
-      width="280px"
+    <Box
+      p={3}
       maxHeight="280px"
+      backdropFilter="blur(12px)"
+      borderRadius="xl"
+      position="relative"
+      css={{
+        "&::-webkit-scrollbar": { width: "4px" },
+        "&::-webkit-scrollbar-track": { background: "transparent" },
+        "&::-webkit-scrollbar-thumb": {
+          background: "var(--chakra-colors-scrollbar-thumb)",
+          borderRadius: "24px",
+        },
+      }}
     >
-      <Box
-        p={3}
-        maxHeight="280px"
-        backdropFilter="blur(12px)"
-        borderRadius="xl"
-        position="relative"
-        css={{
-          "&::-webkit-scrollbar": { width: "4px" },
-          "&::-webkit-scrollbar-track": { background: "transparent" },
-          "&::-webkit-scrollbar-thumb": {
-            background: "var(--chakra-colors-scrollbar-thumb)",
-            borderRadius: "24px",
-          },
-        }}
-      >
         {/* Success overlay */}
         {showSuccess && (
           <Flex
@@ -158,7 +148,6 @@ const TranscriptionPanel = ({
           </Text>
         )}
       </Box>
-    </FloatingPanel>
   );
 };
 
