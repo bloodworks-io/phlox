@@ -52,7 +52,7 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
                             "type": "string",
                             "description": "The field_key of the note field to update",
                         },
-                        "content": {
+                            "content": {
                             "type": "string",
                             "description": "The complete new content for the field",
                         },
@@ -229,6 +229,7 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
 
 # Detects the leading list marker of a field entry ("• ", "1. ", "- ").
 _ENTRY_MARKER = re.compile(r"^\s*(?:[•\-\*]|\d+[.)])\s+")
+_NUMBER_MARKER = re.compile(r"\d+[.)]")
 
 
 def _field_names(session) -> dict[str, str]:
@@ -238,22 +239,74 @@ def _field_names(session) -> dict[str, str]:
     }
 
 
-def _normalise_entry(existing: str, entry: str) -> str:
-    """Match the entry's list marker style to the field's existing entries."""
+def _seed_marker(field: dict[str, Any]) -> str | None:
+    """List marker from the style example; line 1 only, so heading-led
+    styles (heading_with_bullets, narrative, lab_values) yield None."""
+    example = (field.get("style_example") or "").strip()
+    if not example:
+        return None
+    match = _ENTRY_MARKER.match(example.splitlines()[0])
+    return match.group(0).strip() if match else None
+
+
+def _list_seed(session, key: str) -> str | None:
+    """Marker to enforce; clinician manual edits are never re-formatted."""
+    if key in session.user_touched:
+        return None
+    for field in session.template_fields:
+        if field.get("field_key") == key:
+            return _seed_marker(field)
+    return None
+
+
+def _numbered(seed: str) -> bool:
+    return bool(_NUMBER_MARKER.fullmatch(seed))
+
+
+def _normalise_entry(existing: str, entry: str, seed: str | None = None) -> str:
+    """Marker from the last existing line, else the field seed, else plain newline."""
     entry = entry.strip()
-    if not existing.strip():
-        return entry
     lines = [line for line in existing.strip().splitlines() if line.strip()]
-    last = lines[-1]
-    marker_match = _ENTRY_MARKER.match(last)
+    sep = "" if not lines or existing.endswith("\n") else "\n"
+    marker_match = _ENTRY_MARKER.match(lines[-1]) if lines else None
     if marker_match:
         marker = marker_match.group(0).strip()
-        if re.fullmatch(r"\d+[.)]", marker):
+        if _numbered(marker):
             number = int(marker.rstrip(".)")) + 1
             closing = ")" if marker.endswith(")") else "."
-            return f"{number}{closing} {entry}"
-        return f"{marker} {entry}"
-    return f"\n{entry}" if not existing.endswith("\n") else entry
+            return f"{sep}{number}{closing} {entry}"
+        return f"{sep}{marker} {entry}"
+    if seed:
+        if _numbered(seed):
+            # Content drifted bare: treat each existing line as an item.
+            number = len(lines) + 1
+            closing = ")" if seed.endswith(")") else "."
+            return f"{sep}{number}{closing} {entry}"
+        return f"{sep}{seed} {entry}"
+    return f"{sep}{entry}"
+
+
+def _apply_seed_markers(content: str, seed: str | None) -> str:
+    """Apply the seed marker to a full rewrite; numbered seeds renumber 1..n."""
+    if not seed or not content.strip():
+        return content
+    if not _numbered(seed):
+        return "\n".join(
+            line
+            if not line.strip() or _ENTRY_MARKER.match(line)
+            else f"{seed} {line.strip()}"
+            for line in content.splitlines()
+        )
+    closing = ")" if seed.endswith(")") else "."
+    number = 0
+    out_lines = []
+    for line in content.splitlines():
+        if not line.strip():
+            continue
+        number += 1
+        text = _ENTRY_MARKER.sub("", line, count=1).strip()
+        out_lines.append(f"{number}{closing} {text}")
+    return "\n".join(out_lines)
 
 
 def _remove_sentences(content: str, phrase: str) -> tuple[str, bool]:
@@ -271,7 +324,11 @@ def _remove_sentences(content: str, phrase: str) -> tuple[str, bool]:
         if not line.strip():
             out_lines.append(line)
             continue
-        sentences = re.split(r"(?<=[.!?])\s+", line)
+        # Keep the leading list marker when the item text is dropped.
+        marker_match = _ENTRY_MARKER.match(line)
+        prefix = marker_match.group(0) if marker_match else ""
+        body = line[marker_match.end():] if marker_match else line
+        sentences = re.split(r"(?<=[.!?])\s+", body)
         kept = []
         for sentence in sentences:
             sentence_words = [w.lower() for w in re.findall(r"\w+", sentence)]
@@ -281,7 +338,7 @@ def _remove_sentences(content: str, phrase: str) -> tuple[str, bool]:
                 continue  # drop this sentence
             kept.append(sentence)
         if kept:
-            out_lines.append(" ".join(kept))
+            out_lines.append(prefix + " ".join(kept))
         else:
             changed = True  # whole line removed
     if not changed:
@@ -319,6 +376,7 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
                 ),
                 "events": [],
             }
+        content = _apply_seed_markers(content, _list_seed(session, key))
         session.field_drafts[key] = content.strip()
         return {
             "content": f"Field '{key}' updated.",
@@ -336,7 +394,7 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
             return {"content": _unknown_field_error(key, fields), "events": []}
         existing = session.field_drafts.get(key, "")
         session.field_drafts[key] = (
-            f"{existing}{_normalise_entry(existing, entry)}" if existing else entry
+            f"{existing}{_normalise_entry(existing, entry, _list_seed(session, key))}"
         )
         return {
             "content": f"Appended to '{key}'.",
@@ -357,6 +415,10 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
                 "content": f"Phrase '{phrase}' not found in '{key}'. No change made.",
                 "events": [],
             }
+        # Close the numbering gap left by the removed item.
+        seed = _list_seed(session, key)
+        if seed and _numbered(seed):
+            new_content = _apply_seed_markers(new_content, seed)
         session.field_drafts[key] = new_content
         return {
             "content": f"Removed mention of '{phrase}' from '{key}'.",

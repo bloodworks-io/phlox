@@ -14,6 +14,7 @@ from server.agent_live.session import LiveSession, session_manager
 from server.agent_live.tools import (
     _normalise_entry,
     _remove_sentences,
+    _seed_marker,
     execute_live_tool,
     get_live_tools_definition,
 )
@@ -98,13 +99,13 @@ async def test_append_to_field_matches_marker_style():
     await execute_live_tool(
         session, "append_to_field", {"field_key": "plan", "entry": "GP review"}
     )
-    assert session.field_drafts["plan"].endswith("3. GP review")
+    assert session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods\n3. GP review"
 
     session.field_drafts["clinical_history"] = "• Fatigue"
     await execute_live_tool(
         session, "append_to_field", {"field_key": "clinical_history", "entry": "Weight loss"}
     )
-    assert session.field_drafts["clinical_history"].endswith("• Weight loss")
+    assert session.field_drafts["clinical_history"] == "• Fatigue\n• Weight loss"
 
 
 @pytest.mark.asyncio
@@ -213,9 +214,94 @@ def test_remove_sentences_no_false_positive():
 
 
 def test_normalise_entry_numbered_and_bulleted():
-    assert _normalise_entry("1. Alpha\n2. Beta", "Gamma") == "3. Gamma"
-    assert _normalise_entry("• Alpha", "Beta") == "• Beta"
+    assert _normalise_entry("1. Alpha\n2. Beta", "Gamma") == "\n3. Gamma"
+    assert _normalise_entry("• Alpha", "Beta") == "\n• Beta"
     assert _normalise_entry("", "First") == "First"
+    assert _normalise_entry("Prose ends here", "More") == "\nMore"
+
+
+def _styled_session():
+    """Session whose fields carry marker-led style examples."""
+    return _make_session(
+        template_fields=[
+            {
+                "field_key": "clinical_history",
+                "field_name": "Current History",
+                "style_example": "• Fatigue for 3 months\n• 4 kg weight loss",
+            },
+            {
+                "field_key": "plan",
+                "field_name": "Plan",
+                "style_example": "1. Check CBC, LFTs in 2 weeks\n2. Refer to dermatology",
+            },
+        ]
+    )
+
+
+@pytest.mark.asyncio
+async def test_append_to_empty_field_seeds_marker_from_style_example():
+    session = _styled_session()
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "clinical_history", "entry": "Night sweats"}
+    )
+    assert session.field_drafts["clinical_history"] == "• Night sweats"
+
+
+@pytest.mark.asyncio
+async def test_append_to_bare_numbered_field_continues_numbering():
+    session = _styled_session()
+    session.field_drafts["plan"] = "Book PET scan\nBloods"
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "plan", "entry": "GP review"}
+    )
+    assert session.field_drafts["plan"] == "Book PET scan\nBloods\n3. GP review"
+
+
+@pytest.mark.asyncio
+async def test_update_note_field_applies_markers_to_bare_lines():
+    session = _styled_session()
+    await execute_live_tool(
+        session,
+        "update_note_field",
+        {"field_key": "plan", "content": "Book PET scan\nBloods\n3. GP review"},
+    )
+    assert session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods\n3. GP review"
+
+    await execute_live_tool(
+        session,
+        "update_note_field",
+        {"field_key": "clinical_history", "content": "Fatigue\nWeight loss"},
+    )
+    assert session.field_drafts["clinical_history"] == "• Fatigue\n• Weight loss"
+
+
+@pytest.mark.asyncio
+async def test_append_to_clinician_prose_field_adds_no_marker():
+    session = _styled_session()
+    session.user_touched.add("clinical_history")
+    session.field_drafts["clinical_history"] = "Fatigue for three months."
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "clinical_history", "entry": "Weight loss"}
+    )
+    assert session.field_drafts["clinical_history"] == (
+        "Fatigue for three months.\nWeight loss"
+    )
+
+
+@pytest.mark.asyncio
+async def test_remove_from_field_renumbers_plan():
+    session = _styled_session()
+    session.field_drafts["plan"] = "1. Book PET scan\n2. Email CDU\n3. Bloods"
+    await execute_live_tool(
+        session, "remove_from_field", {"field_key": "plan", "phrase": "CDU"}
+    )
+    assert session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods"
+
+
+def test_seed_marker_ignores_non_list_first_lines():
+    assert _seed_marker({"style_example": "Exam:\n• Alert and oriented"}) is None
+    assert _seed_marker({}) is None
+    assert _seed_marker({"style_example": "1. Check CBC\n2. Refer"}) == "1."
 
 
 def test_live_tool_definitions_shape():
