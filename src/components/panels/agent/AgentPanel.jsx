@@ -7,10 +7,14 @@ import {
     FaChevronUp,
     FaChevronDown,
     FaEnvelope,
+    FaFilePdf,
+    FaFile,
 } from "react-icons/fa";
 
 import ArtifactCard from "../../common/ArtifactCard";
-import FormFillArtifact from "../../pdf-forms/FormFillArtifact";
+import FormFillArtifact, {
+    downloadFormFillArtifact,
+} from "../../pdf-forms/FormFillArtifact";
 
 const ACTIVITY_COLORS = {
     info: "overlay0",
@@ -97,8 +101,109 @@ const LetterArtifact = ({ artifact, onOpenLetter }) => (
 );
 
 /* ------------------------------------------------------------------ */
-/* Minimised: one-line live bar docked above the scribe pill.          */
+/* Minimised: artifact chips + one-line live bar above the scribe pill. */
 /* ------------------------------------------------------------------ */
+
+const ARTIFACT_CHIP_ICONS = {
+    letter: FaEnvelope,
+    form_fill: FaFilePdf,
+};
+
+const _downloadUrl = (url, filename) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "artifact";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+const ArtifactChip = ({ artifact, onOpenLetter }) => {
+    const Icon = ARTIFACT_CHIP_ICONS[artifact.type] || FaFile;
+    const label =
+        artifact.title || artifact.template_name || artifact.filename || "Artifact";
+
+    const handleClick = () => {
+        if (artifact.type === "letter") {
+            onOpenLetter?.(artifact);
+        } else if (artifact.type === "form_fill") {
+            downloadFormFillArtifact(artifact);
+        } else if (artifact.url) {
+            _downloadUrl(artifact.url, artifact.filename);
+        }
+    };
+
+    // No hover transform — the animation's `both` fill would override it.
+    return (
+        <Box
+            as="button"
+            className="anim-emerge-spring"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            w="26px"
+            h="26px"
+            borderRadius="full"
+            border="1px solid"
+            borderColor="surface"
+            bg="surfaceInset"
+            cursor="pointer"
+            flexShrink={0}
+            position="relative"
+            title={label}
+            aria-label={`${label} artifact`}
+            onClick={handleClick}
+            _hover={{ bg: "surface" }}
+        >
+            <Icon size="11px" color="gray" />
+            {artifact.saved && (
+                <Box
+                    position="absolute"
+                    top="-2px"
+                    right="-2px"
+                    w="7px"
+                    h="7px"
+                    borderRadius="full"
+                    bg="successButton"
+                    border="1px solid"
+                    borderColor="surfaceInset"
+                />
+            )}
+        </Box>
+    );
+};
+
+const ArtifactChips = ({ artifacts, onOpenLetter }) => (
+    // Transform/animation split like LiveBar so the keyframes don't clobber
+    // the centering translateX.
+    <Box
+        position="fixed"
+        bottom="117px"
+        left="50%"
+        transform="translateX(-50%)"
+        zIndex="1060"
+        width="min(280px, calc(100vw - 48px))"
+    >
+        <HStack
+            className="anim-fade-slide-up"
+            gap={1.5}
+            py={0.5}
+            flexWrap="nowrap"
+            overflowX="auto"
+            overflowY="hidden"
+            css={slimScrollbarCss}
+        >
+            {artifacts.map((artifact, index) => (
+                <ArtifactChip
+                    key={`${artifact.type}-${index}-${artifact.content?.length ?? 0}-${artifact.saved}`}
+                    artifact={artifact}
+                    onOpenLetter={onOpenLetter}
+                />
+            ))}
+        </HStack>
+    </Box>
+);
+
 const LiveBar = ({ status, agentState, transcripts, onExpand }) => {
     const info = getStatusInfo(status, agentState);
     const latest = transcripts[transcripts.length - 1];
@@ -614,12 +719,17 @@ const AgentPanel = ({
     }
     if (hideBar) return null;
     return (
-        <LiveBar
-            status={status}
-            agentState={agentState}
-            transcripts={transcripts}
-            onExpand={onExpand}
-        />
+        <>
+            {artifacts.length > 0 && (
+                <ArtifactChips artifacts={artifacts} onOpenLetter={onOpenLetter} />
+            )}
+            <LiveBar
+                status={status}
+                agentState={agentState}
+                transcripts={transcripts}
+                onExpand={onExpand}
+            />
+        </>
     );
 };
 
