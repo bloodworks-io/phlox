@@ -30,6 +30,8 @@ class LiveSession:
     transcript_segments: list[str] = field(default_factory=list)
     field_drafts: dict[str, str] = field(default_factory=dict)
     user_touched: set[str] = field(default_factory=set)
+    # Spoken format overrides: "list" | "narrative"; absent = template style.
+    field_formats: dict[str, str] = field(default_factory=dict)
     staged_artifacts: list[dict[str, Any]] = field(default_factory=list)
     # Seeded by the client's extract-jobs pipeline; voice-curated via set_jobs.
     staged_jobs: list[dict[str, Any]] = field(default_factory=list)

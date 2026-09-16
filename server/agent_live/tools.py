@@ -52,12 +52,21 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
                             "type": "string",
                             "description": "The field_key of the note field to update",
                         },
-                            "content": {
+                        "content": {
                             "type": "string",
                             "description": "The complete new content for the field",
                         },
+                        "format": {
+                            "type": ["string", "null"],
+                            "description": (
+                                "Set ONLY when the clinician asks to change the "
+                                "field's format: 'narrative' for flowing prose, "
+                                "'list' for the template's list style. Omit "
+                                "otherwise."
+                            ),
+                        },
                     },
-                    "required": ["field_key", "content"],
+                    "required": ["field_key", "content", "format"],
                     "additionalProperties": False,
                 },
                 "strict": True,
@@ -230,6 +239,7 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
 # Detects the leading list marker of a field entry ("• ", "1. ", "- ").
 _ENTRY_MARKER = re.compile(r"^\s*(?:[•\-\*]|\d+[.)])\s+")
 _NUMBER_MARKER = re.compile(r"\d+[.)]")
+_LIST_FORMATS = {"list", "narrative"}
 
 
 def _field_names(session) -> dict[str, str]:
@@ -250,8 +260,11 @@ def _seed_marker(field: dict[str, Any]) -> str | None:
 
 
 def _list_seed(session, key: str) -> str | None:
-    """Marker to enforce; clinician manual edits are never re-formatted."""
-    if key in session.user_touched:
+    """Marker to enforce; format overrides and clinician edits beat the template."""
+    declared = session.field_formats.get(key)
+    if declared == "narrative":
+        return None
+    if declared != "list" and key in session.user_touched:
         return None
     for field in session.template_fields:
         if field.get("field_key") == key:
@@ -366,6 +379,7 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
     if name == "update_note_field":
         key = args.get("field_key", "")
         content = str(args.get("content", ""))
+        fmt = args.get("format")
         if key not in fields:
             return {"content": _unknown_field_error(key, fields), "events": []}
         if session.mode == "live" and key in session.user_touched:
@@ -376,6 +390,8 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
                 ),
                 "events": [],
             }
+        if fmt in _LIST_FORMATS:
+            session.field_formats[key] = fmt
         content = _apply_seed_markers(content, _list_seed(session, key))
         session.field_drafts[key] = content.strip()
         return {

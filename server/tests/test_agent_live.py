@@ -276,6 +276,46 @@ async def test_update_note_field_applies_markers_to_bare_lines():
 
 
 @pytest.mark.asyncio
+async def test_narrative_format_override_sticks():
+    session = _styled_session()
+    await execute_live_tool(
+        session,
+        "update_note_field",
+        {
+            "field_key": "clinical_history",
+            "content": "Fatigue for three months with 4 kg weight loss.",
+            "format": "narrative",
+        },
+    )
+    assert session.field_drafts["clinical_history"] == (
+        "Fatigue for three months with 4 kg weight loss."
+    )
+
+    # Later appends respect the override: plain sentence, no bullet.
+    await execute_live_tool(
+        session,
+        "append_to_field",
+        {"field_key": "clinical_history", "entry": "Reports night sweats also."},
+    )
+    assert session.field_drafts["clinical_history"] == (
+        "Fatigue for three months with 4 kg weight loss.\nReports night sweats also."
+    )
+
+
+@pytest.mark.asyncio
+async def test_list_format_override_beats_user_touched():
+    session = _styled_session()
+    session.user_touched.add("clinical_history")
+    session.mode = "tidy"  # live mode refuses updates to clinician-edited fields
+    await execute_live_tool(
+        session,
+        "update_note_field",
+        {"field_key": "clinical_history", "content": "Fatigue\nWeight loss", "format": "list"},
+    )
+    assert session.field_drafts["clinical_history"] == "• Fatigue\n• Weight loss"
+
+
+@pytest.mark.asyncio
 async def test_append_to_clinician_prose_field_adds_no_marker():
     session = _styled_session()
     session.user_touched.add("clinical_history")

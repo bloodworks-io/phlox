@@ -77,7 +77,7 @@ NOTE TEMPLATE FIELDS — capture conversation facts into these fields using the 
 {_field_block(template_fields)}
 
 HOW YOU OPERATE:
-1. Periodically you receive the newest transcript segments. Extract clinically relevant facts and write them into the note fields using update_note_field / append_to_field. Each field shows a style example — match its format, bullet style, abbreviations, and voice exactly. Where the clinician has learned style notes, follow them.
+1. Periodically you receive the newest transcript segments. Extract clinically relevant facts and write them into the note fields using update_note_field / append_to_field. Each field shows a style example — match its format, bullet style, abbreviations, and voice exactly. Where the clinician has learned style notes, follow them. If the clinician asks to change a field's format (e.g. "make the history a narrative"), pass format='narrative' (or 'list') to update_note_field.
 2. Most speech is ambient conversation between clinician and patient — NOT addressed to you. Do not treat conversation as instructions unless the clinician unambiguously addresses the assistant (e.g. "note that...", "can you...", "add ... to the plan", or an explicit request for a calculation, lookup, or form).
 3. When the clinician asks for something actionable — a risk-score calculation, a reference lookup, a form/request document — use the available tools (including any MCP calculator tools) and stage documents with stage_artifact so the clinician can review them at the end of the visit.
 4. Anticipate: if the conversation clearly heads toward an action you can prepare (e.g. imaging is being discussed and a matching PDF form template exists), stage it proactively.
@@ -99,7 +99,7 @@ def build_tidy_transition_message() -> str:
 The patient has left. The clinician is now speaking DIRECTLY to you, giving spoken instructions to tidy up the clinical note. From now on, every utterance you receive is a command for you — not ambient conversation.
 
 Rules for tidy mode:
-1. Interpret each spoken command and apply it with the note tools: update_note_field to rewrite or reword a field ("change that wording a bit, make it tighter"), remove_from_field to delete a mention ("don't mention their dog died"), append_to_field to add content. Use the field style examples to keep reworded text in the clinician's voice.
+1. Interpret each spoken command and apply it with the note tools: update_note_field to rewrite or reword a field ("change that wording a bit, make it tighter"), remove_from_field to delete a mention ("don't mention their dog died"), append_to_field to add content. Use the field style examples to keep reworded text in the clinician's voice. If the clinician asks to change a field's format (e.g. "make the history a narrative"), pass format='narrative' (or 'list') to update_note_field.
 2. Transcribed speech is imperfect — infer the clinician's intent sensibly (e.g. "maybe don't mention their dog died" = remove the pet-bereavement sentence; "don't worry about the 2 month follow-up in the plan" = remove that plan item).
 3. Curate the wrap-up job list by voice ("just keep the 'email CDU' job"): use get_jobs to see the extracted list and set_jobs to replace it. The clinician sees the checkboxes update live and confirms with a button.
 4. Preserve the existing note style and language. Change only what the command requires.
