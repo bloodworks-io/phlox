@@ -61,50 +61,54 @@ const LiveBar = ({ status, agentState, transcripts, onExpand }) => {
     const info = getStatusInfo(status, agentState);
     const latest = transcripts[transcripts.length - 1];
 
+    // The animation's transform would clobber the wrapper's translateX(-50%).
     return (
         <Box
-            className="live-bar anim-fade-slide-up"
             position="fixed"
             bottom="85px"
             left="50%"
             transform="translateX(-50%)"
             zIndex="1060"
-            display="flex"
-            alignItems="center"
-            gap={2.5}
-            pl={4}
-            pr={2}
-            py={1.5}
-            cursor="pointer"
-            maxWidth="min(560px, calc(100vw - 48px))"
-            onClick={onExpand}
         >
-            <StatusDot color={info.color} pulse={info.pulse} />
-            <Text fontSize="xs" fontWeight="600" flexShrink={0}>
-                {info.label}
-            </Text>
-            <Box w="1px" h="14px" bg="surface" flexShrink={0} />
-            <Text fontSize="xs" color="fg.subtle" isTruncated flex="1">
-                {latest || "Waiting for speech…"}
-            </Text>
-            <Tooltip content="Expand" showArrow positioning={{ placement: "top" }}>
-                <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    w="22px"
-                    h="22px"
-                    borderRadius="full"
-                    color="fg.subtle"
-                    cursor="pointer"
-                    transition="all 0.2s ease"
-                    _hover={{ bg: "surface", transform: "scale(1.05)" }}
-                    asChild>
-                    <button aria-label="Expand live panel">
-                        <FaChevronUp size="10px" />
-                    </button>
-                </Box>
-            </Tooltip>
+            <Box
+                className="live-bar anim-fade-slide-up"
+                display="flex"
+                alignItems="center"
+                gap={2.5}
+                pl={4}
+                pr={2}
+                py={1.5}
+                cursor="pointer"
+                width="min(300px, calc(100vw - 48px))"
+                onClick={onExpand}
+            >
+                <StatusDot color={info.color} pulse={info.pulse} />
+                <Text fontSize="xs" fontWeight="600" flexShrink={0}>
+                    {info.label}
+                </Text>
+                <Box w="1px" h="14px" bg="surface" flexShrink={0} />
+                <Text fontSize="xs" color="fg.subtle" isTruncated flex="1">
+                    {latest || "Waiting for speech…"}
+                </Text>
+                <Tooltip content="Expand" showArrow positioning={{ placement: "top" }}>
+                    <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        w="22px"
+                        h="22px"
+                        borderRadius="full"
+                        color="fg.subtle"
+                        cursor="pointer"
+                        transition="all 0.2s ease"
+                        _hover={{ bg: "surface", transform: "scale(1.05)" }}
+                        asChild>
+                        <button aria-label="Expand live panel">
+                            <FaChevronUp size="10px" />
+                        </button>
+                    </Box>
+                </Tooltip>
+            </Box>
         </Box>
     );
 };
