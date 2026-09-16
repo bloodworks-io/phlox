@@ -135,7 +135,7 @@ class LiveAgentEngine:
         session = self.session
         async with self._audio_lock:
             try:
-                result = await transcribe_audio(audio_bytes)
+                result = await transcribe_audio(audio_bytes, streaming=True)
             except Exception as exc:
                 logger.error("Live session %s: transcription failed: %s", session.id, exc)
                 await session.emit(
