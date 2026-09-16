@@ -1,8 +1,9 @@
 """Live-scribe note-edit and artifact-staging tools.
 
-These tools mutate in-memory LiveSession state directly (no LLM needed for
-execution). Definitions follow the same OpenAI function format as the chat
-tool registry so they can be merged into one tools list.
+Note tools mutate in-memory LiveSession state directly; stage_artifact hits
+the PDF form store and stage_letter calls the letter pipeline. Definitions
+follow the same OpenAI function format as the chat tool registry so they can
+be merged into one tools list.
 """
 
 import logging
@@ -153,6 +154,60 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
                         },
                     },
                     "required": ["template_id", "field_values"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "stage_letter",
+                "description": (
+                    "Draft a letter (e.g. to the GP or a referrer) from the "
+                    "current note fields and stage it for the clinician to "
+                    "review. If a letter is already staged, the new draft "
+                    "refines it, so include the clinician's request in "
+                    "'instruction'."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "template_name": {
+                            "type": ["string", "null"],
+                            "description": (
+                                "Letter template by name (e.g. 'GP Letter', "
+                                "'Specialist Referral'). Omit for the "
+                                "clinician's default template."
+                            ),
+                        },
+                        "instruction": {
+                            "type": ["string", "null"],
+                            "description": (
+                                "What the clinician asked the letter to cover "
+                                "or change (e.g. 'mention the DOAC switch')"
+                            ),
+                        },
+                    },
+                    "required": ["template_name", "instruction"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "save_letter",
+                "description": (
+                    "Save the currently staged letter to the patient's "
+                    "encounter. Only call this when the clinician explicitly "
+                    "asks to save the letter. Saves the staged draft verbatim "
+                    "— it takes no content."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
                     "additionalProperties": False,
                 },
                 "strict": True,
@@ -450,6 +505,12 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
     if name == "stage_artifact":
         return await _stage_artifact(session, args)
 
+    if name == "stage_letter":
+        return await _stage_letter(session, args)
+
+    if name == "save_letter":
+        return _save_letter(session)
+
     if name == "get_jobs":
         if not session.staged_jobs:
             return {
@@ -544,4 +605,122 @@ async def _stage_artifact(session, args: dict[str, Any]) -> dict[str, Any]:
     return {
         "content": f"Staged form '{template['name']}' for the clinician to review at wrap-up.",
         "events": [{"type": "artifact_staged", "artifact": artifact}],
+    }
+
+
+async def _stage_letter(session, args: dict[str, Any]) -> dict[str, Any]:
+    template_name = str(args.get("template_name") or "").strip()
+    instruction = str(args.get("instruction") or "").strip()
+
+    try:
+        from server.database.config.manager import config_manager
+        from server.database.repositories.letter import get_letter_templates
+
+        templates = get_letter_templates()
+    except Exception as exc:
+        logger.error("stage_letter: template fetch error: %s", exc)
+        return {"content": f"Error fetching letter templates: {exc}", "events": []}
+
+    template = None
+    if template_name:
+        lowered = template_name.casefold()
+        template = next(
+            (t for t in templates if str(t.get("name", "")).casefold() == lowered),
+            None,
+        )
+        if template is None:
+            names = ", ".join(str(t.get("name", "")) for t in templates) or "(none)"
+            return {
+                "content": (
+                    f"Letter template '{template_name}' not found. "
+                    f"Available: {names}."
+                ),
+                "events": [],
+            }
+    else:
+        default_id = config_manager.get_user_settings().get(
+            "default_letter_template_id"
+        )
+        template = next((t for t in templates if t.get("id") == default_id), None)
+
+    additional = str((template or {}).get("instructions") or "")
+    if instruction:
+        additional = f"{additional}\n\n{instruction}".strip()
+
+    # A staged letter makes this a refinement pass.
+    prior = next(
+        (a for a in session.staged_artifacts if a.get("type") == "letter"), None
+    )
+    context = None
+    if prior is not None:
+        context = [
+            {"role": "assistant", "content": str(prior.get("content") or "")},
+            {"role": "user", "content": instruction or "Refine this letter."},
+        ]
+
+    try:
+        from server.nlp_tools.letter import generate_letter_content
+
+        result = await generate_letter_content(
+            patient_name=str(session.patient_context.get("name") or ""),
+            gender=str(session.patient_context.get("gender") or ""),
+            dob=str(session.patient_context.get("dob") or ""),
+            template_data=dict(session.field_drafts),
+            additional_instruction=additional or None,
+            context=context,
+        )
+    except Exception as exc:
+        logger.error("stage_letter: generation error: %s", exc)
+        return {"content": f"Error generating letter: {exc}", "events": []}
+
+    title = str((template or {}).get("name") or "Letter")
+    artifact = {
+        "type": "letter",
+        "title": title,
+        "content": result.get("letter", ""),
+        "staged": True,
+    }
+    session.staged_artifacts = [
+        a for a in session.staged_artifacts if a.get("type") != "letter"
+    ] + [artifact]
+    verb = "refined" if prior is not None else "drafted"
+    return {
+        "content": f"Letter '{title}' {verb} and staged for the clinician to review.",
+        "events": [{"type": "artifact_staged", "artifact": artifact}],
+    }
+
+
+def _save_letter(session) -> dict[str, Any]:
+    letter = next(
+        (a for a in session.staged_artifacts if a.get("type") == "letter"), None
+    )
+    if letter is None:
+        return {
+            "content": "No staged letter to save. Draft one with stage_letter first.",
+            "events": [],
+        }
+    if not session.note_id:
+        return {
+            "content": (
+                "The encounter isn't saved yet, so there's nowhere to store "
+                "the letter. Ask the clinician to save the encounter first."
+            ),
+            "events": [],
+        }
+
+    try:
+        from server.database.repositories.letter import update_patient_letter
+
+        update_patient_letter(session.note_id, str(letter.get("content") or ""))
+    except Exception as exc:
+        logger.error("save_letter: error: %s", exc)
+        return {"content": f"Error saving letter: {exc}", "events": []}
+
+    letter["saved"] = True
+    return {
+        "content": "Letter saved to the encounter.",
+        "events": [
+            {"type": "letter_saved", "note_id": session.note_id},
+            {"type": "artifact_staged", "artifact": letter},
+        ],
     }

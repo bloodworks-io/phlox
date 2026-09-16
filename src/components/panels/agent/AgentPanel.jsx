@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Box, Text, HStack } from "@chakra-ui/react";
+import { Box, Text, HStack, Button } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaStop, FaBolt, FaChevronUp, FaChevronDown } from "react-icons/fa";
+import {
+    FaStop,
+    FaBolt,
+    FaChevronUp,
+    FaChevronDown,
+    FaEnvelope,
+} from "react-icons/fa";
 
 import ArtifactCard from "../../common/ArtifactCard";
 import FormFillArtifact from "../../pdf-forms/FormFillArtifact";
@@ -53,6 +59,42 @@ const slimScrollbarCss = {
         borderRadius: "24px",
     },
 };
+
+const LetterArtifact = ({ artifact, onOpenLetter }) => (
+    <Box
+        p={2}
+        borderWidth="1px"
+        borderRadius="md"
+        borderColor="border"
+        bg="surfaceInset"
+        maxW="320px"
+    >
+        <HStack gap={2} mb={1}>
+            <FaEnvelope size="1.2em" color="gray" />
+            <Text fontSize="xs" fontWeight="semibold" truncate minW="0" flex={1}>
+                {artifact.title || "Letter"}
+            </Text>
+        </HStack>
+        <Box maxHeight="72px" overflowY="auto" mb={1} css={slimScrollbarCss}>
+            <Text fontSize="xs" color="fg.subtle" whiteSpace="pre-wrap">
+                {artifact.content}
+            </Text>
+        </Box>
+        <HStack gap={2} justify="space-between">
+            <Text fontSize="xs" color="overlay0">
+                Letter · {artifact.saved ? "saved" : "draft"}
+            </Text>
+            <Button
+                size="xs"
+                variant="ghost"
+                colorPalette="blue"
+                onClick={() => onOpenLetter?.(artifact)}
+            >
+                Open in letter editor
+            </Button>
+        </HStack>
+    </Box>
+);
 
 /* ------------------------------------------------------------------ */
 /* Minimised: one-line live bar docked above the scribe pill.          */
@@ -154,6 +196,7 @@ const LiveWindow = ({
     artifacts,
     onStop,
     onMinimize,
+    onOpenLetter,
 }) => {
     const info = getStatusInfo(status, agentState);
     const isStopping = status === "stopping";
@@ -499,6 +542,12 @@ const LiveWindow = ({
                                             key={`form-${index}`}
                                             artifact={artifact}
                                         />
+                                    ) : artifact.type === "letter" ? (
+                                        <LetterArtifact
+                                            key={`letter-${index}`}
+                                            artifact={artifact}
+                                            onOpenLetter={onOpenLetter}
+                                        />
                                     ) : (
                                         <ArtifactCard
                                             key={`file-${index}`}
@@ -532,6 +581,7 @@ const AgentPanel = ({
     onExpand,
     onMinimize,
     hideBar = false,
+    onOpenLetter,
 }) => {
     const isActive = ["connecting", "live", "tidy", "stopping"].includes(
         status,
@@ -548,6 +598,7 @@ const AgentPanel = ({
                 artifacts={artifacts}
                 onStop={onStop}
                 onMinimize={onMinimize}
+                onOpenLetter={onOpenLetter}
             />
         );
     }

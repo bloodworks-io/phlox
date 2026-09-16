@@ -173,6 +173,155 @@ async def test_stage_artifact_missing_template():
     assert session.staged_artifacts == []
 
 
+def _patch_letter_pipeline(monkeypatch, templates, letter="Dear GP, ..."):
+    gen = AsyncMock(return_value={"letter": letter, "context": []})
+    monkeypatch.setattr(
+        "server.database.repositories.letter.get_letter_templates", lambda: templates
+    )
+    monkeypatch.setattr(
+        "server.nlp_tools.letter.generate_letter_content", gen
+    )
+    return gen
+
+
+@pytest.mark.asyncio
+async def test_stage_letter_drafts_and_stages(monkeypatch):
+    session = _make_session(
+        patient_context={"name": "Test Patient", "gender": "M", "dob": "1980-01-01"}
+    )
+    session.field_drafts = {"plan": "1. GP review"}
+    gen = _patch_letter_pipeline(
+        monkeypatch,
+        [
+            {"id": 1, "name": "GP Letter", "instructions": "Write to the GP."},
+            {"id": 2, "name": "Specialist Referral", "instructions": "Refer."},
+        ],
+    )
+
+    result = await execute_live_tool(
+        session,
+        "stage_letter",
+        {"template_name": "gp letter", "instruction": "mention the DOAC"},
+    )
+
+    kwargs = gen.call_args.kwargs
+    assert kwargs["patient_name"] == "Test Patient"
+    assert kwargs["template_data"] == {"plan": "1. GP review"}
+    assert "Write to the GP." in kwargs["additional_instruction"]
+    assert "mention the DOAC" in kwargs["additional_instruction"]
+    assert kwargs["context"] is None
+    [artifact] = session.staged_artifacts
+    assert artifact["type"] == "letter"
+    assert artifact["title"] == "GP Letter"
+    assert artifact["content"] == "Dear GP, ..."
+    assert result["events"][0]["type"] == "artifact_staged"
+
+
+@pytest.mark.asyncio
+async def test_stage_letter_uses_default_template_when_unnamed(monkeypatch):
+    session = _make_session(patient_context={"name": "Test Patient"})
+    gen = _patch_letter_pipeline(
+        monkeypatch,
+        [{"id": 7, "name": "Brief Update", "instructions": "Be brief."}],
+    )
+    monkeypatch.setattr(
+        "server.database.config.manager.config_manager.get_user_settings",
+        lambda: {"default_letter_template_id": 7},
+    )
+
+    await execute_live_tool(session, "stage_letter", {})
+
+    assert "Be brief." in gen.call_args.kwargs["additional_instruction"]
+    assert session.staged_artifacts[0]["title"] == "Brief Update"
+
+
+@pytest.mark.asyncio
+async def test_stage_letter_refines_prior_draft(monkeypatch):
+    session = _make_session(patient_context={"name": "Test Patient"})
+    session.field_drafts = {"plan": "1. GP review"}
+    session.staged_artifacts = [
+        {"type": "letter", "title": "GP Letter", "content": "First draft."}
+    ]
+    gen = _patch_letter_pipeline(
+        monkeypatch,
+        [{"id": 1, "name": "GP Letter", "instructions": "Write to the GP."}],
+        letter="Shorter draft.",
+    )
+
+    result = await execute_live_tool(
+        session,
+        "stage_letter",
+        {"template_name": "GP Letter", "instruction": "make it shorter"},
+    )
+
+    assert gen.call_args.kwargs["context"] == [
+        {"role": "assistant", "content": "First draft."},
+        {"role": "user", "content": "make it shorter"},
+    ]
+    letters = [a for a in session.staged_artifacts if a.get("type") == "letter"]
+    assert len(letters) == 1
+    assert letters[0]["content"] == "Shorter draft."
+    assert "refined" in result["content"]
+
+
+@pytest.mark.asyncio
+async def test_stage_letter_unknown_template(monkeypatch):
+    session = _make_session()
+    _patch_letter_pipeline(
+        monkeypatch, [{"id": 1, "name": "GP Letter", "instructions": ""}]
+    )
+
+    result = await execute_live_tool(
+        session, "stage_letter", {"template_name": "Nope", "instruction": "x"}
+    )
+
+    assert "not found" in result["content"]
+    assert "GP Letter" in result["content"]
+    assert session.staged_artifacts == []
+
+
+@pytest.mark.asyncio
+async def test_save_letter_saves_staged_letter(monkeypatch):
+    session = _make_session(note_id=42)
+    session.staged_artifacts = [
+        {
+            "type": "letter",
+            "title": "GP Letter",
+            "content": "Dear GP, ...",
+            "staged": True,
+        }
+    ]
+    saved = {}
+    monkeypatch.setattr(
+        "server.database.repositories.letter.update_patient_letter",
+        lambda note_id, letter: saved.update(note_id=note_id, letter=letter),
+    )
+
+    result = await execute_live_tool(session, "save_letter", {})
+
+    assert saved == {"note_id": 42, "letter": "Dear GP, ..."}
+    assert session.staged_artifacts[0]["saved"] is True
+    assert [e["type"] for e in result["events"]] == [
+        "letter_saved",
+        "artifact_staged",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_save_letter_guards():
+    session = _make_session()  # no staged letter, no note_id
+    result = await execute_live_tool(session, "save_letter", {})
+    assert "stage_letter" in result["content"]
+    assert result["events"] == []
+
+    session.staged_artifacts = [
+        {"type": "letter", "title": "GP Letter", "content": "x"}
+    ]
+    result = await execute_live_tool(session, "save_letter", {})
+    assert "encounter isn't saved" in result["content"]
+    assert result["events"] == []
+
+
 @pytest.mark.asyncio
 async def test_get_jobs_hint_when_empty():
     session = _make_session()
@@ -373,6 +522,8 @@ def test_live_tool_definitions_shape():
         "append_to_field",
         "remove_from_field",
         "stage_artifact",
+        "stage_letter",
+        "save_letter",
         "get_jobs",
         "set_jobs",
         "wrap_up",

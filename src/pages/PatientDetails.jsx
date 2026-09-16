@@ -164,7 +164,25 @@ const PatientDetails = ({
         setPatient,
         currentTemplate,
         onRequestWrapUp: () => wrapUpRequestRef.current?.(),
+        onLetterSaved: () => setIsLetterModified(false),
     });
+
+    // Agent letter refinements sync into the open editor; manual edits are
+    // never clobbered.
+    const {
+        finalCorrespondence: letterContent,
+        setFinalCorrespondence: setLetterContent,
+    } = letter;
+    const liveLetter = liveAgent.artifacts.find((a) => a.type === "letter");
+    const letterOpen = isOpen("letter");
+    const lastSyncedLetterRef = useRef(null);
+    useEffect(() => {
+        if (!liveLetter || !letterOpen) return;
+        if (liveLetter.content === lastSyncedLetterRef.current) return;
+        if (letterContent !== lastSyncedLetterRef.current) return;
+        lastSyncedLetterRef.current = liveLetter.content;
+        setLetterContent(liveLetter.content);
+    }, [liveLetter, letterOpen, letterContent, setLetterContent]);
 
     const wrapUp = useWrapUp({
         patient,
@@ -650,6 +668,11 @@ const PatientDetails = ({
                 onExpand={() => setLiveView("window")}
                 onMinimize={() => setLiveView("bar")}
                 hideBar={isOpen("transcription")}
+                onOpenLetter={(artifact) => {
+                    lastSyncedLetterRef.current = artifact.content;
+                    setLetterContent(artifact.content);
+                    open("letter");
+                }}
             />
         </Box>
     );
