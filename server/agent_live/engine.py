@@ -130,6 +130,26 @@ class LiveAgentEngine:
             raise RuntimeError("Expected non-streaming dict response from LLM client")
         return response
 
+    async def prewarm(self) -> None:
+        """Prefill gate and agent prompts; output discarded, errors swallowed."""
+        try:
+            await self._chat(
+                messages=[
+                    {"role": "system", "content": GATE_SYSTEM_PROMPT},
+                    {"role": "user", "content": "Latest utterance: hello"},
+                ],
+                max_tokens=1,
+                purpose="gate",
+            )
+            self._ensure_agent_messages()
+            await self._chat(
+                messages=[self.session.agent_messages[0]],
+                tools=self._tools(),
+                max_tokens=1,
+            )
+        except Exception as exc:
+            logger.debug("Live session %s: prewarm skipped (%s)", self.session.id, exc)
+
     async def handle_audio(self, audio_bytes: bytes) -> None:
         """Transcribe one audio segment and feed the gate/agent pipeline."""
         session = self.session

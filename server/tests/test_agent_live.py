@@ -633,6 +633,41 @@ async def test_gate_classify_fails_closed_to_skip():
     assert await engine._gate_classify("anything") == "SKIP"
 
 
+@pytest.mark.asyncio
+async def test_prewarm_primes_gate_and_agent_prompts():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._tools = lambda: [{"type": "function", "function": {"name": "noop"}}]
+    engine._chat = AsyncMock(return_value={"message": {"content": "SKIP"}})
+
+    await engine.prewarm()
+
+    assert engine._chat.await_count == 2
+    gate_call, agent_call = engine._chat.await_args_list
+    assert gate_call.kwargs["purpose"] == "gate"
+    assert gate_call.kwargs["max_tokens"] == 1
+    assert agent_call.kwargs["messages"] == [session.agent_messages[0]]
+    assert agent_call.kwargs["tools"] == engine._tools()
+    assert agent_call.kwargs["max_tokens"] == 1
+    assert session.agent_messages[0]["role"] == "system"
+
+
+@pytest.mark.asyncio
+async def test_prewarm_swallows_errors():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._tools = lambda: []
+    engine._chat = AsyncMock(side_effect=RuntimeError("no endpoint"))
+
+    await engine.prewarm()
+
+
 def test_live_system_prompt_contains_fields():
     from server.agent_live.prompts import build_live_system_prompt
 

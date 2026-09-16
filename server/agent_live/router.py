@@ -100,6 +100,7 @@ async def start_session(body: LiveStartRequest, request: Request):
         note_id=body.note_id,
     )
     session.engine = LiveAgentEngine(session)
+    session.track_task(asyncio.create_task(session.engine.prewarm()))
     logger.info("Live session %s started (owner=%s)", session.id, session.owner)
     return {"session_id": session.id}
 
