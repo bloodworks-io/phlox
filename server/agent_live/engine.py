@@ -130,12 +130,32 @@ class LiveAgentEngine:
             raise RuntimeError("Expected non-streaming dict response from LLM client")
         return response
 
+    async def prewarm(self) -> None:
+        """Prefill gate and agent prompts; output discarded, errors swallowed."""
+        try:
+            await self._chat(
+                messages=[
+                    {"role": "system", "content": GATE_SYSTEM_PROMPT},
+                    {"role": "user", "content": "Latest utterance: hello"},
+                ],
+                max_tokens=1,
+                purpose="gate",
+            )
+            self._ensure_agent_messages()
+            await self._chat(
+                messages=[self.session.agent_messages[0]],
+                tools=self._tools(),
+                max_tokens=1,
+            )
+        except Exception as exc:
+            logger.debug("Live session %s: prewarm skipped (%s)", self.session.id, exc)
+
     async def handle_audio(self, audio_bytes: bytes) -> None:
         """Transcribe one audio segment and feed the gate/agent pipeline."""
         session = self.session
         async with self._audio_lock:
             try:
-                result = await transcribe_audio(audio_bytes)
+                result = await transcribe_audio(audio_bytes, streaming=True)
             except Exception as exc:
                 logger.error("Live session %s: transcription failed: %s", session.id, exc)
                 await session.emit(
@@ -468,12 +488,5 @@ def _clean_tool_call(tool_call: dict) -> dict[str, Any]:
 
 
 _LIVE_TOOL_NAMES = {
-    "get_note_fields",
-    "update_note_field",
-    "append_to_field",
-    "remove_from_field",
-    "stage_artifact",
-    "get_jobs",
-    "set_jobs",
-    "wrap_up",
+    t["function"]["name"] for t in get_live_tools_definition()
 }

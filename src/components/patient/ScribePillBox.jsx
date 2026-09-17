@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Box } from "@chakra-ui/react";
+import { Box, Popover } from "@chakra-ui/react";
 import PillBox from "../common/PillBox";
 import { LoadingOrb } from "./scribeVisuals";
 import {
@@ -7,7 +7,7 @@ import {
     ResetButton,
     TranscriptSendButton,
     TranscriptionFailurePill,
-    ModeTurntable,
+    ModeSelectButton,
     LiveTimerChip,
 } from "./scribeButtons";
 
@@ -24,13 +24,16 @@ const ScribePillBox = ({
     // Mode dial: "dictate" | "ambient" | "agent"
     mode,
     onModeSelect,
+    isModeMenuOpen = false,
+    onModeMenuOpenChange,
     // Live agent
     isLive,
     isLiveBusy = false,
     liveElapsed = 0,
     onLiveStop,
-    // Panel handlers
-    onOpenTranscription,
+    // Transcript view popover (mutually exclusive with the mode menu)
+    transcriptPanel,
+    onTranscriptOpenChange,
     // Panel states
     isTranscriptionOpen,
     // Other
@@ -137,15 +140,17 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Left: mode dial (Reset while recording) */}
+            {/* Left: mode selector (Reset while recording) */}
             {isRecording ? (
                 <ResetButton onReset={onReset} />
             ) : (
-                <ModeTurntable
+                <ModeSelectButton
                     mode={mode}
                     isLive={isLive}
                     isBusy={isLiveBusy}
                     onSelect={onModeSelect}
+                    open={isModeMenuOpen}
+                    onOpenChange={onModeMenuOpenChange}
                 />
             )}
 
@@ -170,13 +175,27 @@ const ScribePillBox = ({
             )}
 
             {/* Right: Transcript / Send */}
-            <TranscriptSendButton
-                isRecording={isRecording && !isLive}
-                onOpenTranscription={onOpenTranscription}
-                onSend={onSend}
-                isTranscriptionOpen={isTranscriptionOpen}
-                hasRawTranscription={hasRawTranscription}
-            />
+            <Popover.Root
+                open={isTranscriptionOpen}
+                onOpenChange={(d) => onTranscriptOpenChange?.(d.open)}
+                positioning={{ placement: "top" }}
+                lazyRender
+            >
+                <TranscriptSendButton
+                    isRecording={isRecording && !isLive}
+                    onSend={onSend}
+                    isTranscriptionOpen={isTranscriptionOpen}
+                    hasRawTranscription={hasRawTranscription}
+                />
+                <Popover.Positioner>
+                    <Popover.Content w="280px" p={0}>
+                        <Popover.Arrow>
+                            <Popover.ArrowTip />
+                        </Popover.Arrow>
+                        {transcriptPanel}
+                    </Popover.Content>
+                </Popover.Positioner>
+            </Popover.Root>
         </PillBox>
     );
 };

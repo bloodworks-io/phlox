@@ -13,7 +13,7 @@ const EMPTY_CONSENT = {
 
 export const useScribeConsent = ({
     urNumber,
-    isAmbient,
+    recordsConsultation,
     requiresConsentConfig,
     requiredDemographicsMet,
     startRecording,
@@ -33,7 +33,7 @@ export const useScribeConsent = ({
     const hasConsented = Boolean(scribeConsent?.scribe_consent_at);
     const hasDeclined =
         Boolean(scribeConsent?.scribe_consent_declined_at) && !hasConsented;
-    const requireConsent = isAmbient && requiresConsentConfig;
+    const requireConsent = recordsConsultation && requiresConsentConfig;
     const canRecord =
         requiredDemographicsMet && !(requireConsent && !hasConsented);
 

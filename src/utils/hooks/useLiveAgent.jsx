@@ -13,6 +13,7 @@ export const useLiveAgent = ({
     setPatient,
     currentTemplate,
     onRequestWrapUp,
+    onLetterSaved,
 }) => {
     const [status, setStatus] = useState("idle"); // idle|connecting|live|tidy|stopping|error
     const [agentState, setAgentState] = useState("listening");
@@ -33,12 +34,14 @@ export const useLiveAgent = ({
     const currentTemplateRef = useRef(currentTemplate);
     const patientRef = useRef(patient);
     const wrapUpRef = useRef(onRequestWrapUp);
+    const letterSavedRef = useRef(onLetterSaved);
 
     useEffect(() => {
         templateDataRef.current = patient?.template_data;
         patientRef.current = patient;
         currentTemplateRef.current = currentTemplate;
         wrapUpRef.current = onRequestWrapUp;
+        letterSavedRef.current = onLetterSaved;
     });
 
     const pushStatus = useCallback((content, kind = "info") => {
@@ -94,6 +97,16 @@ export const useLiveAgent = ({
                     }));
                     pushStatus(`Note updated: ${event.field_key}`, "edit");
                     break;
+                // Replayed state on (re)connect: apply without the flash.
+                case "field_state":
+                    setPatient((prev) => ({
+                        ...prev,
+                        template_data: {
+                            ...prev.template_data,
+                            [event.field_key]: event.content,
+                        },
+                    }));
+                    break;
                 case "agent_status":
                     pushStatus(event.content);
                     break;
@@ -103,16 +116,23 @@ export const useLiveAgent = ({
                 case "command_result":
                     pushStatus(event.content, "command");
                     break;
-                case "artifact_staged":
-                    setArtifacts((prev) => [
-                        ...prev,
-                        decodeBinaryArtifact(event.artifact),
-                    ]);
+                case "artifact_staged": {
+                    const artifact = decodeBinaryArtifact(event.artifact);
+                    // Letters replace (refinement); other artifacts stack.
+                    setArtifacts((prev) =>
+                        artifact.type === "letter"
+                            ? [
+                                  ...prev.filter((a) => a.type !== "letter"),
+                                  artifact,
+                              ]
+                            : [...prev, artifact],
+                    );
                     pushStatus(
-                        `Staged: ${event.artifact?.template_name || event.artifact?.filename || "artifact"}`,
+                        `Staged: ${artifact.title || artifact.template_name || artifact.filename || "artifact"}`,
                         "artifact",
                     );
                     break;
+                }
                 case "jobs_staged":
                     setStagedJobs(event.jobs || []);
                     pushStatus("Wrap-up jobs updated", "command");
@@ -120,6 +140,10 @@ export const useLiveAgent = ({
                 case "request_wrap_up":
                     pushStatus("Opening wrap-up…", "command");
                     wrapUpRef.current?.();
+                    break;
+                case "letter_saved":
+                    pushStatus("Letter saved to the encounter", "command");
+                    letterSavedRef.current?.();
                     break;
                 case "mode":
                     setStatus("tidy");

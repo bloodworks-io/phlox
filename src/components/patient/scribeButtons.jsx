@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Flex, Text, Popover } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaMicrophone,
@@ -16,6 +16,7 @@ import {
     FaExclamationTriangle,
     FaBolt,
     FaStop,
+    FaCheck,
 } from "react-icons/fa";
 import PillBox from "../common/PillBox";
 import { colors } from "../../theme/colors";
@@ -197,98 +198,141 @@ const MODES = [
     },
 ];
 
-// Slot geometry within the 72x30 dial: left, centre, right.
-const SLOT_DX = [-21, 0, 21];
-const SLOT_TILT = [-32, 0, 32];
+// Controlled open — mutually exclusive with the transcript panel.
+export const ModeSelectButton = ({
+    mode,
+    isLive = false,
+    isBusy = false,
+    onSelect,
+    open = false,
+    onOpenChange,
+}) => {
+    const active = MODES.find((m) => m.id === mode) ?? MODES[0];
+    const ActiveIcon = active.icon;
+    const isAgentLive = active.id === "agent" && isLive;
 
-// Mode dial: the active mode sits front and centre; the other two sit
-// smaller and tilted in the background, one click away.
-export const ModeTurntable = ({ mode, isLive = false, isBusy = false, onSelect }) => {
-    const activeIndex = MODES.findIndex((m) => m.id === mode);
-    if (activeIndex === -1) return null;
-
-    // Previous mode in the cycle parks left, next parks right, so the dial
-    // keeps a stable layout as the selection rotates.
-    const slotOf = (index) => {
-        const d = (index - activeIndex + MODES.length) % MODES.length;
-        return d === 0 ? 1 : d === 1 ? 2 : 0;
+    const handleSelect = (id) => {
+        onOpenChange?.(false);
+        if (id !== mode) onSelect?.(id);
     };
 
     return (
-        <Box
-            position="relative"
-            width="72px"
-            height="30px"
-            flexShrink={0}
-            css={{ perspective: "160px" }}
-            opacity={isBusy ? 0.5 : 1}
-            pointerEvents={isBusy ? "none" : "auto"}
-            role="group"
-            aria-label={`Capture mode: ${MODES[activeIndex].label}`}
+        <Popover.Root
+            open={open}
+            onOpenChange={(d) => onOpenChange?.(d.open)}
+            positioning={{ placement: "top" }}
+            lazyRender
+            closeOnBlur
         >
-            {MODES.map((entry, index) => {
-                const slot = slotOf(index);
-                const isActive = slot === 1;
-                const Icon = entry.icon;
-                const label = isActive
-                    ? `${entry.label} — ${entry.hint}`
-                    : `Switch to ${entry.label} — ${entry.hint}${
-                          isLive ? " (ends live session)" : ""
-                      }`;
-                return (
-                    <Tooltip
-                        key={entry.id}
-                        content={label}
-                        showArrow
-                        positioning={{ placement: "top" }}
-                    >
-                        <Box
-                            as={isActive ? "div" : "button"}
-                            position="absolute"
-                            top="4px"
-                            left="25px"
-                            width="22px"
-                            height="22px"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            borderRadius="full"
-                            border="none"
-                            p={0}
-                            bg="transparent"
-                            cursor={isActive ? "default" : "pointer"}
-                            outline="none"
-                            transform={`translateX(${SLOT_DX[slot]}px) rotateY(${SLOT_TILT[slot]}deg)`}
-                            transition="transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.25s ease"
-                            color={
-                                isActive
-                                    ? entry.id === "agent" && isLive
-                                      ? PILL.danger
-                                      : "white"
-                                    : PILL.muted
-                            }
-                            opacity={isActive ? 1 : isLive ? 0.38 : 0.55}
-                            _hover={isActive ? undefined : { opacity: 0.9 }}
-                            aria-label={label}
-                            onClick={() => {
-                                if (!isActive) onSelect?.(entry.id);
-                            }}
-                        >
-                            <Icon
-                                size={isActive ? 15 : 12}
-                                className={
-                                    isActive &&
-                                    entry.id === "agent" &&
-                                    isLive
-                                        ? "live-bolt-pulse"
-                                        : undefined
+            <Popover.Trigger asChild>
+                <Box
+                    as="button"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    w="30px"
+                    h="30px"
+                    flexShrink={0}
+                    borderRadius="full"
+                    border="none"
+                    bg="transparent"
+                    p={0}
+                    cursor={isBusy ? "default" : "pointer"}
+                    color={isAgentLive ? PILL.danger : "white"}
+                    opacity={isBusy ? 0.5 : 1}
+                    pointerEvents={isBusy ? "none" : "auto"}
+                    outline="none"
+                    transition="transform 0.2s ease"
+                    _hover={{ transform: "scale(1.1)" }}
+                    className={isAgentLive ? "live-bolt-pulse" : undefined}
+                    aria-label={`Capture mode: ${active.label}. Activate to change mode.`}
+                >
+                    <ActiveIcon size={15} />
+                </Box>
+            </Popover.Trigger>
+            <Popover.Positioner>
+                <Popover.Content w="250px" p={1.5}>
+                    <Popover.Arrow>
+                        <Popover.ArrowTip />
+                    </Popover.Arrow>
+                    {MODES.map((entry) => {
+                        const Icon = entry.icon;
+                        const isActive = entry.id === mode;
+                        return (
+                            <Box
+                                key={entry.id}
+                                as="button"
+                                display="flex"
+                                alignItems="center"
+                                gap={2.5}
+                                w="full"
+                                px={2.5}
+                                py={2}
+                                borderRadius="8px"
+                                border="none"
+                                bg={isActive ? "surfaceQuartile" : "transparent"}
+                                cursor={isActive ? "default" : "pointer"}
+                                textAlign="left"
+                                outline="none"
+                                transition="background-color 0.15s ease"
+                                _hover={
+                                    isActive
+                                        ? undefined
+                                        : { bg: "surfaceQuartile" }
                                 }
-                            />
-                        </Box>
-                    </Tooltip>
-                );
-            })}
-        </Box>
+                                onClick={() => handleSelect(entry.id)}
+                            >
+                                <Box
+                                    as="span"
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    w="26px"
+                                    h="26px"
+                                    flexShrink={0}
+                                    borderRadius="full"
+                                    color={isActive ? "accent" : "textTertiary"}
+                                    bg="surfaceQuartile"
+                                >
+                                    <Icon size={12} />
+                                </Box>
+                                <Box as="span" flex="1">
+                                    <Text
+                                        fontSize="xs"
+                                        fontWeight="700"
+                                        color={
+                                            isActive
+                                                ? "textPrimary"
+                                                : "textSecondary"
+                                        }
+                                    >
+                                        {entry.label}
+                                    </Text>
+                                    <Text
+                                        fontSize="10px"
+                                        color="textTertiary"
+                                        lineHeight="1.3"
+                                    >
+                                        {entry.hint}
+                                    </Text>
+                                </Box>
+                                {isActive && (
+                                    <Box
+                                        as="span"
+                                        display="flex"
+                                        alignItems="center"
+                                        flexShrink={0}
+                                        color="accent"
+                                    >
+                                        <FaCheck size={10} />
+                                    </Box>
+                                )}
+                            </Box>
+                        );
+                    })}
+                </Popover.Content>
+            </Popover.Positioner>
+        </Popover.Root>
     );
 };
 
@@ -385,7 +429,6 @@ export const ResetButton = ({ onReset }) => {
 // Right button: Transcript (idle) / Send (recording)
 export const TranscriptSendButton = ({
     isRecording,
-    onOpenTranscription,
     onSend,
     isTranscriptionOpen,
     hasRawTranscription,
@@ -429,10 +472,12 @@ export const TranscriptSendButton = ({
     const isDisabled = !hasRawTranscription;
     const label = isDisabled ? "No transcript available" : "Transcript";
 
+    // ponytail: no Tooltip here — nesting Tooltip.Trigger around
+    // Popover.Trigger makes the tooltip's id/data-scope win on the shared
+    // button, so the popover machine can't find its trigger and the panel
+    // renders unpositioned (hanging below the viewport). aria-label instead.
     return (
-        <Tooltip content={label} showArrow positioning={{
-            placement: "top"
-        }}>
+        <Popover.Trigger asChild>
             <Box
                 display="flex"
                 alignItems="center"
@@ -453,10 +498,10 @@ export const TranscriptSendButton = ({
                         : { bg: colors.dark.surface, transform: "scale(1.05)" }
                 }
                 pointerEvents={isDisabled ? "none" : "auto"}
-                asChild><button onClick={onOpenTranscription}>
+                asChild><button aria-label={label}>
                     <FaFileAlt size={14} />
                 </button></Box>
-        </Tooltip>
+        </Popover.Trigger>
     );
 };
 

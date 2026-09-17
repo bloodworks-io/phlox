@@ -14,6 +14,7 @@ from server.agent_live.session import LiveSession, session_manager
 from server.agent_live.tools import (
     _normalise_entry,
     _remove_sentences,
+    _seed_marker,
     execute_live_tool,
     get_live_tools_definition,
 )
@@ -98,13 +99,33 @@ async def test_append_to_field_matches_marker_style():
     await execute_live_tool(
         session, "append_to_field", {"field_key": "plan", "entry": "GP review"}
     )
-    assert session.field_drafts["plan"].endswith("3. GP review")
+    assert session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods\n3. GP review"
 
     session.field_drafts["clinical_history"] = "• Fatigue"
     await execute_live_tool(
         session, "append_to_field", {"field_key": "clinical_history", "entry": "Weight loss"}
     )
-    assert session.field_drafts["clinical_history"].endswith("• Weight loss")
+    assert session.field_drafts["clinical_history"] == "• Fatigue\n• Weight loss"
+
+
+@pytest.mark.asyncio
+async def test_append_to_field_strips_echoed_markers():
+    session = _make_session()
+    session.field_drafts["plan"] = "1. Book PET scan\n2. Bloods\n3. GP review"
+    await execute_live_tool(
+        session,
+        "append_to_field",
+        {"field_key": "plan", "entry": "4. Routine follow-up in 4 months"},
+    )
+    assert (
+        session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods\n3. GP review\n4. Routine follow-up in 4 months"
+    )
+
+    session.field_drafts["clinical_history"] = "• Fatigue"
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "clinical_history", "entry": "• Weight loss"}
+    )
+    assert session.field_drafts["clinical_history"] == "• Fatigue\n• Weight loss"
 
 
 @pytest.mark.asyncio
@@ -150,6 +171,155 @@ async def test_stage_artifact_missing_template():
     )
     assert "not found" in result["content"]
     assert session.staged_artifacts == []
+
+
+def _patch_letter_pipeline(monkeypatch, templates, letter="Dear GP, ..."):
+    gen = AsyncMock(return_value={"letter": letter, "context": []})
+    monkeypatch.setattr(
+        "server.database.repositories.letter.get_letter_templates", lambda: templates
+    )
+    monkeypatch.setattr(
+        "server.nlp_tools.letter.generate_letter_content", gen
+    )
+    return gen
+
+
+@pytest.mark.asyncio
+async def test_stage_letter_drafts_and_stages(monkeypatch):
+    session = _make_session(
+        patient_context={"name": "Test Patient", "gender": "M", "dob": "1980-01-01"}
+    )
+    session.field_drafts = {"plan": "1. GP review"}
+    gen = _patch_letter_pipeline(
+        monkeypatch,
+        [
+            {"id": 1, "name": "GP Letter", "instructions": "Write to the GP."},
+            {"id": 2, "name": "Specialist Referral", "instructions": "Refer."},
+        ],
+    )
+
+    result = await execute_live_tool(
+        session,
+        "stage_letter",
+        {"template_name": "gp letter", "instruction": "mention the DOAC"},
+    )
+
+    kwargs = gen.call_args.kwargs
+    assert kwargs["patient_name"] == "Test Patient"
+    assert kwargs["template_data"] == {"plan": "1. GP review"}
+    assert "Write to the GP." in kwargs["additional_instruction"]
+    assert "mention the DOAC" in kwargs["additional_instruction"]
+    assert kwargs["context"] is None
+    [artifact] = session.staged_artifacts
+    assert artifact["type"] == "letter"
+    assert artifact["title"] == "GP Letter"
+    assert artifact["content"] == "Dear GP, ..."
+    assert result["events"][0]["type"] == "artifact_staged"
+
+
+@pytest.mark.asyncio
+async def test_stage_letter_uses_default_template_when_unnamed(monkeypatch):
+    session = _make_session(patient_context={"name": "Test Patient"})
+    gen = _patch_letter_pipeline(
+        monkeypatch,
+        [{"id": 7, "name": "Brief Update", "instructions": "Be brief."}],
+    )
+    monkeypatch.setattr(
+        "server.database.config.manager.config_manager.get_user_settings",
+        lambda: {"default_letter_template_id": 7},
+    )
+
+    await execute_live_tool(session, "stage_letter", {})
+
+    assert "Be brief." in gen.call_args.kwargs["additional_instruction"]
+    assert session.staged_artifacts[0]["title"] == "Brief Update"
+
+
+@pytest.mark.asyncio
+async def test_stage_letter_refines_prior_draft(monkeypatch):
+    session = _make_session(patient_context={"name": "Test Patient"})
+    session.field_drafts = {"plan": "1. GP review"}
+    session.staged_artifacts = [
+        {"type": "letter", "title": "GP Letter", "content": "First draft."}
+    ]
+    gen = _patch_letter_pipeline(
+        monkeypatch,
+        [{"id": 1, "name": "GP Letter", "instructions": "Write to the GP."}],
+        letter="Shorter draft.",
+    )
+
+    result = await execute_live_tool(
+        session,
+        "stage_letter",
+        {"template_name": "GP Letter", "instruction": "make it shorter"},
+    )
+
+    assert gen.call_args.kwargs["context"] == [
+        {"role": "assistant", "content": "First draft."},
+        {"role": "user", "content": "make it shorter"},
+    ]
+    letters = [a for a in session.staged_artifacts if a.get("type") == "letter"]
+    assert len(letters) == 1
+    assert letters[0]["content"] == "Shorter draft."
+    assert "refined" in result["content"]
+
+
+@pytest.mark.asyncio
+async def test_stage_letter_unknown_template(monkeypatch):
+    session = _make_session()
+    _patch_letter_pipeline(
+        monkeypatch, [{"id": 1, "name": "GP Letter", "instructions": ""}]
+    )
+
+    result = await execute_live_tool(
+        session, "stage_letter", {"template_name": "Nope", "instruction": "x"}
+    )
+
+    assert "not found" in result["content"]
+    assert "GP Letter" in result["content"]
+    assert session.staged_artifacts == []
+
+
+@pytest.mark.asyncio
+async def test_save_letter_saves_staged_letter(monkeypatch):
+    session = _make_session(note_id=42)
+    session.staged_artifacts = [
+        {
+            "type": "letter",
+            "title": "GP Letter",
+            "content": "Dear GP, ...",
+            "staged": True,
+        }
+    ]
+    saved = {}
+    monkeypatch.setattr(
+        "server.database.repositories.letter.update_patient_letter",
+        lambda note_id, letter: saved.update(note_id=note_id, letter=letter),
+    )
+
+    result = await execute_live_tool(session, "save_letter", {})
+
+    assert saved == {"note_id": 42, "letter": "Dear GP, ..."}
+    assert session.staged_artifacts[0]["saved"] is True
+    assert [e["type"] for e in result["events"]] == [
+        "letter_saved",
+        "artifact_staged",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_save_letter_guards():
+    session = _make_session()  # no staged letter, no note_id
+    result = await execute_live_tool(session, "save_letter", {})
+    assert "stage_letter" in result["content"]
+    assert result["events"] == []
+
+    session.staged_artifacts = [
+        {"type": "letter", "title": "GP Letter", "content": "x"}
+    ]
+    result = await execute_live_tool(session, "save_letter", {})
+    assert "encounter isn't saved" in result["content"]
+    assert result["events"] == []
 
 
 @pytest.mark.asyncio
@@ -213,9 +383,134 @@ def test_remove_sentences_no_false_positive():
 
 
 def test_normalise_entry_numbered_and_bulleted():
-    assert _normalise_entry("1. Alpha\n2. Beta", "Gamma") == "3. Gamma"
-    assert _normalise_entry("• Alpha", "Beta") == "• Beta"
+    assert _normalise_entry("1. Alpha\n2. Beta", "Gamma") == "\n3. Gamma"
+    assert _normalise_entry("• Alpha", "Beta") == "\n• Beta"
     assert _normalise_entry("", "First") == "First"
+    assert _normalise_entry("Prose ends here", "More") == "\nMore"
+
+
+def _styled_session():
+    """Session whose fields carry marker-led style examples."""
+    return _make_session(
+        template_fields=[
+            {
+                "field_key": "clinical_history",
+                "field_name": "Current History",
+                "style_example": "• Fatigue for 3 months\n• 4 kg weight loss",
+            },
+            {
+                "field_key": "plan",
+                "field_name": "Plan",
+                "style_example": "1. Check CBC, LFTs in 2 weeks\n2. Refer to dermatology",
+            },
+        ]
+    )
+
+
+@pytest.mark.asyncio
+async def test_append_to_empty_field_seeds_marker_from_style_example():
+    session = _styled_session()
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "clinical_history", "entry": "Night sweats"}
+    )
+    assert session.field_drafts["clinical_history"] == "• Night sweats"
+
+
+@pytest.mark.asyncio
+async def test_append_to_bare_numbered_field_continues_numbering():
+    session = _styled_session()
+    session.field_drafts["plan"] = "Book PET scan\nBloods"
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "plan", "entry": "GP review"}
+    )
+    assert session.field_drafts["plan"] == "Book PET scan\nBloods\n3. GP review"
+
+
+@pytest.mark.asyncio
+async def test_update_note_field_applies_markers_to_bare_lines():
+    session = _styled_session()
+    await execute_live_tool(
+        session,
+        "update_note_field",
+        {"field_key": "plan", "content": "Book PET scan\nBloods\n3. GP review"},
+    )
+    assert session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods\n3. GP review"
+
+    await execute_live_tool(
+        session,
+        "update_note_field",
+        {"field_key": "clinical_history", "content": "Fatigue\nWeight loss"},
+    )
+    assert session.field_drafts["clinical_history"] == "• Fatigue\n• Weight loss"
+
+
+@pytest.mark.asyncio
+async def test_narrative_format_override_sticks():
+    session = _styled_session()
+    await execute_live_tool(
+        session,
+        "update_note_field",
+        {
+            "field_key": "clinical_history",
+            "content": "Fatigue for three months with 4 kg weight loss.",
+            "format": "narrative",
+        },
+    )
+    assert session.field_drafts["clinical_history"] == (
+        "Fatigue for three months with 4 kg weight loss."
+    )
+
+    # Later appends respect the override: plain sentence, no bullet.
+    await execute_live_tool(
+        session,
+        "append_to_field",
+        {"field_key": "clinical_history", "entry": "Reports night sweats also."},
+    )
+    assert session.field_drafts["clinical_history"] == (
+        "Fatigue for three months with 4 kg weight loss.\nReports night sweats also."
+    )
+
+
+@pytest.mark.asyncio
+async def test_list_format_override_beats_user_touched():
+    session = _styled_session()
+    session.user_touched.add("clinical_history")
+    session.mode = "tidy"  # live mode refuses updates to clinician-edited fields
+    await execute_live_tool(
+        session,
+        "update_note_field",
+        {"field_key": "clinical_history", "content": "Fatigue\nWeight loss", "format": "list"},
+    )
+    assert session.field_drafts["clinical_history"] == "• Fatigue\n• Weight loss"
+
+
+@pytest.mark.asyncio
+async def test_append_to_clinician_prose_field_adds_no_marker():
+    session = _styled_session()
+    session.user_touched.add("clinical_history")
+    session.field_drafts["clinical_history"] = "Fatigue for three months."
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "clinical_history", "entry": "Weight loss"}
+    )
+    assert session.field_drafts["clinical_history"] == (
+        "Fatigue for three months.\nWeight loss"
+    )
+
+
+@pytest.mark.asyncio
+async def test_remove_from_field_renumbers_plan():
+    session = _styled_session()
+    session.field_drafts["plan"] = "1. Book PET scan\n2. Email CDU\n3. Bloods"
+    await execute_live_tool(
+        session, "remove_from_field", {"field_key": "plan", "phrase": "CDU"}
+    )
+    assert session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods"
+
+
+def test_seed_marker_ignores_non_list_first_lines():
+    assert _seed_marker({"style_example": "Exam:\n• Alert and oriented"}) is None
+    assert _seed_marker({}) is None
+    assert _seed_marker({"style_example": "1. Check CBC\n2. Refer"}) == "1."
 
 
 def test_live_tool_definitions_shape():
@@ -227,6 +522,8 @@ def test_live_tool_definitions_shape():
         "append_to_field",
         "remove_from_field",
         "stage_artifact",
+        "stage_letter",
+        "save_letter",
         "get_jobs",
         "set_jobs",
         "wrap_up",
@@ -234,6 +531,14 @@ def test_live_tool_definitions_shape():
     for tool in definitions:
         assert tool["type"] == "function"
         assert tool["function"]["strict"] is True
+
+
+def test_engine_routes_all_live_tools():
+    from server.agent_live.engine import _LIVE_TOOL_NAMES
+
+    assert {
+        t["function"]["name"] for t in get_live_tools_definition()
+    } == _LIVE_TOOL_NAMES
 
 
 # ------------------------------------------------------------------ session
@@ -379,7 +684,7 @@ def test_events_stream_replays_and_ends():
     payload = response.content.decode()
     assert '"type": "start"' in payload
     assert "already spoken" in payload
-    assert '"field_update"' in payload
+    assert '"field_state"' in payload
     assert '"type": "end"' in payload
 
 
@@ -505,6 +810,41 @@ async def test_gate_classify_fails_closed_to_skip():
     engine._chat = AsyncMock(side_effect=RuntimeError("llm down"))
 
     assert await engine._gate_classify("anything") == "SKIP"
+
+
+@pytest.mark.asyncio
+async def test_prewarm_primes_gate_and_agent_prompts():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._tools = lambda: [{"type": "function", "function": {"name": "noop"}}]
+    engine._chat = AsyncMock(return_value={"message": {"content": "SKIP"}})
+
+    await engine.prewarm()
+
+    assert engine._chat.await_count == 2
+    gate_call, agent_call = engine._chat.await_args_list
+    assert gate_call.kwargs["purpose"] == "gate"
+    assert gate_call.kwargs["max_tokens"] == 1
+    assert agent_call.kwargs["messages"] == [session.agent_messages[0]]
+    assert agent_call.kwargs["tools"] == engine._tools()
+    assert agent_call.kwargs["max_tokens"] == 1
+    assert session.agent_messages[0]["role"] == "system"
+
+
+@pytest.mark.asyncio
+async def test_prewarm_swallows_errors():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._tools = lambda: []
+    engine._chat = AsyncMock(side_effect=RuntimeError("no endpoint"))
+
+    await engine.prewarm()
 
 
 def test_live_system_prompt_contains_fields():

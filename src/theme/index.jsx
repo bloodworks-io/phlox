@@ -109,7 +109,7 @@ for (let i = 1; i <= 8; i++) {
 // Live scribe agent: one-shot flash on agent-updated note fields, pulsing
 // bolt on the live toggle while a session is running.
 globalCss[".live-field-updated"] = {
-    animation: "phloxLiveFieldFlash 2.5s ease-out both",
+    animation: "phloxLiveFieldFlash 1.6s ease-out both",
     borderRadius: "6px",
 };
 globalCss[".live-bolt-pulse"] = {
@@ -143,13 +143,14 @@ export const system = createSystem(defaultConfig, {
                 },
             },
             phloxLiveFieldFlash: {
+                // Matches the edit-is-blue coding in the agent activity feed.
                 from: {
-                    backgroundColor: "rgba(139, 213, 202, 0.28)",
-                    boxShadow: "inset 3px 0 0 0 #8bd5ca",
+                    backgroundColor: "rgba(114, 135, 253, 0.15)",
+                    boxShadow: "inset 2px 0 0 0 #7287fd",
                 },
                 to: {
                     backgroundColor: "transparent",
-                    boxShadow: "inset 3px 0 0 0 transparent",
+                    boxShadow: "inset 2px 0 0 0 transparent",
                 },
             },
             phloxBoltPulse: {

@@ -1,10 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Box, Text, HStack } from "@chakra-ui/react";
+import { Box, Text, HStack, Button } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaStop, FaBolt, FaChevronUp, FaChevronDown } from "react-icons/fa";
+import {
+    FaStop,
+    FaBolt,
+    FaChevronUp,
+    FaChevronDown,
+    FaEnvelope,
+    FaFilePdf,
+    FaFile,
+} from "react-icons/fa";
 
 import ArtifactCard from "../../common/ArtifactCard";
-import FormFillArtifact from "../../pdf-forms/FormFillArtifact";
+import FormFillArtifact, {
+    downloadFormFillArtifact,
+} from "../../pdf-forms/FormFillArtifact";
 
 const ACTIVITY_COLORS = {
     info: "overlay0",
@@ -16,7 +26,7 @@ const ACTIVITY_COLORS = {
 const getStatusInfo = (status, agentState) => {
     switch (status) {
         case "connecting":
-            return { label: "Connecting…", color: "overlay0", pulse: true };
+            return { label: "Loading live agent context…", color: "overlay0", pulse: true };
         case "stopping":
             return { label: "Wrapping up…", color: "overlay0", pulse: false };
         case "tidy":
@@ -54,57 +64,208 @@ const slimScrollbarCss = {
     },
 };
 
+const LetterArtifact = ({ artifact, onOpenLetter }) => (
+    <Box
+        p={2}
+        borderWidth="1px"
+        borderRadius="md"
+        borderColor="border"
+        bg="surfaceInset"
+        maxW="320px"
+    >
+        <HStack gap={2} mb={1}>
+            <FaEnvelope size="1.2em" color="gray" />
+            <Text fontSize="xs" fontWeight="semibold" truncate minW="0" flex={1}>
+                {artifact.title || "Letter"}
+            </Text>
+        </HStack>
+        <Box maxHeight="72px" overflowY="auto" mb={1} css={slimScrollbarCss}>
+            <Text fontSize="xs" color="fg.subtle" whiteSpace="pre-wrap">
+                {artifact.content}
+            </Text>
+        </Box>
+        <HStack gap={2} justify="space-between">
+            <Text fontSize="xs" color="overlay0">
+                Letter · {artifact.saved ? "saved" : "draft"}
+            </Text>
+            <Button
+                size="xs"
+                variant="ghost"
+                colorPalette="blue"
+                onClick={() => onOpenLetter?.(artifact)}
+            >
+                Open in letter editor
+            </Button>
+        </HStack>
+    </Box>
+);
+
 /* ------------------------------------------------------------------ */
-/* Minimised: one-line live bar docked above the scribe pill.          */
+/* Minimised: artifact chips + one-line live bar above the scribe pill. */
 /* ------------------------------------------------------------------ */
+
+const ARTIFACT_CHIP_ICONS = {
+    letter: FaEnvelope,
+    form_fill: FaFilePdf,
+};
+
+const _downloadUrl = (url, filename) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "artifact";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+const ArtifactChip = ({ artifact, onOpenLetter }) => {
+    const Icon = ARTIFACT_CHIP_ICONS[artifact.type] || FaFile;
+    const label =
+        artifact.title || artifact.template_name || artifact.filename || "Artifact";
+
+    const handleClick = () => {
+        if (artifact.type === "letter") {
+            onOpenLetter?.(artifact);
+        } else if (artifact.type === "form_fill") {
+            downloadFormFillArtifact(artifact);
+        } else if (artifact.url) {
+            _downloadUrl(artifact.url, artifact.filename);
+        }
+    };
+
+    // No hover transform — the animation's `both` fill would override it.
+    return (
+        <Box
+            as="button"
+            className="anim-emerge-spring"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            w="26px"
+            h="26px"
+            borderRadius="full"
+            border="1px solid"
+            borderColor="surface"
+            bg="surfaceInset"
+            cursor="pointer"
+            flexShrink={0}
+            position="relative"
+            title={label}
+            aria-label={`${label} artifact`}
+            onClick={handleClick}
+            _hover={{ bg: "surface" }}
+        >
+            <Icon size="11px" color="gray" />
+            {artifact.saved && (
+                <Box
+                    position="absolute"
+                    top="-2px"
+                    right="-2px"
+                    w="7px"
+                    h="7px"
+                    borderRadius="full"
+                    bg="successButton"
+                    border="1px solid"
+                    borderColor="surfaceInset"
+                />
+            )}
+        </Box>
+    );
+};
+
+const ArtifactChips = ({ artifacts, onOpenLetter }) => (
+    // Transform/animation split like LiveBar so the keyframes don't clobber
+    // the centering translateX.
+    <Box
+        position="fixed"
+        bottom="117px"
+        left="50%"
+        transform="translateX(-50%)"
+        zIndex="1060"
+        width="min(280px, calc(100vw - 48px))"
+    >
+        <HStack
+            className="anim-fade-slide-up"
+            gap={1.5}
+            py={0.5}
+            flexWrap="nowrap"
+            overflowX="auto"
+            overflowY="hidden"
+            css={slimScrollbarCss}
+        >
+            {artifacts.map((artifact, index) => (
+                <ArtifactChip
+                    key={`${artifact.type}-${index}-${artifact.content?.length ?? 0}-${artifact.saved}`}
+                    artifact={artifact}
+                    onOpenLetter={onOpenLetter}
+                />
+            ))}
+        </HStack>
+    </Box>
+);
+
 const LiveBar = ({ status, agentState, transcripts, onExpand }) => {
     const info = getStatusInfo(status, agentState);
     const latest = transcripts[transcripts.length - 1];
 
+    // The animation's transform would clobber the wrapper's translateX(-50%).
     return (
         <Box
-            className="live-bar anim-fade-slide-up"
             position="fixed"
             bottom="85px"
             left="50%"
             transform="translateX(-50%)"
             zIndex="1060"
-            display="flex"
-            alignItems="center"
-            gap={2.5}
-            pl={4}
-            pr={2}
-            py={1.5}
-            cursor="pointer"
-            maxWidth="min(560px, calc(100vw - 48px))"
-            onClick={onExpand}
         >
-            <StatusDot color={info.color} pulse={info.pulse} />
-            <Text fontSize="xs" fontWeight="600" flexShrink={0}>
-                {info.label}
-            </Text>
-            <Box w="1px" h="14px" bg="surface" flexShrink={0} />
-            <Text fontSize="xs" color="fg.subtle" isTruncated flex="1">
-                {latest || "Waiting for speech…"}
-            </Text>
-            <Tooltip content="Expand" showArrow positioning={{ placement: "top" }}>
-                <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    w="22px"
-                    h="22px"
-                    borderRadius="full"
+            <Box
+                className="live-bar anim-fade-slide-up"
+                display="flex"
+                alignItems="center"
+                gap={2.5}
+                pl={4}
+                pr={2}
+                py={1}
+                cursor="pointer"
+                width="min(280px, calc(100vw - 48px))"
+                onClick={onExpand}
+            >
+                <StatusDot color={info.color} pulse={info.pulse} />
+                <Text fontSize="xs" fontWeight="600" flexShrink={0}>
+                    {info.label}
+                </Text>
+                <Box w="1px" h="14px" bg="surface" flexShrink={0} />
+                <Text
+                    fontSize="xs"
                     color="fg.subtle"
-                    cursor="pointer"
-                    transition="all 0.2s ease"
-                    _hover={{ bg: "surface", transform: "scale(1.05)" }}
-                    asChild>
-                    <button aria-label="Expand live panel">
-                        <FaChevronUp size="10px" />
-                    </button>
-                </Box>
-            </Tooltip>
+                    flex="1"
+                    minW="0"
+                    css={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                    }}
+                >
+                    {latest || "Waiting for speech…"}
+                </Text>
+                <Tooltip content="Expand" showArrow positioning={{ placement: "top" }}>
+                    <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        w="22px"
+                        h="22px"
+                        borderRadius="full"
+                        color="fg.subtle"
+                        cursor="pointer"
+                        transition="all 0.2s ease"
+                        _hover={{ bg: "surface", transform: "scale(1.05)" }}
+                        asChild>
+                        <button aria-label="Expand live panel">
+                            <FaChevronUp size="10px" />
+                        </button>
+                    </Box>
+                </Tooltip>
+            </Box>
         </Box>
     );
 };
@@ -150,6 +311,7 @@ const LiveWindow = ({
     artifacts,
     onStop,
     onMinimize,
+    onOpenLetter,
 }) => {
     const info = getStatusInfo(status, agentState);
     const isStopping = status === "stopping";
@@ -495,6 +657,12 @@ const LiveWindow = ({
                                             key={`form-${index}`}
                                             artifact={artifact}
                                         />
+                                    ) : artifact.type === "letter" ? (
+                                        <LetterArtifact
+                                            key={`letter-${index}`}
+                                            artifact={artifact}
+                                            onOpenLetter={onOpenLetter}
+                                        />
                                     ) : (
                                         <ArtifactCard
                                             key={`file-${index}`}
@@ -528,6 +696,7 @@ const AgentPanel = ({
     onExpand,
     onMinimize,
     hideBar = false,
+    onOpenLetter,
 }) => {
     const isActive = ["connecting", "live", "tidy", "stopping"].includes(
         status,
@@ -544,17 +713,23 @@ const AgentPanel = ({
                 artifacts={artifacts}
                 onStop={onStop}
                 onMinimize={onMinimize}
+                onOpenLetter={onOpenLetter}
             />
         );
     }
     if (hideBar) return null;
     return (
-        <LiveBar
-            status={status}
-            agentState={agentState}
-            transcripts={transcripts}
-            onExpand={onExpand}
-        />
+        <>
+            {artifacts.length > 0 && (
+                <ArtifactChips artifacts={artifacts} onOpenLetter={onOpenLetter} />
+            )}
+            <LiveBar
+                status={status}
+                agentState={agentState}
+                transcripts={transcripts}
+                onExpand={onExpand}
+            />
+        </>
     );
 };
 
