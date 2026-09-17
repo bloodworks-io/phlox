@@ -280,7 +280,13 @@ fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
         .arg("--model")
         .arg(model_path.to_string_lossy().as_ref())
         .arg("--ctx-size")
-        .arg("16384")
+        .arg("32768")
+        // Two slots with continuous batching: the live agent's cheap gate
+        // calls can run (and stay KV-cached) alongside a long agent tick
+        // instead of queueing behind it. Total ctx is split across slots,
+        // so 32768 keeps 16k per conversation as before.
+        .arg("--parallel")
+        .arg("2")
         .arg("--n-gpu-layers")
         .arg("99")
         .arg("--jinja")

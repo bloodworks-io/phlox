@@ -28,6 +28,13 @@ def _fake_request(user="local"):
     return SimpleNamespace(state=SimpleNamespace(user=user))
 
 
+class _RunningTick:
+    """Stand-in for an in-flight tick task (done() is always False)."""
+
+    def done(self):
+        return False
+
+
 def _make_session(**overrides):
     template_fields = [
         {"field_key": "clinical_history", "field_name": "Current History"},
@@ -801,15 +808,120 @@ async def test_gate_classify_parses_verdict():
 
 
 @pytest.mark.asyncio
-async def test_gate_classify_fails_closed_to_skip():
+async def test_gate_classify_fails_closed_to_skip(monkeypatch):
     from server.agent_live.engine import LiveAgentEngine
 
+    monkeypatch.setattr(
+        "server.agent_live.engine.config_manager.get_config",
+        lambda: {"LLM_PROVIDER": "openai"},
+    )
     session = _make_session()
     engine = LiveAgentEngine.__new__(LiveAgentEngine)
     engine.session = session
     engine._chat = AsyncMock(side_effect=RuntimeError("llm down"))
 
     assert await engine._gate_classify("anything") == "SKIP"
+
+
+@pytest.mark.asyncio
+async def test_gate_classify_fails_open_to_note_on_local(monkeypatch):
+    from server.agent_live.engine import LiveAgentEngine
+
+    monkeypatch.setattr(
+        "server.agent_live.engine.config_manager.get_config",
+        lambda: {"LLM_PROVIDER": "local"},
+    )
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._chat = AsyncMock(side_effect=RuntimeError("llm down"))
+
+    assert await engine._gate_classify("anything") == "NOTE"
+
+
+@pytest.mark.asyncio
+async def test_gate_unparseable_output_uses_provider_fallback(monkeypatch):
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._chat = AsyncMock(return_value={"message": {"content": "banana"}})
+
+    monkeypatch.setattr(
+        "server.agent_live.engine.config_manager.get_config",
+        lambda: {"LLM_PROVIDER": "openai"},
+    )
+    assert await engine._gate_classify("anything") == "SKIP"
+
+    monkeypatch.setattr(
+        "server.agent_live.engine.config_manager.get_config",
+        lambda: {"LLM_PROVIDER": "local"},
+    )
+    assert await engine._gate_classify("anything") == "NOTE"
+
+
+@pytest.mark.asyncio
+async def test_intake_utterance_bypasses_gate_while_tick_running():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._gate_classify = AsyncMock()
+    engine._tick_task = _RunningTick()
+    engine._tick_pending = None
+
+    await engine._intake_utterance("new-onset chest pain")
+
+    engine._gate_classify.assert_not_awaited()
+    assert engine._tick_pending == "NOTE"
+
+
+@pytest.mark.asyncio
+async def test_intake_utterance_gates_when_idle():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._gate_classify = AsyncMock(return_value="ACT")
+    engine._tick_task = None
+    engine._tick_pending = None
+    scheduled = []
+    engine._schedule_tick = lambda reason: scheduled.append(reason)
+
+    await engine._intake_utterance("calculate the risk score")
+
+    engine._gate_classify.assert_awaited_once()
+    assert scheduled == ["ACT"]
+
+
+def test_schedule_tick_pending_reason_never_downgrades():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._tick_task = _RunningTick()  # running tick
+    engine._tick_pending = None
+
+    engine._schedule_tick("NOTE")
+    assert engine._tick_pending == "NOTE"
+
+    engine._schedule_tick("ACT")
+    assert engine._tick_pending == "ACT"
+
+    # Weaker reasons must not downgrade a pending ACT.
+    engine._schedule_tick("NOTE")
+    engine._schedule_tick("debounce")
+    assert engine._tick_pending == "ACT"
+
+    # Tidy commands outrank everything.
+    engine._schedule_tick("tidy_command")
+    assert engine._tick_pending == "tidy_command"
+    engine._schedule_tick("ACT")
+    assert engine._tick_pending == "tidy_command"
 
 
 @pytest.mark.asyncio

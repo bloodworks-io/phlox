@@ -5,8 +5,12 @@ Owns the per-session hot loop:
                                               ^ debounce backstop
 
 The agent tick is a free-form tool-calling loop (NO JSON grammar) on
-SECONDARY_MODEL with thinking disabled by default. The conversation is
+PRIMARY_MODEL with thinking disabled by default. The conversation is
 append-only so provider prompt caches stay valid across ticks.
+
+While a tick is running the gate is bypassed: the next tick consumes all
+un-sent transcript segments anyway, so a SKIP/NOTE/ACT verdict would be
+moot — and the call would contend with the tick for the inference server.
 """
 
 import asyncio
@@ -38,6 +42,9 @@ DEBOUNCE_MAX_WORDS = 400
 
 # Honoured by llama.cpp/vLLM/Ollama; strict clouds 400 → self-heal in _chat.
 _REASONING_EFFORT_OK = True
+
+# When triggers pile up while a tick runs, the strongest framing wins.
+_TICK_REASON_RANK = {"debounce": 0, "NOTE": 1, "ACT": 2, "tidy_command": 3}
 
 
 class LiveAgentEngine:
@@ -183,6 +190,13 @@ class LiveAgentEngine:
             self._schedule_tick("tidy_command")
             return
 
+        # Fast path: a tick is already running, so the gate verdict is moot
+        # (the next tick reads every un-sent segment). Skipping the call also
+        # keeps the gate from contending with the tick for the LLM server.
+        if self._tick_task is not None and not self._tick_task.done():
+            self._schedule_tick("NOTE")
+            return
+
         verdict = await self._gate_classify(text)
         if verdict in ("NOTE", "ACT"):
             self._schedule_tick(verdict)
@@ -200,7 +214,10 @@ class LiveAgentEngine:
         )
 
     async def _gate_classify(self, text: str) -> str:
-        """Cheap SKIP/NOTE/ACT triage of one utterance. Fails closed to SKIP."""
+        """Cheap SKIP/NOTE/ACT triage of one utterance.
+
+        Fails open to NOTE on the local server, closed to SKIP on clouds.
+        """
         session = self.session
         recent = session.transcript_segments[-2:]
         convo = " | ".join(seg for seg in recent[:-1])
@@ -221,14 +238,25 @@ class LiveAgentEngine:
             for word in reversed(content.split()):
                 if word in ("SKIP", "NOTE", "ACT"):
                     return word
-            return "SKIP"
+            return _gate_fallback()
         except Exception as exc:
-            logger.warning("Live session %s: gate failed (%s); treating as SKIP", session.id, exc)
-            return "SKIP"
+            fallback = _gate_fallback()
+            logger.warning(
+                "Live session %s: gate failed (%s); treating as %s",
+                session.id,
+                exc,
+                fallback,
+            )
+            return fallback
 
     def _schedule_tick(self, reason: str) -> None:
         if self._tick_task is not None and not self._tick_task.done():
-            self._tick_pending = reason
+            pending = self._tick_pending
+            if (
+                pending is None
+                or _TICK_REASON_RANK.get(reason, 0) > _TICK_REASON_RANK.get(pending, 0)
+            ):
+                self._tick_pending = reason
             return
         self._tick_task = asyncio.create_task(self._tick_loop(reason))
         self.session.track_task(self._tick_task)
@@ -433,6 +461,24 @@ class LiveAgentEngine:
             {"role": "user", "content": build_tidy_transition_message()}
         )
         await session.emit({"type": "mode", "mode": "tidy"})
+
+
+def _is_local_provider() -> bool:
+    """True when inference runs on the bundled llama.cpp server."""
+    try:
+        provider = config_manager.get_config().get("LLM_PROVIDER") or ""
+    except Exception:
+        return False
+    return provider.lower() == "local"
+
+
+def _gate_fallback() -> str:
+    """Verdict when the gate errors or returns nothing.
+
+    Local: fail open to NOTE — a redundant (coalesced) tick is cheaper than
+    missed clinical content. Clouds: fail closed to SKIP (cost control).
+    """
+    return "NOTE" if _is_local_provider() else "SKIP"
 
 
 def _is_unsupported_param_error(exc: Exception) -> bool:
