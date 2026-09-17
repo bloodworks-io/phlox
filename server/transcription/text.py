@@ -1,6 +1,8 @@
 import asyncio
+import json
 import logging
 import random
+import re
 import time
 from typing import Any
 
@@ -12,6 +14,9 @@ from server.schemas.templates import TemplateField, TemplateResponse
 from server.transcription.refinement import refine_field_content
 
 logger = logging.getLogger(__name__)
+
+# Applied when a field has no content after extraction and refinement
+EMPTY_FIELD_PLACEHOLDER = "Nil documented"
 
 
 async def process_transcription(
@@ -54,9 +59,15 @@ async def process_transcription(
         )
         logger.info(f"Successfully refined {total_fields} fields")
 
-        # Combine results into a dictionary
+        # Combine results into a dictionary; fields that ended up empty
+        # (nothing extracted, or refinement produced nothing) get an explicit
+        # placeholder rather than a blank field
         processed_fields = {
-            field.field_key: refined_content
+            field.field_key: (
+                refined_content
+                if str(refined_content).strip()
+                else EMPTY_FIELD_PLACEHOLDER
+            )
             for field, refined_content in zip(non_persistent_fields, refined_results, strict=True)
         }
 
@@ -154,15 +165,17 @@ Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapp
             content = response["message"]["content"]
             repaired_content = repair_json(content)
 
-            # Validate against schema
-            multi_field_response = MultiFieldResponse.model_validate_json(repaired_content)
+            # Parse with tolerance for small-model response shapes
+            summaries = _parse_field_summaries(repaired_content, fields)
 
             # Convert to dict of formatted strings (with bullet points)
             formatted_results = {}
             for field in fields:
-                key_points = multi_field_response.field_summaries.get(field.field_key, [])
+                key_points = summaries.get(field.field_key, [])
                 formatted_content = "\n".join(
-                    f"• {_capitalize_first_char(point.strip())}" for point in key_points
+                    f"• {_capitalize_first_char(point.strip())}"
+                    for point in key_points
+                    if point.strip()
                 )
                 formatted_results[field.field_key] = formatted_content
 
@@ -189,6 +202,65 @@ def _capitalize_first_char(text: str) -> str:
     if not text:
         return text
     return text[0].upper() + text[1:] if text else text
+
+
+def _normalize_field_key(text: str) -> str:
+    """Normalize a field key or name for alias matching ("Current History" -> "current_history")."""
+    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+
+def _parse_field_summaries(content: str, fields: list[TemplateField]) -> dict[str, list[str]]:
+    """Parse the multi-field extraction response into a field_key -> key points mapping.
+
+    Tolerates small-model response shapes: bare {field_key: [...]} mappings
+    without the "field_summaries" wrapper, double-wrapped envelopes, keys that
+    echo the field name instead of the field key, and single strings in place
+    of arrays. Raises when no field can be resolved so callers can retry.
+    """
+    if not content or not str(content).strip():
+        raise ValueError("empty extraction response")
+
+    start = content.find("{")
+    end = content.rfind("}")
+    if start < 0 or end <= start:
+        raise ValueError("no JSON object in extraction response")
+
+    parsed = json.loads(content[start : end + 1])
+    if not isinstance(parsed, dict):
+        raise ValueError("extraction response is not a JSON object")
+
+    # De-nest double-wrapped field_summaries envelopes (bounded)
+    source = parsed
+    for _ in range(3):
+        nested = source.get("field_summaries")
+        if isinstance(nested, dict):
+            source = nested
+        else:
+            break
+
+    # Keys resolve via field_key or the normalized field name: small models
+    # sometimes echo the NAME ("Current History") instead of the key
+    aliases: dict[str, str] = {}
+    for field in fields:
+        aliases[_normalize_field_key(field.field_key)] = field.field_key
+        aliases[_normalize_field_key(field.field_name)] = field.field_key
+
+    summaries: dict[str, list[str]] = {}
+    for key, value in source.items():
+        resolved = aliases.get(key) or aliases.get(_normalize_field_key(key))
+        if not resolved:
+            continue  # drop junk keys
+        if isinstance(value, list):
+            summaries.setdefault(resolved, []).extend(str(point) for point in value)
+        elif isinstance(value, str) and value.strip():
+            summaries.setdefault(resolved, []).append(value)  # single string — accept as one point
+
+    if not summaries:
+        raise ValueError(
+            "no recognized fields in extraction JSON "
+            f"(keys: {', '.join(str(k) for k in list(source)[:8])})"
+        )
+    return summaries
 
 
 def _build_patient_context(context: dict[str, str | None]) -> str:

@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { authApi } from "../api/authApi";
+import { isTauri } from "../helpers/apiConfig";
 
 const STORAGE_KEY = "phlox-patient-scope";
 
 // Admin "all vs mine" patient scope, persisted across sessions.
+// Desktop (Tauri) is always single-admin, so the toggle is hidden and the
+// identity fetch is skipped entirely.
 export const usePatientScope = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [patientScope, setPatientScopeState] = useState(
@@ -11,6 +14,9 @@ export const usePatientScope = () => {
     );
 
     useEffect(() => {
+        if (isTauri()) {
+            return;
+        }
         authApi
             .fetchMe()
             .then((me) => setIsAdmin(me?.role === "admin"))

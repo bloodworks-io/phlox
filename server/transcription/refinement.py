@@ -17,6 +17,12 @@ from server.schemas.templates import TemplateField
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+# Appended when a previous refinement attempt returned empty output
+EMPTY_RETRY_INSTRUCTION = (
+    "IMPORTANT: Your previous response was empty. You must not return an empty result. "
+    "Base your output on the input content; if unsure, reproduce the input's points unchanged."
+)
+
 
 async def refine_field_content(
     content: Any, field: TemplateField, is_ambient: bool = True
@@ -28,11 +34,14 @@ async def refine_field_content(
 
     max_retries = 1
 
+    if isinstance(content, dict):
+        return content
+    if not str(content).strip():
+        logger.info(f"Skipping refinement for {field.field_key}: no extracted content")
+        return content
+
     for attempt in range(max_retries + 1):
         try:
-            if isinstance(content, dict):
-                return content
-
             config = config_manager.get_config()
             client = get_llm_client()
             prompts = config_manager.get_prompts_and_options()
@@ -43,6 +52,10 @@ async def refine_field_content(
 
             # Build system prompt with style example if available
             system_prompt = build_system_prompt(field, format_details, prompts, is_ambient)
+
+            # Escalate with an explicit instruction after an empty response
+            if attempt > 0:
+                system_prompt += f"\n\n{EMPTY_RETRY_INSTRUCTION}"
 
             base_messages = [
                 {"role": "system", "content": system_prompt},
@@ -73,7 +86,21 @@ async def refine_field_content(
 
             # Reuse existing formatter by wrapping the JSON string
             pseudo_response = {"message": {"content": response_json}}
-            return format_refined_response(pseudo_response, field, format_details)
+            refined = format_refined_response(pseudo_response, field, format_details)
+
+            if not refined.strip():
+                if attempt < max_retries:
+                    logger.warning(
+                        f"Refinement for {field.field_key} returned empty output "
+                        f"(attempt {attempt + 1}/{max_retries + 1}). Retrying..."
+                    )
+                    continue
+                logger.warning(
+                    f"Refinement for {field.field_key} returned empty output; keeping original content"
+                )
+                return content
+
+            return refined
 
         except Exception as e:
             if attempt < max_retries:
@@ -211,17 +238,21 @@ def format_refined_response(response: dict, field: TemplateField, format_details
     elif format_type == "bullet":
         return _format_bulleted_list(refined_response.key_points, field)
     else:
-        # No specific formatting required
-        return "\n".join(refined_response.key_points)
+        # No specific formatting required (skip blank points)
+        return "\n".join(point for point in refined_response.key_points if point.strip())
 
 
 def _format_numbered_list(key_points: list[str]) -> str:
     """Format key points as a numbered list."""
     formatted_key_points = []
-    for i, point in enumerate(key_points):
+    for point in key_points:
         # Strip any existing numbering
         cleaned_point = re.sub(r"^\d+\.\s*", "", point.strip())
-        formatted_key_points.append(f"{i + 1}. {_capitalize_first_char(cleaned_point)}")
+        if not cleaned_point:
+            continue
+        formatted_key_points.append(
+            f"{len(formatted_key_points) + 1}. {_capitalize_first_char(cleaned_point)}"
+        )
     return "\n".join(formatted_key_points)
 
 
@@ -235,5 +266,7 @@ def _format_bulleted_list(key_points: list[str], field: TemplateField) -> str:
     for point in key_points:
         # Strip any existing bullets
         cleaned_point = re.sub(r"^[•\-\*#]\s*", "", point.strip())
+        if not cleaned_point:
+            continue
         formatted_key_points.append(f"{bullet_char} {_capitalize_first_char(cleaned_point)}")
     return "\n".join(formatted_key_points)

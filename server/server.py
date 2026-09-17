@@ -249,11 +249,11 @@ def initialize_and_get_app():
 
     app.include_router(config_router, prefix="/api/config")
 
-    # Passphrase login (Docker)
-    if IS_DOCKER:
-        from server.api import auth
+    # Auth routes (login/setup for Docker; /me resolves to the implicit
+    # desktop admin via LocalTokenMiddleware in Tauri builds)
+    from server.api import auth
 
-        app.include_router(auth.router, prefix="/api/auth")
+    app.include_router(auth.router, prefix="/api/auth")
 
     app.include_router(templates.router, prefix="/api/templates")
     app.include_router(letter.router, prefix="/api/letter")
