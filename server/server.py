@@ -191,7 +191,7 @@ def initialize_and_get_app():
         app.add_middleware(ProxyAuthMiddleware)
         logger.info(
             f"Proxy auth enabled, header: {PROXY_AUTH_USER_HEADER}, "
-            f"trusted proxies: {TRUSTED_PROXY_IPS}"
+            f"trusted proxies: {len(TRUSTED_PROXY_IPS)} entries"
         )
 
     # Add rate limiting middleware (enabled by default in Docker mode)
