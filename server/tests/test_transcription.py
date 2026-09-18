@@ -4,6 +4,7 @@ We use pytest-asyncio to run async tests and patch external requests.
 """
 
 import json
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -147,7 +148,7 @@ async def test_transcribe_audio_api_error():
 
 
 def _make_field(**overrides):
-    params = {
+    params: dict[str, Any] = {
         "field_key": "current_history",
         "field_name": "Current History",
         "field_type": "text",
