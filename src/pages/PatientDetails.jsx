@@ -33,6 +33,7 @@ import { useSearchFlow } from "../utils/hooks/useSearchFlow";
 import { useScribeConsent } from "../utils/hooks/useScribeConsent";
 import { useLiveAgent } from "../utils/hooks/useLiveAgent";
 import { useWrapUp } from "../utils/hooks/useWrapUp";
+import { SCRIBE_MODE_STORAGE_KEY } from "../components/patient/Scribe";
 import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
 
@@ -349,12 +350,16 @@ const PatientDetails = ({
     const handleOpenDocument = () => toggle("document");
 
     // Picking agent arms it — mic click starts the session; other picks end it.
+    // The picked mode persists so it stays the default across sessions.
     const [liveView, setLiveView] = useState("bar"); // "bar" | "window"
-    const [agentArmed, setAgentArmed] = useState(false);
+    const [agentArmed, setAgentArmed] = useState(
+        () => localStorage.getItem(SCRIBE_MODE_STORAGE_KEY) === "agent",
+    );
     // Mode popover and transcript panel are mutually exclusive.
     const [modeMenuOpen, setModeMenuOpen] = useState(false);
 
     const handleModeSelect = (mode) => {
+        localStorage.setItem(SCRIBE_MODE_STORAGE_KEY, mode);
         if (mode === "agent") {
             if (liveAgent.isLiveActive) return;
             setAgentArmed(true);
