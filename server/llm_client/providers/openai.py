@@ -41,6 +41,11 @@ async def openai_compatible_chat(
                 params["temperature"] = options["temperature"]
             if "num_predict" in options:
                 params["max_tokens"] = options["num_predict"]
+            # Single-token readout support (e.g. live-agent gate classification)
+            if "logprobs" in options:
+                params["logprobs"] = options["logprobs"]
+            if "top_logprobs" in options:
+                params["top_logprobs"] = options["top_logprobs"]
             # Handle stop tokens
             if "stop" in options:
                 params["stop"] = options["stop"]
@@ -165,6 +170,16 @@ async def openai_compatible_chat(
                     "content": content,
                 },
             }
+
+            # Expose logprobs (OpenAI-style payload) for readout-style
+            # classification; absent when the provider dropped the params.
+            logprobs_obj = getattr(response.choices[0], "logprobs", None)
+            if logprobs_obj is not None:
+                result["logprobs"] = (
+                    logprobs_obj.model_dump()
+                    if hasattr(logprobs_obj, "model_dump")
+                    else logprobs_obj
+                )
 
             # Add reasoning to result if present
             reasoning = (

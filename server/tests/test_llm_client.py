@@ -34,3 +34,48 @@ async def test_non_streaming_with_extra_body_returns_dict():
     kwargs = fake.chat.completions.create.await_args.kwargs
     assert kwargs["reasoning_effort"] == "none"
     assert "stream" not in kwargs
+    # Choices without logprobs must not add the key.
+    assert "logprobs" not in response
+
+
+class _FakeLogProbs:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def model_dump(self):
+        return self._payload
+
+
+@pytest.mark.asyncio
+async def test_logprobs_options_map_to_params_and_pass_through():
+    # Readout-gate support: options["logprobs"]/["top_logprobs"] must reach
+    # the wire params, and the response payload must survive into the dict.
+    payload = {
+        "content": [
+            {
+                "token": "NOTE",
+                "logprob": -0.05,
+                "top_logprobs": [{"token": "NOTE", "logprob": -0.05}],
+            }
+        ]
+    }
+    message = SimpleNamespace(content="NOTE", tool_calls=None, reasoning=None)
+    completion = SimpleNamespace(
+        choices=[SimpleNamespace(message=message, logprobs=_FakeLogProbs(payload))]
+    )
+    create = AsyncMock(return_value=completion)
+    fake = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+
+    response = await openai_compatible_chat(
+        fake,
+        model="test-model",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"logprobs": True, "top_logprobs": 20, "num_predict": 1},
+        stream=False,
+    )
+
+    kwargs = fake.chat.completions.create.await_args.kwargs
+    assert kwargs["logprobs"] is True
+    assert kwargs["top_logprobs"] == 20
+    assert kwargs["max_tokens"] == 1
+    assert response["logprobs"] == payload

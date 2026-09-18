@@ -106,6 +106,12 @@ async def _transcribe_local_whisper(
             # Clean repetitive text patterns
             transcript_text = _clean_repetitive_text(transcript_text)
 
+            logger.info(
+                "Local STT returned %d chars in %.2fs",
+                len(transcript_text or ""),
+                transcription_duration,
+            )
+
             return {
                 "text": transcript_text,
                 "transcriptionDuration": float(f"{transcription_duration:.2f}"),

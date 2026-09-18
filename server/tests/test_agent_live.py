@@ -1,6 +1,7 @@
 """Tests for the live scribe agent: sessions, tools, and router endpoints."""
 
 import json
+import math
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -56,6 +57,12 @@ def clean_sessions():
     session_manager._sessions.clear()
     yield
     session_manager._sessions.clear()
+
+
+@pytest.fixture(autouse=True)
+def reset_gate_readout_flag(monkeypatch):
+    monkeypatch.setattr("server.agent_live.engine._GATE_LOGPROBS_OK", True)
+    yield
 
 
 # --------------------------------------------------------------------- tools
@@ -792,8 +799,53 @@ def test_unsupported_param_error_detection():
     assert _is_unsupported_param_error(Fake500("server exploded")) is False
 
 
-@pytest.mark.asyncio
-async def test_gate_classify_parses_verdict():
+def test_score_verdict_logprobs_sums_mass_and_dedupes():
+    from server.agent_live.engine import _score_verdict_logprobs
+
+    payload = _logprobs_payload(
+        ("NOTE", -0.1), ("NOTE", -0.1), ("SK", math.log(0.25))
+    )
+    scores = _score_verdict_logprobs(payload)
+    # Duplicate NOTE token counted once; SK -> SKIP via strict prefix.
+    assert scores is not None
+    assert scores["NOTE"] == pytest.approx(math.exp(-0.1))
+    assert scores["SKIP"] == pytest.approx(0.25)
+    assert scores["ACT"] == pytest.approx(0.0)
+
+
+def test_score_verdict_logprobs_rejects_unusable_payloads():
+    from server.agent_live.engine import _score_verdict_logprobs
+
+    assert _score_verdict_logprobs(None) is None
+    assert _score_verdict_logprobs("nope") is None
+    assert _score_verdict_logprobs({"content": []}) is None
+    # No verdict tokens at all -> None (caller falls back to words).
+    assert _score_verdict_logprobs(_logprobs_payload(("BANANA", -0.1))) is None
+
+
+def test_is_logprobs_error_detection():
+    from server.agent_live.engine import _is_logprobs_error
+
+    class Fake400(Exception):
+        status_code = 400
+
+    assert (
+        _is_logprobs_error(Fake400("Unsupported parameter: 'logprobs'")) is True
+    )
+    assert _is_logprobs_error(RuntimeError("logprobs not supported here")) is True
+    assert _is_logprobs_error(RuntimeError("llm down")) is False
+
+
+def _logprobs_payload(*pairs, token=None):
+    """OpenAI-style logprobs payload; pairs are (token_text, logprob)."""
+    entry = {"top_logprobs": [{"token": t, "logprob": lp} for t, lp in pairs]}
+    if token is not None:
+        entry["token"] = token[0]
+        entry["logprob"] = token[1]
+    return {"content": [entry]}
+
+
+def _make_gate_engine(**chat_behavior):
     from server.agent_live.engine import LiveAgentEngine
 
     session = _make_session()
@@ -801,10 +853,61 @@ async def test_gate_classify_parses_verdict():
     engine = LiveAgentEngine.__new__(LiveAgentEngine)  # skip __init__ (no client)
     engine.session = session
     engine._llm_client = None
-    engine._chat = AsyncMock(return_value={"message": {"content": "ACT"}})
+    engine._chat = AsyncMock(**chat_behavior)
+    return engine
+
+
+@pytest.mark.asyncio
+async def test_gate_readout_classifies_from_first_token_logprobs():
+    engine = _make_gate_engine(
+        return_value={"message": {"content": "NOTE"}, "logprobs": _logprobs_payload(
+            ("NOTE", -0.05), ("SKIP", -2.8), ("ACT", -4.1)
+        )}
+    )
+
+    assert await engine._gate_classify("new chest pain") == "NOTE"
+    engine._chat.assert_awaited_once()  # one decode step, no word retry
+    kwargs = engine._chat.await_args.kwargs
+    assert kwargs["max_tokens"] == 1
+    assert kwargs["logprobs"] == 20
+    assert kwargs["purpose"] == "gate"
+
+
+@pytest.mark.asyncio
+async def test_gate_readout_uses_strict_prefix_matching():
+    # "AC" is a prefix of ACT; "ACTUALLY" is not; "SK" is a prefix of SKIP.
+    engine = _make_gate_engine(
+        return_value={"logprobs": _logprobs_payload(
+            ("AC", -0.05), ("ACTUALLY", -0.2), ("SK", -3.0)
+        )}
+    )
+
+    assert await engine._gate_classify("do the thing") == "ACT"
+    engine._chat.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_gate_falls_back_to_word_when_logprobs_absent():
+    # Providers like Ollama silently drop the logprobs params: the response
+    # comes back without a payload, so the gate retries with word parsing.
+    engine = _make_gate_engine(return_value={"message": {"content": "ACT"}})
 
     assert await engine._gate_classify("calculate the risk score") == "ACT"
-    engine._chat.assert_awaited_once()
+    assert engine._chat.await_count == 2  # readout attempt, then word retry
+    retry_kwargs = engine._chat.await_args_list[1].kwargs
+    assert retry_kwargs["max_tokens"] == 8
+    assert "logprobs" not in retry_kwargs
+
+
+@pytest.mark.asyncio
+async def test_gate_readout_low_mass_falls_back_to_word():
+    engine = _make_gate_engine(side_effect=[
+        {"logprobs": _logprobs_payload(("BANANA", -0.1))},  # no verdict mass
+        {"message": {"content": "SKIP"}},
+    ])
+
+    assert await engine._gate_classify("hello there") == "SKIP"
+    assert engine._chat.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -859,6 +962,30 @@ async def test_gate_unparseable_output_uses_provider_fallback(monkeypatch):
         lambda: {"LLM_PROVIDER": "local"},
     )
     assert await engine._gate_classify("anything") == "NOTE"
+
+
+@pytest.mark.asyncio
+async def test_gate_logprobs_rejection_sets_flag_and_retries_word():
+    from server.agent_live import engine as engine_module
+
+    engine = _make_gate_engine(side_effect=[
+        RuntimeError("Unsupported parameter: 'logprobs' is not supported"),
+        {"message": {"content": "NOTE"}},
+        {"message": {"content": "SKIP"}},
+    ])
+
+    # First attempt: provider rejects the logprobs params -> legacy retry.
+    assert await engine._gate_classify("anything") == "NOTE"
+    assert engine_module._GATE_LOGPROBS_OK is False
+    retry_kwargs = engine._chat.await_args_list[1].kwargs
+    assert "logprobs" not in retry_kwargs
+    assert retry_kwargs["max_tokens"] == 8
+
+    # Subsequent calls skip the readout entirely.
+    assert await engine._gate_classify("anything else") == "SKIP"
+    assert engine._chat.await_count == 3
+    last_kwargs = engine._chat.await_args.kwargs
+    assert "logprobs" not in last_kwargs
 
 
 @pytest.mark.asyncio
@@ -940,10 +1067,14 @@ async def test_prewarm_primes_gate_and_agent_prompts():
     gate_call, agent_call = engine._chat.await_args_list
     assert gate_call.kwargs["purpose"] == "gate"
     assert gate_call.kwargs["max_tokens"] == 1
-    assert agent_call.kwargs["messages"] == [session.agent_messages[0]]
+    agent_messages = agent_call.kwargs["messages"]
+    # System prefix must stay byte-identical for prefix caching; a user
+    # message is required by strict chat templates (e.g. Qwen3.5).
+    assert agent_messages[0] is session.agent_messages[0]
+    assert agent_messages[0]["role"] == "system"
+    assert agent_messages[1]["role"] == "user"
     assert agent_call.kwargs["tools"] == engine._tools()
     assert agent_call.kwargs["max_tokens"] == 1
-    assert session.agent_messages[0]["role"] == "system"
 
 
 @pytest.mark.asyncio

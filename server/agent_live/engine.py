@@ -11,11 +11,15 @@ append-only so provider prompt caches stay valid across ticks.
 While a tick is running the gate is bypassed: the next tick consumes all
 un-sent transcript segments anyway, so a SKIP/NOTE/ACT verdict would be
 moot — and the call would contend with the tick for the inference server.
+The idle-state gate uses a single-token logprob readout (calibrated
+P(SKIP/NOTE/ACT) in one decode step), falling back to one-word generation
+when a provider does not return logprobs.
 """
 
 import asyncio
 import json
 import logging
+import math
 import time
 from typing import Any
 
@@ -32,7 +36,8 @@ from server.transcription.audio import transcribe_audio
 logger = logging.getLogger(__name__)
 
 MAX_TOOL_ITERATIONS = 6
-GATE_TIMEOUT_SECONDS = 20
+# Readout gate = warm prefill + one decode step; 10s is generous headroom.
+GATE_TIMEOUT_SECONDS = 10
 TICK_TIMEOUT_SECONDS = 120
 
 # Debounce backstop catches content the gate classified as SKIP.
@@ -42,6 +47,11 @@ DEBOUNCE_MAX_WORDS = 400
 
 # Honoured by llama.cpp/vLLM/Ollama; strict clouds 400 → self-heal in _chat.
 _REASONING_EFFORT_OK = True
+
+# Single-token logprob readout for the gate (if provider supports)
+_GATE_LOGPROBS_OK = True
+_GATE_VERDICTS = ("SKIP", "NOTE", "ACT")
+_GATE_MIN_VERDICT_MASS = 0.5
 
 # When triggers pile up while a tick runs, the strongest framing wins.
 _TICK_REASON_RANK = {"debounce": 0, "NOTE": 1, "ACT": 2, "tidy_command": 3}
@@ -96,7 +106,7 @@ class LiveAgentEngine:
         return options
 
     async def _chat(
-        self, messages, tools=None, max_tokens=None, purpose="tick"
+        self, messages, tools=None, max_tokens=None, purpose="tick", logprobs=None
     ) -> dict[str, Any]:
         """Non-streaming chat with thinking off and 400 self-healing."""
         global _REASONING_EFFORT_OK
@@ -105,6 +115,9 @@ class LiveAgentEngine:
         options = self._options(purpose)
         if max_tokens:
             options["num_predict"] = max_tokens
+        if logprobs:
+            options["logprobs"] = True
+            options["top_logprobs"] = logprobs
         if _REASONING_EFFORT_OK:
             options["extra_body"] = {"reasoning_effort": "none"}
 
@@ -150,7 +163,16 @@ class LiveAgentEngine:
             )
             self._ensure_agent_messages()
             await self._chat(
-                messages=[self.session.agent_messages[0]],
+                messages=[
+                    self.session.agent_messages[0],
+                    {
+                        "role": "user",
+                        "content": (
+                            "New transcript segments:\n(none)\n\n"
+                            "(Warm-up probe; do not update any fields.)"
+                        ),
+                    },
+                ],
                 tools=self._tools(),
                 max_tokens=1,
             )
@@ -161,6 +183,7 @@ class LiveAgentEngine:
         """Transcribe one audio segment and feed the gate/agent pipeline."""
         session = self.session
         async with self._audio_lock:
+            logger.info("Live session %s: transcribing %d bytes", session.id, len(audio_bytes))
             try:
                 result = await transcribe_audio(audio_bytes, streaming=True)
             except Exception as exc:
@@ -171,6 +194,10 @@ class LiveAgentEngine:
                 return
             text = str(result.get("text", "")).strip()
             if not text:
+                logger.info(
+                    "Live session %s: transcription returned no text; skipping segment",
+                    session.id,
+                )
                 return
             async with session.state_lock:
                 session.transcript_segments.append(text)
@@ -208,38 +235,48 @@ class LiveAgentEngine:
         if session.words_since_draft >= DEBOUNCE_MAX_WORDS:
             return True
         elapsed = time.time() - session.last_draft_at
-        return (
-            elapsed >= DEBOUNCE_SECONDS
-            and session.words_since_draft >= DEBOUNCE_MIN_WORDS
-        )
+        return elapsed >= DEBOUNCE_SECONDS and session.words_since_draft >= DEBOUNCE_MIN_WORDS
 
     async def _gate_classify(self, text: str) -> str:
         """Cheap SKIP/NOTE/ACT triage of one utterance.
 
-        Fails open to NOTE on the local server, closed to SKIP on clouds.
+        Prefers a single-token logprob readout,
         """
+        global _GATE_LOGPROBS_OK
+
         session = self.session
         recent = session.transcript_segments[-2:]
         convo = " | ".join(seg for seg in recent[:-1])
         latest = recent[-1] if recent else text
-        user_content = f"Earlier: {convo}\nLatest utterance: {latest}" if convo else f"Latest utterance: {latest}"
+        user_content = (
+            f"Earlier: {convo}\nLatest utterance: {latest}"
+            if convo
+            else f"Latest utterance: {latest}"
+        )
+        messages = [
+            {"role": "system", "content": GATE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ]
 
         try:
             async with asyncio.timeout(GATE_TIMEOUT_SECONDS):
-                response = await self._chat(
-                    messages=[
-                        {"role": "system", "content": GATE_SYSTEM_PROMPT},
-                        {"role": "user", "content": user_content},
-                    ],
-                    max_tokens=8,
-                    purpose="gate",
-                )
-            content = (response.get("message", {}).get("content") or "").strip().upper()
-            for word in reversed(content.split()):
-                if word in ("SKIP", "NOTE", "ACT"):
-                    return word
-            return _gate_fallback()
+                verdict = await self._gate_readout(messages)
+                if verdict is None:
+                    verdict = await self._gate_word(messages)
+            return verdict or _gate_fallback()
         except Exception as exc:
+            if _GATE_LOGPROBS_OK and _is_logprobs_error(exc):
+                _GATE_LOGPROBS_OK = False
+                logger.info(
+                    "Live session %s: provider rejected logprobs; using "
+                    "word gate for this server lifetime.",
+                    session.id,
+                )
+                try:
+                    async with asyncio.timeout(GATE_TIMEOUT_SECONDS):
+                        return await self._gate_word(messages) or _gate_fallback()
+                except Exception:
+                    return _gate_fallback()
             fallback = _gate_fallback()
             logger.warning(
                 "Live session %s: gate failed (%s); treating as %s",
@@ -249,12 +286,42 @@ class LiveAgentEngine:
             )
             return fallback
 
+    async def _gate_readout(self, messages) -> str | None:
+        """Verdict from first-token logprobs, or None when unusable."""
+        if not _GATE_LOGPROBS_OK:
+            return None
+        response = await self._chat(
+            messages=messages,
+            max_tokens=1,
+            purpose="gate",
+            logprobs=20,
+        )
+        scores = _score_verdict_logprobs(response.get("logprobs"))
+        if scores is None:
+            return None
+        total = sum(scores.values())
+        if total < _GATE_MIN_VERDICT_MASS:
+            return None
+        return max(scores, key=lambda verdict: scores[verdict])
+
+    async def _gate_word(self, messages) -> str | None:
+        """Legacy gate: generate up to 8 tokens and parse the verdict."""
+        response = await self._chat(
+            messages=messages,
+            max_tokens=8,
+            purpose="gate",
+        )
+        content = (response.get("message", {}).get("content") or "").strip().upper()
+        for word in reversed(content.split()):
+            if word in _GATE_VERDICTS:
+                return word
+        return None
+
     def _schedule_tick(self, reason: str) -> None:
         if self._tick_task is not None and not self._tick_task.done():
             pending = self._tick_pending
-            if (
-                pending is None
-                or _TICK_REASON_RANK.get(reason, 0) > _TICK_REASON_RANK.get(pending, 0)
+            if pending is None or _TICK_REASON_RANK.get(reason, 0) > _TICK_REASON_RANK.get(
+                pending, 0
             ):
                 self._tick_pending = reason
             return
@@ -267,18 +334,14 @@ class LiveAgentEngine:
                 await self._run_tick(reason)
             except Exception as exc:
                 logger.exception("Live session %s: agent tick failed", self.session.id)
-                await self.session.emit(
-                    {"type": "error", "content": f"Agent error: {exc}"}
-                )
+                await self.session.emit({"type": "error", "content": f"Agent error: {exc}"})
             reason = self._tick_pending
             self._tick_pending = None
 
     def _tools(self) -> list[dict[str, Any]]:
         from server.chat.tools import get_tools_definition
 
-        return get_live_tools_definition() + get_tools_definition(
-            [], exclude_chat_only=True
-        )
+        return get_live_tools_definition() + get_tools_definition([], exclude_chat_only=True)
 
     def _ensure_agent_messages(self) -> None:
         """Initialise the append-only conversation (stable system prefix)."""
@@ -314,7 +377,7 @@ class LiveAgentEngine:
 
         if reason == "tidy_command":
             return (
-                f"Clinician said: \"{new_segments[-1] if new_segments else ''}\"\n\n"
+                f'Clinician said: "{new_segments[-1] if new_segments else ""}"\n\n'
                 f"Current note fields:\n{self._field_snapshot()}\n\n"
                 "Apply this command with the note tools, then confirm in one line."
             )
@@ -363,9 +426,7 @@ class LiveAgentEngine:
             assistant_message: dict[str, Any] = {"role": "assistant", "content": content}
             tool_calls = message.get("tool_calls") or []
             if tool_calls:
-                assistant_message["tool_calls"] = [
-                    _clean_tool_call(tc) for tc in tool_calls
-                ]
+                assistant_message["tool_calls"] = [_clean_tool_call(tc) for tc in tool_calls]
             messages.append(assistant_message)
 
             if not tool_calls:
@@ -382,14 +443,10 @@ class LiveAgentEngine:
                         await session.emit(event)
                     tool_content = result["content"]
                 else:
-                    tool_content, artifacts = await self._run_registry_tool(
-                        tool_call, name
-                    )
+                    tool_content, artifacts = await self._run_registry_tool(tool_call, name)
                     for artifact in artifacts:
                         session.staged_artifacts.append(artifact)
-                        await session.emit(
-                            {"type": "artifact_staged", "artifact": artifact}
-                        )
+                        await session.emit({"type": "artifact_staged", "artifact": artifact})
 
                 messages.append(
                     {
@@ -412,13 +469,9 @@ class LiveAgentEngine:
             final_text = response.get("message", {}).get("content") or ""
 
         if session.mode == "tidy" and reason == "tidy_command":
-            await session.emit(
-                {"type": "command_result", "content": final_text.strip()[:400]}
-            )
+            await session.emit({"type": "command_result", "content": final_text.strip()[:400]})
         elif final_text.strip():
-            await session.emit(
-                {"type": "agent_status", "content": final_text.strip()[:200]}
-            )
+            await session.emit({"type": "agent_status", "content": final_text.strip()[:200]})
         await session.emit({"type": "agent_state", "state": "listening"})
 
     async def _run_registry_tool(self, tool_call: dict, name: str) -> tuple[str, list]:
@@ -441,12 +494,12 @@ class LiveAgentEngine:
                     artifacts.append(chunk.get("artifact", {}))
                 elif chunk_type == "end":
                     function_response = chunk.get("function_response")
-                    if isinstance(function_response, dict) and function_response.get(
-                        "content"
-                    ):
+                    if isinstance(function_response, dict) and function_response.get("content"):
                         content = str(function_response["content"])
         except Exception as exc:
-            logger.error("Live session %s: registry tool '%s' failed: %s", self.session.id, name, exc)
+            logger.error(
+                "Live session %s: registry tool '%s' failed: %s", self.session.id, name, exc
+            )
             content = f"Error executing tool '{name}': {exc}"
         return content or f"Tool '{name}' returned no content.", artifacts
 
@@ -457,9 +510,7 @@ class LiveAgentEngine:
         async with session.state_lock:
             session.mode = "tidy"
         self._ensure_agent_messages()
-        session.agent_messages.append(
-            {"role": "user", "content": build_tidy_transition_message()}
-        )
+        session.agent_messages.append({"role": "user", "content": build_tidy_transition_message()})
         await session.emit({"type": "mode", "mode": "tidy"})
 
 
@@ -470,6 +521,48 @@ def _is_local_provider() -> bool:
     except Exception:
         return False
     return provider.lower() == "local"
+
+
+def _score_verdict_logprobs(logprobs: Any) -> dict[str, float] | None:
+    """Sum first-token probability mass per verdict from an OpenAI-style
+    logprobs payload.
+    """
+    if not isinstance(logprobs, dict):
+        return None
+    content = logprobs.get("content")
+    if not isinstance(content, list) or not content:
+        return None
+    first = content[0] if isinstance(content[0], dict) else {}
+    entries = list(first.get("top_logprobs") or [])
+    if first.get("token") is not None:
+        entries.append({"token": first.get("token"), "logprob": first.get("logprob")})
+
+    scores = dict.fromkeys(_GATE_VERDICTS, 0.0)
+    seen_tokens: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        token = str(entry.get("token", "")).strip().upper()
+        logprob = entry.get("logprob")
+        if not token or token in seen_tokens or not isinstance(logprob, (int, float)):
+            continue
+        seen_tokens.add(token)
+        for verdict in _GATE_VERDICTS:
+            if token == verdict or verdict.startswith(token):
+                scores[verdict] += math.exp(logprob)
+                break
+    return scores if any(scores.values()) else None
+
+
+def _is_logprobs_error(exc: Exception) -> bool:
+    """Detect provider rejections of the logprobs params (strict clouds)."""
+    status = getattr(exc, "status_code", None)
+    text = str(exc).lower()
+    if status == 400 and "logprob" in text:
+        return True
+    return "logprob" in text and any(
+        marker in text for marker in ("unsupported", "not supported", "invalid")
+    )
 
 
 def _gate_fallback() -> str:
@@ -510,9 +603,7 @@ def _clean_tool_call(tool_call: dict) -> dict[str, Any]:
             "type": "function",
             "function": {
                 "name": getattr(getattr(tool_call, "function", None), "name", ""),
-                "arguments": getattr(
-                    getattr(tool_call, "function", None), "arguments", ""
-                ),
+                "arguments": getattr(getattr(tool_call, "function", None), "arguments", ""),
             },
         }
     cleaned = {
@@ -525,14 +616,10 @@ def _clean_tool_call(tool_call: dict) -> dict[str, Any]:
     }
     if not isinstance(cleaned["function"]["arguments"], str):
         # Some providers return dict arguments.
-        cleaned["function"]["arguments"] = json.dumps(
-            cleaned["function"]["arguments"]
-        )
+        cleaned["function"]["arguments"] = json.dumps(cleaned["function"]["arguments"])
     if not cleaned["id"]:
         cleaned["id"] = f"call_{id(tool_call)}"
     return cleaned
 
 
-_LIVE_TOOL_NAMES = {
-    t["function"]["name"] for t in get_live_tools_definition()
-}
+_LIVE_TOOL_NAMES = {t["function"]["name"] for t in get_live_tools_definition()}
