@@ -24,16 +24,91 @@ fn position_traffic_light_buttons(ns_window: &objc2_app_kit::NSWindow) {
     use objc2_app_kit::NSWindowButton;
     use objc2_foundation::{NSPoint, NSRect};
 
-    if let Some(close_button) = ns_window.standardWindowButton(NSWindowButton::CloseButton) {
-        // superview() is unsafe (not retained internally)
-        if let Some(superview) = unsafe { close_button.superview() } {
-            let frame = superview.frame();
-            let new_frame = NSRect::new(
-                NSPoint::new(frame.origin.x + 9.0, frame.origin.y - 8.0),
-                frame.size,
-            );
-            superview.setFrame(new_frame);
-        }
+    // Matches the previous look: default inset + the old (9, -8) nudge.
+    const INSET_X: f64 = 16.0;
+    const INSET_Y: f64 = 15.0;
+    const SPACING: f64 = 23.0;
+    const V_CENTER: f64 = 4.0;
+
+    let buttons: Vec<_> = [
+        NSWindowButton::CloseButton,
+        NSWindowButton::MiniaturizeButton,
+        NSWindowButton::ZoomButton,
+    ]
+    .into_iter()
+    .filter_map(|kind| ns_window.standardWindowButton(kind))
+    .collect();
+
+    let Some(close_button) = buttons.first() else {
+        return;
+    };
+
+    let Some(strip) = (unsafe { close_button.superview() }) else {
+        return;
+    };
+    let Some(container) = (unsafe { strip.superview() }) else {
+        return;
+    };
+
+    let button_height = close_button.frame().size.height;
+    let strip_height = button_height + 2.0 * (INSET_Y - V_CENTER);
+
+    let mut container_frame = container.frame();
+    container_frame.size.height = strip_height;
+    container_frame.origin.y = ns_window.frame().size.height - strip_height;
+    container.setFrame(container_frame);
+
+    // Pin each button at an absolute origin within the strip
+    let button_y = (strip_height - button_height) / 2.0 - V_CENTER;
+    for (i, button) in buttons.iter().enumerate() {
+        let size = button.frame().size;
+        button.setFrame(NSRect::new(
+            NSPoint::new(INSET_X + i as f64 * SPACING, button_y),
+            size,
+        ));
+    }
+}
+
+/// Keep the traffic lights pinned during live resize and fullscreen
+/// transitions.
+#[cfg(target_os = "macos")]
+fn install_traffic_light_observer(ns_window: &objc2_app_kit::NSWindow) {
+    use block2::RcBlock;
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
+    use objc2_app_kit::{
+        NSWindow, NSWindowDidExitFullScreenNotification, NSWindowDidResizeNotification,
+    };
+    use objc2_foundation::{NSNotification, NSNotificationCenter};
+    use std::ptr::NonNull;
+
+    // Capture as usize: the block must be 'static, and the main window
+    // outlives the app.
+    let window_ptr = ns_window as *const NSWindow as usize;
+    let block: RcBlock<dyn Fn(NonNull<NSNotification>)> = RcBlock::new(move |_note| {
+        let ns_window = unsafe { &*(window_ptr as *const NSWindow) };
+        position_traffic_light_buttons(ns_window);
+    });
+
+    let window: Retained<NSWindow> =
+        unsafe { Retained::retain(ns_window as *const NSWindow as *mut NSWindow) }
+            .expect("main window is alive");
+    let window: Retained<AnyObject> = unsafe { Retained::cast_unchecked(window) };
+
+    let center = NSNotificationCenter::defaultCenter();
+    // Reading extern statics is unsafe: the pointers come from AppKit.
+    let did_resize = unsafe { NSWindowDidResizeNotification };
+    let did_exit_fullscreen = unsafe { NSWindowDidExitFullScreenNotification };
+    for name in [did_resize, did_exit_fullscreen] {
+        let token = unsafe {
+            center.addObserverForName_object_queue_usingBlock(
+                Some(name),
+                Some(&*window),
+                None,
+                &block,
+            )
+        };
+        std::mem::forget(token);
     }
 }
 
@@ -108,6 +183,7 @@ pub fn run() {
 
                     // Position traffic light buttons
                     position_traffic_light_buttons(ns_window);
+                    install_traffic_light_observer(ns_window);
                 }
             }
 
