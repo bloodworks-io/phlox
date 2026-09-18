@@ -20,6 +20,8 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 
 ## Key Features 
 - **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local.
+- **👥 Multi-User:** Account-based access control; each user's encounters, templates, and knowledge base stay their own.
+- **🌍 Multilingual:** Transcribe and generate notes and letters in multiple languages.
 - **🎤 Ambient Note Generation** Automatically generate structured clinical notes with customizable templates.
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.
 - **📝 Flexible Template System:**  Including automated template generation from example notes you provide.
@@ -59,10 +61,10 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - PHLOX_PASSPHRASE=    # Will be prompted for in the browser
       - DB_ENCRYPTION_KEY=   # Required: generate a strong random key
       - TZ=                  # e.g. America/New_York
-      # Alternative to PHLOX_PASSPHRASE: auth handled by your reverse proxy
+      # Authentication: built-in
+      # Alternative: auth handled by your reverse proxy
       # (pick one approach - do not combine)
       # - PROXY_AUTH_ENABLED=true
       # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
@@ -76,6 +78,8 @@ services:
 ```
 
 Then `docker compose up -d`. See the [Setup guide](https://phlox.bloodworks.io/docs/setup) for full instructions including `.env` configuration.
+
+Authentication is required for Docker deployments: the first browser visit walks through creating the admin account, and further users are added from Settings → Users.
 
 The Docker image does not have any inference or transcription capability built-in. OpenAI compatible endpoints are required for transcription and note generation. 
 
