@@ -27,8 +27,7 @@ _scope_mine: ContextVar[bool] = ContextVar("scope_mine", default=False)
 
 @contextmanager
 def restrict_admin_scope(scope: str | None):
-    """``?scope=mine`` request scope: admins see only their own rows.
-    """
+    """``?scope=mine`` request scope: admins see only their own rows."""
     token = _scope_mine.set(scope == "mine")
     try:
         yield

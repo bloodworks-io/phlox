@@ -64,9 +64,7 @@ async def process_transcription(
         # placeholder rather than a blank field
         processed_fields = {
             field.field_key: (
-                refined_content
-                if str(refined_content).strip()
-                else EMPTY_FIELD_PLACEHOLDER
+                refined_content if str(refined_content).strip() else EMPTY_FIELD_PLACEHOLDER
             )
             for field, refined_content in zip(non_persistent_fields, refined_results, strict=True)
         }

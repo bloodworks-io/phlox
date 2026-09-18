@@ -30,6 +30,12 @@ export default tseslint.config(
         },
     },
     {
+        files: [".github/scripts/**"],
+        languageOptions: {
+            globals: { ...globals.node },
+        },
+    },
+    {
         files: ["src/**/*.{js,jsx,ts,tsx}"],
         plugins: {
             "unused-imports": unusedImports,
