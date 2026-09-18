@@ -225,7 +225,6 @@ class ConfigManager:
                     default_template_key,
                     default_letter_template_id,
                     has_completed_splash_screen,
-                    scribe_is_ambient,
                     preferred_language
                 FROM user_settings
                 WHERE {where}
@@ -241,8 +240,6 @@ class ConfigManager:
                 settings["has_completed_splash_screen"] = bool(
                     settings["has_completed_splash_screen"]
                 )
-            if "scribe_is_ambient" in settings:
-                settings["scribe_is_ambient"] = bool(settings["scribe_is_ambient"])
             if not settings.get("preferred_language"):
                 settings["preferred_language"] = "en"
             return settings
@@ -258,7 +255,6 @@ class ConfigManager:
             "default_template_key": None,
             "default_letter_template_id": None,
             "has_completed_splash_screen": False,
-            "scribe_is_ambient": True,
             "preferred_language": "en",
         }
 
@@ -282,10 +278,9 @@ class ConfigManager:
                     default_template_key,
                     default_letter_template_id,
                     has_completed_splash_screen,
-                    scribe_is_ambient,
                     preferred_language,
                     user_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     settings.get("name", ""),
@@ -299,7 +294,6 @@ class ConfigManager:
                     settings.get("default_template_key"),
                     settings.get("default_letter_template_id"),
                     bool(settings.get("has_completed_splash_screen", False)),
-                    bool(settings.get("scribe_is_ambient", True)),
                     settings.get("preferred_language", "en"),
                     uid,
                 ),

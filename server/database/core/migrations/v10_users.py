@@ -36,5 +36,8 @@ def migrate(cursor, _db):
     cursor.execute("ALTER TABLE todos ADD COLUMN owner_id INTEGER")
     cursor.execute("ALTER TABLE user_settings ADD COLUMN user_id INTEGER")
 
+    # Scribe capture mode now persists in the client (localStorage), not the DB.
+    cursor.execute("ALTER TABLE user_settings DROP COLUMN scribe_is_ambient")
+
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_encounters_created_by ON encounters(created_by)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)")
