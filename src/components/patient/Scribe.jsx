@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranscription } from "../../utils/hooks/useTranscription";
-import { settingsService } from "../../utils/settings/settingsUtils";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { AudioRecorder } from "../../utils/audioRecorder";
+
+const SCRIBE_MODE_STORAGE_KEY = "phlox-scribe-mode";
 
 // Hook to manage scribe state and logic
 // This can be used by ScribePillBox to control recording
@@ -16,7 +17,9 @@ export const useScribe = ({
     setLoading,
     onSendStart,
 }) => {
-    const [isAmbient, setIsAmbient] = useState(true);
+    const [isAmbient, setIsAmbient] = useState(
+        () => localStorage.getItem(SCRIBE_MODE_STORAGE_KEY) !== "dictate",
+    );
     const [requireConsent, setRequireConsent] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -38,17 +41,11 @@ export const useScribe = ({
         });
     }, setLoading);
 
-    // Fetch user + system-policy settings on mount
+    // Fetch system-policy settings on mount
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const [data, globalConfig] = await Promise.all([
-                    settingsApi.fetchUserSettings(),
-                    settingsApi.fetchConfig(),
-                ]);
-                if (data && typeof data.scribe_is_ambient === "boolean") {
-                    setIsAmbient(data.scribe_is_ambient);
-                }
+                const globalConfig = await settingsApi.fetchConfig();
                 setRequireConsent(Boolean(globalConfig?.REQUIRE_SCRIBE_CONSENT));
             } catch (error) {
                 console.error("Error fetching settings:", error);
@@ -212,14 +209,14 @@ export const useScribe = ({
         resetRecordingState();
     }, [isRecording, resetRecordingState]);
 
+    // Capture mode persists per-device in localStorage.
     const toggleAmbientMode = useCallback(async () => {
         const newValue = !isAmbient;
         setIsAmbient(newValue);
-        try {
-            await settingsService.saveAmbientMode(newValue);
-        } catch (error) {
-            console.error("Failed to save ambient mode setting:", error);
-        }
+        localStorage.setItem(
+            SCRIBE_MODE_STORAGE_KEY,
+            newValue ? "ambient" : "dictate",
+        );
     }, [isAmbient]);
 
     // Handle audio file drop
