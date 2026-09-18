@@ -163,9 +163,7 @@ def test_parse_field_summaries_wrapped():
         _make_field(),
         _make_field(field_key="plan", field_name="Plan"),
     ]
-    content = json.dumps(
-        {"field_summaries": {"current_history": ["Hx one"], "plan": ["Plan one"]}}
-    )
+    content = json.dumps({"field_summaries": {"current_history": ["Hx one"], "plan": ["Plan one"]}})
     assert _parse_field_summaries(content, fields) == {
         "current_history": ["Hx one"],
         "plan": ["Plan one"],
@@ -201,9 +199,7 @@ def test_parse_field_summaries_single_string_value():
 
 def test_parse_field_summaries_drops_junk_keys():
     fields = [_make_field()]
-    summaries = _parse_field_summaries(
-        '{"junk": ["x"], "current_history": ["Hx"]}', fields
-    )
+    summaries = _parse_field_summaries('{"junk": ["x"], "current_history": ["Hx"]}', fields)
     assert summaries == {"current_history": ["Hx"]}
 
 

@@ -98,8 +98,7 @@ def invalid_trusted_proxy_entries(entries: list[str]) -> list[str]:
 
 
 def _extract_client_ip_from_xff(forwarded_for: str) -> str | None:
-    """Return the real client IP from an X-Forwarded-For chain, right-to-left.
-    """
+    """Return the real client IP from an X-Forwarded-For chain, right-to-left."""
     candidates = [c.strip() for c in forwarded_for.split(",")]
     for candidate in reversed(candidates):
         if not candidate:
@@ -147,8 +146,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class TrustedProxyMiddleware(BaseHTTPMiddleware):
-    """Extract real client IP from X-Forwarded-For header if from a trusted proxy.
-    """
+    """Extract real client IP from X-Forwarded-For header if from a trusted proxy."""
 
     async def dispatch(self, request, call_next):
         client_host = request.client.host if request.client else "unknown"

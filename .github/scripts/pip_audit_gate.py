@@ -4,8 +4,12 @@ import sys
 if len(sys.argv) != 2:
     sys.exit("usage: python pip_audit_gate.py <pip-audit-json>")
 
-with open(sys.argv[1]) as f:
-    report = json.load(f)
+try:
+    with open(sys.argv[1]) as f:
+        report = json.load(f)
+except (OSError, json.JSONDecodeError) as e:
+    print(f"::error::pip audit report missing or invalid - did pip-audit run? ({e})")
+    sys.exit(1)
 
 dependencies = report["dependencies"] if isinstance(report, dict) else report
 

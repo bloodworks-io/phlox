@@ -6,7 +6,13 @@ if (!path) {
   process.exit(2);
 }
 
-const report = JSON.parse(readFileSync(path, "utf8"));
+let report;
+try {
+  report = JSON.parse(readFileSync(path, "utf8"));
+} catch (e) {
+  console.log(`::error::npm audit report missing or invalid - did npm audit run? (${e})`);
+  process.exit(1);
+}
 const vulnerabilities = Object.values(report.vulnerabilities ?? {});
 
 let failing = 0;
