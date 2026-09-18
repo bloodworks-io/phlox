@@ -99,4 +99,27 @@ describe("UtteranceSegmenter", () => {
         expect(tail.length).toBe(3 * loud().length);
         expect(seg.flush()).toBeNull(); // nothing left
     });
+
+    it("is immune to caller-side buffer recycling (WebKit ScriptProcessor)", () => {
+        const seg = new UtteranceSegmenter(SR);
+        const recycled = new Float32Array(Math.round((SR * 200) / 1000));
+        const push = (value) => {
+            recycled.fill(value);
+            const out = seg.process(recycled);
+            recycled.fill(0); // engine reuses the memory for the next callback
+            return out;
+        };
+
+        expect(push(0.3)).toBeNull(); // streak 200ms < 250ms start
+        expect(push(0.3)).toBeNull(); // speech opens
+        expect(push(0.3)).toBeNull();
+        expect(push(0.001)).toBeNull();
+        expect(push(0.001)).toBeNull();
+        const emitted = push(0.001); // 600ms silence closes it
+        expect(emitted).toBeInstanceOf(Float32Array);
+        // The segment must keep the loud speech captured earlier, not the
+        // recycled (zeroed) memory contents at emit time.
+        expect(emitted[0]).toBeCloseTo(0.3, 5);
+        expect(emitted[Math.round((SR * 200) / 1000) - 1]).toBeCloseTo(0.3, 5);
+    });
 });

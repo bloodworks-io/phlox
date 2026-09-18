@@ -34,6 +34,9 @@ export class UtteranceSegmenter {
      * or null while an utterance is still open / nothing was said.
      */
     process(chunk) {
+        if (chunk && chunk.length > 0) {
+            chunk = new Float32Array(chunk);
+        }
         const rms = computeRms(chunk);
         const opts = this.options;
 
