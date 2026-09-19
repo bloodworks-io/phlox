@@ -79,7 +79,14 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                             <VStack align="stretch" gap={4}>
                                 {releases.length > 0 ? (
                                     releases.map((release, index) => (
-                                        <Box key={index} mb={2}>
+                                        <Box
+                                            key={index}
+                                            mb={2}
+                                            className="anim-fade-slide-up"
+                                            css={{
+                                                animationDuration: "0.2s",
+                                            }}
+                                        >
                                             <ReactMarkdown>
                                                 {release}
                                             </ReactMarkdown>

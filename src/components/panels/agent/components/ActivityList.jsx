@@ -31,7 +31,14 @@ export const ActivityList = ({ statuses }) => (
         {statuses.map((item) => {
             const Icon = ACTIVITY_ICONS[item.kind] || FaInfoCircle;
             return (
-                <HStack key={item.id} gap={2} alignItems="flex-start" mb={1.5}>
+                <HStack
+                    key={item.id}
+                    gap={2}
+                    alignItems="flex-start"
+                    mb={1.5}
+                    className="anim-fade-slide-right"
+                    css={{ animationDuration: "0.2s" }}
+                >
                     <Box
                         as="span"
                         mt="3px"

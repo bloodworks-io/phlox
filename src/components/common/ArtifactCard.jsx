@@ -27,7 +27,11 @@ const ArtifactCard = ({ artifact }) => {
             borderColor="border"
             bg="surfaceInset"
             _dark={{ borderColor: "border", bg: "surface1" }}
+            _hover={{ borderColor: "accent" }}
+            transition="border-color 0.15s ease"
             maxW="320px"
+            className="anim-fade-scale"
+            css={{ animationDuration: "0.2s" }}
         >
             <HStack gap={2} mb={1}>
                 {React.createElement(icon, { size: "1.2em", color: "overlay0" })}

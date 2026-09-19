@@ -464,34 +464,48 @@ const Settings = () => {
                 />
 
                 {isAdmin && (
-                    <AdminSettingsPanel
-                        isCollapsed={collapseStates.modelSettings}
-                        setIsCollapsed={() => toggleCollapse("modelSettings")}
-                        config={config}
-                        handleConfigChange={handleConfigChange}
-                        modelOptions={modelOptions}
-                        embeddingModelOptions={modelOptions}
-                        whisperModelOptions={whisperModelOptions}
-                        whisperModelListAvailable={whisperModelListAvailable}
-                        whisperModelsLoading={whisperModelsLoading}
-                        llmModelsLoading={llmModelsLoading}
-                        urlStatus={urlStatus}
-                        handleReEmbed={handleReEmbed}
-                    />
+                    <Box
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.2s" }}
+                    >
+                        <AdminSettingsPanel
+                            isCollapsed={collapseStates.modelSettings}
+                            setIsCollapsed={() =>
+                                toggleCollapse("modelSettings")
+                            }
+                            config={config}
+                            handleConfigChange={handleConfigChange}
+                            modelOptions={modelOptions}
+                            embeddingModelOptions={modelOptions}
+                            whisperModelOptions={whisperModelOptions}
+                            whisperModelListAvailable={whisperModelListAvailable}
+                            whisperModelsLoading={whisperModelsLoading}
+                            llmModelsLoading={llmModelsLoading}
+                            urlStatus={urlStatus}
+                            handleReEmbed={handleReEmbed}
+                        />
+                    </Box>
                 )}
 
                 {isAdmin && (
-                    <PromptSettingsPanel
-                        isCollapsed={collapseStates.promptSettings}
-                        setIsCollapsed={() => toggleCollapse("promptSettings")}
-                        prompts={prompts}
-                        handlePromptChange={handlePromptChange}
-                        handlePromptReset={handlePromptReset}
-                        options={options}
-                        handleOptionChange={handleOptionChange}
-                        handleOptionsReset={handleOptionsReset}
-                        config={config}
-                    />
+                    <Box
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.2s", animationDelay: "60ms" }}
+                    >
+                        <PromptSettingsPanel
+                            isCollapsed={collapseStates.promptSettings}
+                            setIsCollapsed={() =>
+                                toggleCollapse("promptSettings")
+                            }
+                            prompts={prompts}
+                            handlePromptChange={handlePromptChange}
+                            handlePromptReset={handlePromptReset}
+                            options={options}
+                            handleOptionChange={handleOptionChange}
+                            handleOptionsReset={handleOptionsReset}
+                            config={config}
+                        />
+                    </Box>
                 )}
             </VStack>
         </Box>

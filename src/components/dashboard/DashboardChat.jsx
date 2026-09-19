@@ -367,9 +367,13 @@ const DashboardChat = () => {
                     isIntroFading && !isProcessingImage ? "none" : "auto"
                 }
             >
-                <VStack gap={8} w="100%" maxW="800px">
-                    {/* Greeting */}
-                    <VStack gap={2}>
+                    <VStack gap={8} w="100%" maxW="800px">
+                        {/* Greeting */}
+                        <VStack
+                            gap={2}
+                            className="anim-fade-slide-up"
+                            css={{ animationDuration: "0.25s" }}
+                        >
                         <Text
                             fontSize="2xl"
                             fontWeight="bold"
@@ -464,12 +468,13 @@ const DashboardChat = () => {
     // Active chat state - messages at top, input at bottom
     return (
         <Box
-            className="dashboard-chat-container"
+            className="dashboard-chat-container anim-fade-slide-up"
             display="flex"
             flexDirection="column"
             h="100%"
             position="relative"
             pt="60px"
+            css={{ animationDuration: "0.25s" }}
         >
             {/* Messages Area - scrollable middle */}
             <Box

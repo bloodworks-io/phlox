@@ -197,7 +197,13 @@ const EncryptionUnlock = ({ onComplete }) => {
           </Flex>
 
           {attempts > 0 && lastWasPassphrase && (
-            <Alert.Root status="warning" borderRadius="md" fontSize="sm">
+            <Alert.Root
+              status="warning"
+              borderRadius="md"
+              fontSize="sm"
+              className="anim-fade-slide-up"
+              css={{ animationDuration: "0.2s" }}
+            >
               <Alert.Indicator />
               <Text fontSize="xs">
                 Incorrect passphrase. Please try again. ({attempts} attempt

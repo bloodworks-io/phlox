@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Box, Flex, IconButton, Text, Collapsible, Textarea, Button, Tabs, NumberInput, HStack, VStack, Alert } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
-import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import {
   FaPencilAlt,
   FaFileAlt,
@@ -49,7 +49,7 @@ const PromptSettingsPanel = ({
             variant="outline"
             size="sm"
             mr="2"
-            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
+            className="collapse-toggle"><AnimatedChevron isOpen={!isCollapsed} /></IconButton>
           <FaPencilAlt size="1.2em" style={{ marginRight: "5px" }} />
           <Text as="h3">Prompt Settings</Text>
         </Flex>

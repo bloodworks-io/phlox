@@ -20,6 +20,7 @@ import { FaCheckDouble, FaPlus, FaTimes } from "react-icons/fa";
 import useSWRMutation from "swr/mutation";
 import { patientApi } from "../../utils/api/patientApi";
 import { GreenButton } from "../common/Buttons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { KEYS } from "../../utils/cache/keys";
 
 const Section = ({ title, children }) => (
@@ -204,6 +205,10 @@ const WrapUpModal = ({
                                                 align="flex-start"
                                                 gap={2}
                                                 w="100%"
+                                                className="anim-fade-slide-up"
+                                                css={{
+                                                    animationDuration: "0.15s",
+                                                }}
                                             >
                                                 <Checkbox.Root
                                                     className="checkbox task-checkbox"
@@ -297,7 +302,13 @@ const WrapUpModal = ({
                                                 setShowExcluded((s) => !s)
                                             }
                                         >
-                                            {showExcluded ? "▾" : "▸"} Not tasks
+                                            <AnimatedChevron
+                                                isOpen={showExcluded}
+                                                display="inline-block"
+                                                verticalAlign="-2px"
+                                                mr="2px"
+                                            />
+                                            Not tasks
                                             (review/follow-up) —{" "}
                                             {excluded.length}
                                         </Text>

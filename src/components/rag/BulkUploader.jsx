@@ -20,7 +20,13 @@ const StatusIcon = ({ status }) => {
             return <CheckIcon color="successButton" mr="2" boxSize={3} />;
         case STATUS.COMMITTED:
             return (
-                <CheckIcon color="successButton" mr="2" boxSize={3} />
+                <CheckIcon
+                    color="successButton"
+                    mr="2"
+                    boxSize={3}
+                    className="anim-fade-scale"
+                    css={{ animationDuration: "0.2s" }}
+                />
             );
         case STATUS.FAILED:
             return <WarningIcon color="dangerButton" mr="2" boxSize={3} />;
@@ -158,7 +164,11 @@ const BulkUploader = ({ setCollections }) => {
             {fileQueue.length > 0 && (
                 <VStack gap={2} align="stretch">
                     {fileQueue.map((entry) => (
-                        <Box key={entry.id}>
+                        <Box
+                            key={entry.id}
+                            className="anim-fade-slide-up"
+                            css={{ animationDuration: "0.15s" }}
+                        >
                             <Flex
                                 alignItems="center"
                                 p="2"

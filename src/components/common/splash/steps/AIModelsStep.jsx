@@ -233,7 +233,11 @@ export const AIModelsStep = ({ llm, transcription }) => {
               </Text>
             </Flex>
           ) : (
-            <>
+            <Box
+              w="100%"
+              className="anim-fade-slide-up"
+              sx={{ animationDuration: "0.2s" }}
+            >
               {/* Intro text */}
               <VStack align="start" gap={0.5} w="100%">
                 <Text fontSize="sm" fontWeight="bold" color="textPrimary">
@@ -271,6 +275,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                 )}
 
                 <Grid
+                  key={startIndex}
                   flex="1"
                   templateColumns={{
                     base: "1fr",
@@ -280,6 +285,8 @@ export const AIModelsStep = ({ llm, transcription }) => {
                         : `repeat(${visibleModels.length}, 1fr)`,
                   }}
                   gap={3}
+                  className="anim-fade-slide-right"
+                  sx={{ animationDuration: "0.2s" }}
                 >
                   {visibleModels.map((model) => (
                     <CompactModelCard
@@ -383,7 +390,12 @@ export const AIModelsStep = ({ llm, transcription }) => {
                         </Tooltip>
                       </HStack>
                       {whisperReady ? (
-                        <CheckIcon color="successButton" boxSize={4} />
+                        <CheckIcon
+                          color="successButton"
+                          boxSize={4}
+                          className="anim-fade-scale"
+                          sx={{ animationDuration: "0.2s" }}
+                        />
                       ) : whisperDownloading ? (
                         <HStack gap={1}>
                           <Progress.Root
@@ -476,7 +488,12 @@ export const AIModelsStep = ({ llm, transcription }) => {
                         </Tooltip>
                       </HStack>
                       {embeddingDownloaded ? (
-                        <CheckIcon color="successButton" boxSize={4} />
+                        <CheckIcon
+                          color="successButton"
+                          boxSize={4}
+                          className="anim-fade-scale"
+                          sx={{ animationDuration: "0.2s" }}
+                        />
                       ) : isDownloadingEmbedding ? (
                         <HStack gap={1}>
                           <Progress.Root
@@ -511,7 +528,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                   </Box>
                 </HStack>
               </VStack>
-            </>
+            </Box>
           )}
         </>
       )}

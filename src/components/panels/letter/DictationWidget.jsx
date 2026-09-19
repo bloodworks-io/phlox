@@ -40,6 +40,7 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
       px={4}
       py={2}
       boxShadow="md"
+      className="anim-fade"
     >
       {bars.map((bar, i) => (
         <Box

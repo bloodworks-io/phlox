@@ -191,7 +191,13 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                         alignSelf="flex-start"><AddIcon />Extract PDF Info
                                                                         </Button>
                                     {pdfData && (
-                                        <VStack gap={3} align="stretch" mt={2}>
+                                        <VStack
+                                            gap={3}
+                                            align="stretch"
+                                            mt={2}
+                                            className="anim-fade-slide-up"
+                                            css={{ animationDuration: "0.2s" }}
+                                        >
                                             <Text fontWeight="bold">Extracted Information</Text>
                                             <Field.Root>
                                             <Field.Label htmlFor="custom-collection">

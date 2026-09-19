@@ -11,6 +11,7 @@ import {
     Grid,
     Wrap,
     WrapItem,
+    Skeleton,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useRef, useEffect } from "react";
@@ -39,6 +40,7 @@ const PatientTable = ({
     title,
     groupByDate = false,
     summaryOnly = false,
+    isLoading = false,
 }) => {
     const pendingJobsUpdates = useRef(new Map());
     const { colorMode } = useColorMode();
@@ -124,7 +126,7 @@ const PatientTable = ({
         <Table.Row
             key={patient.id}
             backgroundColor={getRowBackgroundColor(index)}
-            transition="background-color 0.15s ease"
+            transition="background-color 0.15s ease, opacity 0.2s ease"
             _hover={{ backgroundColor: "surfaceQuartile" }}
             opacity={
                 summaryOnly &&
@@ -462,6 +464,10 @@ const PatientTable = ({
                                             display: "block",
                                             whiteSpace: "normal",
                                             paddingTop: 0,
+                                            transition:
+                                                "opacity 0.2s ease, text-decoration-color 0.2s ease",
+                                            textDecorationColor:
+                                                "currentColor",
                                             ...(item.completed
                                                 ? {
                                                       textDecoration:
@@ -499,10 +505,36 @@ const PatientTable = ({
         </Table.Row>
     );
 
+    // Placeholder rows while SWR loads, so the table doesn't flash empty.
+    const renderSkeletonRows = (count = 3) =>
+        Array.from({ length: count }, (_, i) => (
+            <Table.Row key={`skeleton-${i}`}>
+                <Table.Cell>
+                    <VStack align="stretch" gap={2} py={1}>
+                        <Skeleton height="16px" width="70%" />
+                        <Skeleton height="14px" width="50%" />
+                    </VStack>
+                </Table.Cell>
+                <Table.Cell>
+                    <Skeleton height="14px" width="90%" my={1} />
+                    <Skeleton height="14px" width="60%" />
+                </Table.Cell>
+                <Table.Cell>
+                    <Skeleton height="14px" width="80%" />
+                </Table.Cell>
+            </Table.Row>
+        ));
+
     return (
-        <Box p="5" borderRadius="xl" w="100%">
+        <Box
+            p="5"
+            borderRadius="xl"
+            w="100%"
+            className="anim-fade-slide-up"
+            css={{ animationDuration: "0.25s" }}
+        >
             <Text as="h2">{title}</Text>
-            {groupByDate ? (
+            {groupByDate && !isLoading ? (
                 Object.entries(
                     patients.reduce((acc, patient) => {
                         const date = patient.encounter_date;
@@ -513,7 +545,12 @@ const PatientTable = ({
                 )
                     .sort((a, b) => new Date(b[0]) - new Date(a[0]))
                     .map(([date, patients]) => (
-                        <Box key={date} mb={8}>
+                        <Box
+                            key={date}
+                            mb={8}
+                            className="anim-fade-slide-up"
+                            css={{ animationDuration: "0.25s" }}
+                        >
                             <Text as="h3" mb={2}>
                                 {new Date(date).toLocaleDateString()}
                             </Text>
@@ -547,15 +584,24 @@ const PatientTable = ({
                                             </Table.ColumnHeader>
                                         </Table.Row>
                                     </Table.Header>
-                                    <Table.Body>
-                                        {patients
-                                            .sort((a, b) => a.id - b.id)
-                                            .map((patient, index) =>
-                                                renderPatientRow(
-                                                    patient,
-                                                    index,
-                                                ),
-                                            )}
+                                    <Table.Body
+                                        className="anim-stagger"
+                                        css={{
+                                            "& > *": {
+                                                animationDuration: "0.15s",
+                                            },
+                                        }}
+                                    >
+                                        {isLoading
+                                            ? renderSkeletonRows()
+                                            : patients
+                                                  .sort((a, b) => a.id - b.id)
+                                                  .map((patient, index) =>
+                                                      renderPatientRow(
+                                                          patient,
+                                                          index,
+                                                      ),
+                                                  )}
                                     </Table.Body>
                                 </Table.Root>
                             </Box>
@@ -592,13 +638,22 @@ const PatientTable = ({
                                 </Table.ColumnHeader>
                             </Table.Row>
                         </Table.Header>
-                        <Table.Body>
-                            {patients
-                                .slice()
-                                .sort((a, b) => a.id - b.id)
-                                .map((patient, index) =>
-                                    renderPatientRow(patient, index),
-                                )}
+                        <Table.Body
+                            className="anim-stagger"
+                            css={{
+                                "& > *": {
+                                    animationDuration: "0.15s",
+                                },
+                            }}
+                        >
+                            {isLoading
+                                ? renderSkeletonRows(4)
+                                : patients
+                                      .slice()
+                                      .sort((a, b) => a.id - b.id)
+                                      .map((patient, index) =>
+                                          renderPatientRow(patient, index),
+                                      )}
                         </Table.Body>
                     </Table.Root>
                 </Box>

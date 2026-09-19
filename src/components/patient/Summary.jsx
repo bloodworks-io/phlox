@@ -291,11 +291,20 @@ const Summary = forwardRef(
                       <GreyButton
                         onClick={onCopy}
                         width="190px"
-                        leftIcon={recentlyCopied ? <CheckIcon /> : <CopyIcon />}
+                        leftIcon={
+                            recentlyCopied ? (
+                                <CheckIcon
+                                    className="anim-fade-scale"
+                                    css={{ animationDuration: "0.2s" }}
+                                />
+                            ) : (
+                                <CopyIcon />
+                            )
+                        }
                         mr="2"
-                      >
+                    >
                         {recentlyCopied ? "Copied!" : "Copy to Clipboard"}
-                      </GreyButton>
+                    </GreyButton>
                     </Box>
                   </Tooltip>
                   <Tooltip

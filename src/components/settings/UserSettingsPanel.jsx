@@ -2,7 +2,7 @@
 import { Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, Tabs, VStack, Field } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { FaUser, FaFileAlt, FaEnvelopeOpenText, FaComments } from "react-icons/fa";
 import TemplateSettingsPanel from "./TemplateSettingsPanel";
 import LetterTemplatesPanel from "./LetterTemplatesPanel";
@@ -74,7 +74,7 @@ const UserSettingsPanel = ({
             variant="outline"
             size="sm"
             mr="2"
-            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
+            className="collapse-toggle"><AnimatedChevron isOpen={!isCollapsed} /></IconButton>
           <FaUser size="1.2em" style={{ marginRight: "5px" }} />
           <Text as="h3">User Settings</Text>
         </Flex>

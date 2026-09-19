@@ -45,6 +45,8 @@ export const TranscriptSection = ({ transcripts, status }) => {
                             fontSize="xs"
                             lineHeight="1.5"
                             color={isRecent ? "fg.muted" : "fg.subtle"}
+                            className="anim-fade-slide-up"
+                            css={{ animationDuration: "0.15s" }}
                         >
                             {text}
                         </Text>

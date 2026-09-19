@@ -34,7 +34,13 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
   }
 
   return (
-    <VStack gap="3" align="stretch">
+    <VStack
+      key={field.id}
+      gap="3"
+      align="stretch"
+      className="anim-fade-slide-up"
+      css={{ animationDuration: "0.15s" }}
+    >
       <HStack justify="space-between">
         <Text as="h4">Field Properties</Text>
         <IconButton

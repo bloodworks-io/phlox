@@ -22,6 +22,7 @@ const OutstandingJobs = ({ handleSelectPatient, refreshSidebar, patientScope }) 
         },
     );
     const patients = data || [];
+    const isLoading = data === undefined;
     const setPatients = (updater) => mutate(updater, { revalidate: false });
 
     return (
@@ -33,6 +34,7 @@ const OutstandingJobs = ({ handleSelectPatient, refreshSidebar, patientScope }) 
             title="Outstanding Jobs"
             groupByDate={true}
             summaryOnly={true}
+            isLoading={isLoading}
         />
     );
 };

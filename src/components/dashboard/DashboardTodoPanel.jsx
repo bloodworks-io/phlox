@@ -15,9 +15,8 @@ import {
 import {
     AddIcon,
     DeleteIcon,
-    ChevronDownIcon,
-    ChevronUpIcon,
 } from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 
 const DashboardTodoPanel = ({
     todos = [],
@@ -51,11 +50,7 @@ const DashboardTodoPanel = ({
                         textDecoration="none"
                         _hover={{ color: "textPrimary", textDecoration: "none" }}>Todo list
                                             {
-                            isCollapsed ? (
-                                <ChevronDownIcon />
-                            ) : (
-                                <ChevronUpIcon />
-                            )
+                            <AnimatedChevron isOpen={!isCollapsed} direction="up" />
                         }</Button>
                     <Text fontSize="xs" color="overlay0">
                         {activeCount} active
@@ -125,6 +120,8 @@ const DashboardTodoPanel = ({
                                             align="center"
                                             justify="space-between"
                                             py={1}
+                                            className="anim-fade-slide-up"
+                                            css={{ animationDuration: "0.15s" }}
                                         >
                                             <Checkbox.Root
                                                 onCheckedChange={() =>
@@ -146,6 +143,12 @@ const DashboardTodoPanel = ({
                                                             ? "overlay0"
                                                             : "textTertiary"
                                                     }
+                                                    opacity={
+                                                        todo.completed
+                                                            ? 0.6
+                                                            : 1
+                                                    }
+                                                    transition="color 0.2s ease, opacity 0.2s ease"
                                                 >
                                                     {todo.task}
                                                 </Text>

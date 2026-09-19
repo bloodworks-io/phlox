@@ -1,9 +1,6 @@
 import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button, Switch } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import {
-    ChevronRightIcon,
-    ChevronDownIcon,
-} from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import {
     FaCog,
     FaDesktop,
@@ -172,11 +169,7 @@ const AdminSettingsPanel = ({
                         mr="2"
                         className="collapse-toggle"
                     >
-                        {isCollapsed ? (
-                            <ChevronRightIcon />
-                        ) : (
-                            <ChevronDownIcon />
-                        )}
+                        <AnimatedChevron isOpen={!isCollapsed} />
                     </IconButton>
                     <FaCog size="1.2em" style={{ marginRight: "5px" }} />
                     <Text as="h3">Admin Settings</Text>

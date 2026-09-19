@@ -21,7 +21,12 @@ const PanelFooterActions = ({
                 };
             case "saved":
                 return {
-                    leftIcon: <CheckIcon />,
+                    leftIcon: (
+                        <CheckIcon
+                            className="anim-fade-scale"
+                            css={{ animationDuration: "0.2s" }}
+                        />
+                    ),
                     children: "Saved!",
                 };
             default:
@@ -44,7 +49,16 @@ const PanelFooterActions = ({
                     onClick={handleCopy}
                     className="grey-button"
                     mr="2"
-                    disabled={letterLoading}>{recentlyCopied ? <CheckIcon /> : <CopyIcon />}{recentlyCopied ? "Copied!" : "Copy Letter"}</Button>
+                    disabled={letterLoading}>{
+                        recentlyCopied ? (
+                            <CheckIcon
+                                className="anim-fade-scale"
+                                css={{ animationDuration: "0.2s" }}
+                            />
+                        ) : (
+                            <CopyIcon />
+                        )
+                    }{recentlyCopied ? "Copied!" : "Copy Letter"}</Button>
                 <Button
                     onClick={handleSave}
                     className="green-button"

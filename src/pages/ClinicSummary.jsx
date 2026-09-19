@@ -24,6 +24,7 @@ const ClinicSummary = ({
         { revalidateOnMount: true },
     );
     const patients = data || [];
+    const isLoading = data === undefined;
 
     // SWR-backed setter so PatientTable can do local row edits without
     // triggering a revalidation round-trip.
@@ -36,6 +37,7 @@ const ClinicSummary = ({
             handleSelectPatient={handleSelectPatient}
             refreshSidebar={refreshSidebar}
             title={`Clinic Summary for ${selectedDate}`}
+            isLoading={isLoading}
         />
     );
 };

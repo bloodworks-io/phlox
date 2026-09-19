@@ -254,10 +254,27 @@ const SplashScreen = ({ onComplete }) => {
         {/* Header — logo, title, description, progress */}
         <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
           <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
-          <Heading as="h2" size="md" color="textPrimary" textAlign="center">
+          <Heading
+            as="h2"
+            size="md"
+            color="textPrimary"
+            textAlign="center"
+            key={currentStep}
+            className="anim-fade-slide-up"
+            sx={{ animationDuration: "0.2s" }}
+          >
             {STEP_TITLES[currentStep]}
           </Heading>
-          <Text fontSize="sm" color="textSecondary" textAlign="center" maxW="420px" lineHeight="1.5">
+          <Text
+            fontSize="sm"
+            color="textSecondary"
+            textAlign="center"
+            maxW="420px"
+            lineHeight="1.5"
+            key={`desc-${currentStep}`}
+            className="anim-fade-slide-up"
+            sx={{ animationDuration: "0.2s" }}
+          >
             {STEP_DESCRIPTIONS[currentStep]}
           </Text>
           <HStack w="100%" justify="space-between" mt={1}>

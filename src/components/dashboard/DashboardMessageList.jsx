@@ -95,6 +95,8 @@ const DashboardMessageList = ({
                                 ? "flex-start"
                                 : "flex-end"
                         }
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.2s" }}
                     >
                         <Box
                             className={`message-box ${message.role}`}

@@ -25,7 +25,7 @@ const renderItems = (section, reasoning, colorMode) => {
     }
 
     return (
-        <VStack align="stretch" gap={2}>
+        <VStack align="stretch" gap={2} className="anim-stagger">
             {items.map((item, i) => (
                 <ReasoningItem
                     key={i}

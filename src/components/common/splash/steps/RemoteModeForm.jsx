@@ -28,7 +28,12 @@ export const RemoteModeForm = ({
   isFetchingWhisperModels,
 }) => {
   return (
-    <VStack gap={3} w="100%">
+    <VStack
+      gap={3}
+      w="100%"
+      className="anim-fade-slide-up"
+      sx={{ animationDuration: "0.25s" }}
+    >
       <Field.Root>
         <HStack>
           <Field.Label fontSize="sm" color="textSecondary">

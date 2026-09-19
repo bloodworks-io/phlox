@@ -18,6 +18,7 @@ const documentExplorerStyles = (props) => ({
         overflow: "hidden !important",
         whiteSpace: "pre-wrap !important",
         boxShadow: "none !important",
+        transition: "background-color 0.15s ease !important",
     },
     ".documentExplorer-button": {
         backgroundColor: "none !important",

@@ -34,6 +34,24 @@ const FloatingPanel = ({
     const [arrowTop, setArrowTop] = useState("50%");
     const [arrowLeft, setArrowLeft] = useState("50%");
     const [minPanelHeight, setMinPanelHeight] = useState("auto");
+    // Delayed unmount so the close transition can play (mirrors the
+    // LiveWindow isClosing pattern).
+    const [shouldRender, setShouldRender] = useState(isOpen);
+    const [isClosing, setIsClosing] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setShouldRender(true);
+            setIsClosing(false);
+            return undefined;
+        }
+        setIsClosing(true);
+        const t = setTimeout(() => {
+            setShouldRender(false);
+            setIsClosing(false);
+        }, 180);
+        return () => clearTimeout(t);
+    }, [isOpen]);
 
     useEffect(() => {
         if (!isOpen || !showArrow || !triggerId) {
@@ -87,7 +105,7 @@ const FloatingPanel = ({
         };
     }, [isOpen, showArrow, triggerId, position, height, width]);
 
-    if (!isOpen) return null;
+    if (!shouldRender) return null;
 
     const getPositionStyles = () => {
         switch (position) {
@@ -119,6 +137,17 @@ const FloatingPanel = ({
 
     const positionStyles = getPositionStyles();
 
+    // Fade/shrink on close, composing with each position's base transform
+    // so centered panels don't jump while animating out.
+    const closeStyle = isClosing
+        ? {
+              opacity: 0,
+              transform: positionStyles.transform
+                  ? `${positionStyles.transform} scale(0.95)`
+                  : "scale(0.95)",
+          }
+        : undefined;
+
     // Get colors for the arrow to match the panel
     const bgColor =
         colorMode === "light" ? colors.light.secondary : colors.dark.secondary;
@@ -130,13 +159,15 @@ const FloatingPanel = ({
             ref={panelRef}
             position="fixed"
             {...positionStyles}
+            style={closeStyle}
+            transition="transform 0.18s ease-in, opacity 0.18s ease-in"
             width={width}
             height={height}
             minHeight={minPanelHeight}
             maxWidth={maxWidth}
             maxHeight={maxHeight}
             zIndex={zIndex}
-            pointerEvents="auto"
+            pointerEvents={isOpen ? "auto" : "none"}
             display="flex"
             flexDirection="column"
         >

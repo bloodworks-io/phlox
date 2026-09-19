@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { FaFileUpload } from "react-icons/fa";
@@ -45,7 +45,16 @@ const DemographicsForm = ({
     const [isExtracting, setIsExtracting] = useState(false);
     const [extractError, setExtractError] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    // Keys auto-filled by document extraction — flashed briefly so the
+    // user can see which fields the AI populated.
+    const [flashedKeys, setFlashedKeys] = useState(() => new Set());
+    const flashTimer = useRef(null);
     const fileInputRef = useRef(null);
+
+    useEffect(() => () => clearTimeout(flashTimer.current), []);
+
+    const inputClass = (key) =>
+        `input-style${flashedKeys.has(key) ? " live-field-updated" : ""}`;
 
     const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -66,7 +75,14 @@ const DemographicsForm = ({
             );
             // Merge only the fields the model returned (others left untouched).
             if (data && typeof data === "object") {
+                const keys = new Set(Object.keys(data));
                 setForm((prev) => ({ ...prev, ...data }));
+                setFlashedKeys(keys);
+                clearTimeout(flashTimer.current);
+                flashTimer.current = setTimeout(
+                    () => setFlashedKeys(new Set()),
+                    1800,
+                );
             }
         } catch (error) {
             setExtractError(
@@ -179,7 +195,13 @@ const DemographicsForm = ({
                     {isExtracting && <Spinner size="xs" />}
                 </HStack>
                 {extractError && (
-                    <Text fontSize="xs" color="dangerButton" mt={1}>
+                    <Text
+                        fontSize="xs"
+                        color="dangerButton"
+                        mt={1}
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.15s" }}
+                    >
                         {extractError}
                     </Text>
                 )}
@@ -187,7 +209,7 @@ const DemographicsForm = ({
             <HStack gap={3} align="flex-start">
                 <Field label="First name" required>
                     <Input
-                        className="input-style"
+                        className={inputClass("first_name")}
                         size="sm"
                         placeholder="First name"
                         autoFocus
@@ -197,7 +219,7 @@ const DemographicsForm = ({
                 </Field>
                 <Field label="Last name" required>
                     <Input
-                        className="input-style"
+                        className={inputClass("last_name")}
                         size="sm"
                         placeholder="Last name"
                         value={form.last_name || ""}
@@ -209,7 +231,7 @@ const DemographicsForm = ({
                 <Field label="Date of birth" required>
                     <Input
                         type="date"
-                        className="input-style"
+                        className={inputClass("dob")}
                         size="sm"
                         value={form.dob || ""}
                         onChange={(e) => set("dob", e.target.value)}
@@ -218,7 +240,7 @@ const DemographicsForm = ({
                 <Field label="Gender">
                     <NativeSelect.Root>
                         <NativeSelect.Field
-                            className="input-style"
+                            className={inputClass("gender")}
                             size="sm"
                             value={form.gender || ""}
                             onChange={(e) => set("gender", e.target.value)}>
@@ -233,7 +255,7 @@ const DemographicsForm = ({
             <HStack gap={3} align="flex-start">
                 <Field label="UR number" required>
                     <Input
-                        className="input-style"
+                        className={inputClass("ur_number")}
                         size="sm"
                         placeholder="UR number"
                         value={form.ur_number || ""}
@@ -242,7 +264,7 @@ const DemographicsForm = ({
                 </Field>
                 <Field label="Phone">
                     <Input
-                        className="input-style"
+                        className={inputClass("phone")}
                         size="sm"
                         placeholder="Phone"
                         value={form.phone || ""}
@@ -252,7 +274,7 @@ const DemographicsForm = ({
             </HStack>
             <Field label="Address">
                 <Input
-                    className="input-style"
+                    className={inputClass("address")}
                     size="sm"
                     placeholder="Address"
                     value={form.address || ""}

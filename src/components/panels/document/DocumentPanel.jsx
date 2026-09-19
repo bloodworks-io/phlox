@@ -225,6 +225,8 @@ const DocumentPanel = ({
             justifyContent="center"
             textAlign="center"
             borderRadius="sm"
+            className="anim-fade-scale"
+            css={{ animationDuration: "0.2s" }}
           >
             <Flex mb={2}>
               <Alert.Indicator mr={2} asChild><FaExclamationTriangle /></Alert.Indicator>
@@ -246,13 +248,26 @@ const DocumentPanel = ({
             </ButtonGroup>
           </Alert.Root>
         ) : isProcessing || isTranscribing ? (
-          <Flex justify="center" align="center" py={8} direction="column">
+          <Flex
+            justify="center"
+            align="center"
+            py={8}
+            direction="column"
+            className="anim-fade-scale"
+            css={{ animationDuration: "0.2s" }}
+          >
             <Spinner size="xl" mb={4} />
             <Text>Processing document...</Text>
           </Flex>
         ) : !extractedDocData ? (
           // Upload UI
-          (<VStack gap={4} width="full" align="stretch">
+          (<VStack
+            gap={4}
+            width="full"
+            align="stretch"
+            className="anim-fade-slide-up"
+            css={{ animationDuration: "0.2s" }}
+          >
             <Text textAlign="center" fontSize="sm">
               Upload a referral letter or other document to extract information.
             </Text>
@@ -291,8 +306,10 @@ const DocumentPanel = ({
           </VStack>)
         ) : (
           // Document processed UI with toggle buttons
-          (<>
-            <Flex justify="space-between" align="center" mb={3}>
+          (<Box
+            className="anim-fade-slide-up"
+            css={{ animationDuration: "0.2s" }}
+          >            <Flex justify="space-between" align="center" mb={3}>
               <Text fontWeight="bold" fontSize="sm">
                 {docFileName}
               </Text>
@@ -345,7 +362,13 @@ const DocumentPanel = ({
                           height="20px"
                           minWidth="70px"
                           fontSize="xs">{
-                            isReplaced ? <CheckIcon boxSize="2" /> : null
+                            isReplaced ? (
+                              <CheckIcon
+                                boxSize="2"
+                                className="anim-fade-scale"
+                                css={{ animationDuration: "0.2s" }}
+                              />
+                            ) : null
                           }{isReplaced ? "Using" : "Use"}</Button>
                       )}
                     </Flex>
@@ -353,7 +376,7 @@ const DocumentPanel = ({
                 );
               })}
             </SimpleGrid>
-          </>)
+          </Box>)
         )}
       </Box>
     </FloatingPanel>

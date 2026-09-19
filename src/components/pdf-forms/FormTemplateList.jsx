@@ -48,7 +48,11 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
   }
 
   return (
-    <VStack gap="1">
+    <VStack
+      gap="1"
+      className="anim-stagger"
+      css={{ "& > *": { animationDuration: "0.15s" } }}
+    >
       {templates.map((tmpl) => {
         const isSelected = tmpl.id === selectedTemplateId;
         return (
@@ -59,6 +63,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
             cursor="pointer"
             bg={isSelected ? "surfaceMuted" : undefined}
             _hover={{ bg: "surfaceMuted" }}
+            transition="background-color 0.15s ease"
             aria-current={isSelected ? "true" : undefined}
             onClick={() => onSelect(tmpl.id)}
           >

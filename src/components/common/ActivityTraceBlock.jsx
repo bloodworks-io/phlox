@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Flex, Text, HStack, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon } from "./icons";
+import AnimatedChevron from "./icons/AnimatedChevron";
 import {
     getToolName,
     getToolPresentation,
@@ -98,11 +98,7 @@ const ActivityTraceBlock = ({
                     }
                     variant="ghost"
                     size="xs"
-                    className="chat-disclosure-icon">{isTraceExpanded ? (
-                        <ChevronUpIcon />
-                    ) : (
-                        <ChevronDownIcon />
-                    )}</IconButton>
+                    className="chat-disclosure-icon"><AnimatedChevron isOpen={isTraceExpanded} direction="up" /></IconButton>
             </Flex>
             {/* Expanded — full trace of all steps */}
             <Collapsible.Root open={isTraceExpanded}>
@@ -148,11 +144,7 @@ const ActivityTraceBlock = ({
                                                 }
                                                 variant="ghost"
                                                 size="xs"
-                                                className="chat-disclosure-icon">{isExpanded ? (
-                                                    <ChevronUpIcon />
-                                                ) : (
-                                                    <ChevronDownIcon />
-                                                )}</IconButton>
+                                                className="chat-disclosure-icon"><AnimatedChevron isOpen={isExpanded} direction="up" /></IconButton>
                                         </Flex>
                                         <Collapsible.Root open={isExpanded}>
                                             <Collapsible.Content>
@@ -227,11 +219,7 @@ const ActivityTraceBlock = ({
                                                 }
                                                 variant="ghost"
                                                 size="xs"
-                                                className="chat-disclosure-icon">{isExpanded ? (
-                                                    <ChevronUpIcon />
-                                                ) : (
-                                                    <ChevronDownIcon />
-                                                )}</IconButton>
+                                                className="chat-disclosure-icon"><AnimatedChevron isOpen={isExpanded} direction="up" /></IconButton>
                                         </Flex>
                                         <Collapsible.Root open={isExpanded}>
                                             <Collapsible.Content>

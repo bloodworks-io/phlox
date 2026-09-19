@@ -13,11 +13,10 @@ import {
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
-    ChevronRightIcon,
-    ChevronDownIcon,
     DeleteIcon,
     EditIcon,
 } from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { useState } from "react";
 
 export const FieldEditor = ({
@@ -30,7 +29,12 @@ export const FieldEditor = ({
     const isPlanField = field.field_name?.toLowerCase() === "plan";
 
     return (
-        <Box className="panels-bg" p="3" borderRadius="sm">
+        <Box
+            className="panels-bg"
+            p="3"
+            borderRadius="sm"
+            css={{ animation: "phloxFadeScaleIn 0.2s ease-out both" }}
+        >
             <Flex maxW="530px" align="center" mb={2}>
                 <Tooltip content="Click to edit field name">
                         <Flex
@@ -200,11 +204,7 @@ export const FieldEditor = ({
                             aria-label="Toggle Advanced Settings"
                             variant="ghost"
                             size="sm"
-                            className="collapse-toggle">{showAdvanced ? (
-                                <ChevronDownIcon />
-                            ) : (
-                                <ChevronRightIcon />
-                            )}</IconButton>
+                            className="collapse-toggle"><AnimatedChevron isOpen={showAdvanced} /></IconButton>
                         <Text fontSize="sm" color="overlay0">
                             Advanced Settings
                         </Text>

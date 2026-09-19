@@ -66,18 +66,24 @@ const FormTemplatesPanel = ({
       {/* Form builder canvas */}
       <Box flex="1" minW="0">
         {selectedTemplate ? (
-          <FormBuilder
-            template={selectedTemplate}
-            fields={fields}
-            onFieldsChange={onFieldsChange}
-            selectedFieldId={selectedFieldId}
-            onSelectField={onSelectField}
-            onUpdateField={onUpdateField}
-            isDrawing={isDrawingMode}
-            onToggleDrawing={() => onSetDrawingMode(!isDrawingMode)}
-            activeFieldType={activeFieldType}
-            onFieldTypeChange={onSetFieldType}
-          />
+          <Box
+            key={selectedTemplate.id}
+            className="anim-fade-scale"
+            css={{ animationDuration: "0.2s" }}
+          >
+            <FormBuilder
+              template={selectedTemplate}
+              fields={fields}
+              onFieldsChange={onFieldsChange}
+              selectedFieldId={selectedFieldId}
+              onSelectField={onSelectField}
+              onUpdateField={onUpdateField}
+              isDrawing={isDrawingMode}
+              onToggleDrawing={() => onSetDrawingMode(!isDrawingMode)}
+              activeFieldType={activeFieldType}
+              onFieldTypeChange={onSetFieldType}
+            />
+          </Box>
         ) : (
           <Box
             py="16"

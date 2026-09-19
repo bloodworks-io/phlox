@@ -71,6 +71,8 @@ const ChatMessages = ({
                                 : "flex-end"
                         }
                         mb="2"
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.2s" }}
                     >
                         <Box
                             className={`message-box ${message.role}`}

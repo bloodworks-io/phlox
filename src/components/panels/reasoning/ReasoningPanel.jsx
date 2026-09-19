@@ -81,12 +81,21 @@ const ReasoningPanel = forwardRef(
                         flexDirection="column"
                     >
                         {reasoning ? (
-                            <ReasoningContent
-                                reasoning={reasoning}
-                                tabIndex={tabIndex}
-                                setTabIndex={setTabIndex}
-                                colorMode={colorMode}
-                            />
+                            <Box
+                                flex="1"
+                                display="flex"
+                                flexDirection="column"
+                                overflow="hidden"
+                                className="anim-fade-scale"
+                                css={{ animationDuration: "0.25s" }}
+                            >
+                                <ReasoningContent
+                                    reasoning={reasoning}
+                                    tabIndex={tabIndex}
+                                    setTabIndex={setTabIndex}
+                                    colorMode={colorMode}
+                                />
+                            </Box>
                         ) : (
                             <EmptyState
                                 loading={loading}

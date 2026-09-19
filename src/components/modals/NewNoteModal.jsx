@@ -165,7 +165,11 @@ const NewNoteModal = ({
                                 {subtitle}
                             </Text>
 
-                            <Box key={view}>
+                            <Box
+                                key={view}
+                                className="anim-fade-slide-up"
+                                css={{ animationDuration: "0.25s" }}
+                            >
                                 {view === "choose" ? (
                                     <Flex gap={3} mb={2}>
                                         <PathHalf
@@ -217,7 +221,7 @@ const NewNoteModal = ({
                                     </Box>
                                 ) : view === "results" ? (
                                     <Box>
-                                        <VStack gap={3} align="stretch">
+                                        <VStack gap={3} align="stretch" className="anim-stagger">
                                             {results.map((cand) => (
                                                 <CandidateRow
                                                     key={

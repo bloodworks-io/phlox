@@ -146,6 +146,8 @@ const DashboardChatInput = ({
                     borderRadius="lg"
                     zIndex={20}
                     pointerEvents="none"
+                    className="anim-fade-scale"
+                    css={{ animationDuration: "0.15s" }}
                 >
                     <Text fontWeight="bold" color="primaryButton">
                         Drop image or PDF here
@@ -170,6 +172,8 @@ const DashboardChatInput = ({
                         borderRadius="md"
                         bg="surfaceMuted"
                         maxW="33%"
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.15s" }}
                     >
                         {pendingImage.type.startsWith("image/") ? (
                             <Image

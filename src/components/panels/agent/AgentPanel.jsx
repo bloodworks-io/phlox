@@ -15,8 +15,6 @@ const ACTIVE_STATUSES = [
     "error",
 ];
 
-/**
-
 const AgentPanel = ({
     status,
     agentState,

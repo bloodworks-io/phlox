@@ -229,7 +229,14 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           >
             Starting Server
           </Heading>
-          <Text color={"textSecondary"} fontSize="lg" minH="2rem">
+          <Text
+            color={"textSecondary"}
+            fontSize="lg"
+            minH="2rem"
+            key={messageIndex}
+            className="anim-fade-slide-up"
+            css={{ animationDuration: "0.3s" }}
+          >
             {LOADING_MESSAGES[messageIndex]}
           </Text>
         </VStack>

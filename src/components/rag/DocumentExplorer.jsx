@@ -13,12 +13,11 @@ import {
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
-    ChevronDownIcon,
-    ChevronRightIcon,
     EditIcon,
     DeleteIcon,
     DownloadIcon,
 } from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
 import { MdOutlineFolderCopy } from "react-icons/md";
 import { ragApi } from "../../utils/api/ragApi";
@@ -149,11 +148,7 @@ const DocumentExplorer = ({
                         mr="2"
                         className="collapse-toggle"
                     >
-                        {isCollapsed ? (
-                            <ChevronRightIcon />
-                        ) : (
-                            <ChevronDownIcon />
-                        )}
+                        <AnimatedChevron isOpen={!isCollapsed} />
                     </IconButton>
                     <HStack gap={2}>
                         <MdOutlineFolderCopy size="1.2em" />
@@ -166,7 +161,13 @@ const DocumentExplorer = ({
                     {loading && <Spinner />}
                     {!loading && (
                         <Box mt="4">
-                            <List.Root gap={3}>
+                            <List.Root
+                                gap={3}
+                                className="anim-stagger"
+                                css={{
+                                    "& > *": { animationDuration: "0.15s" },
+                                }}
+                            >
                                 {collections.map((collection) => (
                                     <List.Item
                                         key={collection.name}
@@ -195,13 +196,13 @@ const DocumentExplorer = ({
                                                     mr="2"
                                                     className="documentExplorer-button"
                                                 >
-                                                    {expandedCollections[
-                                                        collection.name
-                                                    ] ? (
-                                                        <ChevronDownIcon />
-                                                    ) : (
-                                                        <ChevronRightIcon />
-                                                    )}
+                                                    <AnimatedChevron
+                                                        isOpen={
+                                                            expandedCollections[
+                                                                collection.name
+                                                            ]
+                                                        }
+                                                    />
                                                 </IconButton>
                                             </Tooltip>
                                             <Box
@@ -322,6 +323,11 @@ const DocumentExplorer = ({
                                                                         display="flex"
                                                                         alignItems="center"
                                                                         py="1"
+                                                                        className="anim-fade-slide-up"
+                                                                        css={{
+                                                                            animationDuration:
+                                                                                "0.15s",
+                                                                        }}
                                                                     >
                                                                         <Box
                                                                             as={

@@ -7,7 +7,10 @@ export const FieldPreview = ({ field }) => {
     const content = field.style_example || "";
 
     return (
-        <Box className="cohesive-field">
+        <Box
+            className="cohesive-field"
+            css={{ animation: "phloxFadeScaleIn 0.2s ease-out both" }}
+        >
             <Text className="cohesive-field-label">
                 {field.field_name || "Unnamed Field"}
                 {field.persistent && (

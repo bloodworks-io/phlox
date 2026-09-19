@@ -37,7 +37,13 @@ export const TemplatesStep = ({
         <Text ml={4} color="textSecondary">Loading templates...</Text>
       </Flex>
     ) : (
-      <SimpleGrid columns={{ base: 1, md: 2 }} gap={3} w="100%">
+      <SimpleGrid
+        columns={{ base: 1, md: 2 }}
+        gap={3}
+        w="100%"
+        className="anim-stagger"
+        sx={{ "& > *": { animationDuration: "0.2s" } }}
+      >
         {availableTemplates.map((template, index) => {
           const isSelected = selectedTemplate === template.template_key;
           const accent = TEMPLATE_COLORS[index % TEMPLATE_COLORS.length];
@@ -78,7 +84,13 @@ export const TemplatesStep = ({
                   {template.template_name}
                 </Text>
                 {isSelected && (
-                  <Icon color={accent} boxSize={4} asChild>
+                  <Icon
+                    color={accent}
+                    boxSize={4}
+                    asChild
+                    className="anim-fade-scale"
+                    sx={{ animationDuration: "0.2s" }}
+                  >
                     <FaCheckCircle />
                   </Icon>
                 )}

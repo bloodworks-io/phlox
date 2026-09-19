@@ -245,7 +245,11 @@ const EncryptionSetup = ({ onComplete }) => {
               </HStack>
 
               {passphrase.length > 0 && (
-                <Box mt={2}>
+                <Box
+                  mt={2}
+                  className="anim-fade-slide-up"
+                  css={{ animationDuration: "0.2s" }}
+                >
                   <HStack justify="space-between" mb={1}>
                     <Text fontSize="xs" color="textSecondary">
                       Strength
@@ -304,7 +308,13 @@ const EncryptionSetup = ({ onComplete }) => {
 
               {confirmPassphrase.length > 0 &&
                 passphrase !== confirmPassphrase && (
-                  <Text mt={1} fontSize="xs" color="dangerButton">
+                  <Text
+                    mt={1}
+                    fontSize="xs"
+                    color="dangerButton"
+                    className="anim-fade-slide-up"
+                    css={{ animationDuration: "0.15s" }}
+                  >
                     Passphrases do not match
                   </Text>
                 )}
