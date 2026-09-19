@@ -24,6 +24,30 @@ const scrollbarStyles = (props) => ({
         border: `none`,
     },
 
+    // Narrow 4px variant for compact floating surfaces (live agent,
+    // transcript popovers).
+    ".slim-scrollbar": {
+        scrollbarWidth: "thin",
+        scrollbarColor:
+            props.colorMode === "light"
+                ? `${colors.light.scrollbarThumb} transparent`
+                : `${colors.dark.scrollbarThumb} transparent`,
+    },
+    ".slim-scrollbar::-webkit-scrollbar": {
+        width: "4px",
+    },
+    ".slim-scrollbar::-webkit-scrollbar-track": {
+        background: "transparent",
+    },
+    ".slim-scrollbar::-webkit-scrollbar-thumb": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? colors.light.scrollbarThumb
+                : colors.dark.scrollbarThumb,
+        borderRadius: "24px",
+        border: "none",
+    },
+
     ".sidebar-scroll-overlay": {
         scrollbarWidth: "thin",
         scrollbarColor:

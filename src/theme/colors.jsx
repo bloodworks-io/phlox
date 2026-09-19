@@ -45,6 +45,7 @@ const palette = {
     sendButtonText: { light: "#ffffff", dark: "#4c4f69" },
     sendButtonTextDisabled: { light: "#8c8fa1", dark: "rgba(255,255,255,0.5)" },
     primaryButtonFaint: { light: "#17929915", dark: "#8bd5ca15" },
+    dangerButtonFaint: { light: "#d20f3915", dark: "#ed879620" },
     surfaceQuartile: { light: "#ccd0da40", dark: "#363a4f40" },
     primaryButtonHalftone: { light: "#17929980", dark: "#8bd5ca80" },
     sidebarBackgroundFaint: { light: "#23263415", dark: "#1e203015" },

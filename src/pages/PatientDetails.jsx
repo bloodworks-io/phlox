@@ -661,14 +661,14 @@ const PatientDetails = ({
                 }
                 templates={templates}
             />
-            {/* Live Scribe — PiP bar / draggable mini-window */}
+            {/* Live agent — PiP bar / draggable mini-window */}
             <AgentPanel
                 status={liveAgent.status}
                 agentState={liveAgent.agentState}
                 transcripts={liveAgent.transcripts}
                 statuses={liveAgent.statuses}
                 artifacts={liveAgent.artifacts}
-                onStop={handleLiveStop}
+                lastError={liveAgent.lastError}
                 view={liveView}
                 onExpand={() => setLiveView("window")}
                 onMinimize={() => setLiveView("bar")}
@@ -678,6 +678,8 @@ const PatientDetails = ({
                     setLetterContent(artifact.content);
                     open("letter");
                 }}
+                onRetry={liveAgent.retryLive}
+                onDismissReview={liveAgent.dismissReview}
             />
         </Box>
     );

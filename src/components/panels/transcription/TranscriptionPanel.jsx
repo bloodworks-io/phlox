@@ -43,14 +43,7 @@ const TranscriptionPanel = ({
       backdropFilter="blur(12px)"
       borderRadius="xl"
       position="relative"
-      css={{
-        "&::-webkit-scrollbar": { width: "4px" },
-        "&::-webkit-scrollbar-track": { background: "transparent" },
-        "&::-webkit-scrollbar-thumb": {
-          background: "var(--chakra-colors-scrollbar-thumb)",
-          borderRadius: "24px",
-        },
-      }}
+      className="slim-scrollbar"
     >
         {/* Success overlay */}
         {showSuccess && (
@@ -82,17 +75,10 @@ const TranscriptionPanel = ({
           <>
             {/* Transcription text - scrollable */}
             <Box
+              className="slim-scrollbar"
               maxHeight="180px"
               overflowY="auto"
               mb={2}
-              css={{
-                "&::-webkit-scrollbar": { width: "4px" },
-                "&::-webkit-scrollbar-track": { background: "transparent" },
-                "&::-webkit-scrollbar-thumb": {
-                  background: "var(--chakra-colors-scrollbar-thumb)",
-                  borderRadius: "24px",
-                },
-              }}
             >
               <Text whiteSpace="pre-wrap" fontSize="xs" lineHeight="1.5">
                 {rawTranscription}

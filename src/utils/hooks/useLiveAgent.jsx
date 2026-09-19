@@ -21,6 +21,7 @@ export const useLiveAgent = ({
     const [statuses, setStatuses] = useState([]);
     const [artifacts, setArtifacts] = useState([]);
     const [stagedJobs, setStagedJobs] = useState([]);
+    const [lastError, setLastError] = useState(null);
     const [fieldFlash, setFieldFlash] = useState({}); // {field_key: timestamp}
     const [startedAt, setStartedAt] = useState(null);
     const [clockNow, setClockNow] = useState(0);
@@ -30,6 +31,11 @@ export const useLiveAgent = ({
     const runningRef = useRef(false);
     const toastRef = useRef(false);
     const feedbackTimerRef = useRef(null);
+    // Latest session content and status, readable inside stable callbacks
+    // (stop/end transitions decide between "review" and "idle" from these).
+    const transcriptsRef = useRef([]);
+    const artifactsRef = useRef([]);
+    const statusRef = useRef("idle");
     const templateDataRef = useRef(patient?.template_data);
     const currentTemplateRef = useRef(currentTemplate);
     const patientRef = useRef(patient);
@@ -42,6 +48,9 @@ export const useLiveAgent = ({
         currentTemplateRef.current = currentTemplate;
         wrapUpRef.current = onRequestWrapUp;
         letterSavedRef.current = onLetterSaved;
+        transcriptsRef.current = transcripts;
+        artifactsRef.current = artifacts;
+        statusRef.current = status;
     });
 
     const pushStatus = useCallback((content, kind = "info") => {
@@ -50,6 +59,15 @@ export const useLiveAgent = ({
                 0,
                 MAX_STATUS_ITEMS,
             ),
+        );
+    }, []);
+
+
+    const settleAfterSession = useCallback(() => {
+        setStatus(
+            transcriptsRef.current.length > 0 || artifactsRef.current.length > 0
+                ? "review"
+                : "idle",
         );
     }, []);
 
@@ -164,7 +182,7 @@ export const useLiveAgent = ({
                 case "end":
                     runningRef.current = false;
                     sessionIdRef.current = null;
-                    setStatus((prev) => (prev === "stopping" ? "idle" : "idle"));
+                    settleAfterSession();
                     setAgentState("listening");
                     setStartedAt(null);
                     break;
@@ -172,7 +190,7 @@ export const useLiveAgent = ({
                     break;
             }
         },
-        [setPatient, pushStatus, decodeBinaryArtifact],
+        [setPatient, pushStatus, decodeBinaryArtifact, settleAfterSession],
     );
 
     const consumeEvents = useCallback(
@@ -186,18 +204,15 @@ export const useLiveAgent = ({
             } catch (error) {
                 if (runningRef.current) {
                     console.error("Live event stream failed:", error);
-                    if (!toastRef.current) {
-                        toastRef.current = true;
-                        toaster.create({
-                            title: "Live session disconnected",
-                            description: "The event stream ended unexpectedly.",
-                            type: "warning",
-                            duration: 5000,
-                        });
-                    }
                     runningRef.current = false;
                     sessionIdRef.current = null;
-                    setStatus("idle");
+
+                    recorderRef.current?.stop()?.catch(() => {});
+                    recorderRef.current = null;
+                    setLastError(
+                        "The event stream ended unexpectedly. Audio capture stopped.",
+                    );
+                    setStatus("error");
                     setStartedAt(null);
                 }
             }
@@ -249,6 +264,7 @@ export const useLiveAgent = ({
             sessionIdRef.current = sessionId;
             runningRef.current = true;
             toastRef.current = false;
+            setLastError(null);
             setTranscripts([]);
             setStatuses([]);
             setArtifacts([]);
@@ -265,12 +281,7 @@ export const useLiveAgent = ({
             recorderRef.current?.stop()?.catch(() => {});
             recorderRef.current = null;
             setStatus("error");
-            toaster.create({
-                title: "Could not start live session",
-                description: error?.message || "Unknown error",
-                type: "error",
-                duration: 5000,
-            });
+            setLastError(error?.message || "Unknown error");
             return false;
         }
     }, [consumeEvents]);
@@ -306,11 +317,30 @@ export const useLiveAgent = ({
             return null;
         } finally {
             sessionIdRef.current = null;
-            setStatus("idle");
+            settleAfterSession();
             setAgentState("listening");
             setStartedAt(null);
         }
-    }, [setPatient]);
+    }, [setPatient, settleAfterSession]);
+
+
+    const retryLive = useCallback(async () => {
+        if (runningRef.current) return true;
+        setLastError(null);
+        return startLive();
+    }, [startLive]);
+
+    const dismissReview = useCallback(() => {
+        if (statusRef.current !== "review" && statusRef.current !== "error")
+            return;
+        setStatus("idle");
+        setLastError(null);
+        setTranscripts([]);
+        setStatuses([]);
+        setArtifacts([]);
+        setStagedJobs([]);
+        setFieldFlash({});
+    }, []);
 
     const enterTidyMode = useCallback(async () => {
         const sessionId = sessionIdRef.current;
@@ -397,8 +427,11 @@ export const useLiveAgent = ({
         stagedJobs,
         fieldFlash,
         elapsedSeconds,
+        lastError,
         startLive,
         stopLive,
+        retryLive,
+        dismissReview,
         enterTidyMode,
         pushExtractedJobs,
     };
