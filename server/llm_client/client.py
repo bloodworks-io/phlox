@@ -22,6 +22,25 @@ from .utils import repair_json
 logger = logging.getLogger(__name__)
 
 
+def resolve_effective_api_key(
+    caller_base_url: str | None, caller_api_key: str | None
+) -> str | None:
+    """Return the API key that may be used for a caller-supplied base URL. The stored LLM_API_KEY only ever travels to the stored LLM_BASE_URL."""
+    if caller_api_key:
+        return caller_api_key
+    config = config_manager.get_config()
+    stored_key = config.get("LLM_API_KEY")
+    if not stored_key:
+        return None
+    stored_url = config.get("LLM_BASE_URL") or ""
+    if not caller_base_url or (
+        stored_url
+        and normalize_openai_base_url(caller_base_url) == normalize_openai_base_url(stored_url)
+    ):
+        return stored_key
+    return None
+
+
 class AsyncLLMClient:
     """A unified client interface for OpenAI-compatible and local providers."""
 

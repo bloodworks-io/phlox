@@ -77,6 +77,9 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote", lang
     }, [whisperError]);
 
     // Local mode state
+    const [localWhisperModels, setLocalWhisperModels] = useState([]);
+    const [downloadedWhisperModels, setDownloadedWhisperModels] = useState([]);
+
     // For English, prefer Omi Med STT unless Parakeet is
     // already downloaded — then keep it to avoid a wasteful re-download.
     const recommendedLocalWhisperModel =
@@ -84,8 +87,6 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote", lang
         !downloadedWhisperModels.some((m) => m.id === "tdt-0.6b-v3-q8_0")
             ? "omi-med-stt-v1-q8_0"
             : "tdt-0.6b-v3-q8_0";
-    const [localWhisperModels, setLocalWhisperModels] = useState([]);
-    const [downloadedWhisperModels, setDownloadedWhisperModels] = useState([]);
     const [localWhisperModel, setLocalWhisperModel] = useState(
         recommendedLocalWhisperModel,
     );

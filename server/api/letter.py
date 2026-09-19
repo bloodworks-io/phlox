@@ -37,7 +37,7 @@ async def generate_letter(request: LetterRequest):
         raise he
     except Exception as e:
         logging.error(f"Unexpected error in generate_letter endpoint: {e}")
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}") from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/save")
@@ -49,7 +49,7 @@ def save_letter(request: LetterSave):
         return {"message": "Letter saved successfully"}
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")
-        raise HTTPException(status_code=500, detail=e) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/fetch-letter")
@@ -60,7 +60,7 @@ def fetch_letter(noteId: int):
         return JSONResponse(content={"letter": letter or "No letter attached to encounter"})
     except Exception as e:
         logging.error(f"Error fetching letter: {e}")
-        raise HTTPException(status_code=500, detail=e) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/templates")

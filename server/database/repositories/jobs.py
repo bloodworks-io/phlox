@@ -4,6 +4,7 @@ import traceback
 from typing import Any
 
 from server.database.core.connection import get_db
+from server.utils.current_user import scoped
 
 
 def generate_jobs_list_from_plan(plan):
@@ -49,15 +50,19 @@ def get_patients_with_outstanding_jobs():
         List[Dict]: List of patient records with outstanding jobs.
     """
     try:
+        scope_sql, scope_params = scoped("e.created_by")
         with get_db().read() as cursor:
-            cursor.execute("""
+            cursor.execute(
+                f"""
                 SELECT e.id, e.ur_number, e.encounter_date,
                        e.encounter_summary, e.jobs_list, e.reasoning_output,
                        p.first_name, p.last_name, p.dob
                 FROM encounters e
                 LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                WHERE e.all_jobs_completed = 0
-                """)
+                WHERE e.all_jobs_completed = 0{scope_sql}
+                """,
+                scope_params,
+            )
 
             patients = []
             for row in cursor.fetchall():
@@ -90,15 +95,16 @@ def get_patients_with_outstanding_jobs():
 
 def _select_jobs_list_with_cursor(cursor, note_id: int) -> dict[str, Any] | None:
     """Select an encounter row (with demographics) on an existing cursor."""
+    scope_sql, scope_params = scoped("e.created_by")
     cursor.execute(
-        """
+        f"""
         SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
                p.first_name, p.last_name
         FROM encounters e
         LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-        WHERE e.id = ?
+        WHERE e.id = ?{scope_sql}
         """,
-        (note_id,),
+        (note_id, *scope_params),
     )
     row = cursor.fetchone()
     return dict(row) if row else None
@@ -114,32 +120,33 @@ def get_latest_encounter_with_jobs(
     match exists.
     """
     try:
+        scope_sql, scope_params = scoped("e.created_by")
         with get_db().read() as cursor:
             if ur_number:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
                            p.first_name, p.last_name, p.dob
                     FROM encounters e
                     LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                    WHERE e.ur_number = ?
+                    WHERE e.ur_number = ?{scope_sql}
                     ORDER BY e.encounter_date DESC
                     LIMIT 1
                     """,
-                    (ur_number,),
+                    (ur_number, *scope_params),
                 )
             elif patient_name:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT e.id, e.ur_number, e.encounter_date, e.jobs_list,
                            p.first_name, p.last_name, p.dob
                     FROM encounters e
                     LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?){scope_sql}
                     ORDER BY e.encounter_date DESC
                     LIMIT 1
                     """,
-                    (f"%{patient_name}%",),
+                    (f"%{patient_name}%", *scope_params),
                 )
             else:
                 return None
@@ -191,8 +198,12 @@ def count_incomplete_jobs():
     """Counts the number of incomplete jobs across all patients."""
     logging.info("Counting incomplete jobs across all patients")
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().read() as cursor:
-            cursor.execute("SELECT jobs_list FROM encounters WHERE all_jobs_completed = 0")
+            cursor.execute(
+                f"SELECT jobs_list FROM encounters WHERE all_jobs_completed = 0{scope_sql}",
+                scope_params,
+            )
             rows = cursor.fetchall()
 
             incomplete_jobs_count = 0

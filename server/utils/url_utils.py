@@ -45,6 +45,9 @@ def normalize_base_url(raw_url: str) -> str:
     base without '/v1' and without trailing slash.
     """
     normalized = _normalize_base_url(raw_url)
+    scheme = urlsplit(normalized).scheme.lower()
+    if scheme not in ("http", "https"):
+        raise ValueError(f"Unsupported URL scheme '{scheme or '(none)'}' (only http/https allowed)")
     normalized = _strip_terminal_v1_path(normalized)
     return normalized.rstrip("/")
 

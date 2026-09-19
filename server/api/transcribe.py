@@ -244,9 +244,14 @@ async def process_document(
         return TranscribeResponse(
             fields=result,
             rawTranscription="",  # We don't include raw transcription for document uploads
-            transcriptionDuration=0,  # No transcription for documents
+            transcriptionDuration=0,  # No transcription for document uploads
             processDuration=process_duration,
         )
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # Image exceeded pixel cap (decompression bomb)
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logging.error(f"Error processing document: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -259,6 +264,11 @@ async def extract_demographics(file: UploadFile = File(...)):
         document_buffer = await file.read()
         result = await extract_demographics_from_document(document_buffer, file.content_type or "")
         return result
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # Image exceeded pixel cap (decompression bomb)
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logging.error(f"Error extracting demographics: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e

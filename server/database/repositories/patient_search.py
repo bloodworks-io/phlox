@@ -8,6 +8,7 @@ from server.database.repositories.templates import (
     get_persistent_fields,
     get_template_by_key,
 )
+from server.utils.current_user import scoped
 from server.utils.helpers import format_name
 
 
@@ -19,14 +20,18 @@ def get_unique_primary_conditions():
         list: A list of unique primary condition strings, excluding None values.
     """
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().read() as cursor:
-            cursor.execute("""
+            cursor.execute(
+                f"""
                 SELECT DISTINCT primary_condition
                 FROM encounters
                 WHERE primary_condition IS NOT NULL
-                AND primary_condition != ''
+                AND primary_condition != ''{scope_sql}
                 ORDER BY primary_condition ASC
-                """)
+                """,
+                scope_params,
+            )
             results = cursor.fetchall()
             return [row["primary_condition"] for row in results]
     except Exception as e:
@@ -74,26 +79,28 @@ def search_patients(query: str) -> list[dict[str, Any]]:
         return []
     like = f"%{query}%"
     try:
+        # Scope the "latest encounter" subquery
+        scope_sql, scope_params = scoped("created_by")
         with get_db().read() as cursor:
             cursor.execute(
-                """
+                f"""
                 SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender,
                        p.address, p.phone,
                        e.id, e.encounter_date, e.template_key, e.template_data
                 FROM patient_profiles p
                 JOIN encounters e ON e.id = (
                     SELECT id FROM encounters
-                    WHERE ur_number = p.ur_number
+                    WHERE ur_number = p.ur_number{scope_sql}
                     ORDER BY encounter_date DESC, id DESC
                     LIMIT 1
                 )
-                WHERE p.ur_number = ?
-                   OR p.first_name LIKE ?
-                   OR p.last_name LIKE ?
+                WHERE (p.ur_number = ?
+                    OR p.first_name LIKE ?
+                    OR p.last_name LIKE ?)
                 ORDER BY (p.last_name LIKE ?) DESC, p.last_name, p.first_name
                 LIMIT 20
                 """,
-                (query, like, like, like),
+                (*scope_params, query, like, like, like),
             )
             rows = cursor.fetchall()
 
@@ -147,6 +154,10 @@ def search_patients_aggregate(
     if encounter_date:
         query += " AND e.encounter_date = ?"
         params.append(encounter_date)
+
+    scope_sql, scope_params = scoped("e.created_by")
+    query += scope_sql
+    params += scope_params
 
     query += " GROUP BY e.ur_number, p.first_name, p.last_name, p.dob, p.gender"
     query += " ORDER BY last_encounter DESC"
@@ -220,6 +231,7 @@ def search_patients_by_condition(query: str, limit: int = 20) -> list[dict[str, 
 
     placeholders = ",".join("?" for _ in matched)
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().read() as cursor:
             cursor.execute(
                 f"SELECT p.ur_number, p.first_name, p.last_name, p.dob, p.gender, "
@@ -229,20 +241,20 @@ def search_patients_by_condition(query: str, limit: int = 20) -> list[dict[str, 
                 f"JOIN encounters e ON e.id = ("
                 f"    SELECT id FROM encounters"
                 f"    WHERE ur_number = p.ur_number"
-                f"      AND primary_condition IS NOT NULL"
+                f"      AND primary_condition IS NOT NULL{scope_sql}"
                 f"    ORDER BY encounter_date DESC, id DESC"
                 f"    LIMIT 1"
                 f") "
                 f"JOIN ("
                 f"    SELECT ur_number, COUNT(*) AS encounter_count"
                 f"    FROM encounters"
-                f"    WHERE primary_condition IS NOT NULL"
+                f"    WHERE primary_condition IS NOT NULL{scope_sql}"
                 f"    GROUP BY ur_number"
                 f") cnt ON cnt.ur_number = p.ur_number "
                 f"WHERE e.primary_condition IN ({placeholders}) "  # nosec B608
                 f"ORDER BY p.last_name, p.first_name "
                 f"LIMIT ?",
-                (*matched, limit),
+                (*scope_params, *scope_params, *matched, limit),
             )
             rows = cursor.fetchall()
 

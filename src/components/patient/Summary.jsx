@@ -16,6 +16,7 @@ import {
 import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
+import { getTemplateFamilyBase } from "../../utils/templates/templateService";
 import { patientApi } from "../../utils/api/patientApi";
 import ConfirmLeaveModal from "../modals/ConfirmLeaveModal";
 
@@ -77,8 +78,8 @@ const Summary = forwardRef(
       // If patient has a UR number, fetch persistent fields for the new template type
       if (patient?.ur_number) {
         try {
-          // Extract base template key (e.g., "soap" from "soap_01")
-          const baseTemplateKey = pendingTemplateKey.split("_")[0];
+
+          const baseTemplateKey = getTemplateFamilyBase(pendingTemplateKey);
           console.log("Fetching history for template:", baseTemplateKey);
 
           const history = await patientApi.fetchPatientHistoryByTemplate(

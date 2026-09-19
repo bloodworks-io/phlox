@@ -18,10 +18,12 @@ import { useAppBootstrap } from "./utils/hooks/useAppBootstrap";
 import { useNavigationGuard } from "./utils/hooks/useNavigationGuard";
 import { useSidebarState } from "./utils/hooks/useSidebarState";
 import { useNewNoteFlow } from "./utils/hooks/useNewNoteFlow";
+import { usePatientScope } from "./utils/hooks/usePatientScope";
 
 function AppContent({ setIsInitializing }) {
     const [isModified, setIsModified] = useState(false);
     const [isFromOutstandingJobs, setIsFromOutstandingJobs] = useState(false);
+    const { isAdmin, patientScope, setPatientScope } = usePatientScope();
 
     // App-level patient "session": briefcase patient + shared selectedDate +
     // new-note actions. The editor (PatientDetails) owns its own copy.
@@ -120,6 +122,9 @@ function AppContent({ setIsInitializing }) {
                     isSmallScreen,
                     colorMode,
                     toggleColorMode,
+                    isAdmin,
+                    patientScope,
+                    setPatientScope,
                 }}
             >
                 <AppRoutes
@@ -132,6 +137,7 @@ function AppContent({ setIsInitializing }) {
                     onOpenNewNoteModal={newNote.openNewNoteModal}
                     newNoteKey={newNote.newNoteKey}
                     handleSelectPatient={handleSelectPatient}
+                    patientScope={patientScope}
                 />
             </AppLayout>
             <NewNoteModal

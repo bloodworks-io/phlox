@@ -4,6 +4,7 @@ import {
     useTemplateSelection,
     useTemplate,
 } from "../templates/templateContext";
+import { getTemplateFamilyBase } from "../templates/templateService";
 import { useToastMessage } from "./UseToastMessage";
 
 export const usePatientTemplate = ({
@@ -152,9 +153,14 @@ export const usePatientTemplate = ({
                     console.warn(
                         "Pre-fill template is not active. Finding fallback...",
                     );
-                    const baseKey = patient.template_key.split("_")[0];
+
+                    const baseKey = getTemplateFamilyBase(patient.template_key);
                     const latestVersion = templates
-                        .filter((t) => t.template_key.startsWith(baseKey))
+                        .filter(
+                            (t) =>
+                                t.template_key.startsWith(baseKey) ||
+                                t.template_key.startsWith(`custom_${baseKey}_`),
+                        )
                         .sort((a, b) =>
                             b.template_key.localeCompare(a.template_key),
                         )[0];

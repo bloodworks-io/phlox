@@ -6,6 +6,8 @@ from fastapi.responses import JSONResponse
 
 from server.constants import IS_DOCKER
 from server.database.config.manager import config_manager
+from server.llm_client.client import resolve_effective_api_key
+from server.utils.current_user import require_admin
 from server.utils.llama_models import llama_model_manager
 from server.utils.url_utils import build_openai_v1_url, build_whisper_v1_url
 
@@ -21,14 +23,16 @@ def get_options():
 
 @router.post("/options/reset-to-defaults")
 def reset_options_to_defaults():
-    """Reset all model configuration options to their default values."""
+    """Reset all model configuration options to their default values. Admin only."""
+    require_admin()
     config_manager.reset_options_to_defaults()
     return {"message": "Options reset to defaults successfully"}
 
 
 @router.post("/options/{category}")
 def update_options(category: str, data: dict = Body(...)):
-    """Update options for a specific category."""
+    """Update options for a specific category. Admin only."""
+    require_admin()
     config_manager.update_options(category, data)
     return {"message": f"{category} options updated successfully"}
 
@@ -65,8 +69,7 @@ async def get_llm_models(
                     detail="baseUrl is required for OpenAI-compatible providers",
                 )
 
-            # Fall back to stored key if none provided (mirrors chat.py:375)
-            effective_key = apiKey or config_manager.get_config().get("LLM_API_KEY")
+            effective_key = resolve_effective_api_key(baseUrl, apiKey)
 
             headers = {"Authorization": f"Bearer {effective_key}"} if effective_key else {}
 
@@ -132,6 +135,10 @@ async def get_llm_models(
                 detail="Unsupported provider type. Must be 'openai' or 'local'",
             )
 
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logging.error(f"Error fetching LLM models: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e

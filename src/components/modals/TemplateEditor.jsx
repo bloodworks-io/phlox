@@ -27,6 +27,7 @@ const TemplateEditor = ({
     templateKey,
     onSave,
     isNewTemplate = false,
+    isDefaultTemplate = false,
 }) => {
     const [editedTemplate, setEditedTemplate] = useState(
         () => template ? { ...template, fields: template.fields || [] } : null,
@@ -225,6 +226,44 @@ const TemplateEditor = ({
                                     </HStack>
                                 </Box>
                             )}
+                            {isDefaultTemplate && !isNewTemplate && (
+                                <Box
+                                    px={6}
+                                    py={4}
+                                    bg="surfaceMuted"
+                                    borderLeft="4px solid"
+                                    borderLeftColor="accent"
+                                    borderBottom="1px solid"
+                                    borderBottomColor="whiteAlpha.200"
+                                >
+                                    <HStack align="start" gap={3}>
+                                        <Box color="primaryButton" mt={0.5}>
+                                            <svg
+                                                width="20"
+                                                height="20"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </Box>
+                                        <VStack align="start" gap={1} flex="1">
+                                            <Text fontWeight="600" fontSize="sm">
+                                                Editing a Default Template
+                                            </Text>
+                                            <Text fontSize="xs" opacity={0.8}>
+                                                Saving stores your changes as your
+                                                own copy — the original default
+                                                stays untouched.
+                                            </Text>
+                                        </VStack>
+                                    </HStack>
+                                </Box>
+                            )}
                             <Flex h="500px">
                                 {/* Left Column - Editor */}
                                 <VStack
@@ -262,33 +301,26 @@ const TemplateEditor = ({
                                                             idx={idx}
                                                             updateField={updateField}
                                                             removeField={removeField}
-                                                            isNewTemplate={
-                                                                isNewTemplate
-                                                            }
                                                         />
                                                     ),
                                                 )}
-                                                {isNewTemplate && (
-                                                    <>
-                                                        <Box
-                                                            px={3}
-                                                            py={2}
-                                                            fontSize="xs"
-                                                            opacity={0.7}
-                                                            textAlign="center"
-                                                            bg="transparent"
-                                                            borderRadius="sm"
-                                                        >
-                                                            <strong>Pin</strong> =
-                                                            Carries over between
-                                                            encounters &nbsp;•&nbsp;{" "}
-                                                            <strong>Dyn</strong> =
-                                                            Generated from transcript
-                                                        </Box>
-                                                        <Button onClick={addField} className="summary-buttons" size="sm"><AddIcon />Add Field
-                                                                                                            </Button>
-                                                    </>
-                                                )}
+                                                <Box
+                                                    px={3}
+                                                    py={2}
+                                                    fontSize="xs"
+                                                    opacity={0.7}
+                                                    textAlign="center"
+                                                    bg="transparent"
+                                                    borderRadius="sm"
+                                                >
+                                                    <strong>Pin</strong> =
+                                                    Carries over between
+                                                    encounters &nbsp;•&nbsp;{" "}
+                                                    <strong>Dyn</strong> =
+                                                    Generated from transcript
+                                                </Box>
+                                                <Button onClick={addField} className="summary-buttons" size="sm"><AddIcon />Add Field
+                                                </Button>
                                             </VStack>
                                         </Box>
                                     </Box>

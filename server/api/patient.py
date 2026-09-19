@@ -45,6 +45,7 @@ from server.schemas.patient import (
     SavePatientRequest,
     ScribeConsentRequest,
 )
+from server.utils.current_user import restrict_admin_scope
 
 router = APIRouter()
 
@@ -246,11 +247,13 @@ def get_patients(
     date: str,
     template_key: str | None = None,
     detailed: str | None = None,
+    scope: str | None = None,
 ):
     """Get patients for a specific date."""
     try:
         include_data: bool = detailed is not None and detailed.lower() == "true"
-        patients = get_patients_by_date(date, template_key, include_data)
+        with restrict_admin_scope(scope):
+            patients = get_patients_by_date(date, template_key, include_data)
 
         if include_data:
             return JSONResponse(
@@ -320,6 +323,8 @@ def get_patient_history_endpoint(id: int):
 
         history = get_patient_history(patient["ur_number"])
         return JSONResponse(content=history)
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -375,6 +380,8 @@ def delete_patient(id: int):
         if success:
             return {"message": "Patient deleted"}
         raise HTTPException(status_code=404, detail="Patient not found")
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error deleting patient: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -432,10 +439,11 @@ async def extract_jobs(request: JobExtractionRequest):
 
 
 @router.get("/outstanding-jobs")
-def get_patients_with_jobs():
+def get_patients_with_jobs(scope: str | None = None):
     """Get all patients with outstanding jobs."""
     try:
-        patients = get_patients_with_outstanding_jobs()
+        with restrict_admin_scope(scope):
+            patients = get_patients_with_outstanding_jobs()
         return JSONResponse(
             content=[
                 {
@@ -457,10 +465,11 @@ def get_patients_with_jobs():
 
 
 @router.get("/incomplete-jobs-count")
-def get_incomplete_jobs_count():
+def get_incomplete_jobs_count(scope: str | None = None):
     """Get the count of incomplete jobs."""
     try:
-        incomplete_jobs_count = count_incomplete_jobs()
+        with restrict_admin_scope(scope):
+            incomplete_jobs_count = count_incomplete_jobs()
         return JSONResponse(content={"incomplete_jobs_count": incomplete_jobs_count})
     except Exception as e:
         logging.error(f"Error counting incomplete jobs: {e}")

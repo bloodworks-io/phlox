@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.manager import config_manager
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ async def get_default_prompts():
 
 @router.post("/prompts")
 def update_prompts(data: dict):
-    """Update prompts configuration with provided data."""
+    """Update prompts configuration with provided data. Admin only."""
+    require_admin()
     config_manager.update_prompts(data)
     return {"message": "prompts.js updated successfully"}

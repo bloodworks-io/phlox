@@ -42,7 +42,7 @@ jobs:
             fi
           done
 
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version-file: "server/pyproject.toml"
           enable-cache: true
@@ -95,32 +95,41 @@ jobs:
       - name: npm audit
         id: npm-audit
         continue-on-error: true
-        run: npm audit --audit-level=high
+        run: |
+          npm audit --json > npm-audit.json || true
+          node .github/scripts/npm_audit_gate.mjs npm-audit.json
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version-file: "server/pyproject.toml"
           enable-cache: true
           cache-dependency-glob: "server/uv.lock"
 
       - run: cd server && uv sync --locked --extra docker
-      - name: pip-audit
+      - name: pip audit
         id: pip-audit
         continue-on-error: true
-        run: cd server && uv run pip-audit --local --strict --skip-editable
+        run: |
+          cd server
+          uv run pip-audit --local --skip-editable --format=json --output=../pip-audit.json || true
+          python ../.github/scripts/pip_audit_gate.py ../pip-audit.json
 
       - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@4076c08d76dba979c11a7285295b0716c1d67908 # v2.87.15
+        with:
+          tool: cargo-audit
       - name: cargo audit
         id: cargo-audit
         continue-on-error: true
-        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          working-directory: src-tauri
+        working-directory: src-tauri
+        run: |
+          cargo audit --json > cargo-audit.json || true
+          python ${{ github.workspace }}/.github/scripts/cargo_audit_gate.py cargo-audit.json
 
       - name: Fail if an audit found vulnerabilities
         if: always() && (steps.npm-audit.outcome == 'failure' || steps.pip-audit.outcome == 'failure' || steps.cargo-audit.outcome == 'failure')

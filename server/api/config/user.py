@@ -15,6 +15,9 @@ def get_user_settings():
 @router.post("/user")
 def update_user_settings(data: dict = Body(...)):
     """Update user settings with provided data."""
+    # disabled_tools / advanced_options relocated to config KV (migration v9).
+    data.pop("disabled_tools", None)
+    data.pop("advanced_options", None)
     config_manager.update_user_settings(data)
     return {"message": "User settings updated successfully"}
 

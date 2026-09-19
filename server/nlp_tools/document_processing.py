@@ -1,5 +1,6 @@
 import asyncio
 import io
+import itertools
 import logging
 from typing import Any
 
@@ -18,6 +19,8 @@ except ImportError:
 try:
     import pytesseract
     from PIL import Image
+
+    Image.MAX_IMAGE_PIXELS = 40_000_000
 
     OCR_AVAILABLE = True
 except ImportError:
@@ -39,6 +42,33 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+PDF_MAX_PAGES = 200
+PDF_MAX_TEXT_CHARS = 2_000_000
+
+
+def extract_pdf_text_capped(pdf_bytes: bytes) -> str:
+    """Extract PDF text with page/character caps (shared with the RAG vector store)"""
+    if not PDF_TEXT_AVAILABLE:
+        logger.debug("pypdf not available; skipping PDF text-layer extraction")
+        return ""
+
+    try:
+        reader = PdfReader(io.BytesIO(pdf_bytes))  # ty: ignore
+        text_parts = []
+        total_chars = 0
+        for page in itertools.islice(reader.pages, PDF_MAX_PAGES):
+            part = page.extract_text() or ""
+            text_parts.append(part)
+            total_chars += len(part)
+            if total_chars >= PDF_MAX_TEXT_CHARS:
+                logger.warning("PDF text extraction hit %d char cap", PDF_MAX_TEXT_CHARS)
+                break
+        return "\n\n".join(text_parts).strip()
+    except Exception as e:
+        logger.warning(f"Failed PDF text-layer extraction: {e}")
+        return ""
+
+
 async def extract_text_from_document(document_buffer: bytes, content_type: str) -> str:
     """
     Extract text from document.
@@ -57,6 +87,7 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
 
     Raises:
         RuntimeError: If required extraction dependencies are not available
+        ValueError: If the image exceeds the maximum allowed dimensions
     """
     logger.info(f"Extracting text from document with content type: {content_type}")
 
@@ -68,7 +99,8 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
 
     if content_type == "application/pdf":
         logger.info("Backend PDF parsing invoked")
-        text_from_layer = _extract_pdf_text_layer(document_buffer)
+        # Sync parse runs off the event loop so concurrent requests aren't frozen
+        text_from_layer = await asyncio.to_thread(_extract_pdf_text_layer, document_buffer)
 
         if _is_extracted_text_usable(text_from_layer):
             logger.info("Using extracted PDF text layer content")
@@ -90,10 +122,18 @@ async def extract_text_from_document(document_buffer: bytes, content_type: str) 
     if not OCR_AVAILABLE:
         raise RuntimeError("Image document processing requires Pillow and pytesseract.")
 
+    def _ocr() -> str:
+        img = Image.open(io.BytesIO(document_buffer))  # ty: ignore
+        try:
+            return pytesseract.image_to_string(img)  # ty: ignore
+        finally:
+            img.close()
+
     logger.debug("Processing image document with Tesseract OCR")
-    img = Image.open(io.BytesIO(document_buffer))  # ty: ignore
-    text = pytesseract.image_to_string(img)  # ty: ignore
-    return text
+    try:
+        return await asyncio.to_thread(_ocr)
+    except Image.DecompressionBombError as e:  # ty: ignore
+        raise ValueError("Image dimensions exceed the maximum allowed") from e
 
 
 def _extract_pdf_text_layer(document_buffer: bytes) -> str:
@@ -101,19 +141,7 @@ def _extract_pdf_text_layer(document_buffer: bytes) -> str:
     Extract text from embedded PDF text layer using pypdf.
     """
     logger.info("Backend PDF parser component called: pypdf text-layer extraction")
-    if not PDF_TEXT_AVAILABLE:
-        logger.debug("pypdf not available; skipping PDF text-layer extraction")
-        return ""
-
-    try:
-        reader = PdfReader(io.BytesIO(document_buffer))  # ty: ignore
-        page_texts = []
-        for page in reader.pages:
-            page_texts.append(page.extract_text() or "")
-        return "\n\n".join(page_texts).strip()
-    except Exception as e:
-        logger.warning(f"Failed PDF text-layer extraction: {e}")
-        return ""
+    return extract_pdf_text_capped(document_buffer)
 
 
 def _is_extracted_text_usable(text: str) -> bool:

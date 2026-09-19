@@ -3,9 +3,13 @@ import logging
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 
+from server.constants import is_protected_template_key as _is_protected
+from server.database.config.manager import config_manager
 from server.database.repositories.templates import (
     get_all_templates,
+    get_base_key,
     get_default_template,
+    get_fork_base,
     get_template_by_key,
     save_template,
     set_default_template,
@@ -53,6 +57,8 @@ def get_template(template_key: str):
         if template is None:
             raise HTTPException(status_code=404, detail="Template not found")
         return JSONResponse(content=template)
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error fetching template: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -62,11 +68,20 @@ def get_template(template_key: str):
 def delete_template(template_key: str):
     """Delete a template if it's not a default template."""
     try:
-        if template_key.startswith(("phlox_", "soap_", "progress_")):
+        if _is_protected(template_key):
             raise HTTPException(status_code=403, detail="Cannot delete default templates")
 
         success = soft_delete_template(template_key)
         if success:
+            try:
+                fork_base = get_fork_base(template_key)
+                if (
+                    fork_base is not None
+                    and config_manager.get_default_template_key() == template_key
+                ):
+                    set_default_template(f"{fork_base}_01")
+            except Exception as e:  # pragma: no cover - never block the delete
+                logging.warning(f"Default repoint after fork delete failed: {e}")
             return JSONResponse(content={"message": f"Template {template_key} deleted"})
         raise HTTPException(status_code=404, detail="Template not found")
     except HTTPException as he:
@@ -81,6 +96,9 @@ def reset_adaptive_instructions(template_key: str, field_key: str):
     """
     Reset (clear) the adaptive refinement instructions for a given field in a template.
     """
+    if _is_protected(template_key):
+        raise HTTPException(status_code=403, detail="Cannot modify default templates")
+
     from server.database.repositories.templates import (
         update_field_adaptive_instructions,
     )
@@ -105,6 +123,9 @@ async def consolidate_adaptive_instructions_endpoint(template_key: str, field_ke
     Consolidate the adaptive refinement instructions for a given field in a template.
     This resolves contradictions, merges redundancy, and simplifies complex instructions.
     """
+    if _is_protected(template_key):
+        raise HTTPException(status_code=403, detail="Cannot modify default templates")
+
     from server.database.repositories.templates import (
         get_template_by_key,
         update_field_adaptive_instructions,
@@ -199,17 +220,26 @@ def save_templates(
         updated_keys = {}
 
         for template in template_objects:
+            original_key = template.template_key
+            if _is_protected(original_key):
+                template.template_key = f"custom_{get_base_key(original_key)}_1"
             if template_exists(template.template_key):
                 new_key = update_template(template)
                 if new_key == template.template_key:
                     results.append(f"No changes detected for template: {template.template_name}")
                 else:
                     results.append(f"Updated template: {template.template_name}")
-                updated_keys[template.template_key] = new_key
+                updated_keys[original_key] = new_key
             else:
                 save_template(template)
-                results.append(f"Created template: {template.template_name}")
-                updated_keys[template.template_key] = template.template_key
+                if original_key != template.template_key:
+                    config_manager.update_default_template_key(original_key, template.template_key)
+                    results.append(
+                        f"Forked default template: {template.template_name} → {template.template_key}"
+                    )
+                else:
+                    results.append(f"Created template: {template.template_name}")
+                updated_keys[original_key] = template.template_key
 
         return JSONResponse(
             content={
@@ -218,6 +248,8 @@ def save_templates(
                 "updated_keys": updated_keys,
             }
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error saving templates: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e

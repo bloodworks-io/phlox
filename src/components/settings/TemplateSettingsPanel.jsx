@@ -9,7 +9,7 @@ import {
     Badge,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { AddIcon, DeleteIcon, EditIcon } from "../common/icons";
+import { AddIcon, DeleteIcon, EditIcon, RepeatIcon } from "../common/icons";
 import { FaFileAlt } from "react-icons/fa";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useState } from "react";
@@ -18,11 +18,7 @@ import NewTemplateFromExampleModal from "../modals/NewTemplateFromExampleModal";
 import DeleteConfirmationModal from "../modals/DeleteConfirmationModal";
 import { templateApi } from "../../utils/api/templateApi";
 import { useTemplate } from "../../utils/templates/templateContext";
-
-const DEFAULT_TEMPLATE_KEYS = ["phlox_", "soap_", "progress_"];
-
-const isDefaultTemplate = (templateKey) =>
-    DEFAULT_TEMPLATE_KEYS.some((prefix) => templateKey.startsWith(prefix));
+import { isDefaultTemplate, isCustomizedDefault } from "../../utils/templates/templateService";
 
 const TemplateSettingsPanel = ({ templates, setTemplates }) => {
     const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -49,15 +45,20 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
         }
     };
 
-    const handleSaveTemplate = async (_templateKey, _updatedTemplate) => {
+    const handleSaveTemplate = async (templateKey, updatedTemplate) => {
         setIsSaving(true);
         try {
+            const result = await templateApi.saveTemplates([updatedTemplate]);
+            const newKey = result?.updated_keys?.[templateKey];
             const freshTemplates = await templateApi.fetchTemplates();
             setTemplates(freshTemplates);
 
             toaster.create({
                 title: "Success",
-                description: "Template saved successfully",
+                description:
+                    newKey && newKey !== templateKey
+                        ? `Saved as your own copy: ${newKey}`
+                        : "Template saved successfully",
                 type: "success",
                 duration: 3000,
             });
@@ -83,6 +84,14 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                 setTemplates(freshTemplates);
                 setIsDeleteModalOpen(false);
                 setTemplateToDelete(null);
+                if (isCustomizedDefault(templateKey)) {
+                    toaster.create({
+                        title: "Success",
+                        description: "Template reset to default",
+                        type: "success",
+                        duration: 3000,
+                    });
+                }
             }
         } catch (error) {
             console.error("Error deleting template:", error);
@@ -173,6 +182,9 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                         const isDefault = isDefaultTemplate(
                             template.template_key,
                         );
+                        const isCustomized = isCustomizedDefault(
+                            template.template_key,
+                        );
                         return (
                             <Box
                                 key={template.template_key}
@@ -191,11 +203,19 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                                         </Text>
                                         <Badge
                                             colorPalette={
-                                                isDefault ? "green" : "gray"
+                                                isDefault
+                                                    ? "green"
+                                                    : isCustomized
+                                                      ? "blue"
+                                                      : "gray"
                                             }
                                             fontSize="xs"
                                         >
-                                            {isDefault ? "Default" : "Custom"}
+                                            {isDefault
+                                                ? "Default"
+                                                : isCustomized
+                                                  ? "Customized"
+                                                  : "Custom"}
                                         </Badge>
                                     </HStack>
                                     <HStack gap={1}>
@@ -211,7 +231,24 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                                                 }
                                             ><EditIcon /></IconButton>
                                         </Tooltip>
-                                        {!isDefault && (
+                                        {isCustomized ? (
+                                            <Tooltip content="Reset to default">
+                                                <IconButton
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    aria-label="Reset to default"
+                                                    onClick={() => {
+                                                        setTemplateToDelete({
+                                                            key: template.template_key,
+                                                            name: template.template_name,
+                                                        });
+                                                        setIsDeleteModalOpen(
+                                                            true,
+                                                        );
+                                                    }}
+                                                ><RepeatIcon /></IconButton>
+                                            </Tooltip>
+                                        ) : !isDefault ? (
                                             <Tooltip content="Delete template">
                                                 <IconButton
                                                     variant="ghost"
@@ -229,7 +266,7 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                                                     }}
                                                 ><DeleteIcon /></IconButton>
                                             </Tooltip>
-                                        )}
+                                        ) : null}
                                     </HStack>
                                 </Flex>
                             </Box>
@@ -246,6 +283,9 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                 templateKey={selectedTemplateKey}
                 onSave={handleSaveTemplate}
                 isNewTemplate={isNewTemplate}
+                isDefaultTemplate={
+                    selectedTemplateKey ? isDefaultTemplate(selectedTemplateKey) : false
+                }
             />
             <NewTemplateFromExampleModal
                 isOpen={isNewTemplateModalOpen}
@@ -263,7 +303,21 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                 }}
                 onConfirm={() => handleDeleteTemplate(templateToDelete?.key)}
                 itemName={templateToDelete?.name}
-                title="Delete Template"
+                title={
+                    templateToDelete && isCustomizedDefault(templateToDelete.key)
+                        ? "Reset to Default"
+                        : "Delete Template"
+                }
+                body={
+                    templateToDelete && isCustomizedDefault(templateToDelete.key)
+                        ? `This discards your changes to "${templateToDelete?.name}" and restores the original default template.`
+                        : undefined
+                }
+                confirmLabel={
+                    templateToDelete && isCustomizedDefault(templateToDelete.key)
+                        ? "Reset"
+                        : "Delete"
+                }
             />
         </VStack>
     );

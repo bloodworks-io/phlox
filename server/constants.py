@@ -21,8 +21,25 @@ PROXY_AUTH_ALLOWED_USERS = [
     u.strip() for u in os.getenv("PROXY_AUTH_ALLOWED_USERS", "").split(",") if u.strip()
 ]
 
+TRUSTED_PROXY_IPS = [
+    ip.strip() for ip in os.getenv("TRUSTED_PROXY_IPS", "").split(",") if ip.strip()
+]
+
+PHLOX_PASSPHRASE = os.getenv("PHLOX_PASSPHRASE", "").strip()
+PHLOX_ALLOW_UNAUTHENTICATED = os.getenv("PHLOX_ALLOW_UNAUTHENTICATED", "false").lower() == "true"
+
+MAX_BODY_BYTES = 100 * 1024 * 1024
+MAX_AUDIO_BODY_BYTES = 1024 * 1024 * 1024
+
 APP_NAME = "Phlox"
 APP_AUTHOR = "bloodworks.io"
+
+
+PROTECTED_TEMPLATE_PREFIXES = ("phlox_", "soap_", "progress_", "consult_", "procedure_")
+
+
+def is_protected_template_key(template_key: str) -> bool:
+    return template_key.startswith(PROTECTED_TEMPLATE_PREFIXES)
 
 
 logger = logging.getLogger(__name__)

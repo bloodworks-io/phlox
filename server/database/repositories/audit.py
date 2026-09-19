@@ -87,6 +87,8 @@ def purge_old_events() -> int:
         days = int(config_manager.get_config().get("AUDIT_RETENTION_DAYS", DEFAULT_RETENTION_DAYS))
     except Exception:
         days = DEFAULT_RETENTION_DAYS
+    if days < 1:
+        days = DEFAULT_RETENTION_DAYS
     try:
         with get_db().transaction() as cursor:
             cursor.execute(
