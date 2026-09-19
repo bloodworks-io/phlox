@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from server.database.config.mcp_manager import mcp_config_manager
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -34,6 +35,7 @@ class McpServerUpdate(BaseModel):
 @router.get("/mcp")
 def list_mcp_servers():
     """List all configured MCP servers."""
+    require_admin()
     servers = mcp_config_manager.get_servers()
     return JSONResponse(content={"servers": servers})
 
@@ -41,6 +43,7 @@ def list_mcp_servers():
 @router.get("/mcp/enabled")
 def list_enabled_mcp_servers():
     """List only enabled MCP servers."""
+    require_admin()
     servers = mcp_config_manager.get_enabled_servers()
     return JSONResponse(content={"servers": servers})
 
@@ -48,6 +51,7 @@ def list_enabled_mcp_servers():
 @router.get("/mcp/{server_id}")
 def get_mcp_server(server_id: int):
     """Get a specific MCP server by ID."""
+    require_admin()
     server = mcp_config_manager.get_server(server_id)
     if not server:
         raise HTTPException(status_code=404, detail="MCP server not found")
@@ -57,6 +61,7 @@ def get_mcp_server(server_id: int):
 @router.post("/mcp")
 def add_mcp_server(data: McpServerCreate):
     """Add a new MCP server configuration."""
+    require_admin()
     try:
         server = mcp_config_manager.add_server(
             name=data.name,
@@ -75,6 +80,7 @@ def add_mcp_server(data: McpServerCreate):
 @router.put("/mcp/{server_id}")
 def update_mcp_server(server_id: int, data: McpServerUpdate):
     """Update an existing MCP server configuration."""
+    require_admin()
     server = mcp_config_manager.update_server(
         server_id=server_id,
         name=data.name,
@@ -91,6 +97,7 @@ def update_mcp_server(server_id: int, data: McpServerUpdate):
 @router.delete("/mcp/{server_id}")
 def delete_mcp_server(server_id: int):
     """Delete an MCP server configuration."""
+    require_admin()
     success = mcp_config_manager.remove_server(server_id)
     if not success:
         raise HTTPException(status_code=404, detail="MCP server not found")
@@ -100,6 +107,7 @@ def delete_mcp_server(server_id: int):
 @router.post("/mcp/{server_id}/toggle")
 def toggle_mcp_server(server_id: int, enabled: bool = Body(..., embed=True)):
     """Enable or disable an MCP server."""
+    require_admin()
     success = mcp_config_manager.toggle_server(server_id, enabled)
     if not success:
         raise HTTPException(status_code=404, detail="MCP server not found")
@@ -115,6 +123,7 @@ async def test_mcp_server(server_id: int):
     Returns the server's tools and server info if connection is successful.
     Also updates the server's stored description/version from the server's info.
     """
+    require_admin()
     from server.mcp.client import McpServerClient
 
     server_config = mcp_config_manager.get_server(server_id)
@@ -177,6 +186,7 @@ async def refresh_mcp_tools():
 
     This should be called after adding/removing MCP servers.
     """
+    require_admin()
     from server.mcp.client import refresh_mcp_tools_cache
 
     await refresh_mcp_tools_cache()

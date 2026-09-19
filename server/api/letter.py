@@ -15,6 +15,7 @@ from server.database.repositories.letter import (
 )
 from server.nlp_tools.letter import generate_letter_content
 from server.schemas.letter import LetterRequest, LetterSave, LetterTemplate
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -120,7 +121,8 @@ def create_template(template: LetterTemplate = Body(...)):
 
 @router.post("/templates/reset")
 def reset_templates():
-    """Reset letter templates to default."""
+    """Reset letter templates to default. Admin only."""
+    require_admin()
     try:
         reset_default_templates()
         return JSONResponse(content={"message": "Templates reset to defaults"})

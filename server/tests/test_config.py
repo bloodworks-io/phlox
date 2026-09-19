@@ -3,7 +3,8 @@ Tests for configuration endpoints.
 Uses TestClient and checks JSON response structure.
 """
 
-from fastapi import FastAPI
+import pytest
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from server.api.config import router
@@ -369,3 +370,118 @@ def test_llm_models_stored_key_only_travels_to_stored_url(monkeypatch):
 
     # Restore so other tests see a clean config.
     config_manager.update_config({"LLM_BASE_URL": "", "LLM_API_KEY": ""})
+
+
+# --- access control: MCP configuration and outbound-fetch endpoints ----------
+
+
+@pytest.mark.usefixtures("clinician_ctx")
+def test_mcp_sync_routes_require_admin():
+    from server.api.config.mcp import (
+        McpServerCreate,
+        McpServerUpdate,
+        add_mcp_server,
+        delete_mcp_server,
+        get_mcp_server,
+        list_enabled_mcp_servers,
+        list_mcp_servers,
+        toggle_mcp_server,
+        update_mcp_server,
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        list_mcp_servers()
+    assert exc.value.status_code == 403
+
+    for call in (
+        lambda: list_enabled_mcp_servers(),
+        lambda: get_mcp_server(1),
+        lambda: add_mcp_server(McpServerCreate(name="x", url="http://evil.example")),
+        lambda: update_mcp_server(1, McpServerUpdate(url="http://evil.example")),
+        lambda: delete_mcp_server(1),
+        lambda: toggle_mcp_server(1, True),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            call()
+        assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("clinician_ctx")
+async def test_mcp_async_routes_require_admin():
+    from server.api.config.mcp import refresh_mcp_tools, test_mcp_server
+
+    for call in (lambda: test_mcp_server(1), lambda: refresh_mcp_tools()):
+        with pytest.raises(HTTPException) as exc:
+            await call()
+        assert exc.value.status_code == 403
+
+
+def test_assert_http_url_matrix():
+    from server.utils.url_utils import assert_http_url
+
+    for good in ("http://localhost:3000/mcp", "https://example.com/sse", "http://10.0.0.5:8080"):
+        assert_http_url(good)  # no exception
+
+    for bad in (
+        "",
+        "   ",
+        "file:///etc/passwd",
+        "gopher://127.0.0.1:70/_",
+        "ftp://example.com",
+        "javascript:alert(1)",
+        "not-a-url",
+        "http://",  # scheme ok but no host
+        "/relative/path",
+    ):
+        with pytest.raises(ValueError):
+            assert_http_url(bad)
+
+
+def test_mcp_manager_rejects_non_http_urls():
+    from server.database.config.mcp_manager import mcp_config_manager
+
+    for url in ("file:///etc/passwd", "gopher://127.0.0.1:70/_", "ftp://example.com"):
+        with pytest.raises(ValueError):
+            mcp_config_manager.add_server(name="bad", url=url)
+
+    # Lifecycle: a valid server can be registered and updated, but its URL
+    # can never be flipped to a dangerous scheme.
+    server = mcp_config_manager.add_server(name="pt-http-ok", url="http://127.0.0.1:39999/mcp")
+    assert server is not None
+    try:
+        assert server["url"] == "http://127.0.0.1:39999/mcp"
+        with pytest.raises(ValueError):
+            mcp_config_manager.update_server(server["id"], url="file:///etc/passwd")
+    finally:
+        mcp_config_manager.remove_server(server["id"])
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("clinician_ctx")
+async def test_url_validation_requires_admin():
+    from server.api.config.validation import validate_url
+
+    with pytest.raises(HTTPException) as exc:
+        await validate_url(url="http://127.0.0.1:1", type="openai")
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("clinician_ctx")
+async def test_llm_models_requires_admin():
+    from server.api.config.models import get_llm_models
+
+    with pytest.raises(HTTPException) as exc:
+        await get_llm_models(provider="openai", baseUrl="http://127.0.0.1:1")
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("clinician_ctx")
+async def test_whisper_models_requires_admin():
+    from server.api.config.models import get_whisper_models
+
+    with pytest.raises(HTTPException) as exc:
+        await get_whisper_models(whisperEndpoint="http://127.0.0.1:1")
+    assert exc.value.status_code == 403

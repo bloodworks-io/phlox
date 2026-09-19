@@ -103,3 +103,15 @@ def test_delete_template(monkeypatch):
     assert response.status_code == 200
     data = response.json()
     assert "deleted" in data.get("message", "").lower()
+
+
+@pytest.mark.usefixtures("clinician_ctx")
+def test_template_reset_requires_admin():
+    """Resetting letter templates wipes every user's templates: admin only."""
+    from fastapi import HTTPException
+
+    from server.api.letter import reset_templates
+
+    with pytest.raises(HTTPException) as exc:
+        reset_templates()
+    assert exc.value.status_code == 403

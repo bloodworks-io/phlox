@@ -9,6 +9,7 @@ from typing import Any
 
 import sqlcipher3 as sqlite3
 from server.database.core.connection import get_db, is_db_initialized
+from server.utils.url_utils import assert_http_url
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +122,7 @@ class McpConfigManager:
         """
         if not url:
             raise ValueError("url is required")
+        assert_http_url(url)
 
         self.refresh_db()
 
@@ -167,6 +169,7 @@ class McpConfigManager:
             params.append(name)
 
         if url is not None:
+            assert_http_url(url)
             updates.append("url = ?")
             params.append(url)
 

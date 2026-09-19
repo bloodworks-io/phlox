@@ -16,15 +16,16 @@ def update_patient_letter(note_id: int, letter: str) -> None:
         letter (str): The letter content.
     """
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().transaction() as cursor:
             cursor.execute(
-                """
+                f"""
                 UPDATE encounters
                 SET final_letter = ?,
                     updated_at = ?
-                WHERE id = ?
+                WHERE id = ?{scope_sql}
                 """,
-                (letter, datetime.now().isoformat(), note_id),
+                (letter, datetime.now().isoformat(), note_id, *scope_params),
             )
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")

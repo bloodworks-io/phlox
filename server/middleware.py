@@ -309,6 +309,8 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
             PROXY_AUTH_ENABLED,
             PROXY_AUTH_USER_HEADER,
         )
+        from server.database.repositories import users
+        from server.utils.current_user import CurrentUser, set_current_user
 
         # Skip if disabled
         if not PROXY_AUTH_ENABLED:
@@ -327,17 +329,26 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
             return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
         # Get user from header
-        user = request.headers.get(PROXY_AUTH_USER_HEADER)
+        user_name = request.headers.get(PROXY_AUTH_USER_HEADER)
 
-        if not user:
+        if not user_name:
             return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
-        if PROXY_AUTH_ALLOWED_USERS and user not in PROXY_AUTH_ALLOWED_USERS:
-            logger.warning(f"Access denied for user: {user}")
+        if PROXY_AUTH_ALLOWED_USERS and user_name not in PROXY_AUTH_ALLOWED_USERS:
+            logger.warning(f"Access denied for user: {user_name}")
             return JSONResponse(status_code=403, content={"detail": "Access denied"})
 
+        # Resolve the header identity to a real user account so that
+        # ownership scoping (scoped()) and role gates (require_admin())
+        # apply on the proxy-auth path too.
+        user = users.get_user_by_username(user_name)
+        if user is None or user.get("disabled"):
+            logger.warning(f"Proxy auth identity not provisioned or disabled: {user_name}")
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+
         # Store user for downstream use
-        request.state.user = user
+        set_current_user(CurrentUser(user["id"], user["username"], user["role"]))
+        request.state.user = user["username"]
         return await call_next(request)
 
 

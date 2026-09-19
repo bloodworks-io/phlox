@@ -109,7 +109,8 @@ class ChatEngine:
         template_fields = patient_context.get("template_fields") if patient_context else None
         message_list = build_system_messages(patient_context, template_fields) + filtered_history
 
-        self.logger.info(f"Message list: {message_list}")
+        # Debug-level only: the message list embeds patient context (PHI)
+        self.logger.debug(f"Message list: {message_list}")
 
         # First call to determine if we need literature or direct response
         self.logger.info("Initial LLM call to determine tool usage...")

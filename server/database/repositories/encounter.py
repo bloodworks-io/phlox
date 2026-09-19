@@ -293,10 +293,11 @@ def update_patient_reasoning(note_id: int, reasoning_output: dict) -> None:
     """
     try:
         reasoning_output_json = json.dumps(reasoning_output)
+        scope_sql, scope_params = scoped("created_by")
         with get_db().transaction() as cursor:
             cursor.execute(
-                "UPDATE encounters SET reasoning_output = ? WHERE id = ?",
-                (reasoning_output_json, note_id),
+                f"UPDATE encounters SET reasoning_output = ? WHERE id = ?{scope_sql}",
+                (reasoning_output_json, note_id, *scope_params),
             )
     except Exception as e:
         logging.error(f"Error updating patient reasoning: {e}")
@@ -611,20 +612,22 @@ def update_patient_summary(
         primary_condition (str): The extracted primary condition.
     """
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().transaction() as cursor:
             cursor.execute(
-                """
+                f"""
                 UPDATE encounters
                 SET encounter_summary = ?,
                     primary_condition = ?,
                     updated_at = ?
-                WHERE id = ?
+                WHERE id = ?{scope_sql}
                 """,
                 (
                     encounter_summary,
                     primary_condition,
                     datetime.now().isoformat(),
                     note_id,
+                    *scope_params,
                 ),
             )
     except Exception as e:

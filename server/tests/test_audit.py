@@ -1,6 +1,7 @@
 """Tests for audit logging: middleware writes rows, retention purge honors config."""
 
-from fastapi import FastAPI
+import pytest
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from server.database.core.connection import get_db
@@ -64,6 +65,33 @@ def test_audit_endpoints_not_self_audited():
     assert _count_rows() == before
 
 
+@pytest.mark.usefixtures("clinician_ctx")
+def test_audit_list_requires_admin():
+    from server.api.audit import list_audit
+
+    with pytest.raises(HTTPException) as exc:
+        list_audit()
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.usefixtures("clinician_ctx")
+def test_audit_export_requires_admin():
+    from server.api.audit import export_audit
+
+    with pytest.raises(HTTPException) as exc:
+        export_audit()
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.usefixtures("admin_ctx")
+def test_audit_admin_can_read():
+    from server.api.audit import export_audit, list_audit
+
+    assert "events" in list_audit(limit=10, offset=0, from_date=None, to_date=None)
+    response = export_audit(format="csv")
+    assert response.media_type == "text/csv"
+
+
 def test_purge_old_events_honors_retention():
     with get_db().transaction() as cursor:
         cursor.execute(
@@ -79,7 +107,13 @@ def test_purge_old_events_honors_retention():
         assert cursor.fetchone()["n"] == 0
 
 
+def _clear_marker_rows(path: str):
+    with get_db().transaction() as cursor:
+        cursor.execute("DELETE FROM audit_log WHERE path = ?", (path,))
+
+
 def test_purge_keeps_recent_events():
+    _clear_marker_rows("/api/recent")
     log_event(method="GET", path="/api/recent", status=200)
     purge_old_events()
     with get_db().read() as cursor:
@@ -91,6 +125,7 @@ def test_purge_floors_retention_below_one():
     """A retention of 0 (or negative) must never mean 'purge everything'."""
     from server.database.config.manager import config_manager
 
+    _clear_marker_rows("/api/zero-retention")
     original = config_manager.get_config().get("AUDIT_RETENTION_DAYS")
     log_event(method="GET", path="/api/zero-retention", status=200)
     try:

@@ -21,6 +21,7 @@ from server.schemas.rag import (
     ModifyCollectionRequest,
     UpdateDocumentMetadataRequest,
 )
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -338,7 +339,8 @@ def commit_direct(request: BulkCommitRequest):
 
 @router.post("/re-embed")
 def re_embed():
-    """API endpoint to re-embed all collections with the current embedding model."""
+    """API endpoint to re-embed all collections with the current embedding model. Admin only."""
+    require_admin()
     _check_rag_available()
     try:
         vector_store_manager = get_vector_store_manager()
@@ -354,7 +356,8 @@ def re_embed():
 
 @router.post("/re-embed/stream")
 async def re_embed_stream():
-    """Stream re-embedding progress via Server-Sent Events."""
+    """Stream re-embedding progress via Server-Sent Events. Admin only."""
+    require_admin()
     _check_rag_available()
     return StreamingResponse(
         stream_re_embed_progress(),
@@ -364,7 +367,8 @@ async def re_embed_stream():
 
 @router.post("/clear-database")
 def clear_database():
-    """API endpoint to clear the entire RAG database."""
+    """API endpoint to clear the entire RAG database. Admin only."""
+    require_admin()
     _check_rag_available()
     try:
         vector_store_manager = get_vector_store_manager()
