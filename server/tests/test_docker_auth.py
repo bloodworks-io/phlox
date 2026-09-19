@@ -43,6 +43,14 @@ async def _get(app: FastAPI, peer: str, headers: dict | None = None) -> httpx.Re
         return await client.get("/api/note/list", headers=headers or {})
 
 
+def _provision_proxy_user(username: str):
+    """Proxy identities must map to a provisioned account (fail-closed)."""
+    from server.database.repositories.users import create_user, get_user_by_username
+
+    if not get_user_by_username(username):
+        create_user(username)
+
+
 # --- startup guard ------------------------------------------------------------
 
 
@@ -209,6 +217,7 @@ async def test_proxy_auth_rejects_forged_header_from_private_peer(monkeypatch):
 async def test_proxy_auth_accepts_trusted_proxy(monkeypatch):
     monkeypatch.setattr("server.constants.PROXY_AUTH_ENABLED", True)
     monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["172.16.0.2"])
+    _provision_proxy_user("dr.alice@clinic")
     app = _build_app(ProxyAuthMiddleware)
 
     resp = await _get(app, "172.16.0.2", headers={"X-Forwarded-User": "dr.alice@clinic"})
@@ -241,6 +250,7 @@ async def test_proxy_auth_enforces_allowed_users(monkeypatch):
     monkeypatch.setattr("server.constants.PROXY_AUTH_ENABLED", True)
     monkeypatch.setattr("server.constants.PROXY_AUTH_ALLOWED_USERS", ["dr.alice@clinic"])
     monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["10.0.0.0/8"])
+    _provision_proxy_user("dr.alice@clinic")
     app = _build_app(ProxyAuthMiddleware)
 
     ok = await _get(app, "10.1.2.3", headers={"X-Forwarded-User": "dr.alice@clinic"})
@@ -386,3 +396,32 @@ async def test_trusted_proxy_canonicalizes_ipv6(monkeypatch):
     )
     assert resp.status_code == 200
     assert resp.json()["client_ip"] == "2001:db8::1"
+
+
+@pytest.mark.asyncio
+async def test_proxy_auth_sets_current_user(monkeypatch):
+    """Header identity must resolve to a provisioned account and populate the
+    current-user context, so ownership scoping and role gates apply on the
+    proxy-auth path. Unprovisioned identities are rejected, not silently
+    unscoped."""
+    from server.utils.current_user import get_current_user
+
+    monkeypatch.setattr("server.constants.PROXY_AUTH_ENABLED", True)
+    monkeypatch.setattr("server.constants.TRUSTED_PROXY_IPS", ["10.9.0.1"])
+    _provision_proxy_user("dr.proxy@clinic")
+
+    app = FastAPI()
+    app.add_middleware(ProxyAuthMiddleware)
+
+    @app.get("/api/note/list")
+    def _probe():
+        user = get_current_user()
+        return {"user": user.username if user else None, "role": user.role if user else None}
+
+    resp = await _get(app, "10.9.0.1", headers={"X-Forwarded-User": "dr.proxy@clinic"})
+    assert resp.status_code == 200
+    assert resp.json() == {"user": "dr.proxy@clinic", "role": "clinician"}
+
+    # Unprovisioned identity: rejected instead of silently unscoped
+    resp = await _get(app, "10.9.0.1", headers={"X-Forwarded-User": "ghost@clinic"})
+    assert resp.status_code == 401

@@ -6,7 +6,8 @@ Uses TestClient for a synchronous test and mocks out external dependencies.
 import json
 from unittest.mock import patch
 
-from fastapi import FastAPI
+import pytest
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from server.api.chat import router
@@ -154,6 +155,17 @@ def test_vision_capability_stored_key_only_travels_to_stored_url(monkeypatch):
 
     # Restore so other tests see a clean config.
     config_manager.update_config({"LLM_BASE_URL": "", "LLM_API_KEY": ""})
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("clinician_ctx")
+async def test_vision_capability_requires_admin():
+    """The vision probe dials a caller-supplied base URL; clinicians must not reach it."""
+    from server.api.chat import VisionCapabilityProbeRequest, probe_vision_capability
+
+    with pytest.raises(HTTPException) as exc:
+        await probe_vision_capability(VisionCapabilityProbeRequest())
+    assert exc.value.status_code == 403
 
 
 if __name__ == "__main__":

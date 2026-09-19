@@ -52,6 +52,19 @@ def normalize_base_url(raw_url: str) -> str:
     return normalized.rstrip("/")
 
 
+def assert_http_url(raw_url: str) -> None:
+    """Validate that a URL is a well-formed http(s) URL."""
+    cleaned = (raw_url or "").strip()
+    if not cleaned:
+        raise ValueError("URL cannot be empty")
+    parts = urlsplit(cleaned)
+    scheme = parts.scheme.lower()
+    if scheme not in ("http", "https"):
+        raise ValueError(f"Unsupported URL scheme '{scheme or '(none)'}' (only http/https allowed)")
+    if not parts.netloc:
+        raise ValueError("URL must include a host")
+
+
 # Backwards-compatible aliases
 normalize_openai_base_url = normalize_base_url
 normalize_whisper_base_url = normalize_base_url

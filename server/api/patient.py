@@ -323,6 +323,8 @@ def get_patient_history_endpoint(id: int):
 
         history = get_patient_history(patient["ur_number"])
         return JSONResponse(content=history)
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error fetching patient history: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -378,6 +380,8 @@ def delete_patient(id: int):
         if success:
             return {"message": "Patient deleted"}
         raise HTTPException(status_code=404, detail="Patient not found")
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error deleting patient: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e

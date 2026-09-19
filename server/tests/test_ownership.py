@@ -183,3 +183,79 @@ def test_claim_leaves_seeded_letter_templates_shared():
         assert names_a == names_b, "letter templates not shared after claim"
     finally:
         set_current_user(None)
+
+
+def _drop_users(usernames: list[str]):
+    with get_db().transaction() as cursor:
+        for name in usernames:
+            cursor.execute("DELETE FROM users WHERE username = ?", (name,))
+
+
+def test_cross_user_writes_are_scoped_out():
+    """Every encounter write path must filter by owner, not bare id."""
+    import json as _json
+
+    from server.database.repositories.encounter import (
+        update_patient_reasoning,
+        update_patient_summary,
+    )
+    from server.database.repositories.jobs import update_patient_jobs_list
+    from server.database.repositories.letter import update_patient_letter
+
+    _drop_users(["pt_write_a", "pt_write_b"])  # leftovers from prior runs
+    a, b = create_user("pt_write_a"), create_user("pt_write_b")
+    try:
+        id_a = _save("PTWRITEA1", a)
+        _save("PTWRITEB1", b)
+
+        # B attempts every encounter write against A's record
+        _as(b)
+        update_patient_reasoning(id_a, {"hacked": True})
+        update_patient_summary(id_a, "stolen summary", "stolen condition")
+        update_patient_letter(id_a, "stolen letter")
+        update_patient_jobs_list(id_a, [{"task": "steal", "completed": True}])
+
+        # None of them landed on A's row
+        set_current_user(None)
+        with get_db().read() as cursor:
+            cursor.execute(
+                "SELECT reasoning_output, encounter_summary, primary_condition, "
+                "final_letter, jobs_list FROM encounters WHERE id = ?",
+                (id_a,),
+            )
+            row = cursor.fetchone()
+        assert row["reasoning_output"] in (None, "")
+        assert row["encounter_summary"] in (None, "")
+        assert row["primary_condition"] in (None, "")
+        assert row["final_letter"] in (None, "")
+        assert _json.loads(row["jobs_list"] or "[]") == []
+
+        # The owner's writes still apply
+        _as(a)
+        update_patient_reasoning(id_a, {"plan": "rest"})
+        update_patient_summary(id_a, "legit summary", "legit condition")
+        update_patient_letter(id_a, "legit letter")
+        update_patient_jobs_list(id_a, [{"task": "follow-up", "completed": True}])
+
+        set_current_user(None)
+        with get_db().read() as cursor:
+            cursor.execute(
+                "SELECT reasoning_output, encounter_summary, final_letter, jobs_list "
+                "FROM encounters WHERE id = ?",
+                (id_a,),
+            )
+            row = cursor.fetchone()
+        assert "rest" in row["reasoning_output"]
+        assert row["encounter_summary"] == "legit summary"
+        assert row["final_letter"] == "legit letter"
+        assert "follow-up" in row["jobs_list"]
+
+        # Background context (no user) remains unrestricted by design
+        update_patient_reasoning(id_a, {"bg": True})
+        with get_db().read() as cursor:
+            cursor.execute("SELECT reasoning_output FROM encounters WHERE id = ?", (id_a,))
+            assert "bg" in cursor.fetchone()["reasoning_output"]
+    finally:
+        set_current_user(None)
+        _cleanup(["PTWRITEA1", "PTWRITEB1"])
+        _drop_users(["pt_write_a", "pt_write_b"])

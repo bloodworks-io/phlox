@@ -5,6 +5,7 @@ We mock get_vector_store_manager and VECTOR_STORE_AVAILABLE to simulate vector d
 
 from unittest.mock import MagicMock
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -114,3 +115,42 @@ def test_clear_database(monkeypatch):
     assert response.status_code == 200
     data = response.json()
     assert "cleared successfully" in data.get("message", "").lower()
+
+
+# --- access control: global maintenance endpoints ----------------------------
+
+
+@pytest.mark.usefixtures("clinician_ctx")
+def test_reembed_requires_admin():
+    """Re-embedding rewrites every collection: admin only."""
+    from fastapi import HTTPException
+
+    from server.api.rag import re_embed
+
+    with pytest.raises(HTTPException) as exc:
+        re_embed()
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("clinician_ctx")
+async def test_reembed_stream_requires_admin():
+    from fastapi import HTTPException
+
+    from server.api.rag import re_embed_stream
+
+    with pytest.raises(HTTPException) as exc:
+        await re_embed_stream()
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.usefixtures("clinician_ctx")
+def test_clear_database_requires_admin():
+    """Clearing the RAG database deletes every user's knowledge base: admin only."""
+    from fastapi import HTTPException
+
+    from server.api.rag import clear_database
+
+    with pytest.raises(HTTPException) as exc:
+        clear_database()
+    assert exc.value.status_code == 403

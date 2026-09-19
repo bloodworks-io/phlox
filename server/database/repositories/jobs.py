@@ -175,11 +175,11 @@ def _serialize_jobs_list(jobs_list: list) -> tuple[str, bool]:
 
 def _update_jobs_list_with_cursor(cursor, note_id: int, jobs_list: list) -> None:
     """Update a patient's jobs list on an existing cursor (for nested transactions)."""
-    # Need to fix this; sloppy
     serialized_jobs_list, all_jobs_completed = _serialize_jobs_list(jobs_list)
+    scope_sql, scope_params = scoped("created_by")
     cursor.execute(
-        "UPDATE encounters SET jobs_list = ?, all_jobs_completed = ? WHERE id = ?",
-        (serialized_jobs_list, all_jobs_completed, note_id),
+        f"UPDATE encounters SET jobs_list = ?, all_jobs_completed = ? WHERE id = ?{scope_sql}",
+        (serialized_jobs_list, all_jobs_completed, note_id, *scope_params),
     )
 
 

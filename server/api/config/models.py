@@ -46,6 +46,7 @@ async def get_llm_models(
     ),
 ):
     """Fetch available models from the configured LLM provider."""
+    require_admin()
     try:
         if provider.lower() == "local":
             # For local models, return downloaded models
@@ -154,6 +155,7 @@ async def get_whisper_models(
     Only works if the instance exposes a compatible /v1/models endpoint
     (e.g. Speaches); otherwise returns an empty list.
     """
+    require_admin()
     try:
         # First try to fetch models from the endpoint
         async with httpx.AsyncClient() as client:

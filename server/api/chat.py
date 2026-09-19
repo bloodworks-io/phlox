@@ -15,6 +15,7 @@ from server.llm_client.client import AsyncLLMClient, get_llm_client, resolve_eff
 from server.nlp_tools.document_processing import extract_text_from_document
 from server.schemas.chat import ChatRequest, ChatResponse
 from server.schemas.documents import VisualDocumentPage
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -356,6 +357,7 @@ async def probe_vision_capability(payload: VisionCapabilityProbeRequest):
     - If the call succeeds, assume vision-capable.
     - If it fails with a 400-style unsupported-image error, assume not vision-capable.
     """
+    require_admin()
     config = config_manager.get_config()
     model = payload.model or config.get("PRIMARY_MODEL", "")
     base_url = payload.base_url or config.get("LLM_BASE_URL")

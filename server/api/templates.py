@@ -57,6 +57,8 @@ def get_template(template_key: str):
         if template is None:
             raise HTTPException(status_code=404, detail="Template not found")
         return JSONResponse(content=template)
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error fetching template: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e

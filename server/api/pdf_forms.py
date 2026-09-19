@@ -10,6 +10,7 @@ from server.database.config.manager import config_manager
 from server.llm_client.client import get_llm_client
 from server.pdf_forms.storage import PDFFormStore
 from server.schemas.pdf_forms import DetectFieldsRequest, UpdateFieldsRequest
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -39,6 +40,7 @@ async def create_template(
     Page metadata (count, heights) is extracted by the frontend via pdfjs-dist before uploading.
     Something of an anti-pattern but helps to avoid issues with bundling PyMuPDF for Tauri builds etc.
     """
+    require_admin()
     if not pdf.filename or not pdf.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
@@ -88,7 +90,8 @@ def get_template(template_id: str):
 
 @router.delete("/templates/{template_id}")
 def delete_template(template_id: str):
-    """Delete a template and all its fields."""
+    """Delete a template and all its fields. Admin only."""
+    require_admin()
     if not _get_store().delete_template(template_id):
         raise HTTPException(status_code=404, detail="Template not found")
     return {"status": "deleted"}
@@ -118,6 +121,7 @@ async def replace_template_pdf(
 
     The replacement must have identical page geometry.
     """
+    require_admin()
     if not pdf.filename or not pdf.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
@@ -167,7 +171,8 @@ async def replace_template_pdf(
 
 @router.put("/templates/{template_id}/fields")
 def update_fields(template_id: str, body: UpdateFieldsRequest):
-    """Replace all field definitions for a template."""
+    """Replace all field definitions for a template. Admin only."""
+    require_admin()
     try:
         fields = _get_store().update_fields(template_id, [f.model_dump() for f in body.fields])
     except ValueError as exc:
