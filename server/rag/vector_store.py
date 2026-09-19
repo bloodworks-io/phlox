@@ -345,6 +345,7 @@ class VectorStoreManager:
                 disease_name,
                 filename,
             )
+            raise
 
     # Similarity search
 
