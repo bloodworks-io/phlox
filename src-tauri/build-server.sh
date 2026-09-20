@@ -60,19 +60,6 @@ fi
 echo "Cleaning previous build..."
 rm -rf "$SERVER_DIR/dist"
 
-# Speaker embedding model for live diarization (fetched at build time).
-SPEAKER_MODEL_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx"
-SPEAKER_MODEL_SHA256="f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11"
-SPEAKER_MODEL="$SERVER_DIR/assets/models/campplus-common.onnx"
-if [ -f "$SPEAKER_MODEL" ] && echo "$SPEAKER_MODEL_SHA256  $SPEAKER_MODEL" | shasum -a 256 -c - >/dev/null 2>&1; then
-    echo "Speaker model present: $SPEAKER_MODEL"
-else
-    echo "Fetching speaker embedding model..."
-    mkdir -p "$SERVER_DIR/assets/models"
-    curl -sL -o "$SPEAKER_MODEL" "$SPEAKER_MODEL_URL"
-    echo "$SPEAKER_MODEL_SHA256  $SPEAKER_MODEL" | shasum -a 256 -c -
-fi
-
 # Build with Nuitka from project root
 echo "Compiling with Nuitka (this may take a while on first run)..."
 
@@ -88,6 +75,12 @@ else
     echo "No .venv found, using uv run for Nuitka..."
     NUITKA_CMD="uv run --locked --extra rag --directory $SERVER_DIR python -m nuitka"
 fi
+
+# Speaker embedding model for live diarization (idempotent; the script holds
+# the pinned URL and checksum). Required before Nuitka packs it below.
+FETCH_PYTHON="$PYTHON"
+command -v "$FETCH_PYTHON" >/dev/null 2>&1 || FETCH_PYTHON=python3
+"$FETCH_PYTHON" "$SERVER_DIR/scripts/fetch_speaker_model.py"
 
 SQLITE_VEC_DIR="$("$PYTHON" -c 'import sqlite_vec, os; print(os.path.dirname(sqlite_vec.__file__))' 2>/dev/null)"
 VEC0_NAME="$(ls "$SQLITE_VEC_DIR"/vec0.* 2>/dev/null | head -1)"

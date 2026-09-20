@@ -54,11 +54,14 @@ RUN mkdir -p /usr/src/app/data \
 RUN uv sync --directory server --locked --extra docker
 
 # Make a shell script to initialize the database and start both React and FastAPI
+# The speaker model fetch writes through the dev bind mount (docker-compose.dev.yml
+# mounts .:/usr/src/app), so it persists on the host and later boots are no-ops.
 RUN printf '%s\n' \
 '#!/usr/bin/env bash' \
 'set -euo pipefail' \
 'set -x' \
 '' \
+'python /usr/src/app/server/scripts/fetch_speaker_model.py || echo "speaker model fetch failed; live diarization disabled"' \
 'python /usr/src/app/server/demo/demo_db.py' \
 '# Set default value if SERVER_HOST is not set, then export it for subshells' \
 'export SERVER_HOST=${SERVER_HOST:-0.0.0.0}' \
