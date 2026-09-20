@@ -26,16 +26,23 @@ export const speakerColorPair = (speaker) => {
     return SPEAKER_COLORS[(num - 1) % SPEAKER_COLORS.length];
 };
 
-const SpeakerChip = ({ speaker }) => {
+const SpeakerDot = ({ speaker }) => {
     const [light, dark] = speakerColorPair(speaker);
     const color = useColorModeValue(light, dark);
     return (
         <span
-            style={{ color, fontWeight: 600, fontSize: "10px", marginRight: 4 }}
+            style={{
+                display: "inline-block",
+                width: "7px",
+                height: "7px",
+                borderRadius: "9999px",
+                backgroundColor: color,
+                marginRight: "6px",
+                verticalAlign: "middle",
+            }}
             data-speaker={speaker}
-        >
-            {speaker}
-        </span>
+            title={speaker}
+        />
     );
 };
 
@@ -44,7 +51,7 @@ export const SpeakerText = ({ text, ...textProps }) =>
         const { speaker, text: body } = parseSpeakerLine(line);
         return (
             <Text key={i} as="div" whiteSpace="pre-wrap" {...textProps}>
-                {speaker ? <SpeakerChip speaker={speaker} /> : null}
+                {speaker ? <SpeakerDot speaker={speaker} /> : null}
                 {body}
             </Text>
         );

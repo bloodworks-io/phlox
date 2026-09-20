@@ -47,21 +47,26 @@ describe("speakerColorPair", () => {
 });
 
 describe("SpeakerText", () => {
-    it("renders chips per labelled line and leaves plain lines plain", () => {
+    it("renders a coloured dot per labelled line and leaves plain lines plain", () => {
         renderWithProviders(
             <SpeakerText
                 text={"S1: good morning\nno labels here\nS2: thanks for coming in"}
             />,
         );
-        expect(screen.getByText("S1")).toBeInTheDocument();
-        expect(screen.getByText("S2")).toBeInTheDocument();
         expect(screen.getByText("good morning")).toBeInTheDocument();
         expect(screen.getByText("no labels here")).toBeInTheDocument();
         expect(screen.getByText("thanks for coming in")).toBeInTheDocument();
-        expect(screen.queryByText("S3")).not.toBeInTheDocument();
+        const dots = document.querySelectorAll("[data-speaker]");
+        expect(dots).toHaveLength(2);
+        expect(dots[0].getAttribute("data-speaker")).toBe("S1");
+        expect(dots[1].getAttribute("data-speaker")).toBe("S2");
+        expect(dots[0].textContent).toBe("");
+        expect(dots[0].style.borderRadius).not.toBe("");
+        expect(dots[0].style.backgroundColor).not.toBe("");
+        expect(dots[0].style.backgroundColor).not.toBe(dots[1].style.backgroundColor);
     });
 
-    it("renders a fully plain transcript without any chips", () => {
+    it("renders a fully plain transcript without any dots", () => {
         renderWithProviders(<SpeakerText text={"line one\nline two"} />);
         expect(screen.getByText("line one")).toBeInTheDocument();
         expect(screen.getByText("line two")).toBeInTheDocument();

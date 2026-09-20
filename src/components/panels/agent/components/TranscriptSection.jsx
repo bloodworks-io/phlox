@@ -49,7 +49,7 @@ export const TranscriptSection = ({ transcripts }) => {
 const Caption = ({ text, isRecent }) => {
     const { speaker, text: body } = parseSpeakerLine(text);
     const [light, dark] = speaker ? speakerColorPair(speaker) : [null, null];
-    const chipColor = useColorModeValue(light, dark);
+    const dotColor = useColorModeValue(light, dark);
 
     return (
         <Text
@@ -60,13 +60,20 @@ const Caption = ({ text, isRecent }) => {
             className="anim-fade-slide-up"
             css={{ animationDuration: "0.15s" }}
         >
-            {speaker && chipColor ? (
+            {speaker && dotColor ? (
                 <span
-                    style={{ color: chipColor, fontWeight: 600, fontSize: "10px", marginRight: 4 }}
+                    style={{
+                        display: "inline-block",
+                        width: "7px",
+                        height: "7px",
+                        borderRadius: "9999px",
+                        backgroundColor: dotColor,
+                        marginRight: "6px",
+                        verticalAlign: "middle",
+                    }}
                     data-speaker={speaker}
-                >
-                    {speaker}
-                </span>
+                    title={speaker}
+                />
             ) : null}
             {body}
         </Text>
