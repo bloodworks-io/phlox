@@ -5,7 +5,7 @@ import React, {
   useImperativeHandle,
 } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner } from "@chakra-ui/react";
+import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -13,7 +13,7 @@ import {
   CopyIcon,
   CheckIcon,
 } from "../common/icons";
-import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble } from "react-icons/fa";
+import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { getTemplateFamilyBase } from "../../utils/templates/templateService";
@@ -256,87 +256,97 @@ const Summary = forwardRef(
                   {currentTemplate?.fields?.map(renderField)}
                 </VStack>
               </Box>
-              <Flex mt="4" justifyContent="space-between">
-                <Flex>
+              <Flex mt="4" justifyContent="space-between" align="center">
+                <Flex gap={2}>
+                  <Tooltip
+                    content="Copy the full note to your clipboard"
+                    positioning={{ placement: "top" }}
+                  >
+                    <Box>
+                      <IconButton
+                        onClick={onCopy}
+                        aria-label="Copy note to clipboard"
+                        variant="outline"
+                        borderColor="surface"
+                        bg="transparent"
+                        color="fg.muted"
+                        borderRadius="full"
+                        css={{
+                          width: "35px !important",
+                          height: "35px !important",
+                          minWidth: "35px !important",
+                          padding: "0 !important",
+                        }}
+                        _hover={{ bg: "surface", color: "fg" }}
+                      >
+                        {recentlyCopied ? (
+                          <CheckIcon
+                            className="anim-fade-scale"
+                            css={{ animationDuration: "0.2s" }}
+                          />
+                        ) : (
+                          <CopyIcon />
+                        )}
+                      </IconButton>
+                    </Box>
+                  </Tooltip>
                   <Tooltip
                     content={
                       isEncounterSaved
                         ? "Generate a letter from this note"
                         : "Save the encounter first to generate a letter"
                     }
-                    positioning={{
-                      placement: "top"
-                    }}
+                    positioning={{ placement: "top" }}
                   >
                     <Box>
-                      <GreyButton
+                      <IconButton
                         onClick={() => handleGenerateLetterClick(null)}
-                        leftIcon={<EditIcon />}
-                        mr="2"
+                        aria-label="Generate letter from this note"
+                        variant="outline"
+                        borderColor="surface"
+                        bg="transparent"
+                        color="fg.muted"
+                        borderRadius="full"
+                        css={{
+                          width: "35px !important",
+                          height: "35px !important",
+                          minWidth: "35px !important",
+                          padding: "0 !important",
+                        }}
                         disabled={saveLoading || !isEncounterSaved}
+                        _hover={{ bg: "surface", color: "fg" }}
                       >
-                        Generate Letter
-                      </GreyButton>
+                        <FaEnvelopeOpenText />
+                      </IconButton>
                     </Box>
                   </Tooltip>
                 </Flex>
-                <Flex>
-                  <Tooltip
-                    content="Copy the full note to your clipboard"
-                    positioning={{
-                      placement: "top"
-                    }}
-                  >
-                    <Box>
-                      <GreyButton
-                        onClick={onCopy}
-                        width="190px"
-                        leftIcon={
-                            recentlyCopied ? (
-                                <CheckIcon
-                                    className="anim-fade-scale"
-                                    css={{ animationDuration: "0.2s" }}
-                                />
-                            ) : (
-                                <CopyIcon />
-                            )
-                        }
-                        mr="2"
-                    >
-                        {recentlyCopied ? "Copied!" : "Copy to Clipboard"}
-                    </GreyButton>
-                    </Box>
-                  </Tooltip>
+                <Flex align="center">
                   <Tooltip
                     content="Save the current encounter"
-                    positioning={{
-                      placement: "top"
-                    }}
+                    positioning={{ placement: "top" }}
                   >
                     <Box>
                       <GreyButton
                         onClick={handleSavePatientData}
                         loading={saveLoading}
                         loadingText="Saving"
-                        width="190px"
+                        mr="2"
                         leftIcon={saveLoading ? null : <FaSave />}
                       >
-                        {saveLoading ? "Saving..." : "Save Encounter"}
+                        {saveLoading ? "Saving..." : "Save"}
                       </GreyButton>
                     </Box>
                   </Tooltip>
                   <Tooltip
                     content="Review AI-extracted jobs, then finish and move to a new note"
-                    positioning={{
-                      placement: "top"
-                    }}
+                    positioning={{ placement: "top" }}
                   >
                     <Box>
                       <GreenButton
                         onClick={onWrapUp}
                         loading={wrapUpLoading}
                         loadingText="Wrapping"
-                        width="150px"
                         ml="2"
                         leftIcon={wrapUpLoading ? null : <FaCheckDouble />}
                         disabled={saveLoading}
