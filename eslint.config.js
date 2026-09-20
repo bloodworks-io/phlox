@@ -13,6 +13,7 @@ export default tseslint.config(
             "src-tauri/**",
             "server/**",
             "src/components/ui/**",
+            "src/audio/ten-vad/**",
             "build-dir/**",
             ".flatpak-builder/**",
             "packaging/**",
