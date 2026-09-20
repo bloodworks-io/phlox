@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.4.0](https://github.com/bloodworks-io/phlox/compare/v2.3.0...v2.4.0) (2026-09-20)
+
+
+### Features
+
+* **api:** require admin for global config, prompts, options writes ([be1c1bb](https://github.com/bloodworks-io/phlox/commit/be1c1bbd6b44a518d440d68deb5ffedcb40f9164))
+* **auth:** session login with first-run setup and per-user identity ([615369f](https://github.com/bloodworks-io/phlox/commit/615369f70de4270bcfc9cdf774c3f30dcd307f2c))
+* **auth:** users and sessions ownership claiming ([31eb509](https://github.com/bloodworks-io/phlox/commit/31eb5094ba63f1816a04ed382c295870c4558dc7))
+* **data:** per-user templates, todos, and settings ([ba03bca](https://github.com/bloodworks-io/phlox/commit/ba03bcac5b6c0f6a01471de2de7118a4e44d427e))
+* **data:** scope encounters, jobs, letters by owner ([725bf26](https://github.com/bloodworks-io/phlox/commit/725bf267d474011a2eb08e4df3993869fad421b0))
+* **db:** add users, sessions, and ownership columns ([72837b8](https://github.com/bloodworks-io/phlox/commit/72837b876f709aa0bb4e2c4a454e8c53d04d3827))
+* **llm:** central thinking control for chat across all backends ([c080fef](https://github.com/bloodworks-io/phlox/commit/c080fefc46d0c3aa5d2721ee6cea36be03ce26e6))
+* **rag:** per-user document collections ([fd0e043](https://github.com/bloodworks-io/phlox/commit/fd0e0432528cfd78c4bf2b7ceb0b206fd91c375e))
+* toggle admin scope for sidebar ([5bdbda4](https://github.com/bloodworks-io/phlox/commit/5bdbda49d502adab9ac54bada34b665b04d68c86))
+* **web:** first-run setup wizard and username/password login ([9a9a8bb](https://github.com/bloodworks-io/phlox/commit/9a9a8bb1657ceef282d45844c699402b7c295487))
+* **web:** sign-out button; move GitHub link into changelog modal ([42b3d51](https://github.com/bloodworks-io/phlox/commit/42b3d5195d5635216d2722d916daa72c060b13b3))
+* **web:** users tab in admin settings; hide admin panels for clinicians ([429019f](https://github.com/bloodworks-io/phlox/commit/429019f4e905f52057b47fa952c62f799adce728))
+
+
+### Bug Fixes
+
+* **api:** return 404 not 500 for scoped-out resources; raise on failed RAG commit ([6c35318](https://github.com/bloodworks-io/phlox/commit/6c3531886276732856940669b72557f0af0f1aa8))
+* **audit:** block API writes to AUDIT_RETENTION_DAYS ([1cf91a0](https://github.com/bloodworks-io/phlox/commit/1cf91a01363d10f820ce595959dd72a62e1f60f2))
+* **ci:** python version for flatpak build ([2659ad8](https://github.com/bloodworks-io/phlox/commit/2659ad8d03a8ad2e7e78fd029b64980488adfbcb))
+* **letter:** hide exception details in 500 responses ([082b0c5](https://github.com/bloodworks-io/phlox/commit/082b0c5701ff587de9d07895ce1291468abd7e86))
+* **llm:** default thinking to off for calls without an explicit intent ([c6e6d29](https://github.com/bloodworks-io/phlox/commit/c6e6d29fb49f69c1e07fa52a7bbd5d46e89e3d18))
+* **onboarding:** skip LLM step for non-admins; keep letter templates shared ([913089e](https://github.com/bloodworks-io/phlox/commit/913089eca6f1abc5b228228fc7da8d8be8f4317b))
+* resolve type check error ([b83e25a](https://github.com/bloodworks-io/phlox/commit/b83e25a993930974ce7e22e55a6568504b42b915))
+* **security:** admin-gate audit, MCP and fetch-probe endpoints; scope encounter writes to owners ([b05f5ab](https://github.com/bloodworks-io/phlox/commit/b05f5ab229b33b18bb124728f331233e51ee6804))
+* **security:** XFF extraction order bug ([d69740b](https://github.com/bloodworks-io/phlox/commit/d69740b27854ea97396b7099f5fcf6d02b9e3072))
+* small models emit empty JSON ([a196df4](https://github.com/bloodworks-io/phlox/commit/a196df41ed5ca784fb385a18e25584b96aee84ec))
+* Tauri user scoping ([7ddc8bc](https://github.com/bloodworks-io/phlox/commit/7ddc8bc2711781c8328e92d5f94e724ec11de8a5))
+* template scoping ([cb066b6](https://github.com/bloodworks-io/phlox/commit/cb066b68adc693d65b1749378b935f0c07c202a6))
+* **templates:** fork default templates on save with history carry ([81f7a52](https://github.com/bloodworks-io/phlox/commit/81f7a5257274b2317e75034435fe8ec84e9e45d7))
+* **templates:** persist editor edits with reset-to-default ([620c761](https://github.com/bloodworks-io/phlox/commit/620c7613210c0854b33c2765555472f638a1ae8d))
+* **templates:** protect all seeded default templates ([064e541](https://github.com/bloodworks-io/phlox/commit/064e5415e92e8b7f808a7cf70f8a7d720e8c3233))
+* **templates:** reject protected prefixes on all mutation routes ([238373d](https://github.com/bloodworks-io/phlox/commit/238373db28ef04bc60f273a831b935e20acb79b7))
+* typing ([b6f5a2f](https://github.com/bloodworks-io/phlox/commit/b6f5a2fff7622d29b0d19b9d4b4a5a327ae2ff2b))
+* **ui:** admin toggle not appearing ([bd3c45c](https://github.com/bloodworks-io/phlox/commit/bd3c45cafe901d906ad9f08acfcc3f089bc08438))
+* **ui:** bearer token check ([47db6a2](https://github.com/bloodworks-io/phlox/commit/47db6a2465ffafdb4d0909d3313b19a65b492bef))
+* **ui:** macos traffic light positioning ([78db561](https://github.com/bloodworks-io/phlox/commit/78db56177ee09afd110de1431785a4f3aa890f7b))
+
 ## [2.3.0](https://github.com/bloodworks-io/phlox/compare/v2.2.4...v2.3.0) (2026-08-15)
 
 
