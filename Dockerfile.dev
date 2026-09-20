@@ -62,7 +62,7 @@ RUN printf '%s\n' \
 'python /usr/src/app/server/demo/demo_db.py' \
 '# Set default value if SERVER_HOST is not set, then export it for subshells' \
 'export SERVER_HOST=${SERVER_HOST:-0.0.0.0}' \
-'parallel --tag --line-buffer ::: "npm run start-react" "uvicorn server.server:app --reload --host $SERVER_HOST --port 5000"' \
+    'parallel --tag --line-buffer ::: "npm run start-react" "uvicorn server.server:app --reload --host $SERVER_HOST --port 5000 --no-proxy-headers"' \
 > /usr/local/bin/start-phlox-dev.sh && \
 chmod +x /usr/local/bin/start-phlox-dev.sh
 

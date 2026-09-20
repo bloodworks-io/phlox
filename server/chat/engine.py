@@ -21,6 +21,7 @@ from server.chat.streaming.response import (
 from server.chat.tools import execute_tool_streaming, get_tools_definition
 from server.database.config.manager import config_manager
 from server.llm_client.client import get_llm_client
+from server.llm_client.thinking import chat_thinking_enabled
 from server.rag.vector_store import VECTOR_STORE_AVAILABLE, VectorStoreManager
 from server.utils.helpers import clean_think_tags
 
@@ -94,8 +95,10 @@ class ChatEngine:
             else []
         )
 
-        context_question_options = prompts["options"]["general"]
+        context_question_options = dict(prompts["options"]["general"])
         context_question_options.pop("stop", None)
+        if chat_thinking_enabled():
+            context_question_options["thinking"] = "on"
 
         # Clean</think> tags from conversation history
         cleaned_conversation_history = clean_think_tags(conversation_history)
@@ -109,7 +112,8 @@ class ChatEngine:
         template_fields = patient_context.get("template_fields") if patient_context else None
         message_list = build_system_messages(patient_context, template_fields) + filtered_history
 
-        self.logger.info(f"Message list: {message_list}")
+        # Debug-level only: the message list embeds patient context (PHI)
+        self.logger.debug(f"Message list: {message_list}")
 
         # First call to determine if we need literature or direct response
         self.logger.info("Initial LLM call to determine tool usage...")

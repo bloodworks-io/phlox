@@ -208,19 +208,6 @@ export const settingsService = {
         }
     },
 
-    saveAmbientMode: async (isAmbient) => {
-        try {
-            const userData = await settingsApi.fetchUserSettings();
-            return await settingsApi.saveUserSettings({
-                ...userData,
-                scribe_is_ambient: isAmbient,
-            });
-        } catch (error) {
-            console.error("Error saving ambient mode setting:", error);
-            throw error;
-        }
-    },
-
     resetIndividualPrompt: async (promptType) => {
         try {
             const defaults = await settingsApi.fetchDefaultPrompts();

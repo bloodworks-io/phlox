@@ -25,17 +25,14 @@ export const FieldEditor = ({
     idx,
     updateField,
     removeField,
-    isNewTemplate,
 }) => {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const isPlanField = field.field_name?.toLowerCase() === "plan";
-    const canEdit = isNewTemplate; // Only allow editing/deleting for new templates
 
     return (
         <Box className="panels-bg" p="3" borderRadius="sm">
             <Flex maxW="530px" align="center" mb={2}>
-                {canEdit ? (
-                    <Tooltip content="Click to edit field name">
+                <Tooltip content="Click to edit field name">
                         <Flex
                             align="center"
                             cursor="pointer"
@@ -95,16 +92,6 @@ export const FieldEditor = ({
                             />
                         </Flex>
                     </Tooltip>
-                ) : (
-                    <Text
-                        fontSize="md"
-                        fontWeight="600"
-                        color="textSecondary"
-                        flex="1"
-                    >
-                        {field.field_name || "Unnamed Field"}
-                    </Text>
-                )}
                 <Flex align="center" flexShrink={0}>
                     <Tooltip
                         content={
@@ -170,8 +157,8 @@ export const FieldEditor = ({
                             </Flex>
                         </Box>
                     </Tooltip>
-                    {/* Show delete button only for new templates and non-Plan fields */}
-                    {canEdit && !isPlanField && (
+                    {/* Plan field cannot be removed */}
+                    {!isPlanField && (
                         <IconButton
                             onClick={() => removeField(idx)}
                             aria-label="Remove field"

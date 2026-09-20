@@ -9,6 +9,8 @@ from server.database.core.migrations import (
     v6_patient_profiles,
     v7_audit_log,
     v8_preferred_language,
+    v9_policy_keys,
+    v10_users,
 )
 from server.database.core.migrations.runner import run_migrations
 
@@ -21,6 +23,8 @@ MIGRATIONS = {
     6: v6_patient_profiles.migrate,
     7: v7_audit_log.migrate,
     8: v8_preferred_language.migrate,
+    9: v9_policy_keys.migrate,
+    10: v10_users.migrate,
 }
 
 __all__ = ["run_migrations", "MIGRATIONS"]

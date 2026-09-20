@@ -9,6 +9,8 @@ import time
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from server.api.auth import AUTH_PUBLIC_PATHS
+
 logger = logging.getLogger(__name__)
 
 # Centralized path skip rules - add new React routes here
@@ -16,6 +18,7 @@ PUBLIC_PATHS = {"/", "/health", "/version", "/favicon.ico"}
 REACT_ROUTES = {
     "/new-note",
     "/settings",
+    "/setup",
     "/rag",
     "/clinic-summary",
     "/outstanding-jobs",
@@ -67,12 +70,55 @@ def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
     return bool(check_api and not path.startswith("/api/"))
 
 
-def _is_private_ip(ip_str: str) -> bool:
-    """Check if an IP belongs to a private network (Docker/Localhost)."""
+def _is_trusted_proxy_ip(ip_str: str) -> bool:
+    from server.constants import TRUSTED_PROXY_IPS
+
     try:
-        return ipaddress.ip_address(ip_str).is_private
+        addr = ipaddress.ip_address(ip_str)
     except ValueError:
         return False
+    for net in TRUSTED_PROXY_IPS:
+        try:
+            if addr in ipaddress.ip_network(net, strict=False):
+                return True
+        except ValueError:
+            logger.warning("Ignoring invalid TRUSTED_PROXY_IPS entry")
+    return False
+
+
+def invalid_trusted_proxy_entries(entries: list[str]) -> list[str]:
+    """Return TRUSTED_PROXY_IPS entries that are neither valid IPs nor CIDRs."""
+    invalid = []
+    for entry in entries:
+        try:
+            ipaddress.ip_network(entry, strict=False)
+        except ValueError:
+            invalid.append(entry)
+    return invalid
+
+
+def _extract_client_ip_from_xff(forwarded_for: str) -> str | None:
+    """Return the real client IP from an X-Forwarded-For chain, right-to-left."""
+    candidates = [c.strip() for c in forwarded_for.split(",")]
+    for candidate in reversed(candidates):
+        if not candidate:
+            return None
+        if _is_trusted_proxy_ip(candidate):
+            continue
+        try:
+            return str(ipaddress.ip_address(candidate))
+        except ValueError:
+            # First untrusted entry is forged/garbage - do not guess further left.
+            return None
+    # Every entry trusted: the original client was itself a trusted proxy.
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            return str(ipaddress.ip_address(candidate))
+        except ValueError:
+            continue
+    return None
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -100,74 +146,150 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class TrustedProxyMiddleware(BaseHTTPMiddleware):
-    """Extract real client IP from X-Forwarded-For header if from trusted proxy.
-
-    Only trusts X-Forwarded-For when the direct connection is from a private IP
-    (e.g., a reverse proxy on the same Docker network). This prevents clients
-    from spoofing the header directly.
-    """
+    """Extract real client IP from X-Forwarded-For header if from a trusted proxy."""
 
     async def dispatch(self, request, call_next):
         client_host = request.client.host if request.client else "unknown"
         forwarded_for = request.headers.get("x-forwarded-for")
 
-        # Only trust X-Forwarded-For if the direct connection is from a private IP
-        if forwarded_for and client_host != "unknown" and _is_private_ip(client_host):
-            # Take the first IP in the chain (original client)
-            request.state.client_ip = forwarded_for.split(",")[0].strip()
-        else:
-            # Fall back to the actual connecting IP
-            request.state.client_ip = client_host
+        client_ip = client_host
+        if forwarded_for and _is_trusted_proxy_ip(client_host):
+            extracted = _extract_client_ip_from_xff(forwarded_for)
+            if extracted:
+                client_ip = extracted
+            else:
+                logger.warning(
+                    f"Ignoring invalid X-Forwarded-For from trusted proxy: {forwarded_for!r}"
+                )
+        request.state.client_ip = client_ip
 
         return await call_next(request)
 
 
+class _BodyTooLarge(Exception):
+    """Internal signal: request body exceeded the configured cap."""
+
+
+class RequestBodyLimitMiddleware:
+    """Reject request bodies over a size cap (decompression-bomb / OOM protection)."""
+
+    AUDIO_PATHS = ("/api/transcribe/audio", "/api/transcribe/dictate")
+    GUARDED_METHODS = ("POST", "PUT", "PATCH")
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        from server import constants
+
+        if scope["type"] != "http" or scope.get("method") not in self.GUARDED_METHODS:
+            await self.app(scope, receive, send)
+            return
+
+        limit = (
+            constants.MAX_AUDIO_BODY_BYTES
+            if scope.get("path") in self.AUDIO_PATHS
+            else constants.MAX_BODY_BYTES
+        )
+
+        # Fast path: reject an oversized declared Content-Length before reading anything.
+        for name, value in scope.get("headers", []):
+            if name == b"content-length":
+                if value.isdigit() and int(value) > limit:
+                    await self._send_413(scope, receive, send)
+                    return
+                break
+
+        received = 0
+
+        async def capped_receive():
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > limit:
+                    raise _BodyTooLarge
+            return message
+
+        response_started = False
+
+        async def send_wrapper(message):
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, capped_receive, send_wrapper)
+        except _BodyTooLarge:
+            if not response_started:
+                await self._send_413(scope, receive, send)
+
+    async def _send_413(self, scope, receive, send):
+        response = JSONResponse({"detail": "Request body too large"}, status_code=413)
+        await response(scope, receive, send)
+
+
 class LocalTokenMiddleware(BaseHTTPMiddleware):
-    """Verify local request token on all API requests.
+    """Verify authentication on all API requests.
 
-
-    This middleware protects the API from unauthorized access by other
-    applications running on the same machine. Only requests with a valid
-    Authorization: Bearer <token> header are allowed.
+    Docker: Bearer token resolves to a session row (per-user login).
+    Desktop: Bearer token must match the request token injected by the Tauri
+    host; identity resolves to the implicit 'local' admin.
     """
 
     async def dispatch(self, request, call_next):
-        from server.constants import IS_DOCKER
+        from server.constants import IS_DOCKER, PHLOX_ALLOW_UNAUTHENTICATED
+        from server.database.repositories import users
+        from server.utils.current_user import CurrentUser, set_current_user
         from server.utils.local_request_token import get_request_token
 
         path = request.url.path
 
-        # Skip middleware checks for public/static/React routes
-        if should_skip_middleware(path):
+        # Unauthenticated auth endpoints (status/login/setup) and public paths
+        if path in AUTH_PUBLIC_PATHS or should_skip_middleware(path):
             return await call_next(request)
 
-        # In Docker mode, skip token validation
-        if IS_DOCKER:
-            logger.debug(f"Auth skipped - Docker mode (path: {path})")
-            return await call_next(request)
-
-        # Get expected token
-        expected_token = get_request_token()
-        if not expected_token:
-            logger.error(f"Auth fail-closed - no request token set (path: {path})")
-            return JSONResponse(
-                status_code=503,
-                content={"detail": "Service not initialized"},
-            )
-
-        # Verify Authorization header
         auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
-            logger.debug(f"Missing Bearer header for {path}")
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Missing or invalid Authorization header"},
-            )
+        provided_token = auth_header[7:] if auth_header.startswith("Bearer ") else None
 
-        provided_token = auth_header[7:]  # remove "Bearer " prefix
-        if not secrets.compare_digest(provided_token, expected_token):
-            logger.warning(f"Invalid token for {path} (got {provided_token[:8]}...)")
-            return JSONResponse(status_code=403, content={"detail": "Invalid request token"})
+        if IS_DOCKER:
+            if PHLOX_ALLOW_UNAUTHENTICATED:
+                # Explicit risk acceptance: resolve as implicit admin
+                user = users.ensure_implicit_admin()
+            else:
+                if not provided_token:
+                    return JSONResponse(
+                        status_code=401,
+                        content={"detail": "Missing or invalid Authorization header"},
+                    )
+                user = users.get_user_for_session(provided_token)
+                if user is None:
+                    return JSONResponse(
+                        status_code=401, content={"detail": "Invalid or expired session"}
+                    )
+        else:
+            # Desktop mode: verify the Tauri-injected request token
+            expected_token = get_request_token()
+            if not expected_token:
+                logger.error(f"Auth fail-closed - no request token set (path: {path})")
+                return JSONResponse(
+                    status_code=503,
+                    content={"detail": "Service not initialized"},
+                )
+            if not provided_token:
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Missing or invalid Authorization header"},
+                )
+            if not secrets.compare_digest(provided_token, expected_token):
+                logger.warning(f"Invalid token for {path} (got {provided_token[:8]}...)")
+                return JSONResponse(status_code=403, content={"detail": "Invalid request token"})
+            user = users.get_user_by_username(users.IMPLICIT_ADMIN_USERNAME)
+
+        if user:
+            set_current_user(CurrentUser(user["id"], user["username"], user["role"]))
+            request.state.user = user["username"]
 
         return await call_next(request)
 
@@ -178,9 +300,7 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
     For use with Authelia, Traefik, Caddy, etc. that pass authenticated
     user identity via headers after performing authentication.
 
-    Only trusts the auth header when the direct connection is from a private IP
-    (e.g., a reverse proxy on the same Docker network). This prevents clients
-        from spoofing the header directly.
+
     """
 
     async def dispatch(self, request, call_next):
@@ -189,6 +309,8 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
             PROXY_AUTH_ENABLED,
             PROXY_AUTH_USER_HEADER,
         )
+        from server.database.repositories import users
+        from server.utils.current_user import CurrentUser, set_current_user
 
         # Skip if disabled
         if not PROXY_AUTH_ENABLED:
@@ -200,26 +322,33 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
         if should_skip_middleware(path):
             return await call_next(request)
 
-        # Only trust auth header if coming from a trusted proxy (private IP)
+        # Only trust auth header if coming from a trusted proxy
         client_host = request.client.host if request.client else "unknown"
-        if client_host == "unknown" or not _is_private_ip(client_host):
-            # Direct connection from public IP - reject or fall through
-            # Since proxy auth is enabled, we require the header
-            logger.warning(f"Proxy auth header received from non-private IP: {client_host}")
+        if not _is_trusted_proxy_ip(client_host):
+            logger.warning(f"Proxy auth request from untrusted IP: {client_host}")
             return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
         # Get user from header
-        user = request.headers.get(PROXY_AUTH_USER_HEADER)
+        user_name = request.headers.get(PROXY_AUTH_USER_HEADER)
 
-        if not user:
+        if not user_name:
             return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
-        if PROXY_AUTH_ALLOWED_USERS and user not in PROXY_AUTH_ALLOWED_USERS:
-            logger.warning(f"Access denied for user: {user}")
+        if PROXY_AUTH_ALLOWED_USERS and user_name not in PROXY_AUTH_ALLOWED_USERS:
+            logger.warning(f"Access denied for user: {user_name}")
             return JSONResponse(status_code=403, content={"detail": "Access denied"})
 
+        # Resolve the header identity to a real user account so that
+        # ownership scoping (scoped()) and role gates (require_admin())
+        # apply on the proxy-auth path too.
+        user = users.get_user_by_username(user_name)
+        if user is None or user.get("disabled"):
+            logger.warning(f"Proxy auth identity not provisioned or disabled: {user_name}")
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+
         # Store user for downstream use
-        request.state.user = user
+        set_current_user(CurrentUser(user["id"], user["username"], user["role"]))
+        request.state.user = user["username"]
         return await call_next(request)
 
 

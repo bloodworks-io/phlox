@@ -41,6 +41,10 @@ const LlmTab = ({
             const result = await chatApi.probeVisionCapability({
                 model: config?.PRIMARY_MODEL || "",
                 base_url: config?.LLM_BASE_URL || "",
+                api_key:
+                    config?.LLM_API_KEY && !config.LLM_API_KEY.includes("•")
+                        ? config.LLM_API_KEY
+                        : undefined,
             });
 
             const capable = Boolean(result?.vision_capable);

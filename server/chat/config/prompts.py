@@ -70,6 +70,13 @@ def build_system_messages(
         'iron is first-line for iron-deficiency anaemia [1]."'
     )
 
+    content += (
+        "\n\nPHI PROTECTION: When using search tools, NEVER include patient names, "
+        "dates of birth, UR numbers, phone numbers, addresses, or other identifying "
+        "information in your search queries. Use only clinical terms (e.g., "
+        "'diabetes complications' not 'John Smith diabetes')."
+    )
+
     today = datetime.now().strftime("%Y-%m-%d")
     today_readable = datetime.now().strftime("%A, %B %d, %Y")
     content += f"\n\nToday's date is {today_readable} ({today})."

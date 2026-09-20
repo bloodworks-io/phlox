@@ -6,9 +6,7 @@ This module provides AsyncLLMClient, a unified interface for:
 - Local models via bundled llama.cpp server (exposed through an OpenAI-style API)
 """
 
-import json
 import logging
-import os
 from collections.abc import AsyncGenerator
 from typing import Any, Union
 
@@ -20,6 +18,25 @@ from .providers.openai import openai_compatible_chat
 from .utils import repair_json
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_effective_api_key(
+    caller_base_url: str | None, caller_api_key: str | None
+) -> str | None:
+    """Return the API key that may be used for a caller-supplied base URL. The stored LLM_API_KEY only ever travels to the stored LLM_BASE_URL."""
+    if caller_api_key:
+        return caller_api_key
+    config = config_manager.get_config()
+    stored_key = config.get("LLM_API_KEY")
+    if not stored_key:
+        return None
+    stored_url = config.get("LLM_BASE_URL") or ""
+    if not caller_base_url or (
+        stored_url
+        and normalize_openai_base_url(caller_base_url) == normalize_openai_base_url(stored_url)
+    ):
+        return stored_key
+    return None
 
 
 class AsyncLLMClient:
@@ -49,17 +66,6 @@ class AsyncLLMClient:
             self.base_url = None
         self.api_key = api_key or "not-needed"
         self.timeout = timeout
-
-        # Load extra body from environment variable if present
-        self.extra_body = None
-        extra_body_env = os.getenv("LLM_EXTRA_BODY")
-        if extra_body_env:
-            try:
-                self.extra_body = json.loads(extra_body_env)
-            except json.JSONDecodeError:
-                logger.error(
-                    "Failed to parse LLM_EXTRA_BODY environment variable: %s", extra_body_env
-                )
 
         if not self.base_url:
             raise ValueError("base_url is required for OpenAI-compatible provider")
@@ -121,10 +127,22 @@ class AsyncLLMClient:
         stream: bool = False,
     ) -> Union[dict[str, Any], AsyncGenerator]:
         """Send a chat completion request."""
+        from .thinking import THINKING_OFF, build_thinking_params
         from .utils import ensure_system_messages_first
 
         messages = ensure_system_messages_first(messages)
         messages = self._with_language_directive(messages)
+
+        # Resolve the internal thinking intent to backend-specific params.
+        # Absent intent defaults to "off": every call disables thinking
+        # (Ollama auto-enables it for capable models otherwise) unless it
+        # explicitly opts in with "on".
+        thinking_intent = THINKING_OFF
+        if options and "thinking" in options:
+            thinking_intent = options["thinking"]
+            options = {k: v for k, v in options.items() if k != "thinking"}
+
+        thinking_params = build_thinking_params(thinking_intent, self.base_url or "", model)
 
         return await openai_compatible_chat(
             self._client,
@@ -134,7 +152,7 @@ class AsyncLLMClient:
             options,
             tools,
             stream,
-            self.extra_body,
+            thinking_params,
         )
 
     def _with_language_directive(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:

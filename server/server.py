@@ -24,17 +24,22 @@ from server.constants import (
     IS_DEMO_MODE,
     IS_DOCKER,
     IS_TESTING,
+    PHLOX_ALLOW_UNAUTHENTICATED,
+    PHLOX_PASSPHRASE,
     PROXY_AUTH_ENABLED,
     PROXY_AUTH_USER_HEADER,
     RATE_LIMIT_ENABLED,
+    TRUSTED_PROXY_IPS,
 )
 from server.middleware import (
     AuditMiddleware,
     LocalTokenMiddleware,
     ProxyAuthMiddleware,
     RateLimitMiddleware,
+    RequestBodyLimitMiddleware,
     SecurityHeadersMiddleware,
     TrustedProxyMiddleware,
+    invalid_trusted_proxy_entries,
 )
 from server.utils.parent_watchdog import start_parent_watchdog
 
@@ -82,11 +87,46 @@ async def lifespan(_app: FastAPI):
     from server.database.repositories.audit import purge_old_events
 
     scheduler.add_job(purge_old_events, "interval", hours=24)
+    # Purge expired login sessions once per day
+    from server.database.repositories.users import purge_expired_sessions
+
+    scheduler.add_job(purge_expired_sessions, "interval", hours=24)
 
     yield
 
     # Shutdown
     scheduler.shutdown()
+
+
+def validate_docker_auth(
+    *,
+    passphrase: str,
+    proxy_auth_enabled: bool,
+    trusted_proxy_ips: list,
+    allow_unauthenticated: bool,
+) -> None:
+    """Validate Docker auth configuration. Login is enforced by construction."""
+    invalid_ips = invalid_trusted_proxy_entries(trusted_proxy_ips)
+    if invalid_ips:
+        raise SystemExit(
+            "TRUSTED_PROXY_IPS contains invalid entries (expected IPs/CIDRs): "
+            f"{', '.join(invalid_ips)}"
+        )
+    if proxy_auth_enabled and not trusted_proxy_ips:
+        raise SystemExit(
+            "PROXY_AUTH_ENABLED=true requires TRUSTED_PROXY_IPS (comma-separated\n"
+            "IPs/CIDRs of your reverse proxy, e.g. TRUSTED_PROXY_IPS=172.16.0.2)."
+        )
+    if passphrase:
+        logger.warning(
+            "PHLOX_PASSPHRASE is deprecated and ignored - user accounts are "
+            "created via first-run setup (/api/auth/setup)"
+        )
+    if allow_unauthenticated:
+        logger.warning(
+            "PHLOX_ALLOW_UNAUTHENTICATED=true - all requests run as admin. "
+            "Explicit risk acceptance."
+        )
 
 
 def initialize_and_get_app():
@@ -140,14 +180,19 @@ def initialize_and_get_app():
     # So we add in reverse order: Token -> Proxy -> RateLimit -> TrustedProxy -> Security
     # This ensures TrustedProxy sets client_ip before RateLimit needs it
 
-    # Add token verification middleware (only for desktop mode)
-    if not IS_DOCKER:
-        app.add_middleware(LocalTokenMiddleware)
+    # Add request body size limit (innermost - runs after auth, wraps raw ASGI receive)
+    app.add_middleware(RequestBodyLimitMiddleware)
+
+    # Add token verification middleware
+    app.add_middleware(LocalTokenMiddleware)
 
     # Add proxy auth middleware (for Docker deployments behind auth proxy)
     if PROXY_AUTH_ENABLED:
         app.add_middleware(ProxyAuthMiddleware)
-        logger.info(f"Proxy auth enabled, header: {PROXY_AUTH_USER_HEADER}")
+        logger.info(
+            f"Proxy auth enabled, header: {PROXY_AUTH_USER_HEADER}, "
+            f"trusted proxies: {len(TRUSTED_PROXY_IPS)} entries"
+        )
 
     # Add rate limiting middleware (enabled by default in Docker mode)
     if RATE_LIMIT_ENABLED:
@@ -203,6 +248,13 @@ def initialize_and_get_app():
         logger.warning("RAG features disabled - sqlite-vec not available.")
 
     app.include_router(config_router, prefix="/api/config")
+
+    # Auth routes (login/setup for Docker; /me resolves to the implicit
+    # desktop admin via LocalTokenMiddleware in Tauri builds)
+    from server.api import auth
+
+    app.include_router(auth.router, prefix="/api/auth")
+
     app.include_router(templates.router, prefix="/api/templates")
     app.include_router(letter.router, prefix="/api/letter")
 
@@ -214,6 +266,7 @@ def initialize_and_get_app():
     # React app routes
     @app.get("/new-note")
     @app.get("/settings")
+    @app.get("/setup")
     @app.get("/rag")
     @app.get("/clinic-summary")
     @app.get("/outstanding-jobs")
@@ -238,7 +291,19 @@ def initialize_and_get_app():
 if IS_DOCKER:
     from server.database.core.connection import initialize_database
 
+    if not IS_TESTING:
+        validate_docker_auth(
+            passphrase=PHLOX_PASSPHRASE,
+            proxy_auth_enabled=PROXY_AUTH_ENABLED,
+            trusted_proxy_ips=TRUSTED_PROXY_IPS,
+            allow_unauthenticated=PHLOX_ALLOW_UNAUTHENTICATED,
+        )
+
     initialize_database()  # Uses env/secret
+    if PHLOX_ALLOW_UNAUTHENTICATED:
+        from server.database.repositories.users import ensure_implicit_admin
+
+        ensure_implicit_admin()
     app = initialize_and_get_app()
 else:
     # Desktop mode: app will be initialized after passphrase is received
@@ -287,6 +352,11 @@ def start_server_for_desktop():
         print(f"ERROR:{e}", flush=True)
         sys.exit(1)
 
+    # Desktop is single-user: implicit admin owns everything, no login screen.
+    from server.database.repositories.users import ensure_implicit_admin
+
+    ensure_implicit_admin()
+
     # Now initialize the app
     app = initialize_and_get_app()
 
@@ -324,6 +394,7 @@ def start_server_for_desktop():
         loop="asyncio",
         workers=0,
         http="httptools",
+        proxy_headers=False,
     )
     server = uvicorn.Server(config)
     server.run()
@@ -338,7 +409,7 @@ if __name__ == "__main__":
         config = uvicorn.Config(
             app,
             host=os.getenv("SERVER_HOST", "0.0.0.0"),  # nosec B104
-            port=int(os.getenv("PORT", 5000)),
+            port=int(os.getenv("PORT", "5000")),
             timeout_keep_alive=300,
             timeout_graceful_shutdown=10,
             loop="asyncio",
@@ -346,6 +417,7 @@ if __name__ == "__main__":
             http="httptools",
             ws_ping_interval=None,
             ws_ping_timeout=None,
+            proxy_headers=False,
         )
         server = uvicorn.Server(config)
         server.run()

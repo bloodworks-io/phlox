@@ -3,6 +3,7 @@ import logging
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 
+from server.utils.current_user import require_admin
 from server.utils.url_utils import build_openai_v1_url, build_whisper_v1_url
 
 router = APIRouter()
@@ -33,6 +34,7 @@ async def validate_url(
     ),
 ):
     """Validate if a URL is accessible and returns a valid response."""
+    require_admin()
     try:
         validation_type = _normalize_validation_type(type)
 

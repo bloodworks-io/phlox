@@ -10,14 +10,15 @@ import { toaster } from "@/components/ui/toaster";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
 import { settingsApi } from "../utils/api/settingsApi";
+import { authApi } from "../utils/api/authApi";
 import { settingsHelpers } from "../utils/helpers/settingsHelpers";
 import { syncLanguage } from "../i18n";
 import { UI_LANGUAGES } from "../utils/i18n/languages";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
-import ModelSettingsPanel from "../components/settings/ModelSettingsPanel";
+import AdminSettingsPanel from "../components/settings/AdminSettingsPanel";
 import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
 import { SPECIALTIES } from "../utils/constants";
-import { templateService } from "../utils/services/templateService";
+import { templateService } from "../utils/templates/templateService";
 import { localModelApi } from "../utils/api/localModelApi";
 import { useDebounce } from "../utils/hooks/useDebounce";
 import { useAutosave } from "../utils/hooks/useAutosave";
@@ -45,6 +46,7 @@ const Settings = () => {
     const [config, setConfig] = useState(null);
     const [coreLoading, setCoreLoading] = useState(true);
     const [showSpinner, setShowSpinner] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [llmModelsLoading, setLlmModelsLoading] = useState(false);
     const [whisperModelsLoading, setWhisperModelsLoading] = useState(false);
     const [modelOptions, setModelOptions] = useState([]);
@@ -69,6 +71,12 @@ const Settings = () => {
     const fetchCoreSettings = useCallback(async () => {
         try {
             setCoreLoading(true);
+            // Fail-closed: unknown identity sees no admin panels
+            authApi
+                .fetchMe()
+                .then((me) => setIsAdmin(me?.role === "admin"))
+                .catch(() => setIsAdmin(false));
+
             const configData = await settingsApi.fetchConfig();
             setConfig(configData);
 
@@ -275,7 +283,7 @@ const Settings = () => {
     };
 
     const saveUserSettingsFn = async (newSettings) => {
-        const { disabled_tools: _dt, default_template, ...rest } = newSettings;
+        const { default_template, ...rest } = newSettings;
         await settingsApi.saveUserSettings({
             ...rest,
             default_letter_template_id:
@@ -455,32 +463,36 @@ const Settings = () => {
                     setTemplates={setTemplates}
                 />
 
-                <ModelSettingsPanel
-                    isCollapsed={collapseStates.modelSettings}
-                    setIsCollapsed={() => toggleCollapse("modelSettings")}
-                    config={config}
-                    handleConfigChange={handleConfigChange}
-                    modelOptions={modelOptions}
-                    embeddingModelOptions={modelOptions}
-                    whisperModelOptions={whisperModelOptions}
-                    whisperModelListAvailable={whisperModelListAvailable}
-                    whisperModelsLoading={whisperModelsLoading}
-                    llmModelsLoading={llmModelsLoading}
-                    urlStatus={urlStatus}
-                    handleReEmbed={handleReEmbed}
-                />
+                {isAdmin && (
+                    <AdminSettingsPanel
+                        isCollapsed={collapseStates.modelSettings}
+                        setIsCollapsed={() => toggleCollapse("modelSettings")}
+                        config={config}
+                        handleConfigChange={handleConfigChange}
+                        modelOptions={modelOptions}
+                        embeddingModelOptions={modelOptions}
+                        whisperModelOptions={whisperModelOptions}
+                        whisperModelListAvailable={whisperModelListAvailable}
+                        whisperModelsLoading={whisperModelsLoading}
+                        llmModelsLoading={llmModelsLoading}
+                        urlStatus={urlStatus}
+                        handleReEmbed={handleReEmbed}
+                    />
+                )}
 
-                <PromptSettingsPanel
-                    isCollapsed={collapseStates.promptSettings}
-                    setIsCollapsed={() => toggleCollapse("promptSettings")}
-                    prompts={prompts}
-                    handlePromptChange={handlePromptChange}
-                    handlePromptReset={handlePromptReset}
-                    options={options}
-                    handleOptionChange={handleOptionChange}
-                    handleOptionsReset={handleOptionsReset}
-                    config={config}
-                />
+                {isAdmin && (
+                    <PromptSettingsPanel
+                        isCollapsed={collapseStates.promptSettings}
+                        setIsCollapsed={() => toggleCollapse("promptSettings")}
+                        prompts={prompts}
+                        handlePromptChange={handlePromptChange}
+                        handlePromptReset={handlePromptReset}
+                        options={options}
+                        handleOptionChange={handleOptionChange}
+                        handleOptionsReset={handleOptionsReset}
+                        config={config}
+                    />
+                )}
             </VStack>
         </Box>
     );

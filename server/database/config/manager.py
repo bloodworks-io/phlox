@@ -5,8 +5,12 @@ from threading import Lock
 import sqlcipher3 as sqlite3
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.core.connection import get_db, is_db_initialized
+from server.utils.current_user import current_user_id
 
 logger = logging.getLogger(__name__)
+
+
+CAPABILITY_PREFIX = "CAPABILITY:"
 
 
 class ConfigManager:
@@ -64,9 +68,15 @@ class ConfigManager:
         self.refresh_db()
         with self.db.read() as cursor:
             config = {}
+            capabilities = {}
             cursor.execute("SELECT key, value FROM config")
             for row in cursor.fetchall():
-                config[row["key"]] = json.loads(row["value"])
+                key = row["key"]
+                value = json.loads(row["value"])
+                if key.startswith(CAPABILITY_PREFIX):
+                    capabilities[key[len(CAPABILITY_PREFIX) :]] = value
+                else:
+                    config[key] = value
 
             prompts = {}
             cursor.execute("SELECT key, system FROM prompts")
@@ -85,6 +95,7 @@ class ConfigManager:
 
             with self._cache_lock:
                 self.config = config
+                self.capabilities = capabilities
                 self.prompts = prompts
                 self.options = options
 
@@ -121,6 +132,37 @@ class ConfigManager:
                     (key, json.dumps(value)),
                 )
         self._load_configs()
+
+    def get_capabilities(self) -> dict:
+        """Returns all stored capability blobs, keyed without the namespace prefix."""
+        with self._cache_lock:
+            return self.capabilities
+
+    def get_capability(self, key: str):
+        """Returns a stored capability blob for ``key``, or None if absent."""
+        with self._cache_lock:
+            return self.capabilities.get(key)
+
+    def set_capability(self, key: str, value: dict):
+        """Writes a capability blob (namespaced config row), write-through to the cache."""
+        self.refresh_db()
+        namespaced = f"{CAPABILITY_PREFIX}{key}"
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)",
+                (namespaced, json.dumps(value)),
+            )
+        with self._cache_lock:
+            self.capabilities[key] = value
+
+    def delete_capability(self, key: str):
+        """Removes a capability blob from the store and cache."""
+        self.refresh_db()
+        namespaced = f"{CAPABILITY_PREFIX}{key}"
+        with self.db.transaction() as cursor:
+            cursor.execute("DELETE FROM config WHERE key = ?", (namespaced,))
+        with self._cache_lock:
+            self.capabilities.pop(key, None)
 
     def update_prompts(self, new_prompts):
         """Updates the prompts in the database."""
@@ -203,11 +245,20 @@ class ConfigManager:
         if config_count == 0:
             self._load_configs()  # Just load whatever is there
 
+    @staticmethod
+    def _user_settings_where() -> tuple[str, list]:
+        uid = current_user_id()
+        if uid is None:
+            return "user_id IS NULL", []
+        return "user_id = ?", [uid]
+
     def get_user_settings(self):
-        """Retrieves user settings from the database."""
+        """Retrieves user settings for the current user from the database."""
         self.refresh_db()
+        where, params = self._user_settings_where()
         with self.db.read() as cursor:
-            cursor.execute("""
+            cursor.execute(
+                f"""
                 SELECT name, specialty,
                     quick_chat_1_title, quick_chat_1_prompt,
                     quick_chat_2_title, quick_chat_2_prompt,
@@ -215,12 +266,12 @@ class ConfigManager:
                     default_template_key,
                     default_letter_template_id,
                     has_completed_splash_screen,
-                    scribe_is_ambient,
-                    disabled_tools,
-                    advanced_options,
                     preferred_language
-                FROM user_settings LIMIT 1
-                """)
+                FROM user_settings
+                WHERE {where}
+                """,
+                params,
+            )
             result = cursor.fetchone()
 
         if result:
@@ -230,16 +281,6 @@ class ConfigManager:
                 settings["has_completed_splash_screen"] = bool(
                     settings["has_completed_splash_screen"]
                 )
-            if "scribe_is_ambient" in settings:
-                settings["scribe_is_ambient"] = bool(settings["scribe_is_ambient"])
-            if settings.get("disabled_tools"):
-                settings["disabled_tools"] = json.loads(settings["disabled_tools"])
-            else:
-                settings["disabled_tools"] = ["pubmed_search", "wiki_search"]
-            if settings.get("advanced_options"):
-                settings["advanced_options"] = json.loads(settings["advanced_options"])
-            else:
-                settings["advanced_options"] = {}
             if not settings.get("preferred_language"):
                 settings["preferred_language"] = "en"
             return settings
@@ -255,20 +296,19 @@ class ConfigManager:
             "default_template_key": None,
             "default_letter_template_id": None,
             "has_completed_splash_screen": False,
-            "scribe_is_ambient": True,
-            "disabled_tools": ["pubmed_search", "wiki_search"],
-            "advanced_options": {},
             "preferred_language": "en",
         }
 
     def update_user_settings(self, settings: dict):
         self.refresh_db()
+        uid = current_user_id()
         # Read-modify-write under one transaction so a concurrent update
         # cannot interleave with the DELETE/INSERT below.
         with self.db.transaction() as cursor:
+            where, params = self._user_settings_where()
             existing = self._read_user_settings(cursor)
             settings = {**existing, **settings}
-            cursor.execute("DELETE FROM user_settings")
+            cursor.execute(f"DELETE FROM user_settings WHERE {where}", params)
             cursor.execute(
                 """
                 INSERT INTO user_settings (
@@ -279,11 +319,9 @@ class ConfigManager:
                     default_template_key,
                     default_letter_template_id,
                     has_completed_splash_screen,
-                    scribe_is_ambient,
-                    disabled_tools,
-                    advanced_options,
-                    preferred_language
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    preferred_language,
+                    user_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     settings.get("name", ""),
@@ -297,29 +335,42 @@ class ConfigManager:
                     settings.get("default_template_key"),
                     settings.get("default_letter_template_id"),
                     bool(settings.get("has_completed_splash_screen", False)),
-                    bool(settings.get("scribe_is_ambient", True)),
-                    json.dumps(settings.get("disabled_tools", ["pubmed_search", "wiki_search"])),
-                    json.dumps(settings.get("advanced_options", {})),
                     settings.get("preferred_language", "en"),
+                    uid,
                 ),
+            )
+
+    def get_default_template_key(self) -> str | None:
+        """Return the current default template key, or None if unset."""
+        return self.get_user_settings().get("default_template_key")
+
+    def set_default_template_key(self, key: str) -> None:
+        """Set the default template key via the user_settings read-modify-write path."""
+        self.update_user_settings({"default_template_key": key})
+
+    def update_default_template_key(self, old: str, new: str) -> None:
+        """Bump the default template pointer from old to new (version-bump path).
+
+        Targeted WHERE so it only moves when the current value still matches old,
+        avoiding clobbering a concurrent user change.
+        """
+        self.refresh_db()
+        where, params = self._user_settings_where()
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                f"UPDATE user_settings SET default_template_key = ? "
+                f"WHERE default_template_key = ? AND {where}",
+                (new, old, *params),
             )
 
     @staticmethod
     def _read_user_settings(cursor) -> dict:
-        cursor.execute("SELECT * FROM user_settings LIMIT 1")
+        where, params = ConfigManager._user_settings_where()
+        cursor.execute(f"SELECT * FROM user_settings WHERE {where}", params)
         result = cursor.fetchone()
         if not result:
             return {}
-        settings = dict(result)
-        if settings.get("disabled_tools"):
-            settings["disabled_tools"] = json.loads(settings["disabled_tools"])
-        else:
-            settings["disabled_tools"] = ["pubmed_search", "wiki_search"]
-        if settings.get("advanced_options"):
-            settings["advanced_options"] = json.loads(settings["advanced_options"])
-        else:
-            settings["advanced_options"] = {}
-        return settings
+        return dict(result)
 
 
 config_manager = ConfigManager()

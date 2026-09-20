@@ -11,6 +11,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
 from server.database.repositories.audit import get_events
+from server.utils.current_user import require_admin
 
 router = APIRouter(tags=["audit"])
 
@@ -23,12 +24,14 @@ def list_audit(
     to_date: str | None = Query(None, alias="to"),
 ):
     """Return audit events newest-first, paginated."""
+    require_admin()
     return {"events": get_events(limit=limit, offset=offset, from_date=from_date, to_date=to_date)}
 
 
 @router.get("/export")
 def export_audit(format: str = Query("csv", pattern="^(csv|json)$")):
     """Stream the full audit log as CSV (default) or JSON lines."""
+    require_admin()
     events = get_events(limit=10000)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 

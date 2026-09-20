@@ -4,8 +4,8 @@ import PatientTable from "../components/patient/PatientTable";
 import { patientApi } from "../utils/api/patientApi";
 import { KEYS } from "../utils/cache/keys";
 
-const outstandingJobsFetcher = async () => {
-    const data = await patientApi.fetchOutstandingJobs();
+const outstandingJobsFetcher = async (scope) => {
+    const data = await patientApi.fetchOutstandingJobs(scope);
     return data.map((patient) => ({
         ...patient,
         activeSection: "summary",
@@ -13,10 +13,14 @@ const outstandingJobsFetcher = async () => {
     }));
 };
 
-const OutstandingJobs = ({ handleSelectPatient, refreshSidebar }) => {
-    const { data, mutate } = useSWR(KEYS.OUTSTANDING_JOBS, outstandingJobsFetcher, {
-        revalidateOnMount: true,
-    });
+const OutstandingJobs = ({ handleSelectPatient, refreshSidebar, patientScope }) => {
+    const { data, mutate } = useSWR(
+        KEYS.outstandingJobs(patientScope),
+        () => outstandingJobsFetcher(patientScope),
+        {
+            revalidateOnMount: true,
+        },
+    );
     const patients = data || [];
     const setPatients = (updater) => mutate(updater, { revalidate: false });
 

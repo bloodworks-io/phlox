@@ -44,6 +44,9 @@ def sanitize_query_for_external_search(
     # Phone numbers
     sanitized = re.sub(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b", "", sanitized)
     sanitized = re.sub(r"\b\+?\d{1,3}[-.\s]?\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{4}\b", "", sanitized)
+    # Australian formats (mobile 04XX XXX XXX, landline 0X XXXX XXXX)
+    sanitized = re.sub(r"\b0?4\d{2}[-.\s]?\d{3}[-.\s]?\d{3}\b", "", sanitized)
+    sanitized = re.sub(r"\b0\d[-.\s]?\d{4}[-.\s]?\d{4}\b", "", sanitized)
 
     # Email addresses
     sanitized = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "", sanitized)
@@ -81,20 +84,20 @@ def sanitize_query_for_external_search(
 
 
 def sanitize_pubmed_query(query: str) -> str:
-    """Sanitize query by removing standalone years that PubMed interprets as keywords.
+    """Sanitize a PubMed query: strip PHI, then remove standalone years.
 
-    PubMed E-utilities treats bare years (e.g., "2024") as required keyword search terms,
-    not date filters. This removes standalone years while preserving years that are part
-    of disease names (e.g., "COVID-19").
+
 
     Args:
         query: The raw search query
 
     Returns:
-        Sanitized query with standalone years removed
+        Sanitized query with PHI patterns and standalone years removed
     """
 
-    sanitized = re.sub(r"(?<!\S)(20[0-2][0-9]|19[8-9][0-9])(?!\S)", "", query)
+    sanitized = sanitize_query_for_external_search(query)
+
+    sanitized = re.sub(r"(?<!\S)(20[0-2][0-9]|19[8-9][0-9])(?!\S)", "", sanitized)
 
     # Clean up extra whitespace that may result from removal
     sanitized = re.sub(r"\s+", " ", sanitized).strip()

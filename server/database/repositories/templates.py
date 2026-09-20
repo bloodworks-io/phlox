@@ -1,13 +1,17 @@
 import json
 import logging
+import sqlite3
 from datetime import datetime
 from typing import Any
 
+from server.constants import PROTECTED_TEMPLATE_PREFIXES, is_protected_template_key
+from server.database.config.manager import config_manager
 from server.database.core.connection import get_db
 from server.schemas.templates import (
     ClinicalTemplate,
     TemplateField,
 )
+from server.utils.current_user import current_user_id, scoped_or_shared
 
 
 def get_template_by_key(template_key: str, exact_match: bool = True) -> dict[str, Any] | None:
@@ -19,27 +23,28 @@ def get_template_by_key(template_key: str, exact_match: bool = True) -> dict[str
         exact_match: If True, finds exact key match. If False, finds latest version of base key
     """
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().read() as cursor:
             if exact_match:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT template_key, template_name, fields
                     FROM clinical_templates
-                    WHERE template_key = ?
+                    WHERE template_key = ?{scope_sql}
                     """,
-                    (template_key,),
+                    (template_key, *scope_params),
                 )
             else:
                 # Get latest version of template
                 base_key = template_key.split("_")[0]
                 cursor.execute(
-                    """
+                    f"""
                     SELECT template_key, template_name, fields
                     FROM clinical_templates
-                    WHERE template_key LIKE ? AND deleted = FALSE
+                    WHERE template_key LIKE ? AND deleted = FALSE{scope_sql}
                     ORDER BY template_key DESC LIMIT 1
                     """,
-                    (f"{base_key}_%",),
+                    (f"{base_key}_%", *scope_params),
                 )
 
             row = cursor.fetchone()
@@ -56,28 +61,68 @@ def get_template_by_key(template_key: str, exact_match: bool = True) -> dict[str
         raise
 
 
+def get_fork_base(template_key: str) -> str | None:
+    """Return the protected base if key is a fork: custom_{protected_base}_{digits} only."""
+    rest = template_key.removeprefix("custom_")
+    if rest == template_key:
+        return None
+    for prefix in PROTECTED_TEMPLATE_PREFIXES:
+        base = prefix.rstrip("_")
+        if rest.startswith(f"{base}_") and rest[len(base) + 1 :].isdigit():
+            return base
+    return None
+
+
+def _forked_protected_bases(keys) -> set:
+    """Protected template bases that have a live custom_{base}_N fork."""
+    return {b for b in (get_fork_base(k) for k in keys) if b}
+
+
+def get_template_family_patterns(template_key: str) -> list[str]:
+    """SQL LIKE patterns matching every key in the template's family."""
+    base = get_base_key(template_key)
+    fork_base = get_fork_base(template_key)
+    if fork_base is not None:
+        base = fork_base
+    for prefix in PROTECTED_TEMPLATE_PREFIXES:
+        p = prefix.rstrip("_")
+        if base == p:
+            return [f"{p}\\_%", f"custom\\_{p}\\_%"]
+    return [f"{base}\\_%", base]
+
+
 def get_all_templates() -> list[dict[str, Any]]:
     """
-    Retrieve all available templates.
+    Retrieve all available templates (system/shared + own).
     """
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().read() as cursor:
-            cursor.execute("""
+            cursor.execute(
+                f"""
                 SELECT template_key, template_name, fields
                 FROM clinical_templates
-                WHERE deleted = FALSE
+                WHERE deleted = FALSE{scope_sql}
                 ORDER BY template_name
-                """)
-            templates = []
-            for row in cursor.fetchall():
-                templates.append(
-                    {
-                        "template_key": row["template_key"],
-                        "template_name": row["template_name"],
-                        "fields": json.loads(row["fields"]),
-                    }
-                )
-            return templates
+                """,
+                scope_params,
+            )
+            rows = cursor.fetchall()
+
+        forked_bases = _forked_protected_bases([row["template_key"] for row in rows])
+        templates = []
+        for row in rows:
+            key = row["template_key"]
+            if is_protected_template_key(key) and get_base_key(key) in forked_bases:
+                continue
+            templates.append(
+                {
+                    "template_key": key,
+                    "template_name": row["template_name"],
+                    "fields": json.loads(row["fields"]),
+                }
+            )
+        return templates
     except Exception as e:
         logging.error(f"Error fetching templates: {e}")
         raise
@@ -119,20 +164,27 @@ def save_template(template: ClinicalTemplate) -> str:
                 raise ValueError(f"Template with key {template.template_key} already exists")
 
             now = datetime.now().isoformat()
-            cursor.execute(
-                """
-                INSERT INTO clinical_templates
-                (template_key, template_name, fields, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    template.template_key,
-                    template.template_name,
-                    json.dumps([field.model_dump() for field in template.fields]),
-                    now,
-                    now,
-                ),
-            )
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO clinical_templates
+                    (template_key, template_name, fields, created_at, updated_at, owner_id)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        template.template_key,
+                        template.template_name,
+                        json.dumps([field.model_dump() for field in template.fields]),
+                        now,
+                        now,
+                        current_user_id(),
+                    ),
+                )
+            except sqlite3.IntegrityError as e:
+                # Need to consider per-user key namespacing if collisions happen in future
+                raise ValueError(
+                    f"Template name '{template.template_name}' is already in use"
+                ) from e
             return template.template_key
     except Exception as e:
         logging.error(f"Error saving template: {e}")
@@ -147,16 +199,17 @@ def update_template(template: ClinicalTemplate) -> str:
     try:
         with get_db().transaction() as cursor:
             base_key = get_base_key(template.template_key)
+            scope_sql, scope_params = scoped_or_shared("owner_id")
 
             # Get the current version of the template
             cursor.execute(
-                """
+                f"""
                 SELECT template_key, template_name, fields
                 FROM clinical_templates
-                WHERE template_key LIKE ? AND deleted = FALSE
+                WHERE template_key LIKE ? AND deleted = FALSE{scope_sql}
                 ORDER BY template_key DESC LIMIT 1
                 """,
-                (f"{base_key}_%",),
+                (f"{base_key}_%", *scope_params),
             )
             current = cursor.fetchone()
 
@@ -189,9 +242,8 @@ def update_template(template: ClinicalTemplate) -> str:
 
             # If we get here, there are changes, so create new version
             # Check if this template is currently the default
-            cursor.execute("SELECT default_template_key FROM user_settings LIMIT 1")
-            settings = cursor.fetchone()
-            is_default = settings and settings["default_template_key"] == template.template_key
+            current_default = config_manager.get_default_template_key()
+            is_default = current_default == template.template_key
 
             # Get the latest version number
             cursor.execute(
@@ -217,12 +269,12 @@ def update_template(template: ClinicalTemplate) -> str:
 
             # Mark current version as deleted
             cursor.execute(
-                """
+                f"""
                 UPDATE clinical_templates
                 SET deleted = TRUE
-                WHERE template_key LIKE ? AND deleted = FALSE
+                WHERE template_key LIKE ? AND deleted = FALSE{scope_sql}
                 """,
-                (f"{base_key}_%",),
+                (f"{base_key}_%", *scope_params),
             )
 
             # Insert new version
@@ -230,8 +282,8 @@ def update_template(template: ClinicalTemplate) -> str:
             cursor.execute(
                 """
                 INSERT INTO clinical_templates
-                (template_key, template_name, fields, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                (template_key, template_name, fields, created_at, updated_at, owner_id)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
                     new_template_key,
@@ -239,19 +291,13 @@ def update_template(template: ClinicalTemplate) -> str:
                     json.dumps([field.model_dump() for field in template.fields]),
                     now,
                     now,
+                    current_user_id(),
                 ),
             )
 
             # If this was the default template, update the default to the new version
             if is_default:
-                cursor.execute(
-                    """
-                    UPDATE user_settings
-                    SET default_template_key = ?
-                    WHERE default_template_key = ?
-                    """,
-                    (new_template_key, template.template_key),
-                )
+                config_manager.update_default_template_key(template.template_key, new_template_key)
                 logging.info(f"Updated default template to new version: {new_template_key}")
 
             return new_template_key
@@ -272,16 +318,17 @@ def soft_delete_template(template_key: str) -> bool:
         bool: True if marked as deleted successfully.
     """
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().transaction() as cursor:
             now = datetime.now().isoformat()
             cursor.execute(
-                """
+                f"""
                 UPDATE clinical_templates
                 SET deleted = TRUE,
                     updated_at = ?
-                WHERE template_key = ?
+                WHERE template_key = ?{scope_sql}
                 """,
-                (now, template_key),
+                (now, template_key, *scope_params),
             )
             return cursor.rowcount > 0
     except Exception as e:
@@ -301,16 +348,18 @@ def template_exists(template_key: str, include_deleted: bool = False) -> bool:
         bool: True if the template exists.
     """
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().read() as cursor:
             if include_deleted:
                 cursor.execute(
-                    "SELECT COUNT(*) FROM clinical_templates WHERE template_key = ?",
-                    (template_key,),
+                    f"SELECT COUNT(*) FROM clinical_templates WHERE template_key = ?{scope_sql}",
+                    (template_key, *scope_params),
                 )
             else:
                 cursor.execute(
-                    "SELECT COUNT(*) FROM clinical_templates WHERE template_key = ? AND deleted = FALSE",
-                    (template_key,),
+                    f"SELECT COUNT(*) FROM clinical_templates "
+                    f"WHERE template_key = ? AND deleted = FALSE{scope_sql}",
+                    (template_key, *scope_params),
                 )
             count = cursor.fetchone()[0]
             return count > 0
@@ -369,8 +418,8 @@ def set_default_template(template_key: str) -> None:
         template_key (str): The key of the template to set as default
     """
     try:
-        with get_db().transaction() as cursor:
-            # Verify template exists
+        with get_db().read() as cursor:
+            # Verify template exists and is not deleted
             cursor.execute(
                 "SELECT template_key, deleted FROM clinical_templates WHERE template_key = ?",
                 (template_key,),
@@ -378,31 +427,13 @@ def set_default_template(template_key: str) -> None:
             template = cursor.fetchone()
             logging.info(f"Found template: {dict(template) if template else None}")
 
-            if not template:
-                raise ValueError(f"Template with key {template_key} does not exist")
-            if template["deleted"]:
-                raise ValueError(f"Template with key {template_key} is marked as deleted")
+        if not template:
+            raise ValueError(f"Template with key {template_key} does not exist")
+        if template["deleted"]:
+            raise ValueError(f"Template with key {template_key} is marked as deleted")
 
-            # Get the first user settings record or create if none exists
-            cursor.execute("SELECT id FROM user_settings LIMIT 1")
-            row = cursor.fetchone()
-
-            if row:
-                # Update existing settings
-                logging.info(f"Updating default template to {template_key} in database")
-                cursor.execute(
-                    "UPDATE user_settings SET default_template_key = ? WHERE id = ?",
-                    (template_key, row["id"]),
-                )
-            else:
-                # Create new settings record
-
-                cursor.execute(
-                    "INSERT INTO user_settings (default_template_key) VALUES (?)",
-                    (template_key,),
-                )
-
-            logging.info(f"Successfully set default template to {template_key} in database")
+        config_manager.set_default_template_key(template_key)
+        logging.info(f"Successfully set default template to {template_key} in database")
     except Exception as e:
         logging.error(f"Error setting default template: {e}")
         raise
@@ -416,13 +447,10 @@ def get_default_template() -> dict[str, Any] | None:
         Optional[Dict[str, Any]]: The default template if set, None otherwise
     """
     try:
-        with get_db().read() as cursor:
-            cursor.execute("SELECT default_template_key FROM user_settings LIMIT 1")
-            row = cursor.fetchone()
-            logging.info(f"Retrieved user settings row: {dict(row) if row else None}")
+        template_key = config_manager.get_default_template_key()
+        logging.info(f"Retrieved default template key: {template_key}")
 
-        if row and row["default_template_key"]:
-            template_key = row["default_template_key"]
+        if template_key:
             template = get_template_by_key(template_key)
             logging.info(f"Successfully retrieved template {template_key}.")
             return template
@@ -452,10 +480,11 @@ def update_field_adaptive_instructions(
         f"Attempting to update adaptive instructions for template '{template_key}', field '{field_key}'"
     )
     try:
+        scope_sql, scope_params = scoped_or_shared("owner_id")
         with get_db().transaction() as cursor:
             cursor.execute(
-                "SELECT fields FROM clinical_templates WHERE template_key = ?",
-                (template_key,),
+                f"SELECT fields FROM clinical_templates WHERE template_key = ?{scope_sql}",
+                (template_key, *scope_params),
             )
             row = cursor.fetchone()
             if not row:
@@ -480,12 +509,12 @@ def update_field_adaptive_instructions(
                 return False
 
             cursor.execute(
-                """
+                f"""
                 UPDATE clinical_templates
                 SET fields = ?, updated_at = ?
-                WHERE template_key = ?
+                WHERE template_key = ?{scope_sql}
                 """,
-                (json.dumps(fields_list), datetime.now().isoformat(), template_key),
+                (json.dumps(fields_list), datetime.now().isoformat(), template_key, *scope_params),
             )
 
         logging.info(

@@ -1,6 +1,7 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import ModalTitle from "../common/ModalTitle";
+import { FaGithub } from "react-icons/fa";
 
 import {
     Box,
@@ -9,6 +10,8 @@ import {
     HStack,
     VStack,
     Button,
+    Badge,
+    Link,
     Dialog,
     Portal,
 } from "@chakra-ui/react";
@@ -35,13 +38,34 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                 <Dialog.Positioner>
                     <Dialog.Content className="modal-style">
                         <Dialog.Header>
-                            <HStack>
-                                <Image
-                                    src="/logo.webp"
-                                    alt="Phlox Logo"
-                                    width="30px"
-                                />
-                                <ModalTitle>Changelog v{version}</ModalTitle>
+                            <HStack justify="space-between" width="100%">
+                                <HStack>
+                                    <Image
+                                        src="/logo.webp"
+                                        alt="Phlox Logo"
+                                        width="30px"
+                                    />
+                                    <ModalTitle>Changelog v{version}</ModalTitle>
+                                </HStack>
+                                <Link
+                                    href="https://github.com/bloodworks-io/phlox"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    _hover={{ textDecoration: "none" }}
+                                >
+                                    <Badge
+                                        colorPalette="gray"
+                                        variant="subtle"
+                                        borderRadius="full"
+                                        p={1}
+                                        px={2}
+                                    >
+                                        <HStack gap={1}>
+                                            <FaGithub />
+                                            <Text fontSize="xs">GitHub</Text>
+                                        </HStack>
+                                    </Badge>
+                                </Link>
                             </HStack>
                         </Dialog.Header>
                         <Dialog.CloseTrigger />

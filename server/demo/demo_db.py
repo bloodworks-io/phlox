@@ -14,10 +14,13 @@ from server.database.core.connection import (
 from server.database.core.connection import (
     initialize_database,
 )
-from server.database.repositories.patient import _upsert_profile_with_cursor
-from server.database.repositories.templates import save_template
-from server.schemas.templates import ClinicalTemplate, TemplateField
-from server.utils.helpers import split_name
+
+initialize_database()
+
+from server.database.repositories.patient import _upsert_profile_with_cursor  # noqa: E402
+from server.database.repositories.templates import save_template  # noqa: E402
+from server.schemas.templates import ClinicalTemplate, TemplateField  # noqa: E402
+from server.utils.helpers import split_name  # noqa: E402
 
 # Get the directory of the current script
 current_dir = Path(__file__).resolve().parent

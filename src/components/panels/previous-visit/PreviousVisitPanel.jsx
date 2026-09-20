@@ -3,6 +3,7 @@ import { Box, Flex, Text, Tabs, HStack, VStack } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
 import FloatingPanel from "../../common/FloatingPanel";
+import { getTemplateFamilyBase } from "../../../utils/templates/templateService";
 
 const PreviousVisitPanel = ({
   isOpen,
@@ -43,12 +44,17 @@ const PreviousVisitPanel = ({
     window.removeEventListener("mouseup", handleMouseUp);
   };
 
-  // Look up the template for the previous visit
-  // First try exact match, then fall back to base template match (e.g., phlox_01 -> phlox_02)
+
+  const familyBase = previousVisitTemplateKey
+    ? getTemplateFamilyBase(previousVisitTemplateKey)
+    : "";
   const previousVisitTemplate = templates?.find(
     (t) => t.template_key === previousVisitTemplateKey
   ) || templates?.find(
-    (t) => t.template_key.startsWith(previousVisitTemplateKey?.split('_')[0] + '_')
+    (t) =>
+      familyBase &&
+      (t.template_key.startsWith(`${familyBase}_`) ||
+        t.template_key.startsWith(`custom_${familyBase}_`)),
   );
 
   // Render a single field from the previous visit note (read-only)
@@ -128,7 +134,7 @@ const PreviousVisitPanel = ({
               </Tooltip>
             </Tabs.List>
 
-            
+
               {/* Summary Tab */}
               <Tabs.Content value="0"
                 className="floating-main"
@@ -195,7 +201,7 @@ const PreviousVisitPanel = ({
                   )}
                 </Box>
               </Tabs.Content>
-            
+
           </Tabs.Root>
         </Box>
 

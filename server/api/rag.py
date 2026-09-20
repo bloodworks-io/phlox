@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 
@@ -20,6 +21,7 @@ from server.schemas.rag import (
     ModifyCollectionRequest,
     UpdateDocumentMetadataRequest,
 )
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -229,7 +231,9 @@ async def extract_pdf_info(file: UploadFile = File(...)):
 
         # Extract text directly from bytes (no disk write)
         logger.info(f"Extracting text from upload ({len(content)} bytes)")
-        extracted_text = vector_store_manager.extract_text_from_pdf(content)
+        extracted_text = await asyncio.to_thread(
+            vector_store_manager.extract_text_from_pdf, content
+        )
         if not extracted_text:
             logger.warning(
                 f"No text extracted from PDF '{file.filename}'. It might be empty or image-based."
@@ -273,9 +277,7 @@ async def extract_pdf_info_from_text(payload: ExtractTextPayload):
             f"Error processing extracted text for '{payload.filename}': {e}",
             exc_info=True,
         )
-        raise HTTPException(
-            status_code=500, detail="Error processing extracted text"
-        ) from e
+        raise HTTPException(status_code=500, detail="Error processing extracted text") from e
 
 
 @router.post("/commit-to-vectordb")
@@ -337,7 +339,8 @@ def commit_direct(request: BulkCommitRequest):
 
 @router.post("/re-embed")
 def re_embed():
-    """API endpoint to re-embed all collections with the current embedding model."""
+    """API endpoint to re-embed all collections with the current embedding model. Admin only."""
+    require_admin()
     _check_rag_available()
     try:
         vector_store_manager = get_vector_store_manager()
@@ -353,7 +356,8 @@ def re_embed():
 
 @router.post("/re-embed/stream")
 async def re_embed_stream():
-    """Stream re-embedding progress via Server-Sent Events."""
+    """Stream re-embedding progress via Server-Sent Events. Admin only."""
+    require_admin()
     _check_rag_available()
     return StreamingResponse(
         stream_re_embed_progress(),
@@ -363,7 +367,8 @@ async def re_embed_stream():
 
 @router.post("/clear-database")
 def clear_database():
-    """API endpoint to clear the entire RAG database."""
+    """API endpoint to clear the entire RAG database. Admin only."""
+    require_admin()
     _check_rag_available()
     try:
         vector_store_manager = get_vector_store_manager()

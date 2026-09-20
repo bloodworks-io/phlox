@@ -1,4 +1,4 @@
-import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button, Switch } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
     ChevronRightIcon,
@@ -12,6 +12,8 @@ import {
     FaBrain,
     FaDatabase,
     FaPuzzlePiece,
+    FaShieldAlt,
+    FaUsers,
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
 
@@ -20,12 +22,65 @@ import LocalModelManager from "./LocalModelManager";
 import WhisperTab from "./WhisperTab";
 import LlmTab from "./LlmTab";
 import RagTab from "./RagTab";
+import UsersTab from "./UsersTab";
 import { localModelApi } from "../../utils/api/localModelApi";
 import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
 
-const ModelSettingsPanel = ({
+const PolicyTab = ({ config, handleConfigChange }) => (
+    <VStack gap={3} align="stretch">
+        <Flex justify="space-between" align="center">
+            <Box>
+                <Text fontSize="sm" fontWeight="medium">
+                    Store Original PDFs
+                </Text>
+                <Text fontSize="xs" className="pill-box-icons">
+                    Keep original PDF files in the database after upload.
+                    Increases storage usage.
+                </Text>
+            </Box>
+            <Switch.Root
+                size="sm"
+                checked={!!config?.STORE_ORIGINAL_PDFS}
+                onCheckedChange={({ checked }) =>
+                    handleConfigChange("STORE_ORIGINAL_PDFS", checked)
+                }
+            >
+                <Switch.HiddenInput />
+                <Switch.Control>
+                    <Switch.Thumb />
+                </Switch.Control>
+            </Switch.Root>
+        </Flex>
+        <Flex justify="space-between" align="center">
+            <Box>
+                <Text fontSize="sm" fontWeight="medium">
+                    Require patient consent for ambient scribing
+                </Text>
+                <Text fontSize="xs" className="pill-box-icons">
+                    Prompt each patient for consent before ambient
+                    (transcription) recording. Dictation is unaffected;
+                    consent is remembered per patient.
+                </Text>
+            </Box>
+            <Switch.Root
+                size="sm"
+                checked={!!config?.REQUIRE_SCRIBE_CONSENT}
+                onCheckedChange={({ checked }) =>
+                    handleConfigChange("REQUIRE_SCRIBE_CONSENT", checked)
+                }
+            >
+                <Switch.HiddenInput />
+                <Switch.Control>
+                    <Switch.Thumb />
+                </Switch.Control>
+            </Switch.Root>
+        </Flex>
+    </VStack>
+);
+
+const AdminSettingsPanel = ({
     isCollapsed,
     setIsCollapsed,
     config,
@@ -124,7 +179,7 @@ const ModelSettingsPanel = ({
                         )}
                     </IconButton>
                     <FaCog size="1.2em" style={{ marginRight: "5px" }} />
-                    <Text as="h3">Model Settings</Text>
+                    <Text as="h3">Admin Settings</Text>
                 </Flex>
             </Flex>
             <Collapsible.Root open={!isCollapsed}>
@@ -224,6 +279,30 @@ const ModelSettingsPanel = ({
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
+                                    <Tooltip content="Practice-level system policy">
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="2"
+                                        >
+                                            <HStack>
+                                                <FaShieldAlt />
+                                                <Text>Policy</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    {!isTauri() && (
+                                        <Tooltip content="Manage user accounts">
+                                            <Tabs.Trigger
+                                                className="tab-style"
+                                                value="3"
+                                            >
+                                                <HStack>
+                                                    <FaUsers />
+                                                    <Text>Users</Text>
+                                                </HStack>
+                                            </Tabs.Trigger>
+                                        </Tooltip>
+                                    )}
                                 </Tabs.List>
                                 <Tabs.Content
                                     className="floating-main"
@@ -237,6 +316,23 @@ const ModelSettingsPanel = ({
                                 >
                                     <ToolsSettingsTab />
                                 </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="2"
+                                >
+                                    <PolicyTab
+                                        config={config}
+                                        handleConfigChange={handleConfigChange}
+                                    />
+                                </Tabs.Content>
+                                {!isTauri() && (
+                                    <Tabs.Content
+                                        className="floating-main"
+                                        value="3"
+                                    >
+                                        <UsersTab />
+                                    </Tabs.Content>
+                                )}
                             </Tabs.Root>
                         ) : (
                             <Tabs.Root
@@ -290,6 +386,30 @@ const ModelSettingsPanel = ({
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
+                                    <Tooltip content="Practice-level system policy">
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="4"
+                                        >
+                                            <HStack>
+                                                <FaShieldAlt />
+                                                <Text>Policy</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    {!isTauri() && (
+                                        <Tooltip content="Manage user accounts">
+                                            <Tabs.Trigger
+                                                className="tab-style"
+                                                value="5"
+                                            >
+                                                <HStack>
+                                                    <FaUsers />
+                                                    <Text>Users</Text>
+                                                </HStack>
+                                            </Tabs.Trigger>
+                                        </Tooltip>
+                                    )}
                                 </Tabs.List>
                                 <Tabs.Content
                                     className="floating-main"
@@ -343,6 +463,23 @@ const ModelSettingsPanel = ({
                                 >
                                     <ToolsSettingsTab />
                                 </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="4"
+                                >
+                                    <PolicyTab
+                                        config={config}
+                                        handleConfigChange={handleConfigChange}
+                                    />
+                                </Tabs.Content>
+                                {!isTauri() && (
+                                    <Tabs.Content
+                                        className="floating-main"
+                                        value="5"
+                                    >
+                                        <UsersTab />
+                                    </Tabs.Content>
+                                )}
                             </Tabs.Root>
                         )}
                     </VStack>
@@ -352,4 +489,4 @@ const ModelSettingsPanel = ({
     );
 };
 
-export default ModelSettingsPanel;
+export default AdminSettingsPanel;

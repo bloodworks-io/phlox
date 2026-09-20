@@ -20,6 +20,8 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 
 ## Key Features 
 - **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local.
+- **👥 Multi-User:** Account-based access control; each user's encounters, templates, and knowledge base stay their own.
+- **🌍 Multilingual:** Transcribe and generate notes and letters in multiple languages.
 - **🎤 Ambient Note Generation** Automatically generate structured clinical notes with customizable templates.
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.
 - **📝 Flexible Template System:**  Including automated template generation from example notes you provide.
@@ -57,15 +59,18 @@ services:
     image: ghcr.io/bloodworks-io/phlox:latest
     container_name: phlox
     ports:
-      - "5000:5000"  # Use "127.0.0.1:5000:5000" if not behind a reverse proxy
+      - "5000:5000"
     environment:
-      - DB_ENCRYPTION_KEY=          # Required: generate a strong random key
-      - TZ=                         # e.g. America/New_York
-      - ALLOWED_ORIGINS=*           # Or your origin, e.g. https://phlox.example.com
-      # Optional — proxy auth + rate limiting (see https://phlox.bloodworks.io/docs/setup#critical-security-warning)
+      - DB_ENCRYPTION_KEY=   # Required: generate a strong random key
+      - TZ=                  # e.g. America/New_York
+      # Authentication: built-in
+      # Alternative: auth handled by your reverse proxy
+      # (pick one approach - do not combine)
       # - PROXY_AUTH_ENABLED=true
       # - PROXY_AUTH_USER_HEADER=X-Forwarded-User
       # - PROXY_AUTH_ALLOWED_USERS=user1,user2
+      # - TRUSTED_PROXY_IPS=172.16.0.2 # Required with PROXY_AUTH_ENABLED:
+      #   IPs/CIDRs of EVERY proxy hop between Phlox and clients.
       # - RATE_LIMIT_ENABLED=true
     volumes:
       - ./data:/usr/src/app/data    # Persistent data (database, vectors)
@@ -73,6 +78,8 @@ services:
 ```
 
 Then `docker compose up -d`. See the [Setup guide](https://phlox.bloodworks.io/docs/setup) for full instructions including `.env` configuration.
+
+Authentication is required for Docker deployments: the first browser visit walks through creating the admin account, and further users are added from Settings → Users.
 
 The Docker image does not have any inference or transcription capability built-in. OpenAI compatible endpoints are required for transcription and note generation. 
 

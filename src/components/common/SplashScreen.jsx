@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Progress } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 import { settingsApi } from "../../utils/api/settingsApi";
+import { authApi } from "../../utils/api/authApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
 import {
   SPLASH_STEPS,
@@ -21,10 +22,38 @@ const SplashScreen = ({ onComplete }) => {
 
   const [currentStep, setCurrentStep] = useState(SPLASH_STEPS.ABOUT_YOU);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLlmStep, setShowLlmStep] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const decide = async () => {
+      if (isTauri()) {
+        setShowLlmStep(true);
+        return;
+      }
+      try {
+        const [me, config] = await Promise.all([
+          authApi.fetchMe().catch(() => null),
+          settingsApi.fetchConfig().catch(() => null),
+        ]);
+        if (cancelled) return;
+        setShowLlmStep(me?.role === "admin" && !config?.PRIMARY_MODEL);
+      } catch {
+        if (!cancelled) setShowLlmStep(false);
+      }
+    };
+    decide();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const visibleSteps = useMemo(
-    () => [SPLASH_STEPS.ABOUT_YOU, SPLASH_STEPS.TEMPLATES, SPLASH_STEPS.AI_MODELS],
-    [],
+    () =>
+      showLlmStep
+        ? [SPLASH_STEPS.ABOUT_YOU, SPLASH_STEPS.TEMPLATES, SPLASH_STEPS.AI_MODELS]
+        : [SPLASH_STEPS.ABOUT_YOU, SPLASH_STEPS.TEMPLATES],
+    [showLlmStep],
   );
 
   const totalSteps = visibleSteps.length + (isTauri() ? 1 : 0);
@@ -116,18 +145,20 @@ const SplashScreen = ({ onComplete }) => {
 
       await settingsApi.saveUserSettings(userSettingsToSave);
 
-      const currentGlobalConfig = await settingsApi.fetchConfig();
-      const configToSave = {
-        ...currentGlobalConfig,
-        LLM_PROVIDER: llmData.llmProvider,
-        LLM_BASE_URL: llmData.llmBaseUrl,
-        LLM_API_KEY: llmData.llmApiKey || "",
-        PRIMARY_MODEL: llmData.primaryModel,
-        WHISPER_BASE_URL: transcriptionData.whisperBaseUrl,
-        WHISPER_MODEL: transcriptionData.whisperModel,
-      };
+      if (showLlmStep) {
+        const currentGlobalConfig = await settingsApi.fetchConfig();
+        const configToSave = {
+          ...currentGlobalConfig,
+          LLM_PROVIDER: llmData.llmProvider,
+          LLM_BASE_URL: llmData.llmBaseUrl,
+          LLM_API_KEY: llmData.llmApiKey || "",
+          PRIMARY_MODEL: llmData.primaryModel,
+          WHISPER_BASE_URL: transcriptionData.whisperBaseUrl,
+          WHISPER_MODEL: transcriptionData.whisperModel,
+        };
 
-      await settingsApi.saveConfig(configToSave);
+        await settingsApi.saveConfig(configToSave);
+      }
 
       if (templatesData.selectedTemplate) {
         await settingsApi.setDefaultTemplate(templatesData.selectedTemplate);

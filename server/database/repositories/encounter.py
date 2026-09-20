@@ -15,8 +15,10 @@ from server.database.repositories.patient import (
 from server.database.repositories.templates import (
     get_persistent_fields,
     get_template_by_key,
+    get_template_family_patterns,
 )
 from server.schemas.patient import Patient
+from server.utils.current_user import current_user_id, scoped
 from server.utils.helpers import format_name, split_name
 
 
@@ -75,9 +77,9 @@ def save_patient(patient: Patient) -> int:
                     transcription_duration, process_duration,
                     primary_condition, final_letter, jobs_list,
                     all_jobs_completed, encounter_summary,
-                    created_at, updated_at
+                    created_at, updated_at, created_by
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     patient.ur_number,
@@ -94,6 +96,7 @@ def save_patient(patient: Patient) -> int:
                     getattr(patient, "encounter_summary", None),
                     now,
                     now,
+                    current_user_id(),
                 ),
             )
             # Capture ID from this cursor immediately, before any nested write.
@@ -223,8 +226,9 @@ def update_patient(patient: Patient) -> None:
             )
 
             # Update the database
+            scope_sql, scope_params = scoped("created_by")
             cursor.execute(
-                """
+                f"""
                 UPDATE encounters
                 SET ur_number = ?,
                     encounter_date = ?,
@@ -239,7 +243,7 @@ def update_patient(patient: Patient) -> None:
                     jobs_list = ?,
                     all_jobs_completed = ?,
                     updated_at = ?
-                WHERE id = ?
+                WHERE id = ?{scope_sql}
                 """,
                 (
                     patient.ur_number,
@@ -256,6 +260,7 @@ def update_patient(patient: Patient) -> None:
                     all_jobs_completed,
                     datetime.now().isoformat(),
                     patient.id,
+                    *scope_params,
                 ),
             )
 
@@ -288,10 +293,11 @@ def update_patient_reasoning(note_id: int, reasoning_output: dict) -> None:
     """
     try:
         reasoning_output_json = json.dumps(reasoning_output)
+        scope_sql, scope_params = scoped("created_by")
         with get_db().transaction() as cursor:
             cursor.execute(
-                "UPDATE encounters SET reasoning_output = ? WHERE id = ?",
-                (reasoning_output_json, note_id),
+                f"UPDATE encounters SET reasoning_output = ? WHERE id = ?{scope_sql}",
+                (reasoning_output_json, note_id, *scope_params),
             )
     except Exception as e:
         logging.error(f"Error updating patient reasoning: {e}")
@@ -332,6 +338,10 @@ def get_patients_by_date(
         if template_key:
             query += " AND e.template_key = ?"
             params.append(template_key)
+
+        scope_sql, scope_params = scoped("e.created_by")
+        query += scope_sql
+        params += scope_params
 
         query += " ORDER BY p.last_name, p.first_name"
 
@@ -388,8 +398,12 @@ def get_patient_by_id(note_id: int) -> dict[str, Any] | None:
         Optional[Dict[str, Any]]: Patient data if found.
     """
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().read() as cursor:
-            cursor.execute("SELECT * FROM encounters WHERE id = ?", (note_id,))
+            cursor.execute(
+                f"SELECT * FROM encounters WHERE id = ?{scope_sql}",
+                (note_id, *scope_params),
+            )
             row = cursor.fetchone()
             if not row:
                 return None
@@ -424,38 +438,46 @@ def get_patient_history(ur_number: str, template_key: str | None = None) -> list
         List[Dict[str, Any]]: List of historical encounters.
     """
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().read() as cursor:
             if template_key:
-                # Filter by template key prefix (handles versions like "soap_01", "soap_02")
+                # Match the whole template family (versions + forks across the
+                # custom_ boundary, e.g. phlox_01 / phlox_05 / custom_phlox_1)
+                patterns = get_template_family_patterns(template_key)
+                clause = " OR ".join("template_key LIKE ? ESCAPE '\\'" for _ in patterns)
                 cursor.execute(
-                    """
+                    f"""
                     SELECT id, encounter_date, template_key, template_data
                     FROM encounters
-                    WHERE ur_number = ? AND template_key LIKE ?
+                    WHERE ur_number = ? AND ({clause}){scope_sql}
                     ORDER BY encounter_date DESC
                     """,
-                    (ur_number, f"{template_key}%"),
+                    (ur_number, *patterns, *scope_params),
                 )
             else:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT id, encounter_date, template_key, template_data
                     FROM encounters
-                    WHERE ur_number = ?
+                    WHERE ur_number = ?{scope_sql}
                     ORDER BY encounter_date DESC
                     """,
-                    (ur_number,),
+                    (ur_number, *scope_params),
                 )
 
             rows = cursor.fetchall()
 
         encounters = []
         for row in rows:
-            template = get_template_by_key(row["template_key"])
+            # Exact template first; else latest version in the same family
+            # (e.g. a phlox_05 note resolves against phlox_01/phlox_02)
+            template = get_template_by_key(row["template_key"]) or get_template_by_key(
+                row["template_key"], exact_match=False
+            )
             if not template:
                 continue
 
-            persistent_fields = get_persistent_fields(row["template_key"])
+            persistent_fields = get_persistent_fields(template["template_key"])
             template_data = json.loads(row["template_data"]) if row["template_data"] else {}
 
             persistent_data = {
@@ -488,8 +510,12 @@ def delete_patient_by_id(note_id: int) -> bool:
         bool: True if deleted successfully.
     """
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().transaction() as cursor:
-            cursor.execute("DELETE FROM encounters WHERE id = ?", (note_id,))
+            cursor.execute(
+                f"DELETE FROM encounters WHERE id = ?{scope_sql}",
+                (note_id, *scope_params),
+            )
             return cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error deleting patient: {e}")
@@ -499,28 +525,29 @@ def delete_patient_by_id(note_id: int) -> bool:
 def get_latest_encounter(ur_number: str, exclude_date: str | None = None) -> dict[str, Any] | None:
     """Fetch the most recent encounter for a patient."""
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().read() as cursor:
             if exclude_date:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT id, encounter_date, template_key, template_data, encounter_summary
                     FROM encounters
-                    WHERE ur_number = ? AND encounter_date < ?
+                    WHERE ur_number = ? AND encounter_date < ?{scope_sql}
                     ORDER BY encounter_date DESC
                     LIMIT 1
                     """,
-                    (ur_number, exclude_date),
+                    (ur_number, exclude_date, *scope_params),
                 )
             else:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT id, encounter_date, template_key, template_data, encounter_summary
                     FROM encounters
-                    WHERE ur_number = ?
+                    WHERE ur_number = ?{scope_sql}
                     ORDER BY encounter_date DESC
                     LIMIT 1
                     """,
-                    (ur_number,),
+                    (ur_number, *scope_params),
                 )
             row = cursor.fetchone()
             return dict(row) if row else None
@@ -534,32 +561,33 @@ def get_patient_notes(
 ) -> list[dict[str, Any]]:
     """Fetch all encounters (text columns + demographics) for note-search."""
     try:
+        scope_sql, scope_params = scoped("e.created_by")
         with get_db().read() as cursor:
             if ur_number:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT e.id, e.ur_number, e.encounter_date,
                            e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
                            p.first_name, p.last_name, p.dob
                     FROM encounters e
                     LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                    WHERE e.ur_number = ?
+                    WHERE e.ur_number = ?{scope_sql}
                     ORDER BY e.encounter_date DESC
                     """,
-                    (ur_number,),
+                    (ur_number, *scope_params),
                 )
             elif patient_name:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT e.id, e.ur_number, e.encounter_date,
                            e.template_data, e.raw_transcription, e.encounter_summary, e.final_letter,
                            p.first_name, p.last_name, p.dob
                     FROM encounters e
                     LEFT JOIN patient_profiles p ON p.ur_number = e.ur_number
-                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?)
+                    WHERE LOWER(COALESCE(p.last_name || ', ' || p.first_name, '')) LIKE LOWER(?){scope_sql}
                     ORDER BY e.encounter_date DESC
                     """,
-                    (f"%{patient_name}%",),
+                    (f"%{patient_name}%", *scope_params),
                 )
             else:
                 return []
@@ -584,20 +612,22 @@ def update_patient_summary(
         primary_condition (str): The extracted primary condition.
     """
     try:
+        scope_sql, scope_params = scoped("created_by")
         with get_db().transaction() as cursor:
             cursor.execute(
-                """
+                f"""
                 UPDATE encounters
                 SET encounter_summary = ?,
                     primary_condition = ?,
                     updated_at = ?
-                WHERE id = ?
+                WHERE id = ?{scope_sql}
                 """,
                 (
                     encounter_summary,
                     primary_condition,
                     datetime.now().isoformat(),
                     note_id,
+                    *scope_params,
                 ),
             )
     except Exception as e:

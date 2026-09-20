@@ -15,6 +15,7 @@ from server.database.repositories.letter import (
 )
 from server.nlp_tools.letter import generate_letter_content
 from server.schemas.letter import LetterRequest, LetterSave, LetterTemplate
+from server.utils.current_user import require_admin
 
 router = APIRouter()
 
@@ -37,7 +38,7 @@ async def generate_letter(request: LetterRequest):
         raise he
     except Exception as e:
         logging.error(f"Unexpected error in generate_letter endpoint: {e}")
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}") from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/save")
@@ -49,7 +50,7 @@ def save_letter(request: LetterSave):
         return {"message": "Letter saved successfully"}
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")
-        raise HTTPException(status_code=500, detail=e) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/fetch-letter")
@@ -60,7 +61,7 @@ def fetch_letter(noteId: int):
         return JSONResponse(content={"letter": letter or "No letter attached to encounter"})
     except Exception as e:
         logging.error(f"Error fetching letter: {e}")
-        raise HTTPException(status_code=500, detail=e) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/templates")
@@ -120,7 +121,8 @@ def create_template(template: LetterTemplate = Body(...)):
 
 @router.post("/templates/reset")
 def reset_templates():
-    """Reset letter templates to default."""
+    """Reset letter templates to default. Admin only."""
+    require_admin()
     try:
         reset_default_templates()
         return JSONResponse(content={"message": "Templates reset to defaults"})

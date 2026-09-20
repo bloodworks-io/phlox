@@ -41,8 +41,8 @@ export const getApiBaseUrl = async () => {
 // Get the request token for API authentication
 export const getRequestToken = async () => {
   if (!isTauri()) {
-    // Docker mode - no token needed
-    return null;
+    // Docker/browser mode - token stored after passphrase login
+    return localStorage.getItem("phlox_api_token");
   }
 
   // Return cached token if available
@@ -62,6 +62,14 @@ export const getRequestToken = async () => {
   }
 };
 
+export const setStoredToken = (token) => {
+  localStorage.setItem("phlox_api_token", token);
+};
+
+export const clearStoredToken = () => {
+  localStorage.removeItem("phlox_api_token");
+};
+
 // Helper function to construct full API URL
 export const buildApiUrl = async (endpoint) => {
   const baseUrl = await getApiBaseUrl();
@@ -72,6 +80,8 @@ export const buildApiUrl = async (endpoint) => {
 export const resetApiConfig = () => {
   cachedServerPort = null;
   cachedRequestToken = null;
+  // Browser mode: drop any stale login token too
+  localStorage.removeItem("phlox_api_token");
 };
 
 export { isTauri };
