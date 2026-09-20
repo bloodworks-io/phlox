@@ -238,24 +238,6 @@ const floatingStyles = (props) => ({
         justifyContent: "center",
         alignItems: "center",
     },
-    // Live scribe: minimized one-line bar above the scribe pill
-    ".live-bar": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.secondary} !important`
-                : `${colors.dark.secondary} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
-        borderRadius: "full !important",
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 8px 32px rgba(20, 20, 38, 0.35) !important",
-    },
     // Live scribe: small-caps section labels inside the live window
     ".live-section-label": {
         fontSize: "9px !important",

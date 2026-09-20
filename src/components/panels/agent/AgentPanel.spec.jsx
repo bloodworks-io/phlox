@@ -3,8 +3,7 @@ import { screen, fireEvent, cleanup } from "@testing-library/react";
 import AgentPanel from "./AgentPanel";
 import { renderWithProviders } from "../../../test/utils";
 
-// Vitest runs without globals, so testing-library cannot register its own
-// afterEach cleanup — without this, renders leak between tests.
+// Vitest runs without globals — register cleanup or renders leak.
 afterEach(cleanup);
 
 const letterArtifact = {
@@ -18,49 +17,47 @@ const statuses = [
     { id: "s2", content: "Staged: Patient summary letter", kind: "artifact" },
 ];
 
+const stubLocalStorage = () => {
+    const store = new Map();
+    Object.defineProperty(window, "localStorage", {
+        value: {
+            getItem: (key) => store.get(key) ?? null,
+            setItem: (key, value) => store.set(key, String(value)),
+            removeItem: (key) => store.delete(key),
+        },
+        configurable: true,
+    });
+};
+
 describe("AgentPanel", () => {
     it("renders nothing when the session is idle", () => {
         const { container } = renderWithProviders(
             <AgentPanel status="idle" transcripts={[]} statuses={[]} artifacts={[]} />,
         );
-        // The provider injects a theme script, so assert on our surfaces.
-        expect(container.querySelector(".live-bar, .floating-panel")).toBeNull();
+        expect(container.querySelector(".live-agent-card")).toBeNull();
     });
 
-    it("shows the compact bar with status and review badge", () => {
-        const onExpand = vi.fn();
-        renderWithProviders(
+    it("renders nothing when collapsed — the pill is the minimized view", () => {
+        const { container } = renderWithProviders(
             <AgentPanel
                 status="live"
                 agentState="listening"
                 transcripts={[]}
                 statuses={[]}
                 artifacts={[letterArtifact]}
-                onExpand={onExpand}
             />,
         );
-        expect(screen.getByText("Live agent")).toBeInTheDocument();
-        expect(screen.getByText("Microphone active")).toBeInTheDocument();
-        expect(screen.getByText("1 to review")).toBeInTheDocument();
-        fireEvent.click(screen.getByRole("button", { name: /expand live panel/i }));
-        expect(onExpand).toHaveBeenCalled();
+        expect(container.querySelector(".live-agent-card")).toBeNull();
     });
 
-    it("omits the review badge when nothing is prepared", () => {
-        renderWithProviders(
-            <AgentPanel status="live" transcripts={[]} statuses={[]} artifacts={[]} />,
-        );
-        expect(screen.queryByText(/to review/)).not.toBeInTheDocument();
-    });
-
-    it("leads the window with activity, then prepared drafts", () => {
+    it("leads the expanded panel with activity, then prepared drafts", () => {
         renderWithProviders(
             <AgentPanel
                 status="live"
                 transcripts={[]}
                 statuses={statuses}
                 artifacts={[letterArtifact]}
-                view="window"
+                isExpanded
             />,
         );
         const activity = screen.getByText("Latest activity");
@@ -81,7 +78,7 @@ describe("AgentPanel", () => {
                 transcripts={[]}
                 statuses={[]}
                 artifacts={[letterArtifact]}
-                view="window"
+                isExpanded
                 onOpenLetter={onOpenLetter}
             />,
         );
@@ -98,7 +95,7 @@ describe("AgentPanel", () => {
                 transcripts={["Energy improving."]}
                 statuses={[]}
                 artifacts={[]}
-                view="window"
+                isExpanded
             />,
         );
         const toggle = screen.getByRole("button", { name: /transcript/i });
@@ -117,7 +114,7 @@ describe("AgentPanel", () => {
                 transcripts={["One remark."]}
                 statuses={statuses}
                 artifacts={[letterArtifact]}
-                view="window"
+                isExpanded
                 onDismissReview={onDismissReview}
             />,
         );
@@ -129,23 +126,124 @@ describe("AgentPanel", () => {
         expect(onDismissReview).toHaveBeenCalled();
     });
 
-    it("surfaces connection failures with an inline retry", () => {
+    it("surfaces connection failures with an inline retry when expanded", () => {
         const onRetry = vi.fn();
         const onDismissReview = vi.fn();
-        renderWithProviders(
+        const { rerender } = renderWithProviders(
             <AgentPanel
                 status="error"
                 transcripts={[]}
                 statuses={[]}
                 artifacts={[letterArtifact]}
                 lastError="The event stream ended unexpectedly."
+                isExpanded
                 onRetry={onRetry}
                 onDismissReview={onDismissReview}
             />,
         );
         fireEvent.click(screen.getByRole("button", { name: /reconnect/i }));
         expect(onRetry).toHaveBeenCalled();
+
+        rerender(
+            <AgentPanel
+                status="error"
+                transcripts={[]}
+                statuses={[]}
+                artifacts={[letterArtifact]}
+                lastError="The event stream ended unexpectedly."
+                isExpanded
+                onRetry={onRetry}
+                onDismissReview={onDismissReview}
+            />,
+        );
         fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
         expect(onDismissReview).toHaveBeenCalled();
+    });
+
+    it("keeps the compact card clear of the scribe pill", () => {
+        // A centered pill on a 1000x800 viewport (bottom 20px, ~300x60).
+        const pill = document.createElement("div");
+        pill.className = "pill-box-scribe";
+        pill.getBoundingClientRect = () => ({
+            top: 720,
+            bottom: 780,
+            left: 350,
+            right: 650,
+            width: 300,
+            height: 60,
+            x: 350,
+            y: 720,
+        });
+        document.body.appendChild(pill);
+        window.innerWidth = 1100;
+        window.innerHeight = 800;
+        stubLocalStorage();
+        window.localStorage.setItem(
+            "phlox:live-agent-pos",
+            JSON.stringify({ x: 400, bottom: 16 }),
+        );
+
+        try {
+            const { container } = renderWithProviders(
+                <AgentPanel
+                    status="live"
+                    transcripts={[]}
+                    statuses={[]}
+                    artifacts={[]}
+                    isExpanded
+                />,
+            );
+            const card = container.querySelector(".live-agent-card");
+            expect(getComputedStyle(card).left).toBe("662px"); // pill.right + 12
+        } finally {
+            pill.remove();
+            window.localStorage.removeItem("phlox:live-agent-pos");
+            window.innerWidth = 1024;
+            window.innerHeight = 768;
+        }
+    });
+
+    it("parks the card above the pill when the window is too narrow", () => {
+        const pill = document.createElement("div");
+        pill.className = "pill-box-scribe";
+        pill.getBoundingClientRect = () => ({
+            top: 720,
+            bottom: 780,
+            left: 150,
+            right: 550,
+            width: 400,
+            height: 60,
+            x: 150,
+            y: 720,
+        });
+        document.body.appendChild(pill);
+        window.innerWidth = 700;
+        window.innerHeight = 800;
+        stubLocalStorage();
+        window.localStorage.setItem(
+            "phlox:live-agent-pos",
+            JSON.stringify({ x: 200, bottom: 16 }),
+        );
+
+        try {
+            const { container } = renderWithProviders(
+                <AgentPanel
+                    status="live"
+                    transcripts={[]}
+                    statuses={[]}
+                    artifacts={[]}
+                    isExpanded
+                />,
+            );
+            const card = container.querySelector(".live-agent-card");
+            // pill.right + 12 + panel width exceeds the right bound, so the
+            // panel lifts one row above the pill instead.
+            expect(getComputedStyle(card).bottom).toBe("92px"); // 800 - pill.top + 12
+        } finally {
+            pill.remove();
+            window.localStorage.removeItem("phlox:live-agent-pos");
+            window.innerWidth = 1024;
+            window.innerHeight = 768;
+        }
     });
 });

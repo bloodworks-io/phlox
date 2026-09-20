@@ -34,8 +34,7 @@ const FloatingPanel = ({
     const [arrowTop, setArrowTop] = useState("50%");
     const [arrowLeft, setArrowLeft] = useState("50%");
     const [minPanelHeight, setMinPanelHeight] = useState("auto");
-    // Delayed unmount so the close transition can play (mirrors the
-    // LiveWindow isClosing pattern).
+    // Delayed unmount so the close transition can play.
     const [shouldRender, setShouldRender] = useState(isOpen);
     const [isClosing, setIsClosing] = useState(false);
 

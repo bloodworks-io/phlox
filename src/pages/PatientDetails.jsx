@@ -351,7 +351,7 @@ const PatientDetails = ({
 
     // Picking agent arms it — mic click starts the session; other picks end it.
     // The picked mode persists so it stays the default across sessions.
-    const [liveView, setLiveView] = useState("bar"); // "bar" | "window"
+    const [isLiveExpanded, setIsLiveExpanded] = useState(false);
     const [agentArmed, setAgentArmed] = useState(
         () => localStorage.getItem(SCRIBE_MODE_STORAGE_KEY) === "agent",
     );
@@ -387,7 +387,7 @@ const PatientDetails = ({
     const handleRecordStart = () => {
         if (scribeMode === "agent") {
             liveAgent.startLive().then((started) => {
-                if (started) setLiveView("bar");
+                if (started) setIsLiveExpanded(false);
             });
             return;
         }
@@ -587,6 +587,14 @@ const PatientDetails = ({
                 }
                 liveElapsed={liveAgent.elapsedSeconds}
                 onLiveStop={handleLiveStop}
+                liveStatus={liveAgent.status}
+                liveAgentState={liveAgent.agentState}
+                liveArtifactsCount={liveAgent.artifacts.length}
+                liveBacklogCount={liveAgent.backlog}
+                isLivePanelExpanded={isLiveExpanded}
+                onLiveExpand={() => setIsLiveExpanded((open) => !open)}
+                onLiveRetry={liveAgent.retryLive}
+                onLiveDismissReview={liveAgent.dismissReview}
                 transcriptPanel={
                     <TranscriptionPanel
                         rawTranscription={patient.raw_transcription}
@@ -658,7 +666,7 @@ const PatientDetails = ({
                 }
                 templates={templates}
             />
-            {/* Live agent — PiP bar / draggable mini-window */}
+            {/* Live agent — corner card, expands in place */}
             <AgentPanel
                 status={liveAgent.status}
                 agentState={liveAgent.agentState}
@@ -666,10 +674,8 @@ const PatientDetails = ({
                 statuses={liveAgent.statuses}
                 artifacts={liveAgent.artifacts}
                 lastError={liveAgent.lastError}
-                view={liveView}
-                onExpand={() => setLiveView("window")}
-                onMinimize={() => setLiveView("bar")}
-                hideBar={isOpen("transcription")}
+                isExpanded={isLiveExpanded}
+                onToggleExpand={() => setIsLiveExpanded((open) => !open)}
                 onOpenLetter={(artifact) => {
                     lastSyncedLetterRef.current = artifact.content;
                     setLetterContent(artifact.content);

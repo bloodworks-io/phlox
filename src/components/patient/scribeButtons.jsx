@@ -17,11 +17,14 @@ import {
     FaBolt,
     FaStop,
     FaCheck,
+    FaChevronUp,
+    FaChevronDown,
 } from "react-icons/fa";
 import PillBox from "../common/PillBox";
 import { colors } from "../../theme/colors";
 import { LavaBlobs, InternalGlow } from "./scribeVisuals";
-
+import { AgentSymbol } from "../panels/agent/components/agentVisuals";
+import { getStatusInfo } from "../panels/agent/components/agentStatus";
 
 const PILL = {
     danger: colors.dark.dangerButton, // #ed8796
@@ -342,25 +345,66 @@ const formatElapsed = (seconds) => {
     return `${m}:${String(s).padStart(2, "0")}`;
 };
 
-// Stands in for the mic while a live session owns it: elapsed time + end.
-export const LiveTimerChip = ({ elapsed = 0, isBusy = false, onStop }) => {
-    const [isHovered, setIsHovered] = React.useState(false);
+export const LiveAgentControls = ({
+    status = "live",
+    agentState = "listening",
+    elapsed = 0,
+    artifactsCount = 0,
+    backlogCount = 0,
+    isExpanded = false,
+    onExpand,
+    onStop,
+}) => {
+    const info = getStatusInfo(status, agentState);
+    const isBusy = status === "connecting" || status === "stopping";
+    const isCatchingUp =
+        backlogCount > 0 && status === "live" && agentState === "listening";
 
     return (
-        <Flex align="center" gap={1} flexShrink={0} px={1}>
-            <Text
-                fontSize="sm"
-                fontWeight="700"
-                color="white"
-                fontVariantNumeric="tabular-nums"
-                minW="32px"
-                textAlign="center"
-                aria-label={`Live session ${formatElapsed(elapsed)}`}
+        <Flex align="center" gap={2} flexShrink={0} px={1}>
+            <AgentSymbol
+                pulse={info.pulse}
+                boxSize="26px"
+                iconSize="11px"
+                radius="8px"
+            />
+            <Flex
+                direction="column"
+                align="flex-start"
+                lineHeight="1.15"
+                minW="70px"
             >
-                {isBusy ? "· · ·" : formatElapsed(elapsed)}
-            </Text>
+                <Text fontSize="xs" fontWeight="600" color="white" truncate maxW="120px">
+                    {isCatchingUp ? "Catching up…" : info.label}
+                </Text>
+                <Text
+                    fontSize="sm"
+                    fontWeight="700"
+                    color="white"
+                    fontVariantNumeric="tabular-nums"
+                    minW="34px"
+                    aria-label={`Live session ${formatElapsed(elapsed)}`}
+                >
+                    {isBusy ? "· · ·" : formatElapsed(elapsed)}
+                </Text>
+            </Flex>
+            {artifactsCount > 0 && (
+                <Text
+                    fontSize="xs"
+                    fontWeight="600"
+                    color={PILL.info}
+                    bg="rgba(139, 213, 202, 0.15)"
+                    borderRadius="full"
+                    px={2}
+                    py={0.5}
+                    flexShrink={0}
+                    whiteSpace="nowrap"
+                >
+                    {artifactsCount} to review
+                </Text>
+            )}
             <Tooltip
-                content="End live session"
+                content={isExpanded ? "Collapse live agent panel" : "Expand live agent"}
                 showArrow
                 positioning={{ placement: "top" }}
             >
@@ -368,21 +412,63 @@ export const LiveTimerChip = ({ elapsed = 0, isBusy = false, onStop }) => {
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    w="24px"
-                    h="24px"
+                    w="28px"
+                    h="28px"
                     borderRadius="full"
-                    border={`1px solid ${isHovered ? PILL.dangerFill : PILL.danger}`}
-                    bg={isHovered ? PILL.dangerFill : "rgba(237, 135, 150, 0.15)"}
-                    color={isHovered ? PILL.onFill : PILL.danger}
+                    border={`1px solid ${isExpanded ? PILL.info : PILL.muted}`}
+                    color={isExpanded ? PILL.info : PILL.muted}
                     cursor="pointer"
+                    outline="none"
+                    bg="transparent"
+                    transition="all 0.2s ease"
+                    _hover={{
+                        bg: PILL.infoFill,
+                        borderColor: PILL.infoFill,
+                        color: PILL.onFill,
+                        transform: "scale(1.05)",
+                    }}
+                    asChild>
+                    <button
+                        aria-label={
+                            isExpanded
+                                ? "Collapse live agent panel"
+                                : "Expand live agent"
+                        }
+                        onClick={onExpand}>
+                        {isExpanded ? (
+                            <FaChevronDown size="10px" />
+                        ) : (
+                            <FaChevronUp size="10px" />
+                        )}
+                    </button>
+                </Box>
+            </Tooltip>
+            <Tooltip
+                content={status === "stopping" ? "Wrapping up…" : "End live session"}
+                showArrow
+                positioning={{ placement: "top" }}
+            >
+                <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    w="28px"
+                    h="28px"
+                    borderRadius="full"
+                    border={`1px solid ${PILL.danger}`}
+                    bg="rgba(237, 135, 150, 0.15)"
+                    color={PILL.danger}
+                    cursor={isBusy ? "default" : "pointer"}
+                    opacity={isBusy ? 0.5 : 1}
+                    pointerEvents={isBusy ? "none" : "auto"}
                     transition="all 0.2s ease"
                     outline="none"
                     _hover={{ transform: "scale(1.05)" }}
                     asChild>
                     <button
+                        aria-label="End live session"
                         onClick={onStop}
-                        onMouseEnter={() => setIsHovered(true)}
-                        onMouseLeave={() => setIsHovered(false)}>
+                        disabled={isBusy}>
                         <FaStop size="9px" />
                     </button>
                 </Box>
@@ -390,6 +476,155 @@ export const LiveTimerChip = ({ elapsed = 0, isBusy = false, onStop }) => {
         </Flex>
     );
 };
+
+export const AgentReviewPill = ({ artifactsCount = 0, onExpand, onDismiss }) => (
+    <PillBox
+        bottom="20px"
+        left="50%"
+        transform="translateX(-50%)"
+        className="pill-box-scribe anim-fade"
+        css={{ animationDuration: "0.2s" }}
+        px={3}
+        py={2}
+        gap={2}
+    >
+        <AgentSymbol boxSize="26px" iconSize="11px" radius="8px" />
+        <Flex align="center" gap={2} pr={1} color="white">
+            <Text fontSize="xs" fontWeight="700">
+                Session ended
+            </Text>
+            {artifactsCount > 0 && (
+                <Text fontSize="xs" fontWeight="600" color={PILL.info}>
+                    · {artifactsCount} to review
+                </Text>
+            )}
+        </Flex>
+        <Tooltip
+            content="Open session review"
+            showArrow
+            positioning={{ placement: "top" }}
+        >
+            <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                w="32px"
+                h="32px"
+                borderRadius="full"
+                border={`1px solid ${PILL.info}`}
+                cursor="pointer"
+                outline="none"
+                color={PILL.info}
+                bg="transparent"
+                transition="all 0.2s ease"
+                _hover={{
+                    bg: PILL.infoFill,
+                    borderColor: PILL.infoFill,
+                    color: PILL.onFill,
+                    transform: "scale(1.05)",
+                }}
+                asChild><button aria-label="Open session review" onClick={onExpand}>
+                    <FaChevronUp size={13} />
+                </button></Box>
+        </Tooltip>
+        <Tooltip
+            content="Dismiss review"
+            showArrow
+            positioning={{ placement: "top" }}
+        >
+            <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                w="32px"
+                h="32px"
+                borderRadius="full"
+                border="none"
+                cursor="pointer"
+                outline="none"
+                color={PILL.muted}
+                bg="transparent"
+                className="pill-box-icons"
+                transition="all 0.2s ease"
+                _hover={{ color: PILL.danger, transform: "scale(1.05)" }}
+                asChild><button aria-label="Dismiss session review" onClick={onDismiss}>
+                    <FaTimes size={13} />
+                </button></Box>
+        </Tooltip>
+    </PillBox>
+);
+
+export const AgentErrorPill = ({ onRetry, onDismiss }) => (
+    <PillBox
+        bottom="20px"
+        left="50%"
+        transform="translateX(-50%)"
+        className="pill-box-scribe anim-fade"
+        css={{ animationDuration: "0.2s" }}
+        px={3}
+        py={2}
+        gap={2}
+    >
+        <Flex align="center" gap={2} color={PILL.danger} pr={1}>
+            <FaExclamationTriangle size={15} />
+            <Text fontSize="xs" fontWeight="700">
+                Connection interrupted
+            </Text>
+        </Flex>
+        <Tooltip
+            content="Reconnect live agent"
+            showArrow
+            positioning={{ placement: "top" }}
+        >
+            <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                w="32px"
+                h="32px"
+                borderRadius="full"
+                border={`1px solid ${PILL.success}`}
+                cursor="pointer"
+                outline="none"
+                color={PILL.success}
+                bg="transparent"
+                transition="all 0.2s ease"
+                _hover={{
+                    bg: PILL.successFill,
+                    borderColor: PILL.successFill,
+                    color: PILL.onFill,
+                    transform: "scale(1.05)",
+                }}
+                asChild><button aria-label="Reconnect live agent" onClick={onRetry}>
+                    <FaRedoAlt size={13} />
+                </button></Box>
+        </Tooltip>
+        <Tooltip
+            content="Dismiss"
+            showArrow
+            positioning={{ placement: "top" }}
+        >
+            <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                w="32px"
+                h="32px"
+                borderRadius="full"
+                border="none"
+                cursor="pointer"
+                outline="none"
+                color={PILL.muted}
+                bg="transparent"
+                className="pill-box-icons"
+                transition="all 0.2s ease"
+                _hover={{ color: PILL.danger, transform: "scale(1.05)" }}
+                asChild><button aria-label="Dismiss connection error" onClick={onDismiss}>
+                    <FaTimes size={13} />
+                </button></Box>
+        </Tooltip>
+    </PillBox>
+);
 
 // Reset button shown in the mode slot while a recording is in progress.
 export const ResetButton = ({ onReset }) => {

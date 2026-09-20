@@ -8,7 +8,9 @@ import {
     TranscriptSendButton,
     TranscriptionFailurePill,
     ModeSelectButton,
-    LiveTimerChip,
+    LiveAgentControls,
+    AgentReviewPill,
+    AgentErrorPill,
 } from "./scribeButtons";
 
 const ScribePillBox = ({
@@ -31,6 +33,14 @@ const ScribePillBox = ({
     isLiveBusy = false,
     liveElapsed = 0,
     onLiveStop,
+    liveStatus = "idle",
+    liveAgentState = "listening",
+    liveArtifactsCount = 0,
+    liveBacklogCount = 0,
+    isLivePanelExpanded = false,
+    onLiveExpand,
+    onLiveRetry,
+    onLiveDismissReview,
     // Transcript view popover (mutually exclusive with the mode menu)
     transcriptPanel,
     onTranscriptOpenChange,
@@ -118,6 +128,24 @@ const ScribePillBox = ({
         );
     }
 
+    if (liveStatus === "review") {
+        return (
+            <AgentReviewPill
+                artifactsCount={liveArtifactsCount}
+                onExpand={onLiveExpand}
+                onDismiss={onLiveDismissReview}
+            />
+        );
+    }
+    if (liveStatus === "error") {
+        return (
+            <AgentErrorPill
+                onRetry={onLiveRetry}
+                onDismiss={onLiveDismissReview}
+            />
+        );
+    }
+
     return (
         <PillBox
             bottom="20px"
@@ -147,8 +175,9 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Left: mode selector (Reset while recording) */}
-            {isRecording ? (
+            {/* Left: mode selector (Reset while recording; hidden while the
+                pill belongs to the live agent — mode can't change then) */}
+            {isLive ? null : isRecording ? (
                 <ResetButton onReset={onReset} />
             ) : (
                 <ModeSelectButton
@@ -161,11 +190,16 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Center: mic — owned by the live session while one runs */}
+            {/* Center: live agent minimized view — or the mic */}
             {isLive ? (
-                <LiveTimerChip
+                <LiveAgentControls
+                    status={liveStatus}
+                    agentState={liveAgentState}
                     elapsed={liveElapsed}
-                    isBusy={isLiveBusy}
+                    artifactsCount={liveArtifactsCount}
+                    backlogCount={liveBacklogCount}
+                    isExpanded={isLivePanelExpanded}
+                    onExpand={onLiveExpand}
                     onStop={onLiveStop}
                 />
             ) : (
