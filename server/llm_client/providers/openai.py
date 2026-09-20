@@ -6,25 +6,18 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-async def _create_with_thinking_fallback(client, params: dict[str, Any], thinking_params):
-    """Call chat.completions.create, self-healing once on a rejected thinking param.
-
-    If the backend answers 400 naming one of our thinking params (strict
-    OpenAI-dialect gateways, older Ollama builds), the param is dropped, the
-    learning persisted, and the request retried exactly once.
-    """
-    if thinking_params:
-        params.update(thinking_params)
+async def _create_with_thinking_fallback(client, params: dict[str, Any], extra_body):
+    """Call chat.completions.create, self-healing once on a rejected thinking param."""
     try:
-        return await client.chat.completions.create(**params)
+        return await client.chat.completions.create(**params, extra_body=extra_body or None)
     except Exception as exc:
-        if not thinking_params or getattr(exc, "status_code", None) != 400:
+        if not extra_body or getattr(exc, "status_code", None) != 400:
             raise
 
         from ..thinking import note_rejected_param, rejected_param_from_error
 
         rejected = rejected_param_from_error(exc)
-        if not rejected or rejected not in params:
+        if not rejected or rejected not in extra_body:
             raise
 
         logger.info(
@@ -36,9 +29,8 @@ async def _create_with_thinking_fallback(client, params: dict[str, Any], thinkin
             params.get("model", ""),
             rejected,
         )
-        params.pop(rejected, None)
-        thinking_params.pop(rejected, None)
-        return await client.chat.completions.create(**params)
+        extra_body.pop(rejected, None)
+        return await client.chat.completions.create(**params, extra_body=extra_body or None)
 
 
 async def openai_compatible_chat(
