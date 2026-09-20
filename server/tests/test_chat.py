@@ -41,9 +41,10 @@ def test_chat_endpoint_streaming():
         assert response.headers["content-type"].startswith("text/event-stream")
 
 
-def test_vision_probe_writes_to_in_memory_cache():
-    """_store_vision_probe_result writes to the module-level dict, not config."""
-    from server.api.chat import _VISION_CACHE, _build_vision_cache_key, _store_vision_probe_result
+def test_vision_probe_writes_to_capability_store():
+    """_store_vision_probe_result persists via the capability store."""
+    from server.api.chat import _build_vision_cache_key, _store_vision_probe_result
+    from server.database.config.manager import config_manager
 
     _store_vision_probe_result(
         provider="openai",
@@ -54,22 +55,21 @@ def test_vision_probe_writes_to_in_memory_cache():
         detail="probe ok",
     )
     key = _build_vision_cache_key("openai", "http://example", "gpt-4o")
-    assert key in _VISION_CACHE
-    assert _VISION_CACHE[key]["vision_capable"] is True
-    assert _VISION_CACHE[key]["detail"] == "probe ok"
+    try:
+        assert config_manager.get_capability(key)["vision_capable"] is True
+        assert config_manager.get_capability(key)["detail"] == "probe ok"
+    finally:
+        config_manager.delete_capability(key)
 
-    # Reset for other tests.
-    _VISION_CACHE.clear()
 
-
-def test_vision_probe_does_not_mutate_config():
-    """Storing a probe result must not write any VISION_* row to the config table."""
-    from server.api.chat import _VISION_CACHE, _store_vision_probe_result
+def test_vision_probe_does_not_mutate_general_config():
+    """Storing a probe result must not write any non-capability config row."""
+    from server.api.chat import _store_vision_probe_result
     from server.database.config.manager import config_manager
 
     config_manager.refresh_db()
     with config_manager.db.read() as cursor:
-        cursor.execute("SELECT COUNT(*) FROM config WHERE key LIKE 'VISION%'")
+        cursor.execute("SELECT COUNT(*) FROM config WHERE key NOT LIKE 'CAPABILITY:%'")
         before = cursor.fetchone()[0]
 
     _store_vision_probe_result(
@@ -82,21 +82,23 @@ def test_vision_probe_does_not_mutate_config():
     )
 
     with config_manager.db.read() as cursor:
-        cursor.execute("SELECT COUNT(*) FROM config WHERE key LIKE 'VISION%'")
+        cursor.execute("SELECT COUNT(*) FROM config WHERE key NOT LIKE 'CAPABILITY:%'")
         after = cursor.fetchone()[0]
     assert before == after
 
-    _VISION_CACHE.clear()
+    from server.api.chat import _build_vision_cache_key
+
+    config_manager.delete_capability(_build_vision_cache_key("openai", "", "gpt-4o-mini"))
 
 
 def test_vision_capability_get_returns_no_cache_when_empty():
-    """With an empty in-memory cache, the GET reader reports source=no_cache."""
+    """With no stored entry, the GET reader reports source=no_cache."""
     from unittest.mock import patch
 
-    from server.api.chat import _VISION_CACHE
-
-    _VISION_CACHE.clear()
-    with patch("server.api.chat._is_local_vision_capable", return_value=False):
+    with (
+        patch("server.api.chat._is_local_vision_capable", return_value=False),
+        patch("server.api.chat._get_vision_capability_cache", return_value={}),
+    ):
         response = client.get("/api/chat/vision-capability/current")
     assert response.status_code == 200
     data = response.json()
