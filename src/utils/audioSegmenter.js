@@ -1,8 +1,10 @@
-// Utterance segmentation via RMS energy voice-activity detection.
+// Utterance segmentation driven by per-chunk speech probabilities from a
+// neural VAD (TEN VAD, via vad-worker.js).
 
 const DEFAULTS = {
-    // Low threshold: noiseSuppression runs upstream.
-    threshold: 0.012,
+
+    speechOnProb: 0.5,
+    speechOffProb: 0.35,
     speechStartMs: 250,
     silenceEndMs: 600,
     minSpeechMs: 300,
@@ -29,19 +31,21 @@ export class UtteranceSegmenter {
     }
 
     /**
-     * Feed one chunk of PCM samples.
-     * Returns a Float32Array of the complete utterance when one closes,
-     * or null while an utterance is still open / nothing was said.
+     * Feed one chunk of PCM samples with its VAD speech probability in
+     * [0, 1]. Returns a Float32Array of the complete utterance when one
+     * closes, or null while an utterance is still open / nothing was said.
      */
-    process(chunk) {
+    process(chunk, prob) {
         if (chunk && chunk.length > 0) {
             chunk = new Float32Array(chunk);
         }
-        const rms = computeRms(chunk);
         const opts = this.options;
+        const isSpeech = Number.isFinite(prob)
+            ? prob >= (this._speaking ? opts.speechOffProb : opts.speechOnProb)
+            : false;
 
         if (!this._speaking) {
-            if (rms >= opts.threshold) {
+            if (isSpeech) {
                 this._loudStreak += chunk.length;
                 this._preRoll.push(chunk);
                 if (this._loudStreak >= this._msToBuffers(opts.speechStartMs)) {
@@ -63,7 +67,7 @@ export class UtteranceSegmenter {
         this._buffers.push(chunk);
         this._totalSamples += chunk.length;
 
-        if (rms >= opts.threshold) {
+        if (isSpeech) {
             this._speechSamples += chunk.length;
             this._quietStreak = 0;
         } else {
@@ -112,15 +116,6 @@ export class UtteranceSegmenter {
         if (!hadEnough) return null;
         return concatFloat32(buffers);
     }
-}
-
-export function computeRms(chunk) {
-    if (!chunk || chunk.length === 0) return 0;
-    let sum = 0;
-    for (let i = 0; i < chunk.length; i++) {
-        sum += chunk[i] * chunk[i];
-    }
-    return Math.sqrt(sum / chunk.length);
 }
 
 export function concatFloat32(chunks) {

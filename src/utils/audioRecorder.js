@@ -1,9 +1,8 @@
 // Audio capture via WebAudio API.
 
-import { UtteranceSegmenter } from "./audioSegmenter";
-
 const TARGET_SAMPLE_RATE = 16000;
 const PROCESSOR_BUFFER_SIZE = 4096;
+const VAD_FLUSH_TIMEOUT_MS = 2000;
 
 export class AudioRecorder {
     constructor() {
@@ -14,10 +13,13 @@ export class AudioRecorder {
         this.chunks = [];
         this.isRecording = false;
         this.isPaused = false;
-        // Live-streaming mode: an UtteranceSegmenter drains speech
-        // incrementally and onSegment(blob) fires per utterance.
+        // Live-streaming mode: the VAD worker segments speech and
+        // onSegment(blob) fires per utterance.
         this.onSegment = null;
-        this.segmenter = null;
+        // Neural VAD worker (TEN VAD).
+        this.vadWorker = null;
+        this.vadReady = false;
+        this._vadFlushResolve = null;
     }
 
     async start() {
@@ -45,11 +47,13 @@ export class AudioRecorder {
             if (!this.isRecording || this.isPaused) return;
             const input = event.inputBuffer.getChannelData(0);
             this.chunks.push(new Float32Array(input));
-            if (this.segmenter && this.onSegment) {
-                const segment = this.segmenter.process(input);
-                if (segment) {
-                    this._emitSegment(segment);
-                }
+            if (this.vadReady && this.vadWorker && this.onSegment) {
+                // The worker segments at 16 kHz via TEN VAD.
+                const copy = new Float32Array(input);
+                this.vadWorker.postMessage(
+                    { type: "audio", samples: copy },
+                    [copy.buffer],
+                );
             }
         };
 
@@ -63,20 +67,77 @@ export class AudioRecorder {
     /** Enable live utterance streaming: onSegment receives a WAV blob per utterance. */
     enableSegmentStreaming(onSegment, segmenterOptions = {}) {
         this.onSegment = onSegment;
-        this.segmenter = new UtteranceSegmenter(
-            this.audioContext ? this.audioContext.sampleRate : 48000,
-            segmenterOptions,
-        );
+        this._startVadWorker(segmenterOptions);
     }
 
+    _startVadWorker(segmenterOptions) {
+        try {
+            const worker = new Worker(
+                new URL("../audio/vad-worker.js", import.meta.url),
+                { type: "module" },
+            );
+            this.vadWorker = worker;
+            worker.onmessage = (event) => this._onVadMessage(event.data);
+            worker.onerror = () => this._vadFail("VAD worker crashed");
+            worker.postMessage({
+                type: "init",
+                sampleRate: this.audioContext
+                    ? this.audioContext.sampleRate
+                    : 48000,
+                segmenterOptions,
+            });
+        } catch (error) {
+            this._vadFail(`VAD worker unavailable: ${error}`);
+        }
+    }
+
+    _onVadMessage(msg) {
+        if (msg.type === "ready") {
+            this.vadReady = true;
+            console.info(`[vad] TEN VAD active (${msg.version})`);
+        } else if (msg.type === "segment" && this.onSegment) {
+            this._emitSegment(msg.samples);
+        } else if (msg.type === "flushed") {
+            const resolve = this._vadFlushResolve;
+            this._vadFlushResolve = null;
+            if (resolve) resolve(msg.segment || null);
+        } else if (msg.type === "error") {
+            this._vadFail(msg.message);
+        }
+    }
+
+    _vadFail(reason) {
+        console.error(`VAD worker failed; live segmentation is disabled: ${reason}`);
+        if (this.vadWorker) {
+            this.vadWorker.terminate();
+            this.vadWorker = null;
+        }
+        this.vadReady = false;
+        const resolve = this._vadFlushResolve;
+        this._vadFlushResolve = null;
+        if (resolve) resolve(null);
+    }
+
+    /** Post flush to the worker and wait for the tail segment (bounded). */
+    _flushVadWorker() {
+        return new Promise((resolve) => {
+            const timer = setTimeout(() => {
+                this._vadFlushResolve = null;
+                this._vadFail("VAD worker flush timed out");
+                resolve(null);
+            }, VAD_FLUSH_TIMEOUT_MS);
+            this._vadFlushResolve = (segment) => {
+                clearTimeout(timer);
+                resolve(segment);
+            };
+            this.vadWorker.postMessage({ type: "flush" });
+        });
+    }
+
+    /** Encode 16 kHz worker output as a WAV blob and hand it to onSegment. */
     _emitSegment(samples) {
         try {
-            const nativeSampleRate = this.audioContext.sampleRate;
-            const resampled =
-                nativeSampleRate === TARGET_SAMPLE_RATE
-                    ? samples
-                    : resampleLinear(samples, nativeSampleRate, TARGET_SAMPLE_RATE);
-            const wav = encodeWav(resampled, TARGET_SAMPLE_RATE);
+            const wav = encodeWav(samples, TARGET_SAMPLE_RATE);
             this.onSegment(new Blob([wav], { type: "audio/wav" }));
         } catch (error) {
             console.error("Failed to emit audio segment:", error);
@@ -100,11 +161,19 @@ export class AudioRecorder {
         this.isPaused = false;
 
         // Flush any open utterance so the tail of the session is not lost.
-        if (this.segmenter && this.onSegment) {
-            const tail = this.segmenter.flush();
-            if (tail) {
-                this._emitSegment(tail);
+        try {
+            if (this.vadWorker && this.vadReady) {
+                const tail = await this._flushVadWorker();
+                if (tail && this.onSegment) {
+                    this._emitSegment(tail);
+                }
             }
+        } finally {
+            if (this.vadWorker) {
+                this.vadWorker.terminate();
+                this.vadWorker = null;
+            }
+            this.vadReady = false;
         }
 
         // Tear down the WebAudio graph before we touch chunks.
