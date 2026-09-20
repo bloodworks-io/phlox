@@ -100,16 +100,20 @@ export const useLiveAgent = ({
     const handleEvent = useCallback(
         async (event) => {
             switch (event.type) {
-                case "transcript":
-                    setTranscripts((prev) => [...prev, event.text]);
+                case "transcript": {
+                    const line = event.speaker
+                        ? `${event.speaker}: ${event.text}`
+                        : event.text;
+                    setTranscripts((prev) => [...prev, line]);
                     setPatient((prev) => ({
                         ...prev,
                         raw_transcription: prev.raw_transcription
-                            ? `${prev.raw_transcription}\n${event.text}`
-                            : event.text,
+                            ? `${prev.raw_transcription}\n${line}`
+                            : line,
                     }));
                     noteChangedRef.current?.();
                     break;
+                }
                 case "field_update":
                     setPatient((prev) => ({
                         ...prev,

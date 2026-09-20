@@ -8,6 +8,8 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
+from server.transcription.speakers import SessionSpeakers
+
 logger = logging.getLogger(__name__)
 
 ENDED_RETENTION_SECONDS = 30 * 60  # keep finished sessions briefly for stop() re-reads
@@ -28,6 +30,8 @@ class LiveSession:
     note_id: int | None = None
     mode: str = "live"  # "live" (ambient consultation) | "tidy" (post-visit commands)
     transcript_segments: list[str] = field(default_factory=list)
+    # Best-effort anonymous speaker registry (S1, S2, ...) for live audio.
+    speakers: SessionSpeakers = field(default_factory=SessionSpeakers)
     field_drafts: dict[str, str] = field(default_factory=dict)
     user_touched: set[str] = field(default_factory=set)
     # Spoken format overrides: "list" | "narrative"; absent = template style.
@@ -133,9 +137,7 @@ class SessionManager:
             note_id=note_id,
         )
         if initial_fields:
-            session.field_drafts = {
-                k: str(v) for k, v in initial_fields.items() if v is not None
-            }
+            session.field_drafts = {k: str(v) for k, v in initial_fields.items() if v is not None}
         self._sessions[session.id] = session
         return session
 

@@ -3,6 +3,7 @@
 import json
 import math
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -36,7 +37,7 @@ class _RunningTick:
         return False
 
 
-def _make_session(**overrides):
+def _make_session(**overrides: Any):
     template_fields = [
         {"field_key": "clinical_history", "field_name": "Current History"},
         {"field_key": "plan", "field_name": "Plan"},
@@ -110,9 +111,7 @@ async def test_update_note_field_rejects_clinician_edits_in_live_mode():
 async def test_append_to_field_matches_marker_style():
     session = _make_session()
     session.field_drafts["plan"] = "1. Book PET scan\n2. Bloods"
-    await execute_live_tool(
-        session, "append_to_field", {"field_key": "plan", "entry": "GP review"}
-    )
+    await execute_live_tool(session, "append_to_field", {"field_key": "plan", "entry": "GP review"})
     assert session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods\n3. GP review"
 
     session.field_drafts["clinical_history"] = "• Fatigue"
@@ -132,7 +131,8 @@ async def test_append_to_field_strips_echoed_markers():
         {"field_key": "plan", "entry": "4. Routine follow-up in 4 months"},
     )
     assert (
-        session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods\n3. GP review\n4. Routine follow-up in 4 months"
+        session.field_drafts["plan"]
+        == "1. Book PET scan\n2. Bloods\n3. GP review\n4. Routine follow-up in 4 months"
     )
 
     session.field_drafts["clinical_history"] = "• Fatigue"
@@ -192,9 +192,7 @@ def _patch_letter_pipeline(monkeypatch, templates, letter="Dear GP, ..."):
     monkeypatch.setattr(
         "server.database.repositories.letter.get_letter_templates", lambda: templates
     )
-    monkeypatch.setattr(
-        "server.nlp_tools.letter.generate_letter_content", gen
-    )
+    monkeypatch.setattr("server.nlp_tools.letter.generate_letter_content", gen)
     return gen
 
 
@@ -253,9 +251,7 @@ async def test_stage_letter_uses_default_template_when_unnamed(monkeypatch):
 async def test_stage_letter_refines_prior_draft(monkeypatch):
     session = _make_session(patient_context={"name": "Test Patient"})
     session.field_drafts = {"plan": "1. GP review"}
-    session.staged_artifacts = [
-        {"type": "letter", "title": "GP Letter", "content": "First draft."}
-    ]
+    session.staged_artifacts = [{"type": "letter", "title": "GP Letter", "content": "First draft."}]
     gen = _patch_letter_pipeline(
         monkeypatch,
         [{"id": 1, "name": "GP Letter", "instructions": "Write to the GP."}],
@@ -281,9 +277,7 @@ async def test_stage_letter_refines_prior_draft(monkeypatch):
 @pytest.mark.asyncio
 async def test_stage_letter_unknown_template(monkeypatch):
     session = _make_session()
-    _patch_letter_pipeline(
-        monkeypatch, [{"id": 1, "name": "GP Letter", "instructions": ""}]
-    )
+    _patch_letter_pipeline(monkeypatch, [{"id": 1, "name": "GP Letter", "instructions": ""}])
 
     result = await execute_live_tool(
         session, "stage_letter", {"template_name": "Nope", "instruction": "x"}
@@ -328,9 +322,7 @@ async def test_save_letter_guards():
     assert "stage_letter" in result["content"]
     assert result["events"] == []
 
-    session.staged_artifacts = [
-        {"type": "letter", "title": "GP Letter", "content": "x"}
-    ]
+    session.staged_artifacts = [{"type": "letter", "title": "GP Letter", "content": "x"}]
     result = await execute_live_tool(session, "save_letter", {})
     assert "encounter isn't saved" in result["content"]
     assert result["events"] == []
@@ -434,9 +426,7 @@ async def test_append_to_empty_field_seeds_marker_from_style_example():
 async def test_append_to_bare_numbered_field_continues_numbering():
     session = _styled_session()
     session.field_drafts["plan"] = "Book PET scan\nBloods"
-    await execute_live_tool(
-        session, "append_to_field", {"field_key": "plan", "entry": "GP review"}
-    )
+    await execute_live_tool(session, "append_to_field", {"field_key": "plan", "entry": "GP review"})
     assert session.field_drafts["plan"] == "Book PET scan\nBloods\n3. GP review"
 
 
@@ -506,18 +496,14 @@ async def test_append_to_clinician_prose_field_adds_no_marker():
     await execute_live_tool(
         session, "append_to_field", {"field_key": "clinical_history", "entry": "Weight loss"}
     )
-    assert session.field_drafts["clinical_history"] == (
-        "Fatigue for three months.\nWeight loss"
-    )
+    assert session.field_drafts["clinical_history"] == ("Fatigue for three months.\nWeight loss")
 
 
 @pytest.mark.asyncio
 async def test_remove_from_field_renumbers_plan():
     session = _styled_session()
     session.field_drafts["plan"] = "1. Book PET scan\n2. Email CDU\n3. Bloods"
-    await execute_live_tool(
-        session, "remove_from_field", {"field_key": "plan", "phrase": "CDU"}
-    )
+    await execute_live_tool(session, "remove_from_field", {"field_key": "plan", "phrase": "CDU"})
     assert session.field_drafts["plan"] == "1. Book PET scan\n2. Bloods"
 
 
@@ -550,9 +536,7 @@ def test_live_tool_definitions_shape():
 def test_engine_routes_all_live_tools():
     from server.agent_live.engine import _LIVE_TOOL_NAMES
 
-    assert {
-        t["function"]["name"] for t in get_live_tools_definition()
-    } == _LIVE_TOOL_NAMES
+    assert {t["function"]["name"] for t in get_live_tools_definition()} == _LIVE_TOOL_NAMES
 
 
 # ------------------------------------------------------------------ session
@@ -702,6 +686,27 @@ def test_events_stream_replays_and_ends():
     assert '"type": "end"' in payload
 
 
+def test_events_stream_replays_speaker_labels():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.transcript_segments.append("S1: hello there")
+    session.transcript_segments.append("plain line")
+
+    client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    response = client.get(f"/api/agent-live/sessions/{session_id}/events")
+    payload = response.content.decode()
+    assert '"speaker": "S1"' in payload
+    assert '"text": "hello there"' in payload
+    # Unlabeled segments replay with a null speaker, not a mangled line.
+    assert '"speaker": null' in payload
+    assert '"text": "plain line"' in payload
+
+
 def test_mode_switch_calls_engine():
     response = client.post(
         "/api/agent-live/sessions",
@@ -711,9 +716,7 @@ def test_mode_switch_calls_engine():
     session = session_manager.get(session_id)
     session.engine.enter_tidy_mode = AsyncMock()
 
-    response = client.post(
-        f"/api/agent-live/sessions/{session_id}/mode", json={"mode": "tidy"}
-    )
+    response = client.post(f"/api/agent-live/sessions/{session_id}/mode", json={"mode": "tidy"})
     assert response.status_code == 200
     session.engine.enter_tidy_mode.assert_awaited_once()
 
@@ -784,9 +787,7 @@ def test_parse_tool_call_json_and_dict_args():
 def test_score_verdict_logprobs_sums_mass_and_dedupes():
     from server.agent_live.engine import _score_verdict_logprobs
 
-    payload = _logprobs_payload(
-        ("NOTE", -0.1), ("NOTE", -0.1), ("SK", math.log(0.25))
-    )
+    payload = _logprobs_payload(("NOTE", -0.1), ("NOTE", -0.1), ("SK", math.log(0.25)))
     scores = _score_verdict_logprobs(payload)
     # Duplicate NOTE token counted once; SK -> SKIP via strict prefix.
     assert scores is not None
@@ -811,9 +812,7 @@ def test_is_logprobs_error_detection():
     class Fake400(Exception):
         status_code = 400
 
-    assert (
-        _is_logprobs_error(Fake400("Unsupported parameter: 'logprobs'")) is True
-    )
+    assert _is_logprobs_error(Fake400("Unsupported parameter: 'logprobs'")) is True
     assert _is_logprobs_error(RuntimeError("logprobs not supported here")) is True
     assert _is_logprobs_error(RuntimeError("llm down")) is False
 
@@ -842,9 +841,10 @@ def _make_gate_engine(**chat_behavior):
 @pytest.mark.asyncio
 async def test_gate_readout_classifies_from_first_token_logprobs():
     engine = _make_gate_engine(
-        return_value={"message": {"content": "NOTE"}, "logprobs": _logprobs_payload(
-            ("NOTE", -0.05), ("SKIP", -2.8), ("ACT", -4.1)
-        )}
+        return_value={
+            "message": {"content": "NOTE"},
+            "logprobs": _logprobs_payload(("NOTE", -0.05), ("SKIP", -2.8), ("ACT", -4.1)),
+        }
     )
 
     assert await engine._gate_classify("new chest pain") == "NOTE"
@@ -859,9 +859,9 @@ async def test_gate_readout_classifies_from_first_token_logprobs():
 async def test_gate_readout_uses_strict_prefix_matching():
     # "AC" is a prefix of ACT; "ACTUALLY" is not; "SK" is a prefix of SKIP.
     engine = _make_gate_engine(
-        return_value={"logprobs": _logprobs_payload(
-            ("AC", -0.05), ("ACTUALLY", -0.2), ("SK", -3.0)
-        )}
+        return_value={
+            "logprobs": _logprobs_payload(("AC", -0.05), ("ACTUALLY", -0.2), ("SK", -3.0))
+        }
     )
 
     assert await engine._gate_classify("do the thing") == "ACT"
@@ -883,10 +883,12 @@ async def test_gate_falls_back_to_word_when_logprobs_absent():
 
 @pytest.mark.asyncio
 async def test_gate_readout_low_mass_falls_back_to_word():
-    engine = _make_gate_engine(side_effect=[
-        {"logprobs": _logprobs_payload(("BANANA", -0.1))},  # no verdict mass
-        {"message": {"content": "SKIP"}},
-    ])
+    engine = _make_gate_engine(
+        side_effect=[
+            {"logprobs": _logprobs_payload(("BANANA", -0.1))},  # no verdict mass
+            {"message": {"content": "SKIP"}},
+        ]
+    )
 
     assert await engine._gate_classify("hello there") == "SKIP"
     assert engine._chat.await_count == 2
@@ -950,11 +952,13 @@ async def test_gate_unparseable_output_uses_provider_fallback(monkeypatch):
 async def test_gate_logprobs_rejection_sets_flag_and_retries_word():
     from server.agent_live import engine as engine_module
 
-    engine = _make_gate_engine(side_effect=[
-        RuntimeError("Unsupported parameter: 'logprobs' is not supported"),
-        {"message": {"content": "NOTE"}},
-        {"message": {"content": "SKIP"}},
-    ])
+    engine = _make_gate_engine(
+        side_effect=[
+            RuntimeError("Unsupported parameter: 'logprobs' is not supported"),
+            {"message": {"content": "NOTE"}},
+            {"message": {"content": "SKIP"}},
+        ]
+    )
 
     # First attempt: provider rejects the logprobs params -> legacy retry.
     assert await engine._gate_classify("anything") == "NOTE"
@@ -985,6 +989,129 @@ async def test_intake_utterance_bypasses_gate_while_tick_running():
 
     engine._gate_classify.assert_not_awaited()
     assert engine._tick_pending == "NOTE"
+
+
+class _StaticSpeakers:
+    """Deterministic stand-in for SessionSpeakers.assign."""
+
+    def __init__(self, labels):
+        self.labels = list(labels)
+        self.calls = 0
+
+    def assign(self, _audio_bytes):
+        label = self.labels[min(self.calls, len(self.labels) - 1)]
+        self.calls += 1
+        return label
+
+
+def _audio_engine(session):
+    """Engine skeleton for handle_audio tests (no __init__/LLM client)."""
+    import asyncio
+
+    from server.agent_live.engine import LiveAgentEngine
+
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._audio_lock = asyncio.Lock()
+    engine._tick_task = None
+    engine._tick_pending = None
+    return engine
+
+
+@pytest.mark.asyncio
+async def test_handle_audio_labels_and_prefixes_segment(monkeypatch):
+    from server.agent_live import engine as engine_module
+
+    monkeypatch.setattr(
+        engine_module,
+        "transcribe_audio",
+        AsyncMock(return_value={"text": "the pain is worse on exertion"}),
+    )
+    session = _make_session()
+    session.speakers = _StaticSpeakers(["S1"])
+    engine = _audio_engine(session)
+    engine._gate_classify = AsyncMock(return_value="NOTE")
+    scheduled = []
+    engine._schedule_tick = lambda reason: scheduled.append(reason)
+    session.emit = AsyncMock()
+
+    await engine.handle_audio(b"RIFF....")
+
+    # Stored segment carries the label; the debounce word count does not
+    # (6 words of speech, not 7 with the label).
+    assert session.transcript_segments == ["S1: the pain is worse on exertion"]
+    assert session.words_since_draft == 6
+    event = [e for e in session.emit.await_args_list if e.args[0]["type"] == "transcript"]
+    assert event[0].args[0] == {
+        "type": "transcript",
+        "text": "the pain is worse on exertion",
+        "speaker": "S1",
+        "index": 0,
+    }
+    # The gate receives the prefixed segment like the tick does.
+    engine._gate_classify.assert_awaited_once_with("S1: the pain is worse on exertion")
+    assert scheduled == ["NOTE"]
+
+
+@pytest.mark.asyncio
+async def test_handle_audio_without_label_stores_plain_segment(monkeypatch):
+    from server.agent_live import engine as engine_module
+
+    monkeypatch.setattr(
+        engine_module,
+        "transcribe_audio",
+        AsyncMock(return_value={"text": "hello again"}),
+    )
+    session = _make_session()
+    session.speakers = _StaticSpeakers([None])
+    engine = _audio_engine(session)
+    engine._gate_classify = AsyncMock(return_value="SKIP")
+    engine._schedule_tick = lambda _reason: pytest.fail("SKIP must not schedule")
+    session.emit = AsyncMock()
+
+    await engine.handle_audio(b"RIFF....")
+
+    assert session.transcript_segments == ["hello again"]
+    event = [e for e in session.emit.await_args_list if e.args[0]["type"] == "transcript"]
+    assert event[0].args[0]["speaker"] is None
+
+
+@pytest.mark.asyncio
+async def test_handle_audio_transcription_failure_cancels_embed(monkeypatch):
+    from server.agent_live import engine as engine_module
+
+    monkeypatch.setattr(
+        engine_module,
+        "transcribe_audio",
+        AsyncMock(side_effect=RuntimeError("stt down")),
+    )
+    session = _make_session()
+    speakers = _StaticSpeakers(["S1"])
+    session.speakers = speakers
+    engine = _audio_engine(session)
+    session.emit = AsyncMock()
+
+    await engine.handle_audio(b"RIFF....")
+
+    statuses = [e.args[0] for e in session.emit.await_args_list]
+    assert {"type": "error", "content": "Transcription failed for one segment."} in statuses
+    assert session.transcript_segments == []
+
+
+@pytest.mark.asyncio
+async def test_handle_audio_empty_text_skips_segment(monkeypatch):
+    from server.agent_live import engine as engine_module
+
+    monkeypatch.setattr(engine_module, "transcribe_audio", AsyncMock(return_value={"text": "  "}))
+    session = _make_session()
+    session.speakers = _StaticSpeakers(["S1"])
+    engine = _audio_engine(session)
+    session.emit = AsyncMock()
+    engine._schedule_tick = lambda _reason: pytest.fail("no utterance to intake")
+
+    await engine.handle_audio(b"RIFF....")
+
+    assert session.transcript_segments == []
 
 
 @pytest.mark.asyncio
@@ -1082,7 +1209,7 @@ def test_request_tidy_refuses_ended_session():
     session.end()
     engine = LiveAgentEngine.__new__(LiveAgentEngine)
     engine.session = session
-    engine._schedule_tick = lambda reason: pytest.fail("should not schedule")
+    engine._schedule_tick = lambda _reason: pytest.fail("should not schedule")
     assert engine.request_tidy() is False
 
 

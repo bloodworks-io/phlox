@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 
 from server.agent_live.engine import LiveAgentEngine
 from server.agent_live.session import LiveSession, session_manager
+from server.transcription.speakers import split_speaker_segment
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +92,7 @@ async def start_session(body: LiveStartRequest, request: Request):
 
         raw_fields = get_template_fields(body.template_key)
         template_fields = [
-            field.model_dump() if hasattr(field, "model_dump") else field
-            for field in raw_fields
+            field.model_dump() if hasattr(field, "model_dump") else field for field in raw_fields
         ]
 
     session = session_manager.create(
@@ -107,9 +107,7 @@ async def start_session(body: LiveStartRequest, request: Request):
     # Awaited so the first tick doesn't pay the prefill; the client holds its
     # loading state until this POST resolves.
     try:
-        await asyncio.wait_for(
-            session.engine.prewarm(), PREWARM_TIMEOUT_SECONDS
-        )
+        await asyncio.wait_for(session.engine.prewarm(), PREWARM_TIMEOUT_SECONDS)
     except Exception as exc:
         logger.warning(
             "Live session %s: prewarm incomplete; starting anyway (%s)",
@@ -140,7 +138,10 @@ async def stream_events(session_id: str, request: Request):
         try:
             yield f"data: {json.dumps({'type': 'start', 'mode': session.mode})}\n\n"
             for index, segment in enumerate(session.transcript_segments):
-                yield f"data: {json.dumps({'type': 'transcript', 'text': segment, 'index': index})}\n\n"
+                speaker, text = split_speaker_segment(segment)
+                yield (
+                    f"data: {json.dumps({'type': 'transcript', 'text': text, 'speaker': speaker, 'index': index})}\n\n"
+                )
             for key, content in session.field_drafts.items():
                 # Replay as field_state so reconnect catch-up doesn't flash every field.
                 yield f"data: {json.dumps({'type': 'field_state', 'field_key': key, 'content': content})}\n\n"
@@ -154,9 +155,7 @@ async def stream_events(session_id: str, request: Request):
                     yield f"data: {json.dumps({'type': 'end'})}\n\n"
                     break
                 try:
-                    event = await asyncio.wait_for(
-                        queue.get(), timeout=SSE_KEEPALIVE_SECONDS
-                    )
+                    event = await asyncio.wait_for(queue.get(), timeout=SSE_KEEPALIVE_SECONDS)
                 except TimeoutError:
                     yield ": keepalive\n\n"
                     continue

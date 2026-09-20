@@ -12,6 +12,7 @@ from server.llm_client.client import get_llm_client
 from server.schemas.grammars import MultiFieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
 from server.transcription.refinement import refine_field_content
+from server.transcription.speakers import speaker_legend_hint
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,11 @@ INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
                 intro += (
                     f" This is a returning patient who sees the clinician for {primary_condition}."
                 )
+
+            # Live-agent transcripts carry best-effort speaker labels.
+            legend = speaker_legend_hint(transcript_text)
+            if legend:
+                intro += f" {legend}"
 
             system_content = f"""{intro}
 

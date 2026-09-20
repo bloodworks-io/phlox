@@ -3,6 +3,7 @@ import { Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
+import SpeakerText from "../../transcript/SpeakerText";
 
 const TranscriptionPanel = ({
   rawTranscription,
@@ -80,9 +81,7 @@ const TranscriptionPanel = ({
               overflowY="auto"
               mb={2}
             >
-              <Text whiteSpace="pre-wrap" fontSize="xs" lineHeight="1.5">
-                {rawTranscription}
-              </Text>
+              <SpeakerText text={rawTranscription} fontSize="xs" lineHeight="1.5" />
             </Box>
 
             {/* Footer: Reprocess button and stats */}

@@ -54,6 +54,27 @@ RUN uv sync --directory server --locked --no-dev --extra docker
 # Pre-cache tiktoken encodings so they don't need to be fetched at runtime
 RUN python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
 
+# Speaker embedding model for live diarization (pinned; verified after download)
+RUN python - <<'EOF'
+import hashlib, pathlib, urllib.request
+
+url = (
+    "https://github.com/k2-fsa/sherpa-onnx/releases/download/"
+    "speaker-recongition-models/3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx"
+)
+sha256 = "f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11"
+target = pathlib.Path("server/assets/models/campplus-common.onnx")
+target.parent.mkdir(parents=True, exist_ok=True)
+if not (target.exists() and hashlib.sha256(target.read_bytes()).hexdigest() == sha256):
+    with urllib.request.urlopen(url) as response:
+        data = response.read()
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != sha256:
+        raise SystemExit(f"speaker model checksum mismatch: {digest}")
+    target.write_bytes(data)
+print(f"speaker model ready: {target} ({target.stat().st_size} bytes)")
+EOF
+
 # Copy remaining server code
 COPY server/ ./server
 

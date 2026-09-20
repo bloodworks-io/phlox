@@ -60,6 +60,19 @@ fi
 echo "Cleaning previous build..."
 rm -rf "$SERVER_DIR/dist"
 
+# Speaker embedding model for live diarization (fetched at build time).
+SPEAKER_MODEL_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx"
+SPEAKER_MODEL_SHA256="f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11"
+SPEAKER_MODEL="$SERVER_DIR/assets/models/campplus-common.onnx"
+if [ -f "$SPEAKER_MODEL" ] && echo "$SPEAKER_MODEL_SHA256  $SPEAKER_MODEL" | shasum -a 256 -c - >/dev/null 2>&1; then
+    echo "Speaker model present: $SPEAKER_MODEL"
+else
+    echo "Fetching speaker embedding model..."
+    mkdir -p "$SERVER_DIR/assets/models"
+    curl -sL -o "$SPEAKER_MODEL" "$SPEAKER_MODEL_URL"
+    echo "$SPEAKER_MODEL_SHA256  $SPEAKER_MODEL" | shasum -a 256 -c -
+fi
+
 # Build with Nuitka from project root
 echo "Compiling with Nuitka (this may take a while on first run)..."
 
@@ -99,6 +112,9 @@ $NUITKA_CMD \
     --include-package=sqlite_vec \
     $([[ "$OSTYPE" != "linux-gnu"* ]] && echo "--include-data-files=$VEC0_NAME=sqlite_vec/$(basename "$VEC0_NAME")") \
     --include-data-files="$PROJECT_DIR/server/demo/example_patients.json=server/demo/example_patients.json" \
+    --include-data-files="$SERVER_DIR/assets/models/campplus-common.onnx=server/assets/models/campplus-common.onnx" \
+    --include-package=sherpa_onnx \
+    --include-package-data=sherpa_onnx \
     --include-package=pypdf \
     --include-package=mcp \
     --nofollow-import-to=server.tests \

@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import { Box, Text } from "@chakra-ui/react";
 
+import { parseSpeakerLine, speakerColorPair } from "@/components/transcript/SpeakerText";
+import { useColorModeValue } from "@/components/ui/color-mode";
+
 /* Captions follow the feed only while the reader is already at the end. */
 export const TranscriptSection = ({ transcripts }) => {
     const boxRef = useRef(null);
@@ -34,24 +37,38 @@ export const TranscriptSection = ({ transcripts }) => {
                     Waiting for speech…
                 </Text>
             ) : (
-                transcripts.map((text, index) => {
-                    const isRecent = index >= transcripts.length - 2;
-                    return (
-                        <Text
-                            key={index}
-                            mb={1.5}
-                            fontSize="xs"
-                            lineHeight="1.5"
-                            color={isRecent ? "fg.muted" : "fg.subtle"}
-                            className="anim-fade-slide-up"
-                            css={{ animationDuration: "0.15s" }}
-                        >
-                            {text}
-                        </Text>
-                    );
-                })
+                transcripts.map((text, index) => (
+                    <Caption key={index} text={text} isRecent={index >= transcripts.length - 2} />
+                ))
             )}
             <div ref={endRef} />
         </Box>
+    );
+};
+
+const Caption = ({ text, isRecent }) => {
+    const { speaker, text: body } = parseSpeakerLine(text);
+    const [light, dark] = speaker ? speakerColorPair(speaker) : [null, null];
+    const chipColor = useColorModeValue(light, dark);
+
+    return (
+        <Text
+            mb={1.5}
+            fontSize="xs"
+            lineHeight="1.5"
+            color={isRecent ? "fg.muted" : "fg.subtle"}
+            className="anim-fade-slide-up"
+            css={{ animationDuration: "0.15s" }}
+        >
+            {speaker && chipColor ? (
+                <span
+                    style={{ color: chipColor, fontWeight: 600, fontSize: "10px", marginRight: 4 }}
+                    data-speaker={speaker}
+                >
+                    {speaker}
+                </span>
+            ) : null}
+            {body}
+        </Text>
     );
 };

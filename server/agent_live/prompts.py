@@ -71,6 +71,8 @@ def build_live_system_prompt(
 
 {chr(10).join(patient_bits)}
 
+SPEAKER LABELS: transcript segments are prefixed with labels like S1 or S2 from best-effort automatic diarization. Labels can be wrong or missing. Never copy speaker labels into the note fields.
+
 NOTE TEMPLATE FIELDS — capture conversation facts into these fields using the note tools:
 {_field_block(template_fields)}
 
@@ -159,6 +161,8 @@ Rewrite fields with update_note_field only where tidying actually improves them;
 
 
 GATE_SYSTEM_PROMPT = """You triage utterances from a live medical consultation. Reply with EXACTLY ONE WORD:
+
+Utterances may carry a leading speaker label like S1 or S2 from best-effort diarization; ignore it when classifying.
 
 SKIP — pure social pleasantry with no note relevance: greetings, smalltalk, filler. Anything that mentions a time interval, an action, an appointment, a medication, a symptom, or anything the patient should do or that happens to them is never SKIP.
 
