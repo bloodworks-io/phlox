@@ -781,24 +781,6 @@ def test_parse_tool_call_json_and_dict_args():
     assert isinstance(cleaned["function"]["arguments"], str)
 
 
-def test_unsupported_param_error_detection():
-    from server.agent_live.engine import _is_unsupported_param_error
-
-    class Fake400(Exception):
-        status_code = 400
-
-    class Fake500(Exception):
-        status_code = 500
-
-    assert (
-        _is_unsupported_param_error(
-            Fake400("Unsupported parameter: 'reasoning_effort' is not supported")
-        )
-        is True
-    )
-    assert _is_unsupported_param_error(Fake500("server exploded")) is False
-
-
 def test_score_verdict_logprobs_sums_mass_and_dedupes():
     from server.agent_live.engine import _score_verdict_logprobs
 

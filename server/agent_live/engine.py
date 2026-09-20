@@ -5,7 +5,8 @@ Owns the per-session hot loop:
                                               ^ debounce backstop
 
 The agent tick is a free-form tool-calling loop (NO JSON grammar) on
-PRIMARY_MODEL with thinking disabled by default. The conversation is
+PRIMARY_MODEL with thinking off via the central default (see
+llm_client.thinking). The conversation is
 append-only so provider prompt caches stay valid across ticks.
 
 While a tick is running the gate is bypassed: the next tick consumes all
@@ -44,9 +45,6 @@ TICK_TIMEOUT_SECONDS = 120
 DEBOUNCE_SECONDS = 45.0
 DEBOUNCE_MIN_WORDS = 40
 DEBOUNCE_MAX_WORDS = 400
-
-# Honoured by llama.cpp/vLLM/Ollama; strict clouds 400 → self-heal in _chat.
-_REASONING_EFFORT_OK = True
 
 # Single-token logprob readout for the gate (if provider supports)
 _GATE_LOGPROBS_OK = True
@@ -108,9 +106,7 @@ class LiveAgentEngine:
     async def _chat(
         self, messages, tools=None, max_tokens=None, purpose="tick", logprobs=None
     ) -> dict[str, Any]:
-        """Non-streaming chat with thinking off and 400 self-healing."""
-        global _REASONING_EFFORT_OK
-
+        """Non-streaming chat; thinking stays off via the central default."""
         model = self._gate_model() if purpose == "gate" else self._tick_model()
         options = self._options(purpose)
         if max_tokens:
@@ -118,34 +114,14 @@ class LiveAgentEngine:
         if logprobs:
             options["logprobs"] = True
             options["top_logprobs"] = logprobs
-        if _REASONING_EFFORT_OK:
-            options["extra_body"] = {"reasoning_effort": "none"}
 
-        try:
-            response = await self._client().chat(
-                model=model,
-                messages=messages,
-                options=options,
-                tools=tools,
-                stream=False,
-            )
-        except Exception as exc:
-            if _REASONING_EFFORT_OK and _is_unsupported_param_error(exc):
-                logger.info(
-                    "Live agent: provider rejected reasoning_effort; "
-                    "disabling for this server lifetime and retrying."
-                )
-                _REASONING_EFFORT_OK = False
-                options.pop("extra_body", None)
-                response = await self._client().chat(
-                    model=model,
-                    messages=messages,
-                    options=options,
-                    tools=tools,
-                    stream=False,
-                )
-            else:
-                raise
+        response = await self._client().chat(
+            model=model,
+            messages=messages,
+            options=options,
+            tools=tools,
+            stream=False,
+        )
         if not isinstance(response, dict):
             raise RuntimeError("Expected non-streaming dict response from LLM client")
         return response
@@ -572,15 +548,6 @@ def _gate_fallback() -> str:
     missed clinical content. Clouds: fail closed to SKIP (cost control).
     """
     return "NOTE" if _is_local_provider() else "SKIP"
-
-
-def _is_unsupported_param_error(exc: Exception) -> bool:
-    """Detect strict-provider 400s about unsupported params (e.g. reasoning_effort)."""
-    status = getattr(exc, "status_code", None)
-    text = str(exc).lower()
-    if status == 400 and "reasoning_effort" in text:
-        return True
-    return "unsupported parameter" in text and "reasoning" in text
 
 
 def _parse_tool_call(tool_call: dict) -> tuple[str, dict[str, Any], str]:
