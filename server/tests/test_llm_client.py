@@ -3,12 +3,17 @@ Tests for central thinking control: param emission, capability learnings,
 400 self-heal latch, and the chat thinking gate.
 """
 
+from types import SimpleNamespace
+
 import pytest
 
 from server.database.config.manager import config_manager
 from server.llm_client import thinking
 from server.llm_client.client import AsyncLLMClient
-from server.llm_client.providers.openai import _create_with_thinking_fallback
+from server.llm_client.providers.openai import (
+    _create_with_thinking_fallback,
+    openai_compatible_chat,
+)
 
 # ---------------------------------------------------------------- emission
 
@@ -113,7 +118,10 @@ class _FakeCompletions:
         self._calls = calls
 
     async def create(self, **kwargs):
-        self._calls.append(kwargs)
+        # Snapshot (incl. the nested extra_body) so later in-place mutation
+        # by the self-heal latch cannot alias the recorded history.
+        snapshot = {**kwargs, "extra_body": dict(kwargs.get("extra_body") or {})}
+        self._calls.append(snapshot)
         if len(self._calls) == 1:
             raise _FakeBadRequest(
                 "Error code: 400 - {'error': {'message': "
@@ -148,9 +156,16 @@ async def test_create_self_heals_once_on_rejected_param():
 
     assert result["ok"] is True
     assert len(fake.calls) == 2
-    assert "chat_template_kwargs" in fake.calls[0]
-    assert "chat_template_kwargs" not in fake.calls[1]
-    assert "reasoning_effort" in fake.calls[1]
+    first, second = fake.calls
+    # Non-SDK fields ride the extra_body channel, never the create() signature.
+    assert "chat_template_kwargs" not in first
+    assert "reasoning_effort" not in first
+    assert first["extra_body"] == {
+        "chat_template_kwargs": {"enable_thinking": False},
+        "reasoning_effort": "none",
+    }
+    assert "chat_template_kwargs" not in second["extra_body"]
+    assert second["extra_body"] == {"reasoning_effort": "none"}
     # Learning persisted for a stable endpoint.
     key = thinking.capability_key("http://127.0.0.1:8123/v1", "qwen")
     try:
@@ -183,6 +198,101 @@ def test_rejected_param_from_error_parses_names():
     exc = Exception("Unrecognized request argument supplied: reasoning_effort")
     assert thinking.rejected_param_from_error(exc) == "reasoning_effort"
     assert thinking.rejected_param_from_error(Exception("totally unrelated")) is None
+
+
+# ------------------------------------------- SDK signature compatibility
+
+
+class _StrictSDKCompletions:
+    """Typed create() like the real SDK: no **kwargs, so any non-SDK field
+    splatted into the signature raises TypeError client-side. Non-SDK body
+    fields must arrive via the extra_body keyword."""
+
+    def __init__(self, calls):
+        self._calls = calls
+
+    async def create(
+        self,
+        *,
+        model=None,
+        messages=None,
+        stream=None,
+        temperature=None,
+        stop=None,
+        max_tokens=None,
+        logprobs=None,
+        top_logprobs=None,
+        tools=None,
+        tool_choice=None,
+        response_format=None,
+        extra_body=None,
+    ):
+        self._calls.append(
+            {
+                "model": model,
+                "messages": messages,
+                "stream": stream,
+                "temperature": temperature,
+                "stop": stop,
+                "max_tokens": max_tokens,
+                "logprobs": logprobs,
+                "top_logprobs": top_logprobs,
+                "tools": tools,
+                "tool_choice": tool_choice,
+                "response_format": response_format,
+                "extra_body": extra_body,
+            }
+        )
+        if stream:
+
+            async def _chunks():
+                yield SimpleNamespace(choices=[])
+
+            return _chunks()
+
+        message = SimpleNamespace(content="ok", tool_calls=None, reasoning=None)
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+
+class _StrictSDKClient:
+    def __init__(self):
+        self.calls = []
+        self.chat = _FakeChat(_StrictSDKCompletions(self.calls))
+        self.base_url = "http://127.0.0.1:8123/v1/"
+
+
+@pytest.mark.asyncio
+async def test_non_sdk_params_travel_via_extra_body_not_signature():
+    # Regression: chat_template_kwargs splatted into create(**params) made the
+    # OpenAI SDK raise TypeError before any HTTP request (vLLM live-agent).
+    fake = _StrictSDKClient()
+    thinking_params = {
+        "chat_template_kwargs": {"enable_thinking": False},
+        "reasoning_effort": "none",
+    }
+
+    await openai_compatible_chat(
+        fake,
+        model="qwen",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"temperature": 0.1},
+        stream=False,
+        thinking_params=dict(thinking_params),
+    )
+    streamed = await openai_compatible_chat(
+        fake,
+        model="qwen",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"temperature": 0.1},
+        stream=True,
+        thinking_params=dict(thinking_params),
+    )
+    async for _chunk in streamed:
+        pass
+
+    non_streamed_call, streamed_call = fake.calls
+    for call in (non_streamed_call, streamed_call):
+        assert call["extra_body"] == thinking_params
 
 
 # ------------------------------------------------------- client wiring
