@@ -6,25 +6,18 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-async def _create_with_thinking_fallback(client, params: dict[str, Any], thinking_params):
-    """Call chat.completions.create, self-healing once on a rejected thinking param.
-
-    If the backend answers 400 naming one of our thinking params (strict
-    OpenAI-dialect gateways, older Ollama builds), the param is dropped, the
-    learning persisted, and the request retried exactly once.
-    """
-    if thinking_params:
-        params.update(thinking_params)
+async def _create_with_thinking_fallback(client, params: dict[str, Any], extra_body):
+    """Call chat.completions.create, self-healing once on a rejected thinking param."""
     try:
-        return await client.chat.completions.create(**params)
+        return await client.chat.completions.create(**params, extra_body=extra_body or None)
     except Exception as exc:
-        if not thinking_params or getattr(exc, "status_code", None) != 400:
+        if not extra_body or getattr(exc, "status_code", None) != 400:
             raise
 
         from ..thinking import note_rejected_param, rejected_param_from_error
 
         rejected = rejected_param_from_error(exc)
-        if not rejected or rejected not in params:
+        if not rejected or rejected not in extra_body:
             raise
 
         logger.info(
@@ -36,9 +29,8 @@ async def _create_with_thinking_fallback(client, params: dict[str, Any], thinkin
             params.get("model", ""),
             rejected,
         )
-        params.pop(rejected, None)
-        thinking_params.pop(rejected, None)
-        return await client.chat.completions.create(**params)
+        extra_body.pop(rejected, None)
+        return await client.chat.completions.create(**params, extra_body=extra_body or None)
 
 
 async def openai_compatible_chat(
@@ -96,19 +88,21 @@ async def openai_compatible_chat(
                 },
             }
 
-        # Per-call extra body (options["extra_body"]) is opt-in by the caller
-        # and applied to BOTH streaming and non-streaming requests. It must be
-        # merged before the streaming create is eagerly started below.
+        # Non-SDK body fields travel via the SDK's extra_body channel: the
+        # typed create() signature rejects unknown kwargs client-side. Combine
+        # the thinking params with any caller-supplied options["extra_body"]
+        # (caller wins per key) BEFORE the streaming create starts eagerly.
+        extra_body = dict(thinking_params) if thinking_params else {}
         call_extra_body = options.get("extra_body") if options else None
         if call_extra_body:
-            params.update(call_extra_body)
+            extra_body.update(call_extra_body)
 
         # Add stream parameter if needed
         if stream:
             params["stream"] = stream
             # Eagerly start the request so a 400 for a thinking param can be
             # self-healed before the caller starts consuming the generator.
-            stream_response = await _create_with_thinking_fallback(client, params, thinking_params)
+            stream_response = await _create_with_thinking_fallback(client, params, extra_body)
 
         if stream:
             # For streaming, return an async generator
@@ -193,7 +187,7 @@ async def openai_compatible_chat(
 
             return response_generator()
         else:
-            response = await _create_with_thinking_fallback(client, params, thinking_params)
+            response = await _create_with_thinking_fallback(client, params, extra_body)
             # Convert to Ollama-like format for consistency
             content = response.choices[0].message.content or ""
 
