@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/bloodworks-io/phlox/compare/v2.4.0...v2.4.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* **llm:** route non-SDK request params via extra_body ([d916902](https://github.com/bloodworks-io/phlox/commit/d916902df055066c8181614556b408b07f211b3d))
+
 ## [2.4.0](https://github.com/bloodworks-io/phlox/compare/v2.3.0...v2.4.0) (2026-09-20)
 
 
