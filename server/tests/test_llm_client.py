@@ -208,13 +208,13 @@ async def test_client_resolves_intent_and_strips_option():
 
 
 @pytest.mark.asyncio
-async def test_client_without_intent_passes_no_thinking_params():
+async def test_client_defaults_to_thinking_off_without_intent():
     captured = {}
 
     async def fake_provider(
         _client, _model, _messages, _fmt, _options, _tools, _stream, thinking_params
     ):
-        captured["thinking_params"] = thinking_params
+        captured.setdefault("calls", []).append(thinking_params)
         return {"sentinel": True}
 
     import server.llm_client.client as client_module
@@ -228,10 +228,25 @@ async def test_client_without_intent_passes_no_thinking_params():
             messages=[{"role": "user", "content": "hi"}],
             options={"temperature": 0.1},
         )
+        llm_strict = AsyncLLMClient(
+            provider_type="openai", base_url="https://api.openai.com/v1", api_key="k"
+        )
+        await llm_strict.chat(
+            model="gpt-test",
+            messages=[{"role": "user", "content": "hi"}],
+            options={"temperature": 0.1},
+        )
     finally:
         client_module.openai_compatible_chat = original
 
-    assert captured["thinking_params"] is None
+    selfhosted, strict = captured["calls"]
+    # Self-hosted dialect: both disable params.
+    assert selfhosted == {
+        "chat_template_kwargs": {"enable_thinking": False},
+        "reasoning_effort": "none",
+    }
+    # Strict hosts must get the OpenAI-dialect disable only.
+    assert strict == {"reasoning_effort": "none"}
 
 
 # ---------------------------------------------------- chat thinking gate
