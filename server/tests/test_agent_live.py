@@ -289,6 +289,58 @@ async def test_stage_letter_unknown_template(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_list_letter_templates_lists_names_and_default(monkeypatch):
+    session = _make_session()
+    _patch_letter_pipeline(
+        monkeypatch,
+        [
+            {"id": 1, "name": "GP Letter", "instructions": "Write to the GP."},
+            {"id": 2, "name": "Specialist Referral", "instructions": "Refer."},
+        ],
+    )
+    monkeypatch.setattr(
+        "server.database.config.manager.config_manager.get_user_settings",
+        lambda: {"default_letter_template_id": 2},
+    )
+
+    result = await execute_live_tool(session, "list_letter_templates", {})
+
+    assert "GP Letter" in result["content"]
+    assert "Specialist Referral (default)" in result["content"]
+    assert result["events"] == []
+
+
+@pytest.mark.asyncio
+async def test_list_letter_templates_empty(monkeypatch):
+    session = _make_session()
+    _patch_letter_pipeline(monkeypatch, [])
+    monkeypatch.setattr(
+        "server.database.config.manager.config_manager.get_user_settings",
+        lambda: {},
+    )
+
+    result = await execute_live_tool(session, "list_letter_templates", {})
+
+    assert "No letter templates" in result["content"]
+    assert result["events"] == []
+
+
+@pytest.mark.asyncio
+async def test_list_letter_templates_error(monkeypatch):
+    session = _make_session()
+
+    def boom():
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr("server.database.repositories.letter.get_letter_templates", boom)
+
+    result = await execute_live_tool(session, "list_letter_templates", {})
+
+    assert "Error fetching letter templates" in result["content"]
+    assert result["events"] == []
+
+
+@pytest.mark.asyncio
 async def test_save_letter_saves_staged_letter(monkeypatch):
     session = _make_session(note_id=42)
     session.staged_artifacts = [
@@ -522,6 +574,7 @@ def test_live_tool_definitions_shape():
         "append_to_field",
         "remove_from_field",
         "stage_artifact",
+        "list_letter_templates",
         "stage_letter",
         "save_letter",
         "get_jobs",

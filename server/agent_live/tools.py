@@ -162,6 +162,23 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
         {
             "type": "function",
             "function": {
+                "name": "list_letter_templates",
+                "description": (
+                    "List the letter templates available to this clinician, "
+                    "marking the default. Call before stage_letter when "
+                    "unsure which template name to use."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "stage_letter",
                 "description": (
                     "Draft a letter (e.g. to the GP or a referrer) from the "
@@ -176,8 +193,8 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
                         "template_name": {
                             "type": ["string", "null"],
                             "description": (
-                                "Letter template by name (e.g. 'GP Letter', "
-                                "'Specialist Referral'). Omit for the "
+                                "Letter template by name (from "
+                                "list_letter_templates). Omit for the "
                                 "clinician's default template."
                             ),
                         },
@@ -505,6 +522,9 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
     if name == "stage_artifact":
         return await _stage_artifact(session, args)
 
+    if name == "list_letter_templates":
+        return _list_letter_templates()
+
     if name == "stage_letter":
         return await _stage_letter(session, args)
 
@@ -605,6 +625,32 @@ async def _stage_artifact(session, args: dict[str, Any]) -> dict[str, Any]:
     return {
         "content": f"Staged form '{template['name']}' for the clinician to review at wrap-up.",
         "events": [{"type": "artifact_staged", "artifact": artifact}],
+    }
+
+
+def _list_letter_templates() -> dict[str, Any]:
+    try:
+        from server.database.config.manager import config_manager
+        from server.database.repositories.letter import get_letter_templates
+
+        templates = get_letter_templates()
+        default_id = config_manager.get_user_settings().get(
+            "default_letter_template_id"
+        )
+    except Exception as exc:
+        logger.error("list_letter_templates: error: %s", exc)
+        return {"content": f"Error fetching letter templates: {exc}", "events": []}
+
+    if not templates:
+        return {"content": "No letter templates available yet.", "events": []}
+
+    lines = [
+        f"- {t.get('name', '')}{' (default)' if t.get('id') == default_id else ''}"
+        for t in templates
+    ]
+    return {
+        "content": "Available letter templates:\n" + "\n".join(lines),
+        "events": [],
     }
 
 
