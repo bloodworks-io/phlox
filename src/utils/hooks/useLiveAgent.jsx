@@ -16,6 +16,8 @@ export const useLiveAgent = ({
     currentTemplate,
     onRequestWrapUp,
     onLetterSaved,
+
+    onNoteContentChanged,
 }) => {
     const [status, setStatus] = useState("idle"); // idle|connecting|live|stopping|review|error
     const [agentState, setAgentState] = useState("listening");
@@ -45,6 +47,7 @@ export const useLiveAgent = ({
     const patientRef = useRef(patient);
     const wrapUpRef = useRef(onRequestWrapUp);
     const letterSavedRef = useRef(onLetterSaved);
+    const noteChangedRef = useRef(onNoteContentChanged);
 
     useEffect(() => {
         templateDataRef.current = patient?.template_data;
@@ -52,6 +55,7 @@ export const useLiveAgent = ({
         currentTemplateRef.current = currentTemplate;
         wrapUpRef.current = onRequestWrapUp;
         letterSavedRef.current = onLetterSaved;
+        noteChangedRef.current = onNoteContentChanged;
         transcriptsRef.current = transcripts;
         artifactsRef.current = artifacts;
         statusRef.current = status;
@@ -104,6 +108,7 @@ export const useLiveAgent = ({
                             ? `${prev.raw_transcription}\n${event.text}`
                             : event.text,
                     }));
+                    noteChangedRef.current?.();
                     break;
                 case "field_update":
                     setPatient((prev) => ({
@@ -118,6 +123,7 @@ export const useLiveAgent = ({
                         [event.field_key]: Date.now(),
                     }));
                     pushStatus(`Note updated: ${event.field_key}`, "edit");
+                    noteChangedRef.current?.();
                     break;
                 // Replayed state on (re)connect: apply without the flash.
                 case "field_state":
@@ -128,6 +134,7 @@ export const useLiveAgent = ({
                             [event.field_key]: event.content,
                         },
                     }));
+                    noteChangedRef.current?.();
                     break;
                 case "agent_status":
                     pushStatus(event.content);
@@ -156,6 +163,7 @@ export const useLiveAgent = ({
                         `Staged: ${artifact.title || artifact.template_name || artifact.filename || "artifact"}`,
                         "artifact",
                     );
+                    noteChangedRef.current?.();
                     break;
                 }
                 case "jobs_staged":
@@ -316,6 +324,7 @@ export const useLiveAgent = ({
                         ...finalState.fields,
                     },
                 }));
+                noteChangedRef.current?.();
             }
             return finalState;
         } catch (error) {

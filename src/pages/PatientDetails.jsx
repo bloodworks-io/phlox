@@ -23,6 +23,7 @@ import { useDocumentExtraction } from "../utils/hooks/useDocumentExtraction";
 import { patientApi } from "../utils/api/patientApi";
 import WrapUpModal from "../components/modals/WrapUpModal";
 import DemographicsModal from "../components/modals/DemographicsModal";
+import ConfirmLeaveModal from "../components/modals/ConfirmLeaveModal";
 import ScribeConsentModal from "../components/modals/ScribeConsentModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useLetterOrchestration } from "../utils/hooks/useLetterOrchestration";
@@ -68,10 +69,8 @@ const PatientDetails = ({
 
     const previousTranscriptionRef = useRef(null);
 
-    const { setIsLetterModified, setIsSummaryModified } = useModificationFlags(
-        initialPatient?.id,
-        setParentIsModified,
-    );
+    const { isLetterModified, setIsLetterModified, isSummaryModified, setIsSummaryModified } =
+        useModificationFlags(initialPatient?.id, setParentIsModified);
 
     const [hasViewedPreviousVisit, setHasViewedPreviousVisit] = useState(false);
 
@@ -166,6 +165,8 @@ const PatientDetails = ({
         currentTemplate,
         onRequestWrapUp: () => wrapUpRequestRef.current?.(),
         onLetterSaved: () => setIsLetterModified(false),
+        // agent-written content bypasses onChange
+        onNoteContentChanged: () => setIsSummaryModified(true),
     });
 
     // Agent letter refinements sync into the open editor; manual edits are
@@ -240,6 +241,10 @@ const PatientDetails = ({
             !isRestoration
         ) {
             captureTranscription(data.fields);
+        }
+
+        if (!isRestoration) {
+            setIsSummaryModified(true);
         }
 
         handleProcessingComplete(data, {
@@ -322,12 +327,34 @@ const PatientDetails = ({
         );
     };
 
-    const handleConfirmCandidate = (candidate) =>
-        searchFlow.handleConfirmCandidate(
-            candidate,
-            selectedDate,
-            loadCandidate,
-        );
+    // In-page patient swap bypasses the route guard — confirm first.
+    const [pendingCandidate, setPendingCandidate] = useState(null);
+    const leaveModal = useDisclosure();
+
+    const confirmCandidateSwitch = (candidate) =>
+        searchFlow.handleConfirmCandidate(candidate, selectedDate, loadCandidate);
+
+    const handleConfirmCandidate = (candidate) => {
+        if (isSummaryModified || isLetterModified) {
+            setPendingCandidate(candidate);
+            leaveModal.onOpen();
+            return;
+        }
+        confirmCandidateSwitch(candidate);
+    };
+
+    const cancelCandidateSwitch = () => {
+        setPendingCandidate(null);
+        leaveModal.onClose();
+    };
+
+    const confirmCandidateNavigation = () => {
+        const candidate = pendingCandidate;
+        cancelCandidateSwitch();
+        if (!candidate) return;
+        setIsSummaryModified(false);
+        confirmCandidateSwitch(candidate);
+    };
 
     // Functions for the Floating Action Menu
     const handleOpenLetter = () => toggle("letter");
@@ -383,7 +410,7 @@ const PatientDetails = ({
               ? "ambient"
               : "dictate";
 
-    // Agent mode: mic click starts the live session.
+    // Agent mode: mic click starts the live session (compact card).
     const handleRecordStart = () => {
         if (scribeMode === "agent") {
             liveAgent.startLive().then((started) => {
@@ -566,6 +593,12 @@ const PatientDetails = ({
                     onReasoningGenerated={handleReasoningGenerated}
                 />
             </VStack>
+            {/* Unsaved-work confirmation for the in-page patient switch */}
+            <ConfirmLeaveModal
+                isOpen={leaveModal.open}
+                onClose={cancelCandidateSwitch}
+                confirmNavigation={confirmCandidateNavigation}
+            />
             {/* Scribe Pill Box - centered at bottom */}
             <ScribePillBox
                 isRecording={scribeControls.isRecording}
