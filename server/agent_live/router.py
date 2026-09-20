@@ -7,6 +7,7 @@ sessions are owned by the creating user in multi-user deployments):
   POST /sessions/{sid}/audio          upload one utterance-bounded audio segment
   GET  /sessions/{sid}/events         SSE stream of live events
   POST /sessions/{sid}/feedback       push clinician note edits back to the agent
+  POST /sessions/{sid}/tidy           request a one-off note-consolidation tick
   POST /sessions/{sid}/mode           switch mode (live -> tidy)
   POST /sessions/{sid}/stop           end the session, return final state
 """
@@ -195,6 +196,16 @@ async def push_jobs(session_id: str, body: LiveJobsPushRequest, request: Request
     async with session.state_lock:
         session.staged_jobs = [job.model_dump() for job in body.jobs]
     return {"ok": True, "count": len(session.staged_jobs)}
+
+
+@router.post("/sessions/{session_id}/tidy")
+async def request_tidy(session_id: str, request: Request):
+    """Schedule a one-off note-consolidation tick."""
+    session = _get_owned_session(session_id, request)
+    if session.is_ended:
+        raise HTTPException(status_code=409, detail="Live session already ended")
+    scheduled = session.engine.request_tidy()
+    return {"ok": True, "scheduled": scheduled}
 
 
 @router.post("/sessions/{session_id}/mode")

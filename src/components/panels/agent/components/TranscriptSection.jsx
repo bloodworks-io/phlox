@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Box, Text } from "@chakra-ui/react";
 
 /* Captions follow the feed only while the reader is already at the end. */
-export const TranscriptSection = ({ transcripts, status }) => {
+export const TranscriptSection = ({ transcripts }) => {
     const boxRef = useRef(null);
     const endRef = useRef(null);
     const pinnedRef = useRef(true);
@@ -31,9 +31,7 @@ export const TranscriptSection = ({ transcripts, status }) => {
         >
             {transcripts.length === 0 ? (
                 <Text fontSize="xs" fontStyle="italic" color="overlay0">
-                    {status === "tidy"
-                        ? "Speak a command to edit the note…"
-                        : "Waiting for speech…"}
+                    Waiting for speech…
                 </Text>
             ) : (
                 transcripts.map((text, index) => {

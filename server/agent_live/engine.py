@@ -27,6 +27,7 @@ from typing import Any
 from server.agent_live.prompts import (
     GATE_SYSTEM_PROMPT,
     build_live_system_prompt,
+    build_tidy_tick_message,
     build_tidy_transition_message,
 )
 from server.agent_live.session import LiveSession
@@ -45,6 +46,7 @@ TICK_TIMEOUT_SECONDS = 120
 DEBOUNCE_SECONDS = 45.0
 DEBOUNCE_MIN_WORDS = 40
 DEBOUNCE_MAX_WORDS = 400
+
 OPENING_DEBOUNCE_SECONDS = 12.0
 OPENING_DEBOUNCE_MIN_WORDS = 15
 
@@ -54,7 +56,15 @@ _GATE_VERDICTS = ("SKIP", "NOTE", "ACT")
 _GATE_MIN_VERDICT_MASS = 0.5
 
 # When triggers pile up while a tick runs, the strongest framing wins.
-_TICK_REASON_RANK = {"debounce": 0, "NOTE": 1, "ACT": 2, "tidy_command": 3}
+_TICK_REASON_RANK = {
+    "debounce": 0,
+    "NOTE": 1,
+    "ACT": 2,
+    "tidy_tick": 3,
+    "tidy_command": 4,
+}
+
+_TICK_TOOL_ITERATIONS = {"tidy_tick": 16}
 
 
 class LiveAgentEngine:
@@ -361,6 +371,13 @@ class LiveAgentEngine:
         new_segments = session.transcript_segments[session.segments_sent_to_agent :]
         new_text = "\n".join(new_segments) or "(none)"
 
+        if reason == "tidy_tick":
+            return build_tidy_tick_message(
+                field_snapshot=self._field_snapshot(),
+                template_fields=session.template_fields,
+                user_touched=sorted(session.user_touched),
+            )
+
         if reason == "tidy_command":
             return (
                 f'Clinician said: "{new_segments[-1] if new_segments else ""}"\n\n'
@@ -392,6 +409,8 @@ class LiveAgentEngine:
         self._ensure_agent_messages()
 
         await session.emit({"type": "agent_state", "state": "working"})
+        if reason == "tidy_tick":
+            await session.emit({"type": "agent_status", "content": "Tidying note…"})
 
         async with session.state_lock:
             user_message = {"role": "user", "content": self._tick_user_message(reason)}
@@ -399,13 +418,14 @@ class LiveAgentEngine:
             session.segments_sent_to_agent = len(session.transcript_segments)
             session.words_since_draft = 0
             session.last_draft_at = time.time()
+        # The queued-speech indicator clears as soon as a tick consumes it.
         await session.emit({"type": "backlog", "count": 0})
 
         messages = session.agent_messages
         tools = self._tools()
         final_text = ""
 
-        for _ in range(MAX_TOOL_ITERATIONS):
+        for _ in range(_TICK_TOOL_ITERATIONS.get(reason, MAX_TOOL_ITERATIONS)):
             response = await self._chat(messages=messages, tools=tools)
             message = response.get("message", {})
             content = message.get("content") or ""
@@ -489,6 +509,13 @@ class LiveAgentEngine:
             )
             content = f"Error executing tool '{name}': {exc}"
         return content or f"Tool '{name}' returned no content.", artifacts
+
+    def request_tidy(self) -> bool:
+        """Schedule a one-off note-consolidation tick (client timer)."""
+        if self.session.is_ended:
+            return False
+        self._schedule_tick("tidy_tick")
+        return True
 
     async def enter_tidy_mode(self) -> None:
         session = self.session

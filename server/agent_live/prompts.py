@@ -22,9 +22,7 @@ def _field_block(template_fields: list[dict[str, Any]]) -> str:
     for field in template_fields:
         name = field.get("field_name", field.get("field_key", "?"))
         key = field.get("field_key", "?")
-        persistent = (
-            "persistent across visits" if field.get("persistent") else "this visit only"
-        )
+        persistent = "persistent across visits" if field.get("persistent") else "this visit only"
         lines.append(f"- {key} ({name}) [{persistent}]")
 
         guidance = _condense(field.get("system_prompt"))
@@ -107,6 +105,57 @@ Rules for tidy mode:
 6. If a command is ambiguous, make the most reasonable minimal edit and say what you did.
 7. Clinician-edited fields may now be updated — the clinician is explicitly directing these edits.
 8. After applying the edit(s), stop calling tools and reply with ONE short line confirming what you changed (under 20 words)."""
+
+
+def _example_item_count(style_example: str) -> int | None:
+    """Non-empty lines in a style example — its implied list length."""
+    if not style_example:
+        return None
+    count = sum(1 for line in style_example.splitlines() if line.strip())
+    return count or None
+
+
+def build_tidy_tick_message(
+    field_snapshot: str,
+    template_fields: list[dict[str, Any]],
+    user_touched: list[str],
+) -> str:
+    """Periodic consolidation nudge (client timer, live mode)."""
+    guidance = []
+    for field in template_fields:
+        key = field.get("field_key")
+        if not key or key in user_touched:
+            continue
+        style_example = (field.get("style_example") or "").strip()
+        if not style_example:
+            continue
+        count = _example_item_count(style_example)
+        target = (
+            f"roughly {count} entries like the style example"
+            if count
+            else "the style example's format"
+        )
+        guidance.append(f"- {key}: consolidate toward {target}")
+
+    guidance_block = "\n".join(guidance) if guidance else "- (no style examples available)"
+    protected = ", ".join(user_touched) if user_touched else "(none)"
+
+    return f"""CONSOLIDATION CHECK (periodic, automatic — the consultation is still running).
+
+Re-read the current note below as a whole and tidy it:
+1. Merge duplicate or overlapping entries into single, well-formed items. Do NOT add new clinical content — this is not a capture step.
+2. Match every field's style example: bullet/number marker, line structure, abbreviations, and voice.
+3. Trim entries that repeat information already covered elsewhere in the note.
+
+Per-field length guidance (from each field's style example):
+{guidance_block}
+
+Fields the clinician has edited by hand — do NOT modify these: {protected}
+
+Current note fields:
+{field_snapshot}
+
+Rewrite fields with update_note_field only where tidying actually improves them; leave already-clean fields untouched. Then reply with ONE short line summarising what you consolidated, or state that no changes were needed."""
 
 
 GATE_SYSTEM_PROMPT = """You triage utterances from a live medical consultation. Reply with EXACTLY ONE WORD:

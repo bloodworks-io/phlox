@@ -406,12 +406,9 @@ const PatientDetails = ({
         onRequireDemographics: onOpenDemographics,
     });
 
-    // Wrap Up: enter tidy mode for hands-free note edits, finalise the
-    // live session before the encounter is saved.
+    // Wrap Up: the modal finalises the live session before the encounter
+    // is saved (confirm stops the session).
     const handleWrapUpClick = () => {
-        if (liveAgent.isLiveActive) {
-            liveAgent.enterTidyMode();
-        }
         wrapUp.openWrapUp();
     };
 

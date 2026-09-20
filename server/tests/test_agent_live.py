@@ -1032,6 +1032,73 @@ def test_schedule_tick_pending_reason_never_downgrades():
     engine._schedule_tick("ACT")
     assert engine._tick_pending == "tidy_command"
 
+    engine._tick_pending = "tidy_tick"
+    engine._schedule_tick("ACT")
+    assert engine._tick_pending == "tidy_tick"
+
+
+def test_build_tidy_tick_message_guides_and_protects():
+    from server.agent_live.prompts import build_tidy_tick_message
+
+    template_fields = [
+        {
+            "field_key": "plan",
+            "field_name": "Plan",
+            "style_example": "1. Book PET scan\n2. Bloods\n3. GP review",
+        },
+        {"field_key": "history", "field_name": "History"},
+    ]
+    message = build_tidy_tick_message(
+        field_snapshot="plan: 1. Book PET scan\n2. Bloods",
+        template_fields=template_fields,
+        user_touched=["history"],
+    )
+    assert "CONSOLIDATION CHECK" in message
+    assert "roughly 3 entries" in message
+    assert "plan: consolidate toward" in message
+    assert "history" in message  # named as protected from edits
+    assert "this is not a capture step" in message
+
+
+@pytest.mark.asyncio
+async def test_request_tidy_schedules_consolidation_tick(monkeypatch):
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+    run_tick = AsyncMock()
+    monkeypatch.setattr(engine, "_run_tick", run_tick)
+
+    assert engine.request_tidy() is True
+
+    await engine._tick_task
+    run_tick.assert_awaited_once_with("tidy_tick")
+
+
+def test_request_tidy_refuses_ended_session():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    session.end()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._schedule_tick = lambda reason: pytest.fail("should not schedule")
+    assert engine.request_tidy() is False
+
+
+def test_tidy_endpoint_calls_engine():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    session.engine.request_tidy = lambda: True
+
+    response = client.post(f"/api/agent-live/sessions/{session_id}/tidy")
+    assert response.status_code == 200
+    assert response.json() == {"ok": True, "scheduled": True}
+
 
 def test_gate_prompt_is_note_leaning_and_quote_free():
     from server.agent_live.prompts import GATE_SYSTEM_PROMPT

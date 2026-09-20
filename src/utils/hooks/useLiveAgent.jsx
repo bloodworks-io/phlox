@@ -8,6 +8,8 @@ const TAIL_SETTLE_MS = 1200;
 const FEEDBACK_DEBOUNCE_MS = 1500;
 const MAX_STATUS_ITEMS = 8;
 
+const TIDY_TICK_MS = 3 * 60_000;
+
 export const useLiveAgent = ({
     patient,
     setPatient,
@@ -15,7 +17,7 @@ export const useLiveAgent = ({
     onRequestWrapUp,
     onLetterSaved,
 }) => {
-    const [status, setStatus] = useState("idle"); // idle|connecting|live|tidy|stopping|error
+    const [status, setStatus] = useState("idle"); // idle|connecting|live|stopping|review|error
     const [agentState, setAgentState] = useState("listening");
     const [transcripts, setTranscripts] = useState([]);
     const [statuses, setStatuses] = useState([]);
@@ -37,6 +39,7 @@ export const useLiveAgent = ({
     const transcriptsRef = useRef([]);
     const artifactsRef = useRef([]);
     const statusRef = useRef("idle");
+    const agentStateRef = useRef("listening");
     const templateDataRef = useRef(patient?.template_data);
     const currentTemplateRef = useRef(currentTemplate);
     const patientRef = useRef(patient);
@@ -52,6 +55,7 @@ export const useLiveAgent = ({
         transcriptsRef.current = transcripts;
         artifactsRef.current = artifacts;
         statusRef.current = status;
+        agentStateRef.current = agentState;
     });
 
     const pushStatus = useCallback((content, kind = "info") => {
@@ -62,7 +66,6 @@ export const useLiveAgent = ({
             ),
         );
     }, []);
-
 
     const settleAfterSession = useCallback(() => {
         setStatus(
@@ -166,10 +169,6 @@ export const useLiveAgent = ({
                 case "letter_saved":
                     pushStatus("Letter saved to the encounter", "command");
                     letterSavedRef.current?.();
-                    break;
-                case "mode":
-                    setStatus("tidy");
-                    pushStatus("Tidy mode — speak commands to edit the note", "command");
                     break;
                 case "error":
                     console.error("Live agent error:", event.content);
@@ -331,7 +330,6 @@ export const useLiveAgent = ({
         }
     }, [setPatient, settleAfterSession]);
 
-
     const retryLive = useCallback(async () => {
         if (runningRef.current) return true;
         setLastError(null);
@@ -351,16 +349,6 @@ export const useLiveAgent = ({
         setFieldFlash({});
     }, []);
 
-    const enterTidyMode = useCallback(async () => {
-        const sessionId = sessionIdRef.current;
-        if (!sessionId || status !== "live") return;
-        try {
-            await liveAgentApi.setMode(sessionId, "tidy");
-        } catch (error) {
-            console.error("Failed to enter tidy mode:", error);
-        }
-    }, [status]);
-
     // Called by WrapUpModal after the standard extract-jobs pipeline.
     const pushExtractedJobs = useCallback((actionItems) => {
         const sessionId = sessionIdRef.current;
@@ -378,7 +366,7 @@ export const useLiveAgent = ({
     const templateDataKey = JSON.stringify(patient?.template_data);
     useEffect(() => {
         if (!runningRef.current) return;
-        if (status !== "live" && status !== "tidy") return;
+        if (status !== "live") return;
         const sessionId = sessionIdRef.current;
         if (!sessionId) return;
 
@@ -411,9 +399,20 @@ export const useLiveAgent = ({
         };
     }, [patient?.id]);
 
-    const isLiveActive = ["connecting", "live", "tidy", "stopping"].includes(
-        status,
-    );
+    const isLiveActive = ["connecting", "live", "stopping"].includes(status);
+
+    useEffect(() => {
+        if (status !== "live") return undefined;
+        const id = window.setInterval(() => {
+            const sessionId = sessionIdRef.current;
+            if (!runningRef.current || !sessionId) return;
+            if (agentStateRef.current === "working") return;
+            liveAgentApi.requestTidy(sessionId).catch((error) => {
+                console.error("Tidy tick request failed:", error);
+            });
+        }, TIDY_TICK_MS);
+        return () => window.clearInterval(id);
+    }, [status]);
 
     // Session clock for the pill's live timer chip.
     useEffect(() => {
@@ -442,7 +441,6 @@ export const useLiveAgent = ({
         stopLive,
         retryLive,
         dismissReview,
-        enterTidyMode,
         pushExtractedJobs,
     };
 };

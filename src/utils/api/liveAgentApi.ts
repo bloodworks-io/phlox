@@ -49,17 +49,17 @@ export const liveAgentApi = {
         return true;
     },
 
-    setMode: async (sessionId, mode) => {
+    requestTidy: async (sessionId) => {
         const url = await buildApiUrl(
-            `/api/agent-live/sessions/${sessionId}/mode`,
+            `/api/agent-live/sessions/${sessionId}/tidy`,
         );
         const response = await universalFetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mode }),
+            body: JSON.stringify({}),
         });
         if (!response.ok) {
-            throw new Error(`Mode change failed (${response.status})`);
+            throw new Error(`Tidy request failed (${response.status})`);
         }
         return true;
     },
