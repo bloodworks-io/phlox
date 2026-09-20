@@ -138,7 +138,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Restrict resources to same origin, allow inline scripts for React
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self'; "
+            "script-src 'self' 'wasm-unsafe-eval'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: blob:; "
             "media-src 'self' blob:; "
