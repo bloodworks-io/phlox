@@ -127,21 +127,21 @@ class AsyncLLMClient:
         stream: bool = False,
     ) -> Union[dict[str, Any], AsyncGenerator]:
         """Send a chat completion request."""
-        from .thinking import build_thinking_params
+        from .thinking import THINKING_OFF, build_thinking_params
         from .utils import ensure_system_messages_first
 
         messages = ensure_system_messages_first(messages)
         messages = self._with_language_directive(messages)
 
         # Resolve the internal thinking intent to backend-specific params.
-        thinking_intent = options.get("thinking") if options else None
-        if thinking_intent is not None:
+        # Absent intent defaults to "off": every call disables thinking
+        # (Ollama auto-enables it for capable models otherwise) unless it
+        # explicitly opts in with "on".
+        thinking_intent = THINKING_OFF
+        if options and "thinking" in options:
+            thinking_intent = options["thinking"]
             options = {k: v for k, v in options.items() if k != "thinking"}
-        thinking_params = (
-            build_thinking_params(thinking_intent, self.base_url, model)
-            if thinking_intent
-            else None
-        )
+        thinking_params = build_thinking_params(thinking_intent, self.base_url, model)
 
         return await openai_compatible_chat(
             self._client,
