@@ -114,17 +114,12 @@ const ScribePillBox = ({
 
     if (sendError) {
         return (
-            <Box
-                className="anim-fade-slide-up"
-                css={{ animationDuration: "0.2s" }}
-            >
-                <TranscriptionFailurePill
-                    sendError={sendError}
-                    onRetry={onRetry}
-                    onDownload={onDownload}
-                    onDismiss={onDismiss}
-                />
-            </Box>
+            <TranscriptionFailurePill
+                sendError={sendError}
+                onRetry={onRetry}
+                onDownload={onDownload}
+                onDismiss={onDismiss}
+            />
         );
     }
 

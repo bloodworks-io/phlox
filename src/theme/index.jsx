@@ -151,15 +151,15 @@ export const system = createSystem(defaultConfig, {
         keyframes: {
             phloxFadeSlideUp: {
                 from: { opacity: "0", transform: "translateY(20px)" },
-                to: { opacity: "1", transform: "translateY(0)" },
+                to: { opacity: "1", transform: "none" },
             },
             phloxFadeSlideRight: {
                 from: { opacity: "0", transform: "translateX(50px)" },
-                to: { opacity: "1", transform: "translateX(0)" },
+                to: { opacity: "1", transform: "none" },
             },
             phloxFadeScaleIn: {
                 from: { opacity: "0", transform: "scale(0.9)" },
-                to: { opacity: "1", transform: "scale(1)" },
+                to: { opacity: "1", transform: "none" },
             },
             phloxEmergeSpring: {
                 from: {
@@ -168,7 +168,7 @@ export const system = createSystem(defaultConfig, {
                 },
                 to: {
                     opacity: "1",
-                    transform: "scale(1) translateX(0)",
+                    transform: "none",
                 },
             },
             phloxLiveFieldFlash: {

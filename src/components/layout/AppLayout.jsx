@@ -68,13 +68,14 @@ const AppLayout = ({
                     overflowY="auto"
                     position="relative"
                 >
-                    <Box
-                        key={location.pathname}
-                        className="anim-fade-slide-up"
-                        css={{ animationDuration: "0.2s" }}
-                    >
-                        {children}
-                    </Box>
+                {/* opacity-only fade — a transform would trap position:fixed surfaces */}
+                <Box
+                    key={location.pathname}
+                    className="anim-fade"
+                    css={{ animationDuration: "0.2s" }}
+                >
+                    {children}
+                </Box>
                 </Box>
             </Box>
         </Flex>
