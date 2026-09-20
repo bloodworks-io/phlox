@@ -104,6 +104,10 @@ def test_note_rejected_param_persists_unless_aggregator():
 # --------------------------------------------------------- 400 latch
 
 
+class _FakeBadRequest(Exception):
+    status_code = 400
+
+
 class _FakeCompletions:
     def __init__(self, calls):
         self._calls = calls
@@ -111,21 +115,23 @@ class _FakeCompletions:
     async def create(self, **kwargs):
         self._calls.append(kwargs)
         if len(self._calls) == 1:
-            exc = Exception(
+            raise _FakeBadRequest(
                 "Error code: 400 - {'error': {'message': "
                 "'Unrecognized request argument supplied: chat_template_kwargs', "
                 "'type': 'invalid_request_error'}}"
             )
-            exc.status_code = 400
-            raise exc
         return {"ok": True, **kwargs}
+
+
+class _FakeChat:
+    def __init__(self, completions):
+        self.completions = completions
 
 
 class _FakeOpenAI:
     def __init__(self):
         self.calls = []
-        self.chat = type("Chat", (), {})()
-        self.chat.completions = _FakeCompletions(self.calls)
+        self.chat = _FakeChat(_FakeCompletions(self.calls))
         self.base_url = "http://127.0.0.1:8123/v1/"
 
 
@@ -157,13 +163,17 @@ async def test_create_self_heals_once_on_rejected_param():
 async def test_create_does_not_swallow_other_400s():
     class _Boom:
         async def create(self, **_kwargs):
-            exc = Exception("Error code: 400 - {'error': {'message': 'bad model'}}")
-            exc.status_code = 400
-            raise exc
+            raise _FakeBadRequest("Error code: 400 - {'error': {'message': 'bad model'}}")
 
-    fake = type("F", (), {})()
-    fake.chat = type("C", (), {})()
-    fake.chat.completions = _Boom()
+    class _Chat:
+        def __init__(self):
+            self.completions = _Boom()
+
+    class _FakeClient:
+        def __init__(self):
+            self.chat = _Chat()
+
+    fake = _FakeClient()
 
     with pytest.raises(Exception, match="bad model"):
         await _create_with_thinking_fallback(fake, {"model": "m"}, {"reasoning_effort": "none"})
@@ -179,7 +189,7 @@ def test_rejected_param_from_error_parses_names():
 
 
 @pytest.mark.asyncio
-async def test_client_resolves_intent_and_strips_option():
+async def test_client_resolves_intent_and_strips_option(monkeypatch):
     captured = {}
 
     async def fake_provider(
@@ -191,24 +201,20 @@ async def test_client_resolves_intent_and_strips_option():
 
     import server.llm_client.client as client_module
 
-    original = client_module.openai_compatible_chat
-    client_module.openai_compatible_chat = fake_provider
-    try:
-        llm = AsyncLLMClient(provider_type="openai", base_url="http://127.0.0.1:8123", api_key="k")
-        await llm.chat(
-            model="qwen",
-            messages=[{"role": "user", "content": "hi"}],
-            options={"temperature": 0.1, "thinking": "on"},
-        )
-    finally:
-        client_module.openai_compatible_chat = original
+    monkeypatch.setattr(client_module, "openai_compatible_chat", fake_provider)
+    llm = AsyncLLMClient(provider_type="openai", base_url="http://127.0.0.1:8123", api_key="k")
+    await llm.chat(
+        model="qwen",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"temperature": 0.1, "thinking": "on"},
+    )
 
     assert captured["options"] == {"temperature": 0.1}
     assert captured["thinking_params"] == {"chat_template_kwargs": {"enable_thinking": True}}
 
 
 @pytest.mark.asyncio
-async def test_client_defaults_to_thinking_off_without_intent():
+async def test_client_defaults_to_thinking_off_without_intent(monkeypatch):
     captured = {}
 
     async def fake_provider(
@@ -219,25 +225,21 @@ async def test_client_defaults_to_thinking_off_without_intent():
 
     import server.llm_client.client as client_module
 
-    original = client_module.openai_compatible_chat
-    client_module.openai_compatible_chat = fake_provider
-    try:
-        llm = AsyncLLMClient(provider_type="openai", base_url="http://127.0.0.1:8123", api_key="k")
-        await llm.chat(
-            model="qwen",
-            messages=[{"role": "user", "content": "hi"}],
-            options={"temperature": 0.1},
-        )
-        llm_strict = AsyncLLMClient(
-            provider_type="openai", base_url="https://api.openai.com/v1", api_key="k"
-        )
-        await llm_strict.chat(
-            model="gpt-test",
-            messages=[{"role": "user", "content": "hi"}],
-            options={"temperature": 0.1},
-        )
-    finally:
-        client_module.openai_compatible_chat = original
+    monkeypatch.setattr(client_module, "openai_compatible_chat", fake_provider)
+    llm = AsyncLLMClient(provider_type="openai", base_url="http://127.0.0.1:8123", api_key="k")
+    await llm.chat(
+        model="qwen",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"temperature": 0.1},
+    )
+    llm_strict = AsyncLLMClient(
+        provider_type="openai", base_url="https://api.openai.com/v1", api_key="k"
+    )
+    await llm_strict.chat(
+        model="gpt-test",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"temperature": 0.1},
+    )
 
     selfhosted, strict = captured["calls"]
     # Self-hosted dialect: both disable params.

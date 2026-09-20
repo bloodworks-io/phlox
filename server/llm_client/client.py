@@ -141,7 +141,8 @@ class AsyncLLMClient:
         if options and "thinking" in options:
             thinking_intent = options["thinking"]
             options = {k: v for k, v in options.items() if k != "thinking"}
-        thinking_params = build_thinking_params(thinking_intent, self.base_url, model)
+
+        thinking_params = build_thinking_params(thinking_intent, self.base_url or "", model)
 
         return await openai_compatible_chat(
             self._client,

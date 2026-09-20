@@ -145,8 +145,10 @@ def chat_thinking_enabled() -> bool:
 
     model_id = llama_model_manager.get_selected_model_id() or ""
     info = PRECONFIGURED_MODELS.get(model_id)
-    if info and info.get("parameters_billions"):
-        return info["parameters_billions"] >= CHAT_THINKING_MIN_PARAMS_B
+    if info:
+        params_b = info.get("parameters_billions")
+        if isinstance(params_b, (int, float)) and params_b:
+            return params_b >= CHAT_THINKING_MIN_PARAMS_B
 
     # Fallback for non-preconfigured selections: parse a size token (e.g. 9b)
     # from the model id / configured model name. Unparseable -> stay off.
