@@ -5,12 +5,12 @@ import { isTauri } from "../helpers/apiConfig";
 const STORAGE_KEY = "phlox-patient-scope";
 
 // Admin "all vs mine" patient scope, persisted across sessions.
-// Desktop (Tauri) is always single-admin, so the toggle is hidden and the
-// identity fetch is skipped entirely.
+// Desktop (Tauri) is always single-admin, so the toggle is hidden, the
+// identity fetch is skipped entirely, and the scope is pinned to "all".
 export const usePatientScope = () => {
     const [isAdmin, setIsAdmin] = useState(false);
-    const [patientScope, setPatientScopeState] = useState(
-        () => localStorage.getItem(STORAGE_KEY) || "mine",
+    const [patientScope, setPatientScopeState] = useState(() =>
+        isTauri() ? "all" : localStorage.getItem(STORAGE_KEY) || "mine",
     );
 
     useEffect(() => {
@@ -24,7 +24,9 @@ export const usePatientScope = () => {
     }, []);
 
     const setPatientScope = useCallback((scope) => {
-        localStorage.setItem(STORAGE_KEY, scope);
+        if (!isTauri()) {
+            localStorage.setItem(STORAGE_KEY, scope);
+        }
         setPatientScopeState(scope);
     }, []);
 
