@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.2](https://github.com/bloodworks-io/phlox/compare/v2.4.1...v2.4.2) (2026-09-20)
+
+
+### Bug Fixes
+
+* **deps:** align @tauri-apps/plugin-http with Rust crate 2.6.1 ([a3e7ae9](https://github.com/bloodworks-io/phlox/commit/a3e7ae9741639ec7bfcdf01bddd8a86e05f4739a))
+
 ## [2.4.1](https://github.com/bloodworks-io/phlox/compare/v2.4.0...v2.4.1) (2026-09-20)
 
 
