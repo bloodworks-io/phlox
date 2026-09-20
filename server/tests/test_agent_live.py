@@ -1033,6 +1033,89 @@ def test_schedule_tick_pending_reason_never_downgrades():
     assert engine._tick_pending == "tidy_command"
 
 
+def test_gate_prompt_is_note_leaning_and_quote_free():
+    from server.agent_live.prompts import GATE_SYSTEM_PROMPT
+
+    # Forward-looking plans are NOTE, never SKIP.
+    assert "follow-up intervals" in GATE_SYSTEM_PROMPT
+    assert "never SKIP" in GATE_SYSTEM_PROMPT
+    assert "When in doubt between SKIP and NOTE, reply NOTE" in GATE_SYSTEM_PROMPT
+    # small models echo quoted examples into generations — abstract categories only
+    assert '"' not in GATE_SYSTEM_PROMPT
+    assert "'" not in GATE_SYSTEM_PROMPT
+
+
+def test_debounce_is_eager_before_first_capture():
+    import time
+
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+
+    session.segments_sent_to_agent = 0
+    session.words_since_draft = 15
+    session.last_draft_at = time.time() - 12
+    assert engine._debounce_due() is True
+
+    session.segments_sent_to_agent = 3
+    session.last_draft_at = time.time()
+    assert engine._debounce_due() is False
+
+    session.words_since_draft = 40
+    session.last_draft_at = time.time() - 45
+    assert engine._debounce_due() is True
+
+
+@pytest.mark.asyncio
+async def test_skip_verdict_emits_backlog_then_debounce_captures():
+    import time
+
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._gate_classify = AsyncMock(return_value="SKIP")
+    engine._tick_task = None
+    engine._tick_pending = None
+    scheduled = []
+    engine._schedule_tick = lambda reason: scheduled.append(reason)
+    session.emit = AsyncMock()
+    session.transcript_segments = ["hello there", "still here"]
+    session.segments_sent_to_agent = 0
+    session.words_since_draft = 0
+
+    # handle_audio appends the segment before intake; mirror that here.
+    session.transcript_segments.append("more talk")
+    await engine._intake_utterance("more talk")
+
+    session.emit.assert_any_await({"type": "backlog", "count": 3})
+    assert scheduled == []
+
+    session.words_since_draft = 15
+    session.last_draft_at = time.time() - 12
+    session.transcript_segments.append("even more talk")
+    await engine._intake_utterance("even more talk")
+    assert scheduled == ["debounce"]
+
+
+@pytest.mark.asyncio
+async def test_run_tick_clears_backlog():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+    session.emit = AsyncMock()
+    engine._tools = lambda: []
+    engine._chat = AsyncMock(return_value={"message": {"content": "done"}})
+
+    await engine._run_tick("NOTE")
+
+    session.emit.assert_any_await({"type": "backlog", "count": 0})
+
+
 @pytest.mark.asyncio
 async def test_prewarm_primes_gate_and_agent_prompts():
     from server.agent_live.engine import LiveAgentEngine

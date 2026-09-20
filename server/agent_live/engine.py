@@ -45,6 +45,8 @@ TICK_TIMEOUT_SECONDS = 120
 DEBOUNCE_SECONDS = 45.0
 DEBOUNCE_MIN_WORDS = 40
 DEBOUNCE_MAX_WORDS = 400
+OPENING_DEBOUNCE_SECONDS = 12.0
+OPENING_DEBOUNCE_MIN_WORDS = 15
 
 # Single-token logprob readout for the gate (if provider supports)
 _GATE_LOGPROBS_OK = True
@@ -203,15 +205,23 @@ class LiveAgentEngine:
         verdict = await self._gate_classify(text)
         if verdict in ("NOTE", "ACT"):
             self._schedule_tick(verdict)
-        elif self._debounce_due():
-            self._schedule_tick("debounce")
+        else:
+            un_sent = len(session.transcript_segments) - session.segments_sent_to_agent
+            if un_sent > 0:
+                await session.emit({"type": "backlog", "count": un_sent})
+            if self._debounce_due():
+                self._schedule_tick("debounce")
 
     def _debounce_due(self) -> bool:
         session = self.session
         if session.words_since_draft >= DEBOUNCE_MAX_WORDS:
             return True
+        if session.segments_sent_to_agent == 0:
+            seconds, min_words = OPENING_DEBOUNCE_SECONDS, OPENING_DEBOUNCE_MIN_WORDS
+        else:
+            seconds, min_words = DEBOUNCE_SECONDS, DEBOUNCE_MIN_WORDS
         elapsed = time.time() - session.last_draft_at
-        return elapsed >= DEBOUNCE_SECONDS and session.words_since_draft >= DEBOUNCE_MIN_WORDS
+        return elapsed >= seconds and session.words_since_draft >= min_words
 
     async def _gate_classify(self, text: str) -> str:
         """Cheap SKIP/NOTE/ACT triage of one utterance.
@@ -389,6 +399,7 @@ class LiveAgentEngine:
             session.segments_sent_to_agent = len(session.transcript_segments)
             session.words_since_draft = 0
             session.last_draft_at = time.time()
+        await session.emit({"type": "backlog", "count": 0})
 
         messages = session.agent_messages
         tools = self._tools()

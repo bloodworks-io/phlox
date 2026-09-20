@@ -22,6 +22,7 @@ export const useLiveAgent = ({
     const [artifacts, setArtifacts] = useState([]);
     const [stagedJobs, setStagedJobs] = useState([]);
     const [lastError, setLastError] = useState(null);
+    const [backlog, setBacklog] = useState(0);
     const [fieldFlash, setFieldFlash] = useState({}); // {field_key: timestamp}
     const [startedAt, setStartedAt] = useState(null);
     const [clockNow, setClockNow] = useState(0);
@@ -131,6 +132,9 @@ export const useLiveAgent = ({
                 case "agent_state":
                     setAgentState(event.state);
                     break;
+                case "backlog":
+                    setBacklog(event.count ?? 0);
+                    break;
                 case "command_result":
                     pushStatus(event.content, "command");
                     break;
@@ -185,6 +189,7 @@ export const useLiveAgent = ({
                     settleAfterSession();
                     setAgentState("listening");
                     setStartedAt(null);
+                    setBacklog(0);
                     break;
                 default:
                     break;
@@ -214,6 +219,7 @@ export const useLiveAgent = ({
                     );
                     setStatus("error");
                     setStartedAt(null);
+                    setBacklog(0);
                 }
             }
         },
@@ -270,6 +276,7 @@ export const useLiveAgent = ({
             setArtifacts([]);
             setStagedJobs([]);
             setFieldFlash({});
+            setBacklog(0);
             setStartedAt(Date.now());
             setClockNow(Date.now());
             setStatus("live");
@@ -320,6 +327,7 @@ export const useLiveAgent = ({
             settleAfterSession();
             setAgentState("listening");
             setStartedAt(null);
+            setBacklog(0);
         }
     }, [setPatient, settleAfterSession]);
 
@@ -335,6 +343,7 @@ export const useLiveAgent = ({
             return;
         setStatus("idle");
         setLastError(null);
+        setBacklog(0);
         setTranscripts([]);
         setStatuses([]);
         setArtifacts([]);
@@ -428,6 +437,7 @@ export const useLiveAgent = ({
         fieldFlash,
         elapsedSeconds,
         lastError,
+        backlog,
         startLive,
         stopLive,
         retryLive,
