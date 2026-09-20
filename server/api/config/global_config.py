@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
 
-from server.database.config.manager import config_manager
+from server.database.config.manager import CAPABILITY_PREFIX, config_manager
 from server.utils.current_user import require_admin
 
 router = APIRouter()
@@ -45,7 +45,8 @@ def update_config(data: dict = Body(...)):
     overwriting the stored secret with a masked display value.
     """
     require_admin()
-    filtered = dict(data)
+
+    filtered = {k: v for k, v in data.items() if not k.startswith(CAPABILITY_PREFIX)}
     for sensitive_key in SENSITIVE_KEYS:
         if sensitive_key in filtered and MASK_BULLET in str(filtered[sensitive_key]):
             del filtered[sensitive_key]

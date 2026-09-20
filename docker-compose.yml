@@ -8,7 +8,6 @@ services:
     environment:
       - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY} # Required: generate a strong random key
       - TZ=${TZ} # e.g. America/New_York
-      - LLM_EXTRA_BODY= # Optional: JSON string for extra_body params (e.g., '{"chat_template_kwargs": {"thinking": true}}'); does not apply to streaming requests
 
       # - RATE_LIMIT_ENABLED=true
     volumes:

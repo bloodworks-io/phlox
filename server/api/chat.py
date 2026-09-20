@@ -19,8 +19,6 @@ from server.utils.current_user import require_admin
 
 router = APIRouter()
 
-_VISION_CACHE: dict[str, dict] = {}
-
 
 class VisualDocumentRequest(BaseModel):
     filename: str | None = None
@@ -88,7 +86,8 @@ def _is_local_vision_capable(config: dict) -> bool:
 
 
 def _get_vision_capability_cache() -> dict:
-    return _VISION_CACHE
+    """Vision capability rows from the persisted capability store."""
+    return config_manager.get_capabilities()
 
 
 def _store_vision_probe_result(
@@ -101,12 +100,15 @@ def _store_vision_probe_result(
     detail: str,
 ):
     cache_key = _build_vision_cache_key(provider, base_url, model)
-    _VISION_CACHE[cache_key] = {
-        "vision_capable": bool(vision_capable),
-        "status_code": int(status_code),
-        "detail": detail,
-        "probed_at": datetime.now(UTC).isoformat(),
-    }
+    config_manager.set_capability(
+        cache_key,
+        {
+            "vision_capable": bool(vision_capable),
+            "status_code": int(status_code),
+            "detail": detail,
+            "probed_at": datetime.now(UTC).isoformat(),
+        },
+    )
 
 
 def _build_visual_user_content(
@@ -337,7 +339,7 @@ def get_current_vision_capability():
             "probed_at": cached_result.get("probed_at"),
         }
 
-    # In-memory cache is the single source of truth now.)
+    # Persisted capability store is the single source of truth.
     return {
         "vision_capable": False,
         "status_code": 200,

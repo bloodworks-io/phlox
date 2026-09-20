@@ -10,6 +10,9 @@ from server.utils.current_user import current_user_id
 logger = logging.getLogger(__name__)
 
 
+CAPABILITY_PREFIX = "CAPABILITY:"
+
+
 class ConfigManager:
     """Manages configuration settings, prompts, and options."""
 
@@ -65,9 +68,15 @@ class ConfigManager:
         self.refresh_db()
         with self.db.read() as cursor:
             config = {}
+            capabilities = {}
             cursor.execute("SELECT key, value FROM config")
             for row in cursor.fetchall():
-                config[row["key"]] = json.loads(row["value"])
+                key = row["key"]
+                value = json.loads(row["value"])
+                if key.startswith(CAPABILITY_PREFIX):
+                    capabilities[key[len(CAPABILITY_PREFIX) :]] = value
+                else:
+                    config[key] = value
 
             prompts = {}
             cursor.execute("SELECT key, system FROM prompts")
@@ -86,6 +95,7 @@ class ConfigManager:
 
             with self._cache_lock:
                 self.config = config
+                self.capabilities = capabilities
                 self.prompts = prompts
                 self.options = options
 
@@ -122,6 +132,37 @@ class ConfigManager:
                     (key, json.dumps(value)),
                 )
         self._load_configs()
+
+    def get_capabilities(self) -> dict:
+        """Returns all stored capability blobs, keyed without the namespace prefix."""
+        with self._cache_lock:
+            return self.capabilities
+
+    def get_capability(self, key: str):
+        """Returns a stored capability blob for ``key``, or None if absent."""
+        with self._cache_lock:
+            return self.capabilities.get(key)
+
+    def set_capability(self, key: str, value: dict):
+        """Writes a capability blob (namespaced config row), write-through to the cache."""
+        self.refresh_db()
+        namespaced = f"{CAPABILITY_PREFIX}{key}"
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)",
+                (namespaced, json.dumps(value)),
+            )
+        with self._cache_lock:
+            self.capabilities[key] = value
+
+    def delete_capability(self, key: str):
+        """Removes a capability blob from the store and cache."""
+        self.refresh_db()
+        namespaced = f"{CAPABILITY_PREFIX}{key}"
+        with self.db.transaction() as cursor:
+            cursor.execute("DELETE FROM config WHERE key = ?", (namespaced,))
+        with self._cache_lock:
+            self.capabilities.pop(key, None)
 
     def update_prompts(self, new_prompts):
         """Updates the prompts in the database."""
