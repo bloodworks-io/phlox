@@ -11,12 +11,15 @@ import {
     FaPuzzlePiece,
     FaShieldAlt,
     FaUsers,
+    FaComments,
+    FaFileAlt,
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
 
 import ToolsSettingsTab from "./ToolsSettingsTab";
 import LocalModelManager from "./LocalModelManager";
 import WhisperTab from "./WhisperTab";
+import PromptEditorTab from "./PromptEditorTab";
 import LlmTab from "./LlmTab";
 import RagTab from "./RagTab";
 import UsersTab from "./UsersTab";
@@ -90,6 +93,12 @@ const AdminSettingsPanel = ({
     urlStatus = { whisper: false, llm: false },
     embeddingModelOptions = [],
     handleReEmbed,
+    prompts,
+    handlePromptChange,
+    handlePromptReset,
+    letterTemperature,
+    onLetterTemperatureChange,
+    onOptionsReset,
 }) => {
     const [localStatus, setLocalStatus] = useState(null);
     const [isDocker, setIsDocker] = useState(false);
@@ -261,6 +270,28 @@ const AdminSettingsPanel = ({
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
+                                    <Tooltip content="System prompt used for chat interactions">
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="chat"
+                                        >
+                                            <HStack>
+                                                <FaComments />
+                                                <Text>Chat</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    <Tooltip content="System prompt used for generating patient summaries">
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="summary"
+                                        >
+                                            <HStack>
+                                                <FaFileAlt />
+                                                <Text>Summary</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
                                     <Tooltip content="Configure external tool servers">
                                         <Tabs.Trigger
                                             className="tab-style"
@@ -302,6 +333,48 @@ const AdminSettingsPanel = ({
                                     value="0"
                                 >
                                     <LocalModelManager />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="chat"
+                                >
+                                    <PromptEditorTab
+                                        title="Chat Prompt"
+                                        subtitle="System prompt used for chat interactions"
+                                        value={prompts?.chat?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "chat",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("chat")
+                                        }
+                                    />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="summary"
+                                >
+                                    <PromptEditorTab
+                                        title="Summary Prompt"
+                                        subtitle="System prompt used for generating patient summaries"
+                                        value={prompts?.summary?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "summary",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("summary")
+                                        }
+                                    />
                                 </Tabs.Content>
                                 <Tabs.Content
                                     className="floating-main"
@@ -352,6 +425,28 @@ const AdminSettingsPanel = ({
                                             <HStack>
                                                 <FaBrain />
                                                 <Text>LLM</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    <Tooltip content="System prompt used for chat interactions">
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="chat"
+                                        >
+                                            <HStack>
+                                                <FaComments />
+                                                <Text>Chat</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    <Tooltip content="System prompt used for generating patient summaries">
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="summary"
+                                        >
+                                            <HStack>
+                                                <FaFileAlt />
+                                                <Text>Summary</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
@@ -433,6 +528,53 @@ const AdminSettingsPanel = ({
                                         modelOptions={modelOptions}
                                         llmModelsLoading={llmModelsLoading}
                                         urlStatus={urlStatus}
+                                        letterTemperature={letterTemperature}
+                                        onLetterTemperatureChange={
+                                            onLetterTemperatureChange
+                                        }
+                                        onOptionsReset={onOptionsReset}
+                                    />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="chat"
+                                >
+                                    <PromptEditorTab
+                                        title="Chat Prompt"
+                                        subtitle="System prompt used for chat interactions"
+                                        value={prompts?.chat?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "chat",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("chat")
+                                        }
+                                    />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="summary"
+                                >
+                                    <PromptEditorTab
+                                        title="Summary Prompt"
+                                        subtitle="System prompt used for generating patient summaries"
+                                        value={prompts?.summary?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "summary",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("summary")
+                                        }
                                     />
                                 </Tabs.Content>
                                 {isRagEnabled() && (

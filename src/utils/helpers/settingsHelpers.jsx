@@ -2,12 +2,6 @@
 import { toaster } from "@/components/ui/toaster";
 export const settingsHelpers = {
   processOptionsData: (data) => ({
-    general: {
-      num_ctx: data?.general?.num_ctx || 0,
-    },
-    secondary: {
-      num_ctx: data?.secondary?.num_ctx || 0,
-    },
     letter: {
       temperature: data?.letter?.temperature || 0,
     },

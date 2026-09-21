@@ -16,7 +16,6 @@ import { syncLanguage } from "../i18n";
 import { UI_LANGUAGES } from "../utils/i18n/languages";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import AdminSettingsPanel from "../components/settings/AdminSettingsPanel";
-import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
 import { SPECIALTIES } from "../utils/constants";
 import { templateService } from "../utils/templates/templateService";
 import { localModelApi } from "../utils/api/localModelApi";
@@ -36,8 +35,6 @@ const Settings = () => {
     });
     const [prompts, setPrompts] = useState(null);
     const [options, setOptions] = useState({
-        general: { num_ctx: 0 },
-        secondary: { num_ctx: 0 },
         letter: { temperature: 0 },
     });
     const [templates, setTemplates] = useState({});
@@ -61,7 +58,6 @@ const Settings = () => {
     const [collapseStates, setCollapseStates] = useState({
         userSettings: false,
         modelSettings: true,
-        promptSettings: true,
         localModels: true,
     });
 
@@ -102,8 +98,6 @@ const Settings = () => {
                 setOptions(settingsHelpers.processOptionsData(optionsData));
             } else {
                 setOptions({
-                    general: { num_ctx: 0 },
-                    secondary: { num_ctx: 0 },
                     letter: { temperature: 0 },
                 });
             }
@@ -483,27 +477,18 @@ const Settings = () => {
                             llmModelsLoading={llmModelsLoading}
                             urlStatus={urlStatus}
                             handleReEmbed={handleReEmbed}
-                        />
-                    </Box>
-                )}
-
-                {isAdmin && (
-                    <Box
-                        className="anim-fade-slide-up"
-                        css={{ animationDuration: "0.2s", animationDelay: "60ms" }}
-                    >
-                        <PromptSettingsPanel
-                            isCollapsed={collapseStates.promptSettings}
-                            setIsCollapsed={() =>
-                                toggleCollapse("promptSettings")
-                            }
                             prompts={prompts}
                             handlePromptChange={handlePromptChange}
                             handlePromptReset={handlePromptReset}
-                            options={options}
-                            handleOptionChange={handleOptionChange}
-                            handleOptionsReset={handleOptionsReset}
-                            config={config}
+                            letterTemperature={options?.letter?.temperature}
+                            onLetterTemperatureChange={(value) =>
+                                handleOptionChange(
+                                    "letter",
+                                    "temperature",
+                                    value,
+                                )
+                            }
+                            onOptionsReset={handleOptionsReset}
                         />
                     </Box>
                 )}

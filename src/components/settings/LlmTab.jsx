@@ -1,9 +1,23 @@
-import { Box, Text, InputGroup, Input, NativeSelect, VStack, HStack, Badge, Button, Alert, Spinner } from "@chakra-ui/react";
+import {
+    Box,
+    Text,
+    InputGroup,
+    Input,
+    NativeSelect,
+    VStack,
+    HStack,
+    Badge,
+    Button,
+    Alert,
+    Spinner,
+    NumberInput,
+} from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from "@/components/ui/tooltip";
 import { CheckCircleIcon } from "../common/icons";
 import { useState, useEffect } from "react";
 import { chatApi } from "../../utils/api/chatApi";
+import { FiRefreshCw } from "react-icons/fi";
 
 const LlmTab = ({
     config,
@@ -11,6 +25,9 @@ const LlmTab = ({
     modelOptions,
     llmModelsLoading = false,
     urlStatus = { llm: false },
+    letterTemperature,
+    onLetterTemperatureChange,
+    onOptionsReset,
 }) => {
     const [isProbingVision, setIsProbingVision] = useState(false);
     const [visionProbeDetail, setVisionProbeDetail] = useState("");
@@ -316,6 +333,49 @@ const LlmTab = ({
                         </Alert.Root>
                     ) : null}
                 </Box>
+
+                {onLetterTemperatureChange && (
+                    <Box>
+                        <HStack justify="space-between" mb="1">
+                            <Tooltip content="Sampling temperature used when generating letters (default 0.6). Higher values produce more varied writing.">
+                                <Text fontSize="sm" fontWeight="bold">
+                                    Letter Generation Temperature
+                                </Text>
+                            </Tooltip>
+                            {onOptionsReset && (
+                                <Button
+                                    size="sm"
+                                    h="30px"
+                                    minH="30px"
+                                    className="red-button"
+                                    onClick={onOptionsReset}
+                                >
+                                    <FiRefreshCw />
+                                    Reset to Default
+                                </Button>
+                            )}
+                        </HStack>
+                        <HStack>
+                            <NumberInput.Root
+                                size="sm"
+                                width="100px"
+                                min={0}
+                                max={2}
+                                step={0.1}
+                                value={String(letterTemperature ?? "")}
+                                onValueChange={(details) =>
+                                    onLetterTemperatureChange(details.value)
+                                }
+                            >
+                                <NumberInput.Input className="input-style" />
+                            </NumberInput.Root>
+                            <Text fontSize="xs" color="overlay0">
+                                Applies to letter generation only; all other
+                                tasks use the default temperature.
+                            </Text>
+                        </HStack>
+                    </Box>
+                )}
             </VStack>
         </VStack>
     );
