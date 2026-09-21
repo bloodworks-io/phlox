@@ -166,7 +166,6 @@ const DocumentPanel = ({
   return (
     <FloatingPanel
       isOpen={isOpen}
-      className="floating-panel"
       position="left-of-fab"
       showArrow={true}
       triggerId="fab-document"

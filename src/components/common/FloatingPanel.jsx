@@ -1,4 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from "react";
 import { useColorMode } from "../ui/color-mode";
 import { Box } from "@chakra-ui/react";
 import { colors } from "../../theme/colors";
@@ -31,8 +36,8 @@ const FloatingPanel = ({
 }) => {
     const { colorMode } = useColorMode();
     const panelRef = useRef(null);
-    const [arrowTop, setArrowTop] = useState("50%");
-    const [arrowLeft, setArrowLeft] = useState("50%");
+    const arrowRef = useRef(null);
+    const [hasMeasured, setHasMeasured] = useState(false);
     const [minPanelHeight, setMinPanelHeight] = useState("auto");
     // Delayed unmount so the close transition can play.
     const [shouldRender, setShouldRender] = useState(isOpen);
@@ -52,17 +57,13 @@ const FloatingPanel = ({
         return () => clearTimeout(t);
     }, [isOpen]);
 
-    useEffect(() => {
-        if (!isOpen || !showArrow || !triggerId) {
-            setArrowTop("50%");
-            setArrowLeft("50%");
-            setMinPanelHeight("auto");
-            return;
-        }
+    useLayoutEffect(() => {
+        if (!shouldRender || !showArrow || !triggerId) return undefined;
 
         const updateArrowPosition = () => {
             const triggerEl = document.getElementById(triggerId);
-            if (!triggerEl || !panelRef.current) return;
+            const arrowEl = arrowRef.current;
+            if (!triggerEl || !panelRef.current || !arrowEl) return;
             const triggerRect = triggerEl.getBoundingClientRect();
             const panelRect = panelRef.current.getBoundingClientRect();
 
@@ -76,33 +77,41 @@ const FloatingPanel = ({
                         `${menuEl.getBoundingClientRect().height}px`,
                     );
                 }
-                setArrowTop(
-                    `${triggerRect.top + triggerRect.height / 2 - panelRect.top}px`,
-                );
+                arrowEl.style.left = "";
+                arrowEl.style.top = `${triggerRect.top + triggerRect.height / 2 - panelRect.top}px`;
             } else if (
                 position === "bottom-center" ||
                 position === "above-transcript-button"
             ) {
-                setArrowLeft(
-                    `${triggerRect.left + triggerRect.width / 2 - panelRect.left}px`,
-                );
+                arrowEl.style.top = "";
+                arrowEl.style.left = `${triggerRect.left + triggerRect.width / 2 - panelRect.left}px`;
             }
+            setHasMeasured(true);
         };
 
-        const frameId = requestAnimationFrame(updateArrowPosition);
+        updateArrowPosition();
         window.addEventListener("resize", updateArrowPosition);
+
+        const onAnimationEnd = () => updateArrowPosition();
+        const onTransitionEnd = (e) => {
+            if (e.propertyName === "transform") updateArrowPosition();
+        };
+        const panel = panelRef.current;
+        panel.addEventListener("animationend", onAnimationEnd);
+        panel.addEventListener("transitionend", onTransitionEnd);
         let resizeObserver;
-        if (panelRef.current && typeof ResizeObserver !== "undefined") {
+        if (typeof ResizeObserver !== "undefined") {
             resizeObserver = new ResizeObserver(() => updateArrowPosition());
-            resizeObserver.observe(panelRef.current);
+            resizeObserver.observe(panel);
         }
 
         return () => {
-            cancelAnimationFrame(frameId);
             window.removeEventListener("resize", updateArrowPosition);
+            panel.removeEventListener("animationend", onAnimationEnd);
+            panel.removeEventListener("transitionend", onTransitionEnd);
             resizeObserver?.disconnect();
         };
-    }, [isOpen, showArrow, triggerId, position, height, width]);
+    }, [shouldRender, showArrow, triggerId, position]);
 
     if (!shouldRender) return null;
 
@@ -193,9 +202,10 @@ const FloatingPanel = ({
                     (position === "left-of-fab" ||
                         position === "left-of-fab-grow-down") && (
                     <Box
+                        ref={arrowRef}
                         position="absolute"
                         right="-12px"
-                        top={arrowTop}
+                        visibility={hasMeasured ? "visible" : "hidden"}
                         transform="translateY(-50%)"
                         width="13px"
                         height="24px"
@@ -227,9 +237,10 @@ const FloatingPanel = ({
                     (position === "bottom-center" ||
                         position === "above-transcript-button") && (
                         <Box
+                            ref={arrowRef}
                             position="absolute"
                             bottom="-15px"
-                            left={arrowLeft}
+                            visibility={hasMeasured ? "visible" : "hidden"}
                             transform="translateX(-50%)"
                             width="24px"
                             height="16px"
