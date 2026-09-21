@@ -17,14 +17,12 @@ import {
     FaBolt,
     FaStop,
     FaCheck,
-    FaChevronUp,
     FaExternalLinkAlt,
     FaWaveSquare,
 } from "react-icons/fa";
 import PillBox from "../common/PillBox";
 import { colors } from "../../theme/colors";
 import { LavaBlobs, InternalGlow, LoadingOrb } from "./scribeVisuals";
-import { AgentSymbol } from "../panels/agent/components/agentVisuals";
 
 const PILL = {
     danger: colors.dark.dangerButton, // #ed8796
@@ -442,9 +440,14 @@ export const LiveAgentControls = ({ status = "live", onStop }) => {
     );
 };
 
-export const LiveExpandButton = ({ isExpanded = false, onExpand }) => (
+export const LiveExpandButton = ({
+    isExpanded = false,
+    onExpand,
+    label = "Expand live agent",
+    labelExpanded = "Collapse live agent panel",
+}) => (
     <Tooltip
-        content={isExpanded ? "Collapse live agent panel" : "Expand live agent"}
+        content={isExpanded ? labelExpanded : label}
         showArrow
         positioning={{ placement: "top" }}
     >
@@ -462,9 +465,7 @@ export const LiveExpandButton = ({ isExpanded = false, onExpand }) => (
             bg={isExpanded ? colors.dark.surface : "transparent"}
             _hover={{ bg: colors.dark.surface, transform: "scale(1.05)" }}
             asChild><button
-                aria-label={
-                    isExpanded ? "Collapse live agent panel" : "Expand live agent"
-                }
+                aria-label={isExpanded ? labelExpanded : label}
                 onClick={onExpand}>
                 <Box
                     as="span"
@@ -480,156 +481,209 @@ export const LiveExpandButton = ({ isExpanded = false, onExpand }) => (
     </Tooltip>
 );
 
-export const AgentReviewPill = ({ artifactsCount = 0, onExpand, onDismiss }) => (
-    <PillBox
-        bottom="20px"
-        left="50%"
-        transform="translateX(-50%)"
-        className="pill-box-scribe anim-fade"
-        css={{ animationDuration: "0.2s" }}
-        px={3}
-        py={2}
-        gap={2}
-        minHeight="65px"
-    >
-        <AgentSymbol boxSize="26px" iconSize="11px" radius="8px" />
-        <Flex align="center" gap={2} pr={1} color="white">
-            <Text fontSize="xs" fontWeight="700">
-                Session ended
-            </Text>
-            {artifactsCount > 0 && (
-                <Text fontSize="xs" fontWeight="600" color={PILL.info}>
-                    · {artifactsCount} to review
-                </Text>
-            )}
-        </Flex>
-        <Tooltip
-            content="Open session review"
-            showArrow
-            positioning={{ placement: "top" }}
-        >
-            <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                w="32px"
-                h="32px"
-                borderRadius="full"
-                border={`1px solid ${PILL.info}`}
-                cursor="pointer"
-                outline="none"
-                color={PILL.info}
-                bg="transparent"
-                transition="all 0.2s ease"
-                _hover={{
-                    bg: PILL.infoFill,
-                    borderColor: PILL.infoFill,
-                    color: PILL.onFill,
-                    transform: "scale(1.05)",
-                }}
-                asChild><button aria-label="Open session review" onClick={onExpand}>
-                    <FaChevronUp size={13} />
-                </button></Box>
-        </Tooltip>
-        <Tooltip
-            content="Dismiss review"
-            showArrow
-            positioning={{ placement: "top" }}
-        >
-            <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                w="32px"
-                h="32px"
-                borderRadius="full"
-                border="none"
-                cursor="pointer"
-                outline="none"
-                color={PILL.muted}
-                bg="transparent"
-                className="pill-box-icons"
-                transition="all 0.2s ease"
-                _hover={{ color: PILL.danger, transform: "scale(1.05)" }}
-                asChild><button aria-label="Dismiss session review" onClick={onDismiss}>
-                    <FaTimes size={13} />
-                </button></Box>
-        </Tooltip>
-    </PillBox>
+// Borderless side-slot button — the ghost treatment LiveExpandButton and
+// the transcript toggle use, shared by the end-of-session pills.
+const GhostButton = ({ label, onClick, children }) => (
+    <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
+        <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            w="30px"
+            h="30px"
+            flexShrink={0}
+            borderRadius="full"
+            border="none"
+            cursor="pointer"
+            outline="none"
+            transition="all 0.2s ease"
+            color={PILL.muted}
+            bg="transparent"
+            _hover={{ bg: colors.dark.surface, transform: "scale(1.05)" }}
+            asChild><button aria-label={label} onClick={onClick}>
+                {children}
+            </button></Box>
+    </Tooltip>
 );
 
-export const AgentErrorPill = ({ onRetry, onDismiss }) => (
-    <PillBox
-        bottom="20px"
-        left="50%"
-        transform="translateX(-50%)"
-        className="pill-box-scribe anim-fade"
-        css={{ animationDuration: "0.2s" }}
-        px={3}
-        py={2}
-        gap={2}
-        minHeight="65px"
-    >
-        <Flex align="center" gap={2} color={PILL.danger} pr={1}>
-            <FaExclamationTriangle size={15} />
-            <Text fontSize="xs" fontWeight="700">
-                Connection interrupted
-            </Text>
-        </Flex>
-        <Tooltip
-            content="Reconnect live agent"
-            showArrow
-            positioning={{ placement: "top" }}
-        >
-            <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                w="32px"
-                h="32px"
-                borderRadius="full"
-                border={`1px solid ${PILL.success}`}
-                cursor="pointer"
-                outline="none"
-                color={PILL.success}
-                bg="transparent"
-                transition="all 0.2s ease"
-                _hover={{
-                    bg: PILL.successFill,
-                    borderColor: PILL.successFill,
-                    color: PILL.onFill,
-                    transform: "scale(1.05)",
-                }}
-                asChild><button aria-label="Reconnect live agent" onClick={onRetry}>
-                    <FaRedoAlt size={13} />
-                </button></Box>
-        </Tooltip>
-        <Tooltip
-            content="Dismiss"
-            showArrow
-            positioning={{ placement: "top" }}
-        >
-            <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                w="32px"
-                h="32px"
-                borderRadius="full"
-                border="none"
-                cursor="pointer"
-                outline="none"
-                color={PILL.muted}
-                bg="transparent"
-                className="pill-box-icons"
-                transition="all 0.2s ease"
-                _hover={{ color: PILL.danger, transform: "scale(1.05)" }}
-                asChild><button aria-label="Dismiss connection error" onClick={onDismiss}>
-                    <FaTimes size={13} />
-                </button></Box>
-        </Tooltip>
-    </PillBox>
-);
+// Fixed pill footprint shared by the end-of-session pills — matches the
+// live pill so the scribe pill never jumps size at the handoff.
+const END_STATE_PILL = {
+    bottom: "20px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    className: "pill-box-scribe anim-fade",
+    css: { animationDuration: "0.2s" },
+    px: 2,
+    py: 2,
+    gap: 1.5,
+    minHeight: "65px",
+    w: "182px",
+    justify: "center",
+};
+
+export const AgentReviewPill = ({
+    artifactsCount = 0,
+    isExpanded = false,
+    canStart = true,
+    onBlockedClick,
+    onLiveResume,
+    onExpand,
+    onDismiss,
+}) => {
+    const [isHovered, setIsHovered] = React.useState(false);
+    // Drafts do not survive a resume — startLive starts a fresh session.
+    const label =
+        artifactsCount > 0
+            ? `Resume live session · ${artifactsCount} drafts to review first`
+            : "Resume live session";
+
+    const handleClick = () => {
+        if (canStart) {
+            onLiveResume?.();
+        } else {
+            onBlockedClick?.();
+        }
+    };
+
+    return (
+        <PillBox {...END_STATE_PILL}>
+            <GhostButton label="Close session review" onClick={onDismiss}>
+                <FaTimes size={13} />
+            </GhostButton>
+            <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
+                {/* Static teal hero — the lava returns on resume. Doubles as
+                    the resume action, consent-gated like the mic. */}
+                <Box
+                    position="relative"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    w="46px"
+                    h="46px"
+                    p={0}
+                    flexShrink={0}
+                    borderRadius="full"
+                    border="none"
+                    cursor="pointer"
+                    transition="all 0.2s ease"
+                    outline="none"
+                    overflow="hidden"
+                    boxShadow="xl"
+                    color={PILL.onFill}
+                    bg="radial-gradient(circle at 30% 30%, #45c0b2 0%, #179299 55%, #0d6570 100%)"
+                    asChild><button
+                        aria-label={label}
+                        onClick={handleClick}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}>
+                        {/* Inner highlight border */}
+                        <Box
+                            position="absolute"
+                            top="2px"
+                            left="2px"
+                            right="2px"
+                            bottom="2px"
+                            borderRadius="full"
+                            border="1px solid rgba(255,255,255,0.3)"
+                            pointerEvents="none"
+                        />
+                        {/* Icon: wave at rest, play on hover */}
+                        <Box
+                            position="absolute"
+                            top="50%"
+                            left="50%"
+                            transform="translate(-50%, -50%)"
+                            zIndex={1}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                        >
+                            {isHovered ? (
+                                <FaPlay size={14} />
+                            ) : (
+                                <FaWaveSquare size={18} />
+                            )}
+                        </Box>
+                    </button></Box>
+            </Tooltip>
+            <LiveExpandButton
+                isExpanded={isExpanded}
+                onExpand={onExpand}
+                label="Open session review"
+                labelExpanded="Collapse session review"
+            />
+        </PillBox>
+    );
+};
+
+export const AgentErrorPill = ({ onRetry, onDismiss }) => {
+    const [isHovered, setIsHovered] = React.useState(false);
+    const label = "Connection interrupted — reconnect live agent";
+
+    return (
+        <PillBox {...END_STATE_PILL}>
+            <GhostButton label="Dismiss connection error" onClick={onDismiss}>
+                <FaTimes size={13} />
+            </GhostButton>
+            <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
+                {/* Static danger hero — one-click retry, like the live hero stops */}
+                <Box
+                    position="relative"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    w="46px"
+                    h="46px"
+                    p={0}
+                    flexShrink={0}
+                    borderRadius="full"
+                    border="none"
+                    cursor="pointer"
+                    transition="all 0.2s ease"
+                    outline="none"
+                    overflow="hidden"
+                    boxShadow="xl"
+                    color={PILL.onFill}
+                    bg="radial-gradient(circle at 30% 30%, #ed8796 0%, #d20f39 55%, #a30d2e 100%)"
+                    asChild><button
+                        aria-label={label}
+                        onClick={onRetry}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}>
+                        {/* Inner highlight border */}
+                        <Box
+                            position="absolute"
+                            top="2px"
+                            left="2px"
+                            right="2px"
+                            bottom="2px"
+                            borderRadius="full"
+                            border="1px solid rgba(255,255,255,0.3)"
+                            pointerEvents="none"
+                        />
+                        {/* Icon: warning at rest, retry on hover */}
+                        <Box
+                            position="absolute"
+                            top="50%"
+                            left="50%"
+                            transform="translate(-50%, -50%)"
+                            zIndex={1}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                        >
+                            {isHovered ? (
+                                <FaRedoAlt size={14} />
+                            ) : (
+                                <FaExclamationTriangle size={15} />
+                            )}
+                        </Box>
+                    </button></Box>
+            </Tooltip>
+        </PillBox>
+    );
+};
 
 // Reset button shown in the mode slot while a recording is in progress.
 export const ResetButton = ({ onReset }) => {

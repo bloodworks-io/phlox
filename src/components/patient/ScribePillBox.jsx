@@ -33,6 +33,7 @@ const ScribePillBox = ({
     isLive,
     isLiveBusy = false,
     onLiveStop,
+    onLiveResume,
     liveStatus = "idle",
     liveArtifactsCount = 0,
     isLivePanelExpanded = false,
@@ -128,6 +129,10 @@ const ScribePillBox = ({
         return (
             <AgentReviewPill
                 artifactsCount={liveArtifactsCount}
+                isExpanded={isLivePanelExpanded}
+                canStart={canRecord}
+                onBlockedClick={onBlockedRecord}
+                onLiveResume={onLiveResume}
                 onExpand={onLiveExpand}
                 onDismiss={onLiveDismissReview}
             />

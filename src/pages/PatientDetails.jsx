@@ -403,6 +403,13 @@ const PatientDetails = ({
         if (liveAgent.isLiveActive) liveAgent.stopLive();
     };
 
+    const handleLiveResume = () => {
+        if (liveAgent.isLiveActive) return;
+        liveAgent.startLive().then((started) => {
+            if (started) setIsLiveExpanded(false);
+        });
+    };
+
     const scribeMode =
         agentArmed || liveAgent.isLiveActive
             ? "agent"
@@ -619,6 +626,7 @@ const PatientDetails = ({
                     liveAgent.status === "stopping"
                 }
                 onLiveStop={handleLiveStop}
+                onLiveResume={handleLiveResume}
                 liveStatus={liveAgent.status}
                 liveArtifactsCount={liveAgent.artifacts.length}
                 isLivePanelExpanded={isLiveExpanded}

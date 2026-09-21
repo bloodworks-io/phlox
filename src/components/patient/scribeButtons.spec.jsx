@@ -61,18 +61,69 @@ describe("LiveExpandButton", () => {
 });
 
 describe("AgentReviewPill", () => {
-    it("offers open and dismiss with the review count", () => {
+    it("offers resume, close, and the panel link", () => {
+        const onLiveResume = vi.fn();
         const onExpand = vi.fn();
         const onDismiss = vi.fn();
         renderWithProviders(
-            <AgentReviewPill artifactsCount={2} onExpand={onExpand} onDismiss={onDismiss} />,
+            <AgentReviewPill
+                artifactsCount={2}
+                onLiveResume={onLiveResume}
+                onExpand={onExpand}
+                onDismiss={onDismiss}
+            />,
         );
-        expect(screen.getByText("Session ended")).toBeInTheDocument();
-        expect(screen.getByText(/2 to review/)).toBeInTheDocument();
+        fireEvent.click(screen.getByRole("button", { name: /resume live session/i }));
+        expect(onLiveResume).toHaveBeenCalled();
+        fireEvent.click(screen.getByRole("button", { name: /close session review/i }));
+        expect(onDismiss).toHaveBeenCalled();
         fireEvent.click(screen.getByRole("button", { name: /open session review/i }));
         expect(onExpand).toHaveBeenCalled();
-        fireEvent.click(screen.getByRole("button", { name: /dismiss session review/i }));
-        expect(onDismiss).toHaveBeenCalled();
+    });
+
+    it("warns that unreviewed drafts are lost on resume", () => {
+        renderWithProviders(
+            <AgentReviewPill
+                artifactsCount={2}
+                onLiveResume={() => {}}
+                onExpand={() => {}}
+                onDismiss={() => {}}
+            />,
+        );
+        expect(
+            screen.getByRole("button", { name: /2 drafts to review first/i }),
+        ).toBeInTheDocument();
+    });
+
+    it("routes blocked resumes through the consent gate", () => {
+        const onLiveResume = vi.fn();
+        const onBlockedClick = vi.fn();
+        renderWithProviders(
+            <AgentReviewPill
+                canStart={false}
+                onLiveResume={onLiveResume}
+                onBlockedClick={onBlockedClick}
+                onExpand={() => {}}
+                onDismiss={() => {}}
+            />,
+        );
+        fireEvent.click(screen.getByRole("button", { name: /resume live session/i }));
+        expect(onLiveResume).not.toHaveBeenCalled();
+        expect(onBlockedClick).toHaveBeenCalled();
+    });
+
+    it("flips the panel link once the review panel is open", () => {
+        renderWithProviders(
+            <AgentReviewPill
+                isExpanded
+                onLiveResume={() => {}}
+                onExpand={() => {}}
+                onDismiss={() => {}}
+            />,
+        );
+        expect(
+            screen.getByRole("button", { name: /collapse session review/i }),
+        ).toBeInTheDocument();
     });
 });
 
@@ -83,8 +134,9 @@ describe("AgentErrorPill", () => {
         renderWithProviders(
             <AgentErrorPill onRetry={onRetry} onDismiss={onDismiss} />,
         );
-        expect(screen.getByText("Connection interrupted")).toBeInTheDocument();
-        fireEvent.click(screen.getByRole("button", { name: /reconnect live agent/i }));
+        const hero = screen.getByRole("button", { name: /connection interrupted/i });
+        expect(hero).toBeInTheDocument();
+        fireEvent.click(hero);
         expect(onRetry).toHaveBeenCalled();
         fireEvent.click(screen.getByRole("button", { name: /dismiss connection error/i }));
         expect(onDismiss).toHaveBeenCalled();
