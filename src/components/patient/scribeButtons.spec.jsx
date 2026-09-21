@@ -24,9 +24,18 @@ describe("LiveAgentControls", () => {
         expect(onStop).toHaveBeenCalled();
     });
 
-    it("disables ending while connecting or wrapping up", () => {
+    it("shows a waiting state while the agent prewarms", () => {
+        renderWithProviders(
+            <LiveAgentControls status="connecting" onStop={() => {}} />,
+        );
+        expect(
+            screen.getByRole("button", { name: /warming up the agent/i }),
+        ).toBeDisabled();
+    });
+
+    it("disables ending while wrapping up", () => {
         renderWithProviders(<LiveAgentControls status="stopping" onStop={() => {}} />);
-        expect(screen.getByRole("button", { name: /end live session/i })).toBeDisabled();
+        expect(screen.getByRole("button", { name: /wrapping up/i })).toBeDisabled();
     });
 });
 

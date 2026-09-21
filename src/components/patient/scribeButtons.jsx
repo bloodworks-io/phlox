@@ -23,7 +23,7 @@ import {
 } from "react-icons/fa";
 import PillBox from "../common/PillBox";
 import { colors } from "../../theme/colors";
-import { LavaBlobs, InternalGlow } from "./scribeVisuals";
+import { LavaBlobs, InternalGlow, LoadingOrb } from "./scribeVisuals";
 import { AgentSymbol } from "../panels/agent/components/agentVisuals";
 
 const PILL = {
@@ -340,13 +340,15 @@ export const ModeSelectButton = ({
 export const LiveAgentControls = ({ status = "live", onStop }) => {
     const [isHovered, setIsHovered] = React.useState(false);
     const isBusy = status === "connecting" || status === "stopping";
+    const label =
+        status === "connecting"
+            ? "Warming up the agent…"
+            : status === "stopping"
+              ? "Wrapping up…"
+              : "End live session";
 
     return (
-        <Tooltip
-            content={status === "stopping" ? "Wrapping up…" : "End live session"}
-            showArrow
-            positioning={{ placement: "top" }}
-        >
+        <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
             <Box
                 position="relative"
                 display="flex"
@@ -367,25 +369,44 @@ export const LiveAgentControls = ({ status = "live", onStop }) => {
                 boxShadow="xl"
                 color={PILL.onFill}
                 asChild><button
-                    aria-label="End live session"
+                    aria-label={label}
                     onClick={onStop}
                     disabled={isBusy}
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}>
-                    {/* RecordButton's lava, hue-shifted orange → teal */}
-                    <Box
-                        position="absolute"
-                        top={0}
-                        left={0}
-                        right={0}
-                        bottom={0}
-                        borderRadius="full"
-                        overflow="hidden"
-                        pointerEvents="none"
-                        filter="hue-rotate(160deg) saturate(0.7)"
-                    >
-                        <LavaBlobs />
-                    </Box>
+                    {isBusy ? (
+                        // Pill's waiting orb, hue-shifted orange → teal
+                        <Box
+                            position="absolute"
+                            top={0}
+                            left={0}
+                            right={0}
+                            bottom={0}
+                            pointerEvents="none"
+                            filter="hue-rotate(160deg) saturate(0.7)"
+                        >
+                            <LoadingOrb size={46} />
+                        </Box>
+                    ) : (
+                        <>
+                            {/* RecordButton's lava, hue-shifted orange → teal */}
+                            <Box
+                                position="absolute"
+                                top={0}
+                                left={0}
+                                right={0}
+                                bottom={0}
+                                borderRadius="full"
+                                overflow="hidden"
+                                pointerEvents="none"
+                                filter="hue-rotate(160deg) saturate(0.7)"
+                            >
+                                <LavaBlobs />
+                            </Box>
+                            {/* Pulsing teal glow — the "agent is live" cue */}
+                            <InternalGlow rgb="23,146,153" />
+                        </>
+                    )}
                     {/* Inner highlight border */}
                     <Box
                         position="absolute"
@@ -397,23 +418,25 @@ export const LiveAgentControls = ({ status = "live", onStop }) => {
                         border="1px solid rgba(255,255,255,0.3)"
                         pointerEvents="none"
                     />
-                    {/* Icon: wave at rest, stop on hover */}
-                    <Box
-                        position="absolute"
-                        top="50%"
-                        left="50%"
-                        transform="translate(-50%, -50%)"
-                        zIndex={1}
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                    >
-                        {isHovered && !isBusy ? (
-                            <FaStop size={16} />
-                        ) : (
-                            <FaWaveSquare size={18} />
-                        )}
-                    </Box>
+                    {/* Icon: wave at rest, stop on hover; hidden while busy */}
+                    {!isBusy && (
+                        <Box
+                            position="absolute"
+                            top="50%"
+                            left="50%"
+                            transform="translate(-50%, -50%)"
+                            zIndex={1}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                        >
+                            {isHovered ? (
+                                <FaStop size={16} />
+                            ) : (
+                                <FaWaveSquare size={18} />
+                            )}
+                        </Box>
+                    )}
                 </button></Box>
         </Tooltip>
     );
