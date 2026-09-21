@@ -23,9 +23,10 @@ export const ActivityList = ({ statuses }) => (
         overflowY="auto"
         pr={1}
         css={{
-            maskImage: "linear-gradient(to bottom, transparent 0, black 16px)",
+            maskImage:
+                "linear-gradient(to bottom, black calc(100% - 16px), transparent 100%)",
             WebkitMaskImage:
-                "linear-gradient(to bottom, transparent 0, black 16px)",
+                "linear-gradient(to bottom, black calc(100% - 16px), transparent 100%)",
         }}
     >
         {statuses.map((item) => {
