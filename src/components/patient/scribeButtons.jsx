@@ -18,13 +18,13 @@ import {
     FaStop,
     FaCheck,
     FaChevronUp,
-    FaChevronDown,
+    FaExternalLinkAlt,
+    FaWaveSquare,
 } from "react-icons/fa";
 import PillBox from "../common/PillBox";
 import { colors } from "../../theme/colors";
 import { LavaBlobs, InternalGlow } from "./scribeVisuals";
 import { AgentSymbol } from "../panels/agent/components/agentVisuals";
-import { getStatusInfo } from "../panels/agent/components/agentStatus";
 
 const PILL = {
     danger: colors.dark.dangerButton, // #ed8796
@@ -204,7 +204,6 @@ const MODES = [
 // Controlled open — mutually exclusive with the transcript panel.
 export const ModeSelectButton = ({
     mode,
-    isLive = false,
     isBusy = false,
     onSelect,
     open = false,
@@ -212,7 +211,6 @@ export const ModeSelectButton = ({
 }) => {
     const active = MODES.find((m) => m.id === mode) ?? MODES[0];
     const ActiveIcon = active.icon;
-    const isAgentLive = active.id === "agent" && isLive;
 
     const handleSelect = (id) => {
         onOpenChange?.(false);
@@ -240,15 +238,14 @@ export const ModeSelectButton = ({
                     border="none"
                     bg="transparent"
                     p={0}
-                    cursor={isBusy ? "default" : "pointer"}
-                    color={isAgentLive ? PILL.danger : "white"}
-                    opacity={isBusy ? 0.5 : 1}
-                    pointerEvents={isBusy ? "none" : "auto"}
-                    outline="none"
-                    transition="transform 0.2s ease"
-                    _hover={{ transform: "scale(1.1)" }}
-                    className={isAgentLive ? "live-bolt-pulse" : undefined}
-                    aria-label={`Capture mode: ${active.label}. Activate to change mode.`}
+                cursor={isBusy ? "default" : "pointer"}
+                color="white"
+                opacity={isBusy ? 0.5 : 1}
+                pointerEvents={isBusy ? "none" : "auto"}
+                outline="none"
+                transition="transform 0.2s ease"
+                _hover={{ transform: "scale(1.1)" }}
+                aria-label={`Capture mode: ${active.label}. Activate to change mode.`}
                 >
                     <ActiveIcon size={15} />
                 </Box>
@@ -339,143 +336,126 @@ export const ModeSelectButton = ({
     );
 };
 
-const formatElapsed = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-};
 
-export const LiveAgentControls = ({
-    status = "live",
-    agentState = "listening",
-    elapsed = 0,
-    artifactsCount = 0,
-    backlogCount = 0,
-    isExpanded = false,
-    onExpand,
-    onStop,
-}) => {
-    const info = getStatusInfo(status, agentState);
+export const LiveAgentControls = ({ status = "live", onStop }) => {
+    const [isHovered, setIsHovered] = React.useState(false);
     const isBusy = status === "connecting" || status === "stopping";
-    const isCatchingUp =
-        backlogCount > 0 && status === "live" && agentState === "listening";
 
     return (
-        <Flex align="center" gap={2} flexShrink={0} px={1}>
-            <AgentSymbol
-                pulse={info.pulse}
-                boxSize="26px"
-                iconSize="11px"
-                radius="8px"
-            />
-            <Flex
-                direction="column"
-                align="flex-start"
-                lineHeight="1.15"
-                minW="70px"
-            >
-                <Text fontSize="xs" fontWeight="600" color="white" truncate maxW="120px">
-                    {isCatchingUp ? "Catching up…" : info.label}
-                </Text>
-                <Text
-                    fontSize="sm"
-                    fontWeight="700"
-                    color="white"
-                    fontVariantNumeric="tabular-nums"
-                    minW="34px"
-                    aria-label={`Live session ${formatElapsed(elapsed)}`}
-                >
-                    {isBusy ? "· · ·" : formatElapsed(elapsed)}
-                </Text>
-            </Flex>
-            {artifactsCount > 0 && (
-                <Text
-                    fontSize="xs"
-                    fontWeight="600"
-                    color={PILL.info}
-                    bg="rgba(139, 213, 202, 0.15)"
-                    borderRadius="full"
-                    px={2}
-                    py={0.5}
-                    flexShrink={0}
-                    whiteSpace="nowrap"
-                >
-                    {artifactsCount} to review
-                </Text>
-            )}
-            <Tooltip
-                content={isExpanded ? "Collapse live agent panel" : "Expand live agent"}
-                showArrow
-                positioning={{ placement: "top" }}
-            >
-                <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    w="28px"
-                    h="28px"
-                    borderRadius="full"
-                    border={`1px solid ${isExpanded ? PILL.info : PILL.muted}`}
-                    color={isExpanded ? PILL.info : PILL.muted}
-                    cursor="pointer"
-                    outline="none"
-                    bg="transparent"
-                    transition="all 0.2s ease"
-                    _hover={{
-                        bg: PILL.infoFill,
-                        borderColor: PILL.infoFill,
-                        color: PILL.onFill,
-                        transform: "scale(1.05)",
-                    }}
-                    asChild>
-                    <button
-                        aria-label={
-                            isExpanded
-                                ? "Collapse live agent panel"
-                                : "Expand live agent"
-                        }
-                        onClick={onExpand}>
-                        {isExpanded ? (
-                            <FaChevronDown size="10px" />
+        <Tooltip
+            content={status === "stopping" ? "Wrapping up…" : "End live session"}
+            showArrow
+            positioning={{ placement: "top" }}
+        >
+            <Box
+                position="relative"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                w="46px"
+                h="46px"
+                p={0}
+                flexShrink={0}
+                borderRadius="full"
+                border="none"
+                cursor={isBusy ? "default" : "pointer"}
+                opacity={isBusy ? 0.5 : 1}
+                pointerEvents={isBusy ? "none" : "auto"}
+                transition="all 0.2s ease"
+                outline="none"
+                overflow="hidden"
+                boxShadow="xl"
+                color={PILL.onFill}
+                asChild><button
+                    aria-label="End live session"
+                    onClick={onStop}
+                    disabled={isBusy}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}>
+                    {/* RecordButton's lava, hue-shifted orange → teal */}
+                    <Box
+                        position="absolute"
+                        top={0}
+                        left={0}
+                        right={0}
+                        bottom={0}
+                        borderRadius="full"
+                        overflow="hidden"
+                        pointerEvents="none"
+                        filter="hue-rotate(160deg) saturate(0.7)"
+                    >
+                        <LavaBlobs />
+                    </Box>
+                    {/* Inner highlight border */}
+                    <Box
+                        position="absolute"
+                        top="2px"
+                        left="2px"
+                        right="2px"
+                        bottom="2px"
+                        borderRadius="full"
+                        border="1px solid rgba(255,255,255,0.3)"
+                        pointerEvents="none"
+                    />
+                    {/* Icon: wave at rest, stop on hover */}
+                    <Box
+                        position="absolute"
+                        top="50%"
+                        left="50%"
+                        transform="translate(-50%, -50%)"
+                        zIndex={1}
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        {isHovered && !isBusy ? (
+                            <FaStop size={16} />
                         ) : (
-                            <FaChevronUp size="10px" />
+                            <FaWaveSquare size={18} />
                         )}
-                    </button>
-                </Box>
-            </Tooltip>
-            <Tooltip
-                content={status === "stopping" ? "Wrapping up…" : "End live session"}
-                showArrow
-                positioning={{ placement: "top" }}
-            >
-                <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    w="28px"
-                    h="28px"
-                    borderRadius="full"
-                    border={`1px solid ${PILL.danger}`}
-                    bg="rgba(237, 135, 150, 0.15)"
-                    color={PILL.danger}
-                    cursor={isBusy ? "default" : "pointer"}
-                    opacity={isBusy ? 0.5 : 1}
-                    pointerEvents={isBusy ? "none" : "auto"}
-                    transition="all 0.2s ease"
-                    outline="none"
-                    _hover={{ transform: "scale(1.05)" }}
-                    asChild>
-                    <button
-                        aria-label="End live session"
-                        onClick={onStop}
-                        disabled={isBusy}>
-                        <FaStop size="9px" />
-                    </button>
-                </Box>
-            </Tooltip>
-        </Flex>
+                    </Box>
+                </button></Box>
+        </Tooltip>
     );
 };
+
+export const LiveExpandButton = ({ isExpanded = false, onExpand }) => (
+    <Tooltip
+        content={isExpanded ? "Collapse live agent panel" : "Expand live agent"}
+        showArrow
+        positioning={{ placement: "top" }}
+    >
+        <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            w="30px"
+            h="30px"
+            borderRadius="full"
+            cursor="pointer"
+            outline="none"
+            transition="all 0.2s ease"
+            color={isExpanded ? PILL.info : "white"}
+            bg={isExpanded ? colors.dark.surface : "transparent"}
+            _hover={{ bg: colors.dark.surface, transform: "scale(1.05)" }}
+            asChild><button
+                aria-label={
+                    isExpanded ? "Collapse live agent panel" : "Expand live agent"
+                }
+                onClick={onExpand}>
+                <Box
+                    as="span"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    transition="transform 0.2s ease"
+                    transform={isExpanded ? "rotate(180deg)" : "none"}
+                >
+                    <FaExternalLinkAlt size={13} />
+                </Box>
+            </button></Box>
+    </Tooltip>
+);
 
 export const AgentReviewPill = ({ artifactsCount = 0, onExpand, onDismiss }) => (
     <PillBox
@@ -487,6 +467,7 @@ export const AgentReviewPill = ({ artifactsCount = 0, onExpand, onDismiss }) => 
         px={3}
         py={2}
         gap={2}
+        minHeight="65px"
     >
         <AgentSymbol boxSize="26px" iconSize="11px" radius="8px" />
         <Flex align="center" gap={2} pr={1} color="white">
@@ -564,6 +545,7 @@ export const AgentErrorPill = ({ onRetry, onDismiss }) => (
         px={3}
         py={2}
         gap={2}
+        minHeight="65px"
     >
         <Flex align="center" gap={2} color={PILL.danger} pr={1}>
             <FaExclamationTriangle size={15} />
@@ -755,6 +737,7 @@ export const TranscriptionFailurePill = ({
         px={3}
         py={2}
         gap={2}
+        minHeight="65px"
     >
         <Tooltip
             content={sendError?.message || "Transcription failed"}

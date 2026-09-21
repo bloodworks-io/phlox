@@ -3,6 +3,7 @@ import { useState } from "react";
 import { screen, fireEvent, cleanup } from "@testing-library/react";
 import {
     LiveAgentControls,
+    LiveExpandButton,
     AgentReviewPill,
     AgentErrorPill,
 } from "./scribeButtons";
@@ -14,57 +15,39 @@ import { renderWithProviders } from "../../test/utils";
 afterEach(cleanup);
 
 describe("LiveAgentControls", () => {
-    it("shows status, timer, review count, and expand", () => {
-        const onExpand = vi.fn();
-        renderWithProviders(
-            <LiveAgentControls
-                status="live"
-                agentState="listening"
-                elapsed={252}
-                artifactsCount={2}
-                onExpand={onExpand}
-            />,
-        );
-        expect(screen.getByText("Microphone active")).toBeInTheDocument();
-        expect(screen.getByText("4:12")).toBeInTheDocument();
-        expect(screen.getByText("2 to review")).toBeInTheDocument();
+    it("ends the session on click", () => {
+        const onStop = vi.fn();
+        renderWithProviders(<LiveAgentControls status="live" onStop={onStop} />);
         fireEvent.click(
-            screen.getByRole("button", { name: /expand live agent/i }),
+            screen.getByRole("button", { name: /end live session/i }),
         );
-        expect(onExpand).toHaveBeenCalled();
-    });
-
-    it("omits the review badge when nothing is prepared", () => {
-        renderWithProviders(<LiveAgentControls status="live" elapsed={10} />);
-        expect(screen.queryByText(/to review/)).not.toBeInTheDocument();
+        expect(onStop).toHaveBeenCalled();
     });
 
     it("disables ending while connecting or wrapping up", () => {
-        renderWithProviders(<LiveAgentControls status="stopping" elapsed={0} />);
+        renderWithProviders(<LiveAgentControls status="stopping" onStop={() => {}} />);
         expect(screen.getByRole("button", { name: /end live session/i })).toBeDisabled();
     });
+});
 
-    it("shows catching-up while speech is queued and listening", () => {
+describe("LiveExpandButton", () => {
+    it("expands the panel on click and flips its label when expanded", () => {
+        const onExpand = vi.fn();
         renderWithProviders(
-            <LiveAgentControls
-                status="live"
-                agentState="listening"
-                backlogCount={3}
-            />,
+            <LiveExpandButton isExpanded={false} onExpand={onExpand} />,
         );
-        expect(screen.getByText("Catching up…")).toBeInTheDocument();
-    });
+        fireEvent.click(
+            screen.getByRole("button", { name: "Expand live agent" }),
+        );
+        expect(onExpand).toHaveBeenCalled();
 
-    it("keeps the working status over catching-up", () => {
+        cleanup();
         renderWithProviders(
-            <LiveAgentControls
-                status="live"
-                agentState="working"
-                backlogCount={3}
-            />,
+            <LiveExpandButton isExpanded onExpand={onExpand} />,
         );
-        expect(screen.getByText("Updating note…")).toBeInTheDocument();
-        expect(screen.queryByText("Catching up…")).not.toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: "Collapse live agent panel" }),
+        ).toBeInTheDocument();
     });
 });
 
@@ -107,8 +90,6 @@ function PillAndPanelHarness() {
             <ScribePillBox
                 isLive
                 liveStatus="live"
-                liveAgentState="listening"
-                liveElapsed={252}
                 isLivePanelExpanded={isLiveExpanded}
                 onLiveExpand={() => setIsLiveExpanded((open) => !open)}
                 onLiveStop={() => {}}
@@ -142,5 +123,26 @@ describe("pill to panel integration", () => {
             screen.getByRole("button", { name: "Collapse live agent panel" }),
         );
         expect(document.querySelector(".live-agent-card")).toBeNull();
+    });
+
+    it("first open anchors the panel above the scribe pill", () => {
+        renderWithProviders(<PillAndPanelHarness />);
+        const pill = document.querySelector(".pill-box-scribe");
+        pill.getBoundingClientRect = () => ({
+            top: 700,
+            bottom: 750,
+            left: 362,
+            right: 662,
+            width: 300,
+            height: 50,
+        });
+
+        fireEvent.click(
+            screen.getByRole("button", { name: /expand live agent/i }),
+        );
+
+        const card = document.querySelector(".live-agent-card");
+        expect(getComputedStyle(card).left).toBe("342px");
+        expect(getComputedStyle(card).bottom).toBe("80px");
     });
 });

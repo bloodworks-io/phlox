@@ -94,9 +94,19 @@ export const LiveAgentCard = ({
     const width = EXPANDED_WIDTH;
 
     const [position, setPosition] = useState(() => {
-        const initial =
-            readSavedPosition() ??
-            { x: window.innerWidth - EXPANDED_WIDTH - EDGE_BUFFER, bottom: 16 };
+        const saved = readSavedPosition();
+        if (saved) return clampPosition(saved.x, saved.bottom, width, null);
+
+        const pill = scribePillRect();
+        const initial = pill
+            ? {
+                  x: pill.left + pill.width / 2 - width / 2,
+                  bottom: window.innerHeight - pill.top + PILL_CLEARANCE,
+              }
+            : {
+                  x: window.innerWidth - EXPANDED_WIDTH - EDGE_BUFFER,
+                  bottom: 16,
+              };
         return clampPosition(initial.x, initial.bottom, width, null);
     });
     const dragRef = useRef(null);

@@ -9,6 +9,7 @@ import {
     TranscriptionFailurePill,
     ModeSelectButton,
     LiveAgentControls,
+    LiveExpandButton,
     AgentReviewPill,
     AgentErrorPill,
 } from "./scribeButtons";
@@ -31,12 +32,9 @@ const ScribePillBox = ({
     // Live agent
     isLive,
     isLiveBusy = false,
-    liveElapsed = 0,
     onLiveStop,
     liveStatus = "idle",
-    liveAgentState = "listening",
     liveArtifactsCount = 0,
-    liveBacklogCount = 0,
     isLivePanelExpanded = false,
     onLiveExpand,
     onLiveRetry,
@@ -106,6 +104,9 @@ const ScribePillBox = ({
                 px={2}
                 py={2}
                 gap={0}
+                minHeight="65px"
+                w="182px"
+                justify="center"
             >
                 <LoadingOrb size={46} />
             </PillBox>
@@ -147,6 +148,10 @@ const ScribePillBox = ({
             className="pill-box-scribe"
             left="50%"
             transform="translateX(-50%)"
+            py={2}
+            minHeight="65px"
+            w="182px"
+            justify="center"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -170,14 +175,21 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Left: mode selector (Reset while recording; hidden while the
-                pill belongs to the live agent — mode can't change then) */}
-            {isLive ? null : isRecording ? (
+            {/* Left: mode selector (Reset while recording; locked, pulsing
+                bolt while the pill belongs to the live agent — mode can't
+                change mid-session) */}
+            {isLive ? (
+                <ModeSelectButton
+                    mode={mode}
+                    isBusy
+                    open={isModeMenuOpen}
+                    onOpenChange={onModeMenuOpenChange}
+                />
+            ) : isRecording ? (
                 <ResetButton onReset={onReset} />
             ) : (
                 <ModeSelectButton
                     mode={mode}
-                    isLive={isLive}
                     isBusy={isLiveBusy}
                     onSelect={onModeSelect}
                     open={isModeMenuOpen}
@@ -185,18 +197,9 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Center: live agent minimized view — or the mic */}
+            {/* Center: live agent hero (doubles as stop) — or the mic */}
             {isLive ? (
-                <LiveAgentControls
-                    status={liveStatus}
-                    agentState={liveAgentState}
-                    elapsed={liveElapsed}
-                    artifactsCount={liveArtifactsCount}
-                    backlogCount={liveBacklogCount}
-                    isExpanded={isLivePanelExpanded}
-                    onExpand={onLiveExpand}
-                    onStop={onLiveStop}
-                />
+                <LiveAgentControls status={liveStatus} onStop={onLiveStop} />
             ) : (
                 <RecordButton
                     isRecording={isRecording}
@@ -210,28 +213,36 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Right: Transcript / Send */}
-            <Popover.Root
-                open={isTranscriptionOpen}
-                onOpenChange={(d) => onTranscriptOpenChange?.(d.open)}
-                positioning={{ placement: "top" }}
-                lazyRender
-            >
-                <TranscriptSendButton
-                    isRecording={isRecording && !isLive}
-                    onSend={onSend}
-                    isTranscriptionOpen={isTranscriptionOpen}
-                    hasRawTranscription={hasRawTranscription}
+            {/* Right: Expand live panel while the agent runs (mirrors Send
+                in the recording state); Transcript / Send otherwise */}
+            {isLive ? (
+                <LiveExpandButton
+                    isExpanded={isLivePanelExpanded}
+                    onExpand={onLiveExpand}
                 />
-                <Popover.Positioner>
-                    <Popover.Content w="280px" p={0}>
-                        <Popover.Arrow>
-                            <Popover.ArrowTip />
-                        </Popover.Arrow>
-                        {transcriptPanel}
-                    </Popover.Content>
-                </Popover.Positioner>
-            </Popover.Root>
+            ) : (
+                <Popover.Root
+                    open={isTranscriptionOpen}
+                    onOpenChange={(d) => onTranscriptOpenChange?.(d.open)}
+                    positioning={{ placement: "top" }}
+                    lazyRender
+                >
+                    <TranscriptSendButton
+                        isRecording={isRecording && !isLive}
+                        onSend={onSend}
+                        isTranscriptionOpen={isTranscriptionOpen}
+                        hasRawTranscription={hasRawTranscription}
+                    />
+                    <Popover.Positioner>
+                        <Popover.Content w="280px" p={0}>
+                            <Popover.Arrow>
+                                <Popover.ArrowTip />
+                            </Popover.Arrow>
+                            {transcriptPanel}
+                        </Popover.Content>
+                    </Popover.Positioner>
+                </Popover.Root>
+            )}
         </PillBox>
     );
 };

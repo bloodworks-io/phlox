@@ -16,6 +16,7 @@ const PillBox = ({
   transform,
   flexDirection = "row",
   gap = 3,
+  justify = "flex-start",
   zIndex = "1050",
   px = 4,
   py = 3,
@@ -38,7 +39,7 @@ const PillBox = ({
       py={py}
       {...rest}
     >
-      <Flex align="center" gap={gap} flexDirection={flexDirection}>
+      <Flex align="center" gap={gap} flexDirection={flexDirection} justifyContent={justify}>
         {children}
       </Flex>
     </Box>

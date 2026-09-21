@@ -618,12 +618,9 @@ const PatientDetails = ({
                     liveAgent.status === "connecting" ||
                     liveAgent.status === "stopping"
                 }
-                liveElapsed={liveAgent.elapsedSeconds}
                 onLiveStop={handleLiveStop}
                 liveStatus={liveAgent.status}
-                liveAgentState={liveAgent.agentState}
                 liveArtifactsCount={liveAgent.artifacts.length}
-                liveBacklogCount={liveAgent.backlog}
                 isLivePanelExpanded={isLiveExpanded}
                 onLiveExpand={() => setIsLiveExpanded((open) => !open)}
                 onLiveRetry={liveAgent.retryLive}

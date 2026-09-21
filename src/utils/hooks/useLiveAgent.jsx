@@ -28,8 +28,6 @@ export const useLiveAgent = ({
     const [lastError, setLastError] = useState(null);
     const [backlog, setBacklog] = useState(0);
     const [fieldFlash, setFieldFlash] = useState({}); // {field_key: timestamp}
-    const [startedAt, setStartedAt] = useState(null);
-    const [clockNow, setClockNow] = useState(0);
 
     const sessionIdRef = useRef(null);
     const recorderRef = useRef(null);
@@ -199,7 +197,6 @@ export const useLiveAgent = ({
                     sessionIdRef.current = null;
                     settleAfterSession();
                     setAgentState("listening");
-                    setStartedAt(null);
                     setBacklog(0);
                     break;
                 default:
@@ -229,7 +226,6 @@ export const useLiveAgent = ({
                         "The event stream ended unexpectedly. Audio capture stopped.",
                     );
                     setStatus("error");
-                    setStartedAt(null);
                     setBacklog(0);
                 }
             }
@@ -288,8 +284,6 @@ export const useLiveAgent = ({
             setStagedJobs([]);
             setFieldFlash({});
             setBacklog(0);
-            setStartedAt(Date.now());
-            setClockNow(Date.now());
             setStatus("live");
             setAgentState("listening");
             consumeEvents(sessionId);
@@ -338,7 +332,6 @@ export const useLiveAgent = ({
             sessionIdRef.current = null;
             settleAfterSession();
             setAgentState("listening");
-            setStartedAt(null);
             setBacklog(0);
         }
     }, [setPatient, settleAfterSession]);
@@ -427,17 +420,6 @@ export const useLiveAgent = ({
         return () => window.clearInterval(id);
     }, [status]);
 
-    // Session clock for the pill's live timer chip.
-    useEffect(() => {
-        if (!startedAt) return undefined;
-        const id = setInterval(() => setClockNow(Date.now()), 1000);
-        return () => clearInterval(id);
-    }, [startedAt]);
-
-    const elapsedSeconds = startedAt
-        ? Math.max(0, Math.floor((clockNow - startedAt) / 1000))
-        : 0;
-
     return {
         status,
         isLiveActive,
@@ -447,7 +429,6 @@ export const useLiveAgent = ({
         artifacts,
         stagedJobs,
         fieldFlash,
-        elapsedSeconds,
         lastError,
         backlog,
         startLive,
