@@ -16,6 +16,11 @@ export const useAutosave = (value, saver, delay = 800, enabled = true) => {
   const lastSavedRef = useRef(value);
   const saverRef = useRef(saver);
   const wasEnabledRef = useRef(false);
+  // Latest value for the unmount flush (the [] effect closes over stale state otherwise)
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   // Keep saver ref current without retriggering the effect
   useEffect(() => {
@@ -83,7 +88,22 @@ export const useAutosave = (value, saver, delay = 800, enabled = true) => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      if (
+        wasEnabledRef.current &&
+        valueRef.current !== lastSavedRef.current
+      ) {
+        Promise.resolve(saverRef.current(valueRef.current))
+          .then(() => {
+            lastSavedRef.current = valueRef.current;
+          })
+          .catch((e) => {
+            console.error("Autosave flush on unmount failed:", e);
+          });
+      }
     };
   }, []);
 

@@ -17,12 +17,14 @@ import { useLLMStep } from "../../utils/hooks/splash/useLLMStep";
 import { useTranscriptionStep } from "../../utils/hooks/splash/useTranscriptionStep";
 import { useTemplatesStep } from "../../utils/hooks/splash/useTemplatesStep";
 import { useLettersStep } from "../../utils/hooks/splash/useLettersStep";
+import { useTemplate } from "../../utils/templates/templateContext";
 
 const SplashScreen = ({ onComplete }) => {
 
   const [currentStep, setCurrentStep] = useState(SPLASH_STEPS.ABOUT_YOU);
   const [isLoading, setIsLoading] = useState(false);
   const [showLlmStep, setShowLlmStep] = useState(false);
+  const { setDefaultTemplate } = useTemplate();
 
   useEffect(() => {
     let cancelled = false;
@@ -142,6 +144,7 @@ const SplashScreen = ({ onComplete }) => {
           ? parseInt(lettersData.selectedLetterTemplate)
           : null,
       };
+      delete userSettingsToSave.default_template_key;
 
       await settingsApi.saveUserSettings(userSettingsToSave);
 
@@ -161,7 +164,8 @@ const SplashScreen = ({ onComplete }) => {
       }
 
       if (templatesData.selectedTemplate) {
-        await settingsApi.setDefaultTemplate(templatesData.selectedTemplate);
+
+        await setDefaultTemplate(templatesData.selectedTemplate);
       }
 
       await settingsApi.markSplashCompleted();

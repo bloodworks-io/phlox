@@ -116,7 +116,8 @@ const PatientDetails = ({
         }));
 
         if (candidate.template_key) {
-            selectTemplate(candidate.template_key);
+
+            selectTemplate(candidate.template_key, { includeDeleted: true });
         }
 
         searchFlow.clearSearchResult();

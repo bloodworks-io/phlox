@@ -4,20 +4,24 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import { useApiToast } from "../helpers/apiToastContext";
 import { templateApi } from "../api/templateApi";
-import { templateService } from "./templateService";
+import { isDefaultTemplate } from "./templateFamily";
 import { useAppInit } from "../context/appInit";
 
-// Create context
-const TemplateContext = createContext<any>(null);
+// Single source of truth for template state. Every mutation (default
+// selection, save/fork/version bump, delete) flows through here so the
+// active list, default pointer, and current selection can never drift
+// apart the way the old mount-once load did.
+const TemplateContext = createContext(null);
 
 // Initial state
 const initialState = {
   templates: [],
   currentTemplate: null,
-  defaultTemplate: null,
+  defaultTemplateKey: null,
   loading: false,
   error: null,
   status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
@@ -27,30 +31,14 @@ const initialState = {
 function templateReducer(state, action) {
   switch (action.type) {
     case "START_LOADING":
-      return {
-        ...state,
-        loading: true,
-        visualLoading: true,
-        status: "loading",
-      };
-    case "FINISH_LOADING":
-      return {
-        ...state,
-        loading: false,
-        status: state.visualLoading ? "loading" : "succeeded",
-      };
-    case "SET_VISUAL_LOADING":
-      return {
-        ...state,
-        visualLoading: action.payload,
-        status: action.payload ? "loading" : "succeeded",
-      };
-    case "SET_LOADING":
       return { ...state, loading: true, status: "loading" };
+    case "FINISH_LOADING":
+      return { ...state, loading: false, status: "succeeded" };
     case "SET_TEMPLATES":
       return {
         ...state,
         templates: action.payload,
+        error: null,
         loading: false,
         status: "succeeded",
       };
@@ -61,107 +49,51 @@ function templateReducer(state, action) {
         loading: false,
         status: "succeeded",
       };
-    case "SET_DEFAULT_TEMPLATE":
+    case "SET_DEFAULT_TEMPLATE_KEY":
       return {
         ...state,
-        defaultTemplate: action.payload,
-        loading: false,
-        status: "succeeded",
-      };
-    case "DELETE_TEMPLATE":
-      return {
-        ...state,
-        templates: state.templates.filter(
-          (t) => t.template_key !== action.payload,
-        ),
+        defaultTemplateKey: action.payload,
         loading: false,
         status: "succeeded",
       };
     case "SET_ERROR":
-      return {
-        ...state,
-        error: action.payload,
-        loading: false,
-        status: "failed",
-      };
-    case "RESET":
-      return initialState;
-    case "SET_TEMPLATE_CHANGING":
-      return {
-        ...state,
-        isTemplateChanging: action.payload,
-      };
+      return { ...state, error: action.payload, loading: false, status: "failed" };
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }
 }
 
 export const TemplateProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(templateReducer, {
-    ...initialState,
-    loading: false,
-    visualLoading: false,
-  });
+  const [state, dispatch] = useReducer(templateReducer, initialState);
   const toast = useApiToast();
   const { isInitializing } = useAppInit();
 
-  // Load all templates
-  const loadTemplates = useCallback(async () => {
-    dispatch({ type: "SET_LOADING" });
-    try {
-      const templatesData = await templateApi.fetchTemplates();
-      dispatch({ type: "SET_TEMPLATES", payload: templatesData });
-    } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: error.message });
-      toast({
-        title: "Error",
-        description: "Failed to load templates",
-        type: "error",
-        duration: 3000,
-      });
-    }
-  }, [toast]);
 
-  // Load default template
-  const loadDefaultTemplate = useCallback(async () => {
-    dispatch({ type: "SET_LOADING" });
-    try {
-      const defaultTemplateData = await templateApi.getDefaultTemplate();
-      dispatch({
-        type: "SET_DEFAULT_TEMPLATE",
-        payload: defaultTemplateData,
-      });
-      return defaultTemplateData;
-    } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: error.message });
-      toast({
-        title: "Error",
-        description: "Failed to load default template",
-        type: "error",
-        duration: 3000,
-      });
-      return null;
-    }
-  }, [toast]);
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
-  // Set active template
-  const setActiveTemplate = useCallback(
-    async (templateKey = "unspecified") => {
-      const cached = templateService.getCachedTemplate(templateKey);
-      if (cached) {
-        dispatch({ type: "SET_CURRENT_TEMPLATE", payload: cached });
-        return cached;
+  // Set the active template.
+  const selectTemplate = useCallback(
+    async (templateKey, { includeDeleted = false } = {}) => {
+      if (!templateKey) {
+        return null;
       }
 
-      dispatch({ type: "START_LOADING" });
+      const fromList = stateRef.current.templates.find(
+        (t) => t.template_key === templateKey,
+      );
+      if (fromList) {
+        dispatch({ type: "SET_CURRENT_TEMPLATE", payload: fromList });
+        return fromList;
+      }
 
       try {
-        const template = await templateService.getTemplateByKey(templateKey);
-
+        const template = await templateApi.getTemplateByKey(templateKey, {
+          includeDeleted,
+        });
         dispatch({ type: "SET_CURRENT_TEMPLATE", payload: template });
-        dispatch({ type: "FINISH_LOADING" });
-        dispatch({ type: "SET_VISUAL_LOADING", payload: false });
-
         return template;
       } catch (error) {
         console.error(
@@ -169,9 +101,6 @@ export const TemplateProvider = ({ children }) => {
           error,
         );
         dispatch({ type: "SET_ERROR", payload: error.message });
-        dispatch({ type: "FINISH_LOADING" });
-        dispatch({ type: "SET_VISUAL_LOADING", payload: false });
-
         toast({
           title: "Error",
           description: "Failed to load template",
@@ -184,60 +113,32 @@ export const TemplateProvider = ({ children }) => {
     [toast],
   );
 
-  // Initialize templates on mount
-  // Skip initialization if app is still initializing (server not ready)
-  useEffect(() => {
-    // Don't initialize templates if the app is still initializing
-    if (isInitializing) {
-      return;
-    }
-
-    const initializeTemplates = async () => {
-      try {
-        dispatch({ type: "SET_LOADING" });
-
-        // Load all templates (this is already handled by loadTemplates())
-        await loadTemplates();
-
-        // Load and set default template
-        const defaultTemplate = await loadDefaultTemplate();
-        if (!defaultTemplate) {
-          throw new Error("No default template found");
-        }
-
-        // Additionally set it as the current active template
-        await setActiveTemplate(defaultTemplate.template_key);
-      } catch (error) {
-        dispatch({ type: "SET_ERROR", payload: error.message });
-        // Only show toast if we're not initializing
-        if (!isInitializing) {
-          toast({
-            title: "Error",
-            description: "Failed to initialize templates",
-            type: "error",
-            duration: 3000,
-          });
-        }
-      }
-    };
-    initializeTemplates();
-  }, [
-    loadTemplates,
-    loadDefaultTemplate,
-    setActiveTemplate,
-    toast,
-    isInitializing,
-  ]);
-
+  // Reload the active template list and the default pointer, keeping the
+  // current selection when it still exists and falling back to the default
+  // otherwise.
   const refreshTemplates = useCallback(async () => {
     dispatch({ type: "START_LOADING" });
     try {
-      // Load all templates
-      await loadTemplates();
-      // Load and set default template
-      const defaultTemplate = await loadDefaultTemplate();
-      if (defaultTemplate) {
-        await setActiveTemplate(defaultTemplate.template_key);
+      const templatesData = await templateApi.fetchTemplates();
+      dispatch({ type: "SET_TEMPLATES", payload: templatesData });
+
+      const defaultData = await templateApi.getDefaultTemplate();
+      const defaultKey = defaultData?.template_key ?? null;
+      dispatch({ type: "SET_DEFAULT_TEMPLATE_KEY", payload: defaultKey });
+
+      const prevKey = stateRef.current.currentTemplate?.template_key;
+      const keepKey =
+        prevKey && templatesData.some((t) => t.template_key === prevKey)
+          ? prevKey
+          : defaultKey;
+
+      if (keepKey) {
+        const fromList = templatesData.find((t) => t.template_key === keepKey);
+        if (fromList) {
+          dispatch({ type: "SET_CURRENT_TEMPLATE", payload: fromList });
+        } else {
+          await selectTemplate(keepKey);
+        }
       }
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });
@@ -248,11 +149,36 @@ export const TemplateProvider = ({ children }) => {
         duration: 3000,
       });
     }
-  }, [loadTemplates, loadDefaultTemplate, setActiveTemplate, toast]);
+  }, [toast, selectTemplate]);
+
+  const setDefaultTemplate = useCallback(
+    async (templateKey) => {
+      if (!templateKey) {
+        return;
+      }
+      await templateApi.setDefaultTemplate(templateKey);
+      dispatch({ type: "SET_DEFAULT_TEMPLATE_KEY", payload: templateKey });
+      await selectTemplate(templateKey);
+    },
+    [selectTemplate],
+  );
+
+  const saveTemplate = useCallback(
+    async (template) => {
+      const result = await templateApi.saveTemplates([template]);
+      const newKey = result?.updated_keys?.[template.template_key];
+      await refreshTemplates();
+      if (newKey && newKey !== template.template_key) {
+        await selectTemplate(newKey);
+      }
+      return result;
+    },
+    [refreshTemplates, selectTemplate],
+  );
 
   const deleteTemplate = useCallback(
     async (templateKey) => {
-      if (templateService.isDefaultTemplate(templateKey)) {
+      if (isDefaultTemplate(templateKey)) {
         toast({
           title: "Error",
           description: "Cannot delete default templates",
@@ -262,14 +188,9 @@ export const TemplateProvider = ({ children }) => {
         return false;
       }
 
-      dispatch({ type: "SET_LOADING" });
       try {
-        await templateService.deleteTemplate(templateKey);
-        dispatch({ type: "DELETE_TEMPLATE", payload: templateKey });
-
-        // Refresh templates after deletion
+        await templateApi.deleteTemplate(templateKey);
         await refreshTemplates();
-
         toast({
           title: "Success",
           description: "Template deleted successfully",
@@ -291,19 +212,73 @@ export const TemplateProvider = ({ children }) => {
     [toast, refreshTemplates],
   );
 
+  // Legacy helper: ensure the default pointer is loaded and return it.
+  const loadDefaultTemplate = useCallback(async () => {
+    let key = stateRef.current.defaultTemplateKey;
+    if (!key) {
+      try {
+        const data = await templateApi.getDefaultTemplate();
+        key = data?.template_key ?? null;
+        if (key) {
+          dispatch({ type: "SET_DEFAULT_TEMPLATE_KEY", payload: key });
+        }
+      } catch (error) {
+        dispatch({ type: "SET_ERROR", payload: error.message });
+        return null;
+      }
+    }
+    if (!key) {
+      return null;
+    }
+    return (
+      stateRef.current.templates.find((t) => t.template_key === key) ?? {
+        template_key: key,
+      }
+    );
+  }, []);
+
+  // Initialize templates on mount
+  // Skip initialization if app is still initializing (server not ready)
+  useEffect(() => {
+    if (isInitializing) {
+      return;
+    }
+    refreshTemplates();
+  }, [refreshTemplates, isInitializing]);
+
+  // The full default template object, derived from the active list (the
+  // /default endpoint only returns the key).
+  const defaultTemplate = useMemo(() => {
+    if (!state.defaultTemplateKey) {
+      return null;
+    }
+    return (
+      state.templates.find(
+        (t) => t.template_key === state.defaultTemplateKey,
+      ) ?? { template_key: state.defaultTemplateKey }
+    );
+  }, [state.templates, state.defaultTemplateKey]);
+
   const value = useMemo(
     () => ({
       ...state,
-      setActiveTemplate,
-      isLoading: state.visualLoading,
+      defaultTemplate,
+      isLoading: state.loading,
+      selectTemplate,
+      setActiveTemplate: selectTemplate, // legacy alias
       refreshTemplates,
+      setDefaultTemplate,
+      saveTemplate,
       deleteTemplate,
       loadDefaultTemplate,
     }),
     [
       state,
-      setActiveTemplate,
+      defaultTemplate,
+      selectTemplate,
       refreshTemplates,
+      setDefaultTemplate,
+      saveTemplate,
       deleteTemplate,
       loadDefaultTemplate,
     ],

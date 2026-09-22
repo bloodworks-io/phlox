@@ -20,7 +20,7 @@ import { templateApi } from "../../utils/api/templateApi";
 import { useTemplate } from "../../utils/templates/templateContext";
 import { isDefaultTemplate, isCustomizedDefault } from "../../utils/templates/templateService";
 
-const TemplateSettingsPanel = ({ templates, setTemplates }) => {
+const TemplateSettingsPanel = () => {
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,7 +33,12 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState(null);
-    const { deleteTemplate } = useTemplate();
+    const {
+        templates,
+        saveTemplate,
+        deleteTemplate,
+        refreshTemplates,
+    } = useTemplate();
 
     const handleEditTemplate = (templateKey) => {
         const template = templates.find((t) => t.template_key === templateKey);
@@ -48,10 +53,9 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
     const handleSaveTemplate = async (templateKey, updatedTemplate) => {
         setIsSaving(true);
         try {
-            const result = await templateApi.saveTemplates([updatedTemplate]);
+
+            const result = await saveTemplate(updatedTemplate);
             const newKey = result?.updated_keys?.[templateKey];
-            const freshTemplates = await templateApi.fetchTemplates();
-            setTemplates(freshTemplates);
 
             toaster.create({
                 title: "Success",
@@ -80,8 +84,6 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
         try {
             const success = await deleteTemplate(templateKey);
             if (success) {
-                const freshTemplates = await templateApi.fetchTemplates();
-                setTemplates(freshTemplates);
                 setIsDeleteModalOpen(false);
                 setTemplateToDelete(null);
                 if (isCustomizedDefault(templateKey)) {
@@ -109,8 +111,8 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
         try {
             const newTemplate = await templateApi.generateTemplate(exampleNote);
 
-            const freshTemplates = await templateApi.fetchTemplates();
-            setTemplates(freshTemplates);
+            // New template created server-side; sync the store's list.
+            await refreshTemplates();
 
             setSelectedTemplate(newTemplate);
             setSelectedTemplateKey(newTemplate.template_key);

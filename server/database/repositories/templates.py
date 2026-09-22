@@ -14,38 +14,33 @@ from server.schemas.templates import (
 from server.utils.current_user import current_user_id, scoped_or_shared
 
 
-def get_template_by_key(template_key: str, exact_match: bool = True) -> dict[str, Any] | None:
-    """
-    Retrieve a template by its key.
-
-    Args:
-        template_key: The template key to search for
-        exact_match: If True, finds exact key match. If False, finds latest version of base key
-    """
+def get_template_by_key(
+    template_key: str, exact_match: bool = True, include_deleted: bool = False
+) -> dict[str, Any] | None:
+    """Retrieve a template by its key."""
     try:
         scope_sql, scope_params = scoped_or_shared("owner_id")
+        deleted_sql = "" if include_deleted else " AND deleted = FALSE"
         with get_db().read() as cursor:
             if exact_match:
                 cursor.execute(
                     f"""
                     SELECT template_key, template_name, fields
                     FROM clinical_templates
-                    WHERE template_key = ?{scope_sql}
+                    WHERE template_key = ?{deleted_sql}{scope_sql}
                     """,
                     (template_key, *scope_params),
                 )
             else:
-                # Get latest version of template
-                base_key = template_key.split("_")[0]
-                cursor.execute(
-                    f"""
-                    SELECT template_key, template_name, fields
-                    FROM clinical_templates
-                    WHERE template_key LIKE ? AND deleted = FALSE{scope_sql}
-                    ORDER BY template_key DESC LIMIT 1
-                    """,
-                    (f"{base_key}_%", *scope_params),
-                )
+                rows = _family_template_rows(cursor, template_key, include_deleted=include_deleted)
+                row = rows[0] if rows else None
+                if row:
+                    return {
+                        "template_key": row["template_key"],
+                        "template_name": row["template_name"],
+                        "fields": json.loads(row["fields"]),
+                    }
+                return None
 
             row = cursor.fetchone()
             if row:
@@ -59,6 +54,45 @@ def get_template_by_key(template_key: str, exact_match: bool = True) -> dict[str
     except Exception as e:
         logging.error(f"Error fetching template: {e}")
         raise
+
+
+def _version_number(template_key: str) -> int:
+    """Numeric version suffix of a key: phlox_01 -> 1, custom_phlox_12 -> 12."""
+    suffix = template_key.rsplit("_", 1)[-1]
+    return int(suffix) if suffix.isdigit() else 0
+
+
+def _family_order_key(template_key: str) -> tuple[int, int]:
+    """Canonical family ordering (higher sorts first).
+
+    User forks (custom_{protected}_{N}) represent the user's customization
+    of a family and rank above every protected original/version; within the
+    same rank, higher version numbers win. Numeric comparison keeps
+    phlox_10 > phlox_9 which lexicographic SQL ordering gets wrong.
+    """
+    fork_base = get_fork_base(template_key)
+    if fork_base is not None:
+        return (1, _version_number(template_key))
+    return (0, _version_number(template_key))
+
+
+def _family_template_rows(cursor, template_key: str, include_deleted: bool = False) -> list:
+    """All rows in the template's family, newest-first by canonical order."""
+    patterns = get_template_family_patterns(template_key)
+    scope_sql, scope_params = scoped_or_shared("owner_id")
+    deleted_sql = "" if include_deleted else " AND deleted = FALSE"
+    like_sql = " OR ".join("template_key LIKE ? ESCAPE '\\'" for _ in patterns)
+    cursor.execute(
+        f"""
+        SELECT template_key, template_name, fields
+        FROM clinical_templates
+        WHERE ({like_sql}){deleted_sql}{scope_sql}
+        """,
+        (*patterns, *scope_params),
+    )
+    rows = cursor.fetchall()
+    rows.sort(key=lambda r: _family_order_key(r["template_key"]), reverse=True)
+    return rows
 
 
 def get_fork_base(template_key: str) -> str | None:
@@ -201,17 +235,17 @@ def update_template(template: ClinicalTemplate) -> str:
             base_key = get_base_key(template.template_key)
             scope_sql, scope_params = scoped_or_shared("owner_id")
 
-            # Get the current version of the template
             cursor.execute(
                 f"""
                 SELECT template_key, template_name, fields
                 FROM clinical_templates
-                WHERE template_key LIKE ? AND deleted = FALSE{scope_sql}
-                ORDER BY template_key DESC LIMIT 1
+                WHERE template_key LIKE ? ESCAPE '\\' AND deleted = FALSE{scope_sql}
                 """,
-                (f"{base_key}_%", *scope_params),
+                (f"{base_key}\\_%", *scope_params),
             )
-            current = cursor.fetchone()
+            series_rows = cursor.fetchall()
+            series_rows.sort(key=lambda r: _version_number(r["template_key"]), reverse=True)
+            current = series_rows[0] if series_rows else None
 
             if current:
                 # Compare current and new content
@@ -245,23 +279,23 @@ def update_template(template: ClinicalTemplate) -> str:
             current_default = config_manager.get_default_template_key()
             is_default = current_default == template.template_key
 
-            # Get the latest version number
+            # Next version in this template's own key series (base_key_N),
+            # computed numerically across live AND soft-deleted rows to avoid
+            # PK collisions (e.g. phlox_10 already soft-deleted). Fork series
+            # (custom_base_N) version independently of the protected series.
             cursor.execute(
-                """
+                f"""
                 SELECT template_key FROM clinical_templates
-                WHERE template_key LIKE ?
-                ORDER BY template_key DESC LIMIT 1
+                WHERE template_key LIKE ? ESCAPE '\\'{scope_sql}
                 """,
-                (f"{base_key}_%",),
+                (f"{base_key}\\_%", *scope_params),
             )
-            result = cursor.fetchone()
+            series_keys = cursor.fetchall()
 
-            current_version = 0
-            if result:
-                try:
-                    current_version = int(result["template_key"].split("_")[-1])
-                except ValueError:
-                    current_version = 0
+            current_version = max(
+                (_version_number(key["template_key"]) for key in series_keys),
+                default=0,
+            )
 
             # Create new version number
             new_version = current_version + 1
@@ -272,9 +306,9 @@ def update_template(template: ClinicalTemplate) -> str:
                 f"""
                 UPDATE clinical_templates
                 SET deleted = TRUE
-                WHERE template_key LIKE ? AND deleted = FALSE{scope_sql}
+                WHERE template_key LIKE ? ESCAPE '\\'{scope_sql}
                 """,
-                (f"{base_key}_%", *scope_params),
+                (f"{base_key}\\_%", *scope_params),
             )
 
             # Insert new version
@@ -295,12 +329,11 @@ def update_template(template: ClinicalTemplate) -> str:
                 ),
             )
 
-            # If this was the default template, update the default to the new version
-            if is_default:
-                config_manager.update_default_template_key(template.template_key, new_template_key)
-                logging.info(f"Updated default template to new version: {new_template_key}")
+        if is_default:
+            config_manager.update_default_template_key(template.template_key, new_template_key)
+            logging.info(f"Updated default template to new version: {new_template_key}")
 
-            return new_template_key
+        return new_template_key
 
     except Exception as e:
         logging.error(f"Error updating template: {e}")
@@ -382,7 +415,7 @@ def get_template_fields(template_key: str) -> list[TemplateField]:
         ValueError: If template doesn't exist or is deleted.
     """
     try:
-        template = get_template_by_key(template_key)
+        template = get_template_by_key(template_key, include_deleted=True)
         if not template:
             raise ValueError(f"Template with key {template_key} not found")
 
@@ -452,7 +485,17 @@ def get_default_template() -> dict[str, Any] | None:
 
         if template_key:
             template = get_template_by_key(template_key)
-            logging.info(f"Successfully retrieved template {template_key}.")
+            if template is None:
+                # Stale pointer at a soft-deleted key (should be unreachable
+                # via sanctioned flows): keep serving it rather than breaking
+                # template init, but make the state visible in logs.
+                template = get_template_by_key(template_key, include_deleted=True)
+                if template:
+                    logging.warning(
+                        f"Default template '{template_key}' is soft-deleted; serving it anyway"
+                    )
+            if template:
+                logging.info(f"Successfully retrieved template {template_key}.")
             return template
 
         logging.info("No default template set")

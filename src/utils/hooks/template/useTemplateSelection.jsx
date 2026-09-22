@@ -19,14 +19,14 @@ export const useTemplateSelection = () => {
   } = context;
 
   const selectTemplate = useCallback(
-    async (templateKey) => {
+    async (templateKey, options) => {
       if (!templateKey) {
         return null;
       }
 
 
       try {
-        const template = await setActiveTemplate(templateKey);
+        const template = await setActiveTemplate(templateKey, options);
 
         return template;
       } catch (error) {

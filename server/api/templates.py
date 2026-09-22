@@ -50,10 +50,10 @@ def get_default_template_endpoint():
 
 
 @router.get("/{template_key}")
-def get_template(template_key: str):
+def get_template(template_key: str, include_deleted: bool = False):
     """Get a specific template by its key."""
     try:
-        template = get_template_by_key(template_key)
+        template = get_template_by_key(template_key, include_deleted=include_deleted)
         if template is None:
             raise HTTPException(status_code=404, detail="Template not found")
         return JSONResponse(content=template)

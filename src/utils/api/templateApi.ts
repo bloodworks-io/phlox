@@ -20,13 +20,25 @@ export const templateApi = {
       errorMessage: "Failed to fetch default template",
     }),
 
-  getTemplateByKey: async (templateKey) =>
+  getTemplateByKey: async (templateKey, { includeDeleted = false } = {}) =>
     handleApiRequest({
       apiCall: async () => {
-        const url = await buildApiUrl(`/api/templates/${templateKey}`);
+        const query = includeDeleted ? "?include_deleted=true" : "";
+        const url = await buildApiUrl(`/api/templates/${templateKey}${query}`);
         return universalFetch(url);
       },
       errorMessage: `Failed to fetch template: ${templateKey}`,
+    }),
+
+  deleteTemplate: async (templateKey) =>
+    handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl(`/api/templates/${templateKey}`);
+        return universalFetch(url, {
+          method: "DELETE",
+        });
+      },
+      errorMessage: `Failed to delete template: ${templateKey}`,
     }),
 
   setDefaultTemplate: async (templateKey) =>

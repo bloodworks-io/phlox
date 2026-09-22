@@ -20,7 +20,7 @@ const UserSettingsPanel = ({
   specialties,
   templates,
   letterTemplates,
-  setTemplates,
+  onDefaultTemplateChange,
 }) => {
   const { t } = useTranslation();
   const [capabilities, setCapabilities] = useState(null);
@@ -57,6 +57,7 @@ const UserSettingsPanel = ({
       ...prev,
       default_template: templateKey,
     }));
+    onDefaultTemplateChange?.(templateKey);
   };
   const handleDefaultLetterTemplateChange = (templateId) => {
     setUserSettings((prev) => ({
@@ -110,7 +111,7 @@ const UserSettingsPanel = ({
                 </Tabs.Trigger>
               )}
             </Tabs.List>
-            
+
               <Tabs.Content value="0" className="floating-main">
                 <VStack gap={4} align="stretch">
                   <Box>
@@ -234,10 +235,7 @@ const UserSettingsPanel = ({
               </Tabs.Content>
 
               <Tabs.Content value="2" className="floating-main">
-                <TemplateSettingsPanel
-                  templates={templates}
-                  setTemplates={setTemplates}
-                />
+                <TemplateSettingsPanel />
               </Tabs.Content>
               <Tabs.Content value="3" className="floating-main">
                 <LetterTemplatesPanel />

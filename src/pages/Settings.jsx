@@ -7,7 +7,7 @@ import {
     Spinner,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
 import { settingsApi } from "../utils/api/settingsApi";
 import { authApi } from "../utils/api/authApi";
@@ -17,7 +17,7 @@ import { UI_LANGUAGES } from "../utils/i18n/languages";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import AdminSettingsPanel from "../components/settings/AdminSettingsPanel";
 import { SPECIALTIES } from "../utils/constants";
-import { templateService } from "../utils/templates/templateService";
+import { useTemplate } from "../utils/templates/templateContext";
 import { localModelApi } from "../utils/api/localModelApi";
 import { useDebounce } from "../utils/hooks/useDebounce";
 import { useAutosave } from "../utils/hooks/useAutosave";
@@ -37,8 +37,14 @@ const Settings = () => {
     const [options, setOptions] = useState({
         letter: { temperature: 0 },
     });
-    const [templates, setTemplates] = useState({});
     const [letterTemplates, setLetterTemplates] = useState([]);
+
+    // Template list comes from the app-wide template store so edits and
+    // default changes made here are visible everywhere immediately.
+    const {
+        templates: providerTemplates,
+        setDefaultTemplate: persistDefaultTemplate,
+    } = useTemplate();
 
     const [config, setConfig] = useState(null);
     const [coreLoading, setCoreLoading] = useState(true);
@@ -61,9 +67,6 @@ const Settings = () => {
         localModels: true,
     });
 
-    // Track default_template separately — it persists via a different endpoint
-    const lastDefaultTemplateRef = useRef(null);
-
     const fetchCoreSettings = useCallback(async () => {
         try {
             setCoreLoading(true);
@@ -77,7 +80,7 @@ const Settings = () => {
             setConfig(configData);
 
             // Letter templates fetched here instead of a separate useEffect
-            const [letterResponse, prompts, optionsData, userSettings, templates] = await Promise.all([
+            const [letterResponse, prompts, optionsData, userSettings] = await Promise.all([
                 settingsService.fetchLetterTemplates().catch((error) => {
                     console.error(
                         "Failed to fetch letter templates:",
@@ -90,7 +93,6 @@ const Settings = () => {
                     ? settingsApi.fetchOptions()
                     : Promise.resolve(null),
                 settingsApi.fetchUserSettings(),
-                settingsApi.fetchTemplates(),
             ]);
 
             setPrompts(prompts);
@@ -107,7 +109,6 @@ const Settings = () => {
                 userSettings.preferred_language = "en";
             }
             setUserSettings(userSettings);
-            setTemplates(templates);
 
             // Sync the preferred language to the localStorage mirror and i18n
             // so locale-aware formatting tracks the clinic language.
@@ -125,13 +126,12 @@ const Settings = () => {
                 }
             }
 
-            // Fetch and merge default template into user settings
-            const defaultTemplate = await templateService.getDefaultTemplate();
+            // Fetch the default template key for the dropdown's initial value
+            const defaultTemplate = await settingsApi.getDefaultTemplate();
             setUserSettings((prev) => ({
                 ...prev,
                 default_template: defaultTemplate.template_key,
             }));
-            lastDefaultTemplateRef.current = defaultTemplate.template_key;
         } catch (error) {
             console.error("Error loading settings:", error);
             toaster.create({
@@ -277,18 +277,41 @@ const Settings = () => {
     };
 
     const saveUserSettingsFn = async (newSettings) => {
-        const { default_template, ...rest } = newSettings;
-        await settingsApi.saveUserSettings({
-            ...rest,
-            default_letter_template_id:
-                newSettings.default_letter_template_id || null,
-        });
-        if (
-            default_template &&
-            default_template !== lastDefaultTemplateRef.current
-        ) {
-            await templateService.setDefaultTemplate(default_template);
-            lastDefaultTemplateRef.current = default_template;
+        // default_template persists immediately via handleDefaultTemplateChange
+        const {
+            default_template: _defaultTemplate,
+            default_template_key: _defaultTemplateKey,
+            ...rest
+        } = newSettings;
+        try {
+            await settingsApi.saveUserSettings({
+                ...rest,
+                default_letter_template_id:
+                    newSettings.default_letter_template_id || null,
+            });
+        } catch (error) {
+            toaster.create({
+                title: "Error",
+                description: "Failed to save user settings",
+                type: "error",
+                duration: 3000,
+            });
+            throw error;
+        }
+    };
+
+    const handleDefaultTemplateChange = async (templateKey) => {
+        setUserSettings((prev) => ({ ...prev, default_template: templateKey }));
+        try {
+            await persistDefaultTemplate(templateKey);
+        } catch (error) {
+            console.error("Failed to set default template:", error);
+            toaster.create({
+                title: "Error",
+                description: "Failed to set default template",
+                type: "error",
+                duration: 3000,
+            });
         }
     };
 
@@ -452,9 +475,9 @@ const Settings = () => {
                     userSettings={userSettings}
                     setUserSettings={setUserSettings}
                     specialties={SPECIALTIES}
-                    templates={templates}
+                    templates={providerTemplates || []}
                     letterTemplates={letterTemplates}
-                    setTemplates={setTemplates}
+                    onDefaultTemplateChange={handleDefaultTemplateChange}
                 />
 
                 {isAdmin && (
