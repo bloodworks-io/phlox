@@ -195,7 +195,7 @@ const MODES = [
         id: "agent",
         icon: FaBolt,
         label: "Live agent",
-        hint: "streams and drafts the note as you talk",
+        hint: "drafts the note in realtime",
     },
 ];
 
