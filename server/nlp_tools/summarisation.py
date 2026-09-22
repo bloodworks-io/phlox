@@ -187,7 +187,7 @@ async def summarise_encounter(patient: Patient) -> tuple[str, str | None]:
         summary_content = summary_content.split("\n\n")[0]
         logging.info(f"Summary content: {summary_content}")
 
-        return initial_summary_content + summary_content
+        return summary_content
 
     async def fetch_condition():
         # Get existing conditions from database
