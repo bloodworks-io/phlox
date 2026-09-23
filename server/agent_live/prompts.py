@@ -71,7 +71,7 @@ def build_live_system_prompt(
 
 {chr(10).join(patient_bits)}
 
-SPEAKER LABELS: transcript segments are prefixed with labels like S1 or S2 from best-effort automatic diarization. Labels can be wrong or missing. Never copy speaker labels into the note fields.
+SPEAKER LABELS: transcript segments are prefixed with labels like S1 or S2 from best-effort automatic diarization. Labels can be wrong or missing; S? marks an unattributed utterance. Never copy speaker labels into the note fields.
 
 NOTE TEMPLATE FIELDS — capture conversation facts into these fields using the note tools:
 {_field_block(template_fields)}

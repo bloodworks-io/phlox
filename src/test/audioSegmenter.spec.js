@@ -30,14 +30,15 @@ describe("UtteranceSegmenter", () => {
 
     it("opens on sustained speech probability and closes on silence (pre-roll kept)", () => {
         const seg = new UtteranceSegmenter(SR);
-        // 250ms / 16ms = 16 hops to open; 600ms / 16ms = 38 hops to close.
+        // 250ms / 16ms = 16 hops to open; 400ms / 16ms = 25 hops to close.
         // 37 speech hops ≈ 592ms, comfortably above minSpeechMs (300ms).
         expect(feed(seg, 37, 0.9)).toBeNull(); // opens at hop 16, keeps going
-        expect(feed(seg, 37, 0.1)).toBeNull();
-        const emitted = feed(seg, 1, 0.1); // 38th silence hop closes
+        expect(feed(seg, 24, 0.1)).toBeNull();
+        const emitted = feed(seg, 1, 0.1); // 25th silence hop closes
         expect(emitted).toBeInstanceOf(Float32Array);
-        // 37 speech hops (incl. pre-roll) + 38 silence hops.
-        expect(emitted.length).toBe(75 * 256);
+        // 37 speech hops (incl. pre-roll) + 1600 samples of kept silence
+        // tail (25 hops closed on, tailKeepMs=100 → trim 4800 samples).
+        expect(emitted.length).toBe(37 * 256 + 1600);
     });
 
     it("treats sub-threshold probabilities as silence while not speaking", () => {
@@ -52,9 +53,9 @@ describe("UtteranceSegmenter", () => {
         // 0.4 sits between speechOffProb (0.35) and speechOnProb (0.5):
         // inside an open utterance it still counts as speech.
         expect(feed(seg, 100, 0.4)).toBeNull();
-        const emitted = feed(seg, 38, 0.05); // only true silence closes
+        const emitted = feed(seg, 25, 0.05); // only true silence closes
         expect(emitted).toBeInstanceOf(Float32Array);
-        expect(emitted.length).toBe((16 + 100 + 38) * 256);
+        expect(emitted.length).toBe((16 + 100) * 256 + 1600);
     });
 
     it("discards utterances whose speech never reaches minSpeechMs", () => {
@@ -64,7 +65,7 @@ describe("UtteranceSegmenter", () => {
         });
         // 20 hops ≈ 320ms: opens (> 100ms) but under minSpeechMs (400ms).
         expect(feed(seg, 20, 0.9)).toBeNull();
-        const emitted = feed(seg, 38, 0.1); // silence closes it
+        const emitted = feed(seg, 25, 0.1); // silence closes it
         expect(emitted).toBeNull(); // discarded: too little speech
         expect(seg.flush()).toBeNull();
     });
@@ -83,7 +84,7 @@ describe("UtteranceSegmenter", () => {
         // Speech continues after the cap; enough speech (7 in-loop + 12
         // more hops = 19 hops ≥ minSpeechMs) + trailing silence closes #2.
         feed(seg, 12, 0.9);
-        expect(feed(seg, 38, 0.1)).toBeInstanceOf(Float32Array);
+        expect(feed(seg, 25, 0.1)).toBeInstanceOf(Float32Array);
     });
 
     it("flush emits in-progress speech", () => {
@@ -105,9 +106,28 @@ describe("UtteranceSegmenter", () => {
         };
 
         for (let i = 0; i < 37; i++) expect(push(0.9)).toBeNull(); // opens
-        for (let i = 0; i < 37; i++) expect(push(0.1)).toBeNull();
-        const emitted = push(0.1); // 38th silence hop closes
+        for (let i = 0; i < 24; i++) expect(push(0.1)).toBeNull();
+        const emitted = push(0.1); // 25th silence hop closes
         expect(emitted).toBeInstanceOf(Float32Array);
-        expect(emitted.length).toBe(75 * 256);
+        expect(emitted.length).toBe(37 * 256 + 1600);
+    });
+
+    it("splits fast speaker handovers into separate utterances", () => {
+        const seg = new UtteranceSegmenter(SR);
+        const segments = [];
+        const run = (n, prob) => {
+            for (let i = 0; i < n; i++) {
+                const out = seg.process(frame(), prob);
+                if (out) segments.push(out);
+            }
+        };
+        run(37, 0.9); // first speaker ~592ms
+        run(29, 0.1); // 464ms gap — over silenceEndMs, closes mid-loop
+        run(37, 0.9); // second speaker
+        run(29, 0.1); // closes again
+        expect(segments).toHaveLength(2);
+        // 37 speech hops (incl. pre-roll) + kept 1600-sample silence tail.
+        expect(segments[0].length).toBe(37 * 256 + 1600);
+        expect(segments[1].length).toBe(37 * 256 + 1600);
     });
 });

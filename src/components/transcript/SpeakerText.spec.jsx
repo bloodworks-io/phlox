@@ -34,6 +34,13 @@ describe("parseSpeakerLine", () => {
             text: "S0: zero is not a label",
         });
     });
+
+    it("parses the unattributed S? marker", () => {
+        expect(parseSpeakerLine("S?: not sure who")).toEqual({
+            speaker: "S?",
+            text: "not sure who",
+        });
+    });
 });
 
 describe("speakerColorPair", () => {
@@ -43,6 +50,13 @@ describe("speakerColorPair", () => {
         );
         expect(new Set(pairs.slice(0, 4)).size).toBe(4);
         expect(pairs[4]).toBe(pairs[0]); // S5 cycles back to S1's colour
+    });
+
+    it("gives S? a muted pair distinct from numbered speakers", () => {
+        const [unknown] = speakerColorPair("S?");
+        [1, 2, 3, 4].forEach((n) => {
+            expect(unknown).not.toBe(speakerColorPair(`S${n}`)[0]);
+        });
     });
 });
 
@@ -64,6 +78,19 @@ describe("SpeakerText", () => {
         expect(dots[0].style.borderRadius).not.toBe("");
         expect(dots[0].style.backgroundColor).not.toBe("");
         expect(dots[0].style.backgroundColor).not.toBe(dots[1].style.backgroundColor);
+    });
+
+    it("renders a hollow dot for the unattributed S? marker", () => {
+        renderWithProviders(<SpeakerText text={"S1: good morning\nS?: unclear who"} />);
+        const dots = document.querySelectorAll("[data-speaker]");
+        expect(dots).toHaveLength(2);
+        const unknown = dots[1];
+        expect(unknown.getAttribute("data-speaker")).toBe("S?");
+        expect(unknown.getAttribute("title")).toBe("Unattributed");
+        // Hollow: transparent fill with a visible border.
+        expect(unknown.style.backgroundColor).toBe("transparent");
+        expect(unknown.style.border).not.toBe("");
+        expect(dots[0].style.backgroundColor).not.toBe("transparent");
     });
 
     it("renders a fully plain transcript without any dots", () => {

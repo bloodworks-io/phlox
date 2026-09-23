@@ -8,10 +8,10 @@ from pathlib import Path
 
 MODEL_URL = (
     "https://github.com/k2-fsa/sherpa-onnx/releases/download/"
-    "speaker-recongition-models/3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx"
+    "speaker-recongition-models/3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx"
 )
-MODEL_SHA256 = "f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11"
-MODEL_FILENAME = "campplus-common.onnx"
+MODEL_SHA256 = "aa3cfc16963a10586a9393f5035d6d6b57e98d358b347f80c2a30bf4f00ceba2"
+MODEL_FILENAME = "campplus-zh-en.onnx"
 
 # server/scripts/fetch_speaker_model.py -> server/assets/models/<file>
 TARGET = Path(__file__).resolve().parents[1] / "assets" / "models" / MODEL_FILENAME

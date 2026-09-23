@@ -6,8 +6,11 @@ const DEFAULTS = {
     speechOnProb: 0.5,
     speechOffProb: 0.35,
     speechStartMs: 250,
-    silenceEndMs: 600,
+
+    silenceEndMs: 400,
     minSpeechMs: 300,
+
+    tailKeepMs: 100,
     // Force-close mid-speech so segments stay small for live streaming.
     maxSegmentMs: 15000,
 };
@@ -106,6 +109,7 @@ export class UtteranceSegmenter {
         this._speaking = false;
         const hadEnough =
             this._speechSamples >= this._msToBuffers(this.options.minSpeechMs);
+        const quiet = this._quietStreak; // captured before the reset below
         const buffers = this._buffers;
         this._buffers = [];
         this._preRoll = [];
@@ -114,7 +118,12 @@ export class UtteranceSegmenter {
         this._loudStreak = 0;
         this._quietStreak = 0;
         if (!hadEnough) return null;
-        return concatFloat32(buffers);
+        const out = concatFloat32(buffers);
+        const trim = Math.max(
+            0,
+            quiet - this._msToBuffers(this.options.tailKeepMs),
+        );
+        return trim ? out.slice(0, out.length - trim) : out;
     }
 }
 

@@ -749,6 +749,7 @@ def test_events_stream_replays_speaker_labels():
     assert session is not None
     session.transcript_segments.append("S1: hello there")
     session.transcript_segments.append("plain line")
+    session.transcript_segments.append("S?: unclear who said this")
 
     client.post(f"/api/agent-live/sessions/{session_id}/stop")
     response = client.get(f"/api/agent-live/sessions/{session_id}/events")
@@ -758,6 +759,9 @@ def test_events_stream_replays_speaker_labels():
     # Unlabeled segments replay with a null speaker, not a mangled line.
     assert '"speaker": null' in payload
     assert '"text": "plain line"' in payload
+    # Unattributed (S?) segments replay with the S? marker.
+    assert '"speaker": "S?"' in payload
+    assert '"text": "unclear who said this"' in payload
 
 
 def test_mode_switch_calls_engine():

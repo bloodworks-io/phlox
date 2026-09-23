@@ -11,16 +11,28 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# "S1: ", "S12: " ... at the start of a transcript line.
-SPEAKER_LINE_RE = re.compile(r"^(S[1-9]\d*):\s")
+# "S1: ", "S12: ", "S?: " ... at the start of a transcript line. "S?" marks
+# an utterance the diarizer saw but could not attribute (see SessionSpeakers).
+SPEAKER_LINE_RE = re.compile(r"^(S[1-9]\d*|S\?):\s")
+UNKNOWN_SPEAKER = "S?"
 
 SAMPLE_RATE = 16000
 
-DEFAULT_THRESHOLD = 0.55
-MIN_UTTERANCE_SECONDS = 0.8
+# Strict match bar: CAM++ cross-speaker cosine on room mics can reach
+# ~0.5, so 0.62 keeps a second voice from folding into an existing label
+DEFAULT_THRESHOLD = 0.62
+# Below this, inherit the previous speaker: CAM++ embeddings of very short
+# clips are unreliable, but 0.5s still labels quick back-channels.
+MIN_UTTERANCE_SECONDS = 0.5
 MAX_SPEAKERS = 4
 
-MODEL_FILENAME = "campplus-common.onnx"
+# Recency weight for centroid updates
+CENTROID_EMA_ALPHA = 0.3
+
+# Below this cosine a new voice is unambiguous
+DISTANT_MINT_THRESHOLD = 0.30
+
+MODEL_FILENAME = "campplus-zh-en.onnx"
 
 
 def format_segment(speaker: str | None, text: str) -> str:
@@ -55,9 +67,10 @@ def speaker_legend_hint(text: str) -> str:
         return ""
     return (
         "Transcript lines are prefixed with speaker labels like S1 or S2 from "
-        "best-effort automatic diarization; the labels can be wrong or missing. "
-        "Use them only as hints about who said what and never include the "
-        "labels in your output."
+        "best-effort automatic diarization; the labels can be wrong or "
+        "missing, and S? marks an unattributed utterance. Use them only as "
+        "hints about who said what and never include the labels in your "
+        "output."
     )
 
 
@@ -166,11 +179,6 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return dot / norm if norm else 0.0
 
 
-def _mean(vectors: list[list[float]]) -> list[float]:
-    count = len(vectors)
-    return [sum(v[i] for v in vectors) / count for i in range(len(vectors[0]))]
-
-
 class SessionSpeakers:
     """Per-session anonymous speaker registry via centroid matching."""
 
@@ -179,20 +187,27 @@ class SessionSpeakers:
         threshold: float = DEFAULT_THRESHOLD,
         min_duration: float = MIN_UTTERANCE_SECONDS,
         max_speakers: int = MAX_SPEAKERS,
+        ema_alpha: float = CENTROID_EMA_ALPHA,
     ) -> None:
         self.threshold = threshold
         self.min_duration = min_duration
         self.max_speakers = max_speakers
-        self._embeddings: dict[str, list[list[float]]] = {}
+        self.ema_alpha = ema_alpha
         self._centroids: dict[str, list[float]] = {}
         self._last_label: str | None = None
+        # Unconfirmed new-voice candidate: minted as a label only when a later utterance matches it
+        self._pending: list[float] | None = None
 
     @property
     def speaker_count(self) -> int:
         return len(self._centroids)
 
     def assign(self, audio_bytes: bytes) -> str | None:
-        """Label one utterance, or None when diarization cannot decide."""
+        """Label one utterance.
+
+        Returns "S1".."S4", UNKNOWN_SPEAKER while a new voice is heard but
+        not yet confirmed, or None when diarization cannot contribute.
+        """
         parsed = wav_bytes_to_samples(audio_bytes)
         if parsed is None:
             return self._inherit()
@@ -205,16 +220,60 @@ class SessionSpeakers:
             return self._inherit()
 
         best_label, score = self._best_match(embedding)
+        duration_s = len(samples) / SAMPLE_RATE
         label: str
-        if score >= self.threshold and best_label is not None:
-            label = best_label
-        elif len(self._centroids) < self.max_speakers:
+        distant_mint = False
+        if not self._centroids:
             label = f"S{len(self._centroids) + 1}"
-        else:
+        elif score >= self.threshold and best_label is not None:
+            label = best_label
+        elif (
+            self._pending is not None
+            and _cosine(embedding, self._pending) >= self.threshold
+            and len(self._centroids) < self.max_speakers
+        ):
+            # Second utterance consistent with the pending candidate:
+            # confirmed — mint the label seeded from both embeddings.
+            label = f"S{len(self._centroids) + 1}"
+            self._record(label, self._pending)
+            self._pending = None
+        elif (
+            score < DISTANT_MINT_THRESHOLD
+            and len(self._centroids) < self.max_speakers
+            and not (
+                self._pending is not None
+                and _cosine(embedding, self._pending) >= DISTANT_MINT_THRESHOLD
+            )
+        ):
+            # Markedly different from every known voice: attribute now.
+            label = f"S{len(self._centroids) + 1}"
+            distant_mint = True
+        elif len(self._centroids) >= self.max_speakers:
             # Cap reached: keep the closest existing centroid (best effort)
             # rather than minting an implausible fifth speaker. The registry
             # is never empty here (cap >= 1), so the fallback is safe.
             label = best_label or f"S{len(self._centroids) + 1}"
+        else:
+            # Borderline: hold as pending (a newer outlier replaces a
+            # stale one) and mark unattributed.
+            self._pending = embedding
+            logger.info(
+                "Diarize %.1fs: best=%s score=%.3f threshold=%.2f -> S? (pending)",
+                duration_s,
+                best_label,
+                score,
+                self.threshold,
+            )
+            return UNKNOWN_SPEAKER
+        logger.info(
+            "Diarize %.1fs: best=%s score=%.3f threshold=%.2f -> %s%s",
+            duration_s,
+            best_label,
+            score,
+            self.threshold,
+            label,
+            " (distant)" if distant_mint else "",
+        )
         self._record(label, embedding)
         self._last_label = label
         return label
@@ -232,9 +291,12 @@ class SessionSpeakers:
         return best_label, best_score
 
     def _record(self, label: str, embedding: list[float]) -> None:
-        embeddings = self._embeddings.setdefault(label, [])
-        embeddings.append(embedding)
-        self._centroids[label] = _mean(embeddings)
+        centroid = self._centroids.get(label)
+        if centroid is None:
+            self._centroids[label] = list(embedding)
+            return
+        alpha = self.ema_alpha
+        self._centroids[label] = [(1 - alpha) * c + alpha * v for c, v in zip(centroid, embedding)]
 
 
 # Default session registry factory for LiveSession.

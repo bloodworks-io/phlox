@@ -69,8 +69,10 @@ def patch_diarizer(monkeypatch):
 def test_format_and_split_roundtrip():
     assert format_segment("S1", "hello") == "S1: hello"
     assert format_segment(None, "hello") == "hello"
+    assert format_segment("S?", "hello") == "S?: hello"
     assert split_speaker_segment("S1: hello") == ("S1", "hello")
     assert split_speaker_segment("S12: multi word") == ("S12", "multi word")
+    assert split_speaker_segment("S?: hello") == ("S?", "hello")
     assert split_speaker_segment("plain line") == (None, "plain line")
     # Not labels: lowercase, S0, text before the colon.
     assert split_speaker_segment("s1: nope")[0] is None
@@ -79,9 +81,9 @@ def test_format_and_split_roundtrip():
 
 
 def test_has_prefixes_and_strip():
-    text = "S1: good morning\nplain line\nS2: thanks"
+    text = "S1: good morning\nS?: unclear who\nplain line\nS2: thanks"
     assert has_speaker_prefixes(text) is True
-    assert strip_speaker_prefixes(text) == "good morning\nplain line\nthanks"
+    assert strip_speaker_prefixes(text) == "good morning\nunclear who\nplain line\nthanks"
     assert has_speaker_prefixes("no labels\nhere") is False
     assert strip_speaker_prefixes("no labels") == "no labels"
 
@@ -126,12 +128,27 @@ def test_first_utterance_mints_s1_then_matches(patch_diarizer):
     assert registry.speaker_count == 1
 
 
-def test_different_voice_mints_next_label(patch_diarizer):
+def test_distinct_voice_mints_immediately(patch_diarizer):
+    # Maximally dissimilar embedding (cosine 0) is unambiguously a new voice
     patch_diarizer(_unit(0), _unit(3), _unit(3))
     registry = SessionSpeakers()
     assert registry.assign(_wav_bytes()) == "S1"
     assert registry.assign(_wav_bytes()) == "S2"
     assert registry.assign(_wav_bytes()) == "S2"
+    assert registry.speaker_count == 2
+
+
+def test_pending_survives_intervening_match_to_other_speaker(patch_diarizer):
+    # Borderline second voice (cosine ~0.45 to S1) needs confirmation.
+    s1 = _unit(0)
+    v2 = list(s1)
+    v2[1] = 1.985  # cosine(s1, v2) = 1/sqrt(1 + 1.985^2) ≈ 0.45
+    patch_diarizer(s1, v2, s1, v2)
+    registry = SessionSpeakers()
+    assert registry.assign(_wav_bytes()) == "S1"
+    assert registry.assign(_wav_bytes()) == "S?"  # voice 2 first heard
+    assert registry.assign(_wav_bytes()) == "S1"  # voice 1 again — pending kept
+    assert registry.assign(_wav_bytes()) == "S2"  # voice 2 confirms
     assert registry.speaker_count == 2
 
 
@@ -160,17 +177,35 @@ def test_embedder_unavailable_inherits_or_none(monkeypatch):
 
 
 def test_speaker_cap_falls_back_to_closest(patch_diarizer):
-    # Four orthogonal voices, then a fifth distinct voice: must not mint S5.
-    patch_diarizer(_unit(0), _unit(1), _unit(2), _unit(3), _unit(3))
+    # Four distinct voices mint immediately (distant zone); a fifth
+    # distinct voice must fold to the closest centroid, not mint S5.
+    patch_diarizer(
+        _unit(0), _unit(0), _unit(1), _unit(1), _unit(2), _unit(2), _unit(3), _unit(3), _unit(4)
+    )
     registry = SessionSpeakers()
-    labels = [registry.assign(_wav_bytes()) for _ in range(5)]
-    assert labels == ["S1", "S2", "S3", "S4", "S4"]
+    labels = [registry.assign(_wav_bytes()) for _ in range(9)]
+    assert labels == ["S1", "S1", "S2", "S2", "S3", "S3", "S4", "S4", "S1"]
     assert registry.speaker_count == 4
 
 
-def test_centroid_updates_with_running_mean(patch_diarizer):
+def test_borderline_voice_mints_new_label_under_strict_default(patch_diarizer):
+    # Cosine ~0.58 sits between the old (0.55) and new (0.62) thresholds:
+    # under the strict default a borderline voice mints S2 instead of
+    # folding into S1 — after confirmation.
+    a = _unit(0)
+    b = list(a)
+    b[1] = 1.405  # cosine(a, b) = 1/sqrt(1 + 1.405^2) ≈ 0.58
+    patch_diarizer(a, b, b)
+    registry = SessionSpeakers()
+    assert registry.assign(_wav_bytes()) == "S1"
+    assert registry.assign(_wav_bytes()) == "S?"
+    assert registry.assign(_wav_bytes()) == "S2"
+
+
+def test_centroid_updates_with_ema(patch_diarizer):
     # Same speaker with mild drift: still above threshold, and the stored
-    # centroid becomes the mean of both embeddings.
+    # centroid moves toward the new embedding by CENTROID_EMA_ALPHA (a
+    # mis-assigned utterance decays out instead of accumulating forever).
     first = _unit(0)
     drifted = list(first)
     drifted[1] = 0.15  # ~8.5 degrees off the first embedding
@@ -178,9 +213,9 @@ def test_centroid_updates_with_running_mean(patch_diarizer):
     registry = SessionSpeakers(threshold=0.55)
     assert registry.assign(_wav_bytes()) == "S1"
     assert registry.assign(_wav_bytes()) == "S1"
-    expected = [(a + b) / 2 for a, b in zip(first, drifted, strict=False)]
+    alpha = registry.ema_alpha
+    expected = [(1 - alpha) * a + alpha * b for a, b in zip(first, drifted, strict=False)]
     assert registry._centroids["S1"] == pytest.approx(expected)
-    assert len(registry._embeddings["S1"]) == 2
 
 
 # ------------------------------------------------- real-model integration run

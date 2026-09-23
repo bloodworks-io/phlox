@@ -11,9 +11,13 @@ const SPEAKER_COLORS = [
     ["#d20f39", "#ed8796"],
 ];
 
-const SPEAKER_LINE_RE = /^(S[1-9]\d*):\s/;
+const SPEAKER_LINE_RE = /^(S[1-9]\d*|S\?):\s/;
 
-/** Parse an optional speaker prefix: { speaker: "S2" | null, text }. */
+/** Label for an utterance the diarizer heard but could not attribute. */
+export const UNKNOWN_SPEAKER = "S?";
+const UNKNOWN_COLORS = ["#6c6f85", "#a5adcb"];
+
+/** Parse an optional speaker prefix: { speaker: "S2" | "S?" | null, text }. */
 export const parseSpeakerLine = (line) => {
     const match = SPEAKER_LINE_RE.exec(line);
     if (!match) return { speaker: null, text: line };
@@ -22,13 +26,15 @@ export const parseSpeakerLine = (line) => {
 
 /** Light/dark hex pair for a speaker label (S5+ cycles the palette). */
 export const speakerColorPair = (speaker) => {
+    if (speaker === UNKNOWN_SPEAKER) return UNKNOWN_COLORS;
     const num = parseInt(speaker.slice(1), 10);
     return SPEAKER_COLORS[(num - 1) % SPEAKER_COLORS.length];
 };
 
-const SpeakerDot = ({ speaker }) => {
+export const SpeakerDot = ({ speaker }) => {
     const [light, dark] = speakerColorPair(speaker);
     const color = useColorModeValue(light, dark);
+    const unknown = speaker === UNKNOWN_SPEAKER;
     return (
         <span
             style={{
@@ -36,12 +42,14 @@ const SpeakerDot = ({ speaker }) => {
                 width: "7px",
                 height: "7px",
                 borderRadius: "9999px",
-                backgroundColor: color,
+                backgroundColor: unknown ? "transparent" : color,
+                border: unknown ? `1.5px solid ${color}` : "none",
+                boxSizing: "border-box",
                 marginRight: "6px",
                 verticalAlign: "middle",
             }}
             data-speaker={speaker}
-            title={speaker}
+            title={unknown ? "Unattributed" : speaker}
         />
     );
 };

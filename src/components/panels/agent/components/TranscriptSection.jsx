@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Box, Text } from "@chakra-ui/react";
 
-import { parseSpeakerLine, speakerColorPair } from "@/components/transcript/SpeakerText";
-import { useColorModeValue } from "@/components/ui/color-mode";
+import { SpeakerDot, parseSpeakerLine } from "@/components/transcript/SpeakerText";
 
 /* Captions follow the feed only while the reader is already at the end. */
 export const TranscriptSection = ({ transcripts }) => {
@@ -48,8 +47,6 @@ export const TranscriptSection = ({ transcripts }) => {
 
 const Caption = ({ text, isRecent }) => {
     const { speaker, text: body } = parseSpeakerLine(text);
-    const [light, dark] = speaker ? speakerColorPair(speaker) : [null, null];
-    const dotColor = useColorModeValue(light, dark);
 
     return (
         <Text
@@ -60,21 +57,7 @@ const Caption = ({ text, isRecent }) => {
             className="anim-fade-slide-up"
             css={{ animationDuration: "0.15s" }}
         >
-            {speaker && dotColor ? (
-                <span
-                    style={{
-                        display: "inline-block",
-                        width: "7px",
-                        height: "7px",
-                        borderRadius: "9999px",
-                        backgroundColor: dotColor,
-                        marginRight: "6px",
-                        verticalAlign: "middle",
-                    }}
-                    data-speaker={speaker}
-                    title={speaker}
-                />
-            ) : null}
+            {speaker ? <SpeakerDot speaker={speaker} /> : null}
             {body}
         </Text>
     );
