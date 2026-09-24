@@ -900,7 +900,7 @@ async def test_gate_readout_classifies_from_first_token_logprobs():
     engine = _make_gate_engine(
         return_value={
             "message": {"content": "NOTE"},
-            "logprobs": _logprobs_payload(("NOTE", -0.05), ("SKIP", -2.8), ("ACT", -4.1)),
+            "logprobs": _logprobs_payload(("NOTE", -0.05), ("SKIP", -4.0), ("ACT", -4.1)),
         }
     )
 
@@ -923,6 +923,67 @@ async def test_gate_readout_uses_strict_prefix_matching():
 
     assert await engine._gate_classify("do the thing") == "ACT"
     engine._chat.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_gate_readout_skip_mass_rescues_short_pleasantry():
+    engine = _make_gate_engine(
+        return_value={
+            "logprobs": _logprobs_payload(("NOTE", -0.3), ("SKIP", -1.1), ("ACT", -4.0)),
+        }
+    )
+
+    assert await engine._gate_classify("anything") == "SKIP"
+    engine._chat.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_gate_readout_skip_mass_ignores_long_utterance():
+    engine = _make_gate_engine(
+        return_value={
+            "logprobs": _logprobs_payload(("NOTE", -0.3), ("SKIP", -1.1), ("ACT", -4.0)),
+        }
+    )
+    engine.session.transcript_segments = [" ".join(["word"] * 11)]
+
+    assert await engine._gate_classify("anything") == "NOTE"
+
+
+@pytest.mark.asyncio
+async def test_gate_readout_skip_mass_never_overrides_act():
+    engine = _make_gate_engine(
+        return_value={
+            "logprobs": _logprobs_payload(("ACT", -0.1), ("SKIP", -0.105), ("NOTE", -4.0)),
+        }
+    )
+
+    assert await engine._gate_classify("anything") == "ACT"
+
+
+@pytest.mark.asyncio
+async def test_gate_readout_skip_mass_strips_speaker_label():
+    engine = _make_gate_engine(
+        return_value={
+            "logprobs": _logprobs_payload(("NOTE", -0.3), ("SKIP", -1.1), ("ACT", -4.0)),
+        }
+    )
+    # 8 words after the label; 9 with it — the label must not count.
+    engine.session.transcript_segments = ["S1: " + " ".join(["yeah"] * 8)]
+
+    assert await engine._gate_classify("anything") == "SKIP"
+
+
+def test_gate_options_temperature_defaults(monkeypatch):
+    from server.agent_live.engine import LiveAgentEngine
+
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    monkeypatch.setattr(
+        "server.agent_live.engine.config_manager.get_prompts_and_options",
+        lambda: {"options": {}},
+    )
+
+    assert engine._options("gate")["temperature"] == 0.0
+    assert engine._options("tick")["temperature"] == 0.1
 
 
 @pytest.mark.asyncio

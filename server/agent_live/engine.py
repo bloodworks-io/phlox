@@ -14,7 +14,9 @@ un-sent transcript segments anyway, so a SKIP/NOTE/ACT verdict would be
 moot — and the call would contend with the tick for the inference server.
 The idle-state gate uses a single-token logprob readout (calibrated
 P(SKIP/NOTE/ACT) in one decode step), falling back to one-word generation
-when a provider does not return logprobs.
+when a provider does not return logprobs. The readout applies a skip-mass
+rescue: a short NOTE-carrying utterance whose SKIP mass is high is
+downgraded to SKIP (never ACT; the debounce backstop bounds misses).
 """
 
 import asyncio
@@ -34,7 +36,7 @@ from server.agent_live.session import LiveSession
 from server.agent_live.tools import execute_live_tool, get_live_tools_definition
 from server.database.config.manager import config_manager
 from server.transcription.audio import transcribe_audio
-from server.transcription.speakers import format_segment
+from server.transcription.speakers import format_segment, split_speaker_segment
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,10 @@ OPENING_DEBOUNCE_MIN_WORDS = 15
 _GATE_LOGPROBS_OK = True
 _GATE_VERDICTS = ("SKIP", "NOTE", "ACT")
 _GATE_MIN_VERDICT_MASS = 0.5
+
+# A NOTE verdict with this much SKIP mass on a short utterance is almost always SKIP
+_GATE_SKIP_MASS = 0.05
+_GATE_SKIP_MASS_MAX_WORDS = 8
 
 # When triggers pile up while a tick runs, the strongest framing wins.
 _TICK_REASON_RANK = {
@@ -105,7 +111,7 @@ class LiveAgentEngine:
         return config.get("SECONDARY_MODEL") or config.get("PRIMARY_MODEL", "")
 
     def _options(self, purpose: str = "tick") -> dict[str, Any]:
-        options: dict[str, Any] = {"temperature": 0.1}
+        options: dict[str, Any] = {"temperature": 0.0 if purpose == "gate" else 0.1}
         try:
             prompts = config_manager.get_prompts_and_options()
             key = "secondary" if purpose == "gate" else "general"
@@ -275,7 +281,7 @@ class LiveAgentEngine:
 
         try:
             async with asyncio.timeout(GATE_TIMEOUT_SECONDS):
-                verdict = await self._gate_readout(messages)
+                verdict = await self._gate_readout(messages, latest)
                 if verdict is None:
                     verdict = await self._gate_word(messages)
             return verdict or _gate_fallback()
@@ -301,7 +307,7 @@ class LiveAgentEngine:
             )
             return fallback
 
-    async def _gate_readout(self, messages) -> str | None:
+    async def _gate_readout(self, messages, latest: str) -> str | None:
         """Verdict from first-token logprobs, or None when unusable."""
         if not _GATE_LOGPROBS_OK:
             return None
@@ -317,7 +323,18 @@ class LiveAgentEngine:
         total = sum(scores.values())
         if total < _GATE_MIN_VERDICT_MASS:
             return None
-        return max(scores, key=lambda verdict: scores[verdict])
+        verdict = max(scores, key=lambda verdict: scores[verdict])
+        if verdict == "NOTE" and self._skip_mass_rescue(scores, latest):
+            return "SKIP"
+        return verdict
+
+    def _skip_mass_rescue(self, scores: dict[str, float], latest: str) -> bool:
+        """True when a short utterance's SKIP mass outweighs its NOTE argmax."""
+        text = split_speaker_segment(latest)[1]
+        return (
+            scores.get("SKIP", 0.0) >= _GATE_SKIP_MASS
+            and len(text.split()) <= _GATE_SKIP_MASS_MAX_WORDS
+        )
 
     async def _gate_word(self, messages) -> str | None:
         """Legacy gate: generate up to 8 tokens and parse the verdict."""
