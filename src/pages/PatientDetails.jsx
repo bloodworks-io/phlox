@@ -78,7 +78,6 @@ const PatientDetails = ({
     const {
         patient,
         setPatient,
-        setIsModified,
         savePatient,
         savePatientCore,
         loadCandidate,
@@ -131,7 +130,7 @@ const PatientDetails = ({
         handleDocumentComplete,
         toggleDocumentField,
         resetDocumentState,
-    } = useDocumentExtraction({ patient, setPatient, setIsModified });
+    } = useDocumentExtraction({ patient, setPatient, setIsModified: setIsSummaryModified });
 
     const requiredDemographicsMet = areRequiredDemographicsMet(patient);
 

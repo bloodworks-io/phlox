@@ -66,7 +66,6 @@ const buildAdaptiveRefinementData = (
 
 export const usePatientEditor = (initialPatient = null) => {
     const [patient, setPatient] = useState(initialPatient);
-    const [, setIsModified] = useState(false);
     const navigate = useNavigate();
     const { currentTemplate } = useTemplateSelection();
 
@@ -139,10 +138,6 @@ export const usePatientEditor = (initialPatient = null) => {
                 refreshSidebar,
             );
 
-            if (response) {
-                setIsModified(false);
-            }
-
             return response;
         } catch (error) {
             console.error("Error saving patient:", error);
@@ -193,7 +188,6 @@ export const usePatientEditor = (initialPatient = null) => {
     return {
         patient,
         setPatient,
-        setIsModified,
         savePatient,
         savePatientCore,
         loadCandidate,

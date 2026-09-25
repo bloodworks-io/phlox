@@ -39,9 +39,7 @@ function AppContent({ setIsInitializing }) {
 
     const bootstrap = useAppBootstrap();
     const nav = useNavigationGuard(isModified, setIsModified);
-    const newNote = useNewNoteFlow({
-        guardedNavigate: nav.guardedNavigate,
-    });
+    const newNote = useNewNoteFlow();
     const { isSidebarCollapsed, toggleSidebar, isSmallScreen } =
         useSidebarState();
     const { colorMode, toggleColorMode } = useColorMode();
@@ -109,7 +107,7 @@ function AppContent({ setIsInitializing }) {
                 colorMode={colorMode}
                 toggleSidebar={toggleSidebar}
                 sidebarProps={{
-                    onNewPatient: newNote.openNewNoteModal,
+                    onNewPatient: () => nav.guardedAction(newNote.openNewNoteModal),
                     onSelectPatient: handleSelectPatient,
                     selectedPatientId: location.pathname.startsWith("/note/")
                         ? patient?.id
