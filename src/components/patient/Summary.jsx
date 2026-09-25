@@ -18,7 +18,7 @@ import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { getTemplateFamilyBase } from "../../utils/templates/templateService";
 import { patientApi } from "../../utils/api/patientApi";
-import ConfirmLeaveModal from "../modals/ConfirmLeaveModal";
+import ConfirmDialog from "../common/ConfirmDialog";
 
 const Summary = forwardRef(
   (
@@ -360,10 +360,13 @@ const Summary = forwardRef(
             </Collapsible.Content>
           </Collapsible.Root>
         </Box>
-        <ConfirmLeaveModal
+        <ConfirmDialog
           isOpen={isTemplateChangeModalOpen}
           onClose={() => setIsTemplateChangeModalOpen(false)}
-          confirmNavigation={confirmTemplateChange}
+          onConfirm={confirmTemplateChange}
+          title="Confirm Navigation"
+          body="Are you sure you want to leave this page? Unsaved changes will be lost."
+          confirmLabel="Leave"
         />
       </>
     );

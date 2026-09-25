@@ -5,7 +5,7 @@ import { FaBook, FaFileAlt } from "react-icons/fa";
 import { isRagEnabled, isPdfFormsEnabled } from "../utils/helpers/featureFlags";
 import { useRagDocuments } from "../utils/hooks/useRagDocuments";
 import { usePdfForms } from "../utils/hooks/usePdfForms";
-import DeleteModal from "../components/rag/DeleteModal";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 import KnowledgeBasePanel from "../components/rag/KnowledgeBasePanel";
 import FormTemplatesPanel from "../components/pdf-forms/FormTemplatesPanel";
 import UploadTemplateModal from "../components/pdf-forms/UploadTemplateModal";
@@ -94,11 +94,23 @@ const Rag = () => {
         </Box>
       </Box>
       {ragEnabled && (
-        <DeleteModal
+        <ConfirmDialog
           isOpen={!!rag.itemToDelete}
           onClose={() => rag.setItemToDelete(null)}
-          onDelete={rag.handleDelete}
-          item={rag.itemToDelete}
+          onConfirm={rag.handleDelete}
+          title={
+            rag.itemToDelete?.type === "file"
+              ? "Delete File"
+              : "Delete Collection"
+          }
+          body={`Are you sure you want to delete the ${
+            rag.itemToDelete?.type === "file" ? "file" : "collection"
+          } "${rag.itemToDelete?.name}"${
+            rag.itemToDelete?.type === "file"
+              ? ` from the collection "${rag.itemToDelete?.collection}"`
+              : ""
+          }?`}
+          confirmLabel="Delete"
         />
       )}
       {formsEnabled && (

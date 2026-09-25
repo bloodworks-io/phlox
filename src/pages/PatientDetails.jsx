@@ -23,7 +23,7 @@ import { useDocumentExtraction } from "../utils/hooks/useDocumentExtraction";
 import { patientApi } from "../utils/api/patientApi";
 import WrapUpModal from "../components/modals/WrapUpModal";
 import DemographicsModal from "../components/modals/DemographicsModal";
-import ConfirmLeaveModal from "../components/modals/ConfirmLeaveModal";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 import ScribeConsentModal from "../components/modals/ScribeConsentModal";
 import { useCollapse } from "../utils/hooks/useCollapse";
 import { useLetterOrchestration } from "../utils/hooks/useLetterOrchestration";
@@ -602,10 +602,13 @@ const PatientDetails = ({
                 />
             </VStack>
             {/* Unsaved-work confirmation for the in-page patient switch */}
-            <ConfirmLeaveModal
+            <ConfirmDialog
                 isOpen={leaveModal.open}
                 onClose={cancelCandidateSwitch}
-                confirmNavigation={confirmCandidateNavigation}
+                onConfirm={confirmCandidateNavigation}
+                title="Confirm Navigation"
+                body="Are you sure you want to leave this page? Unsaved changes will be lost."
+                confirmLabel="Leave"
             />
             {/* Scribe Pill Box - centered at bottom */}
             <ScribePillBox

@@ -15,7 +15,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useState } from "react";
 import TemplateEditor from "../modals/TemplateEditor";
 import NewTemplateFromExampleModal from "../modals/NewTemplateFromExampleModal";
-import DeleteConfirmationModal from "../modals/DeleteConfirmationModal";
+import ConfirmDialog from "../common/ConfirmDialog";
 import { templateApi } from "../../utils/api/templateApi";
 import { useTemplate } from "../../utils/templates/templateContext";
 import { isDefaultTemplate, isCustomizedDefault } from "../../utils/templates/templateService";
@@ -297,14 +297,13 @@ const TemplateSettingsPanel = () => {
                 setExampleNote={setExampleNote}
                 isLoading={isGeneratingTemplate}
             />
-            <DeleteConfirmationModal
+            <ConfirmDialog
                 isOpen={isDeleteModalOpen}
                 onClose={() => {
                     setIsDeleteModalOpen(false);
                     setTemplateToDelete(null);
                 }}
                 onConfirm={() => handleDeleteTemplate(templateToDelete?.key)}
-                itemName={templateToDelete?.name}
                 title={
                     templateToDelete && isCustomizedDefault(templateToDelete.key)
                         ? "Reset to Default"
@@ -313,7 +312,7 @@ const TemplateSettingsPanel = () => {
                 body={
                     templateToDelete && isCustomizedDefault(templateToDelete.key)
                         ? `This discards your changes to "${templateToDelete?.name}" and restores the original default template.`
-                        : undefined
+                        : `Are you sure you want to delete "${templateToDelete?.name}"? This action cannot be undone.`
                 }
                 confirmLabel={
                     templateToDelete && isCustomizedDefault(templateToDelete.key)

@@ -9,7 +9,7 @@ import { ApiToastProvider } from "./utils/helpers/apiToastContext";
 import { AppInitContext } from "./utils/context/appInit";
 import AppLayout from "./components/layout/AppLayout";
 import AppRoutes from "./components/layout/AppRoutes";
-import ConfirmLeaveModal from "./components/modals/ConfirmLeaveModal";
+import ConfirmDialog from "./components/common/ConfirmDialog";
 import NewNoteModal from "./components/modals/NewNoteModal";
 import { handleError } from "./utils/helpers/errorHandlers";
 import { handleLoadPatientDetails } from "./utils/patient/patientHandlers";
@@ -152,10 +152,13 @@ function AppContent({ setIsInitializing }) {
                 selectedDate={selectedDate}
                 onComplete={newNote.completeNewNote}
             />
-            <ConfirmLeaveModal
+            <ConfirmDialog
                 isOpen={nav.isLeaveOpen}
                 onClose={nav.cancelNavigation}
-                confirmNavigation={nav.confirmNavigation}
+                onConfirm={nav.confirmNavigation}
+                title="Confirm Navigation"
+                body="Are you sure you want to leave this page? Unsaved changes will be lost."
+                confirmLabel="Leave"
             />
         </>
     );

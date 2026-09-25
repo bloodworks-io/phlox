@@ -14,7 +14,7 @@ import useSWR from "swr";
 import VersionInfo from "./VersionInfo";
 import SidebarPatientList from "./SidebarPatientList";
 import SidebarNavigation from "./SidebarNavigation";
-import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import ConfirmDialog from "../common/ConfirmDialog";
 import { colors } from "../../theme/colors";
 import { sidebarWidth } from "../../theme/dimensions";
 import { patientApi } from "../../utils/api/patientApi";
@@ -375,11 +375,17 @@ const Sidebar = ({
         />
       </Box>
       {/* Delete confirmation modal */}
-      <DeleteConfirmationModal
+      <ConfirmDialog
         isOpen={open}
         onClose={onClose}
-        onDelete={confirmDelete}
-        patientName={patientToDelete?.name}
+        onConfirm={confirmDelete}
+        title="Delete Patient"
+        body={
+          patientToDelete?.name
+            ? `Are you sure you want to delete ${patientToDelete?.name}?`
+            : "Are you sure you want to delete this patient?"
+        }
+        confirmLabel="Delete"
       />
     </Box>
   );
