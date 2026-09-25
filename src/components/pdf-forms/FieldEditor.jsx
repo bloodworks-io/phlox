@@ -1,5 +1,5 @@
 // Field property editor panel.
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Text,
@@ -14,6 +14,7 @@ import {
   Field,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "../common/icons";
+import { layoutTextField, getHelveticaMeasure } from "../../utils/pdf/fieldLayout";
 
 const FIELD_COLORS = {
   text: "blue.400",
@@ -22,7 +23,25 @@ const FIELD_COLORS = {
   number: "purple.400",
 };
 
-const FieldEditor = ({ field, onChange, onDelete }) => {
+const FieldEditor = ({
+  field,
+  onChange,
+  onDelete,
+  previewValue,
+  onPreviewValueChange,
+}) => {
+  // Helvetica metrics for the overflow warning (matches fillPdf exactly)
+  const [measure, setMeasure] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    getHelveticaMeasure().then((m) => {
+      if (!cancelled) setMeasure({ m });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!field) {
     return (
       <Box py="4" textAlign="center">
@@ -31,6 +50,21 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
         </Text>
       </Box>
     );
+  }
+
+  let overflowWarning = null;
+  let autoFitNote = null;
+  if (measure && field.field_type !== "checkbox") {
+    const sample = previewValue || field.name || "";
+    if (sample.trim()) {
+      const layout = layoutTextField(field, sample, measure.m);
+      const configured = field.font_size || 12;
+      if (layout.hiddenLineCount > 0 || layout.overflowsWidth) {
+        overflowWarning = `Text still overflows at ${layout.fontSize}pt — enlarge the box.`;
+      } else if (layout.fontSize < configured) {
+        autoFitNote = `Auto-fit: renders at ${layout.fontSize}pt to fit.`;
+      }
+    }
   }
 
   return (
@@ -93,6 +127,20 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
           className="input-style"
         />
       </Field.Root>
+      {field.field_type !== "checkbox" && (
+        <Field.Root>
+          <Field.Label fontSize="xs" mb="1">
+            Preview Text
+          </Field.Label>
+          <Input
+            size="sm"
+            value={previewValue || ""}
+            onChange={(e) => onPreviewValueChange(e.target.value)}
+            placeholder={`Sample text for preview${field.name ? ` (defaults to "${field.name}")` : ""}`}
+            className="input-style"
+          />
+        </Field.Root>
+      )}
       <HStack gap="3">
         <Field.Root>
           <Field.Label fontSize="xs" mb="1">
@@ -123,6 +171,16 @@ const FieldEditor = ({ field, onChange, onDelete }) => {
           </NumberInput.Root>
         </Field.Root>
       </HStack>
+      {overflowWarning && (
+        <Text fontSize="xs" color="dangerButton">
+          ⚠ {overflowWarning}
+        </Text>
+      )}
+      {autoFitNote && (
+        <Text fontSize="xs" color="overlay0">
+          {autoFitNote}
+        </Text>
+      )}
       <Checkbox.Root
         size="sm"
         onCheckedChange={({ checked }) => onChange({ ...field, required: checked })}

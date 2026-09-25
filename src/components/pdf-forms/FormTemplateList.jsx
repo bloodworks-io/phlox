@@ -50,6 +50,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
   return (
     <VStack
       gap="1"
+      align="stretch"
       className="anim-stagger"
       css={{ "& > *": { animationDuration: "0.15s" } }}
     >
@@ -59,6 +60,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
           <Box
             key={tmpl.id}
             p="2"
+            w="full"
             borderRadius="sm"
             cursor="pointer"
             bg={isSelected ? "surfaceMuted" : undefined}
@@ -67,14 +69,30 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
             aria-current={isSelected ? "true" : undefined}
             onClick={() => onSelect(tmpl.id)}
           >
-            <HStack justify="space-between">
-              <HStack gap="2" overflow="hidden">
+            <HStack justify="space-between" gap="2">
+              <HStack gap="2" css={{ minWidth: 0, flex: "1 1 0" }}>
                 <Box color="primaryButton" flexShrink={0} asChild><FiFileText /></Box>
-                <Box overflow="hidden">
-                  <Text fontSize="sm" fontWeight="medium" lineClamp={1}>
+                <Box css={{ minWidth: 0, flex: "1 1 0", overflow: "hidden" }}>
+                  <Text
+                    fontSize="sm"
+                    fontWeight="medium"
+                    css={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {tmpl.name}
                   </Text>
-                  <Text fontSize="xs" color="overlay0">
+                  <Text
+                    fontSize="xs"
+                    color="overlay0"
+                    css={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {tmpl.page_count} page{tmpl.page_count !== 1 ? "s" : ""} ·{" "}
                     {tmpl.field_count || 0} field
                     {(tmpl.field_count || 0) !== 1 ? "s" : ""}

@@ -1,12 +1,13 @@
 // Panel component for the Form Templates tab — sidebar, builder canvas, and field editor.
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Text, VStack, HStack, NativeSelect, Flex } from "@chakra-ui/react";
 import { AddIcon } from "../common/icons";
-import { FaPencilAlt, FaMagic, FaSave } from "react-icons/fa";
+import { FaPencilAlt, FaMagic, FaSave, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import FormTemplateList from "./FormTemplateList";
 import FormBuilder from "./FormBuilder";
 import FieldEditor from "./FieldEditor";
+import FieldList from "./FieldList";
 
 const FormTemplatesPanel = ({
   templates,
@@ -33,6 +34,14 @@ const FormTemplatesPanel = ({
   onDeleteField,
   onSaveFields,
 }) => {
+  const [previewOn, setPreviewOn] = useState(false);
+  const [previewValues, setPreviewValues] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1); // reset view when switching templates
+  }, [selectedTemplate?.id]);
+
   return (
     <HStack gap="4" align="start">
       {/* Forms sidebar */}
@@ -82,6 +91,10 @@ const FormTemplatesPanel = ({
               onToggleDrawing={() => onSetDrawingMode(!isDrawingMode)}
               activeFieldType={activeFieldType}
               onFieldTypeChange={onSetFieldType}
+              previewOn={previewOn}
+              previewValues={previewValues}
+              currentPage={currentPage}
+              onCurrentPageChange={setCurrentPage}
             />
           </Box>
         ) : (
@@ -165,6 +178,15 @@ const FormTemplatesPanel = ({
                     Auto-detect
                   </GreyButton>
                 )}
+                <GreyButton
+                  size="xs"
+                  width="100%"
+                  leftIcon={previewOn ? <FaRegEyeSlash /> : <FaRegEye />}
+                  onClick={() => setPreviewOn(!previewOn)}
+                  colorPalette={previewOn ? "green" : undefined}
+                >
+                  {previewOn ? "Hide Preview" : "Preview Fill"}
+                </GreyButton>
               </VStack>
             )}
           </Box>
@@ -174,7 +196,33 @@ const FormTemplatesPanel = ({
           field={selectedField}
           onChange={onUpdateField}
           onDelete={onDeleteField}
+          previewValue={
+            selectedField ? previewValues[selectedField.id] ?? "" : ""
+          }
+          onPreviewValueChange={(value) => {
+            if (selectedField) {
+              setPreviewValues((prev) => ({
+                ...prev,
+                [selectedField.id]: value,
+              }));
+            }
+          }}
         />
+
+        {selectedTemplate && (
+          <Box mt="3" pt="2" borderTop="1px solid" borderColor="border">
+            <Text fontSize="xs" fontWeight="bold" mb="1">
+              Fields ({fields.length})
+            </Text>
+            <FieldList
+              fields={fields}
+              selectedFieldId={selectedFieldId}
+              onSelectField={onSelectField}
+              onDeleteField={onDeleteField}
+              onJumpToPage={setCurrentPage}
+            />
+          </Box>
+        )}
 
         {selectedTemplate && (
           <Box mt="3" pt="2" borderTop="1px solid" borderColor="border">
