@@ -1,7 +1,9 @@
 import { Flex, Text } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { ChatIcon } from "../../common/icons";
 
-const ChatHeader = ({ title = "Chat With Phlox", _onClose }) => {
+const ChatHeader = ({ title, _onClose }) => {
+    const { t } = useTranslation();
     return (
         <Flex
             align="center"
@@ -13,7 +15,7 @@ const ChatHeader = ({ title = "Chat With Phlox", _onClose }) => {
         >
             <Flex align="center">
                 <ChatIcon mr="2" />
-                <Text fontWeight="bold">{title}</Text>
+                <Text fontWeight="bold">{title ?? t("chat.title")}</Text>
             </Flex>
         </Flex>
     );

@@ -1,6 +1,7 @@
 // Page component for document management (upload, explore, and PDF form templates).
 import React from "react";
 import { Box, Text, HStack, Tabs } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { FaBook, FaFileAlt } from "react-icons/fa";
 import { isRagEnabled, isPdfFormsEnabled } from "../utils/helpers/featureFlags";
 import { useRagDocuments } from "../utils/hooks/useRagDocuments";
@@ -13,6 +14,7 @@ import ReplacePdfModal from "../components/pdf-forms/ReplacePdfModal";
 import FillFormModal from "../components/pdf-forms/FillFormModal";
 
 const Rag = () => {
+  const { t } = useTranslation();
   const rag = useRagDocuments();
   const forms = usePdfForms();
 
@@ -59,7 +61,7 @@ const Rag = () => {
     <>
       <Box p="5" w="100%">
         <Text as="h2" mb="4">
-          Documents
+          {t("page.rag.title")}
         </Text>
 
         <Box p={[2, 3, 4]} borderRadius="sm" className="panels-bg">
@@ -69,13 +71,13 @@ const Rag = () => {
                 <Tabs.Trigger className="tab-style" value="0">
                   <HStack gap="1">
                     <FaBook size="0.85em" />
-                    <Text>Knowledge Base</Text>
+                    <Text>{t("page.rag.knowledgeBaseTab")}</Text>
                   </HStack>
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="1">
                   <HStack gap="1">
                     <FaFileAlt size="0.85em" />
-                    <Text>Form Templates</Text>
+                    <Text>{t("page.rag.formTemplatesTab")}</Text>
                   </HStack>
                 </Tabs.Trigger>
               </Tabs.List>
@@ -100,17 +102,23 @@ const Rag = () => {
           onConfirm={rag.handleDelete}
           title={
             rag.itemToDelete?.type === "file"
-              ? "Delete File"
-              : "Delete Collection"
+              ? t("page.rag.delete.titleFile")
+              : t("page.rag.delete.titleCollection")
           }
-          body={`Are you sure you want to delete the ${
-            rag.itemToDelete?.type === "file" ? "file" : "collection"
-          } "${rag.itemToDelete?.name}"${
-            rag.itemToDelete?.type === "file"
-              ? ` from the collection "${rag.itemToDelete?.collection}"`
-              : ""
-          }?`}
-          confirmLabel="Delete"
+          body={t("page.rag.delete.body", {
+            type:
+              rag.itemToDelete?.type === "file"
+                ? t("page.rag.delete.typeFile")
+                : t("page.rag.delete.typeCollection"),
+            name: rag.itemToDelete?.name,
+            fromCollection:
+              rag.itemToDelete?.type === "file"
+                ? t("page.rag.delete.fromCollection", {
+                    collection: rag.itemToDelete?.collection,
+                  })
+                : "",
+          })}
+          confirmLabel={t("action.delete")}
         />
       )}
       {formsEnabled && (

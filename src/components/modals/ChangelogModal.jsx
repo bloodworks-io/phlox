@@ -1,5 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
+import { useTranslation } from "react-i18next";
 import ModalTitle from "../common/ModalTitle";
 import { FaGithub } from "react-icons/fa";
 
@@ -17,6 +18,7 @@ import {
 } from "@chakra-ui/react";
 
 const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
+    const { t } = useTranslation();
 
     const cleanChangelog = changelog.replace(/^# Changelog\s*\n/, "");
     const releases = cleanChangelog
@@ -45,7 +47,7 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                         alt="Phlox Logo"
                                         width="30px"
                                     />
-                                    <ModalTitle>Changelog v{version}</ModalTitle>
+                                    <ModalTitle>{t("modal.changelog.title", { version })}</ModalTitle>
                                 </HStack>
                                 <Link
                                     href="https://github.com/bloodworks-io/phlox"
@@ -94,7 +96,7 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                     ))
                                 ) : (
                                     <Text color={"textPrimary"}>
-                                        Loading changelog...
+                                        {t("modal.changelog.loading")}
                                     </Text>
                                 )}
                             </VStack>
@@ -111,9 +113,9 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                             '"Space Grotesk", sans-serif',
                                         fontWeight: "600",
                                     }}
-                                >
-                                    Close
-                                </Button>
+                                    >
+                                        {t("action.close")}
+                                    </Button>
                             </HStack>
                         </Dialog.Footer>
                     </Dialog.Content>

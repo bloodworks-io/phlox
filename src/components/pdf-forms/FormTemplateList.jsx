@@ -5,23 +5,25 @@ import { toaster } from "@/components/ui/toaster";
 import { DeleteIcon, RepeatIcon } from "../common/icons";
 import { FiFileText } from "react-icons/fi";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
+import { useTranslation } from "react-i18next";
 
 const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, selectedTemplateId }) => {
+  const { t } = useTranslation();
 
   const handleDelete = async (e, id, name) => {
     e.stopPropagation();
     try {
       await pdfFormsApi.deleteTemplate(id);
       toaster.create({
-        title: "Deleted",
-        description: `"${name}" deleted`,
+        title: t("forms.deleted"),
+        description: t("forms.templateDeleted", { name }),
         type: "success",
         duration: 2000,
       });
       onDelete(id);
     } catch (error) {
       toaster.create({
-        title: "Error",
+        title: t("toast.error"),
         description: error.message,
         type: "error",
         duration: 3000,
@@ -41,7 +43,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
     return (
       <Box py="4" textAlign="center">
         <Text color="overlay0" fontSize="sm">
-          No form templates yet. Upload a PDF to get started.
+          {t("forms.noTemplatesYet")}
         </Text>
       </Box>
     );
@@ -93,9 +95,8 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {tmpl.page_count} page{tmpl.page_count !== 1 ? "s" : ""} ·{" "}
-                    {tmpl.field_count || 0} field
-                    {(tmpl.field_count || 0) !== 1 ? "s" : ""}
+                    {t("forms.pageCount", { count: tmpl.page_count })} ·{" "}
+                    {t("forms.fieldCount", { count: tmpl.field_count || 0 })}
                   </Text>
                 </Box>
               </HStack>
@@ -103,8 +104,8 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
                 <IconButton
                   variant="ghost"
                   size="sm"
-                  aria-label="Replace PDF"
-                  title="Replace PDF (keep fields)"
+                  aria-label={t("forms.replacePdf")}
+                  title={t("forms.replacePdfKeepFields")}
                   onClick={(e) => {
                     e.stopPropagation();
                     onReplace(tmpl);
@@ -114,7 +115,7 @@ const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, s
                   variant="ghost"
                   size="sm"
                   colorPalette="red"
-                  aria-label="Delete template"
+                  aria-label={t("forms.deleteTemplate")}
                   onClick={(e) => handleDelete(e, tmpl.id, tmpl.name)}><DeleteIcon /></IconButton>
               </HStack>
             </HStack>

@@ -15,6 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { DeleteIcon } from "../common/icons";
 import { layoutTextField, getHelveticaMeasure } from "../../utils/pdf/fieldLayout";
+import { useTranslation } from "react-i18next";
 
 const FIELD_COLORS = {
   text: "blue.400",
@@ -30,6 +31,7 @@ const FieldEditor = ({
   previewValue,
   onPreviewValueChange,
 }) => {
+  const { t } = useTranslation();
   // Helvetica metrics for the overflow warning (matches fillPdf exactly)
   const [measure, setMeasure] = useState(null);
   useEffect(() => {
@@ -46,7 +48,7 @@ const FieldEditor = ({
     return (
       <Box py="4" textAlign="center">
         <Text color="overlay0" fontSize="sm">
-          Select a field to edit its properties, or draw a new field on the PDF.
+          {t("forms.selectFieldHint")}
         </Text>
       </Box>
     );
@@ -60,9 +62,9 @@ const FieldEditor = ({
       const layout = layoutTextField(field, sample, measure.m);
       const configured = field.font_size || 12;
       if (layout.hiddenLineCount > 0 || layout.overflowsWidth) {
-        overflowWarning = `Text still overflows at ${layout.fontSize}pt — enlarge the box.`;
+        overflowWarning = t("forms.overflowWarning", { fontSize: layout.fontSize });
       } else if (layout.fontSize < configured) {
-        autoFitNote = `Auto-fit: renders at ${layout.fontSize}pt to fit.`;
+        autoFitNote = t("forms.autoFitNote", { fontSize: layout.fontSize });
       }
     }
   }
@@ -76,29 +78,29 @@ const FieldEditor = ({
       css={{ animationDuration: "0.15s" }}
     >
       <HStack justify="space-between">
-        <Text as="h4">Field Properties</Text>
+        <Text as="h4">{t("forms.fieldProperties")}</Text>
         <IconButton
           variant="ghost"
           size="sm"
           colorPalette="red"
-          aria-label="Delete field"
+          aria-label={t("forms.deleteField")}
           onClick={() => onDelete(field.id)}><DeleteIcon /></IconButton>
       </HStack>
       <Field.Root>
         <Field.Label fontSize="xs" mb="1">
-          Name
+          {t("forms.name")}
         </Field.Label>
         <Input
           size="sm"
           value={field.name}
           onChange={(e) => onChange({ ...field, name: e.target.value })}
-          placeholder="field_name"
+          placeholder={t("forms.fieldNamePlaceholder")}
           className="input-style"
         />
       </Field.Root>
       <Field.Root>
         <Field.Label fontSize="xs" mb="1">
-          Type
+          {t("forms.type")}
         </Field.Label>
         <NativeSelect.Root>
           <NativeSelect.Field
@@ -106,23 +108,23 @@ const FieldEditor = ({
             value={field.field_type}
             onChange={(e) => onChange({ ...field, field_type: e.target.value })}
             className="input-style">
-            <option value="text">Text</option>
-            <option value="checkbox">Checkbox</option>
-            <option value="date">Date</option>
-            <option value="number">Number</option>
+            <option value="text">{t("forms.fieldTypes.text")}</option>
+            <option value="checkbox">{t("forms.fieldTypes.checkbox")}</option>
+            <option value="date">{t("forms.fieldTypes.date")}</option>
+            <option value="number">{t("forms.fieldTypes.number")}</option>
           </NativeSelect.Field>
           <NativeSelect.Indicator />
         </NativeSelect.Root>
       </Field.Root>
       <Field.Root>
         <Field.Label fontSize="xs" mb="1">
-          Description
+          {t("forms.description")}
         </Field.Label>
         <Textarea
           size="sm"
           value={field.description || ""}
           onChange={(e) => onChange({ ...field, description: e.target.value })}
-          placeholder="Optional description"
+          placeholder={t("forms.descriptionPlaceholder")}
           rows={2}
           className="input-style"
         />
@@ -130,13 +132,13 @@ const FieldEditor = ({
       {field.field_type !== "checkbox" && (
         <Field.Root>
           <Field.Label fontSize="xs" mb="1">
-            Preview Text
+            {t("forms.previewText")}
           </Field.Label>
           <Input
             size="sm"
             value={previewValue || ""}
             onChange={(e) => onPreviewValueChange(e.target.value)}
-            placeholder={`Sample text for preview${field.name ? ` (defaults to "${field.name}")` : ""}`}
+            placeholder={field.name ? t("forms.sampleTextNamed", { name: field.name }) : t("forms.sampleText")}
             className="input-style"
           />
         </Field.Root>
@@ -144,7 +146,7 @@ const FieldEditor = ({
       <HStack gap="3">
         <Field.Root>
           <Field.Label fontSize="xs" mb="1">
-            Font Size
+            {t("forms.fontSize")}
           </Field.Label>
           <NumberInput.Root
             size="sm"
@@ -159,7 +161,7 @@ const FieldEditor = ({
 
         <Field.Root>
           <Field.Label fontSize="xs" mb="1">
-            Page
+            {t("forms.page")}
           </Field.Label>
           <NumberInput.Root
             size="sm"
@@ -190,12 +192,16 @@ const FieldEditor = ({
         <Checkbox.Control>
           <Checkbox.Indicator />
         </Checkbox.Control>
-        <Checkbox.Label>Required field</Checkbox.Label>
+        <Checkbox.Label>{t("forms.requiredField")}</Checkbox.Label>
       </Checkbox.Root>
       <Box pt="2" borderTop="1px solid" borderColor="border">
         <Text fontSize="xs" color="overlay0">
-          Position: ({field.x.toFixed(1)}, {field.y.toFixed(1)}) · Size:{" "}
-          {field.width.toFixed(1)} × {field.height.toFixed(1)}
+          {t("forms.positionSize", {
+            x: field.x.toFixed(1),
+            y: field.y.toFixed(1),
+            width: field.width.toFixed(1),
+            height: field.height.toFixed(1),
+          })}
         </Text>
       </Box>
     </VStack>

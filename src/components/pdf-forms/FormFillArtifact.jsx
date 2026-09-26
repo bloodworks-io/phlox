@@ -6,6 +6,8 @@ import { DownloadIcon } from "../common/icons";
 import { FaFilePdf } from "react-icons/fa";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
+import { useTranslation } from "react-i18next";
+import { t as tStatic } from "@/i18n";
 
 /** Download a form_fill artifact as a filled PDF (shared with the live-agent chips). */
 export const downloadFormFillArtifact = async (artifact) => {
@@ -35,8 +37,10 @@ export const downloadFormFillArtifact = async (artifact) => {
         URL.revokeObjectURL(url);
     } catch (error) {
         toaster.create({
-            title: "Error",
-            description: `Failed to generate PDF: ${error.message}`,
+            title: tStatic("toast.error"),
+            description: tStatic("forms.failedToGenerate", {
+                message: error.message,
+            }),
             type: "error",
             duration: 3000,
         });
@@ -44,6 +48,7 @@ export const downloadFormFillArtifact = async (artifact) => {
 };
 
 const FormFillArtifact = ({ artifact }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
 
     const filename = `${artifact.template_name || "form"}_filled.pdf`;
@@ -74,15 +79,15 @@ const FormFillArtifact = ({ artifact }) => {
             </HStack>
             <HStack gap={2} justify="space-between">
                 <Text fontSize="xs" color="overlay0">
-                    PDF form · filled
+                    {t("forms.pdfFormFilled")}
                 </Text>
                 <Button
                     size="xs"
                     variant="ghost"
                     colorPalette="blue"
-                    aria-label="Download filled PDF"
+                    aria-label={t("forms.downloadFilledPdf")}
                     onClick={handleDownload}
-                    loading={loading}><DownloadIcon />Save
+                    loading={loading}><DownloadIcon />{t("action.save")}
                                     </Button>
             </HStack>
         </Box>

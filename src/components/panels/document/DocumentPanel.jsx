@@ -1,4 +1,5 @@
 import { Box, Button, Flex, Input, Spinner, Text, VStack, Alert, ButtonGroup, Badge, SimpleGrid, Separator } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import {
   FaFileUpload,
@@ -29,6 +30,7 @@ const DocumentPanel = ({
   setDocFileName,
 }) => {
   const [file, setFile] = useState(null);
+  const { t } = useTranslation();
   const [processingError, setProcessingError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -49,8 +51,8 @@ const DocumentPanel = ({
   const handleUpload = async () => {
     if (!file) {
       toaster.create({
-        title: "No file selected",
-        description: "Please select a file to upload",
+        title: t("rag.toast.noFileSelected"),
+        description: t("document.selectFileFirst"),
         type: "error",
         duration: 3000,
       });
@@ -71,7 +73,7 @@ const DocumentPanel = ({
           },
           handleError: (error) => {
             setProcessingError({
-              message: error.message || "Failed to process document",
+              message: error.message || t("document.processFailed"),
             });
             setIsProcessing(false);
           },
@@ -83,7 +85,7 @@ const DocumentPanel = ({
       setProcessingError({
         message:
           error.message ||
-          "An unexpected error occurred while processing the document",
+          t("document.unexpectedError"),
       });
       setIsProcessing(false);
     }
@@ -92,7 +94,7 @@ const DocumentPanel = ({
   const retryProcessing = async () => {
     if (!file) {
       setProcessingError({
-        message: "No document available to retry. Please upload a file again.",
+        message: t("document.retryNoFile"),
       });
       return;
     }
@@ -106,8 +108,7 @@ const DocumentPanel = ({
     } catch (error) {
       console.error("Error retrying document processing:", error);
       setProcessingError({
-        message:
-          "Processing retry failed. The server might be experiencing issues.",
+        message: t("document.retryFailed"),
       });
       setIsProcessing(false);
     }
@@ -150,8 +151,8 @@ const DocumentPanel = ({
       !droppedFile.name.match(/\.(pdf|doc|docx|txt)$/i)
     ) {
       toaster.create({
-        title: "Invalid file type",
-        description: "Please upload a PDF, Word document, or text file.",
+        title: t("document.invalidFileType"),
+        description: t("document.invalidFileTypeDesc"),
         type: "error",
         duration: 3000,
       });
@@ -188,7 +189,7 @@ const DocumentPanel = ({
           pointerEvents="none"
         >
           <Text fontWeight="bold" color="primaryButton">
-            Drop document here
+            {t("document.dropHere")}
           </Text>
         </Flex>
       )}
@@ -202,7 +203,7 @@ const DocumentPanel = ({
       >
         <Flex align="center">
           <FaFileUpload size="1em" style={{ marginRight: "8px" }} />
-          <Text fontWeight="bold">Document Upload</Text>
+          <Text fontWeight="bold">{t("document.title")}</Text>
         </Flex>
       </Flex>
       {/* Content */}
@@ -229,7 +230,7 @@ const DocumentPanel = ({
           >
             <Flex mb={2}>
               <Alert.Indicator mr={2} asChild><FaExclamationTriangle /></Alert.Indicator>
-              <Alert.Title>Processing Error</Alert.Title>
+              <Alert.Title>{t("document.processingError")}</Alert.Title>
             </Flex>
             <Alert.Description maxWidth="lg">
               {processingError.message}
@@ -240,9 +241,9 @@ const DocumentPanel = ({
                 className="green-button"
                 disabled={isProcessing}
                 size="sm"><FaRedoAlt />{isProcessing ? <Spinner size="sm" mr={2} /> : null}
-                Resend
+                {t("document.resend")}
               </Button>
-              <Button onClick={startNewUpload} className="orange-button" size="sm"><FaRedo />New Document
+              <Button onClick={startNewUpload} className="orange-button" size="sm"><FaRedo />{t("document.newDocument")}
                               </Button>
             </ButtonGroup>
           </Alert.Root>
@@ -256,7 +257,7 @@ const DocumentPanel = ({
             css={{ animationDuration: "0.2s" }}
           >
             <Spinner size="xl" mb={4} />
-            <Text>Processing document...</Text>
+            <Text>{t("document.processing")}</Text>
           </Flex>
         ) : !extractedDocData ? (
           // Upload UI
@@ -268,7 +269,7 @@ const DocumentPanel = ({
             css={{ animationDuration: "0.2s" }}
           >
             <Text textAlign="center" fontSize="sm">
-              Upload a referral letter or other document to extract information.
+              {t("document.uploadHint")}
             </Text>
             <VStack width="full" align="center">
               <Input
@@ -286,7 +287,7 @@ const DocumentPanel = ({
                 }
                 size="sm"
               >
-                Choose Document
+                {t("document.choose")}
               </GreyButton>
               {docFileName && <Text fontSize="sm">{docFileName}</Text>}
             </VStack>
@@ -298,7 +299,7 @@ const DocumentPanel = ({
                   className="green-button"
                   size="sm"
                 >
-                  Process Document
+                  {t("document.process")}
                 </Button>
               </Flex>
             )}
@@ -312,12 +313,12 @@ const DocumentPanel = ({
               <Text fontWeight="bold" fontSize="sm">
                 {docFileName}
               </Text>
-              <Button onClick={startNewUpload} size="xs" className="orange-button"><FaFileUpload />New
+              <Button onClick={startNewUpload} size="xs" className="orange-button"><FaFileUpload />{t("forms.new")}
                               </Button>
             </Flex>
             <Separator my={2} />
             <Text fontStyle="italic" fontSize="xs" mb={2}>
-              Click buttons to toggle document content
+              {t("document.toggleHint")}
             </Text>
             <SimpleGrid columns={[1, 2]} gap={2}>
               {template?.fields?.map((field) => {
@@ -347,7 +348,7 @@ const DocumentPanel = ({
                       </Text>
                       {!hasContent ? (
                         <Badge colorPalette="yellow" fontSize="xs">
-                          Empty
+                          {t("document.empty")}
                         </Badge>
                       ) : (
                         <Button
@@ -368,7 +369,7 @@ const DocumentPanel = ({
                                 css={{ animationDuration: "0.2s" }}
                               />
                             ) : null
-                          }{isReplaced ? "Using" : "Use"}</Button>
+                          }{isReplaced ? t("document.using") : t("document.use")}</Button>
                       )}
                     </Flex>
                   </Box>

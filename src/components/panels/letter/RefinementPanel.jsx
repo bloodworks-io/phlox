@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Flex, IconButton, Text, Textarea, Button, Spinner } from "@chakra-ui/react";
 import { EditIcon, CloseIcon } from "../../common/icons";
 
@@ -8,13 +9,17 @@ const RefinementPanel = ({
     handleRefinement,
     loading,
     setIsRefining,
-    suggestions = [
-        "More formal",
-        "More concise",
-        "Add detail",
-        "Improve clarity",
-    ],
-}) => (
+    suggestions,
+}) => {
+    const { t } = useTranslation();
+    const items =
+        suggestions || [
+            t("letter.suggestions.formal"),
+            t("letter.suggestions.concise"),
+            t("letter.suggestions.detail"),
+            t("letter.suggestions.clarity"),
+        ];
+    return (
     <Box
         position="absolute"
         top="50%"
@@ -46,12 +51,12 @@ const RefinementPanel = ({
             <Flex align="center">
                 <EditIcon mr={2} />
                 <Text fontSize="sm" fontWeight="medium">
-                    Refine Letter
+                    {t("letter.refineTitle")}
                 </Text>
             </Flex>
             <IconButton
                 onClick={() => setIsRefining(false)}
-                aria-label="Close refinement"
+                aria-label={t("letter.closeRefinement")}
                 variant="ghost"
                 size="sm"
                 className="collapse-toggle"><CloseIcon boxSize="12px" /></IconButton>
@@ -59,7 +64,7 @@ const RefinementPanel = ({
 
         <Box p="3">
             <Flex wrap="wrap" gap={2} mb="3">
-                {suggestions.map((suggestion) => (
+                {items.map((suggestion) => (
                     <Button
                         key={suggestion}
                         size="xs"
@@ -72,7 +77,7 @@ const RefinementPanel = ({
             </Flex>
 
             <Textarea
-                placeholder="How would you like to improve the letter?"
+                placeholder={t("letter.refinePlaceholder")}
                 value={refinementInput}
                 onChange={(e) => setRefinementInput(e.target.value)}
                 size="sm"
@@ -87,13 +92,14 @@ const RefinementPanel = ({
                 <Button
                     onClick={handleRefinement}
                     loading={loading}
-                    loadingText="Refining..."
+                    loadingText={t("letter.refining")}
                     size="sm"
-                    className="refinement-submit-button"><EditIcon />Refine
+                    className="refinement-submit-button"><EditIcon />{t("letter.refine")}
                                     </Button>
             </Flex>
         </Box>
     </Box>
-);
+    );
+};
 
 export default RefinementPanel;

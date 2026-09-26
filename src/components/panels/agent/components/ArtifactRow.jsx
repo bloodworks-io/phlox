@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { FaEnvelope, FaFilePdf, FaFile, FaArrowRight } from "react-icons/fa";
 
 import { downloadFormFillArtifact } from "../../../pdf-forms/FormFillArtifact";
@@ -20,9 +21,13 @@ const _downloadUrl = (url, filename) => {
 
 /* A prepared output as one full-width action row. */
 export const ArtifactRow = ({ artifact, onOpenLetter }) => {
+    const { t } = useTranslation();
     const Icon = ARTIFACT_ROW_ICONS[artifact.type] || FaFile;
     const label =
-        artifact.title || artifact.template_name || artifact.filename || "Artifact";
+        artifact.title ||
+        artifact.template_name ||
+        artifact.filename ||
+        t("agent.artifact.defaultTitle");
     const isLetter = artifact.type === "letter";
 
     const handleClick = () => {
@@ -53,9 +58,12 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
             transition="border-color 0.15s ease"
             _hover={{ borderColor: "accent" }}
             onClick={handleClick}
-            aria-label={`${label} — ${
-                artifact.saved ? "saved" : "prepared for review"
-            }`}
+            aria-label={t("agent.artifact.aria", {
+                label,
+                state: artifact.saved
+                    ? t("agent.artifact.stateSaved")
+                    : t("agent.artifact.statePrepared"),
+            })}
         >
             <Box
                 as="span"
@@ -71,8 +79,13 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
                     {label}
                 </Text>
                 <Text fontSize="xs" color="fg.subtle">
-                    {artifact.saved ? "Saved" : "Prepared for review"} ·{" "}
-                    {isLetter ? "Open in letter editor" : "Download"}
+                    {artifact.saved
+                        ? t("agent.artifact.saved")
+                        : t("agent.artifact.preparedForReview")}{" "}
+                    ·{" "}
+                    {isLetter
+                        ? t("agent.artifact.openInEditor")
+                        : t("agent.artifact.download")}
                 </Text>
             </Box>
             <Box

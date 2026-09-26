@@ -7,6 +7,7 @@ import {
   Field,
   Spinner,
 } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
 import { InfoIcon } from "../../icons";
 
@@ -27,6 +28,8 @@ export const RemoteModeForm = ({
   whisperModelListAvailable,
   isFetchingWhisperModels,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <VStack
       gap={3}
@@ -37,10 +40,10 @@ export const RemoteModeForm = ({
       <Field.Root>
         <HStack>
           <Field.Label fontSize="sm" color="textSecondary">
-            API URL
+            {t("splash.remote.apiUrl")}
           </Field.Label>
           <Tooltip
-            content="OpenAI/Ollama-compatible endpoint (usually http://localhost:11434 for local Ollama)"
+            content={t("splash.remote.apiUrlTooltip")}
             showArrow
           >
             <InfoIcon boxSize={3} color="textSecondary" />
@@ -58,10 +61,10 @@ export const RemoteModeForm = ({
       <Field.Root>
         <HStack>
           <Field.Label fontSize="sm" color="textSecondary">
-            API Key
+            {t("splash.remote.apiKey")}
           </Field.Label>
           <Tooltip
-            content="API key for authenticating with the service. Leave empty for local servers like Ollama."
+            content={t("splash.remote.apiKeyTooltip")}
             showArrow
           >
             <InfoIcon boxSize={3} color="textSecondary" />
@@ -80,10 +83,10 @@ export const RemoteModeForm = ({
       <Field.Root required={availableModels.length > 0}>
         <HStack>
           <Field.Label fontSize="sm" color="textSecondary">
-            Primary Model
+            {t("splash.remote.primaryModel")}
           </Field.Label>
           <Tooltip
-            content="The main AI model for medical queries. We recommend llama3.1:8b or gpt-4."
+            content={t("splash.remote.primaryModelTooltip")}
             showArrow
           >
             <InfoIcon boxSize={3} color="textSecondary" />
@@ -93,8 +96,8 @@ export const RemoteModeForm = ({
           <NativeSelect.Field
             placeholder={
               availableModels.length === 0 && !isFetchingLLMModels
-                ? "No models found — check URL"
-                : "Select model"
+                ? t("splash.remote.noModelsFound")
+                : t("splash.remote.selectModel")
             }
             value={primaryModel}
             onChange={(e) => setPrimaryModel(e.target.value)}
@@ -114,7 +117,7 @@ export const RemoteModeForm = ({
           <HStack gap={2} mt={2}>
             <Spinner size="xs" color="primaryButton" />
             <Text fontSize="sm" color="textSecondary">
-              Loading models...
+              {t("splash.remote.loadingModels")}
             </Text>
           </HStack>
         )}
@@ -123,11 +126,11 @@ export const RemoteModeForm = ({
       {/* Transcription settings — always visible */}
       <VStack gap={2} w="100%" align="stretch">
         <Text fontSize="xs" fontWeight="bold" className="pill-box-icons">
-          Transcription
+          {t("splash.step.aiModels.transcription")}
         </Text>
         <Field.Root>
           <Field.Label fontSize="sm" color="textSecondary">
-            Whisper URL
+            {t("splash.remote.whisperUrl")}
           </Field.Label>
           <Input
             placeholder="http://localhost:8080"
@@ -140,13 +143,13 @@ export const RemoteModeForm = ({
         {whisperBaseUrl.trim() && (
           <Field.Root>
             <Field.Label fontSize="sm" color="textSecondary">
-              Whisper Model
+              {t("splash.remote.whisperModel")}
             </Field.Label>
             {whisperModelListAvailable &&
             availableWhisperModels.length > 0 ? (
               <NativeSelect.Root>
                 <NativeSelect.Field
-                  placeholder="Select model"
+                  placeholder={t("splash.remote.selectModel")}
                   value={whisperModel}
                   onChange={(e) => setWhisperModel(e.target.value)}
                   disabled={isFetchingWhisperModels}
@@ -163,7 +166,7 @@ export const RemoteModeForm = ({
               </NativeSelect.Root>
             ) : (
               <Input
-                placeholder="e.g., whisper-1, base, small"
+                placeholder={t("splash.remote.whisperModelPlaceholder")}
                 value={whisperModel}
                 onChange={(e) => setWhisperModel(e.target.value)}
                 disabled={isFetchingWhisperModels}
@@ -175,7 +178,7 @@ export const RemoteModeForm = ({
               <HStack gap={2} mt={2}>
                 <Spinner size="xs" color="primaryButton" />
                 <Text fontSize="sm" color="textSecondary">
-                  Loading...
+                  {t("splash.remote.loading")}
                 </Text>
               </HStack>
             )}

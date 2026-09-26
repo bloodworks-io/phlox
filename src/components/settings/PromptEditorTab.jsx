@@ -1,7 +1,10 @@
 import { Box, Button, Flex, Textarea, Text, VStack } from "@chakra-ui/react";
 import { FiRefreshCw } from "react-icons/fi";
+import { useTranslation } from "react-i18next";
 
-const ResetToDefaultButton = ({ onClick, ...props }) => (
+const ResetToDefaultButton = ({ onClick, ...props }) => {
+    const { t } = useTranslation();
+    return (
     <Button
         size="sm"
         h="30px"
@@ -11,9 +14,10 @@ const ResetToDefaultButton = ({ onClick, ...props }) => (
         {...props}
     >
         <FiRefreshCw />
-        Reset to Default
+        {t("settings.resetToDefault")}
     </Button>
-);
+    );
+};
 
 const PromptEditorTab = ({ title, subtitle, value, onChange, onReset }) => (
     <VStack gap={4} align="stretch">

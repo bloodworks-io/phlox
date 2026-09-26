@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Flex, Text, Popover } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     FaMicrophone,
@@ -49,6 +50,7 @@ export const RecordButton = ({
     onBlockedClick,
 }) => {
     const [isHovered, setIsHovered] = React.useState(false);
+    const { t } = useTranslation();
 
     const getButtonStyles = () => {
         if (isRecording && !isPaused) {
@@ -88,13 +90,13 @@ export const RecordButton = ({
 
     const getLabel = () => {
         if (isRecording && !isPaused) {
-            return isHovered ? "Pause" : "Recording...";
+            return isHovered ? t("scribe.record.pause") : t("scribe.record.recording");
         } else if (isPaused) {
-            return "Resume";
+            return t("scribe.record.resume");
         } else if (!canStart) {
-            return "Enter patient details (name, DOB, UR number) to start recording";
+            return t("scribe.record.blockedHint");
         } else {
-            return "Record";
+            return t("scribe.record.start");
         }
     };
 
@@ -182,20 +184,20 @@ const MODES = [
     {
         id: "dictate",
         icon: FaKeyboard,
-        label: "Dictate",
-        hint: "direct speech, processed on send",
+        label: "scribe.mode.dictate",
+        hint: "scribe.mode.dictateHint",
     },
     {
         id: "ambient",
         icon: FaComments,
-        label: "Ambient",
-        hint: "captures the whole consultation",
+        label: "scribe.mode.ambient",
+        hint: "scribe.mode.ambientHint",
     },
     {
         id: "agent",
         icon: FaBolt,
-        label: "Live agent",
-        hint: "drafts the note in realtime",
+        label: "agent.liveAgent",
+        hint: "scribe.mode.agentHint",
     },
 ];
 
@@ -207,6 +209,7 @@ export const ModeSelectButton = ({
     open = false,
     onOpenChange,
 }) => {
+    const { t } = useTranslation();
     const active = MODES.find((m) => m.id === mode) ?? MODES[0];
     const ActiveIcon = active.icon;
 
@@ -243,7 +246,7 @@ export const ModeSelectButton = ({
                 outline="none"
                 transition="transform 0.2s ease"
                 _hover={{ transform: "scale(1.1)" }}
-                aria-label={`Capture mode: ${active.label}. Activate to change mode.`}
+                aria-label={t("scribe.mode.aria", { label: t(active.label) })}
                 >
                     <ActiveIcon size={15} />
                 </Box>
@@ -304,14 +307,14 @@ export const ModeSelectButton = ({
                                                 : "textSecondary"
                                         }
                                     >
-                                        {entry.label}
+                                        {t(entry.label)}
                                     </Text>
                                     <Text
                                         fontSize="10px"
                                         color="textTertiary"
                                         lineHeight="1.3"
                                     >
-                                        {entry.hint}
+                                        {t(entry.hint)}
                                     </Text>
                                 </Box>
                                 {isActive && (
@@ -337,13 +340,14 @@ export const ModeSelectButton = ({
 
 export const LiveAgentControls = ({ status = "live", onStop }) => {
     const [isHovered, setIsHovered] = React.useState(false);
+    const { t } = useTranslation();
     const isBusy = status === "connecting" || status === "stopping";
     const label =
         status === "connecting"
-            ? "Warming up the agent…"
+            ? t("scribe.agent.warmingUp")
             : status === "stopping"
-              ? "Wrapping up…"
-              : "End live session";
+              ? t("agent.status.wrappingUp")
+              : t("scribe.agent.end");
 
     return (
         <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
@@ -443,11 +447,15 @@ export const LiveAgentControls = ({ status = "live", onStop }) => {
 export const LiveExpandButton = ({
     isExpanded = false,
     onExpand,
-    label = "Expand live agent",
-    labelExpanded = "Collapse live agent panel",
-}) => (
+    label,
+    labelExpanded,
+}) => {
+    const { t } = useTranslation();
+    const expandLabel = label ?? t("agent.expand.expand");
+    const collapseLabel = labelExpanded ?? t("agent.expand.collapsePanel");
+    return (
     <Tooltip
-        content={isExpanded ? labelExpanded : label}
+        content={isExpanded ? collapseLabel : expandLabel}
         showArrow
         positioning={{ placement: "top" }}
     >
@@ -465,7 +473,7 @@ export const LiveExpandButton = ({
             bg={isExpanded ? colors.dark.surface : "transparent"}
             _hover={{ bg: colors.dark.surface, transform: "scale(1.05)" }}
             asChild><button
-                aria-label={isExpanded ? labelExpanded : label}
+                aria-label={isExpanded ? collapseLabel : expandLabel}
                 onClick={onExpand}>
                 <Box
                     as="span"
@@ -479,7 +487,8 @@ export const LiveExpandButton = ({
                 </Box>
             </button></Box>
     </Tooltip>
-);
+    );
+};
 
 // Borderless side-slot button — the ghost treatment LiveExpandButton and
 // the transcript toggle use, shared by the end-of-session pills.
@@ -532,11 +541,12 @@ export const AgentReviewPill = ({
     onDismiss,
 }) => {
     const [isHovered, setIsHovered] = React.useState(false);
+    const { t } = useTranslation();
     // Drafts do not survive a resume — startLive starts a fresh session.
     const label =
         artifactsCount > 0
-            ? `Resume live session · ${artifactsCount} drafts to review first`
-            : "Resume live session";
+            ? t("agent.review.resumeWithDrafts", { count: artifactsCount })
+            : t("agent.review.resume");
 
     const handleClick = () => {
         if (canStart) {
@@ -548,7 +558,10 @@ export const AgentReviewPill = ({
 
     return (
         <PillBox {...END_STATE_PILL}>
-            <GhostButton label="Close session review" onClick={onDismiss}>
+            <GhostButton
+                label={t("agent.panel.closeSession")}
+                onClick={onDismiss}
+            >
                 <FaTimes size={13} />
             </GhostButton>
             <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
@@ -610,8 +623,8 @@ export const AgentReviewPill = ({
             <LiveExpandButton
                 isExpanded={isExpanded}
                 onExpand={onExpand}
-                label="Open session review"
-                labelExpanded="Collapse session review"
+                label={t("agent.review.openPanel")}
+                labelExpanded={t("agent.review.collapsePanel")}
             />
         </PillBox>
     );
@@ -619,11 +632,15 @@ export const AgentReviewPill = ({
 
 export const AgentErrorPill = ({ onRetry, onDismiss }) => {
     const [isHovered, setIsHovered] = React.useState(false);
-    const label = "Connection interrupted — reconnect live agent";
+    const { t } = useTranslation();
+    const label = t("agent.error.reconnectLive");
 
     return (
         <PillBox {...END_STATE_PILL}>
-            <GhostButton label="Dismiss connection error" onClick={onDismiss}>
+            <GhostButton
+                label={t("agent.error.dismissError")}
+                onClick={onDismiss}
+            >
                 <FaTimes size={13} />
             </GhostButton>
             <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
@@ -688,9 +705,10 @@ export const AgentErrorPill = ({ onRetry, onDismiss }) => {
 // Reset button shown in the mode slot while a recording is in progress.
 export const ResetButton = ({ onReset }) => {
     const [isHovered, setIsHovered] = React.useState(false);
+    const { t } = useTranslation();
 
     return (
-        <Tooltip content="Reset" showArrow positioning={{
+        <Tooltip content={t("scribe.reset")} showArrow positioning={{
             placement: "top"
         }}>
             <Box
@@ -728,11 +746,12 @@ export const TranscriptSendButton = ({
     hasRawTranscription,
 }) => {
     const [isHovered, setIsHovered] = React.useState(false);
+    const { t } = useTranslation();
 
     if (isRecording) {
         // Send button state
         return (
-            <Tooltip content="Stop and send" showArrow positioning={{
+            <Tooltip content={t("scribe.send.stopAndSend")} showArrow positioning={{
                 placement: "top"
             }}>
                 <Box
@@ -764,7 +783,9 @@ export const TranscriptSendButton = ({
 
     // Transcript button state
     const isDisabled = !hasRawTranscription;
-    const label = isDisabled ? "No transcript available" : "Transcript";
+    const label = isDisabled
+        ? t("scribe.transcript.none")
+        : t("agent.panel.transcript");
 
     // ponytail: no Tooltip here — nesting Tooltip.Trigger around
     // Popover.Trigger makes the tooltip's id/data-scope win on the shared
@@ -804,7 +825,10 @@ export const TranscriptionFailurePill = ({
     onRetry,
     onDownload,
     onDismiss,
-}) => (
+}) => {
+    const { t } = useTranslation();
+
+    return (
     <PillBox
         bottom="20px"
         left="50%"
@@ -817,7 +841,7 @@ export const TranscriptionFailurePill = ({
         minHeight="65px"
     >
         <Tooltip
-            content={sendError?.message || "Transcription failed"}
+            content={sendError?.message || t("scribe.transcription.failed")}
             showArrow
             positioning={{
                 placement: "top"
@@ -826,11 +850,11 @@ export const TranscriptionFailurePill = ({
             <Flex align="center" gap={2} color={PILL.danger} pr={1}>
                 <FaExclamationTriangle size={15} />
                 <Text fontSize="xs" fontWeight="700">
-                    Transcription failed
+                    {t("scribe.transcription.failed")}
                 </Text>
             </Flex>
         </Tooltip>
-        <Tooltip content="Retry sending" showArrow positioning={{
+        <Tooltip content={t("scribe.transcription.retrySend")} showArrow positioning={{
             placement: "top"
         }}>
             <Box
@@ -856,7 +880,7 @@ export const TranscriptionFailurePill = ({
                     <FaRedoAlt size={13} />
                 </button></Box>
         </Tooltip>
-        <Tooltip content="Download audio to retry later" showArrow positioning={{
+        <Tooltip content={t("scribe.transcription.downloadAudio")} showArrow positioning={{
             placement: "top"
         }}>
             <Box
@@ -883,7 +907,7 @@ export const TranscriptionFailurePill = ({
                 </button></Box>
         </Tooltip>
         <Tooltip
-            content="Dismiss — download first to keep the audio"
+            content={t("scribe.transcription.dismissWarning")}
             showArrow
             positioning={{
                 placement: "top"
@@ -909,4 +933,5 @@ export const TranscriptionFailurePill = ({
                 </button></Box>
         </Tooltip>
     </PillBox>
-);
+    );
+};

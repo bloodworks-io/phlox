@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     HStack,
     Heading,
@@ -42,6 +43,7 @@ const WrapUpModal = ({
     stagedJobs,
     onExtracted,
 }) => {
+    const { t } = useTranslation();
     const [actionItems, setActionItems] = useState([]);
     const [excluded, setExcluded] = useState([]);
     const [fallback, setFallback] = useState(null);
@@ -162,7 +164,7 @@ const WrapUpModal = ({
                             <HStack>
                                 <FaCheckDouble />
                                 <Heading as="h3" size="xl" fontFamily="heading">
-                                    Wrap Up
+                                    {t("modal.wrapUp.title")}
                                 </Heading>
                             </HStack>
                         </Dialog.Header>
@@ -173,7 +175,7 @@ const WrapUpModal = ({
                             className="custom-scrollbar"
                         >
                             <VStack align="stretch" gap={4}>
-                                <Section title="Jobs to action">
+                                <Section title={t("modal.wrapUp.jobsToAction")}>
                                     {extracting ? (
                                         <Center py={6}>
                                             <Spinner size="sm" />
@@ -184,8 +186,7 @@ const WrapUpModal = ({
                                                     "textSecondary"
                                                 }
                                             >
-                                                Extracting tasks from the
-                                                plan...
+                                                {t("modal.wrapUp.extracting")}
                                             </Text>
                                         </Center>
                                     ) : actionItems.length === 0 &&
@@ -194,7 +195,7 @@ const WrapUpModal = ({
                                             fontSize="sm"
                                             color={"textSecondary"}
                                         >
-                                            No tasks extracted — add any below.
+                                            {t("modal.wrapUp.noTasksExtracted")}
                                         </Text>
                                     ) : null}
 
@@ -251,7 +252,7 @@ const WrapUpModal = ({
                                                     }}
                                                 />
                                                 <IconButton
-                                                    aria-label="Remove task"
+                                                    aria-label={t("modal.wrapUp.removeTask")}
                                                     size="xs"
                                                     variant="ghost"
                                                     onClick={() =>
@@ -266,7 +267,7 @@ const WrapUpModal = ({
 
                                     <HStack mt={2}>
                                         <Input
-                                            placeholder="Add a task..."
+                                            placeholder={t("modal.wrapUp.addTaskPlaceholder")}
                                             value={newTaskText}
                                             onChange={(e) =>
                                                 setNewTaskText(e.target.value)
@@ -281,7 +282,7 @@ const WrapUpModal = ({
                                             className="input-style"
                                         />
                                         <IconButton
-                                            aria-label="Add task"
+                                            aria-label={t("modal.wrapUp.addTask")}
                                             size="sm"
                                             onClick={addTask}
                                         >
@@ -308,9 +309,7 @@ const WrapUpModal = ({
                                                 verticalAlign="-2px"
                                                 mr="2px"
                                             />
-                                            Not tasks
-                                            (review/follow-up) —{" "}
-                                            {excluded.length}
+                                            {t("modal.wrapUp.notTasks", { count: excluded.length })}
                                         </Text>
                                         <Collapsible.Root open={showExcluded}>
                                             <Collapsible.Content>
@@ -334,8 +333,8 @@ const WrapUpModal = ({
                                                                 >
                                                                     {item.text}
                                                                 </Text>
-                                                                <IconButton
-                                                                    aria-label="Promote to task"
+                                                                 <IconButton
+                                                                     aria-label={t("modal.wrapUp.promoteToTask")}
                                                                     size="xs"
                                                                     variant="ghost"
                                                                     onClick={() =>
@@ -355,23 +354,21 @@ const WrapUpModal = ({
                                     </Box>
                                 )}
 
-                                {fallback === "empty" && (
-                                    <Alert.Root status="info" borderRadius="md">
-                                        <Alert.Indicator />
-                                        No plan text to extract tasks from. Add
-                                        any tasks above.
-                                    </Alert.Root>
-                                )}
-                                {fallback === "heuristic" && (
-                                    <Alert.Root
-                                        status="warning"
-                                        borderRadius="md"
-                                    >
-                                        <Alert.Indicator />
-                                        Smart extraction unavailable — showing
-                                        basic tasks. Edit freely.
-                                    </Alert.Root>
-                                )}
+                                 {fallback === "empty" && (
+                                     <Alert.Root status="info" borderRadius="md">
+                                         <Alert.Indicator />
+                                         {t("modal.wrapUp.noPlanText")}
+                                     </Alert.Root>
+                                 )}
+                                 {fallback === "heuristic" && (
+                                     <Alert.Root
+                                         status="warning"
+                                         borderRadius="md"
+                                     >
+                                         <Alert.Indicator />
+                                         {t("modal.wrapUp.heuristicFallback")}
+                                     </Alert.Root>
+                                 )}
 
                                 {/* TODO: billing suggestions section */}
                             </VStack>
@@ -391,15 +388,15 @@ const WrapUpModal = ({
                                     mr={3}
                                     disabled={submitting}
                                 >
-                                    Cancel
+                                    {t("action.cancel")}
                                 </Button>
                                 <GreenButton
                                     onClick={handleConfirm}
                                     loading={submitting}
-                                    loadingText="Saving"
+                                    loadingText={t("modal.wrapUp.saving")}
                                     disabled={!canConfirm}
                                 >
-                                    Confirm &amp; Finish
+                                    {t("modal.wrapUp.confirmFinish")}
                                 </GreenButton>
                             </HStack>
                         </Dialog.Footer>

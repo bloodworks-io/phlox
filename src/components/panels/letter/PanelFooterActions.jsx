@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Flex, Button, Spinner } from "@chakra-ui/react";
 import { RepeatIcon, CopyIcon, CheckIcon } from "../../common/icons";
 import { FaSave } from "react-icons/fa";
@@ -12,12 +13,13 @@ const PanelFooterActions = ({
     letterLoading,
     additionalInstructions,
 }) => {
+    const { t } = useTranslation();
     const getSaveButtonProps = () => {
         switch (saveState) {
             case "saving":
                 return {
                     leftIcon: <Spinner size="sm" />,
-                    children: "Saving...",
+                    children: t("patient.savingOngoing"),
                 };
             case "saved":
                 return {
@@ -27,12 +29,12 @@ const PanelFooterActions = ({
                             css={{ animationDuration: "0.2s" }}
                         />
                     ),
-                    children: "Saved!",
+                    children: t("letter.saved"),
                 };
             default:
                 return {
                     leftIcon: <FaSave />,
-                    children: "Save Letter",
+                    children: t("letter.save"),
                 };
         }
     };
@@ -42,7 +44,7 @@ const PanelFooterActions = ({
             <Button
                 onClick={() => handleGenerateLetter(additionalInstructions)}
                 className="red-button"
-                disabled={letterLoading || saveState !== "idle"}><RepeatIcon />Regenerate Letter
+                disabled={letterLoading || saveState !== "idle"}><RepeatIcon />{t("letter.regenerate")}
                             </Button>
             <Flex>
                 <Button
@@ -58,7 +60,7 @@ const PanelFooterActions = ({
                         ) : (
                             <CopyIcon />
                         )
-                    }{recentlyCopied ? "Copied!" : "Copy Letter"}</Button>
+                    }{recentlyCopied ? t("letter.copied") : t("letter.copy")}</Button>
                 <Button
                     onClick={handleSave}
                     className="green-button"

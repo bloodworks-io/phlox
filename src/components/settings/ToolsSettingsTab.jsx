@@ -9,38 +9,39 @@ import {
 } from "react-icons/fa";
 import { DeleteIcon } from "../common/icons";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useToolServers } from "../../utils/hooks/useToolServers";
 
 // Built-in tools configuration
 const BUILT_IN_TOOLS = [
     {
         name: "transcript_search",
-        label: "Transcript Search",
-        description: "Search patient transcripts",
+        labelKey: "settings.tools.transcriptSearch",
+        descriptionKey: "settings.tools.transcriptSearchDescription",
         external: false,
     },
     {
         name: "get_relevant_literature",
-        label: "Literature Search",
-        description: "Local literature database",
+        labelKey: "settings.tools.literatureSearch",
+        descriptionKey: "settings.tools.literatureSearchDescription",
         external: false,
     },
     {
         name: "pubmed_search",
-        label: "PubMed Search",
-        description: "PubMed API (may expose PHI)",
+        labelKey: "settings.tools.pubmedSearch",
+        descriptionKey: "settings.tools.pubmedSearchDescription",
         external: true,
     },
     {
         name: "wiki_search",
-        label: "Wikipedia Search",
-        description: "Wikipedia API (may expose PHI)",
+        labelKey: "settings.tools.wikipediaSearch",
+        descriptionKey: "settings.tools.wikipediaSearchDescription",
         external: true,
     },
     {
         name: "get_previous_encounter",
-        label: "Previous Encounters",
-        description: "Patient history lookup",
+        labelKey: "settings.tools.previousEncounters",
+        descriptionKey: "settings.tools.previousEncountersDescription",
         external: false,
     },
 ];
@@ -58,6 +59,7 @@ const ToolsSettingsTab = ({ className }) => {
         toggleBuiltInTool,
         isToolEnabled,
     } = useToolServers();
+    const { t } = useTranslation();
 
     const [showAddForm, setShowAddForm] = useState(false);
     const [serverName, setServerName] = useState("");
@@ -72,18 +74,18 @@ const ToolsSettingsTab = ({ className }) => {
         setUrlError("");
 
         if (!serverName.trim()) {
-            setNameError("Server name is required");
+            setNameError(t("settings.tools.serverNameRequired"));
             isValid = false;
         }
 
         if (!serverUrl.trim()) {
-            setUrlError("Server URL is required");
+            setUrlError(t("settings.tools.serverUrlRequired"));
             isValid = false;
         } else {
             try {
                 new URL(serverUrl);
             } catch {
-                setUrlError("Please enter a valid URL");
+                setUrlError(t("settings.tools.invalidUrl"));
                 isValid = false;
             }
         }
@@ -112,9 +114,7 @@ const ToolsSettingsTab = ({ className }) => {
             <Alert.Root status="warning" borderRadius="md">
                 <Alert.Indicator color="secondaryButton" />
                 <Alert.Description fontSize="sm">
-                    Tool servers may receive sensitive patient information
-                    (PHI). Only add servers you trust that comply with your
-                    privacy requirements.
+                    {t("settings.tools.warning")}
                 </Alert.Description>
             </Alert.Root>
             {/* Built-in Tools Section */}
@@ -123,15 +123,13 @@ const ToolsSettingsTab = ({ className }) => {
                     <HStack>
                         <FaPuzzlePiece style={{ opacity: 0.7 }} />
                         <Text fontSize="sm" fontWeight="semibold">
-                            Built-in Tools
+                            {t("settings.tools.builtinTitle")}
                         </Text>
                     </HStack>
                 </Flex>
 
                 <Text fontSize="xs" className="pill-box-icons" mb={2}>
-                    Enable or disable built-in tools. External tools (PubMed,
-                    Wikipedia) are disabled by default to protect patient
-                    privacy.
+                    {t("settings.tools.builtinDescription")}
                 </Text>
 
                 <VStack gap={1} align="stretch">
@@ -150,10 +148,10 @@ const ToolsSettingsTab = ({ className }) => {
                                                 fontWeight="medium"
                                                 fontSize="sm"
                                             >
-                                                {tool.label}
+                                                {t(tool.labelKey)}
                                             </Text>
                                             {tool.external && (
-                                                <Tooltip content="External API - may expose PHI">
+                                                <Tooltip content={t("settings.tools.externalTooltip")}>
                                                     <Box>
                                                         <FaLock
                                                             style={{
@@ -169,7 +167,7 @@ const ToolsSettingsTab = ({ className }) => {
                                             fontSize="xs"
                                             className="pill-box-icons"
                                         >
-                                            {tool.description}
+                                            {t(tool.descriptionKey)}
                                         </Text>
                                     </Box>
                                 </HStack>
@@ -196,18 +194,16 @@ const ToolsSettingsTab = ({ className }) => {
                 <HStack>
                     <FaPuzzlePiece style={{ opacity: 0.7 }} />
                     <Text fontSize="sm" fontWeight="semibold">
-                        Tool Servers
+                        {t("settings.tools.serversTitle")}
                     </Text>
                 </HStack>
                 <Spacer />
                 <Badge colorPalette="purple" fontSize="xs">
-                    Streamable HTTP
+                    {t("settings.tools.streamableHttp")}
                 </Badge>
             </Flex>
             <Text fontSize="xs" className="pill-box-icons">
-                External tool servers provide additional tools for chat and
-                chart insights. Servers must implement the Streamable HTTP
-                transport.
+                {t("settings.tools.serversDescription")}
             </Text>
             {/* Add Server Button */}
             <Button
@@ -215,18 +211,18 @@ const ToolsSettingsTab = ({ className }) => {
                 variant="outline"
                 size="sm"
                 className="nav-button"
-                alignSelf="flex-start"><FaPlus />Add Server
+                alignSelf="flex-start"><FaPlus />{t("settings.tools.addServer")}
                             </Button>
             {/* Add Server Form */}
             {showAddForm && (
                 <Box p={4} borderRadius="md" className="floating-main">
                     <VStack gap={3}>
                         <Field.Root invalid={!!nameError}>
-                            <Field.Label fontSize="xs">Server Name</Field.Label>
+                            <Field.Label fontSize="xs">{t("settings.tools.serverName")}</Field.Label>
                             <Input
                                 value={serverName}
                                 onChange={(e) => setServerName(e.target.value)}
-                                placeholder="My MCP Server"
+                                placeholder={t("settings.tools.serverNamePlaceholder")}
                                 size="sm"
                                 className="input-style"
                             />
@@ -236,7 +232,7 @@ const ToolsSettingsTab = ({ className }) => {
                         </Field.Root>
 
                         <Field.Root invalid={!!urlError}>
-                            <Field.Label fontSize="xs">Server URL</Field.Label>
+                            <Field.Label fontSize="xs">{t("settings.tools.serverUrl")}</Field.Label>
                             <Input
                                 value={serverUrl}
                                 onChange={(e) => setServerUrl(e.target.value)}
@@ -257,16 +253,16 @@ const ToolsSettingsTab = ({ className }) => {
                                     size="sm"
                                     checked={allowSensitiveData}
                                 ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
-                                    <Text fontSize="xs">Allow sensitive data (PHI)</Text>
+                                    <Text fontSize="xs">{t("settings.tools.allowSensitive")}</Text>
                                 </Checkbox.Label></Checkbox.Root>
-                                <Tooltip content="When enabled, patient data will be sent to this server without sanitization. Only enable for fully trusted servers.">
+                                <Tooltip content={t("settings.tools.allowSensitiveTooltip")}>
                                     <Box>
                                         <FaLock style={{ opacity: 0.6, color: "var(--chakra-colors-secondary-button)" }} />
                                     </Box>
                                 </Tooltip>
                             </HStack>
                             <Text fontSize="xs" className="pill-box-icons" mt={1}>
-                                Default: sanitized. Enable only for trusted servers.
+                                {t("settings.tools.sensitiveDefault")}
                             </Text>
                         </Field.Root>
 
@@ -276,7 +272,7 @@ const ToolsSettingsTab = ({ className }) => {
                                 variant="ghost"
                                 size="sm"
                             >
-                                Cancel
+                                {t("action.cancel")}
                             </Button>
                             <Button
                                 onClick={handleAddServer}
@@ -284,7 +280,7 @@ const ToolsSettingsTab = ({ className }) => {
                                 colorPalette="green"
                                 size="sm"
                             >
-                                Add Server
+                                {t("settings.tools.addServer")}
                             </Button>
                         </HStack>
                     </VStack>
@@ -298,10 +294,10 @@ const ToolsSettingsTab = ({ className }) => {
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
                     <Text fontSize="sm" className="pill-box-icons">
-                        No tool servers configured
+                        {t("settings.tools.emptyTitle")}
                     </Text>
                     <Text fontSize="xs" className="pill-box-icons" mt={1}>
-                        Add a server to extend available tools
+                        {t("settings.tools.emptyDescription")}
                     </Text>
                 </Box>
             ) : (
@@ -334,11 +330,11 @@ const ToolsSettingsTab = ({ className }) => {
                                                 fontSize="xs"
                                             >
                                                 {server.enabled
-                                                    ? "Active"
-                                                    : "Disabled"}
+                                                    ? t("settings.active")
+                                                    : t("settings.tools.disabled")}
                                             </Badge>
                                             {server.allow_sensitive_data && (
-                                                <Tooltip content="PHI allowed - data sent without sanitization">
+                                                <Tooltip content={t("settings.tools.phiAllowedTooltip")}>
                                                     <Badge
                                                         size="sm"
                                                         colorPalette="red"
@@ -369,7 +365,7 @@ const ToolsSettingsTab = ({ className }) => {
                                 </HStack>
 
                                 <HStack gap={1}>
-                                    <Tooltip content="Test connection">
+                                    <Tooltip content={t("settings.tools.testConnection")}>
                                         <IconButton
                                             size="sm"
                                             variant="ghost"
@@ -379,14 +375,14 @@ const ToolsSettingsTab = ({ className }) => {
                                             loading={
                                                 testingServerId === server.id
                                             }
-                                            aria-label="Test connection"><FaCheck /></IconButton>
+                                            aria-label={t("settings.tools.testConnection")}><FaCheck /></IconButton>
                                     </Tooltip>
 
                                     <Tooltip
                                         content={
                                             server.allow_sensitive_data
-                                                ? "PHI allowed - click to sanitize"
-                                                : "PHI sanitized - click to allow"
+                                                ? t("settings.tools.phiClickSanitize")
+                                                : t("settings.tools.phiClickAllow")
                                         }
                                     >
                                         <IconButton
@@ -400,14 +396,14 @@ const ToolsSettingsTab = ({ className }) => {
                                                     !server.allow_sensitive_data,
                                                 )
                                             }
-                                            aria-label="Toggle PHI sanitization"><FaLock /></IconButton>
+                                            aria-label={t("settings.tools.togglePhi")}><FaLock /></IconButton>
                                     </Tooltip>
 
                                     <Tooltip
                                         content={
                                             server.enabled
-                                                ? "Disable"
-                                                : "Enable"
+                                                ? t("settings.disable")
+                                                : t("settings.enable")
                                         }
                                     >
                                         <Switch.Root
@@ -424,7 +420,7 @@ const ToolsSettingsTab = ({ className }) => {
                                         </Switch.Root>
                                     </Tooltip>
 
-                                    <Tooltip content="Delete">
+                                    <Tooltip content={t("settings.tools.delete")}>
                                         <IconButton
                                             size="sm"
                                             colorPalette="red"
@@ -432,7 +428,7 @@ const ToolsSettingsTab = ({ className }) => {
                                             onClick={() =>
                                                 deleteServer(server.id)
                                             }
-                                            aria-label="Delete server"><DeleteIcon /></IconButton>
+                                            aria-label={t("settings.tools.deleteServer")}><DeleteIcon /></IconButton>
                                     </Tooltip>
                                 </HStack>
                             </Flex>

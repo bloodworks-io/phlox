@@ -1,4 +1,5 @@
 import { Box, Flex, IconButton, Textarea, Spinner } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from '@/components/ui/tooltip';
 import { EditIcon } from "../../common/icons";
 
@@ -12,6 +13,7 @@ const LetterEditor = ({
   refinementPanel,
   dictationWidget,
 }) => {
+  const { t } = useTranslation();
 
   return (
     // This outer Box needs height="100%" if its parent relies on it
@@ -51,8 +53,8 @@ const LetterEditor = ({
         transition="opacity 0.2s ease-in-out, filter 0.2s ease-in-out"
       >
         <Textarea
-          placeholder="Write your letter here..."
-          value={finalCorrespondence || "No letter attached to encounter"}
+          placeholder={t("letter.placeholder")}
+          value={finalCorrespondence || t("letter.toast.noneAttached")}
           onChange={(e) => {
             onLetterChange(e.target.value);
           }}
@@ -70,7 +72,7 @@ const LetterEditor = ({
         />
         {/* Tooltip and IconButton remain largely the same */}
         {/* They are absolutely positioned relative to the floating-main Box */}
-        <Tooltip content="Refine letter" disabled={loading} positioning={{
+        <Tooltip content={t("letter.refineTooltip")} disabled={loading} positioning={{
           placement: "left"
         }}>
           <IconButton
@@ -95,7 +97,7 @@ const LetterEditor = ({
             className="refinement-fab"
             // Prevent click when loading
             onClick={() => !loading && setIsRefining(true)}
-            aria-label="Refine letter"
+            aria-label={t("letter.refineTooltip")}
             disabled={loading}><EditIcon /></IconButton>
         </Tooltip>
         {dictationWidget}

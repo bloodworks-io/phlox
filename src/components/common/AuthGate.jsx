@@ -13,11 +13,13 @@ import {
   Alert,
 } from "@chakra-ui/react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { setStoredToken } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 
 export const AuthGate = ({ onSuccess }) => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,8 +30,8 @@ export const AuthGate = ({ onSuccess }) => {
   const handleSubmit = useCallback(async () => {
     if (username.length < 1 || password.length < 1) {
       toaster.create({
-        title: "Credentials Required",
-        description: "Please enter your username and password to sign in.",
+        title: t("auth.credentialsRequired"),
+        description: t("auth.credentialsRequiredDescription"),
         type: "warning",
         duration: 3000,
       });
@@ -46,7 +48,7 @@ export const AuthGate = ({ onSuccess }) => {
 
       if (response.status === 423) {
         const data = await response.json().catch(() => null);
-        setLockMessage(data?.detail || "Too many failed attempts. Try again shortly.");
+        setLockMessage(data?.detail || t("auth.tooManyAttempts"));
         return;
       }
 
@@ -62,15 +64,15 @@ export const AuthGate = ({ onSuccess }) => {
       onSuccess();
     } catch {
       toaster.create({
-        title: "Could Not Reach Server",
-        description: "Check your connection and try again.",
+        title: t("auth.couldNotReachServer"),
+        description: t("auth.couldNotReachServerDescription"),
         type: "error",
         duration: 6000,
       });
     } finally {
       setIsSubmitting(false);
     }
-  }, [username, password, onSuccess]);
+  }, [username, password, onSuccess, t]);
 
   const handleKeyPress = useCallback(
     (e) => {
@@ -135,7 +137,7 @@ export const AuthGate = ({ onSuccess }) => {
                 marginBottom: "0.5rem",
               }}
             >
-              Sign In
+              {t("auth.signIn")}
             </Heading>
             <Text
               textAlign="center"
@@ -144,7 +146,7 @@ export const AuthGate = ({ onSuccess }) => {
               maxW="350px"
               lineHeight="1.6"
             >
-              Sign in with your account to access your patient data.
+              {t("auth.signInSubtitle")}
             </Text>
           </Flex>
 
@@ -159,8 +161,7 @@ export const AuthGate = ({ onSuccess }) => {
             <Alert.Root status="warning" borderRadius="md" fontSize="sm">
               <Alert.Indicator />
               <Text fontSize="xs">
-                Incorrect username or password. ({attempts} attempt
-                {attempts > 1 ? "s" : ""})
+                {t("auth.attemptsWarning", { count: attempts })}
               </Text>
             </Alert.Root>
           )}
@@ -168,11 +169,11 @@ export const AuthGate = ({ onSuccess }) => {
           <VStack gap={4} align="stretch">
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
-                Username
+                {t("auth.username")}
               </Text>
               <Input
                 type="text"
-                placeholder="Enter your username"
+                placeholder={t("auth.usernamePlaceholder")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -193,12 +194,12 @@ export const AuthGate = ({ onSuccess }) => {
             </Box>
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
-                Password
+                {t("common.password")}
               </Text>
               <HStack>
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t("auth.passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -219,7 +220,7 @@ export const AuthGate = ({ onSuccess }) => {
                   size="md"
                   variant="ghost"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label="Toggle password visibility"
+                  aria-label={t("common.togglePasswordVisibility")}
                 >
                   <Icon as={showPassword ? FaEyeSlash : FaEye} />
                 </Button>
@@ -230,7 +231,7 @@ export const AuthGate = ({ onSuccess }) => {
           <Button
             onClick={handleSubmit}
             loading={isSubmitting}
-            loadingText="Signing in..."
+            loadingText={t("auth.signingIn")}
             disabled={username.length < 1 || password.length < 1}
             borderRadius="2xl"
             size="lg"
@@ -241,7 +242,7 @@ export const AuthGate = ({ onSuccess }) => {
             }}
             mt={2}
           >
-            Sign In
+            {t("auth.signIn")}
           </Button>
         </VStack>
       </Box>

@@ -23,6 +23,7 @@ import { MdOutlineFolderCopy } from "react-icons/md";
 import { ragApi } from "../../utils/api/ragApi";
 import { formatCollectionName } from "../../utils/helpers/formatHelpers";
 import { EditDocumentPopover } from "./EditDocumentPopover";
+import { useTranslation } from "react-i18next";
 
 const DocumentExplorer = ({
     isCollapsed,
@@ -32,6 +33,7 @@ const DocumentExplorer = ({
     loading,
     setItemToDelete,
 }) => {
+    const { t } = useTranslation();
     const [expandedCollections, setExpandedCollections] = useState({});
 
     useEffect(() => {
@@ -59,8 +61,8 @@ const DocumentExplorer = ({
             } catch (error) {
                 console.error("Error fetching collection:", error);
                 toaster.create({
-                    title: "Error",
-                    description: "Error fetching collection files",
+                    title: t("toast.error"),
+                    description: t("rag.toast.errorFetchingCollectionFiles"),
                     type: "error",
                     duration: 3000,
                 });
@@ -74,8 +76,8 @@ const DocumentExplorer = ({
                 .renameCollection(oldName, newName)
                 .then(() => {
                     toaster.create({
-                        title: "Success",
-                        description: `Successfully renamed to ${newName}`,
+                        title: t("toast.success"),
+                        description: t("rag.toast.renamedTo", { name: newName }),
                         type: "success",
                         duration: 3000,
                     });
@@ -93,9 +95,8 @@ const DocumentExplorer = ({
                             );
                         } catch {
                             toaster.create({
-                                title: "Error",
-                                description:
-                                    "Error fetching updated collection list",
+                                title: t("toast.error"),
+                                description: t("rag.toast.errorFetchingCollections"),
                                 type: "error",
                                 duration: 3000,
                             });
@@ -106,8 +107,8 @@ const DocumentExplorer = ({
                 .catch((error) => {
                     console.error("Error renaming collection:", error);
                     toaster.create({
-                        title: "Error",
-                        description: "Failed to rename collection",
+                        title: t("toast.error"),
+                        description: t("rag.toast.failedToRename"),
                         type: "error",
                         duration: 3000,
                     });
@@ -129,8 +130,8 @@ const DocumentExplorer = ({
         } catch (error) {
             console.error("Error downloading PDF:", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to download PDF",
+                title: t("toast.error"),
+                description: t("rag.toast.failedToDownloadPdf"),
                 type: "error",
                 duration: 3000,
             });
@@ -142,7 +143,7 @@ const DocumentExplorer = ({
                 <Flex align="center">
                     <IconButton
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        aria-label="Toggle collapse"
+                        aria-label={t("rag.toggleCollapse")}
                         variant="outline"
                         size="sm"
                         mr="2"
@@ -152,7 +153,7 @@ const DocumentExplorer = ({
                     </IconButton>
                     <HStack gap={2}>
                         <MdOutlineFolderCopy size="1.2em" />
-                        <Text as="h3">Document Explorer</Text>
+                        <Text as="h3">{t("rag.documentExplorer")}</Text>
                     </HStack>
                 </Flex>
             </Flex>
@@ -181,7 +182,7 @@ const DocumentExplorer = ({
                                             _hover={{ bg: "surfaceMuted" }}
                                         >
                                             <Tooltip
-                                                content="Toggle collection"
+                                                content={t("rag.toggleCollection")}
                                                 showArrow
                                             >
                                                 <IconButton
@@ -190,7 +191,7 @@ const DocumentExplorer = ({
                                                             collection.name,
                                                         )
                                                     }
-                                                    aria-label="Toggle collection"
+                                                    aria-label={t("rag.toggleCollection")}
                                                     variant="ghost"
                                                     size="sm"
                                                     mr="2"
@@ -226,15 +227,15 @@ const DocumentExplorer = ({
                                             </Text>
                                             <Flex ml="auto">
                                                 <Tooltip
-                                                    content="Rename collection"
+                                                    content={t("rag.renameCollection")}
                                                     showArrow
                                                 >
                                                     <IconButton
-                                                        aria-label="Rename collection"
+                                                        aria-label={t("rag.renameCollection")}
                                                         onClick={() => {
                                                             const newName =
                                                                 prompt(
-                                                                    "Enter new name:",
+                                                                    t("rag.enterNewName"),
                                                                     collection.name,
                                                                 );
                                                             handleRenameCollection(
@@ -250,11 +251,11 @@ const DocumentExplorer = ({
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip
-                                                    content="Delete collection"
+                                                    content={t("rag.deleteCollection")}
                                                     showArrow
                                                 >
                                                     <IconButton
-                                                        aria-label="Delete collection"
+                                                        aria-label={t("rag.deleteCollection")}
                                                         onClick={() =>
                                                             setItemToDelete({
                                                                 type: "collection",
@@ -293,7 +294,7 @@ const DocumentExplorer = ({
                                                                 size="sm"
                                                                 mr="2"
                                                             />{" "}
-                                                            Loading files...
+                                                            {t("rag.loadingFiles")}
                                                         </List.Item>
                                                     ) : collection.files
                                                           .length > 0 ? (
@@ -395,11 +396,11 @@ const DocumentExplorer = ({
                                                                             )}
                                                                             {hasPdf && (
                                                                                 <Tooltip
-                                                                                    content="Download PDF"
+                                                                                    content={t("rag.downloadPdf")}
                                                                                     showArrow
                                                                                 >
                                                                                     <IconButton
-                                                                                        aria-label="Download PDF"
+                                                                                        aria-label={t("rag.downloadPdf")}
                                                                                         onClick={() =>
                                                                                             handleDownloadPdf(
                                                                                                 collection.name,
@@ -416,11 +417,11 @@ const DocumentExplorer = ({
                                                                                 </Tooltip>
                                                                             )}
                                                                             <Tooltip
-                                                                                content="Delete file"
+                                                                                content={t("rag.deleteFile")}
                                                                                 showArrow
                                                                             >
                                                                                 <IconButton
-                                                                                    aria-label="Delete file"
+                                                                                    aria-label={t("rag.deleteFile")}
                                                                                     onClick={() =>
                                                                                         setItemToDelete(
                                                                                             {
@@ -448,7 +449,7 @@ const DocumentExplorer = ({
                                                             fontSize="sm"
                                                             color="overlay0"
                                                         >
-                                                            No files found.
+                                                            {t("rag.noFilesFound")}
                                                         </List.Item>
                                                     )}
                                                 </List.Root>

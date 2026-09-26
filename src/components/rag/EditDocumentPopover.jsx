@@ -13,6 +13,7 @@ import { toaster } from "@/components/ui/toaster";
 import { EditIcon } from "../common/icons";
 import { FaTimes } from "react-icons/fa";
 import { ragApi } from "../../utils/api/ragApi";
+import { useTranslation } from "react-i18next";
 
 const FOCUS_AREA_OPTIONS = [
     "guidelines",
@@ -27,6 +28,7 @@ const FOCUS_AREA_OPTIONS = [
 ];
 
 export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [title, setTitle] = useState(file.title || "");
     const [source, setSource] = useState(file.source || "");
@@ -48,8 +50,8 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
             setOpen(false);
         } catch {
             toaster.create({
-                title: "Error",
-                description: "Failed to update document",
+                title: t("toast.error"),
+                description: t("rag.toast.failedToUpdateDocument"),
                 type: "error",
                 duration: 3000,
             });
@@ -67,7 +69,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
         >
             <Popover.Trigger asChild>
                 <IconButton
-                    aria-label="Edit document"
+                    aria-label={t("rag.editDocument")}
                     size="xs"
                     variant="ghost"
                     colorPalette="blue"
@@ -95,7 +97,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
                             lineHeight="1.2"
                             flex="1"
                         >
-                            Edit document
+                            {t("rag.editDocument")}
                         </Text>
                         <Box
                             as="button"
@@ -107,7 +109,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
                             color="textSecondary"
                             opacity={0.6}
                             _hover={{ opacity: 1 }}
-                            aria-label="Close"
+                            aria-label={t("action.close")}
                             flexShrink={0}
                             display="flex"
                             alignItems="center"
@@ -124,14 +126,14 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
                                     mb={1}
                                     color="textSecondary"
                                 >
-                                    Title
+                                    {t("rag.title")}
                                 </Text>
                                 <Input
                                     size="sm"
                                     className="input-style"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    placeholder="Document title"
+                                    placeholder={t("rag.titlePlaceholder")}
                                 />
                             </Box>
                             <Box>
@@ -140,14 +142,14 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
                                     mb={1}
                                     color="textSecondary"
                                 >
-                                    Source
+                                    {t("rag.source")}
                                 </Text>
                                 <Input
                                     size="sm"
                                     className="input-style"
                                     value={source}
                                     onChange={(e) => setSource(e.target.value)}
-                                    placeholder="Publishing source"
+                                    placeholder={t("rag.sourcePlaceholder")}
                                 />
                             </Box>
                             <Box>
@@ -156,7 +158,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
                                     mb={1}
                                     color="textSecondary"
                                 >
-                                    Focus area
+                                    {t("rag.focusAreaInline")}
                                 </Text>
                                 <Input
                                     size="sm"
@@ -165,7 +167,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
                                     onChange={(e) =>
                                         setFocusArea(e.target.value)
                                     }
-                                    placeholder="Focus area"
+                                    placeholder={t("rag.focusAreaInline")}
                                     list="focus-area-options"
                                 />
                                 <datalist id="focus-area-options">
@@ -188,7 +190,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
                             variant="ghost"
                             onClick={() => setOpen(false)}
                         >
-                            Cancel
+                            {t("action.cancel")}
                         </Button>
                         <Button
                             size="xs"
@@ -196,7 +198,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
                             loading={saving}
                             onClick={handleSave}
                         >
-                            Save
+                            {t("action.save")}
                         </Button>
                     </Flex>
                 </Popover.Content>

@@ -13,6 +13,7 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import { localModelApi } from "@/utils/api/localModelApi";
 import {
   InfoIcon,
@@ -45,6 +46,7 @@ const RECOMMENDED_EMBEDDING = {
 };
 
 export const AIModelsStep = ({ llm, transcription }) => {
+  const { t } = useTranslation();
   const {
     inferenceMode,
     setInferenceMode,
@@ -93,8 +95,8 @@ export const AIModelsStep = ({ llm, transcription }) => {
   }, [localWhisperModel]);
 
   const whisperTooltipText = RECOMMENDED_WHISPER.id === "omi-med-stt-v1-q8_0"
-    ? `Required for speech-to-text. Omi Med STT is the bundled medical model. (${RECOMMENDED_WHISPER.size_mb}MB)`
-    : `Required for speech-to-text. Parakeet Multilingual supports 25 European languages. (${RECOMMENDED_WHISPER.size_mb}MB)`;
+    ? t("splash.step.aiModels.whisperTooltipOmi", { size: RECOMMENDED_WHISPER.size_mb })
+    : t("splash.step.aiModels.whisperTooltipParakeet", { size: RECOMMENDED_WHISPER.size_mb });
 
   const [systemSpecs, setSystemSpecs] = useState(null);
   const [embeddingDownloaded, setEmbeddingDownloaded] = useState(false);
@@ -209,14 +211,14 @@ export const AIModelsStep = ({ llm, transcription }) => {
               onClick={() => setInferenceMode("local")}
             >
               <FaDesktop />
-              Run on my Mac
+              {t("splash.step.aiModels.runLocally")}
             </Button>
             <Button
               className={`mode-selector-button ${!isLocal ? "active" : ""}`}
               onClick={() => setInferenceMode("remote")}
             >
               <FaCloud />
-              Use external API
+              {t("splash.step.aiModels.useApi")}
             </Button>
           </Flex>
         </Flex>
@@ -229,7 +231,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
             <Flex align="center" justify="center" py={8}>
               <Spinner size="lg" color="primaryButton" />
               <Text ml={4} color="textSecondary">
-                Finding the best model for your Mac...
+                {t("splash.step.aiModels.findingModel")}
               </Text>
             </Flex>
           ) : (
@@ -241,11 +243,10 @@ export const AIModelsStep = ({ llm, transcription }) => {
               {/* Intro text */}
               <VStack align="start" gap={0.5} w="100%">
                 <Text fontSize="sm" fontWeight="bold" color="textPrimary">
-                  Choose your AI model
+                  {t("splash.step.aiModels.chooseModel")}
                 </Text>
                 <Text fontSize="xs" className="pill-box-icons">
-                  Powers your clinical notes, chat, and medical queries.
-                  Smaller = faster; larger = smarter.
+                  {t("splash.step.aiModels.modelIntro")}
                 </Text>
               </VStack>
 
@@ -336,7 +337,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                   fontWeight="bold"
                   className="pill-box-icons"
                 >
-                  Supporting models
+                  {t("splash.step.aiModels.supportingModels")}
                 </Text>
                 <HStack w="100%" gap={3} align="stretch">
                   {/* Transcription model */}
@@ -373,14 +374,14 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           <FaMicrophone size="12" />
                         </Box>
                         <Text fontSize="xs" fontWeight="bold">
-                          Transcription
+                          {t("splash.step.aiModels.transcription")}
                         </Text>
                         <Badge
                           colorPalette="red"
                           fontSize="2xs"
                           variant="solid"
                         >
-                          Required
+                          {t("splash.step.aiModels.required")}
                         </Badge>
                         <Tooltip
                           content={whisperTooltipText}
@@ -420,7 +421,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                         <IconButton
                           size="xs"
                           variant="ghost"
-                          aria-label="Download transcription model"
+                          aria-label={t("splash.step.aiModels.downloadTranscriptionModel")}
                           onClick={() =>
                             downloadWhisperModel(RECOMMENDED_WHISPER.id)
                           }
@@ -471,17 +472,17 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           <FaDatabase size="12" />
                         </Box>
                         <Text fontSize="xs" fontWeight="bold">
-                          Embeddings
+                          {t("splash.step.aiModels.embeddings")}
                         </Text>
                         <Badge
                           colorPalette="gray"
                           fontSize="2xs"
                           variant="outline"
                         >
-                          Optional
+                          {t("splash.step.aiModels.optional")}
                         </Badge>
                         <Tooltip
-                          content={`Required for document search (RAG). Bundled — no configuration needed. (${RECOMMENDED_EMBEDDING.size_mb}MB)`}
+                          content={t("splash.step.aiModels.embeddingTooltip", { size: RECOMMENDED_EMBEDDING.size_mb })}
                           showArrow
                         >
                           <InfoIcon boxSize={3} color="textSecondary" />
@@ -518,7 +519,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                         <IconButton
                           size="xs"
                           variant="ghost"
-                          aria-label="Download embedding model"
+                          aria-label={t("splash.step.aiModels.downloadEmbeddingModel")}
                           onClick={handleDownloadEmbedding}
                         >
                           <DownloadIcon boxSize={3.5} />

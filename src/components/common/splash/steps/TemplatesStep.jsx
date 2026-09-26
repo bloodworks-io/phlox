@@ -8,6 +8,7 @@ import {
   Spinner,
   Box,
 } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { FaCheckCircle } from "react-icons/fa";
 import { TEMPLATE_DESCRIPTIONS } from "../constants";
 
@@ -24,7 +25,10 @@ export const TemplatesStep = ({
   selectedTemplate,
   setSelectedTemplate,
   isFetchingTemplates,
-}) => (
+}) => {
+  const { t } = useTranslation();
+
+  return (
   <VStack
     key="templates"
     className="anim-fade-slide-right"
@@ -34,7 +38,7 @@ export const TemplatesStep = ({
     {isFetchingTemplates ? (
       <Flex align="center" justify="center" py={8}>
         <Spinner size="lg" color="primaryButton" />
-        <Text ml={4} color="textSecondary">Loading templates...</Text>
+        <Text ml={4} color="textSecondary">{t("splash.step.templates.loading")}</Text>
       </Flex>
     ) : (
       <SimpleGrid
@@ -97,7 +101,7 @@ export const TemplatesStep = ({
               </HStack>
               <Text fontSize="xs" color="textSecondary" lineHeight="1.4">
                 {TEMPLATE_DESCRIPTIONS[template.template_key] ||
-                  "A custom template for clinical documentation."}
+                  t("splash.step.templates.customDescription")}
               </Text>
             </Box>
           );
@@ -105,4 +109,5 @@ export const TemplatesStep = ({
       </SimpleGrid>
     )}
   </VStack>
-);
+  );
+};

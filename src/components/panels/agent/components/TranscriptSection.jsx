@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from "react";
 import { Box, Text } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 
 import { SpeakerDot, parseSpeakerLine } from "@/components/transcript/SpeakerText";
 
 /* Captions follow the feed only while the reader is already at the end. */
 export const TranscriptSection = ({ transcripts }) => {
+    const { t } = useTranslation();
     const boxRef = useRef(null);
     const endRef = useRef(null);
     const pinnedRef = useRef(true);
@@ -33,7 +35,7 @@ export const TranscriptSection = ({ transcripts }) => {
         >
             {transcripts.length === 0 ? (
                 <Text fontSize="xs" fontStyle="italic" color="overlay0">
-                    Waiting for speech…
+                    {t("agent.transcript.waiting")}
                 </Text>
             ) : (
                 transcripts.map((text, index) => (

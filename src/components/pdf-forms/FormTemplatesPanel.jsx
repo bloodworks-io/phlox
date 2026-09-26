@@ -8,6 +8,7 @@ import FormTemplateList from "./FormTemplateList";
 import FormBuilder from "./FormBuilder";
 import FieldEditor from "./FieldEditor";
 import FieldList from "./FieldList";
+import { useTranslation } from "react-i18next";
 
 const FormTemplatesPanel = ({
   templates,
@@ -34,6 +35,7 @@ const FormTemplatesPanel = ({
   onDeleteField,
   onSaveFields,
 }) => {
+  const { t } = useTranslation();
   const [previewOn, setPreviewOn] = useState(false);
   const [previewValues, setPreviewValues] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,10 +58,10 @@ const FormTemplatesPanel = ({
       >
         <Flex justify="space-between" align="center" mb="2">
           <Text as="h4" fontSize="sm">
-            Forms
+            {t("forms.forms")}
           </Text>
           <GreyButton size="xs" leftIcon={<AddIcon />} onClick={onOpenUpload}>
-            New
+            {t("forms.new")}
           </GreyButton>
         </Flex>
 
@@ -106,7 +108,7 @@ const FormTemplatesPanel = ({
             borderRadius="sm"
           >
             <Text color="overlay0" fontSize="sm">
-              Select a template or upload a new PDF
+              {t("forms.selectTemplateHint")}
             </Text>
           </Box>
         )}
@@ -132,7 +134,7 @@ const FormTemplatesPanel = ({
                 <HStack gap="1">
                   <Box color="primaryButton" fontSize="0.7em" asChild><FaPencilAlt /></Box>
                   <Text fontSize="xs" fontWeight="bold">
-                    Drawing mode
+                    {t("forms.drawingMode")}
                   </Text>
                 </HStack>
                 <NativeSelect.Root>
@@ -141,10 +143,10 @@ const FormTemplatesPanel = ({
                     value={activeFieldType}
                     onChange={(e) => onSetFieldType(e.target.value)}
                     className="input-style">
-                    <option value="text">Text</option>
-                    <option value="checkbox">Checkbox</option>
-                    <option value="date">Date</option>
-                    <option value="number">Number</option>
+                    <option value="text">{t("forms.fieldTypes.text")}</option>
+                    <option value="checkbox">{t("forms.fieldTypes.checkbox")}</option>
+                    <option value="date">{t("forms.fieldTypes.date")}</option>
+                    <option value="number">{t("forms.fieldTypes.number")}</option>
                   </NativeSelect.Field>
                   <NativeSelect.Indicator />
                 </NativeSelect.Root>
@@ -153,7 +155,7 @@ const FormTemplatesPanel = ({
                   width="100%"
                   onClick={() => onSetDrawingMode(false)}
                 >
-                  Done
+                  {t("forms.done")}
                 </GreyButton>
               </VStack>
             ) : (
@@ -164,7 +166,7 @@ const FormTemplatesPanel = ({
                   leftIcon={<AddIcon />}
                   onClick={() => onSetDrawingMode(true)}
                 >
-                  New Field
+                  {t("forms.newField")}
                 </GreyButton>
                 {visionCapable && (
                   <GreyButton
@@ -173,9 +175,9 @@ const FormTemplatesPanel = ({
                     leftIcon={<FaMagic />}
                     onClick={onAutoDetect}
                     loading={detecting}
-                    loadingText="Detecting..."
+                    loadingText={t("forms.detecting")}
                   >
-                    Auto-detect
+                    {t("forms.autoDetect")}
                   </GreyButton>
                 )}
                 <GreyButton
@@ -185,7 +187,7 @@ const FormTemplatesPanel = ({
                   onClick={() => setPreviewOn(!previewOn)}
                   colorPalette={previewOn ? "green" : undefined}
                 >
-                  {previewOn ? "Hide Preview" : "Preview Fill"}
+                  {previewOn ? t("forms.hidePreview") : t("forms.previewFill")}
                 </GreyButton>
               </VStack>
             )}
@@ -212,7 +214,7 @@ const FormTemplatesPanel = ({
         {selectedTemplate && (
           <Box mt="3" pt="2" borderTop="1px solid" borderColor="border">
             <Text fontSize="xs" fontWeight="bold" mb="1">
-              Fields ({fields.length})
+              {t("forms.fieldsCount", { number: fields.length })}
             </Text>
             <FieldList
               fields={fields}
@@ -231,10 +233,10 @@ const FormTemplatesPanel = ({
               width="100%"
               onClick={onSaveFields}
               loading={saving}
-              loadingText="Saving"
+              loadingText={t("forms.saving")}
               leftIcon={saving ? null : <FaSave />}
             >
-              {saving ? "Saving..." : "Save Fields"}
+              {saving ? t("forms.savingDots") : t("forms.saveFields")}
             </GreenButton>
           </Box>
         )}

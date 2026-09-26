@@ -11,6 +11,7 @@ import {
     VStack,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { FaClinicMedical, FaUser, FaUsers } from "react-icons/fa";
 import { DeleteIcon, ChevronDownIcon, ChevronUpIcon } from "../common/icons";
@@ -33,6 +34,7 @@ const SidebarPatientList = ({
 }) => {
     const [isPatientsCollapsed, setIsPatientsCollapsed] = useState(false);
     const [hoveredPatientId, setHoveredPatientId] = useState(null);
+    const { t } = useTranslation();
     const labelColor = colors.dark.textSecondary;
 
     return (
@@ -79,13 +81,13 @@ const SidebarPatientList = ({
                             color={labelColor}
                             whiteSpace="nowrap"
                         >
-                            Patient List
+                            {t("sidebar.patientList.heading")}
                         </Text>
                     </Flex>
                     <Flex align="center" gap={1}>
                         {isAdmin && (
-                            <Tooltip
-                                content="Patient scope: yours ↔ all users'"
+                             <Tooltip
+                                 content={t("sidebar.patientList.scopeTooltip")}
                                 positioning={{ placement: "top" }}
                                 openDelay={700}
                             >
@@ -110,7 +112,9 @@ const SidebarPatientList = ({
                                         onCheckedChange={() =>
                                             onTogglePatientScope()
                                         }
-                                        aria-label="Toggle between all users' patients and your own"
+                                        aria-label={t(
+                                            "sidebar.patientList.scopeAriaLabel",
+                                        )}
                                     >
                                         <Switch.HiddenInput />
                                         <Switch.Control
@@ -142,11 +146,11 @@ const SidebarPatientList = ({
                         p={0.5}
                         color={colors.dark.textPrimary}
                         _hover={{ bg: "rgba(184, 192, 224, 0.1)" }}
-                        aria-label={
-                            isPatientsCollapsed
-                                ? "Expand patients"
-                                : "Collapse patients"
-                        }
+                         aria-label={
+                             isPatientsCollapsed
+                                 ? t("sidebar.patientList.expandAriaLabel")
+                                 : t("sidebar.patientList.collapseAriaLabel")
+                         }
                         pointerEvents="none"
                     >
                         {isPatientsCollapsed ? (
@@ -174,7 +178,7 @@ const SidebarPatientList = ({
                     {/* Clinic date — pinned at the top of the section */}
                     {!isCollapsed && (
                         <Tooltip
-                            content="Clinic date — filters the patient list"
+                            content={t("sidebar.patientList.clinicDateTooltip")}
                             positioning={{ placement: "top" }} openDelay={700}
                         >
                             <Input
@@ -323,23 +327,27 @@ const SidebarPatientList = ({
                                                             </Text>
                                                             <Text
                                                                 fontSize="xs"
-                                                                color={
-                                                                    labelColor
-                                                                }
-                                                                lineClamp={1}
-                                                            >
-                                                                UR:{" "}
-                                                                {
-                                                                    patient.ur_number
-                                                                }
-                                                            </Text>
+                                                                 color={
+                                                                     labelColor
+                                                                 }
+                                                                 lineClamp={1}
+                                                             >
+                                                                 {t(
+                                                                     "sidebar.patientList.ur",
+                                                                     {
+                                                                         ur: patient.ur_number,
+                                                                     },
+                                                                 )}
+                                                             </Text>
                                                         </Box>
                                                     )}
                                                 </Flex>
 
                                                 {!isCollapsed && isHovered && (
-                                                    <Tooltip
-                                                        content="Remove patient"
+                                                     <Tooltip
+                                                         content={t(
+                                                            "sidebar.patientList.removeTooltip",
+                                                        )}
                                                         positioning={{
                                                             placement: "top",
                                                         }}
@@ -347,7 +355,9 @@ const SidebarPatientList = ({
                                                     >
                                                         <IconButton
                                                             size="xs"
-                                                            aria-label="Delete patient"
+                                                             aria-label={t(
+                                                                 "sidebar.patientList.deleteAriaLabel",
+                                                             )}
                                                             variant="ghost"
                                                             colorPalette="red"
                                                             onClick={(e) => {
@@ -374,16 +384,18 @@ const SidebarPatientList = ({
                                 px="2"
                                 mt={2}
                             >
-                                {isCollapsed
-                                    ? "No pts"
-                                    : "No patients available"}
+                                 {isCollapsed
+                                     ? t("sidebar.patientList.noPts")
+                                     : t("sidebar.patientList.noPatients")}
                             </Text>
                         )}
                     </Box>
                     {/* Day Summary — pinned at the bottom of the section */}
                     {!isCollapsed && patients.length > 0 && (
-                        <Tooltip
-                            content="Open the selected day's summary"
+                         <Tooltip
+                             content={t(
+                                 "sidebar.patientList.daySummaryTooltip",
+                             )}
                             positioning={{ placement: "top" }} openDelay={700}
                         >
                         <Flex
@@ -423,7 +435,7 @@ const SidebarPatientList = ({
                                 fontWeight="medium"
                                 whiteSpace="nowrap"
                             >
-                                Day Summary
+                                {t("sidebar.patientList.daySummary")}
                             </Text>
                         </Flex>
                         </Tooltip>

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Flex, Text, Tabs, HStack, VStack } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
@@ -15,6 +16,7 @@ const PreviousVisitPanel = ({
   templates = [],
 }) => {
   const [tabIndex, setTabIndex] = useState("0");
+  const { t } = useTranslation();
   const [dimensions, setDimensions] = useState({ width: 550, height: 450 });
   const resizerRef = useRef(null);
 
@@ -49,12 +51,12 @@ const PreviousVisitPanel = ({
     ? getTemplateFamilyBase(previousVisitTemplateKey)
     : "";
   const previousVisitTemplate = templates?.find(
-    (t) => t.template_key === previousVisitTemplateKey
+    (tpl) => tpl.template_key === previousVisitTemplateKey
   ) || templates?.find(
-    (t) =>
+    (tpl) =>
       familyBase &&
-      (t.template_key.startsWith(`${familyBase}_`) ||
-        t.template_key.startsWith(`custom_${familyBase}_`)),
+      (tpl.template_key.startsWith(`${familyBase}_`) ||
+        tpl.template_key.startsWith(`custom_${familyBase}_`)),
   );
 
   // Render a single field from the previous visit note (read-only)
@@ -101,7 +103,7 @@ const PreviousVisitPanel = ({
         >
           <Flex align="center">
             <FaClock size="1em" style={{ marginRight: "8px" }} />
-            <Text fontWeight="bold">Previous Visit</Text>
+            <Text fontWeight="bold">{t("common.fab.previousVisit")}</Text>
           </Flex>
         </Flex>
 
@@ -116,19 +118,19 @@ const PreviousVisitPanel = ({
             height="100%"
           >
             <Tabs.List flexShrink={0}>
-              <Tooltip content="AI-generated summary of the previous visit">
+              <Tooltip content={t("previousVisit.summaryTooltip")}>
                 <Tabs.Trigger className="tab-style" value="0">
                   <HStack>
                     <FaList />
-                    <Text>Summary</Text>
+                    <Text>{t("settings.admin.tabSummary")}</Text>
                   </HStack>
                 </Tabs.Trigger>
               </Tooltip>
-              <Tooltip content="Full note content from the previous encounter">
+              <Tooltip content={t("previousVisit.fullNoteTooltip")}>
                 <Tabs.Trigger className="tab-style" value="1">
                   <HStack>
                     <FaFileAlt />
-                    <Text>Full Note</Text>
+                    <Text>{t("previousVisit.fullNote")}</Text>
                   </HStack>
                 </Tabs.Trigger>
               </Tooltip>
@@ -156,7 +158,7 @@ const PreviousVisitPanel = ({
                     </Text>
                   ) : (
                     <Text color="overlay0" textAlign="center" py={4}>
-                      No previous visit summary available.
+                      {t("previousVisit.noSummary")}
                     </Text>
                   )}
                 </Box>
@@ -183,7 +185,7 @@ const PreviousVisitPanel = ({
                       {previousVisitEncounterDate && (
                         <Box p="2" width="100%">
                           <Text fontSize="xs" color="overlay0" fontWeight="bold">
-                            ENCOUNTER DATE
+                            {t("previousVisit.encounterDate")}
                           </Text>
                           <Text fontSize="sm">{previousVisitEncounterDate}</Text>
                         </Box>
@@ -196,7 +198,7 @@ const PreviousVisitPanel = ({
                     </VStack>
                   ) : (
                     <Text color="overlay0" textAlign="center" py={4}>
-                      No previous visit note content available.
+                      {t("previousVisit.noNote")}
                     </Text>
                   )}
                 </Box>

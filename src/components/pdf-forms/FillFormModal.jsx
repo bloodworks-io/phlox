@@ -7,6 +7,7 @@ import { fillPdf } from "../../utils/pdf/fillForm";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { FaRegEye } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 // Renders every page of a pdfjs document as stacked canvases.
 const PdfPageStack = ({ doc }) => {
@@ -45,6 +46,7 @@ const PdfPageStack = ({ doc }) => {
 };
 
 const FillFormModal = ({ isOpen, onClose, template }) => {
+  const { t } = useTranslation();
   const [values, setValues] = useState({});
   const [filling, setFilling] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -70,8 +72,8 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
       setPreviewDoc(doc);
     } catch (error) {
       toaster.create({
-        title: "Error",
-        description: `Failed to preview form: ${error.message}`,
+        title: t("toast.error"),
+        description: t("forms.failedToPreview", { message: error.message }),
         type: "error",
         duration: 3000,
       });
@@ -98,16 +100,16 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
       URL.revokeObjectURL(url);
 
       toaster.create({
-        title: "Form filled",
-        description: "PDF downloaded successfully",
+        title: t("forms.formFilled"),
+        description: t("forms.pdfDownloaded"),
         type: "success",
         duration: 2000,
       });
       handleClose();
     } catch (error) {
       toaster.create({
-        title: "Error",
-        description: `Failed to fill form: ${error.message}`,
+        title: t("toast.error"),
+        description: t("forms.failedToFill", { message: error.message }),
         type: "error",
         duration: 3000,
       });
@@ -134,21 +136,21 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header>
-              <Text as="h3">Fill: {template?.name}</Text>
+              <Text as="h3">{t("forms.fillTitle", { name: template?.name })}</Text>
             </Dialog.Header>
             <Dialog.Body>
               {previewDoc ? (
                 <PdfPageStack doc={previewDoc} />
               ) : fields.length === 0 ? (
                 <Text color="overlay0" fontSize="sm">
-                  This template has no fields defined yet.
+                  {t("forms.noFieldsDefined")}
                 </Text>
               ) : (
                 <VStack gap="3" align="stretch">
                   {fields.map((field) => (
                     <Field.Root key={field.id}>
                       <Field.Label fontSize="sm" mb="1">
-                        {field.name || `Field (${field.field_type})`}
+                        {field.name || t("forms.fieldWithType", { type: field.field_type })}
                         {field.required && (
                           <Text as="span" color="dangerButton" ml="1">
                             *
@@ -167,7 +169,7 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
                             <Checkbox.Indicator />
                           </Checkbox.Control>
                           <Checkbox.Label>
-                            {field.description || "Check to enable"}
+                            {field.description || t("forms.checkToEnable")}
                           </Checkbox.Label>
                         </Checkbox.Root>
                       ) : (
@@ -193,14 +195,14 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
             </Dialog.Body>
             <Dialog.Footer>
               <GreyButton mr="3" onClick={handleClose}>
-                Cancel
+                {t("action.cancel")}
               </GreyButton>
               {previewDoc ? (
                 <GreyButton
                   mr="3"
                   onClick={() => setPreviewDoc(null)}
                 >
-                  Back to Edit
+                  {t("forms.backToEdit")}
                 </GreyButton>
               ) : (
                 <GreyButton
@@ -210,7 +212,7 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
                   loading={previewing}
                   disabled={fields.length === 0}
                 >
-                  Preview
+                  {t("forms.preview")}
                 </GreyButton>
               )}
               <GreenButton
@@ -218,7 +220,7 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
                 loading={filling}
                 disabled={fields.length === 0}
               >
-                Fill & Download
+                {t("forms.fillAndDownload")}
               </GreenButton>
             </Dialog.Footer>
           </Dialog.Content>

@@ -1,4 +1,5 @@
 import { Box, VStack, useDisclosure, Spinner, Center } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { useClipboard } from "../utils/hooks/useClipboard";
 import { toaster } from "@/components/ui/toaster";
 const toast = toaster.create;
@@ -48,6 +49,7 @@ const PatientDetails = ({
     onOpenNewNoteModal,
 }) => {
     const location = useLocation();
+    const { t } = useTranslation();
     const isNewPatient = location.pathname === "/new-note";
     const { viaModal, cameFromSearch } = location.state || {};
     const summaryRef = useRef(null);
@@ -605,9 +607,9 @@ const PatientDetails = ({
                 isOpen={leaveModal.open}
                 onClose={cancelCandidateSwitch}
                 onConfirm={confirmCandidateNavigation}
-                title="Confirm Navigation"
-                body="Are you sure you want to leave this page? Unsaved changes will be lost."
-                confirmLabel="Leave"
+                title={t("navigation.confirmTitle")}
+                body={t("navigation.leaveWarning")}
+                confirmLabel={t("navigation.leave")}
             />
             {/* Scribe Pill Box - centered at bottom */}
             <ScribePillBox

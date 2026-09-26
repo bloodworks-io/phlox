@@ -1,33 +1,55 @@
+import { t } from "@/i18n";
+
 export const getStatusInfo = (status, agentState) => {
     switch (status) {
         case "connecting":
-            return { label: "Connecting…", color: "overlay0", pulse: true };
+            return {
+                label: t("agent.status.connecting"),
+                color: "overlay0",
+                pulse: true,
+            };
         case "stopping":
-            return { label: "Wrapping up…", color: "overlay0", pulse: false };
+            return {
+                label: t("agent.status.wrappingUp"),
+                color: "overlay0",
+                pulse: false,
+            };
         case "live":
             return agentState === "working"
-                ? { label: "Updating note…", color: "secondaryButton", pulse: false }
-                : { label: "Microphone active", color: "accent", pulse: true };
+                ? {
+                      label: t("agent.status.updatingNote"),
+                      color: "secondaryButton",
+                      pulse: false,
+                  }
+                : {
+                      label: t("agent.status.microphoneActive"),
+                      color: "accent",
+                      pulse: true,
+                  };
         case "review":
-            return { label: "Session ended", color: "overlay0", pulse: false };
+            return {
+                label: t("agent.status.sessionEnded"),
+                color: "overlay0",
+                pulse: false,
+            };
         case "error":
             return {
-                label: "Connection interrupted",
+                label: t("agent.status.connectionInterrupted"),
                 color: "dangerButton",
                 pulse: false,
             };
         default:
-            return { label: "Idle", color: "overlay0", pulse: false };
+            return { label: t("agent.status.idle"), color: "overlay0", pulse: false };
     }
 };
 
 export const getContextLine = (status) => {
     switch (status) {
         case "stopping":
-            return "Applying the final updates…";
+            return t("agent.context.applyingFinal");
         case "review":
-            return "Drafts stay available until you start a new session";
+            return t("agent.context.draftsAvailable");
         default:
-            return "Changes apply to the note as you speak";
+            return t("agent.context.changesApply");
     }
 };

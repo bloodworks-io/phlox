@@ -3,6 +3,7 @@ import React from "react";
 import { Box, Text, VStack, HStack, IconButton } from "@chakra-ui/react";
 import { DeleteIcon } from "../common/icons";
 import { FIELD_COLORS } from "./FieldEditor";
+import { useTranslation } from "react-i18next";
 
 const FieldList = ({
   fields,
@@ -11,10 +12,11 @@ const FieldList = ({
   onDeleteField,
   onJumpToPage,
 }) => {
+  const { t } = useTranslation();
   if (!fields.length) {
     return (
       <Text fontSize="xs" color="overlay0" py="2" textAlign="center">
-        No fields yet.
+        {t("forms.noFieldsYet")}
       </Text>
     );
   }
@@ -60,16 +62,18 @@ const FieldList = ({
                 whiteSpace: "nowrap",
               }}
             >
-              {field.name || "(unnamed field)"}
+              {field.name || t("forms.unnamedField")}
             </Text>
             <Text fontSize="xs" color="overlay0" flexShrink={0}>
-              p{field.page_number}
+              {t("forms.pageShort", { page: field.page_number })}
             </Text>
             <IconButton
               variant="ghost"
               size="xs"
               colorPalette="red"
-              aria-label={`Delete field ${field.name || "(unnamed)"}`}
+              aria-label={t("forms.deleteFieldNamed", {
+                name: field.name || t("forms.unnamed"),
+              })}
               flexShrink={0}
               onClick={(e) => {
                 e.stopPropagation();

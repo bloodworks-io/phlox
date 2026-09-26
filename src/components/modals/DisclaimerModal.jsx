@@ -1,5 +1,6 @@
 // Modal component to display disclaimer on first visit to landing page per session.
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Button,
     Box,
@@ -16,6 +17,7 @@ import {
 import { FaExclamationTriangle } from "react-icons/fa";
 
 const DisclaimerModal = ({ isOpen, onClose }) => {
+    const { t } = useTranslation();
     const [agreed, setAgreed] = useState(false);
 
     const handleContinue = () => {
@@ -43,7 +45,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                         <Dialog.Header>
                             <HStack>
                                 <Image src="/logo.webp" alt="Phlox Logo" width="30px" />
-                                <Heading as="h2" size="md" fontFamily="heading">Important Notice</Heading>
+                                <Heading as="h2" size="md" fontFamily="heading">{t("modal.disclaimer.title")}</Heading>
                             </HStack>
                         </Dialog.Header>
                         {/* Warning alert */}
@@ -60,7 +62,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                             <HStack align="start">
                                 <Icon color="secondaryButton" mt={0.5} asChild><FaExclamationTriangle /></Icon>
                                 <Text color="textPrimary" fontSize="sm" fontWeight="600">
-                                    Experimental Software - Use at Your Own Risk
+                                    {t("modal.disclaimer.warning")}
                                 </Text>
                             </HStack>
                         </Box>
@@ -78,17 +80,14 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                         fontWeight="600"
                                         mb={2}
                                     >
-                                        Phlox is an experimental project intended for
-                                        educational and personal experimentation ONLY.
+                                        {t("modal.disclaimer.intro")}
                                     </Text>
                                     <Text
                                         color={"textPrimary"}
                                         fontSize="sm"
                                         fontWeight="600"
                                     >
-                                        AS PROVIDED, IT IS NOT A CERTIFIED MEDICAL
-                                        DEVICE AND MUST NOT BE USED IN ACTUAL CLINICAL
-                                        SETTINGS OR FOR CLINICAL DECISION-MAKING.
+                                        {t("modal.disclaimer.notCertified")}
                                     </Text>
                                 </Box>
 
@@ -99,61 +98,46 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                         fontWeight="600"
                                         mb={2}
                                     >
-                                        KEY LIMITATIONS:
+                                        {t("modal.disclaimer.keyLimitations")}
                                     </Text>
                                     <VStack align="stretch" gap={2}>
                                         <Text
                                             color={"textPrimary"}
                                             fontSize="sm"
                                         >
-                                            <strong>Experimental Code:</strong> The
-                                            codebase is a work in progress and may
-                                            contain bugs and inconsistencies.
+                                            <strong>{t("modal.disclaimer.experimentalCodeLabel")}</strong>{" "}
+                                            {t("modal.disclaimer.experimentalCodeBody")}
                                         </Text>
                                         <Text
                                             color={"textPrimary"}
                                             fontSize="sm"
                                         >
-                                            <strong>AI Hallucinations:</strong> LLM
-                                            outputs, especially from smaller models, can
-                                            be unreliable, inaccurate, and may present
-                                            plausible but incorrect information. Always
-                                            verify AI-generated content against trusted
-                                            sources and use your professional clinical
-                                            judgment.
+                                            <strong>{t("modal.disclaimer.aiHallucinationsLabel")}</strong>{" "}
+                                            {t("modal.disclaimer.aiHallucinationsBody")}
                                         </Text>
                                         <Text
                                             color={"textPrimary"}
                                             fontSize="sm"
                                         >
-                                            <strong>No User Authentication:</strong>{" "}
-                                            Naively exposing this application to the
-                                            open internet is highly discouraged. Phlox
-                                            has no user access controls and minimal
-                                            input sanitisation.
+                                            <strong>{t("modal.disclaimer.noAuthLabel")}</strong>{" "}
+                                            {t("modal.disclaimer.noAuthBody")}
                                         </Text>
                                         <Text
                                             color={"textPrimary"}
                                             fontSize="sm"
                                         >
-                                            <strong>Not HIPAA/GDPR Compliant:</strong>{" "}
-                                            Phlox lacks the necessary security and
-                                            compliance measures for handling protected
-                                            health information in regulated
-                                            environments.
+                                            <strong>{t("modal.disclaimer.noComplianceLabel")}</strong>{" "}
+                                            {t("modal.disclaimer.noComplianceBody")}
                                         </Text>
                                     </VStack>
                                 </Box>
 
                                 <Text color={"textPrimary"} fontSize="sm">
-                                    USE AT YOUR OWN RISK and only for non-clinical,
-                                    educational purposes unless you have implemented
-                                    robust security measures and undertaken thorough
-                                    validation.
+                                    {t("modal.disclaimer.useAtOwnRisk")}
                                 </Text>
 
                                 <Text color={"textSecondary"} fontSize="xs">
-                                    This software is provided under the MIT License.
+                                    {t("modal.disclaimer.license")}
                                 </Text>
                             </VStack>
                         </Dialog.Body>
@@ -171,8 +155,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                             fontFamily: '"Roboto", sans-serif'
                                         }}
                                     >
-                                        I have read and understand the above warnings. I
-                                        agree to proceed at my own risk.
+                                        {t("modal.disclaimer.agreement")}
                                     </Text>
                                 </Checkbox.Label></Checkbox.Root>
                                 <HStack justify="flex-end">
@@ -187,7 +170,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                             fontWeight: "600"
                                         }}
                                     >
-                                        Continue
+                                        {t("action.continue")}
                                     </Button>
                                 </HStack>
                             </VStack>

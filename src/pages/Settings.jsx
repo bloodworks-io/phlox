@@ -7,6 +7,7 @@ import {
     Spinner,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useCallback } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
 import { settingsApi } from "../utils/api/settingsApi";
@@ -23,6 +24,7 @@ import { useDebounce } from "../utils/hooks/useDebounce";
 import { useAutosave } from "../utils/hooks/useAutosave";
 
 const Settings = () => {
+    const { t } = useTranslation();
     const [userSettings, setUserSettings] = useState({
         name: "",
         specialty: "",
@@ -135,7 +137,7 @@ const Settings = () => {
         } catch (error) {
             console.error("Error loading settings:", error);
             toaster.create({
-                title: "Error loading settings",
+                title: t("page.settings.toasts.loadError"),
                 description: error.message,
                 type: "error",
                 duration: 3000,
@@ -291,8 +293,8 @@ const Settings = () => {
             });
         } catch (error) {
             toaster.create({
-                title: "Error",
-                description: "Failed to save user settings",
+                title: t("toast.error"),
+                description: t("page.settings.toasts.saveUserError"),
                 type: "error",
                 duration: 3000,
             });
@@ -307,8 +309,8 @@ const Settings = () => {
         } catch (error) {
             console.error("Failed to set default template:", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to set default template",
+                title: t("toast.error"),
+                description: t("page.settings.toasts.defaultTemplateError"),
                 type: "error",
                 duration: 3000,
             });
@@ -378,15 +380,17 @@ const Settings = () => {
                 await settingsService.resetIndividualPrompt(promptType);
             setPrompts(updatedPrompts);
             toaster.create({
-                title: "Success",
-                description: `${promptType} prompt reset to default`,
+                title: t("toast.success"),
+                description: t("page.settings.toasts.promptReset", {
+                    promptType,
+                }),
                 type: "success",
                 duration: 3000,
             });
         } catch {
             toaster.create({
-                title: "Error",
-                description: "Failed to reset prompt",
+                title: t("toast.error"),
+                description: t("page.settings.toasts.promptResetError"),
                 type: "error",
                 duration: 3000,
             });
@@ -399,15 +403,15 @@ const Settings = () => {
             const optionsData = await settingsApi.fetchOptions();
             setOptions(settingsHelpers.processOptionsData(optionsData));
             toaster.create({
-                title: "Success",
-                description: "Advanced options reset to defaults",
+                title: t("toast.success"),
+                description: t("page.settings.toasts.optionsReset"),
                 type: "success",
                 duration: 3000,
             });
         } catch {
             toaster.create({
-                title: "Error",
-                description: "Failed to reset advanced options",
+                title: t("toast.error"),
+                description: t("page.settings.toasts.optionsResetError"),
                 type: "error",
                 duration: 3000,
             });
@@ -452,8 +456,8 @@ const Settings = () => {
 
     useEffect(() => {
         if (!coreLoading) return;
-        const t = setTimeout(() => setShowSpinner(true), 150);
-        return () => clearTimeout(t);
+        const timer = setTimeout(() => setShowSpinner(true), 150);
+        return () => clearTimeout(timer);
     }, [coreLoading]);
 
     if (coreLoading) {
@@ -466,7 +470,7 @@ const Settings = () => {
     return (
         <Box p="5" borderRadius="sm" w="100%">
             <Text as="h2" mb="4">
-                Settings
+                {t("page.settings.title")}
             </Text>
             <VStack gap="5" align="stretch">
                 <UserSettingsPanel

@@ -9,6 +9,7 @@ import {
     checkboxMark,
     getHelveticaMeasure,
 } from "../../utils/pdf/fieldLayout";
+import { useTranslation } from "react-i18next";
 
 // Canvas-safe overflow warning color (matches Chakra red-ish used elsewhere)
 const OVERFLOW_COLOR = "#e53e3e";
@@ -54,6 +55,7 @@ const FormBuilder = ({
     currentPage = 1,
     onCurrentPageChange = () => {},
 }) => {
+    const { t } = useTranslation();
     const containerRef = useRef(null);
     const pdfCanvasRef = useRef(null);
     const overlayCanvasRef = useRef(null);
@@ -559,7 +561,7 @@ const FormBuilder = ({
                             onCurrentPageChange(Math.max(1, currentPage - 1))
                         }
                         disabled={currentPage <= 1}
-                        aria-label="Previous page"><ChevronLeftIcon /></IconButton>
+                        aria-label={t("forms.previousPage")}><ChevronLeftIcon /></IconButton>
                     <Text fontSize="sm">
                         {currentPage} / {template?.page_count || 1}
                     </Text>
@@ -572,7 +574,7 @@ const FormBuilder = ({
                             )
                         }
                         disabled={currentPage >= (template?.page_count || 1)}
-                        aria-label="Next page"><ChevronRightIcon /></IconButton>
+                        aria-label={t("forms.nextPage")}><ChevronRightIcon /></IconButton>
                 </HStack>
             </HStack>
             {/* Canvas area */}

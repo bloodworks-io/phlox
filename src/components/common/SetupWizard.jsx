@@ -13,6 +13,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { setStoredToken } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
@@ -20,6 +21,7 @@ import { universalFetch } from "../../utils/helpers/apiHelpers";
 // First-run admin creation. Shown only when /api/auth/status reports
 // needs_setup (no real users exist yet).
 export const SetupWizard = ({ onSuccess }) => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -30,15 +32,15 @@ export const SetupWizard = ({ onSuccess }) => {
   const handleSubmit = useCallback(async () => {
     setError(null);
     if (!username || !password) {
-      setError("Username and password are required.");
+      setError(t("setup.usernameRequired"));
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters (12+ recommended).");
+      setError(t("setup.passwordTooShort"));
       return;
     }
     if (password !== confirm) {
-      setError("Passwords do not match.");
+      setError(t("setup.passwordsDoNotMatch"));
       return;
     }
 
@@ -51,24 +53,24 @@ export const SetupWizard = ({ onSuccess }) => {
       });
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        setError(data?.detail || "Setup failed. Please try again.");
+        setError(data?.detail || t("setup.setupFailed"));
         return;
       }
       const data = await response.json();
       setStoredToken(data.token);
       toaster.create({
-        title: "Welcome to Phlox",
-        description: "Admin account created. You are signed in.",
+        title: t("setup.welcomeToastTitle"),
+        description: t("setup.welcomeToastDescription"),
         type: "success",
         duration: 5000,
       });
       onSuccess();
     } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+      setError(t("setup.couldNotReachServer"));
     } finally {
       setIsSubmitting(false);
     }
-  }, [username, password, confirm, onSuccess]);
+  }, [username, password, confirm, onSuccess, t]);
 
   const inputProps = {
     size: "md",
@@ -115,7 +117,7 @@ export const SetupWizard = ({ onSuccess }) => {
                 marginBottom: "0.5rem",
               }}
             >
-              Welcome
+              {t("setup.welcome")}
             </Heading>
             <Text
               textAlign="center"
@@ -124,8 +126,7 @@ export const SetupWizard = ({ onSuccess }) => {
               maxW="380px"
               lineHeight="1.6"
             >
-              Create the administrator account for this Phlox instance. All
-              existing data will be attached to this account.
+              {t("setup.intro")}
             </Text>
           </Flex>
 
@@ -139,11 +140,11 @@ export const SetupWizard = ({ onSuccess }) => {
           <VStack gap={4} align="stretch">
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
-                Administrator username
+                {t("setup.adminUsername")}
               </Text>
               <Input
                 type="text"
-                placeholder="e.g. drsmith"
+                placeholder={t("setup.usernamePlaceholder")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoFocus
@@ -152,12 +153,12 @@ export const SetupWizard = ({ onSuccess }) => {
             </Box>
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
-                Password
+                {t("common.password")}
               </Text>
               <HStack>
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="At least 8 characters"
+                  placeholder={t("setup.passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   {...inputProps}
@@ -166,7 +167,7 @@ export const SetupWizard = ({ onSuccess }) => {
                   size="md"
                   variant="ghost"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label="Toggle password visibility"
+                  aria-label={t("common.togglePasswordVisibility")}
                 >
                   <Icon as={showPassword ? FaEyeSlash : FaEye} />
                 </Button>
@@ -174,11 +175,11 @@ export const SetupWizard = ({ onSuccess }) => {
             </Box>
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
-                Confirm password
+                {t("setup.confirmPassword")}
               </Text>
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder="Repeat your password"
+                placeholder={t("setup.confirmPasswordPlaceholder")}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 {...inputProps}
@@ -189,7 +190,7 @@ export const SetupWizard = ({ onSuccess }) => {
           <Button
             onClick={handleSubmit}
             loading={isSubmitting}
-            loadingText="Creating account..."
+            loadingText={t("setup.creatingAccount")}
             disabled={!username || !password || !confirm}
             borderRadius="2xl"
             size="lg"
@@ -200,7 +201,7 @@ export const SetupWizard = ({ onSuccess }) => {
             }}
             mt={2}
           >
-            Create Admin Account
+            {t("setup.createAdminAccount")}
           </Button>
         </VStack>
       </Box>

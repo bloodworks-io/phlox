@@ -1,5 +1,6 @@
 // Page component listing patients with outstanding jobs.
 import useSWR from "swr";
+import { useTranslation } from "react-i18next";
 import PatientTable from "../components/patient/PatientTable";
 import { patientApi } from "../utils/api/patientApi";
 import { KEYS } from "../utils/cache/keys";
@@ -14,6 +15,7 @@ const outstandingJobsFetcher = async (scope) => {
 };
 
 const OutstandingJobs = ({ handleSelectPatient, refreshSidebar, patientScope }) => {
+    const { t } = useTranslation();
     const { data, mutate } = useSWR(
         KEYS.outstandingJobs(patientScope),
         () => outstandingJobsFetcher(patientScope),
@@ -31,7 +33,7 @@ const OutstandingJobs = ({ handleSelectPatient, refreshSidebar, patientScope }) 
             setPatients={setPatients}
             handleSelectPatient={handleSelectPatient}
             refreshSidebar={refreshSidebar}
-            title="Outstanding Jobs"
+            title={t("page.outstandingJobs.title")}
             groupByDate={true}
             summaryOnly={true}
             isLoading={isLoading}

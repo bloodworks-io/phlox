@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Box, Text, HStack } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
 import { FaChevronUp, FaChevronDown, FaTimes } from "react-icons/fa";
 
@@ -23,6 +24,7 @@ export const ExpandedAgentPanel = ({
     onDismissReview,
     dragHandlers,
 }) => {
+    const { t } = useTranslation();
     const info = getStatusInfo(status, agentState);
     const isReview = status === "review";
     const isError = status === "error";
@@ -54,7 +56,7 @@ export const ExpandedAgentPanel = ({
                 <AgentSymbol pulse={info.pulse} />
                 <Box flex="1" minW="0">
                     <Text fontWeight="semibold" fontSize="sm" lineHeight="1.3">
-                        Live agent
+                        {t("agent.liveAgent")}
                     </Text>
                     <HStack gap={1.5} mt="2px">
                         <StatusDot color={info.color} pulse={info.pulse} />
@@ -65,7 +67,7 @@ export const ExpandedAgentPanel = ({
                 </Box>
                 {isReview && (
                     <Tooltip
-                        content="Close review"
+                        content={t("agent.panel.closeReview")}
                         showArrow
                         positioning={{ placement: "top" }}
                     >
@@ -84,7 +86,7 @@ export const ExpandedAgentPanel = ({
                             asChild
                         >
                             <button
-                                aria-label="Close session review"
+                                aria-label={t("agent.panel.closeSession")}
                                 onClick={onDismissReview}
                             >
                                 <FaTimes size="11px" />
@@ -93,7 +95,7 @@ export const ExpandedAgentPanel = ({
                     </Tooltip>
                 )}
                 <Tooltip
-                    content="Collapse to corner card"
+                    content={t("agent.panel.collapseToCard")}
                     showArrow
                     positioning={{ placement: "top" }}
                 >
@@ -112,7 +114,7 @@ export const ExpandedAgentPanel = ({
                         asChild
                     >
                         <button
-                            aria-label="Collapse live agent"
+                            aria-label={t("agent.panel.collapse")}
                             onClick={onToggleExpand}
                         >
                             <FaChevronDown size="11px" />
@@ -142,7 +144,7 @@ export const ExpandedAgentPanel = ({
                     <>
                         <Box flexShrink={0}>
                             <Text className="live-section-label" mb={2}>
-                                Latest activity
+                                {t("agent.panel.latestActivity")}
                             </Text>
                             {statuses.length === 0 ? (
                                 <Text
@@ -151,8 +153,8 @@ export const ExpandedAgentPanel = ({
                                     color="overlay0"
                                 >
                                     {status === "connecting"
-                                        ? "Loading live agent context…"
-                                        : "Waiting for updates…"}
+                                        ? t("agent.panel.loadingContext")
+                                        : t("agent.panel.waitingUpdates")}
                                 </Text>
                             ) : (
                                 <ActivityList statuses={statuses} />
@@ -162,7 +164,9 @@ export const ExpandedAgentPanel = ({
                         {artifacts.length > 0 && (
                             <Box flexShrink={0}>
                                 <Text className="live-section-label" mb={2}>
-                                    Prepared for review · {artifacts.length}
+                                    {t("agent.panel.preparedForReview", {
+                                        count: artifacts.length,
+                                    })}
                                 </Text>
                                 {artifacts.map((artifact, index) => (
                                     <ArtifactRow
@@ -188,7 +192,7 @@ export const ExpandedAgentPanel = ({
                     overflowY="auto"
                 >
                     <Text className="live-section-label" mb={2}>
-                        Transcript
+                        {t("agent.panel.transcript")}
                     </Text>
                     <TranscriptSection transcripts={transcripts} />
                 </Box>
@@ -227,7 +231,7 @@ export const ExpandedAgentPanel = ({
                     ) : (
                         <FaChevronUp size="10px" />
                     )}
-                    Transcript
+                    {t("agent.panel.transcript")}
                 </Box>
                 <Text
                     fontSize="xs"

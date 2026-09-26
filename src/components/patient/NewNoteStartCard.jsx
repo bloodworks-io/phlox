@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Avatar,
     Box,
@@ -82,8 +83,8 @@ export const PathHalf = ({
     );
 };
 
-const candidateMeta = (cand) =>
-    [cand.gender, cand.dob, cand.ur_number && `UR ${cand.ur_number}`]
+const candidateMeta = (cand, t) =>
+    [cand.gender, cand.dob, cand.ur_number && t("patient.urBadge", { ur: cand.ur_number })]
         .filter(Boolean)
         .join("  ·  ");
 
@@ -98,6 +99,7 @@ export const CandidateRow = ({
     confirming = false,
     disabled = false,
 }) => {
+    const { t } = useTranslation();
     const fallbackName =
         candidate.first_name || candidate.last_name
             ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
@@ -121,19 +123,21 @@ export const CandidateRow = ({
                         color="textPrimary"
                         lineClamp={1}
                     >
-                        {candidate.name || "Unnamed patient"}
+                        {candidate.name || t("patient.unnamedPatient")}
                     </Text>
                     <Text
                         fontSize="xs"
                         color="textSecondary"
                         lineClamp={1}
                     >
-                        {candidateMeta(candidate) ||
-                            "No demographics on file"}
+                        {candidateMeta(candidate, t) ||
+                            t("patient.noDemographicsOnFile")}
                     </Text>
                     {candidate.encounter_date && (
                         <Text fontSize="xs" color="textSecondary">
-                            Last seen {formatDate(candidate.encounter_date)}
+                            {t("patient.lastSeen", {
+                                date: formatDate(candidate.encounter_date),
+                            })}
                         </Text>
                     )}
                 </Box>
@@ -146,13 +150,14 @@ export const CandidateRow = ({
                 css={startBtnSx}
                 onClick={() => onConfirm(candidate)}
             >
-                Start visit
+                {t("patient.startVisit")}
             </Button>
         </Flex>
     );
 };
 
 const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLoading }) => {
+    const { t } = useTranslation();
     const [view, setView] = useState("choose"); // "choose" | "search" | "results"
     const [query, setQuery] = useState("");
     const [results, setResults] = useState([]);
@@ -163,9 +168,8 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
         const q = (query || "").trim();
         if (!q) {
             toaster.create({
-                title: "Enter a UR number or name",
-                description:
-                    "Type a UR number or patient name, then click search.",
+                title: t("patient.enterUrOrName"),
+                description: t("patient.enterUrOrNameHint"),
                 type: "warning",
                 ...DEFAULT_TOAST_CONFIG,
             });
@@ -177,8 +181,8 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
             setView("results");
         } else {
             toaster.create({
-                title: "No patient found",
-                description: `No patient matches "${q}". Fill in their details to create a new record.`,
+                title: t("patient.noPatientFound"),
+                description: t("patient.noPatientMatch", { query: q }),
                 type: "info",
                 ...DEFAULT_TOAST_CONFIG,
             });
@@ -197,10 +201,10 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
 
     const subtitle =
         view === "search"
-            ? "Enter a UR number or name to find an existing patient."
+            ? t("patient.searchSubtitle")
             : view === "results"
-              ? "Confirm the patient to start a new visit."
-              : "Find an existing patient to start a new visit, or create a new patient record.";
+              ? t("patient.resultsSubtitle")
+              : t("patient.chooseSubtitle");
 
     return (
         <Flex align="center" justify="center" minH="80vh" px={4} py={8}>
@@ -227,7 +231,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                             fontFamily: '"Space Grotesk", sans-serif',
                         }}
                     >
-                        New encounter
+                        {t("patient.newEncounter")}
                     </Heading>
                     <Text
                         fontSize="sm"
@@ -245,16 +249,16 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                         <Flex gap={3}>
                             <PathHalf
                                 icon={FaUserPlus}
-                                title="New patient"
-                                subtitle="Create a new record"
+                                title={t("patient.newPatient")}
+                                subtitle={t("patient.createNewRecord")}
                                 accent="primaryButton"
                                 tileBg="tile"
                                 onClick={onNewPatient}
                             />
                             <PathHalf
                                 icon={FaSearch}
-                                title="Search"
-                                subtitle="Existing patient"
+                                title={t("patient.search")}
+                                subtitle={t("patient.existingPatient")}
                                 accent="secondaryButton"
                                 tileBg="tile"
                                 onClick={() => setView("search")}
@@ -287,7 +291,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                                 onClick={() => setView("search")}
                             >
                                 <FaArrowLeft />
-                                Back
+                                {t("patient.back")}
                             </Button>
                         </Box>
                     ) : (
@@ -302,7 +306,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                                         onSearch={handleFind}
                                         isLoading={isSearchLoading}
                                         autoFocus
-                                        placeholder="UR number or name"
+                                        placeholder={t("patient.urOrNamePlaceholder")}
                                     />
                                 </form>
                             </Flex>
@@ -317,7 +321,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                                 onClick={() => setView("choose")}
                             >
                                 <FaArrowLeft />
-                                Back
+                                {t("patient.back")}
                             </Button>
                         </Box>
                     )}

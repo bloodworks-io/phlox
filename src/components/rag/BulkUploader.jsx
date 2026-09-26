@@ -10,6 +10,7 @@ import {
 } from "../common/icons";
 import { FaFilePdf, FaCloudUploadAlt } from "react-icons/fa";
 import { useBulkUploadQueue, STATUS } from "../../utils/hooks/useBulkUploadQueue";
+import { useTranslation } from "react-i18next";
 
 const StatusIcon = ({ status }) => {
     switch (status) {
@@ -36,6 +37,7 @@ const StatusIcon = ({ status }) => {
 };
 
 const BulkUploader = ({ setCollections }) => {
+    const { t } = useTranslation();
     const [isDragOver, setIsDragOver] = useState(false);
     const [expandedFile, setExpandedFile] = useState(null);
     const fileInputRef = useRef(null);
@@ -78,8 +80,8 @@ const BulkUploader = ({ setCollections }) => {
         );
         if (pdfFiles.length === 0) {
             toaster.create({
-                title: "No PDF files",
-                description: "Only PDF files are supported",
+                title: t("rag.toast.noPdfFiles"),
+                description: t("rag.toast.onlyPdfSupported"),
                 type: "warning",
                 duration: 3000,
             });
@@ -87,8 +89,10 @@ const BulkUploader = ({ setCollections }) => {
         }
         if (files.length > pdfFiles.length) {
             toaster.create({
-                title: "Some files skipped",
-                description: `${files.length - pdfFiles.length} non-PDF file(s) were ignored`,
+                title: t("rag.toast.someFilesSkipped"),
+                description: t("rag.toast.nonPdfIgnored", {
+                    number: files.length - pdfFiles.length,
+                }),
                 type: "info",
                 duration: 3000,
             });
@@ -109,17 +113,17 @@ const BulkUploader = ({ setCollections }) => {
     const statusLabel = (entry) => {
         switch (entry.status) {
             case STATUS.PENDING:
-                return "Pending";
+                return t("rag.status.pending");
             case STATUS.EXTRACTING:
-                return "Extracting...";
+                return t("rag.status.extracting");
             case STATUS.EXTRACTED:
-                return "Ready to commit";
+                return t("rag.status.readyToCommit");
             case STATUS.COMMITTING:
-                return "Committing...";
+                return t("rag.status.committing");
             case STATUS.COMMITTED:
-                return "Committed ✓";
+                return t("rag.status.committed");
             case STATUS.FAILED:
-                return entry.error || "Failed";
+                return entry.error || t("rag.status.failed");
             default:
                 return "";
         }
@@ -149,7 +153,7 @@ const BulkUploader = ({ setCollections }) => {
                             style={{ margin: "0 auto 8px" }}
                         />
                         <Text fontSize="sm" color="overlay0">
-                            Drag and drop PDFs here, or click to browse
+                            {t("rag.dropZoneHint")}
                         </Text>
                         <Input
                             ref={fileInputRef}
@@ -200,7 +204,7 @@ const BulkUploader = ({ setCollections }) => {
                                 </Text>
                                 {entry.status === STATUS.EXTRACTED && (
                                     <IconButton
-                                        aria-label="Edit metadata"
+                                        aria-label={t("rag.editMetadata")}
                                         size="xs"
                                         variant="ghost"
                                         onClick={(e) => {
@@ -218,7 +222,7 @@ const BulkUploader = ({ setCollections }) => {
                                     entry.status === STATUS.EXTRACTED) &&
                                     !isProcessing && (
                                         <IconButton
-                                            aria-label="Remove from queue"
+                                            aria-label={t("rag.removeFromQueue")}
                                             size="xs"
                                             variant="ghost"
                                             colorPalette="red"
@@ -251,7 +255,7 @@ const BulkUploader = ({ setCollections }) => {
                                                     fontSize="xs"
                                                     mb="0"
                                                 >
-                                                    Collection Name
+                                                    {t("rag.collectionName")}
                                                 </Field.Label>
                                                 <Input
                                                     size="sm"
@@ -274,7 +278,7 @@ const BulkUploader = ({ setCollections }) => {
                                                     fontSize="xs"
                                                     mb="0"
                                                 >
-                                                    Document Source
+                                                    {t("rag.documentSource")}
                                                 </Field.Label>
                                                 <Input
                                                     size="sm"
@@ -297,7 +301,7 @@ const BulkUploader = ({ setCollections }) => {
                                                     fontSize="xs"
                                                     mb="0"
                                                 >
-                                                    Focus Area
+                                                    {t("rag.focusArea")}
                                                 </Field.Label>
                                                 <Input
                                                     size="sm"
@@ -332,8 +336,11 @@ const BulkUploader = ({ setCollections }) => {
                     gap="2"
                 >
                     <Text fontSize="xs" color="overlay0">
-                        {totalPending} pending · {readyToCommit} ready
-                        to commit · {committedCount} committed
+                        {t("rag.queueSummary", {
+                            pending: totalPending,
+                            ready: readyToCommit,
+                            committed: committedCount,
+                        })}
                     </Text>
                     <HStack>
                         <Button
@@ -342,9 +349,9 @@ const BulkUploader = ({ setCollections }) => {
                                 !hasPendingOrFailed || isProcessing
                             }
                             loading={isProcessing && extractedCount === 0}
-                            loadingText="Extracting..."
+                            loadingText={t("rag.status.extracting")}
                             size="sm"
-                            className="orange-button"><CheckIcon />Extract All
+                            className="orange-button"><CheckIcon />{t("rag.extractAll")}
                                                     </Button>
                         <Button
                             onClick={commitAll}
@@ -354,9 +361,9 @@ const BulkUploader = ({ setCollections }) => {
                             loading={
                                 isProcessing && readyToCommit === 0
                             }
-                            loadingText="Committing..."
+                            loadingText={t("rag.status.committing")}
                             size="sm"
-                            className="green-button"><CheckIcon />Commit All
+                            className="green-button"><CheckIcon />{t("rag.commitAll")}
                                                     </Button>
                     </HStack>
                 </Flex>

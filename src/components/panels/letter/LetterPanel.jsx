@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Flex, Text, NativeSelect } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaEnvelope, FaMicrophone, FaMagic } from "react-icons/fa";
@@ -39,6 +40,7 @@ const LetterPanel = ({
   handleCopy,
 }) => {
   const [letterMode, setLetterMode] = useState("draft");
+  const { t } = useTranslation();
   const isDictateMode = letterMode === "dictate";
 
   return (
@@ -64,16 +66,16 @@ const LetterPanel = ({
         >
           <Flex align="center">
             <FaEnvelope size="1em" style={{ marginRight: "8px" }} />
-            <Text>Patient Letter</Text>
+            <Text>{t("common.fab.patientLetter")}</Text>
           </Flex>
 
           <Tooltip
             content={
               isDictateMode
-                ? "Dictate: speak your letter and we'll turn it into a polished letter."
-                : "Draft: choose a template and have AI draft the letter for you."
+                ? t("letter.modeTooltipDictate")
+                : t("letter.modeTooltipDraft")
             }
-            aria-label="Letter mode tooltip"
+            aria-label={t("letter.modeTooltipAria")}
           >
             <Box>
               <Flex alignItems="center">
@@ -95,8 +97,8 @@ const LetterPanel = ({
                     size="sm"
                     width={["110px", "140px", "160px"]}
                     className="input-style">
-                    <option value="draft">Draft</option>
-                    <option value="dictate">Dictate</option>
+                    <option value="draft">{t("letter.modeDraft")}</option>
+                    <option value="dictate">{t("scribe.mode.dictate")}</option>
                   </NativeSelect.Field>
                   <NativeSelect.Indicator />
                 </NativeSelect.Root>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useTranscription } from "../../utils/hooks/useTranscription";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { AudioRecorder } from "../../utils/audioRecorder";
@@ -17,6 +18,7 @@ export const useScribe = ({
     setLoading,
     onSendStart,
 }) => {
+    const { t } = useTranslation();
     const [isAmbient, setIsAmbient] = useState(
         () => localStorage.getItem(SCRIBE_MODE_STORAGE_KEY) !== "dictate",
     );
@@ -97,12 +99,12 @@ export const useScribe = ({
             } catch (error) {
                 console.error("Transcription failed:", error);
                 lastFailedRef.current = { blob, meta: { ...meta }, isAmbient };
-                const message = error?.message || "Transcription failed";
+                const message = error?.message || t("patient.transcriptionFailed");
                 setSendError({ message });
                 return false;
             }
         },
-        [transcribeAudio, isAmbient, clearLastFailed],
+        [transcribeAudio, isAmbient, clearLastFailed, t],
     );
 
     const retrySend = useCallback(async () => {
@@ -114,11 +116,11 @@ export const useScribe = ({
             return true;
         } catch (error) {
             console.error("Transcription retry failed:", error);
-            const message = error?.message || "Transcription failed";
+            const message = error?.message || t("patient.transcriptionFailed");
             setSendError({ message });
             return false;
         }
-    }, [transcribeAudio, clearLastFailed]);
+    }, [transcribeAudio, clearLastFailed, t]);
 
     const downloadLastRecording = useCallback(() => {
         const { blob } = lastFailedRef.current;
@@ -155,9 +157,9 @@ export const useScribe = ({
             setTimer(0);
         } catch (error) {
             console.error("Error starting recording:", error);
-            alert("Could not access microphone. Please check your permissions.");
+            alert(t("patient.microphoneAccessError"));
         }
-    }, []);
+    }, [t]);
 
     const pauseRecording = useCallback(() => {
         audioRecorderRef.current?.pause();

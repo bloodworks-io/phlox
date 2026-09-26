@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
@@ -19,6 +20,7 @@ const TranscriptionPanel = ({
   noteId,
 }) => {
   const [showSuccess, setShowSuccess] = useState(false);
+  const { t } = useTranslation();
   const { reprocessTranscription, isTranscribing } = useTranscription(onReprocess, () => {});
 
   const handleReprocess = async () => {
@@ -89,33 +91,33 @@ const TranscriptionPanel = ({
               {/* Stats */}
               {transcriptionDuration && (
                 <HStack fontSize="10px" color="overlay0" gap={2}>
-                  <Tooltip content="Transcription time" showArrow positioning={{
+                  <Tooltip content={t("transcription.transcriptionTime")} showArrow positioning={{
                     placement: "top"
                   }}>
                     <HStack gap={1}>
                       <Box size="8px" asChild><FaClock /></Box>
-                      <Text>{transcriptionDuration}s</Text>
+                      <Text>{t("transcription.durationSeconds", { duration: transcriptionDuration })}</Text>
                     </HStack>
                   </Tooltip>
-                  <Tooltip content="Processing time" showArrow positioning={{
+                  <Tooltip content={t("transcription.processingTime")} showArrow positioning={{
                     placement: "top"
                   }}>
                     <HStack gap={1}>
                       <Box size="8px" asChild><FaCogs /></Box>
-                      <Text>{processDuration}s</Text>
+                      <Text>{t("transcription.durationSeconds", { duration: processDuration })}</Text>
                     </HStack>
                   </Tooltip>
                 </HStack>
               )}
 
               {/* Reprocess button */}
-              <Tooltip content="Reprocess" showArrow positioning={{
+              <Tooltip content={t("transcription.reprocess")} showArrow positioning={{
                 placement: "top"
               }}>
                 <IconButton
                   onClick={handleReprocess}
                   disabled={isTranscribing}
-                  aria-label="Reprocess"
+                  aria-label={t("transcription.reprocess")}
                   size="xs"
                   variant="ghost"
                   opacity={0.5}
@@ -129,7 +131,7 @@ const TranscriptionPanel = ({
           </>
         ) : (
           <Text color="overlay0" textAlign="center" fontSize="xs" py={3}>
-            No transcription
+            {t("transcription.empty")}
           </Text>
         )}
       </Box>

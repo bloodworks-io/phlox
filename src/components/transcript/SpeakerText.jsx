@@ -1,5 +1,6 @@
 import React from "react";
 import { Text } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 
 import { useColorModeValue } from "@/components/ui/color-mode";
 
@@ -35,6 +36,7 @@ export const SpeakerDot = ({ speaker }) => {
     const [light, dark] = speakerColorPair(speaker);
     const color = useColorModeValue(light, dark);
     const unknown = speaker === UNKNOWN_SPEAKER;
+    const { t } = useTranslation();
     return (
         <span
             style={{
@@ -49,7 +51,7 @@ export const SpeakerDot = ({ speaker }) => {
                 verticalAlign: "middle",
             }}
             data-speaker={speaker}
-            title={unknown ? "Unattributed" : speaker}
+            title={unknown ? t("transcript.unattributed") : speaker}
         />
     );
 };

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { FaFileUpload } from "react-icons/fa";
@@ -26,10 +27,11 @@ const DemographicsForm = ({
     onSave,
     onSaved,
     onCancel,
-    saveLabel = "Save",
-    cancelLabel = "Cancel",
+    saveLabel,
+    cancelLabel,
     cancelIcon = null,
 }) => {
+    const { t } = useTranslation();
     const [form, setForm] = useState(() => patient
         ? {
             first_name: patient.first_name || "",
@@ -87,7 +89,7 @@ const DemographicsForm = ({
         } catch (error) {
             setExtractError(
                 error?.message ||
-                    "Couldn't read demographics from that document.",
+                    t("patient.extractDemographicsFailed"),
             );
         } finally {
             setIsExtracting(false);
@@ -137,8 +139,8 @@ const DemographicsForm = ({
                 await onSave(updated);
             } catch {
                 toaster.create({
-                    title: "Couldn't save demographics",
-                    description: "Please try again.",
+                    title: t("patient.saveDemographicsFailed"),
+                    description: t("patient.tryAgain"),
                     type: "error",
                     duration: 3000,
                 });
@@ -189,8 +191,8 @@ const DemographicsForm = ({
                     <Icon asChild><FaFileUpload /></Icon>
                     <Text>
                         {isExtracting
-                            ? "Reading document…"
-                            : "Drop a document to auto-fill, or click to browse"}
+                            ? t("patient.readingDocument")
+                            : t("patient.dropDocumentHint")}
                     </Text>
                     {isExtracting && <Spinner size="xs" />}
                 </HStack>
@@ -207,28 +209,28 @@ const DemographicsForm = ({
                 )}
             </Box>
             <HStack gap={3} align="flex-start">
-                <Field label="First name" required>
+                <Field label={t("patient.firstName")} required>
                     <Input
                         className={inputClass("first_name")}
                         size="sm"
-                        placeholder="First name"
+                        placeholder={t("patient.firstName")}
                         autoFocus
                         value={form.first_name || ""}
                         onChange={(e) => set("first_name", e.target.value)}
                     />
                 </Field>
-                <Field label="Last name" required>
+                <Field label={t("patient.lastName")} required>
                     <Input
                         className={inputClass("last_name")}
                         size="sm"
-                        placeholder="Last name"
+                        placeholder={t("patient.lastName")}
                         value={form.last_name || ""}
                         onChange={(e) => set("last_name", e.target.value)}
                     />
                 </Field>
             </HStack>
             <HStack gap={3} align="flex-start">
-                <Field label="Date of birth" required>
+                <Field label={t("patient.dateOfBirth")} required>
                     <Input
                         type="date"
                         className={inputClass("dob")}
@@ -237,7 +239,7 @@ const DemographicsForm = ({
                         onChange={(e) => set("dob", e.target.value)}
                     />
                 </Field>
-                <Field label="Gender">
+                <Field label={t("patient.gender")}>
                     <NativeSelect.Root>
                         <NativeSelect.Field
                             className={inputClass("gender")}
@@ -253,30 +255,30 @@ const DemographicsForm = ({
                 </Field>
             </HStack>
             <HStack gap={3} align="flex-start">
-                <Field label="UR number" required>
+                <Field label={t("patient.urNumber")} required>
                     <Input
                         className={inputClass("ur_number")}
                         size="sm"
-                        placeholder="UR number"
+                        placeholder={t("patient.urNumber")}
                         value={form.ur_number || ""}
                         onChange={(e) => set("ur_number", e.target.value)}
                     />
                 </Field>
-                <Field label="Phone">
+                <Field label={t("patient.phone")}>
                     <Input
                         className={inputClass("phone")}
                         size="sm"
-                        placeholder="Phone"
+                        placeholder={t("patient.phone")}
                         value={form.phone || ""}
                         onChange={(e) => set("phone", e.target.value)}
                     />
                 </Field>
             </HStack>
-            <Field label="Address">
+            <Field label={t("patient.address")}>
                 <Input
                     className={inputClass("address")}
                     size="sm"
-                    placeholder="Address"
+                    placeholder={t("patient.address")}
                     value={form.address || ""}
                     onChange={(e) => set("address", e.target.value)}
                 />
@@ -288,7 +290,7 @@ const DemographicsForm = ({
                         size="md"
                         borderRadius="2xl"
                         className="switch-mode"
-                        css={btnSx}>{cancelIcon || undefined}{cancelLabel}</Button>
+                        css={btnSx}>{cancelIcon || undefined}{cancelLabel ?? t("action.cancel")}</Button>
                 )}
                 <Button
                     onClick={handleSave}
@@ -299,7 +301,7 @@ const DemographicsForm = ({
                     className="green-button"
                     css={btnSx}
                 >
-                    {saveLabel}
+                    {saveLabel ?? t("action.save")}
                 </Button>
             </HStack>
         </VStack>
