@@ -103,6 +103,12 @@ modules:
         pip3 install --prefix=/app
         "uv$(python3 -c 'import tomllib; print(tomllib.load(open("server/pyproject.toml", "rb"))["tool"]["uv"]["required-version"])')"
       - cd server && UV_PYTHON=/usr/bin/python3 /app/bin/uv sync --locked --extra rag
+      # pbs cpython (uv-managed, from build-server.sh's unpinned sync) injects
+      # "-l:libatomic.a" into sysconfig MODLIBS (clang-built OpenSSL); the SDK
+      # ships no libatomic.a. Satisfy the linker with the shared lib via
+      # /app/lib (already on the link and runtime library path).
+      - install -Dm755 "$(find /usr/lib -name 'libatomic.so*' | head -1)" /app/lib/libatomic.so.1
+      - ln -sf libatomic.so.1 /app/lib/libatomic.a
       - bash src-tauri/build-server.sh
       - install -d /app/bin/server_dist
       - cp -a src-tauri/server_dist/. /app/bin/server_dist/

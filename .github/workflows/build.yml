@@ -189,7 +189,6 @@ jobs:
         with:
           bundle: Phlox-linux-x86_64.flatpak
           manifest-path: packaging/com.phlox.app.yaml
-          cache-key: flatpak-builder-${{ github.sha }}
           arch: x86_64
           verbose: true
 
