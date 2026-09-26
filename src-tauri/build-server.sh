@@ -105,7 +105,7 @@ $NUITKA_CMD \
     --include-package=sqlite_vec \
     $([[ "$OSTYPE" != "linux-gnu"* ]] && echo "--include-data-files=$VEC0_NAME=sqlite_vec/$(basename "$VEC0_NAME")") \
     --include-data-files="$PROJECT_DIR/server/demo/example_patients.json=server/demo/example_patients.json" \
-    --include-data-files="$SERVER_DIR/assets/models/campplus-common.onnx=server/assets/models/campplus-common.onnx" \
+    --include-data-files="$SERVER_DIR/assets/models/campplus-zh-en.onnx=server/assets/models/campplus-zh-en.onnx" \
     --include-package=sherpa_onnx \
     --include-package-data=sherpa_onnx \
     --include-package=pypdf \
