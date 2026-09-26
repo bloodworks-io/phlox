@@ -19,7 +19,7 @@ const FloatingActionMenu = ({
     isDocumentOpen,
     isPreviousVisitOpen,
     hasCriticalReasoning,
-    hasPreviousVisitSummary = false,
+    hasPreviousVisit = false,
     showPreviousVisitDot = false,
     isEncounterSaved = false,
 }) => {
@@ -68,7 +68,7 @@ const FloatingActionMenu = ({
             <Box position="relative" display="inline-block">
                 <Tooltip
                     content={
-                        hasPreviousVisitSummary
+                        hasPreviousVisit
                             ? t("common.fab.previousVisit")
                             : t("common.fab.noPreviousVisit")
                     }
@@ -87,16 +87,16 @@ const FloatingActionMenu = ({
                         bg={getButtonBg(isPreviousVisitOpen)}
                         _hover={{ bg: surfaceBg }}
                         className="pill-box-icons"
-                        disabled={!hasPreviousVisitSummary}
-                        opacity={!hasPreviousVisitSummary ? 0.4 : 1}
+                        disabled={!hasPreviousVisit}
+                        opacity={!hasPreviousVisit ? 0.4 : 1}
                         cursor={
-                            !hasPreviousVisitSummary ? "not-allowed" : "pointer"
+                            !hasPreviousVisit ? "not-allowed" : "pointer"
                         }
                     >
                         <FaClock />
                     </IconButton>
                 </Tooltip>
-                {showPreviousVisitDot && hasPreviousVisitSummary && (
+                {showPreviousVisitDot && hasPreviousVisit && (
                     <Box
                         position="absolute"
                         top="0"

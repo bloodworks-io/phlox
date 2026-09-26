@@ -177,6 +177,18 @@ export const usePatientEditor = (initialPatient = null) => {
         const loaded = await buildEncounterFromCandidate(
             candidate,
             selectedDate,
+            // Guard: don't apply a stale summary if the user switched patients
+            (summary) =>
+                setPatient((prev) =>
+                    prev?.isNewEncounter &&
+                    prev.ur_number === candidate.ur_number
+                        ? {
+                              ...prev,
+                              previous_visit_summary: summary ?? undefined,
+                              previous_visit_summary_pending: false,
+                          }
+                        : prev,
+                ),
         );
         setPatient(loaded);
         return loaded;

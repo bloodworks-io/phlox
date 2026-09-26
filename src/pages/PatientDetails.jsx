@@ -676,8 +676,10 @@ const PatientDetails = ({
                 isDocumentOpen={isOpen("document")}
                 isPreviousVisitOpen={isOpen("previous-visit")}
                 hasCriticalReasoning={hasCriticalReasoning}
-                hasPreviousVisitSummary={Boolean(
-                    patient?.previous_visit_summary,
+                hasPreviousVisit={Boolean(
+                    patient?.previous_visit_summary ||
+                        patient?.previous_visit_template_data ||
+                        patient?.previous_visit_summary_pending,
                 )}
                 showPreviousVisitDot={showPreviousVisitDot}
                 isEncounterSaved={Boolean(patient?.id)}
@@ -702,6 +704,9 @@ const PatientDetails = ({
             <PreviousVisitPanel
                 isOpen={isOpen("previous-visit")}
                 previousVisitSummary={patient.previous_visit_summary}
+                previousVisitSummaryPending={
+                    patient.previous_visit_summary_pending
+                }
                 previousVisitTemplateData={patient.previous_visit_template_data}
                 previousVisitTemplateKey={patient.previous_visit_template_key}
                 previousVisitEncounterDate={

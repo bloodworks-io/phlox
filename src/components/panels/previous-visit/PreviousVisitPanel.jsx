@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Flex, Text, Tabs, HStack, VStack } from "@chakra-ui/react";
+import { Box, Flex, Text, Tabs, HStack, VStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
 import FloatingPanel from "../../common/FloatingPanel";
@@ -10,6 +10,7 @@ const PreviousVisitPanel = ({
   isOpen,
   _onClose,
   previousVisitSummary,
+  previousVisitSummaryPending,
   previousVisitTemplateData,
   previousVisitTemplateKey,
   previousVisitEncounterDate,
@@ -156,6 +157,10 @@ const PreviousVisitPanel = ({
                     <Text whiteSpace="pre-wrap" fontSize="sm">
                       {previousVisitSummary}
                     </Text>
+                  ) : previousVisitSummaryPending ? (
+                    <Flex justify="center" py={4}>
+                      <Spinner size="sm" />
+                    </Flex>
                   ) : (
                     <Text color="overlay0" textAlign="center" py={4}>
                       {t("previousVisit.noSummary")}
