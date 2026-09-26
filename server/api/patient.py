@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from server.database.repositories.analysis import generate_previous_visit_summary
 from server.database.repositories.encounter import (
     delete_patient_by_id,
+    get_latest_encounter,
     get_patient_by_id,
     get_patient_history,
     get_patients_by_date,
@@ -304,6 +305,22 @@ def get_patient(id: int, include_history: bool = False):
         if include_history:
             history = get_patient_history(patient["ur_number"])
             patient["history"] = history
+
+        prev = None
+        if patient.get("encounter_date"):
+            try:
+                prev = get_latest_encounter(
+                    patient["ur_number"], exclude_date=patient["encounter_date"]
+                )
+            except Exception as e:
+                logging.warning(f"Error fetching previous encounter for note {id}: {e}")
+        if prev:
+            prev_data = prev.get("template_data")
+            if isinstance(prev_data, str):
+                prev_data = json.loads(prev_data)
+            patient["previous_visit_template_data"] = prev_data or {}
+            patient["previous_visit_template_key"] = prev.get("template_key")
+            patient["previous_visit_encounter_date"] = prev.get("encounter_date")
 
         return JSONResponse(content=patient)
     except HTTPException:
