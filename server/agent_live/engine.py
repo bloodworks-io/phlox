@@ -383,7 +383,9 @@ class LiveAgentEngine:
                 {
                     "role": "system",
                     "content": build_live_system_prompt(
-                        session.patient_context, session.template_fields
+                        session.patient_context,
+                        session.template_fields,
+                        pdf_form_templates=_pdf_form_template_names(),
                     ),
                 }
             )
@@ -571,6 +573,16 @@ def _is_local_provider() -> bool:
     except Exception:
         return False
     return provider.lower() == "local"
+
+
+def _pdf_form_template_names() -> list[str]:
+    """Names of uploaded PDF form templates (empty when the store is unavailable)."""
+    try:
+        from server.pdf_forms.storage import PDFFormStore
+
+        return [t["name"] for t in PDFFormStore().list_templates() if t.get("name")]
+    except Exception:
+        return []
 
 
 def _score_verdict_logprobs(logprobs: Any) -> dict[str, float] | None:
