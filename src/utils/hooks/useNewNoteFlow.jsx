@@ -26,8 +26,10 @@ export const useNewNoteFlow = () => {
             }
             onCloseNewNote();
             navigate("/new-note", {
-                viaModal: true,
-                cameFromSearch: Boolean(cameFromSearch),
+                state: {
+                    viaModal: true,
+                    cameFromSearch: Boolean(cameFromSearch),
+                },
             });
         },
         [resetLetter, onCloseNewNote, navigate],
