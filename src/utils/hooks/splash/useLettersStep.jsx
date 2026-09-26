@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLettersStep } from "../../../utils/splash/validators";
@@ -7,6 +8,7 @@ import { settingsService } from "../../../utils/settings/settingsUtils";
 import { KEYS } from "../../cache/keys";
 
 export const useLettersStep = (currentStep) => {
+  const { t } = useTranslation();
   const [selectedLetterTemplate, setSelectedLetterTemplate] = useState("");
 
   const shouldFetch = currentStep === SPLASH_STEPS.ABOUT_YOU;
@@ -22,13 +24,13 @@ export const useLettersStep = (currentStep) => {
   useEffect(() => {
     if (error) {
       toaster.create({
-        title: "Error fetching letter templates",
-        description: error.message || "Could not load letter templates",
+        title: t("splash.letters.fetchErrorTitle"),
+        description: error.message || t("splash.letters.fetchErrorFallback"),
         type: "error",
         duration: 3000,
       });
     }
-  }, [error]);
+  }, [error, t]);
 
   // Auto-select first option when data arrives and nothing is selected
   useEffect(() => {

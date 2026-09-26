@@ -1,5 +1,6 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const letterApi = {
   fetchLetterTemplates: async () =>
@@ -8,7 +9,7 @@ export const letterApi = {
         const url = await buildApiUrl("/api/letter/templates");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch letter templates",
+      errorMessage: t("settings.letterTemplates.fetchFailed"),
     }),
 
   getLetterTemplate: async (templateId) =>
@@ -17,7 +18,7 @@ export const letterApi = {
         const url = await buildApiUrl(`/api/letter/templates/${templateId}`);
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch letter template",
+      errorMessage: t("api.letters.fetchTemplateFailed"),
     }),
 
   createLetterTemplate: async (template) =>
@@ -30,8 +31,8 @@ export const letterApi = {
           body: JSON.stringify(template),
         });
       },
-      successMessage: "Letter template created successfully",
-      errorMessage: "Failed to create letter template",
+      successMessage: t("settings.letterTemplates.createdSuccessfully"),
+      errorMessage: t("api.letters.createFailed"),
     }),
 
   updateLetterTemplate: async (templateId, template) =>
@@ -44,8 +45,8 @@ export const letterApi = {
           body: JSON.stringify(template),
         });
       },
-      successMessage: "Letter template updated successfully",
-      errorMessage: "Failed to update letter template",
+      successMessage: t("settings.letterTemplates.updatedSuccessfully"),
+      errorMessage: t("api.letters.updateFailed"),
     }),
 
   deleteLetterTemplate: async (templateId) =>
@@ -56,8 +57,8 @@ export const letterApi = {
           method: "DELETE",
         });
       },
-      successMessage: "Letter template deleted successfully",
-      errorMessage: "Failed to delete letter template",
+      successMessage: t("settings.letterTemplates.deletedSuccessfully"),
+      errorMessage: t("settings.letterTemplates.deleteFailed"),
     }),
 
   resetLetterTemplates: async () =>
@@ -68,8 +69,8 @@ export const letterApi = {
           method: "POST",
         });
       },
-      successMessage: "Letter templates reset to defaults",
-      errorMessage: "Failed to reset letter templates",
+      successMessage: t("api.letters.resetToast"),
+      errorMessage: t("api.letters.resetFailed"),
     }),
 
   generateLetter: async ({
@@ -96,7 +97,7 @@ export const letterApi = {
           }),
         });
       },
-      errorMessage: "Failed to generate letter",
+      errorMessage: t("letter.toast.generateFailed"),
     });
   },
 

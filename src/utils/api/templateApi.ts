@@ -1,5 +1,6 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const templateApi = {
   fetchTemplates: async () =>
@@ -8,7 +9,7 @@ export const templateApi = {
         const url = await buildApiUrl("/api/templates");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch templates",
+      errorMessage: t("api.templates.fetchFailed"),
     }),
 
   getDefaultTemplate: async () =>
@@ -17,7 +18,7 @@ export const templateApi = {
         const url = await buildApiUrl("/api/templates/default");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch default template",
+      errorMessage: t("api.templates.fetchDefaultFailed"),
     }),
 
   getTemplateByKey: async (templateKey, { includeDeleted = false } = {}) =>
@@ -27,7 +28,7 @@ export const templateApi = {
         const url = await buildApiUrl(`/api/templates/${templateKey}${query}`);
         return universalFetch(url);
       },
-      errorMessage: `Failed to fetch template: ${templateKey}`,
+      errorMessage: t("api.templates.fetchKeyFailed", { key: templateKey }),
     }),
 
   deleteTemplate: async (templateKey) =>
@@ -38,7 +39,7 @@ export const templateApi = {
           method: "DELETE",
         });
       },
-      errorMessage: `Failed to delete template: ${templateKey}`,
+      errorMessage: t("api.templates.deleteKeyFailed", { key: templateKey }),
     }),
 
   setDefaultTemplate: async (templateKey) =>
@@ -49,8 +50,8 @@ export const templateApi = {
           method: "POST",
         });
       },
-      successMessage: "Default template updated successfully",
-      errorMessage: "Failed to set default template",
+      successMessage: t("api.templates.defaultUpdatedToast"),
+      errorMessage: t("page.settings.toasts.defaultTemplateError"),
     }),
 
   saveTemplates: async (templates) =>
@@ -67,8 +68,8 @@ export const templateApi = {
           body: JSON.stringify(templatesArray),
         });
       },
-      successMessage: "Templates saved successfully",
-      errorMessage: "Failed to save templates",
+      successMessage: t("api.templates.savedToast"),
+      errorMessage: t("api.templates.saveFailed"),
       transformResponse: (data) => ({
         message: data.message,
         details: data.details,
@@ -87,6 +88,6 @@ export const templateApi = {
           body: JSON.stringify({ exampleNote }),
         });
       },
-      errorMessage: "Failed to generate template",
+      errorMessage: t("api.templates.generateFailed"),
     }),
 };

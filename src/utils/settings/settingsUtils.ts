@@ -1,4 +1,5 @@
 import { ragApi } from "../api/ragApi";
+import { t } from "@/i18n";
 import { toaster } from "@/components/ui/toaster";
 import { settingsApi } from "../api/settingsApi";
 import { letterApi } from "../api/letterApi";
@@ -113,16 +114,16 @@ export const settingsService = {
         try {
             await letterApi.resetLetterTemplates();
             toaster.create({
-                title: "Success",
-                description: "Letter templates reset to defaults",
+                title: t("toast.success"),
+                description: t("api.letters.resetToast"),
                 type: "success",
                 duration: 3000,
             });
         } catch (error) {
             console.error("Failed to reset letter templates:", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to reset letter templates",
+                title: t("toast.error"),
+                description: t("api.letters.resetFailed"),
                 type: "error",
                 duration: 3000,
             });
@@ -143,9 +144,8 @@ export const settingsService = {
 
             if (toast) {
                 toaster.create({
-                    title: "Success",
-                    description:
-                        "RAG database cleared and embedding model updated",
+                    title: t("toast.success"),
+                    description: t("settings.rag.dbClearedAndUpdated"),
                     type: "success",
                     duration: 3000,
                 });
@@ -153,8 +153,8 @@ export const settingsService = {
         } catch (error) {
             if (toast) {
                 toaster.create({
-                    title: "Error",
-                    description: "Failed to clear RAG database",
+                    title: t("toast.error"),
+                    description: t("api.settings.clearRagDatabaseFailed"),
                     type: "error",
                     duration: 3000,
                 });
@@ -187,8 +187,10 @@ export const settingsService = {
 
             if (toast && result) {
                 toaster.create({
-                    title: "Success",
-                    description: `Re-embedded ${result.total_chunks_re_embedded || "all"} chunks with new model`,
+                    title: t("toast.success"),
+                    description: t("settings.rag.reembedded", {
+                        chunks: result.total_chunks_re_embedded || "all",
+                    }),
                     type: "success",
                     duration: 3000,
                 });
@@ -198,8 +200,8 @@ export const settingsService = {
         } catch (error) {
             if (toast) {
                 toaster.create({
-                    title: "Error",
-                    description: "Failed to re-embed documents",
+                    title: t("toast.error"),
+                    description: t("api.rag.reEmbedFailed"),
                     type: "error",
                     duration: 3000,
                 });
@@ -230,7 +232,7 @@ export const settingsService = {
             if (toast) {
                 settingsHelpers.showSuccessToast(
                     toast,
-                    "Advanced options reset to defaults",
+                    t("page.settings.toasts.optionsReset"),
                 );
             }
         } catch (error) {
@@ -238,7 +240,7 @@ export const settingsService = {
             if (toast) {
                 settingsHelpers.showErrorToast(
                     toast,
-                    "Failed to reset advanced options",
+                    t("page.settings.toasts.optionsResetError"),
                 );
             }
             throw error;

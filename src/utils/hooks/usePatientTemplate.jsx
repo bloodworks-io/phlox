@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { useTemplateSelection, useTemplate } from "../templates/templateContext";
 import { latestInFamily } from "../templates/templateFamily";
@@ -20,6 +21,7 @@ export const usePatientTemplate = ({
     initialPatient,
     isSearchLoading,
 }) => {
+    const { t } = useTranslation();
     const { showWarningToast } = useToastMessage();
 
     const {
@@ -37,13 +39,13 @@ export const usePatientTemplate = ({
     useEffect(() => {
         if (templateError) {
             toaster.create({
-                title: "Template Error",
+                title: t("patient.toast.templateError"),
                 description: templateError,
                 type: "error",
                 duration: 5000,
             });
         }
-    }, [templateError]);
+    }, [templateError, t]);
 
     // Resolve the active template for the current encounter context
     useEffect(() => {
@@ -110,7 +112,9 @@ export const usePatientTemplate = ({
 
             if (isSearchedPatient) {
                 showWarningToast(
-                    `Using ${fallback.template_name} template for this new encounter.`,
+                    t("patient.toast.usingTemplate", {
+                        name: fallback.template_name,
+                    }),
                 );
             }
         };
@@ -127,6 +131,7 @@ export const usePatientTemplate = ({
         selectTemplate,
         setPatient,
         showWarningToast,
+        t,
     ]);
 
     // Map historical encounter data onto the current template's fields

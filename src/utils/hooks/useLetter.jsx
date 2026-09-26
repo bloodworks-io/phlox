@@ -1,9 +1,11 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { letterApi } from "../api/letterApi";
 import { validateLetterData } from "../helpers/validationHelpers";
 import { useToastMessage } from "./UseToastMessage";
 
 export const useLetter = (setIsModified) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [finalCorrespondence, setFinalCorrespondence] = useState("");
     const [letterContext, setLetterContext] = useState([]);
@@ -16,7 +18,7 @@ export const useLetter = (setIsModified) => {
         // We require both template_data and a template key
         if (!patient?.template_data || !patient?.template_key) {
             showErrorToast(
-                "Patient data and template are required for letter generation",
+                t("letter.toast.dataRequired"),
             );
             return;
         }
@@ -60,10 +62,10 @@ export const useLetter = (setIsModified) => {
             });
             setFinalCorrespondence(response.letter);
             setIsModified(true);
-            showSuccessToast("Letter generated successfully");
+            showSuccessToast(t("letter.toast.generated"));
         } catch (error) {
             console.error("Error generating letter:", error);
-            showErrorToast(error.message || "Failed to generate letter");
+            showErrorToast(error.message || t("letter.toast.generateFailed"));
         } finally {
             setLoading(false);
         }
@@ -71,7 +73,7 @@ export const useLetter = (setIsModified) => {
 
     const saveLetter = async (noteId) => {
         if (!noteId || !finalCorrespondence) {
-            showErrorToast("Patient ID and letter content are required");
+            showErrorToast(t("letter.toast.saveRequired"));
             return;
         }
 
@@ -81,11 +83,11 @@ export const useLetter = (setIsModified) => {
             setIsModified(false);
             setSaveState("saved");
             setTimeout(() => setSaveState("idle"), 2000);
-            showSuccessToast("Letter saved successfully");
+            showSuccessToast(t("letter.toast.saved"));
         } catch (error) {
             console.error("Error saving letter:", error);
             setSaveState("idle");
-            showErrorToast(error.message || "Failed to save letter");
+            showErrorToast(error.message || t("letter.toast.saveFailed"));
             throw error; // Propagate error to handle in component
         }
     };
@@ -141,10 +143,10 @@ export const useLetter = (setIsModified) => {
             setFinalCorrespondence(response.letter);
             setIsModified(true);
             onSuccess();
-            showSuccessToast("Letter refined successfully");
+            showSuccessToast(t("letter.toast.refined"));
         } catch (error) {
             console.error("Refinement error:", error);
-            showErrorToast("Failed to refine letter");
+            showErrorToast(t("letter.toast.refineFailed"));
         } finally {
             setLoading(false);
         }
@@ -159,13 +161,13 @@ export const useLetter = (setIsModified) => {
         try {
             const response = await letterApi.fetchLetter(noteId);
             setFinalCorrespondence(
-                response.letter || "No letter attached to encounter",
+                response.letter || t("letter.toast.noneAttached"),
             );
             setIsModified(false);
         } catch (error) {
             console.error("Error loading letter:", error);
-            setFinalCorrespondence("No letter attached to encounter");
-            showErrorToast("Failed to load letter");
+            setFinalCorrespondence(t("letter.toast.noneAttached"));
+            showErrorToast(t("letter.toast.loadFailed"));
         } finally {
             setLoading(false);
         }

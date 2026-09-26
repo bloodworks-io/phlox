@@ -1,4 +1,5 @@
 import { localModelApi } from "../api/localModelApi";
+import { t } from "@/i18n";
 import { toaster } from "@/components/ui/toaster";
 
 /**
@@ -21,8 +22,8 @@ export async function downloadLlmModel(modelId, { onProgress, onStart }) {
         try {
           await localModelApi.restartLlamaServer();
           toaster.create({
-            title: "Success",
-            description: "Model downloaded and server restarted",
+            title: t("toast.success"),
+            description: t("localModels.toast.downloadedAndRestarted"),
             type: "success",
             duration: 3000,
           });
@@ -30,8 +31,8 @@ export async function downloadLlmModel(modelId, { onProgress, onStart }) {
           // Model downloaded but restart failed - still notify user of success
           console.error("Error restarting llama server:", restartError);
           toaster.create({
-            title: "Model Downloaded",
-            description: "Model downloaded. Please restart the app to use it.",
+            title: t("localModels.toast.modelDownloaded"),
+            description: t("localModels.toast.restartNeeded"),
             type: "info",
             duration: 5000,
           });
@@ -43,8 +44,10 @@ export async function downloadLlmModel(modelId, { onProgress, onStart }) {
   } catch (error) {
     console.error("Error downloading model:", error);
     toaster.create({
-      title: "Error",
-      description: `Failed to download model: ${error.message}`,
+      title: t("toast.error"),
+      description: t("localModels.toast.downloadFailed", {
+        message: error.message,
+      }),
       type: "error",
       duration: 5000,
     });
@@ -72,8 +75,10 @@ export async function downloadWhisperModel(modelId, { onProgress, onStart }) {
         try {
           await localModelApi.restartWhisperServer();
           toaster.create({
-            title: "Success",
-            description: `Whisper model ${modelId} downloaded and server restarted`,
+            title: t("toast.success"),
+            description: t("localModels.toast.whisperDownloadedAndRestarted", {
+              model: modelId,
+            }),
             type: "success",
             duration: 3000,
           });
@@ -81,8 +86,10 @@ export async function downloadWhisperModel(modelId, { onProgress, onStart }) {
           // Model downloaded but restart failed - still notify user of success
           console.error("Error restarting Whisper server:", restartError);
           toaster.create({
-            title: "Model Downloaded",
-            description: `Whisper model ${modelId} downloaded. Please restart the app to use it.`,
+            title: t("localModels.toast.modelDownloaded"),
+            description: t("localModels.toast.whisperRestartNeeded", {
+              model: modelId,
+            }),
             type: "info",
             duration: 5000,
           });
@@ -94,8 +101,10 @@ export async function downloadWhisperModel(modelId, { onProgress, onStart }) {
   } catch (error) {
     console.error("Error downloading Whisper model:", error);
     toaster.create({
-      title: "Error",
-      description: `Failed to download Whisper model: ${error.message}`,
+      title: t("toast.error"),
+      description: t("localModels.toast.whisperDownloadFailed", {
+        message: error.message,
+      }),
       type: "error",
       duration: 5000,
     });
@@ -117,16 +126,16 @@ export async function downloadEmbeddingModel({ onProgress, onStart }) {
         try {
           await localModelApi.restartEmbeddingServer();
           toaster.create({
-            title: "Success",
-            description: "Embedding model downloaded",
+            title: t("toast.success"),
+            description: t("localModels.toast.embeddingDownloaded"),
             type: "success",
             duration: 3000,
           });
         } catch (restartError) {
           console.error("Error restarting embedding server:", restartError);
           toaster.create({
-            title: "Model Downloaded",
-            description: "Embedding model downloaded. Please restart the app.",
+            title: t("localModels.toast.modelDownloaded"),
+            description: t("localModels.toast.embeddingRestartNeeded"),
             type: "info",
             duration: 5000,
           });
@@ -138,8 +147,10 @@ export async function downloadEmbeddingModel({ onProgress, onStart }) {
   } catch (error) {
     console.error("Error downloading embedding model:", error);
     toaster.create({
-      title: "Error",
-      description: `Failed to download embedding model: ${error.message}`,
+      title: t("toast.error"),
+      description: t("localModels.toast.embeddingDownloadFailed", {
+        message: error.message,
+      }),
       type: "error",
       duration: 5000,
     });

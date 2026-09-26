@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useDisclosure } from "@chakra-ui/react";
 import useSWR from "swr";
 import { toaster } from "@/components/ui/toaster";
@@ -19,6 +20,7 @@ export const useScribeConsent = ({
     startRecording,
     onRequireDemographics,
 }) => {
+    const { t } = useTranslation();
     const { data: scribeConsent = EMPTY_CONSENT, mutate: mutateConsent } =
         useSWR(
             urNumber ? KEYS.scribeConsent(urNumber) : null,
@@ -54,13 +56,13 @@ export const useScribeConsent = ({
             await startRecording();
         } catch (error) {
             toaster.create({
-                title: "Could not record consent",
+                title: t("scribe.toast.consentSaveFailed"),
                 description: error.message,
                 type: "error",
                 ...DEFAULT_TOAST_CONFIG,
             });
         }
-    }, [urNumber, onCloseConsent, startRecording, mutateConsent]);
+    }, [urNumber, onCloseConsent, startRecording, mutateConsent, t]);
 
     const handleConsentDeclined = useCallback(async () => {
         if (!urNumber) return;
@@ -70,13 +72,13 @@ export const useScribeConsent = ({
             onCloseConsent();
         } catch (error) {
             toaster.create({
-                title: "Could not record decision",
+                title: t("scribe.toast.decisionSaveFailed"),
                 description: error.message,
                 type: "error",
                 ...DEFAULT_TOAST_CONFIG,
             });
         }
-    }, [urNumber, onCloseConsent, mutateConsent]);
+    }, [urNumber, onCloseConsent, mutateConsent, t]);
 
     return {
         consent: scribeConsent,

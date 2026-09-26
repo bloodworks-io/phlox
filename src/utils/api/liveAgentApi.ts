@@ -1,6 +1,7 @@
 // API client for the live scribe agent backend.
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const liveAgentApi = {
     startSession: async (payload) => {
@@ -14,7 +15,7 @@ export const liveAgentApi = {
                     signal,
                 });
             },
-            errorMessage: "Could not start live session",
+            errorMessage: t("api.liveAgent.startFailed"),
         });
     },
 
@@ -29,7 +30,7 @@ export const liveAgentApi = {
             body: formData,
         });
         if (!response.ok) {
-            throw new Error(`Audio upload failed (${response.status})`);
+            throw new Error(t("api.liveAgent.audioUploadFailed", { status: response.status }) as string);
         }
         return true;
     },
@@ -44,7 +45,7 @@ export const liveAgentApi = {
             body: JSON.stringify({ fields }),
         });
         if (!response.ok) {
-            throw new Error(`Feedback failed (${response.status})`);
+            throw new Error(t("api.liveAgent.feedbackFailed", { status: response.status }) as string);
         }
         return true;
     },
@@ -59,7 +60,7 @@ export const liveAgentApi = {
             body: JSON.stringify({}),
         });
         if (!response.ok) {
-            throw new Error(`Tidy request failed (${response.status})`);
+            throw new Error(t("api.liveAgent.tidyFailed", { status: response.status }) as string);
         }
         return true;
     },
@@ -74,7 +75,7 @@ export const liveAgentApi = {
             body: JSON.stringify({ jobs }),
         });
         if (!response.ok) {
-            throw new Error(`Jobs push failed (${response.status})`);
+            throw new Error(t("api.liveAgent.pushJobsFailed", { status: response.status }) as string);
         }
         return true;
     },
@@ -92,7 +93,7 @@ export const liveAgentApi = {
                     signal,
                 });
             },
-            errorMessage: "Could not stop live session",
+            errorMessage: t("api.liveAgent.stopFailed"),
         });
     },
 
@@ -107,7 +108,7 @@ export const liveAgentApi = {
         const response = await universalFetch(url, { method: "GET" });
 
         if (!response.ok) {
-            throw new Error(`Event stream failed (${response.status})`);
+            throw new Error(t("api.liveAgent.streamFailed", { status: response.status }) as string);
         }
 
         const reader = response.body.getReader();

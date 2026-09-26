@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import useSWR from "swr";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTranscriptionStep } from "../../../utils/splash/validators";
@@ -10,6 +11,7 @@ import { useDebounce } from "../useDebounce";
 import { KEYS } from "../../cache/keys";
 
 export const useTranscriptionStep = (currentStep, inferenceMode = "remote", language = "en") => {
+    const { t } = useTranslation();
 
     // Remote mode state
     const [whisperBaseUrl, setWhisperBaseUrl] = useState(
@@ -66,15 +68,15 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote", lang
     useEffect(() => {
         if (whisperError) {
             toaster.create({
-                title: "Error fetching Whisper models",
+                title: t("splash.transcription.fetchErrorTitle"),
                 description:
                     whisperError.message ||
-                    "Could not connect or provider returned an error.",
+                    t("splash.llm.connectErrorFallback"),
                 type: "error",
                 duration: 3000,
             });
         }
-    }, [whisperError]);
+    }, [whisperError, t]);
 
     // Local mode state
     const [localWhisperModels, setLocalWhisperModels] = useState([]);
@@ -113,15 +115,15 @@ export const useTranscriptionStep = (currentStep, inferenceMode = "remote", lang
         } catch (error) {
             console.error("Error fetching local Whisper models:", error);
             toaster.create({
-                title: "Error fetching local Whisper models",
+                title: t("splash.transcription.localFetchErrorTitle"),
                 description:
                     error.message ||
-                    "Could not retrieve local Whisper model list.",
+                    t("splash.transcription.localFetchErrorFallback"),
                 type: "error",
                 duration: 3000,
             });
         }
-    }, [inferenceMode]);
+    }, [inferenceMode, t]);
 
     // Download local Whisper model
     const downloadWhisperModel = useCallback(

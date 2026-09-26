@@ -1,6 +1,7 @@
 // API functions for PDF form template operations.
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const pdfFormsApi = {
   fetchTemplates: async () => {
@@ -9,7 +10,7 @@ export const pdfFormsApi = {
         const url = await buildApiUrl("/api/pdf-forms/templates");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch form templates",
+      errorMessage: t("api.pdfForms.fetchTemplatesFailed"),
     });
   },
 
@@ -19,7 +20,7 @@ export const pdfFormsApi = {
         const url = await buildApiUrl(`/api/pdf-forms/templates/${id}`);
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch template",
+      errorMessage: t("api.pdfForms.fetchTemplateFailed"),
     });
   },
 
@@ -32,7 +33,7 @@ export const pdfFormsApi = {
           body: formData,
         });
       },
-      errorMessage: "Failed to upload template",
+      errorMessage: t("api.pdfForms.uploadFailed"),
     });
   },
 
@@ -45,8 +46,8 @@ export const pdfFormsApi = {
           body: formData,
         });
       },
-      successMessage: "PDF replaced",
-      errorMessage: "Failed to replace PDF",
+      successMessage: t("forms.pdfReplaced"),
+      errorMessage: t("api.pdfForms.replacePdfFailed"),
     });
   },
 
@@ -58,8 +59,8 @@ export const pdfFormsApi = {
           method: "DELETE",
         });
       },
-      successMessage: "Template deleted",
-      errorMessage: "Failed to delete template",
+      successMessage: t("api.pdfForms.deletedToast"),
+      errorMessage: t("settings.templates.deleteFailed"),
     });
   },
 
@@ -67,7 +68,7 @@ export const pdfFormsApi = {
     const url = await buildApiUrl(`/api/pdf-forms/templates/${id}/pdf`);
     const response = await universalFetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+      throw new Error(t("api.pdfForms.fetchPdfFailed", { status: response.statusText }) as string);
     }
     return response.arrayBuffer();
   },
@@ -82,8 +83,8 @@ export const pdfFormsApi = {
           body: JSON.stringify({ fields }),
         });
       },
-      successMessage: "Fields saved",
-      errorMessage: "Failed to save fields",
+      successMessage: t("api.pdfForms.fieldsSavedToast"),
+      errorMessage: t("api.pdfForms.saveFieldsFailed"),
     });
   },
 
@@ -99,7 +100,7 @@ export const pdfFormsApi = {
         });
       },
       timeout: 240000,
-      errorMessage: "Failed to detect fields",
+      errorMessage: t("api.pdfForms.detectFieldsFailed"),
     });
   },
 };

@@ -1,5 +1,6 @@
 // Helper functions for settings component
 import { toaster } from "@/components/ui/toaster";
+import { t } from "@/i18n";
 export const settingsHelpers = {
   processOptionsData: (data) => ({
     letter: {
@@ -10,7 +11,7 @@ export const settingsHelpers = {
   showSuccessToast: (toast, message) => {
     if (toast) {
       toaster.create({
-        title: "Success",
+        title: t("toast.success"),
         description: message,
         type: "success",
         duration: 3000,
@@ -21,7 +22,7 @@ export const settingsHelpers = {
   showErrorToast: (toast, message) => {
     if (toast) {
       toaster.create({
-        title: "Error",
+        title: t("toast.error"),
         description: message,
         type: "error",
         duration: 3000,

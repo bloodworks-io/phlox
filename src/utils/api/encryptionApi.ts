@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { t } from "@/i18n";
 
 /**
  * Encryption API for Tauri commands
@@ -105,31 +106,31 @@ export const calculatePassphraseStrength = (passphrase) => {
   const feedback = [];
 
   if (passphrase.length >= 12) score += 1;
-  else feedback.push("Use at least 12 characters");
+  else feedback.push(t("api.encryption.minLength"));
 
   if (passphrase.length >= 16) score += 1;
-  else if (passphrase.length >= 12) feedback.push("16+ characters is better");
+  else if (passphrase.length >= 12) feedback.push(t("api.encryption.longerBetter"));
 
   if (/[a-z]/.test(passphrase) && /[A-Z]/.test(passphrase)) score += 1;
-  else feedback.push("Mix uppercase and lowercase");
+  else feedback.push(t("api.encryption.mixCase"));
 
   if (/\d/.test(passphrase)) score += 1;
-  else feedback.push("Add numbers");
+  else feedback.push(t("api.encryption.addNumbers"));
 
   if (/[^a-zA-Z0-9]/.test(passphrase)) score += 1;
-  else feedback.push("Add special characters");
+  else feedback.push(t("api.encryption.addSpecial"));
 
   // Cap at 4
   const finalScore = Math.min(score, 4);
 
-  let strength = "Weak";
-  if (finalScore >= 4) strength = "Strong";
-  else if (finalScore >= 3) strength = "Good";
-  else if (finalScore >= 2) strength = "Fair";
+  let strength = t("api.encryption.strengthWeak");
+  if (finalScore >= 4) strength = t("api.encryption.strengthStrong");
+  else if (finalScore >= 3) strength = t("api.encryption.strengthGood");
+  else if (finalScore >= 2) strength = t("api.encryption.strengthFair");
 
   return {
     score: finalScore,
     strength,
-    feedback: feedback.length > 0 ? feedback : ["Looks good!"],
+    feedback: feedback.length > 0 ? feedback : [t("api.encryption.looksGood")],
   };
 };

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AudioRecorder } from "../audioRecorder";
 import { liveAgentApi } from "../api/liveAgentApi";
 import { toaster } from "@/components/ui/toaster";
@@ -19,6 +20,7 @@ export const useLiveAgent = ({
 
     onNoteContentChanged,
 }) => {
+    const { t } = useTranslation();
     const [status, setStatus] = useState("idle"); // idle|connecting|live|stopping|review|error
     const [agentState, setAgentState] = useState("listening");
     const [transcripts, setTranscripts] = useState([]);
@@ -124,7 +126,12 @@ export const useLiveAgent = ({
                         ...prev,
                         [event.field_key]: Date.now(),
                     }));
-                    pushStatus(`Note updated: ${event.field_key}`, "edit");
+                    pushStatus(
+                        t("liveAgent.status.noteUpdated", {
+                            field: event.field_key,
+                        }),
+                        "edit",
+                    );
                     noteChangedRef.current?.();
                     break;
                 // Replayed state on (re)connect: apply without the flash.
@@ -162,7 +169,13 @@ export const useLiveAgent = ({
                             : [...prev, artifact],
                     );
                     pushStatus(
-                        `Staged: ${artifact.title || artifact.template_name || artifact.filename || "artifact"}`,
+                        t("liveAgent.status.staged", {
+                            name:
+                                artifact.title ||
+                                artifact.template_name ||
+                                artifact.filename ||
+                                t("liveAgent.status.artifact"),
+                        }),
                         "artifact",
                     );
                     noteChangedRef.current?.();
@@ -170,14 +183,14 @@ export const useLiveAgent = ({
                 }
                 case "jobs_staged":
                     setStagedJobs(event.jobs || []);
-                    pushStatus("Wrap-up jobs updated", "command");
+                    pushStatus(t("liveAgent.status.jobsUpdated"), "command");
                     break;
                 case "request_wrap_up":
-                    pushStatus("Opening wrap-up…", "command");
+                    pushStatus(t("liveAgent.status.openingWrapUp"), "command");
                     wrapUpRef.current?.();
                     break;
                 case "letter_saved":
-                    pushStatus("Letter saved to the encounter", "command");
+                    pushStatus(t("liveAgent.status.letterSaved"), "command");
                     letterSavedRef.current?.();
                     break;
                 case "error":
@@ -185,7 +198,7 @@ export const useLiveAgent = ({
                     if (!toastRef.current) {
                         toastRef.current = true;
                         toaster.create({
-                            title: "Live agent error",
+                            title: t("liveAgent.toast.error"),
                             description: event.content,
                             type: "error",
                             duration: 5000,
@@ -203,7 +216,7 @@ export const useLiveAgent = ({
                     break;
             }
         },
-        [setPatient, pushStatus, decodeBinaryArtifact, settleAfterSession],
+        [setPatient, pushStatus, decodeBinaryArtifact, settleAfterSession, t],
     );
 
     const consumeEvents = useCallback(
@@ -223,14 +236,14 @@ export const useLiveAgent = ({
                     recorderRef.current?.stop()?.catch(() => {});
                     recorderRef.current = null;
                     setLastError(
-                        "The event stream ended unexpectedly. Audio capture stopped.",
+                        t("liveAgent.error.streamEnded"),
                     );
                     setStatus("error");
                     setBacklog(0);
                 }
             }
         },
-        [handleEvent],
+        [handleEvent, t],
     );
 
     const startLive = useCallback(async () => {
@@ -264,8 +277,10 @@ export const useLiveAgent = ({
                     if (!toastRef.current) {
                         toastRef.current = true;
                         toaster.create({
-                            title: "Live audio upload failed",
-                            description: "Some speech may be missing from the live note.",
+                            title: t("liveAgent.toast.audioUploadFailed"),
+                            description: t(
+                                "liveAgent.toast.audioUploadFailedDescription",
+                            ),
                             type: "warning",
                             duration: 5000,
                         });
@@ -293,10 +308,10 @@ export const useLiveAgent = ({
             recorderRef.current?.stop()?.catch(() => {});
             recorderRef.current = null;
             setStatus("error");
-            setLastError(error?.message || "Unknown error");
+            setLastError(error?.message || t("liveAgent.error.unknown"));
             return false;
         }
-    }, [consumeEvents]);
+    }, [consumeEvents, t]);
 
     const stopLive = useCallback(async () => {
         const sessionId = sessionIdRef.current;

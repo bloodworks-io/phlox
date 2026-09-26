@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Box } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { mutate } from "swr";
 import { useColorMode } from "./components/ui/color-mode";
 import { useLocation } from "react-router";
@@ -21,6 +22,7 @@ import { useNewNoteFlow } from "./utils/hooks/useNewNoteFlow";
 import { usePatientScope } from "./utils/hooks/usePatientScope";
 
 function AppContent({ setIsInitializing }) {
+    const { t } = useTranslation();
     const [isModified, setIsModified] = useState(false);
     const [isFromOutstandingJobs, setIsFromOutstandingJobs] = useState(false);
     const { isAdmin, patientScope, setPatientScope } = usePatientScope();
@@ -154,9 +156,9 @@ function AppContent({ setIsInitializing }) {
                 isOpen={nav.isLeaveOpen}
                 onClose={nav.cancelNavigation}
                 onConfirm={nav.confirmNavigation}
-                title="Confirm Navigation"
-                body="Are you sure you want to leave this page? Unsaved changes will be lost."
-                confirmLabel="Leave"
+                title={t("navigation.confirmTitle")}
+                body={t("navigation.leaveWarning")}
+                confirmLabel={t("navigation.leave")}
             />
         </>
     );

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { chatApi } from "../api/chatApi";
 import { formatPatientContext } from "../chat/messageUtils";
 
@@ -9,53 +10,53 @@ const RAG_SYSTEM_MESSAGE = {
         "The user is a qualified healthcare professional. They will ask you general questions about medical conditions, treatment and guidelines. You are an informational and educational assistant only; you are NOT a clinical decision support tool. Do not provide definitive diagnoses or treatment recommendations. All responses are general and educational; the clinician is solely responsible for all clinical decisions and must rely on their own professional judgement and current authoritative guidelines.",
 };
 
-const getClinicianToolActionLabel = (toolName = "") => {
+const getClinicianToolActionLabel = (toolName = "", t) => {
     const normalized = String(toolName).toLowerCase();
 
     // Literature/Search tools
     if (normalized.includes("pubmed")) {
-        return "Searching PubMed evidence";
+        return t("chat.toolAction.searchingPubMed");
     }
     if (normalized.includes("wiki")) {
-        return "Reviewing reference material";
+        return t("chat.toolAction.reviewingReference");
     }
     if (normalized.includes("literature")) {
-        return "Searching medical literature";
+        return t("chat.toolAction.searchingLiterature");
     }
 
     // Transcript
     if (normalized.includes("transcript")) {
-        return "Reviewing encounter transcript";
+        return t("chat.toolAction.reviewingTranscript");
     }
 
     // Patient tools
     if (normalized.includes("create_note")) {
-        return "Creating patient note";
+        return t("chat.toolAction.creatingNote");
     }
     if (normalized.includes("get_previous_encounter")) {
-        return "Fetching previous encounter";
+        return t("chat.toolAction.fetchingEncounter");
     }
     if (normalized.includes("search_patient_notes")) {
-        return "Searching patient notes";
+        return t("chat.toolAction.searchingNotes");
     }
     if (normalized.includes("get_patient_jobs")) {
-        return "Fetching patient tasks";
+        return t("chat.toolAction.fetchingTasks");
     }
 
     // Job/Task tools
     if (normalized.includes("todo_list")) {
-        return "Accessing todo list";
+        return t("chat.toolAction.accessingTodos");
     }
     if (normalized.includes("list_outstanding_jobs")) {
-        return "Listing outstanding tasks";
+        return t("chat.toolAction.listingTasks");
     }
     if (normalized.includes("complete_job")) {
-        return "Completing task";
+        return t("chat.toolAction.completingTask");
     }
 
     // Direct response
     if (normalized.includes("direct_response")) {
-        return "Drafting response";
+        return t("chat.toolAction.drafting");
     }
 
     // MCP tools - format: mcp_{server_name}_{tool_name}
@@ -64,15 +65,19 @@ const getClinicianToolActionLabel = (toolName = "") => {
         if (parts.length >= 3) {
             const serverName = parts[1];
             const mcpToolName = parts.slice(2).join("_");
-            return `Using ${mcpToolName} (${serverName})`;
+            return t("chat.toolAction.usingTool", {
+                tool: mcpToolName,
+                server: serverName,
+            });
         }
-        return `Using MCP tool: ${normalized}`;
+        return t("chat.toolAction.usingMcpTool", { name: normalized });
     }
 
-    return "Processing request";
+    return t("chat.toolAction.processing");
 };
 
 export const useChat = ({ mode = "patient" } = {}) => {
+    const { t } = useTranslation();
     const [chatExpanded, setChatExpanded] = useState(false);
     const [messages, setMessages] = useState([]);
     const [userInput, setUserInput] = useState("");
@@ -214,8 +219,10 @@ export const useChat = ({ mode = "patient" } = {}) => {
                             .trim()
                             .replace(/"/g, "'");
 
-                        const actionLabel =
-                            getClinicianToolActionLabel(toolName);
+                        const actionLabel = getClinicianToolActionLabel(
+                            toolName,
+                            t,
+                        );
                         const clinicianStatusText = toolQuery
                             ? `${actionLabel}: ${toolQuery}`
                             : actionLabel;
@@ -297,13 +304,18 @@ export const useChat = ({ mode = "patient" } = {}) => {
                 console.error("Error in chat:", error);
                 setMessages((prev) => [
                     ...prev,
-                    { role: "assistant", content: `Error: ${error.message}` },
+                    {
+                        role: "assistant",
+                        content: t("chat.errorBubble", {
+                            message: error.message,
+                        }),
+                    },
                 ]);
             } finally {
                 setLoading(false);
             }
         },
-        [messages, mode],
+        [messages, mode, t],
     );
 
     const clearChat = useCallback(() => {
