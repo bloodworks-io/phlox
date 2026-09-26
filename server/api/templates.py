@@ -64,6 +64,24 @@ def get_template(template_key: str, include_deleted: bool = False):
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
+def _reassign_default_after_delete(deleted_key: str) -> None:
+    """Point the default at a live template: the protected base of the
+    deleted fork when available, else the first live protected template."""
+    candidates = []
+    fork_base = get_fork_base(deleted_key)
+    if fork_base is not None:
+        candidates.append(f"{fork_base}_01")
+    candidates += [
+        t["template_key"]
+        for t in get_all_templates()
+        if _is_protected(t["template_key"])
+    ]
+    for key in candidates:
+        if template_exists(key):
+            set_default_template(key)
+            return
+
+
 @router.delete("/{template_key}")
 def delete_template(template_key: str):
     """Delete a template if it's not a default template."""
@@ -74,14 +92,10 @@ def delete_template(template_key: str):
         success = soft_delete_template(template_key)
         if success:
             try:
-                fork_base = get_fork_base(template_key)
-                if (
-                    fork_base is not None
-                    and config_manager.get_default_template_key() == template_key
-                ):
-                    set_default_template(f"{fork_base}_01")
+                if config_manager.get_default_template_key() == template_key:
+                    _reassign_default_after_delete(template_key)
             except Exception as e:  # pragma: no cover - never block the delete
-                logging.warning(f"Default repoint after fork delete failed: {e}")
+                logging.warning(f"Default repoint after delete failed: {e}")
             return JSONResponse(content={"message": f"Template {template_key} deleted"})
         raise HTTPException(status_code=404, detail="Template not found")
     except HTTPException as he:

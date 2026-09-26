@@ -1,5 +1,4 @@
 import React, {
-  useState,
   useRef,
   forwardRef,
   useImperativeHandle,
@@ -17,8 +16,7 @@ import {
 import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
-import { getTemplateFamilyBase } from "../../utils/templates/templateService";
-import { patientApi } from "../../utils/api/patientApi";
+import { useTemplateChange } from "../../utils/hooks/useTemplateChange";
 import ConfirmDialog from "../common/ConfirmDialog";
 
 const Summary = forwardRef(
@@ -51,9 +49,12 @@ const Summary = forwardRef(
     } = useTemplateSelection();
 
     const textareasRefs = useRef({});
-    const [isTemplateChangeModalOpen, setIsTemplateChangeModalOpen] =
-      useState(false);
-    const [pendingTemplateKey, setPendingTemplateKey] = useState(null);
+    const {
+        isChangeModalOpen: isTemplateChangeModalOpen,
+        requestTemplateChange,
+        cancelTemplateChange,
+        confirmTemplateChange,
+    } = useTemplateChange({ patient, setPatient, selectTemplate });
 
     const handleTemplateChange = async (e) => {
       const newTemplateKey = e.target.value;
@@ -68,53 +69,7 @@ const Summary = forwardRef(
         return;
       }
 
-      setPendingTemplateKey(newTemplateKey);
-      setIsTemplateChangeModalOpen(true);
-    };
-
-    const confirmTemplateChange = async () => {
-      console.log("confirmTemplateChange called", {
-        ur_number: patient?.ur_number,
-        pendingTemplateKey,
-      });
-
-      // If patient has a UR number, fetch persistent fields for the new template type
-      if (patient?.ur_number) {
-        try {
-
-          const baseTemplateKey = getTemplateFamilyBase(pendingTemplateKey);
-          console.log("Fetching history for template:", baseTemplateKey);
-
-          const history = await patientApi.fetchPatientHistoryByTemplate(
-            patient.ur_number,
-            baseTemplateKey,
-          );
-
-          console.log("History result:", history);
-
-          if (history && history.length > 0) {
-            // Merge persistent fields from most recent note of this type
-            const mostRecent = history[0];
-            setPatient((prev) => ({
-              ...prev,
-              template_key: pendingTemplateKey,
-              template_data: {
-                ...mostRecent.template_data,
-              },
-            }));
-            setIsTemplateChangeModalOpen(false);
-            await selectTemplate(pendingTemplateKey);
-            return;
-          }
-        } catch (error) {
-          console.error("Error fetching history for template:", error);
-        }
-      }
-
-      // Fallback: just change template without pre-filling
-      console.log("Falling back to simple template change");
-      selectTemplate(pendingTemplateKey);
-      setIsTemplateChangeModalOpen(false);
+      requestTemplateChange(newTemplateKey);
     };
 
     const handleTemplateDataChange = (fieldKey, value) => {
@@ -364,11 +319,11 @@ const Summary = forwardRef(
         </Box>
         <ConfirmDialog
           isOpen={isTemplateChangeModalOpen}
-          onClose={() => setIsTemplateChangeModalOpen(false)}
+          onClose={cancelTemplateChange}
           onConfirm={confirmTemplateChange}
-          title={t("navigation.confirmTitle")}
-          body={t("navigation.leaveWarning")}
-          confirmLabel={t("navigation.leave")}
+          title={t("patient.templateChangeTitle")}
+          body={t("patient.templateChangeBody")}
+          confirmLabel={t("patient.templateChangeConfirm")}
         />
       </>
     );

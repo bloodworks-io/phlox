@@ -71,15 +71,18 @@ export const usePatientTemplate = ({
             }
 
             if (!patient.template_key) {
-                // New encounter with no pre-fill: apply the default template
-                if (defaultTemplate?.template_key) {
-                    await selectTemplate(defaultTemplate.template_key);
+
+                const fallbackKey =
+                    defaultTemplate?.template_key ??
+                    templates[0]?.template_key;
+                if (fallbackKey) {
+                    await selectTemplate(fallbackKey);
                     setPatient((prev) =>
-                        prev.template_key === defaultTemplate.template_key
+                        prev.template_key === fallbackKey
                             ? prev
                             : {
                                   ...prev,
-                                  template_key: defaultTemplate.template_key,
+                                  template_key: fallbackKey,
                               },
                     );
                 }
@@ -93,6 +96,9 @@ export const usePatientTemplate = ({
                 (t) => t.template_key === patient.template_key,
             );
             if (isActive) {
+                if (currentTemplate?.template_key !== patient.template_key) {
+                    await selectTemplate(patient.template_key);
+                }
                 return;
             }
 

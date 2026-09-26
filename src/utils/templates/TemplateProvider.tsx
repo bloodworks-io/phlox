@@ -74,12 +74,19 @@ export const TemplateProvider = ({ children }) => {
     stateRef.current = state;
   }, [state]);
 
+  // Latest-wins sequencing: a newer selection invalidates older
+  // in-flight fetches so a slow response can't clobber the user's
+  // current choice.
+  const selectSeq = useRef(0);
+
   // Set the active template.
   const selectTemplate = useCallback(
     async (templateKey, { includeDeleted = false } = {}) => {
       if (!templateKey) {
         return null;
       }
+
+      const seq = ++selectSeq.current;
 
       const fromList = stateRef.current.templates.find(
         (t) => t.template_key === templateKey,
@@ -93,20 +100,25 @@ export const TemplateProvider = ({ children }) => {
         const template = await templateApi.getTemplateByKey(templateKey, {
           includeDeleted,
         });
+        if (seq !== selectSeq.current) {
+          return template;
+        }
         dispatch({ type: "SET_CURRENT_TEMPLATE", payload: template });
         return template;
       } catch (error) {
-        console.error(
-          `Failed to load template with key "${templateKey}":`,
-          error,
-        );
-        dispatch({ type: "SET_ERROR", payload: error.message });
-        toast({
-          title: "Error",
-          description: "Failed to load template",
-          type: "error",
-          duration: 3000,
-        });
+        if (seq === selectSeq.current) {
+          console.error(
+            `Failed to load template with key "${templateKey}":`,
+            error,
+          );
+          dispatch({ type: "SET_ERROR", payload: error.message });
+          toast({
+            title: "Error",
+            description: "Failed to load template",
+            type: "error",
+            duration: 3000,
+          });
+        }
         return null;
       }
     },
@@ -115,7 +127,12 @@ export const TemplateProvider = ({ children }) => {
 
   // Reload the active template list and the default pointer, keeping the
   // current selection when it still exists and falling back to the default
-  // otherwise.
+  // otherwise. A default that references a missing template (deleted out
+  // from under the pointer) must not trigger a doomed fetch on every
+  // refresh: keep any live selection and fall back to the first live
+  // template, warning once.
+  const defaultMissingWarnedRef = useRef(false);
+
   const refreshTemplates = useCallback(async () => {
     dispatch({ type: "START_LOADING" });
     try {
@@ -126,19 +143,32 @@ export const TemplateProvider = ({ children }) => {
       const defaultKey = defaultData?.template_key ?? null;
       dispatch({ type: "SET_DEFAULT_TEMPLATE_KEY", payload: defaultKey });
 
+      const inList = (key) =>
+        Boolean(key) && templatesData.some((t) => t.template_key === key);
+      const defaultDangles = defaultKey && !inList(defaultKey);
+      if (defaultDangles && !defaultMissingWarnedRef.current) {
+        defaultMissingWarnedRef.current = true;
+        toast({
+          title: "Warning",
+          description: "Default template is missing; using a fallback",
+          type: "warning",
+          duration: 3000,
+        });
+      }
+
       const prevKey = stateRef.current.currentTemplate?.template_key;
-      const keepKey =
-        prevKey && templatesData.some((t) => t.template_key === prevKey)
-          ? prevKey
-          : defaultKey;
+      let keepKey;
+      if (inList(prevKey)) {
+        keepKey = prevKey;
+      } else if (!defaultDangles) {
+        keepKey = defaultKey;
+      } else {
+        keepKey = templatesData[0]?.template_key ?? null;
+      }
 
       if (keepKey) {
         const fromList = templatesData.find((t) => t.template_key === keepKey);
-        if (fromList) {
-          dispatch({ type: "SET_CURRENT_TEMPLATE", payload: fromList });
-        } else {
-          await selectTemplate(keepKey);
-        }
+        dispatch({ type: "SET_CURRENT_TEMPLATE", payload: fromList });
       }
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: error.message });
@@ -149,18 +179,30 @@ export const TemplateProvider = ({ children }) => {
         duration: 3000,
       });
     }
-  }, [toast, selectTemplate]);
+  }, [toast]);
 
   const setDefaultTemplate = useCallback(
     async (templateKey) => {
       if (!templateKey) {
-        return;
+        return false;
       }
-      await templateApi.setDefaultTemplate(templateKey);
-      dispatch({ type: "SET_DEFAULT_TEMPLATE_KEY", payload: templateKey });
-      await selectTemplate(templateKey);
+      try {
+        await templateApi.setDefaultTemplate(templateKey);
+        dispatch({ type: "SET_DEFAULT_TEMPLATE_KEY", payload: templateKey });
+        await selectTemplate(templateKey);
+        return true;
+      } catch (error) {
+        dispatch({ type: "SET_ERROR", payload: error.message });
+        toast({
+          title: "Error",
+          description: error.message || "Failed to set default template",
+          type: "error",
+          duration: 3000,
+        });
+        return false;
+      }
     },
-    [selectTemplate],
+    [selectTemplate, toast],
   );
 
   const saveTemplate = useCallback(
@@ -231,9 +273,7 @@ export const TemplateProvider = ({ children }) => {
       return null;
     }
     return (
-      stateRef.current.templates.find((t) => t.template_key === key) ?? {
-        template_key: key,
-      }
+      stateRef.current.templates.find((t) => t.template_key === key) ?? null
     );
   }, []);
 
@@ -255,7 +295,7 @@ export const TemplateProvider = ({ children }) => {
     return (
       state.templates.find(
         (t) => t.template_key === state.defaultTemplateKey,
-      ) ?? { template_key: state.defaultTemplateKey }
+      ) ?? null
     );
   }, [state.templates, state.defaultTemplateKey]);
 

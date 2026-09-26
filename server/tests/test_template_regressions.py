@@ -196,3 +196,31 @@ def test_update_template_moves_default_pointer():
     finally:
         _delete_template_rows("haem_summary_1", "haem_summary_2")
         config_manager.set_default_template_key(original)
+
+
+def test_delete_default_non_fork_template_repoints_default():
+    """Deleting the default when it is a plain custom template must repoint
+    the default at a live protected template.
+
+    Reproduces: only forks of protected bases triggered the repoint, so
+    deleting a non-fork default left a dangling pointer that made every
+    client refresh attempt a doomed fetch (error toast loop, dead keys
+    pinned onto new encounters).
+    """
+    from server.constants import is_protected_template_key
+
+    original = config_manager.get_default_template_key() or "phlox_01"
+    _insert_template("custom_gout_1")
+    try:
+        config_manager.set_default_template_key("custom_gout_1")
+
+        response = client.delete("/api/templates/custom_gout_1")
+        assert response.status_code == 200
+
+        new_default = config_manager.get_default_template_key()
+        assert new_default != "custom_gout_1"
+        assert is_protected_template_key(new_default)
+        assert repo.get_template_by_key(new_default) is not None
+    finally:
+        _delete_template_rows("custom_gout_1")
+        config_manager.set_default_template_key(original)
