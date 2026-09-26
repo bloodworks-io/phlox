@@ -13,5 +13,17 @@
         "error": "Error",
         "loading": "Loading…",
         "success": "Success"
+    },
+    "error": {
+        "unexpected": "An unexpected error occurred",
+        "withStatus": "Error {{status}}"
+    },
+    "navigation": {
+        "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+    },
+    "toast": {
+        "error": "Error",
+        "success": "Success",
+        "warning": "Warning"
     }
 }
