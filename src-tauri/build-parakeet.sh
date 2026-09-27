@@ -67,6 +67,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         -DPARAKEET_GGML_METAL=ON
     )
     BACKEND_DESC="Metal"
+elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+    # Windows: Vulkan + CPU fallback (mirrors the Flatpak build)
+    JOBS=$(nproc)
+    CMAKE_BACKEND_FLAGS=(
+        -DPARAKEET_GGML_VULKAN=ON
+        -DGGML_NATIVE=OFF
+    )
+    BACKEND_DESC="Vulkan"
 else
     # Linux local dev: CPU-only.
     # Production Flatpak build re-enables Vulkan via CMake flags
@@ -87,13 +95,22 @@ cmake -S "$PARAKEET_DIR" -B "$PARAKEET_DIR/build" \
   -DPARAKEET_BUILD_CLI=OFF \
   -DPARAKEET_BUILD_TESTS=OFF
 
-# Build the parakeet-server binary
+# Build the parakeet-server binary (--config is ignored by single-config generators)
 echo "Building parakeet-server binary..."
-cmake --build "$PARAKEET_DIR/build" --target parakeet-server -j"$JOBS"
+cmake --build "$PARAKEET_DIR/build" --config Release --target parakeet-server -j"$JOBS"
 
-echo "Fixing rpath in parakeet-server..."
-SERVER_BIN="$PARAKEET_DIR/build/examples/server/parakeet-server"
-if [ -f "$SERVER_BIN" ]; then
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows (multi-config VS generator): exe lands in a Release/ subdir
+    SERVER_BIN="$(ls "$PARAKEET_DIR/build/examples/server/Release/parakeet-server.exe" 2>/dev/null || find "$PARAKEET_DIR/build" -name 'parakeet-server.exe' | head -1)"
+    if [ -z "$SERVER_BIN" ]; then
+        echo "Error: parakeet-server.exe not found after build"
+        ls -la "$PARAKEET_DIR/build/examples/server/" 2>/dev/null || echo "examples/server/ directory not found"
+        exit 1
+    fi
+    cp "$SERVER_BIN" "$SCRIPT_DIR/phlox-whisper-server.exe"
+    echo "phlox-whisper-server.exe built successfully at: $SCRIPT_DIR/phlox-whisper-server.exe"
+elif [ -f "$PARAKEET_DIR/build/examples/server/parakeet-server" ]; then
+    SERVER_BIN="$PARAKEET_DIR/build/examples/server/parakeet-server"
     cp "$SERVER_BIN" "$SCRIPT_DIR/phlox-whisper-server"
     chmod +x "$SCRIPT_DIR/phlox-whisper-server"
 

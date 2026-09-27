@@ -169,6 +169,107 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-windows:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: false
+
+      - name: Enable long paths
+        run: git config --system core.longpaths true
+
+      # parakeet.cpp (patched for the Omi Med STT adapter) - pinned commit e8acc617
+      - name: Checkout parakeet.cpp and apply Omi adapter patch
+        run: |
+          git clone https://github.com/mudler/parakeet.cpp.git src-tauri/parakeet.cpp
+          cd src-tauri/parakeet.cpp && git checkout e8acc6172a94e20a952cf1843decace5d771a94b
+          EXPECTED="e8acc6172a94e20a952cf1843decace5d771a94b"
+          ACTUAL=$(git rev-parse HEAD)
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "❌ SHA mismatch: expected $EXPECTED, got $ACTUAL"
+            exit 1
+          fi
+          git submodule update --init --recursive
+          git apply --recount ../parakeet-cpp-omi-adapter.patch
+          rm -rf src-tauri/parakeet.cpp/.git
+
+      # llama.cpp pinned aa46bda
+      - name: Checkout llama.cpp
+        run: |
+          git clone https://github.com/ggml-org/llama.cpp.git src-tauri/llama.cpp
+          cd src-tauri/llama.cpp && git checkout aa46bda89b9a8378ae76bb15fc2ce2f571f0983c
+          EXPECTED="aa46bda89b9a8378ae76bb15fc2ce2f571f0983c"
+          ACTUAL=$(git rev-parse HEAD)
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "❌ SHA mismatch: expected $EXPECTED, got $ACTUAL"
+            exit 1
+          fi
+          rm -rf src-tauri/llama.cpp/.git
+
+      # Vulkan SDK: shader compiler (glslc) at build time; build-llama.sh also
+      # bundles the redistributable loader (vulkan-1.dll) for CPU-only fallback.
+      - name: Install Vulkan SDK
+        run: |
+          choco install -y vulkansdk
+          SDK_DIR=$(ls -d /c/VulkanSDK/*/ | sort -V | tail -1)
+          echo "VULKAN_SDK=$(cygpath -w "$SDK_DIR")" >> "$GITHUB_ENV"
+          echo "$(cygpath -u "$SDK_DIR")/Bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.18.0"
+          cache: "npm"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version-file: "server/pyproject.toml"
+
+      - name: Cache Nuitka and ccache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            C:\Users\runneradmin\AppData\Local\Nuitka
+          key: nuitka-ccache-${{ runner.os }}-${{ hashFiles('server/**/*.py', 'server/uv.lock') }}
+          restore-keys: |
+            nuitka-ccache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all components
+        run: bash build-all.sh
+
+      - name: Build Tauri app (NSIS)
+        run: npx tauri build -- --locked
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Phlox-windows-x86_64
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+
+      - name: Attach to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: src-tauri/target/release/bundle/nsis/*-setup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-flatpak:
     permissions:
       contents: write
@@ -251,7 +352,7 @@ jobs:
   notify-website:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, build-flatpak, docker]
+    needs: [build, build-windows, build-flatpak, docker]
     steps:
       - name: Trigger phlox-website rebuild
         env:

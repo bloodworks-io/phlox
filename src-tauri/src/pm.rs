@@ -151,13 +151,36 @@ fn find_whisper_server() -> Option<PathBuf> {
 /// The 'phlox-server' binary is a wrapper that points to ../Resources/server_dist/server.
 fn find_python_server() -> Option<PathBuf> {
     let exe_dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
-    let path = exe_dir.join("phlox-server");
 
-    if path.exists() {
-        Some(path)
-    } else {
-        log::warn!("Python server not found at {:?}", path);
-        None
+    #[cfg(target_os = "windows")]
+    {
+        // No bash wrapper on Windows: spawn the Nuitka dist exe shipped as a
+        // resource. NSIS keeps resources next to the installed exe; the
+        // resources/ variant covers alternate layouts.
+        let candidates = [
+            exe_dir.join("server_dist").join("phlox-server.exe"),
+            exe_dir
+                .join("resources")
+                .join("server_dist")
+                .join("phlox-server.exe"),
+        ];
+        let found = candidates.iter().find(|p| p.exists()).cloned();
+        if found.is_none() {
+            log::warn!("Python server not found in server_dist/ next to exe");
+        }
+        found
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let path = exe_dir.join("phlox-server");
+
+        if path.exists() {
+            Some(path)
+        } else {
+            log::warn!("Python server not found at {:?}", path);
+            None
+        }
     }
 }
 

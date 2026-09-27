@@ -133,7 +133,7 @@ echo "=========================================="
 if [ "$SKIP_WHISPER" = true ]; then
     echo "⏭️  Skipping parakeet.cpp build (--skip-whisper)"
     WHISPER_BIN="src-tauri/phlox-whisper-server"
-    if [[ "$PLATFORM" == "windows-"* ]]; then
+    if [[ "$PLATFORM" == *windows-msvc ]]; then
         WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
     fi
     if [ ! -f "$WHISPER_BIN" ]; then
@@ -147,7 +147,7 @@ else
     fi
 
     # Check if whisper-server was built
-    if [[ "$PLATFORM" == "windows-"* ]]; then
+    if [[ "$PLATFORM" == *windows-msvc ]]; then
         WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
     else
         WHISPER_BIN="src-tauri/phlox-whisper-server"
@@ -172,7 +172,7 @@ echo "=========================================="
 if [ "$SKIP_LLAMA" = true ]; then
     echo "⏭️  Skipping llama.cpp build (--skip-llama)"
     LLAMA_BIN="src-tauri/phlox-llama-server"
-    if [[ "$PLATFORM" == "windows-"* ]]; then
+    if [[ "$PLATFORM" == *windows-msvc ]]; then
         LLAMA_BIN="src-tauri/phlox-llama-server.exe"
     fi
     if [ ! -f "$LLAMA_BIN" ]; then
@@ -186,7 +186,7 @@ else
     fi
 
     # Check if llama-server was built
-    if [[ "$PLATFORM" == "windows-"* ]]; then
+    if [[ "$PLATFORM" == *windows-msvc ]]; then
         LLAMA_BIN="src-tauri/phlox-llama-server.exe"
     else
         LLAMA_BIN="src-tauri/phlox-llama-server"
@@ -210,10 +210,17 @@ echo "=========================================="
 
 mkdir -p "src-tauri/binaries"
 
+# Windows externalBin files carry the platform triple + .exe extension
+if [[ "$PLATFORM" == *windows-msvc ]]; then
+    EXT=".exe"
+else
+    EXT=""
+fi
+
 # Copy llama-server
 if [ -f "$LLAMA_BIN" ]; then
-    cp "$LLAMA_BIN" "src-tauri/binaries/phlox-llama-server-${PLATFORM}"
-    chmod +x "src-tauri/binaries/phlox-llama-server-${PLATFORM}"
+    cp "$LLAMA_BIN" "src-tauri/binaries/phlox-llama-server-${PLATFORM}${EXT}"
+    chmod +x "src-tauri/binaries/phlox-llama-server-${PLATFORM}${EXT}"
     echo "✅ Copied phlox-llama-server"
 else
     echo "⚠️  Warning: phlox-llama-server not found, skipping"
@@ -221,8 +228,8 @@ fi
 
 # Copy whisper-server
 if [ -f "$WHISPER_BIN" ]; then
-    cp "$WHISPER_BIN" "src-tauri/binaries/phlox-whisper-server-${PLATFORM}"
-    chmod +x "src-tauri/binaries/phlox-whisper-server-${PLATFORM}"
+    cp "$WHISPER_BIN" "src-tauri/binaries/phlox-whisper-server-${PLATFORM}${EXT}"
+    chmod +x "src-tauri/binaries/phlox-whisper-server-${PLATFORM}${EXT}"
     echo "✅ Copied phlox-whisper-server"
 else
     echo "⚠️  Warning: phlox-whisper-server not found, skipping"

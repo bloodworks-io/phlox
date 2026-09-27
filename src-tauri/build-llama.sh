@@ -64,6 +64,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         -DLLAMA_ACCELERATE=ON
     )
     BACKEND_DESC="Metal"
+elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+    # Windows: Vulkan + CPU fallback (mirrors the Flatpak build)
+    JOBS=$(nproc)
+    CMAKE_BACKEND_FLAGS=(
+        -DGGML_VULKAN=ON
+        -DGGML_NATIVE=OFF
+    )
+    BACKEND_DESC="Vulkan"
 else
     # Linux local dev: CPU-only.
     # Production Flatpak build re-enables Vulkan via CMake flags
@@ -88,12 +96,32 @@ cmake .. \
   -DLLAMA_BUILD_EXAMPLES=OFF \
   -DLLAMA_BUILD_TESTS=OFF
 
-# Build the llama-server binary
+# Build the llama-server binary (--config is ignored by single-config generators)
 echo "Building llama-server binary..."
-cmake --build . --target llama-server -j"$JOBS"
+cmake --build . --config Release --target llama-server -j"$JOBS"
 
-echo "Fixing rpath in llama-server..."
-if [ -f "bin/llama-server" ]; then
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows (multi-config VS generator): exe lands in bin/Release/
+    LLAMA_OUT="$(ls bin/Release/llama-server.exe 2>/dev/null || find bin -name 'llama-server.exe' | head -1)"
+    if [ -z "$LLAMA_OUT" ]; then
+        echo "Error: llama-server.exe not found after build"
+        exit 1
+    fi
+    cp "$LLAMA_OUT" "$SCRIPT_DIR/phlox-llama-server.exe"
+    echo "phlox-llama-server.exe built successfully at: $SCRIPT_DIR/phlox-llama-server.exe"
+
+    # Bundle the Vulkan loader next to the servers: machines without a Vulkan
+    # driver still load (loader enumerates 0 devices -> ggml CPU fallback).
+    SDK_BIN="$(cygpath -u "${VULKAN_SDK:-}")/Bin"
+    if [ -f "$SDK_BIN/vulkan-1.dll" ]; then
+        mkdir -p "$SCRIPT_DIR/binaries"
+        cp "$SDK_BIN/vulkan-1.dll" "$SCRIPT_DIR/binaries/vulkan-1-x86_64-pc-windows-msvc.dll"
+        echo "Bundled vulkan-1.dll for Tauri externalBin"
+    else
+        echo "ERROR: VULKAN_SDK not set or vulkan-1.dll missing - build would produce a binary that fails to start on GPU-less machines"
+        exit 1
+    fi
+elif [ -f "bin/llama-server" ]; then
     cp bin/llama-server "$SCRIPT_DIR/phlox-llama-server"
     chmod +x "$SCRIPT_DIR/phlox-llama-server"
 

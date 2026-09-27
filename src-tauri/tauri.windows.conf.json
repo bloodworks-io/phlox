@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "targets": ["nsis"],
+    "externalBin": [
+      "binaries/phlox-llama-server",
+      "binaries/phlox-whisper-server",
+      "binaries/vulkan-1"
+    ]
+  }
+}
