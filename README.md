@@ -22,14 +22,15 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 - **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local.
 - **👥 Multi-User:** Account-based access control; with per user encounters, templates, and documents.
 - **🌍 Multilingual:** Transcribe and generate notes and letters in multiple languages.
-- **🎤 Ambient Note Generation** Automatically generate structured clinical notes with customizable templates.
+- **🎤 Ambient Note Generation** Automatically generate structured notes with custom templates.
+- **⚡ Live Agent:** Drafts the note in realtime while you consult.
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.
 - **📝 Flexible Template System:**  Including automated template generation from example notes you provide.
 - **🤖 AI-agent:** Your local assistant with access to literature in your own local knowledge base.
 - **🔌 MCP Server Support:** Connect external tool servers to give your agent new capabilties.
 - **✅ Task Manager:**  Parse clinical plans into to-do lists to keep up-to-date with your outstanding tasks.
 - **✉️  Correspondence Generation:**  One-click generation of patient letters based on clinical notes.
-- **📄 Document Processing:** Fill-in forms, extract demographics, and more using local Vision Language Models.
+- **📄 Document Processing:** Fill-in forms, extract demographics, and more with Vision Language Models.
 
 <p align="center">
   <img src="/assets/readme_screenshot.png" width="600" alt="Phlox Screenshot">
@@ -91,7 +92,7 @@ Ambient scribing is a relatively simple task for LLMs. In particular, large fron
 
 Phlox approaches this by chunking transcripts per template field and constraining outputs to structured JSON. After getting the model to make a targeted summary for a given field, a dedicated refinement pass then allows the model to focus on matching output to the users personal style example. Finally an adaptive-refinement feedback loop allows the model to improve note quality as it is used more.
 
-### Technical Stack
+[Live Agent](https://phlox.bloodworks.io/docs/features/live-agent) mode takes a different path for real-time scribing: the consultation is segmented into utterances on-device (TEN VAD) and each utterance is streamed through a cheap gate; a single-token logprob classification that decides whether the speech should reach the note (NOTE), trigger an action (ACT), or be ignored as filler (SKIP, buffered with a debounce backstop so nothing is lost). NOTE and ACT utterances run through a tool-calling loop on the main model, which edits the running note, stages letters and PDF forms for review, and curates the wrap-up task list. Best-effort speaker diarisation (CAM++) labels who said what, and the conversation is kept append-only so the prompt cache stays warm between passes.
 
 - **Frontend:** [Chakra UI](https://github.com/chakra-ui/chakra-ui) (React)
 - **Backend:** [FastAPI](https://github.com/fastapi/fastapi) (Python)
