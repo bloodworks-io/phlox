@@ -12,12 +12,12 @@ import {
     Collapsible,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import {
-    ChevronRightIcon,
-    ChevronDownIcon,
     DeleteIcon,
     EditIcon,
 } from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { useState } from "react";
 
 export const FieldEditor = ({
@@ -26,13 +26,19 @@ export const FieldEditor = ({
     updateField,
     removeField,
 }) => {
+    const { t } = useTranslation();
     const [showAdvanced, setShowAdvanced] = useState(false);
     const isPlanField = field.field_name?.toLowerCase() === "plan";
 
     return (
-        <Box className="panels-bg" p="3" borderRadius="sm">
+        <Box
+            className="panels-bg"
+            p="3"
+            borderRadius="sm"
+            css={{ animation: "phloxFadeScaleIn 0.2s ease-out both" }}
+        >
             <Flex maxW="530px" align="center" mb={2}>
-                <Tooltip content="Click to edit field name">
+                <Tooltip content={t("modal.fieldEditor.editFieldNameTooltip")}>
                         <Flex
                             align="center"
                             cursor="pointer"
@@ -42,7 +48,7 @@ export const FieldEditor = ({
                             role="group"
                         >
                             <Input
-                                placeholder="Unnamed Field"
+                                placeholder={t("modal.fieldEditor.unnamedField")}
                                 value={field.field_name || ""}
                                 onChange={(e) =>
                                     updateField(
@@ -96,8 +102,8 @@ export const FieldEditor = ({
                     <Tooltip
                         content={
                             isPlanField
-                                ? "The Plan section is always dynamic as it needs to be generated from each encounter"
-                                : "Persistent fields carry over between encounters. Dynamic fields are generated from the transcript"
+                                ? t("modal.fieldEditor.planTooltip")
+                                : t("modal.fieldEditor.persistenceTooltip")
                         }
                     >
                         <Box position="relative">
@@ -132,7 +138,7 @@ export const FieldEditor = ({
                                         }
                                         disabled={isPlanField}
                                     >
-                                        Persistent
+                                        {t("modal.fieldEditor.persistent")}
                                     </Button>
                                     <Button
                                         className={`template-mode-selector-button ${
@@ -151,7 +157,7 @@ export const FieldEditor = ({
                                         }
                                         disabled={isPlanField}
                                     >
-                                        Dynamic
+                                        {t("modal.fieldEditor.dynamic")}
                                     </Button>
                                 </Flex>
                             </Flex>
@@ -161,7 +167,7 @@ export const FieldEditor = ({
                     {!isPlanField && (
                         <IconButton
                             onClick={() => removeField(idx)}
-                            aria-label="Remove field"
+                            aria-label={t("modal.fieldEditor.removeField")}
                             size="sm"
                             variant="ghost"
                             ml={3}
@@ -174,7 +180,7 @@ export const FieldEditor = ({
                 {/* System prompt */}
                 <Box width="full">
                     <Text fontSize="sm" color="overlay0" mb={1}>
-                        System Prompt
+                        {t("modal.fieldEditor.systemPrompt")}
                     </Text>
                     <Textarea
                         value={field.system_prompt || ""}
@@ -186,8 +192,8 @@ export const FieldEditor = ({
                         className="input-style"
                         placeholder={
                             field.persistent
-                                ? "Instructions for persistent field..."
-                                : "Instructions for dynamic field..."
+                                ? t("modal.fieldEditor.persistentInstructions")
+                                : t("modal.fieldEditor.dynamicInstructions")
                         }
                     />
                 </Box>
@@ -197,16 +203,12 @@ export const FieldEditor = ({
                     <HStack gap={2}>
                         <IconButton
                             onClick={() => setShowAdvanced(!showAdvanced)}
-                            aria-label="Toggle Advanced Settings"
+                            aria-label={t("modal.fieldEditor.toggleAdvanced")}
                             variant="ghost"
                             size="sm"
-                            className="collapse-toggle">{showAdvanced ? (
-                                <ChevronDownIcon />
-                            ) : (
-                                <ChevronRightIcon />
-                            )}</IconButton>
+                            className="collapse-toggle"><AnimatedChevron isOpen={showAdvanced} /></IconButton>
                         <Text fontSize="sm" color="overlay0">
-                            Advanced Settings
+                            {t("modal.fieldEditor.advancedSettings")}
                         </Text>
                     </HStack>
                     <Collapsible.Root open={showAdvanced}>
@@ -215,7 +217,7 @@ export const FieldEditor = ({
                                 <HStack>
                                     <Box flex="1">
                                         <Text fontSize="sm" color="overlay0" mb={1}>
-                                            Format Schema
+                                            {t("modal.fieldEditor.formatSchema")}
                                         </Text>
                                         <NativeSelect.Root>
                                             <NativeSelect.Field
@@ -244,15 +246,15 @@ export const FieldEditor = ({
                                                         );
                                                     }
                                                 }}>
-                                                <option value="none">Free Text</option>
+                                                <option value="none">{t("modal.fieldEditor.formatFreeText")}</option>
                                                 <option value="bullet">
-                                                    Bullet List
+                                                    {t("modal.fieldEditor.formatBulletList")}
                                                 </option>
                                                 <option value="numbered">
-                                                    Numbered List
+                                                    {t("modal.fieldEditor.formatNumberedList")}
                                                 </option>
                                                 <option value="narrative">
-                                                    Narrative
+                                                    {t("modal.fieldEditor.formatNarrative")}
                                                 </option>
                                             </NativeSelect.Field>
                                             <NativeSelect.Indicator />
@@ -265,7 +267,7 @@ export const FieldEditor = ({
                                                 color="overlay0"
                                                 mb={1}
                                             >
-                                                Bullet Character
+                                                {t("modal.fieldEditor.bulletCharacter")}
                                             </Text>
                                             <NativeSelect.Root>
                                                 <NativeSelect.Field
@@ -301,7 +303,7 @@ export const FieldEditor = ({
                                 {/* Style Example */}
                                 <Box width="full">
                                     <Text fontSize="sm" color="overlay0" mb={1}>
-                                        Style Example (shows in preview)
+                                        {t("modal.fieldEditor.styleExample")}
                                     </Text>
                                     <Textarea
                                         size="sm"
@@ -314,7 +316,7 @@ export const FieldEditor = ({
                                             );
                                         }}
                                         className="input-style"
-                                        placeholder="Enter an example of how this field should look..."
+                                        placeholder={t("modal.fieldEditor.styleExamplePlaceholder")}
                                         rows={4}
                                     />
                                 </Box>

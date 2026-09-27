@@ -112,8 +112,8 @@ export const LavaBlobs = () => (
     </Box>
 );
 
-// Internal pulsing glow for recording state
-export const InternalGlow = () => (
+// Internal pulsing glow for recording state (red) / live agent hero (teal)
+export const InternalGlow = ({ rgb = "229,62,62" }) => (
     <Box
         position="absolute"
         top={0}
@@ -131,7 +131,7 @@ export const InternalGlow = () => (
             right={0}
             bottom={0}
             borderRadius="full"
-            bg="radial-gradient(circle, rgba(229,62,62,0.4) 0%, rgba(229,62,62,0.1) 50%, transparent 70%)"
+            bg={`radial-gradient(circle, rgba(${rgb},0.4) 0%, rgba(${rgb},0.1) 50%, transparent 70%)`}
             animation={`${pulse} 1.5s ease-in-out infinite`}
         />
     </Box>

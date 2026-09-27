@@ -33,7 +33,6 @@ DEFAULT_PROMPTS = {
         },
     },
     "options": {
-        "chat": {"temperature": 0.1},
         "general": {"temperature": 0.1},
         "letter": {"temperature": 0.6},
         "secondary": {"temperature": 0.1},

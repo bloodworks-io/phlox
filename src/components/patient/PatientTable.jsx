@@ -11,8 +11,10 @@ import {
     Grid,
     Wrap,
     WrapItem,
+    Skeleton,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import { useRef, useEffect } from "react";
 import { FaUser, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
 import {
@@ -25,6 +27,7 @@ import {
 import { RepeatIcon } from "../common/icons";
 import { useColorMode } from "../ui/color-mode";
 import { colors } from "../../theme/colors";
+import { getLocale } from "../../utils/helpers/formatHelpers";
 import {
     resetJobsItems,
     debouncedUpdateJobsList,
@@ -39,7 +42,9 @@ const PatientTable = ({
     title,
     groupByDate = false,
     summaryOnly = false,
+    isLoading = false,
 }) => {
+    const { t } = useTranslation();
     const pendingJobsUpdates = useRef(new Map());
     const { colorMode } = useColorMode();
 
@@ -124,7 +129,7 @@ const PatientTable = ({
         <Table.Row
             key={patient.id}
             backgroundColor={getRowBackgroundColor(index)}
-            transition="background-color 0.15s ease"
+            transition="background-color 0.15s ease, opacity 0.2s ease"
             _hover={{ backgroundColor: "surfaceQuartile" }}
             opacity={
                 summaryOnly &&
@@ -145,7 +150,7 @@ const PatientTable = ({
                                 {formatName(patient.name)}
                             </Text>
                             <Tooltip
-                                content="Go to Encounter"
+                                content={t("patient.goToEncounter")}
                                 showArrow
                                 positioning={{
                                     placement: "right",
@@ -154,7 +159,7 @@ const PatientTable = ({
                                 <IconButton
                                     size="xs"
                                     variant="ghost"
-                                    aria-label="Go to Encounter"
+                                    aria-label={t("patient.goToEncounter")}
                                     onClick={() => handleSelectPatient(patient)}
                                 >
                                     <Icon asChild>
@@ -179,8 +184,12 @@ const PatientTable = ({
                 ) : (
                     <VStack align="stretch" gap={2}>
                         <Tooltip
-                            content={`${patient.name}, DOB: ${patient.dob}, UR Number: ${patient.ur_number}`}
-                            aria-label="Patient Details"
+                            content={t("patient.detailsHover", {
+                                name: patient.name,
+                                dob: patient.dob,
+                                urNumber: patient.ur_number,
+                            })}
+                            aria-label={t("patient.patientDetails")}
                         >
                             <PatientDetails patient={patient} />
                         </Tooltip>
@@ -190,7 +199,7 @@ const PatientTable = ({
                             onClick={() => handleSelectPatient(patient)}
                             maxW="150px"
                         >
-                            Go to Encounter
+                            {t("patient.goToEncounter")}
                         </Button>
                     </VStack>
                 )}
@@ -216,22 +225,22 @@ const PatientTable = ({
                                     {
                                         section: "summary",
                                         icon: FaFileAlt,
-                                        tooltip: "Summary",
+                                        tooltip: t("patient.sectionSummary"),
                                     },
                                     {
                                         section: "differentials",
                                         icon: FaSitemap,
-                                        tooltip: "Differentials",
+                                        tooltip: t("patient.sectionDifferentials"),
                                     },
                                     {
                                         section: "investigations",
                                         icon: FaVial,
-                                        tooltip: "Investigations",
+                                        tooltip: t("patient.sectionInvestigations"),
                                     },
                                     {
                                         section: "considerations",
                                         icon: FaBrain,
-                                        tooltip: "Clinical Considerations",
+                                        tooltip: t("patient.sectionConsiderations"),
                                     },
                                 ].map(({ section, icon: ReasonIcon, tooltip }) => (
                                     <Tooltip
@@ -372,7 +381,7 @@ const PatientTable = ({
 
             <Table.Cell width="30%" verticalAlign="top">
                 <HStack gap={2} alignItems="flex-start">
-                    <Tooltip content="Reset jobs" aria-label="Reset jobs">
+                    <Tooltip content={t("patient.resetJobs")} aria-label={t("patient.resetJobs")}>
                         <IconButton
                             size="sm"
                             variant="ghost"
@@ -462,6 +471,10 @@ const PatientTable = ({
                                             display: "block",
                                             whiteSpace: "normal",
                                             paddingTop: 0,
+                                            transition:
+                                                "opacity 0.2s ease, text-decoration-color 0.2s ease",
+                                            textDecorationColor:
+                                                "currentColor",
                                             ...(item.completed
                                                 ? {
                                                       textDecoration:
@@ -490,7 +503,7 @@ const PatientTable = ({
                                 fontStyle="italic"
                                 opacity={0.6}
                             >
-                                No tasks
+                                {t("patient.noTasks")}
                             </Text>
                         )}
                     </VStack>
@@ -499,10 +512,36 @@ const PatientTable = ({
         </Table.Row>
     );
 
+    // Placeholder rows while SWR loads, so the table doesn't flash empty.
+    const renderSkeletonRows = (count = 3) =>
+        Array.from({ length: count }, (_, i) => (
+            <Table.Row key={`skeleton-${i}`}>
+                <Table.Cell>
+                    <VStack align="stretch" gap={2} py={1}>
+                        <Skeleton height="16px" width="70%" />
+                        <Skeleton height="14px" width="50%" />
+                    </VStack>
+                </Table.Cell>
+                <Table.Cell>
+                    <Skeleton height="14px" width="90%" my={1} />
+                    <Skeleton height="14px" width="60%" />
+                </Table.Cell>
+                <Table.Cell>
+                    <Skeleton height="14px" width="80%" />
+                </Table.Cell>
+            </Table.Row>
+        ));
+
     return (
-        <Box p="5" borderRadius="xl" w="100%">
+        <Box
+            p="5"
+            borderRadius="xl"
+            w="100%"
+            className="anim-fade-slide-up"
+            css={{ animationDuration: "0.25s" }}
+        >
             <Text as="h2">{title}</Text>
-            {groupByDate ? (
+            {groupByDate && !isLoading ? (
                 Object.entries(
                     patients.reduce((acc, patient) => {
                         const date = patient.encounter_date;
@@ -513,9 +552,14 @@ const PatientTable = ({
                 )
                     .sort((a, b) => new Date(b[0]) - new Date(a[0]))
                     .map(([date, patients]) => (
-                        <Box key={date} mb={8}>
+                        <Box
+                            key={date}
+                            mb={8}
+                            className="anim-fade-slide-up"
+                            css={{ animationDuration: "0.25s" }}
+                        >
                             <Text as="h3" mb={2}>
-                                {new Date(date).toLocaleDateString()}
+                                {new Date(date).toLocaleDateString(getLocale())}
                             </Text>
                             <Box
                                 overflowX="auto"
@@ -537,25 +581,34 @@ const PatientTable = ({
                                     >
                                         <Table.Row>
                                             <Table.ColumnHeader width="25%">
-                                                Patient Details
+                                                {t("patient.patientDetails")}
                                             </Table.ColumnHeader>
                                             <Table.ColumnHeader width="45%">
-                                                Reasoning / Encounter Summary
+                                                {t("patient.reasoningEncounterSummary")}
                                             </Table.ColumnHeader>
                                             <Table.ColumnHeader width="30%">
-                                                Jobs
+                                                {t("patient.jobs")}
                                             </Table.ColumnHeader>
                                         </Table.Row>
                                     </Table.Header>
-                                    <Table.Body>
-                                        {patients
-                                            .sort((a, b) => a.id - b.id)
-                                            .map((patient, index) =>
-                                                renderPatientRow(
-                                                    patient,
-                                                    index,
-                                                ),
-                                            )}
+                                    <Table.Body
+                                        className="anim-stagger"
+                                        css={{
+                                            "& > *": {
+                                                animationDuration: "0.15s",
+                                            },
+                                        }}
+                                    >
+                                        {isLoading
+                                            ? renderSkeletonRows()
+                                            : patients
+                                                  .sort((a, b) => a.id - b.id)
+                                                  .map((patient, index) =>
+                                                      renderPatientRow(
+                                                          patient,
+                                                          index,
+                                                      ),
+                                                  )}
                                     </Table.Body>
                                 </Table.Root>
                             </Box>
@@ -582,23 +635,32 @@ const PatientTable = ({
                         >
                             <Table.Row>
                                 <Table.ColumnHeader width="25%">
-                                    Patient Details
+                                    {t("patient.patientDetails")}
                                 </Table.ColumnHeader>
                                 <Table.ColumnHeader width="45%">
-                                    Reasoning / Encounter Summary
+                                    {t("patient.reasoningEncounterSummary")}
                                 </Table.ColumnHeader>
                                 <Table.ColumnHeader width="30%">
-                                    Jobs
+                                    {t("patient.jobs")}
                                 </Table.ColumnHeader>
                             </Table.Row>
                         </Table.Header>
-                        <Table.Body>
-                            {patients
-                                .slice()
-                                .sort((a, b) => a.id - b.id)
-                                .map((patient, index) =>
-                                    renderPatientRow(patient, index),
-                                )}
+                        <Table.Body
+                            className="anim-stagger"
+                            css={{
+                                "& > *": {
+                                    animationDuration: "0.15s",
+                                },
+                            }}
+                        >
+                            {isLoading
+                                ? renderSkeletonRows(4)
+                                : patients
+                                      .slice()
+                                      .sort((a, b) => a.id - b.id)
+                                      .map((patient, index) =>
+                                          renderPatientRow(patient, index),
+                                      )}
                         </Table.Body>
                     </Table.Root>
                 </Box>

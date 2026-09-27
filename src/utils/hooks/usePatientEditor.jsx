@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { useTemplateSelection } from "../templates/templateContext";
 import { patientApi } from "../api/patientApi";
@@ -65,8 +66,8 @@ const buildAdaptiveRefinementData = (
 };
 
 export const usePatientEditor = (initialPatient = null) => {
+    const { t } = useTranslation();
     const [patient, setPatient] = useState(initialPatient);
-    const [, setIsModified] = useState(false);
     const navigate = useNavigate();
     const { currentTemplate } = useTemplateSelection();
 
@@ -78,15 +79,17 @@ export const usePatientEditor = (initialPatient = null) => {
     ) => {
         const missingFields = [];
 
-        if (!patient?.first_name) missingFields.push("First name");
-        if (!patient?.last_name) missingFields.push("Last name");
-        if (!patient?.dob) missingFields.push("Date of Birth");
-        if (!patient?.ur_number) missingFields.push("UR Number");
+        if (!patient?.first_name) missingFields.push(t("patient.field.firstName"));
+        if (!patient?.last_name) missingFields.push(t("patient.field.lastName"));
+        if (!patient?.dob) missingFields.push(t("patient.field.dob"));
+        if (!patient?.ur_number) missingFields.push(t("patient.field.urNumber"));
 
         if (missingFields.length > 0) {
             toaster.create({
-                title: "Missing Required Fields",
-                description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
+                title: t("patient.toast.missingFields"),
+                description: t("patient.toast.missingFieldsDescription", {
+                    fields: missingFields.join(", "),
+                }),
                 type: "error",
                 duration: 3000,
             });
@@ -139,16 +142,12 @@ export const usePatientEditor = (initialPatient = null) => {
                 refreshSidebar,
             );
 
-            if (response) {
-                setIsModified(false);
-            }
-
             return response;
         } catch (error) {
             console.error("Error saving patient:", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to save patient data",
+                title: t("toast.error"),
+                description: t("patient.toast.saveFailed"),
                 type: "error",
                 duration: 3000,
             });
@@ -178,6 +177,18 @@ export const usePatientEditor = (initialPatient = null) => {
         const loaded = await buildEncounterFromCandidate(
             candidate,
             selectedDate,
+            // Guard: don't apply a stale summary if the user switched patients
+            (summary) =>
+                setPatient((prev) =>
+                    prev?.isNewEncounter &&
+                    prev.ur_number === candidate.ur_number
+                        ? {
+                              ...prev,
+                              previous_visit_summary: summary ?? undefined,
+                              previous_visit_summary_pending: false,
+                          }
+                        : prev,
+                ),
         );
         setPatient(loaded);
         return loaded;
@@ -193,7 +204,6 @@ export const usePatientEditor = (initialPatient = null) => {
     return {
         patient,
         setPatient,
-        setIsModified,
         savePatient,
         savePatientCore,
         loadCandidate,

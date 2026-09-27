@@ -9,18 +9,20 @@ import {
     Badge,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
+import { useTranslation } from "react-i18next";
 import { AddIcon, DeleteIcon, EditIcon, RepeatIcon } from "../common/icons";
 import { FaFileAlt } from "react-icons/fa";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useState } from "react";
 import TemplateEditor from "../modals/TemplateEditor";
 import NewTemplateFromExampleModal from "../modals/NewTemplateFromExampleModal";
-import DeleteConfirmationModal from "../modals/DeleteConfirmationModal";
+import ConfirmDialog from "../common/ConfirmDialog";
 import { templateApi } from "../../utils/api/templateApi";
 import { useTemplate } from "../../utils/templates/templateContext";
 import { isDefaultTemplate, isCustomizedDefault } from "../../utils/templates/templateService";
 
-const TemplateSettingsPanel = ({ templates, setTemplates }) => {
+const TemplateSettingsPanel = () => {
+    const { t } = useTranslation();
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,7 +35,12 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState(null);
-    const { deleteTemplate } = useTemplate();
+    const {
+        templates,
+        saveTemplate,
+        deleteTemplate,
+        refreshTemplates,
+    } = useTemplate();
 
     const handleEditTemplate = (templateKey) => {
         const template = templates.find((t) => t.template_key === templateKey);
@@ -48,25 +55,24 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
     const handleSaveTemplate = async (templateKey, updatedTemplate) => {
         setIsSaving(true);
         try {
-            const result = await templateApi.saveTemplates([updatedTemplate]);
+
+            const result = await saveTemplate(updatedTemplate);
             const newKey = result?.updated_keys?.[templateKey];
-            const freshTemplates = await templateApi.fetchTemplates();
-            setTemplates(freshTemplates);
 
             toaster.create({
-                title: "Success",
+                title: t("toast.success"),
                 description:
                     newKey && newKey !== templateKey
-                        ? `Saved as your own copy: ${newKey}`
-                        : "Template saved successfully",
+                        ? t("settings.templates.savedAsCopy", { key: newKey })
+                        : t("settings.templates.savedSuccessfully"),
                 type: "success",
                 duration: 3000,
             });
         } catch (error) {
             console.error("Failed to save template:", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to save template",
+                title: t("toast.error"),
+                description: t("settings.templates.saveFailed"),
                 type: "error",
                 duration: 3000,
             });
@@ -80,14 +86,12 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
         try {
             const success = await deleteTemplate(templateKey);
             if (success) {
-                const freshTemplates = await templateApi.fetchTemplates();
-                setTemplates(freshTemplates);
                 setIsDeleteModalOpen(false);
                 setTemplateToDelete(null);
                 if (isCustomizedDefault(templateKey)) {
                     toaster.create({
-                        title: "Success",
-                        description: "Template reset to default",
+                        title: t("toast.success"),
+                        description: t("settings.templates.resetToDefaultSuccess"),
                         type: "success",
                         duration: 3000,
                     });
@@ -96,8 +100,8 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
         } catch (error) {
             console.error("Error deleting template:", error);
             toaster.create({
-                title: "Error",
-                description: error.message || "Failed to delete template",
+                title: t("toast.error"),
+                description: error.message || t("settings.templates.deleteFailed"),
                 type: "error",
                 duration: 3000,
             });
@@ -109,8 +113,8 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
         try {
             const newTemplate = await templateApi.generateTemplate(exampleNote);
 
-            const freshTemplates = await templateApi.fetchTemplates();
-            setTemplates(freshTemplates);
+            // New template created server-side; sync the store's list.
+            await refreshTemplates();
 
             setSelectedTemplate(newTemplate);
             setSelectedTemplateKey(newTemplate.template_key);
@@ -120,8 +124,8 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
         } catch (error) {
             console.error("Error generating template from example:", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to generate template from example",
+                title: t("toast.error"),
+                description: t("settings.templates.generateFailed"),
                 type: "error",
                 duration: 3000,
             });
@@ -145,15 +149,14 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
         <VStack gap={3} align="stretch">
             <Flex justify="space-between" align="center">
                 <Text fontSize="xs" className="pill-box-icons" maxW="60%">
-                    Templates control the structure of generated notes. Defaults
-                    can be edited but not removed.
+                    {t("settings.templates.description")}
                 </Text>
                 <Button
                     onClick={() => setIsNewTemplateModalOpen(true)}
                     variant="outline"
                     size="sm"
                     className="nav-button"
-                ><AddIcon />New Template
+                ><AddIcon />{t("settings.templates.newTemplate")}
                 </Button>
             </Flex>
 
@@ -170,10 +173,10 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
                     <Text fontSize="sm" className="pill-box-icons">
-                        No templates available
+                        {t("settings.templates.emptyTitle")}
                     </Text>
                     <Text fontSize="xs" className="pill-box-icons" mt={1}>
-                        Create a template to customize note structure
+                        {t("settings.templates.emptyDescription")}
                     </Text>
                 </Box>
             ) : (
@@ -212,18 +215,18 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                                             fontSize="xs"
                                         >
                                             {isDefault
-                                                ? "Default"
+                                                ? t("settings.templates.badgeDefault")
                                                 : isCustomized
-                                                  ? "Customized"
-                                                  : "Custom"}
+                                                  ? t("settings.templates.badgeCustomized")
+                                                  : t("settings.templates.badgeCustom")}
                                         </Badge>
                                     </HStack>
                                     <HStack gap={1}>
-                                        <Tooltip content="Edit template">
+                                        <Tooltip content={t("settings.templates.editTemplate")}>
                                             <IconButton
                                                 variant="ghost"
                                                 size="sm"
-                                                aria-label="Edit template"
+                                                aria-label={t("settings.templates.editTemplate")}
                                                 onClick={() =>
                                                     handleEditTemplate(
                                                         template.template_key,
@@ -232,11 +235,11 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                                             ><EditIcon /></IconButton>
                                         </Tooltip>
                                         {isCustomized ? (
-                                            <Tooltip content="Reset to default">
+                                            <Tooltip content={t("settings.templates.resetToDefault")}>
                                                 <IconButton
                                                     variant="ghost"
                                                     size="sm"
-                                                    aria-label="Reset to default"
+                                                    aria-label={t("settings.templates.resetToDefault")}
                                                     onClick={() => {
                                                         setTemplateToDelete({
                                                             key: template.template_key,
@@ -249,12 +252,12 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                                                 ><RepeatIcon /></IconButton>
                                             </Tooltip>
                                         ) : !isDefault ? (
-                                            <Tooltip content="Delete template">
+                                            <Tooltip content={t("settings.templates.deleteTemplate")}>
                                                 <IconButton
                                                     variant="ghost"
                                                     size="sm"
                                                     colorPalette="red"
-                                                    aria-label="Delete template"
+                                                    aria-label={t("settings.templates.deleteTemplate")}
                                                     onClick={() => {
                                                         setTemplateToDelete({
                                                             key: template.template_key,
@@ -295,28 +298,31 @@ const TemplateSettingsPanel = ({ templates, setTemplates }) => {
                 setExampleNote={setExampleNote}
                 isLoading={isGeneratingTemplate}
             />
-            <DeleteConfirmationModal
+            <ConfirmDialog
                 isOpen={isDeleteModalOpen}
                 onClose={() => {
                     setIsDeleteModalOpen(false);
                     setTemplateToDelete(null);
                 }}
                 onConfirm={() => handleDeleteTemplate(templateToDelete?.key)}
-                itemName={templateToDelete?.name}
                 title={
                     templateToDelete && isCustomizedDefault(templateToDelete.key)
-                        ? "Reset to Default"
-                        : "Delete Template"
+                        ? t("settings.resetToDefault")
+                        : t("settings.templates.deleteTitle")
                 }
                 body={
                     templateToDelete && isCustomizedDefault(templateToDelete.key)
-                        ? `This discards your changes to "${templateToDelete?.name}" and restores the original default template.`
-                        : undefined
+                        ? t("settings.templates.resetBody", {
+                              name: templateToDelete?.name,
+                          })
+                        : t("settings.templates.deleteBody", {
+                              name: templateToDelete?.name,
+                          })
                 }
                 confirmLabel={
                     templateToDelete && isCustomizedDefault(templateToDelete.key)
-                        ? "Reset"
-                        : "Delete"
+                        ? t("settings.templates.resetAction")
+                        : t("settings.templates.deleteAction")
                 }
             />
         </VStack>

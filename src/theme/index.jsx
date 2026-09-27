@@ -94,6 +94,11 @@ globalCss[".anim-emerge-spring"] = {
     animation:
         "phloxEmergeSpring 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) both",
 };
+// Opacity-only fade — safe for elements whose transform is used for
+// positioning (e.g. translateX(-50%) centering).
+globalCss[".anim-fade"] = {
+    animation: "phloxFadeIn 0.15s ease-out both",
+};
 
 // Staggered entrance
 globalCss[".anim-stagger > *"] = {
@@ -106,21 +111,55 @@ for (let i = 1; i <= 8; i++) {
     };
 }
 
+// Live scribe agent: one-shot flash on agent-updated note fields, pulsing
+// bolt on the live toggle while a session is running.
+globalCss[".live-field-updated"] = {
+    animation: "phloxLiveFieldFlash 1.6s ease-out both",
+    borderRadius: "6px",
+};
+globalCss[".live-bolt-pulse"] = {
+    animation: "phloxBoltPulse 1.6s ease-in-out infinite",
+};
+
+// Tab panel content fades in on switch (app-wide, kept very short)
+globalCss[".chakra-tabs-content"] = {
+    animation: "phloxTabFade 0.15s ease-out both",
+};
+
+// Popovers have no default motion in Chakra v3 — give them a subtle
+// fade-scale on open (citations, transcripts, inline editors).
+globalCss[".chakra-popover-content"] = {
+    animation: "phloxFadeScaleIn 0.15s ease-out both",
+};
+
+// Accessibility: disable decorative animations for users who prefer
+// reduced motion. Loops below (aurora, orbs) fall back to static.
+globalCss["@media (prefers-reduced-motion: reduce)"] = {
+    ".anim-fade-slide-up": { animation: "none !important" },
+    ".anim-fade-slide-right": { animation: "none !important" },
+    ".anim-fade-scale": { animation: "none !important" },
+    ".anim-fade": { animation: "none !important" },
+    ".anim-emerge-spring": { animation: "none !important" },
+    ".anim-stagger > *": { animation: "none !important" },
+    ".chakra-tabs-content": { animation: "none !important" },
+    ".chakra-popover-content": { animation: "none !important" },
+};
+
 export const system = createSystem(defaultConfig, {
     globalCss,
     theme: {
         keyframes: {
             phloxFadeSlideUp: {
                 from: { opacity: "0", transform: "translateY(20px)" },
-                to: { opacity: "1", transform: "translateY(0)" },
+                to: { opacity: "1", transform: "none" },
             },
             phloxFadeSlideRight: {
                 from: { opacity: "0", transform: "translateX(50px)" },
-                to: { opacity: "1", transform: "translateX(0)" },
+                to: { opacity: "1", transform: "none" },
             },
             phloxFadeScaleIn: {
                 from: { opacity: "0", transform: "scale(0.9)" },
-                to: { opacity: "1", transform: "scale(1)" },
+                to: { opacity: "1", transform: "none" },
             },
             phloxEmergeSpring: {
                 from: {
@@ -129,8 +168,33 @@ export const system = createSystem(defaultConfig, {
                 },
                 to: {
                     opacity: "1",
-                    transform: "scale(1) translateX(0)",
+                    transform: "none",
                 },
+            },
+            phloxLiveFieldFlash: {
+                // Matches the edit-is-blue coding in the agent activity feed.
+                from: {
+                    backgroundColor: "rgba(114, 135, 253, 0.15)",
+                    boxShadow: "inset 2px 0 0 0 #7287fd",
+                },
+                to: {
+                    backgroundColor: "transparent",
+                    boxShadow: "inset 2px 0 0 0 transparent",
+                },
+            },
+            phloxBoltPulse: {
+                "0%": { opacity: "1" },
+                "50%": { opacity: "0.35" },
+                "100%": { opacity: "1" },
+            },
+            // Gentle lift for tab-panel switches (smaller than fadeSlideUp)
+            phloxTabFade: {
+                from: { opacity: "0", transform: "translateY(6px)" },
+                to: { opacity: "1", transform: "translateY(0)" },
+            },
+            phloxFadeIn: {
+                from: { opacity: "0" },
+                to: { opacity: "1" },
             },
         },
         tokens: {

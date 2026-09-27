@@ -1,14 +1,16 @@
 import { Flex, Text, IconButton, HStack } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
 import { FaEdit } from "react-icons/fa";
 import { getAvatarColor, getInitials } from "../sidebar/SidebarHelpers";
 
 const PatientInfoBar = ({ patient, onEdit }) => {
-    const name = patient.name || "New patient";
+    const { t } = useTranslation();
+    const name = patient.name || t("patient.newPatient");
     const meta = [
         patient.gender,
         patient.dob,
-        patient.ur_number && `UR ${patient.ur_number}`,
+        patient.ur_number && t("patient.urBadge", { ur: patient.ur_number }),
     ].filter(Boolean);
 
     return (
@@ -61,13 +63,13 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                     >
                         {meta.length
                             ? meta.join("  ·  ")
-                            : "No demographics yet"}
+                            : t("patient.noDemographicsYet")}
                     </Text>
                 </HStack>
 
-                <Tooltip content="Edit patient details">
+                <Tooltip content={t("patient.editPatientDetails")}>
                     <IconButton
-                        aria-label="Edit patient details"
+                        aria-label={t("patient.editPatientDetails")}
                         size="sm"
                         variant="ghost"
                         color={"textSecondary"}

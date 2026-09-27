@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
 import { clearStoredToken, isTauri } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
@@ -7,6 +8,7 @@ import { AuthGate } from "./AuthGate";
 import { SetupWizard } from "./SetupWizard";
 
 export const ServerConnectionCheck = ({ children }) => {
+  const { t } = useTranslation();
   const [serverStatus, setServerStatus] = useState("checking");
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export const ServerConnectionCheck = ({ children }) => {
         <VStack gap={4}>
           <Spinner size="xl" color="primaryButton" />
           <Text fontSize="lg" fontWeight="medium">
-            Initializing...
+            {t("common.initializing")}
           </Text>
         </VStack>
       </Box>

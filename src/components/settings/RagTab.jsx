@@ -2,6 +2,7 @@ import { Box, Text, NativeSelect, VStack, HStack, Spinner, Button, Dialog, Porta
 import { Tooltip } from "@/components/ui/tooltip";
 import { ReEmbedProgress } from "../common/ReEmbedProgress";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const RagTab = ({
     config,
@@ -9,6 +10,7 @@ const RagTab = ({
     llmModelsLoading = false,
     handleReEmbed,
 }) => {
+    const { t } = useTranslation();
     const [isEmbeddingModelModalOpen, setIsEmbeddingModelModalOpen] =
         useState(false);
     const [pendingEmbeddingModel, setPendingEmbeddingModel] = useState(null);
@@ -60,25 +62,24 @@ const RagTab = ({
             <VStack gap={4} align="stretch">
                 <Box>
                     <Text fontSize="md" fontWeight="bold">
-                        Knowledge Base (RAG)
+                        {t("settings.rag.title")}
                     </Text>
                     <Text fontSize="sm" color="overlay0">
-                        Configure the embedding model used for knowledge base
-                        searches
+                        {t("settings.rag.description")}
                     </Text>
                 </Box>
 
                 <Box>
-                    <Tooltip content="Model used for generating embeddings for RAG - changing this will re-embed all documents">
+                    <Tooltip content={t("settings.rag.embeddingModelTooltip")}>
                         <Text fontSize="sm" mb="2" fontWeight={"bold"}>
-                            Embedding Model
+                            {t("settings.rag.embeddingModel")}
                         </Text>
                     </Tooltip>
                     {llmModelsLoading ? (
                         <HStack gap="2">
                             <Spinner size="sm" />
                             <Text fontSize="sm" color="overlay0">
-                                Loading models...
+                                {t("settings.loadingModels")}
                             </Text>
                         </HStack>
                     ) : (
@@ -89,7 +90,7 @@ const RagTab = ({
                                 onChange={(e) =>
                                     handleEmbeddingModelChange(e.target.value)
                                 }
-                                placeholder="Select embedding model"
+                                placeholder={t("settings.rag.selectModel")}
                                 className="input-style"
                             >
                                 {embeddingModelOptions.map((model) => (
@@ -102,8 +103,7 @@ const RagTab = ({
                         </NativeSelect.Root>
                     )}
                     <Text fontSize="xs" color="overlay0" mt="1">
-                        Available embedding models depend on the LLM endpoint
-                        configured in the LLM tab
+                        {t("settings.rag.modelsHint")}
                     </Text>
                     <Text
                         fontSize="xs"
@@ -111,8 +111,7 @@ const RagTab = ({
                         mt="2"
                         fontWeight="medium"
                     >
-                        ⚠️ Changing the embedding model will re-embed all
-                        documents automatically
+                        {t("settings.rag.reembedWarning")}
                     </Text>
                 </Box>
             </VStack>
@@ -136,13 +135,12 @@ const RagTab = ({
                     <Dialog.Backdrop />
                     <Dialog.Positioner>
                         <Dialog.Content className="modal-style">
-                            <Dialog.Header>Re-embed Documents</Dialog.Header>
+                            <Dialog.Header>{t("settings.rag.reembedTitle")}</Dialog.Header>
                             <Dialog.Body>
                                 {isReEmbedding ? (
                                     <VStack gap={4} align="stretch">
                                         <Text>
-                                            Re-embedding documents with the new
-                                            model…
+                                            {t("settings.rag.reembedding")}
                                         </Text>
                                         <ReEmbedProgress
                                             progress={reEmbedProgress}
@@ -151,14 +149,10 @@ const RagTab = ({
                                 ) : (
                                     <>
                                         <Text>
-                                            Changing the embedding model will
-                                            re-embed all existing document
-                                            collections with the new model. Your
-                                            documents and collections will be
-                                            preserved.
+                                            {t("settings.rag.confirmBody")}
                                         </Text>
                                         <Text mt={4} fontWeight="bold">
-                                            Are you sure you want to proceed?
+                                            {t("settings.rag.confirmQuestion")}
                                         </Text>
                                     </>
                                 )}
@@ -170,13 +164,13 @@ const RagTab = ({
                                         mr={3}
                                         onClick={handleCancelEmbeddingChange}
                                     >
-                                        Cancel
+                                        {t("action.cancel")}
                                     </Button>
                                     <Button
                                         className="green-button"
                                         onClick={handleConfirmEmbeddingChange}
                                     >
-                                        Confirm Change
+                                        {t("settings.rag.confirmChange")}
                                     </Button>
                                 </Dialog.Footer>
                             )}

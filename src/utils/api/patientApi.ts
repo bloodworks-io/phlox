@@ -1,5 +1,6 @@
 // API functions for patient related data operations.
 import { toaster } from "@/components/ui/toaster";
+import { t } from "@/i18n";
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 
@@ -17,14 +18,14 @@ export const patientApi = {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to save patient");
+        throw new Error(errorData.detail || t("api.patient.saveFailed"));
       }
 
       const data = await response.json();
 
       toaster.create({
-        title: "Success",
-        description: "Patient data saved successfully",
+        title: t("toast.success"),
+        description: t("api.patient.savedToast"),
         type: "success",
         duration: 3000,
       });
@@ -56,7 +57,7 @@ export const patientApi = {
         }
         return patientData;
       },
-      errorMessage: "Failed to fetch patient details",
+      errorMessage: t("api.patient.fetchDetailsFailed"),
     });
   },
 
@@ -70,7 +71,7 @@ export const patientApi = {
           body: JSON.stringify({ noteId, jobsList }),
         });
       },
-      errorMessage: "Failed to update jobs list",
+      errorMessage: t("api.patient.updateJobsListFailed"),
     });
   },
 
@@ -83,7 +84,7 @@ export const patientApi = {
     });
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || "Failed to extract jobs");
+      throw new Error(errorData.detail || t("api.patient.extractJobsFailed"));
     }
     return response.json();
   },
@@ -104,7 +105,7 @@ export const patientApi = {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || "Failed to generate reasoning");
+      throw new Error(errorData.detail || t("api.patient.generateReasoningFailed"));
     }
 
     const reader = response.body.getReader();
@@ -137,8 +138,8 @@ export const patientApi = {
 
     if (toast) {
       toaster.create({
-        title: "Success",
-        description: "Chart insights generated successfully.",
+        title: t("toast.success"),
+        description: t("api.patient.reasoningGeneratedToast"),
         type: "success",
         duration: 3000,
       });
@@ -152,7 +153,7 @@ export const patientApi = {
       `/api/note/history?ur_number=${urNumber}&template_key=${templateKey}`,
     );
     const response = await universalFetch(url);
-    if (!response.ok) throw new Error("Failed to fetch patient history");
+    if (!response.ok) throw new Error(t("api.patient.fetchHistoryFailed") as string);
     return response.json();
   },
 
@@ -161,7 +162,7 @@ export const patientApi = {
       `/api/note/consent?ur_number=${encodeURIComponent(urNumber)}`,
     );
     const response = await universalFetch(url);
-    if (!response.ok) throw new Error("Failed to fetch scribe consent");
+    if (!response.ok) throw new Error(t("api.patient.fetchScribeConsentFailed") as string);
     return response.json();
   },
 
@@ -174,7 +175,7 @@ export const patientApi = {
     });
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || "Failed to save scribe consent");
+      throw new Error(errorData.detail || t("api.patient.saveScribeConsentFailed"));
     }
     return response.json();
   },
@@ -196,7 +197,7 @@ export const patientApi = {
         const url = await buildApiUrl(`/api/note/list?${params.toString()}`);
         return universalFetch(url, { signal });
       },
-      errorMessage: "Failed to fetch note list",
+      errorMessage: t("api.patient.fetchNoteListFailed"),
     });
   },
 
@@ -207,7 +208,7 @@ export const patientApi = {
         const url = await buildApiUrl(`/api/note/incomplete-jobs-count${qs}`);
         return universalFetch(url, { signal });
       },
-      errorMessage: "Failed to fetch incomplete jobs count",
+      errorMessage: t("api.patient.fetchIncompleteJobsCountFailed"),
     });
   },
 
@@ -217,7 +218,7 @@ export const patientApi = {
         const url = await buildApiUrl(`/api/note/id/${noteId}`);
         return universalFetch(url, { signal, method: "DELETE" });
       },
-      errorMessage: "Failed to delete patient",
+      errorMessage: t("api.patient.deleteFailed"),
     });
   },
 
@@ -228,7 +229,7 @@ export const patientApi = {
         const url = await buildApiUrl(`/api/note/outstanding-jobs${qs}`);
         return universalFetch(url, { signal });
       },
-      errorMessage: "Failed to fetch outstanding jobs",
+      errorMessage: t("api.patient.fetchOutstandingJobsFailed"),
     });
   },
 
@@ -240,7 +241,7 @@ export const patientApi = {
         );
         return universalFetch(url, { signal });
       },
-      errorMessage: "Failed to search patients",
+      errorMessage: t("api.patient.searchFailed"),
     });
   },
 
@@ -250,7 +251,7 @@ export const patientApi = {
         const url = await buildApiUrl(`/api/note/summary/${noteId}`);
         return universalFetch(url, { signal });
       },
-      errorMessage: "Failed to fetch patient summary",
+      errorMessage: t("api.patient.fetchSummaryFailed"),
     });
   },
 };

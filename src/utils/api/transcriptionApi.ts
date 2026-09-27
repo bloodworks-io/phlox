@@ -1,5 +1,6 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const transcriptionApi = {
     transcribeAudio: async (formData) => {
@@ -12,7 +13,7 @@ export const transcriptionApi = {
                     signal: signal,
                 });
             },
-            errorMessage: "Error transcribing audio",
+            errorMessage: t("api.transcription.transcribeAudioFailed"),
         });
     },
 
@@ -27,7 +28,7 @@ export const transcriptionApi = {
                 });
             },
             timeout: 120000,
-            errorMessage: "Error reprocessing transcription",
+            errorMessage: t("api.transcription.reprocessFailed"),
         });
     },
 
@@ -40,7 +41,7 @@ export const transcriptionApi = {
                     body: formData,
                 });
             },
-            errorMessage: "Error transcribing dictation",
+            errorMessage: t("api.transcription.transcribeDictationFailed"),
         });
     },
 
@@ -57,7 +58,7 @@ export const transcriptionApi = {
                 });
             },
             timeout: 180000,
-            errorMessage: "Error processing document",
+            errorMessage: t("api.transcription.processDocumentFailed"),
         });
     },
 
@@ -74,7 +75,7 @@ export const transcriptionApi = {
                 });
             },
             timeout: 180000,
-            errorMessage: "Error extracting demographics from document",
+            errorMessage: t("api.transcription.extractDemographicsFailed"),
         });
     },
 
@@ -92,7 +93,7 @@ export const transcriptionApi = {
                 });
             },
             timeout: 180000,
-            errorMessage: "Error extracting demographics from text",
+            errorMessage: t("api.transcription.extractDemographicsFromTextFailed"),
         });
     },
 
@@ -110,7 +111,7 @@ export const transcriptionApi = {
                 });
             },
             timeout: 300000,
-            errorMessage: "Error extracting demographics from visual document",
+            errorMessage: t("api.transcription.extractDemographicsVisualFailed"),
         });
     },
 
@@ -128,7 +129,7 @@ export const transcriptionApi = {
                 });
             },
             timeout: 180000,
-            errorMessage: "Error processing extracted document text",
+            errorMessage: t("api.transcription.processDocumentFromTextFailed"),
         });
     },
 
@@ -146,7 +147,7 @@ export const transcriptionApi = {
                 });
             },
             timeout: 300000,
-            errorMessage: "Error processing visual document",
+            errorMessage: t("api.transcription.processDocumentVisualFailed"),
         });
     },
 };

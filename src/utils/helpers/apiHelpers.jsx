@@ -1,5 +1,6 @@
 import { isTauri, getRequestToken } from "./apiConfig";
 import { toaster } from "@/components/ui/toaster";
+import { t } from "@/i18n";
 
 export const universalFetch = async (url, options = {}) => {
   // Get the request token if in Tauri mode
@@ -93,7 +94,7 @@ export const handleApiRequest = async ({
 
     if (successMessage && toast) {
       toaster.create({
-        title: "Success",
+        title: t("toast.success"),
         description: successMessage,
         type: "success",
         duration: 3000,
@@ -119,8 +120,10 @@ export const handleApiRequest = async ({
 
       if (toast) {
         toaster.create({
-          title: "Request Timeout",
-          description: `The request took too long to complete (${timeout / 1000}s timeout)`,
+          title: t("api.toast.requestTimeout"),
+          description: t("api.toast.requestTimeoutDescription", {
+            seconds: timeout / 1000,
+          }),
           type: "error",
           duration: 5000,
         });
@@ -137,7 +140,7 @@ export const handleApiRequest = async ({
 
     if (toast) {
       toaster.create({
-        title: "Error",
+        title: t("toast.error"),
         description: errorMessage || error.message,
         type: "error",
         duration: 5000,

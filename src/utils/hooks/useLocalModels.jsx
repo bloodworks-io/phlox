@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { localModelApi } from "../api/localModelApi";
 import { invoke } from "@tauri-apps/api/core";
 import { downloadLlmModel as downloadLlmService, downloadWhisperModel as downloadWhisperService } from "../services/localModelService";
 
 export const useLocalModels = () => {
+  const { t } = useTranslation();
   const [models, setModels] = useState([]);
   const [availableModels, setAvailableModels] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -40,14 +42,14 @@ export const useLocalModels = () => {
     } catch (error) {
       console.error("Error getting system specs:", error);
       toaster.create({
-        title: "Warning",
-        description: "Could not retrieve system specifications",
+        title: t("toast.warning"),
+        description: t("localModels.toast.specsFailed"),
         type: "warning",
         duration: 3000,
       });
       return null;
     }
-  }, []);
+  }, [t]);
 
   // Fetch downloaded local models
   const fetchLocalModels = useCallback(async () => {
@@ -136,22 +138,24 @@ export const useLocalModels = () => {
         await localModelApi.deleteLlmModel(filename);
         await fetchLocalModels();
         toaster.create({
-          title: "Success",
-          description: `Model deleted successfully`,
+          title: t("toast.success"),
+          description: t("localModels.toast.modelDeleted"),
           type: "success",
           duration: 3000,
         });
       } catch (error) {
         console.error("Error deleting model:", error);
         toaster.create({
-          title: "Error",
-          description: `Failed to delete model: ${error.message}`,
+          title: t("toast.error"),
+          description: t("localModels.toast.modelDeleteFailed", {
+            message: error.message,
+          }),
           type: "error",
           duration: 5000,
         });
       }
     },
-    [fetchLocalModels],
+    [fetchLocalModels, t],
   );
 
   // ========== Whisper Model Functions ==========
@@ -243,22 +247,26 @@ export const useLocalModels = () => {
         await localModelApi.deleteWhisperModel(modelId);
         await fetchWhisperModels();
         toaster.create({
-          title: "Success",
-          description: `Whisper model ${modelId} deleted successfully`,
+          title: t("toast.success"),
+          description: t("localModels.toast.whisperDeleted", {
+            model: modelId,
+          }),
           type: "success",
           duration: 3000,
         });
       } catch (error) {
         console.error("Error deleting Whisper model:", error);
         toaster.create({
-          title: "Error",
-          description: `Failed to delete Whisper model: ${error.message}`,
+          title: t("toast.error"),
+          description: t("localModels.toast.whisperDeleteFailed", {
+            message: error.message,
+          }),
           type: "error",
           duration: 5000,
         });
       }
     },
-    [fetchWhisperModels],
+    [fetchWhisperModels, t],
   );
 
   // Initialize data on mount

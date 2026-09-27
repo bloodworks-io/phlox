@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { layoutTextField, checkboxMark } from "./fieldLayout";
 
 /**
  * Fill a PDF form template with the provided values and return the completed PDF bytes.
@@ -47,38 +48,19 @@ export async function fillPdf(templatePdfBytes, template, values) {
 
 /**
  * Draw text inside a field rectangle, with word-wrap for long text.
+ * Layout comes from fieldLayout.ts — shared with the editor preview.
  */
 function drawTextInField(page, field, value, font) {
-    const fontSize = field.font_size || 12;
-    const maxWidth = field.width - 4; // small padding
-
-    const textWidth = font.widthOfTextAtSize(value, fontSize);
-
-    if (textWidth <= maxWidth) {
-        // Single line, vertically centered
-        const yOffset = field.y + (field.height - fontSize) / 2;
-        page.drawText(value, {
-            x: field.x + 2,
-            y: yOffset,
+    const measure = (text, size) => font.widthOfTextAtSize(text, size);
+    const { lines, fontSize } = layoutTextField(field, value, measure);
+    for (const line of lines) {
+        page.drawText(line.text, {
+            x: line.x,
+            y: line.y,
             size: fontSize,
             font,
             color: rgb(0, 0, 0),
         });
-    } else {
-        // Multi-line: word-wrap within the field
-        const lines = wrapText(value, font, fontSize, maxWidth);
-        const lineHeight = fontSize * 1.2;
-        for (let i = 0; i < lines.length; i++) {
-            const yPos = field.y + field.height - fontSize - i * lineHeight - 2;
-            if (yPos < field.y) break; // don't overflow below field
-            page.drawText(lines[i], {
-                x: field.x + 2,
-                y: yPos,
-                size: fontSize,
-                font,
-                color: rgb(0, 0, 0),
-            });
-        }
     }
 }
 
@@ -86,39 +68,15 @@ function drawTextInField(page, field, value, font) {
  * Draw a centered checkmark in a checkbox field.
  */
 function drawCheckmark(page, field, font) {
-    const size = Math.min(field.font_size || 12, field.height * 0.8);
-    // Use "x" — WinAnsi fonts (Helvetica) cannot encode "✓" (U+2713).
-    const mark = "x";
-    const xCenter =
-        field.x + (field.width - font.widthOfTextAtSize(mark, size)) / 2;
-    const yCenter = field.y + (field.height - size) / 2;
+    const { mark, size, x, y } = checkboxMark(
+        field,
+        (text, s) => font.widthOfTextAtSize(text, s),
+    );
     page.drawText(mark, {
-        x: xCenter,
-        y: yCenter,
+        x,
+        y,
         size,
         font,
         color: rgb(0, 0, 0),
     });
-}
-
-/**
- * Word-wrap text to fit within maxWidth using font metrics.
- */
-function wrapText(text, font, fontSize, maxWidth) {
-    const words = text.split(/\s+/);
-    const lines = [];
-    let currentLine = "";
-
-    for (const word of words) {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-        if (testWidth > maxWidth && currentLine) {
-            lines.push(currentLine);
-            currentLine = word;
-        } else {
-            currentLine = testLine;
-        }
-    }
-    if (currentLine) lines.push(currentLine);
-    return lines;
 }

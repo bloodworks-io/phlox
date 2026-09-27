@@ -1,9 +1,6 @@
 import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button, Switch } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import {
-    ChevronRightIcon,
-    ChevronDownIcon,
-} from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import {
     FaCog,
     FaDesktop,
@@ -14,12 +11,16 @@ import {
     FaPuzzlePiece,
     FaShieldAlt,
     FaUsers,
+    FaComments,
+    FaFileAlt,
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import ToolsSettingsTab from "./ToolsSettingsTab";
 import LocalModelManager from "./LocalModelManager";
 import WhisperTab from "./WhisperTab";
+import PromptEditorTab from "./PromptEditorTab";
 import LlmTab from "./LlmTab";
 import RagTab from "./RagTab";
 import UsersTab from "./UsersTab";
@@ -28,16 +29,17 @@ import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
 
-const PolicyTab = ({ config, handleConfigChange }) => (
+const PolicyTab = ({ config, handleConfigChange }) => {
+    const { t } = useTranslation();
+    return (
     <VStack gap={3} align="stretch">
         <Flex justify="space-between" align="center">
             <Box>
                 <Text fontSize="sm" fontWeight="medium">
-                    Store Original PDFs
+                    {t("settings.policy.storeOriginalPdfs")}
                 </Text>
                 <Text fontSize="xs" className="pill-box-icons">
-                    Keep original PDF files in the database after upload.
-                    Increases storage usage.
+                    {t("settings.policy.storeOriginalPdfsDescription")}
                 </Text>
             </Box>
             <Switch.Root
@@ -56,12 +58,10 @@ const PolicyTab = ({ config, handleConfigChange }) => (
         <Flex justify="space-between" align="center">
             <Box>
                 <Text fontSize="sm" fontWeight="medium">
-                    Require patient consent for ambient scribing
+                    {t("settings.policy.requireScribeConsent")}
                 </Text>
                 <Text fontSize="xs" className="pill-box-icons">
-                    Prompt each patient for consent before ambient
-                    (transcription) recording. Dictation is unaffected;
-                    consent is remembered per patient.
+                    {t("settings.policy.requireScribeConsentDescription")}
                 </Text>
             </Box>
             <Switch.Root
@@ -78,7 +78,8 @@ const PolicyTab = ({ config, handleConfigChange }) => (
             </Switch.Root>
         </Flex>
     </VStack>
-);
+    );
+};
 
 const AdminSettingsPanel = ({
     isCollapsed,
@@ -93,7 +94,14 @@ const AdminSettingsPanel = ({
     urlStatus = { whisper: false, llm: false },
     embeddingModelOptions = [],
     handleReEmbed,
+    prompts,
+    handlePromptChange,
+    handlePromptReset,
+    letterTemperature,
+    onLetterTemperatureChange,
+    onOptionsReset,
 }) => {
+    const { t } = useTranslation();
     const [localStatus, setLocalStatus] = useState(null);
     const [isDocker, setIsDocker] = useState(false);
 
@@ -166,20 +174,16 @@ const AdminSettingsPanel = ({
                 <Flex align="center">
                     <IconButton
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        aria-label="Toggle collapse"
+                        aria-label={t("settings.toggleCollapse")}
                         variant="outline"
                         size="sm"
                         mr="2"
                         className="collapse-toggle"
                     >
-                        {isCollapsed ? (
-                            <ChevronRightIcon />
-                        ) : (
-                            <ChevronDownIcon />
-                        )}
+                        <AnimatedChevron isOpen={!isCollapsed} />
                     </IconButton>
                     <FaCog size="1.2em" style={{ marginRight: "5px" }} />
-                    <Text as="h3">Admin Settings</Text>
+                    <Text as="h3">{t("settings.admin.title")}</Text>
                 </Flex>
             </Flex>
             <Collapsible.Root open={!isCollapsed}>
@@ -188,13 +192,13 @@ const AdminSettingsPanel = ({
                         {/* Inference Type Selection - Desktop (Tauri) only and not in Docker */}
                         {isTauri() && !isDocker && (
                             <Box>
-                                <Tooltip content="Choose between running models locally on your machine or connecting to remote API services">
+                                <Tooltip content={t("settings.admin.inferenceTypeTooltip")}>
                                     <Text
                                         fontSize="md"
                                         fontWeight="bold"
                                         mb="3"
                                     >
-                                        Inference Type
+                                        {t("settings.admin.inferenceType")}
                                     </Text>
                                 </Tooltip>
                                 <Flex
@@ -216,7 +220,7 @@ const AdminSettingsPanel = ({
                                         position="relative"
                                         zIndex={1}
                                     >
-                                        <Tooltip content="Run models directly on your machine using bundled inference engines">
+                                        <Tooltip content={t("settings.admin.localTooltip")}>
                                             <Button
                                                 className={`mode-selector-button ${isLocalInference ? "active" : ""}`}
                                                 onClick={() =>
@@ -230,10 +234,10 @@ const AdminSettingsPanel = ({
                                                 }
                                             >
                                                 <FaDesktop />
-                                                Local
+                                                {t("settings.admin.local")}
                                             </Button>
                                         </Tooltip>
-                                        <Tooltip content="Connect to external OpenAI/Ollama-compatible APIs">
+                                        <Tooltip content={t("settings.admin.remoteTooltip")}>
                                             <Button
                                                 className={`mode-selector-button ${!isLocalInference ? "active" : ""}`}
                                                 onClick={() =>
@@ -243,7 +247,7 @@ const AdminSettingsPanel = ({
                                                 }
                                             >
                                                 <FaCloud />
-                                                Remote
+                                                {t("settings.admin.remote")}
                                             </Button>
                                         </Tooltip>
                                     </Flex>
@@ -257,48 +261,70 @@ const AdminSettingsPanel = ({
                                 defaultValue="0"
                             >
                                 <Tabs.List>
-                                    <Tooltip content="Manage local LLM and Whisper models">
+                                    <Tooltip content={t("settings.admin.tabModelsTooltip")}>
                                         <Tabs.Trigger
                                             className="tab-style"
                                             value="0"
                                         >
                                             <HStack>
                                                 <FaDesktop />
-                                                <Text>Models</Text>
+                                                <Text>{t("settings.admin.tabModels")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
-                                    <Tooltip content="Configure external tool servers">
+                                    <Tooltip content={t("settings.prompt.chatSubtitle")}>
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="chat"
+                                        >
+                                            <HStack>
+                                                <FaComments />
+                                                <Text>{t("settings.admin.tabChat")}</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    <Tooltip content={t("settings.prompt.summarySubtitle")}>
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="summary"
+                                        >
+                                            <HStack>
+                                                <FaFileAlt />
+                                                <Text>{t("settings.admin.tabSummary")}</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    <Tooltip content={t("settings.admin.tabToolsTooltip")}>
                                         <Tabs.Trigger
                                             className="tab-style"
                                             value="1"
                                         >
                                             <HStack>
                                                 <FaPuzzlePiece />
-                                                <Text>Tools</Text>
+                                                <Text>{t("settings.admin.tabTools")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
-                                    <Tooltip content="Practice-level system policy">
+                                    <Tooltip content={t("settings.admin.tabPolicyTooltip")}>
                                         <Tabs.Trigger
                                             className="tab-style"
                                             value="2"
                                         >
                                             <HStack>
                                                 <FaShieldAlt />
-                                                <Text>Policy</Text>
+                                                <Text>{t("settings.admin.tabPolicy")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
                                     {!isTauri() && (
-                                        <Tooltip content="Manage user accounts">
+                                        <Tooltip content={t("settings.admin.tabUsersTooltip")}>
                                             <Tabs.Trigger
                                                 className="tab-style"
                                                 value="3"
                                             >
                                                 <HStack>
                                                     <FaUsers />
-                                                    <Text>Users</Text>
+                                                    <Text>{t("settings.admin.tabUsers")}</Text>
                                                 </HStack>
                                             </Tabs.Trigger>
                                         </Tooltip>
@@ -309,6 +335,48 @@ const AdminSettingsPanel = ({
                                     value="0"
                                 >
                                     <LocalModelManager />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="chat"
+                                >
+                                    <PromptEditorTab
+                                        title={t("settings.prompt.chatTitle")}
+                                        subtitle={t("settings.prompt.chatSubtitle")}
+                                        value={prompts?.chat?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "chat",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("chat")
+                                        }
+                                    />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="summary"
+                                >
+                                    <PromptEditorTab
+                                        title={t("settings.prompt.summaryTitle")}
+                                        subtitle={t("settings.prompt.summarySubtitle")}
+                                        value={prompts?.summary?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "summary",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("summary")
+                                        }
+                                    />
                                 </Tabs.Content>
                                 <Tabs.Content
                                     className="floating-main"
@@ -340,72 +408,94 @@ const AdminSettingsPanel = ({
                                 defaultValue="0"
                             >
                                 <Tabs.List>
-                                    <Tooltip content="Configure speech-to-text service settings">
+                                    <Tooltip content={t("settings.admin.tabWhisperTooltip")}>
                                         <Tabs.Trigger
                                             className="tab-style"
                                             value="0"
                                         >
                                             <HStack>
                                                 <FaMicrophone />
-                                                <Text>Whisper</Text>
+                                                <Text>{t("settings.admin.tabWhisper")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
-                                    <Tooltip content="Configure large language model provider settings">
+                                    <Tooltip content={t("settings.admin.tabLlmTooltip")}>
                                         <Tabs.Trigger
                                             className="tab-style"
                                             value="1"
                                         >
                                             <HStack>
                                                 <FaBrain />
-                                                <Text>LLM</Text>
+                                                <Text>{t("settings.admin.tabLlm")}</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    <Tooltip content={t("settings.prompt.chatSubtitle")}>
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="chat"
+                                        >
+                                            <HStack>
+                                                <FaComments />
+                                                <Text>{t("settings.admin.tabChat")}</Text>
+                                            </HStack>
+                                        </Tabs.Trigger>
+                                    </Tooltip>
+                                    <Tooltip content={t("settings.prompt.summarySubtitle")}>
+                                        <Tabs.Trigger
+                                            className="tab-style"
+                                            value="summary"
+                                        >
+                                            <HStack>
+                                                <FaFileAlt />
+                                                <Text>{t("settings.admin.tabSummary")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
                                     {isRagEnabled() && (
-                                        <Tooltip content="Configure knowledge base embedding model">
+                                        <Tooltip content={t("settings.admin.tabRagTooltip")}>
                                             <Tabs.Trigger
                                                 className="tab-style"
                                                 value="2"
                                             >
                                                 <HStack>
                                                     <FaDatabase />
-                                                    <Text>RAG</Text>
+                                                    <Text>{t("settings.admin.tabRag")}</Text>
                                                 </HStack>
                                             </Tabs.Trigger>
                                         </Tooltip>
                                     )}
-                                    <Tooltip content="Configure external tool servers">
+                                    <Tooltip content={t("settings.admin.tabToolsTooltip")}>
                                         <Tabs.Trigger
                                             className="tab-style"
                                             value="3"
                                         >
                                             <HStack>
                                                 <FaPuzzlePiece />
-                                                <Text>Tools</Text>
+                                                <Text>{t("settings.admin.tabTools")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
-                                    <Tooltip content="Practice-level system policy">
+                                    <Tooltip content={t("settings.admin.tabPolicyTooltip")}>
                                         <Tabs.Trigger
                                             className="tab-style"
                                             value="4"
                                         >
                                             <HStack>
                                                 <FaShieldAlt />
-                                                <Text>Policy</Text>
+                                                <Text>{t("settings.admin.tabPolicy")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
                                     </Tooltip>
                                     {!isTauri() && (
-                                        <Tooltip content="Manage user accounts">
+                                        <Tooltip content={t("settings.admin.tabUsersTooltip")}>
                                             <Tabs.Trigger
                                                 className="tab-style"
                                                 value="5"
                                             >
                                                 <HStack>
                                                     <FaUsers />
-                                                    <Text>Users</Text>
+                                                    <Text>{t("settings.admin.tabUsers")}</Text>
                                                 </HStack>
                                             </Tabs.Trigger>
                                         </Tooltip>
@@ -440,6 +530,53 @@ const AdminSettingsPanel = ({
                                         modelOptions={modelOptions}
                                         llmModelsLoading={llmModelsLoading}
                                         urlStatus={urlStatus}
+                                        letterTemperature={letterTemperature}
+                                        onLetterTemperatureChange={
+                                            onLetterTemperatureChange
+                                        }
+                                        onOptionsReset={onOptionsReset}
+                                    />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="chat"
+                                >
+                                    <PromptEditorTab
+                                        title={t("settings.prompt.chatTitle")}
+                                        subtitle={t("settings.prompt.chatSubtitle")}
+                                        value={prompts?.chat?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "chat",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("chat")
+                                        }
+                                    />
+                                </Tabs.Content>
+                                <Tabs.Content
+                                    className="floating-main"
+                                    value="summary"
+                                >
+                                    <PromptEditorTab
+                                        title={t("settings.prompt.summaryTitle")}
+                                        subtitle={t("settings.prompt.summarySubtitle")}
+                                        value={prompts?.summary?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "summary",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("summary")
+                                        }
                                     />
                                 </Tabs.Content>
                                 {isRagEnabled() && (

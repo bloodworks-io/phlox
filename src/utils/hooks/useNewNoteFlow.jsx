@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router";
 import { useDisclosure } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 
-export const useNewNoteFlow = ({ guardedNavigate }) => {
+export const useNewNoteFlow = () => {
+    const navigate = useNavigate();
     const [newNoteKey, setNewNoteKey] = useState(0);
     const {
         open: isNewNoteOpen,
@@ -23,12 +25,14 @@ export const useNewNoteFlow = ({ guardedNavigate }) => {
                 resetLetter();
             }
             onCloseNewNote();
-            guardedNavigate("/new-note", {
-                viaModal: true,
-                cameFromSearch: Boolean(cameFromSearch),
+            navigate("/new-note", {
+                state: {
+                    viaModal: true,
+                    cameFromSearch: Boolean(cameFromSearch),
+                },
             });
         },
-        [resetLetter, onCloseNewNote, guardedNavigate],
+        [resetLetter, onCloseNewNote, navigate],
     );
 
     return {

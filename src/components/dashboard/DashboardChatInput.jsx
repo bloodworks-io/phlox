@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Box,
     Flex,
@@ -30,7 +31,7 @@ const DashboardChatInput = ({
     onChange,
     onSend,
     isLoading,
-    placeholder = "Message Phlox...",
+    placeholder,
     position = "centered", // "centered" | "bottom"
     showDisclaimer = true,
     pendingImage,
@@ -38,6 +39,7 @@ const DashboardChatInput = ({
     onImageRemove,
     isProcessingImage,
 }) => {
+    const { t } = useTranslation();
     const [isDragOver, setIsDragOver] = useState(false);
 
     const fileInputRef = useRef(null);
@@ -146,9 +148,11 @@ const DashboardChatInput = ({
                     borderRadius="lg"
                     zIndex={20}
                     pointerEvents="none"
+                    className="anim-fade-scale"
+                    css={{ animationDuration: "0.15s" }}
                 >
                     <Text fontWeight="bold" color="primaryButton">
-                        Drop image or PDF here
+                        {t("chat.attachment.dropHere")}
                     </Text>
                 </Flex>
             )}
@@ -170,11 +174,13 @@ const DashboardChatInput = ({
                         borderRadius="md"
                         bg="surfaceMuted"
                         maxW="33%"
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.15s" }}
                     >
                         {pendingImage.type.startsWith("image/") ? (
                             <Image
                                 src={URL.createObjectURL(pendingImage)}
-                                alt="Preview"
+                                alt={t("chat.attachment.previewAlt")}
                                 boxSize="20px"
                                 borderRadius="sm"
                                 objectFit="cover"
@@ -190,7 +196,7 @@ const DashboardChatInput = ({
                                 <FaFilePdf />
                             </Icon>
                         )}
-                        <Text fontSize="xs" flex="1" isTruncated>
+                        <Text fontSize="xs" flex="1" minW="0" truncate>
                             {pendingImage.name}
                         </Text>
                         {isProcessingImage && (
@@ -199,7 +205,7 @@ const DashboardChatInput = ({
                         <IconButton
                             size="xs"
                             variant="ghost"
-                            aria-label="Remove file"
+                            aria-label={t("chat.attachment.removeFile")}
                             onClick={onImageRemove}
                             disabled={isProcessingImage}
                             flexShrink={0}
@@ -217,7 +223,7 @@ const DashboardChatInput = ({
                     value={inputValue}
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
-                    placeholder={placeholder}
+                    placeholder={placeholder ?? t("chat.input.placeholder")}
                     rows={1}
                     resize="none"
                     variant="unstyled"
@@ -241,7 +247,7 @@ const DashboardChatInput = ({
                         <IconButton
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isLoading || isProcessingImage}
-                            aria-label="Attach image or PDF"
+                            aria-label={t("chat.attachment.attach")}
                             size="sm"
                             variant="ghost"
                             color="textQuaternary"
@@ -264,7 +270,7 @@ const DashboardChatInput = ({
                         onClick={onSend}
                         disabled={!canSend}
                         loading={isLoading}
-                        aria-label="Send message"
+                        aria-label={t("chat.input.send")}
                         size="sm"
                         alignSelf="center"
                         borderRadius="full"
@@ -290,7 +296,7 @@ const DashboardChatInput = ({
                     mt={2}
                     opacity={0.8}
                 >
-                    Phlox may make mistakes. Always verify critical information.
+                    {t("chat.disclaimer")}
                 </Text>
             )}
         </Flex>

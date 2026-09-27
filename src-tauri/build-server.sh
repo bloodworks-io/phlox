@@ -81,6 +81,12 @@ if [ -z "$NUITKA_CMD" ]; then
     NUITKA_CMD="$PYTHON -m nuitka"
 fi
 
+# Speaker embedding model for live diarization (idempotent; the script holds
+# the pinned URL and checksum). Required before Nuitka packs it below.
+FETCH_PYTHON="$PYTHON"
+command -v "$FETCH_PYTHON" >/dev/null 2>&1 || FETCH_PYTHON=python3
+"$FETCH_PYTHON" "$SERVER_DIR/scripts/fetch_speaker_model.py"
+
 SQLITE_VEC_DIR="$("$PYTHON" -c 'import sqlite_vec, os; print(os.path.dirname(sqlite_vec.__file__))' 2>/dev/null)"
 VEC0_NAME="$(ls "$SQLITE_VEC_DIR"/vec0.* 2>/dev/null | head -1)"
 
@@ -104,6 +110,9 @@ $NUITKA_CMD \
     --include-package=sqlite_vec \
     $([[ "$OSTYPE" == "darwin"* ]] && echo "--include-data-files=$VEC0_NAME=sqlite_vec/$(basename "$VEC0_NAME")") \
     --include-data-files="server/demo/example_patients.json=server/demo/example_patients.json" \
+    --include-data-files="server/assets/models/campplus-zh-en.onnx=server/assets/models/campplus-zh-en.onnx" \
+    --include-package=sherpa_onnx \
+    --include-package-data=sherpa_onnx \
     --include-package=pypdf \
     --include-package=mcp \
     --nofollow-import-to=server.tests \

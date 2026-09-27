@@ -1,4 +1,5 @@
 import { Button, VStack, HStack, Heading, Input, Textarea, Dialog, Portal } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 
 const LetterTemplateEditModal = ({
   isOpen,
@@ -7,6 +8,8 @@ const LetterTemplateEditModal = ({
   template,
   setTemplate,
 }) => {
+  const { t } = useTranslation();
+
   const handleChange = (field, value) => {
     setTemplate((prev) => ({
       ...prev,
@@ -31,21 +34,21 @@ const LetterTemplateEditModal = ({
           <Dialog.Content className="modal-style">
             <Dialog.Header>
               <Heading as="h2" size="md" fontFamily="heading">
-                {template?.id ? "Edit Template" : "New Template"}
+                {template?.id ? t("modal.letterTemplate.editTitle") : t("modal.letterTemplate.newTitle")}
               </Heading>
             </Dialog.Header>
             <Dialog.CloseTrigger />
             <Dialog.Body maxH="40vh" overflowY="auto" className="custom-scrollbar">
               <VStack gap={4}>
                 <Input
-                  placeholder="Template Name"
+                  placeholder={t("modal.templateNamePlaceholder")}
                   value={template?.name || ""}
                   onChange={(e) => handleChange("name", e.target.value)}
                   disabled={template?.name === "Dictation"}
                   className="input-style"
                 />
                 <Textarea
-                  placeholder="Instructions for letter generation..."
+                  placeholder={t("modal.letterTemplate.instructionsPlaceholder")}
                   value={template?.instructions || ""}
                   onChange={(e) => handleChange("instructions", e.target.value)}
                   className="input-style"
@@ -61,11 +64,11 @@ const LetterTemplateEditModal = ({
                     onClose();
                     setTemplate(null);
                   }}
-                >
-                  Cancel
+                 >
+                  {t("action.cancel")}
                 </Button>
                 <Button className="green-button" onClick={handleSave}>
-                  Save
+                  {t("action.save")}
                 </Button>
               </HStack>
             </Dialog.Footer>

@@ -66,6 +66,13 @@ async def openai_compatible_chat(
             # Direct mappings
             if "temperature" in options:
                 params["temperature"] = options["temperature"]
+            if "num_predict" in options:
+                params["max_tokens"] = options["num_predict"]
+            # Single-token readout support (e.g. live-agent gate classification)
+            if "logprobs" in options:
+                params["logprobs"] = options["logprobs"]
+            if "top_logprobs" in options:
+                params["top_logprobs"] = options["top_logprobs"]
             # Handle stop tokens
             if "stop" in options:
                 params["stop"] = options["stop"]
@@ -81,13 +88,23 @@ async def openai_compatible_chat(
                 },
             }
 
+        # Non-SDK body fields travel via the SDK's extra_body channel: the
+        # typed create() signature rejects unknown kwargs client-side. Combine
+        # the thinking params with any caller-supplied options["extra_body"]
+        # (caller wins per key) BEFORE the streaming create starts eagerly.
+        extra_body = dict(thinking_params) if thinking_params else {}
+        call_extra_body = options.get("extra_body") if options else None
+        if call_extra_body:
+            extra_body.update(call_extra_body)
+
         # Add stream parameter if needed
         if stream:
             params["stream"] = stream
             # Eagerly start the request so a 400 for a thinking param can be
             # self-healed before the caller starts consuming the generator.
-            stream_response = await _create_with_thinking_fallback(client, params, thinking_params)
+            stream_response = await _create_with_thinking_fallback(client, params, extra_body)
 
+        if stream:
             # For streaming, return an async generator
             async def response_generator():
                 reasoning_started = False
@@ -170,7 +187,7 @@ async def openai_compatible_chat(
 
             return response_generator()
         else:
-            response = await _create_with_thinking_fallback(client, params, thinking_params)
+            response = await _create_with_thinking_fallback(client, params, extra_body)
             # Convert to Ollama-like format for consistency
             content = response.choices[0].message.content or ""
 
@@ -181,6 +198,16 @@ async def openai_compatible_chat(
                     "content": content,
                 },
             }
+
+            # Expose logprobs (OpenAI-style payload) for readout-style
+            # classification; absent when the provider dropped the params.
+            logprobs_obj = getattr(response.choices[0], "logprobs", None)
+            if logprobs_obj is not None:
+                result["logprobs"] = (
+                    logprobs_obj.model_dump()
+                    if hasattr(logprobs_obj, "model_dump")
+                    else logprobs_obj
+                )
 
             # Add reasoning to result if present
             reasoning = (

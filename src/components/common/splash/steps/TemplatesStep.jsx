@@ -8,6 +8,7 @@ import {
   Spinner,
   Box,
 } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { FaCheckCircle } from "react-icons/fa";
 import { TEMPLATE_DESCRIPTIONS } from "../constants";
 
@@ -24,7 +25,10 @@ export const TemplatesStep = ({
   selectedTemplate,
   setSelectedTemplate,
   isFetchingTemplates,
-}) => (
+}) => {
+  const { t } = useTranslation();
+
+  return (
   <VStack
     key="templates"
     className="anim-fade-slide-right"
@@ -34,10 +38,16 @@ export const TemplatesStep = ({
     {isFetchingTemplates ? (
       <Flex align="center" justify="center" py={8}>
         <Spinner size="lg" color="primaryButton" />
-        <Text ml={4} color="textSecondary">Loading templates...</Text>
+        <Text ml={4} color="textSecondary">{t("splash.step.templates.loading")}</Text>
       </Flex>
     ) : (
-      <SimpleGrid columns={{ base: 1, md: 2 }} gap={3} w="100%">
+      <SimpleGrid
+        columns={{ base: 1, md: 2 }}
+        gap={3}
+        w="100%"
+        className="anim-stagger"
+        sx={{ "& > *": { animationDuration: "0.2s" } }}
+      >
         {availableTemplates.map((template, index) => {
           const isSelected = selectedTemplate === template.template_key;
           const accent = TEMPLATE_COLORS[index % TEMPLATE_COLORS.length];
@@ -78,14 +88,20 @@ export const TemplatesStep = ({
                   {template.template_name}
                 </Text>
                 {isSelected && (
-                  <Icon color={accent} boxSize={4} asChild>
+                  <Icon
+                    color={accent}
+                    boxSize={4}
+                    asChild
+                    className="anim-fade-scale"
+                    sx={{ animationDuration: "0.2s" }}
+                  >
                     <FaCheckCircle />
                   </Icon>
                 )}
               </HStack>
               <Text fontSize="xs" color="textSecondary" lineHeight="1.4">
                 {TEMPLATE_DESCRIPTIONS[template.template_key] ||
-                  "A custom template for clinical documentation."}
+                  t("splash.step.templates.customDescription")}
               </Text>
             </Box>
           );
@@ -93,4 +109,5 @@ export const TemplatesStep = ({
       </SimpleGrid>
     )}
   </VStack>
-);
+  );
+};

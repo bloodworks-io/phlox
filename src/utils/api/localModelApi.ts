@@ -1,13 +1,14 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl, isTauri } from "../helpers/apiConfig";
 import { invoke } from "@tauri-apps/api/core";
+import { t } from "@/i18n";
 
 export const localModelApi = {
   // Streaming download helper for SSE
   streamSSE: async function* (url) {
     const response = await universalFetch(url);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(t("api.error.httpStatus", { status: response.status }) as string);
     }
 
     const reader = response.body.getReader();
@@ -43,7 +44,7 @@ export const localModelApi = {
         const url = await buildApiUrl("/api/config/local/models/available");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch available LLM models",
+      errorMessage: t("api.localModels.fetchAvailableFailed"),
     }),
 
   fetchLocalModels: async () =>
@@ -52,7 +53,7 @@ export const localModelApi = {
         const url = await buildApiUrl("/api/config/local/models");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch local models",
+      errorMessage: t("api.localModels.fetchLocalFailed"),
     }),
 
   fetchModelRecommendations: async () =>
@@ -63,7 +64,7 @@ export const localModelApi = {
         );
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch model recommendations",
+      errorMessage: t("api.localModels.fetchRecommendationsFailed"),
     }),
 
   checkLocalStatus: async () =>
@@ -72,7 +73,7 @@ export const localModelApi = {
         const url = await buildApiUrl("/api/config/local/status");
         return universalFetch(url);
       },
-      errorMessage: "Failed to check local status",
+      errorMessage: t("api.localModels.checkStatusFailed"),
     }),
 
   downloadLlmModel: async (modelId) =>
@@ -85,8 +86,8 @@ export const localModelApi = {
           body: JSON.stringify({ model_id: modelId }),
         });
       },
-      successMessage: "Model downloaded successfully",
-      errorMessage: "Failed to download model",
+      successMessage: t("api.localModels.downloadSuccess"),
+      errorMessage: t("api.localModels.downloadFailed"),
       timeout: 600000, // 10 minutes for larger models
     }),
 
@@ -104,8 +105,8 @@ export const localModelApi = {
           method: "DELETE",
         });
       },
-      successMessage: "Model deleted successfully",
-      errorMessage: "Failed to delete model",
+      successMessage: t("localModels.toast.modelDeleted"),
+      errorMessage: t("api.localModels.deleteFailed"),
     }),
 
   restartLlamaServer: async () =>
@@ -114,10 +115,10 @@ export const localModelApi = {
         if (isTauri()) {
           return await invoke("restart_llama");
         }
-        throw new Error("Llama restart is only available in Tauri builds");
+        throw new Error(t("api.localModels.restartLlamaTauriOnly") as string);
       },
-      successMessage: "LLM server restarted successfully",
-      errorMessage: "Failed to restart LLM server",
+      successMessage: t("api.localModels.restartLlamaSuccess"),
+      errorMessage: t("api.localModels.restartLlamaFailed"),
     }),
 
   getSelectedModel: async () =>
@@ -126,7 +127,7 @@ export const localModelApi = {
         const url = await buildApiUrl("/api/config/local/selected-model");
         return universalFetch(url);
       },
-      errorMessage: "Failed to get selected model",
+      errorMessage: t("api.localModels.getSelectedFailed"),
     }),
 
   // Whisper model management
@@ -138,7 +139,7 @@ export const localModelApi = {
         );
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch Whisper models",
+      errorMessage: t("api.localModels.fetchWhisperModelsFailed"),
     }),
 
   fetchDownloadedWhisperModels: async () =>
@@ -149,7 +150,7 @@ export const localModelApi = {
         );
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch downloaded Whisper models",
+      errorMessage: t("api.localModels.fetchDownloadedWhisperFailed"),
     }),
 
   fetchAvailableWhisperModels: async () =>
@@ -160,7 +161,7 @@ export const localModelApi = {
         );
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch available Whisper models",
+      errorMessage: t("api.localModels.fetchAvailableWhisperFailed"),
     }),
 
   fetchWhisperRecommendations: async () =>
@@ -171,7 +172,7 @@ export const localModelApi = {
         );
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch Whisper model recommendations",
+      errorMessage: t("api.localModels.fetchWhisperRecommendationsFailed"),
     }),
 
   streamDownloadWhisperModel: async function* (modelId) {
@@ -190,8 +191,8 @@ export const localModelApi = {
           method: "DELETE",
         });
       },
-      successMessage: "Whisper model deleted successfully",
-      errorMessage: "Failed to delete Whisper model",
+      successMessage: t("api.localModels.deleteWhisperSuccess"),
+      errorMessage: t("api.localModels.deleteWhisperFailed"),
     }),
 
   fetchWhisperStatus: async () =>
@@ -200,7 +201,7 @@ export const localModelApi = {
         const url = await buildApiUrl("/api/config/local/whisper/status");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch Whisper status",
+      errorMessage: t("api.localModels.fetchWhisperStatusFailed"),
     }),
 
   restartWhisperServer: async () =>
@@ -209,10 +210,10 @@ export const localModelApi = {
         if (isTauri()) {
           return await invoke("restart_whisper");
         }
-        throw new Error("Whisper restart is only available in Tauri builds");
+        throw new Error(t("api.localModels.restartWhisperTauriOnly") as string);
       },
-      successMessage: "Whisper server restarted successfully",
-      errorMessage: "Failed to restart Whisper server",
+      successMessage: t("api.localModels.restartWhisperSuccess"),
+      errorMessage: t("api.localModels.restartWhisperFailed"),
     }),
 
   // Embedding model management
@@ -222,7 +223,7 @@ export const localModelApi = {
         const url = await buildApiUrl("/api/config/local/embedding/status");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch embedding model status",
+      errorMessage: t("api.localModels.fetchEmbeddingStatusFailed"),
     }),
 
   streamDownloadEmbeddingModel: async function* () {
@@ -237,10 +238,10 @@ export const localModelApi = {
         if (isTauri()) {
           return await invoke("restart_embedding");
         }
-        throw new Error("Embedding restart is only available in Tauri builds");
+        throw new Error(t("api.localModels.restartEmbeddingTauriOnly") as string);
       },
-      successMessage: "Embedding server restarted successfully",
-      errorMessage: "Failed to restart embedding server",
+      successMessage: t("api.localModels.restartEmbeddingSuccess"),
+      errorMessage: t("api.localModels.restartEmbeddingFailed"),
     }),
 
   deleteEmbeddingModel: async () =>
@@ -251,7 +252,7 @@ export const localModelApi = {
           method: "DELETE",
         });
       },
-      successMessage: "Embedding model deleted successfully",
-      errorMessage: "Failed to delete embedding model",
+      successMessage: t("api.localModels.deleteEmbeddingSuccess"),
+      errorMessage: t("api.localModels.deleteEmbeddingFailed"),
     }),
 };

@@ -1,4 +1,5 @@
 import { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useClipboard } from "../../../utils/hooks/useClipboard";
 
 import LetterPanel from "./LetterPanel";
@@ -24,6 +25,7 @@ const Letter = forwardRef(
     ref,
   ) => {
     // State
+    const { t } = useTranslation();
     const [isRefining, setIsRefining] = useState(false);
     const [refinementInput, setRefinementInput] = useState("");
     const [recentlyCopied, setRecentlyCopied] = useState(false);
@@ -75,7 +77,7 @@ const Letter = forwardRef(
       }
     }, [isOpen, finalCorrespondence]);
 
-    const textToCopy = finalCorrespondence || "No letter attached to encounter";
+    const textToCopy = finalCorrespondence || t("letter.toast.noneAttached");
     const { onCopy } = useClipboard(textToCopy, { format: "text/plain" });
 
     const handleCopy = () => {

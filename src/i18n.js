@@ -23,7 +23,17 @@ i18n.use(initReactI18next).init({
         escapeValue: false, // React escapes by default
     },
     returnNull: false,
+    parseMissingKeyHandler: (key) => {
+        if (import.meta.env.DEV) {
+            console.warn(`[i18n] missing key: ${key}`);
+        }
+        return key;
+    },
 });
+
+// For non-React contexts (api modules, plain helpers). Inside components and
+// hooks, prefer useTranslation().
+export const t = (key, options) => i18n.t(key, options);
 
 export const syncLanguage = (language) => {
     const lang = language || "en";

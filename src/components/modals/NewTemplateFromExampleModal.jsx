@@ -1,4 +1,5 @@
 import { Button, HStack, Heading, Textarea, Box, Text, VStack, Dialog, Portal } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 
 const NewTemplateFromExampleModal = ({
     isOpen,
@@ -8,6 +9,8 @@ const NewTemplateFromExampleModal = ({
     setExampleNote,
     isLoading,
 }) => {
+    const { t } = useTranslation();
+
     return (
         <Dialog.Root open={isOpen} size='lg' onOpenChange={e => {
             if (!e.open) {
@@ -19,7 +22,7 @@ const NewTemplateFromExampleModal = ({
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
                     <Dialog.Content className="modal-style">
-                        <Dialog.Header><Heading as="h2" size="md" fontFamily="heading">New Template from Example</Heading></Dialog.Header>
+                        <Dialog.Header><Heading as="h2" size="md" fontFamily="heading">{t("modal.newTemplateFromExample.title")}</Heading></Dialog.Header>
                         <Dialog.CloseTrigger />
                         <Dialog.Body
                             maxH="50vh"
@@ -41,15 +44,13 @@ const NewTemplateFromExampleModal = ({
                                             fontWeight="600"
                                             fontSize="sm"
                                         >
-                                            Create a Template from an Existing Note
+                                            {t("modal.newTemplateFromExample.createTitle")}
                                         </Text>
                                         <Text
                                             color="textSecondary"
                                             fontSize="sm"
                                         >
-                                            Paste an example clinical note below. The AI
-                                            will analyze its structure and automatically
-                                            create a template with matching fields.
+                                            {t("modal.newTemplateFromExample.createDescription")}
                                         </Text>
                                     </VStack>
                                 </Box>
@@ -62,42 +63,33 @@ const NewTemplateFromExampleModal = ({
                                         fontWeight="600"
                                         mb={2}
                                     >
-                                        TIPS FOR BEST RESULTS:
+                                        {t("modal.newTemplateFromExample.tips")}
                                     </Text>
                                     <VStack align="start" gap={1} pl={2}>
                                         <Text
                                             color="textSecondary"
                                             fontSize="sm"
                                         >
-                                            • Use a complete, well-formatted note as
-                                            your example
+                                            {t("modal.newTemplateFromExample.tipComplete")}
                                         </Text>
                                         <Text
                                             color="textSecondary"
                                             fontSize="sm"
                                         >
-                                            • Include typical sections like Subjective,
-                                            Objective, Assessment, Plan
+                                            {t("modal.newTemplateFromExample.tipSections")}
                                         </Text>
                                         <Text
                                             color="textSecondary"
                                             fontSize="sm"
                                         >
-                                            • The AI will identify field names and their
-                                            relationships
+                                            {t("modal.newTemplateFromExample.tipFields")}
                                         </Text>
                                     </VStack>
                                 </Box>
 
                                 {/* Textarea */}
                                 <Textarea
-                                    placeholder={`Paste your example note here...
-
-        Example:
-        Subjective: Patient presents with...
-        Objective: Vitals normal, physical exam reveals...
-        Assessment: Likely diagnosis of...
-        Plan: 1. Prescribe medication 2. Follow up in 2 weeks`}
+                                    placeholder={t("modal.newTemplateFromExample.placeholder")}
                                     value={exampleNote}
                                     onChange={(e) => setExampleNote(e.target.value)}
                                     className="input-style"
@@ -119,12 +111,12 @@ const NewTemplateFromExampleModal = ({
                                     }}
                                     mr={3}
                                 >
-                                    Cancel
+                                    {t("action.cancel")}
                                 </Button>
                                 <Button
                                     onClick={onCreate}
                                     loading={isLoading}
-                                    loadingText="Creating..."
+                                    loadingText={t("modal.newTemplateFromExample.creating")}
                                     size="md"
                                     borderRadius="2xl"
                                     className="green-button"
@@ -133,7 +125,7 @@ const NewTemplateFromExampleModal = ({
                                         fontWeight: "600"
                                     }}
                                 >
-                                    Create Template
+                                    {t("modal.newTemplateFromExample.create")}
                                 </Button>
                             </HStack>
                         </Dialog.Footer>

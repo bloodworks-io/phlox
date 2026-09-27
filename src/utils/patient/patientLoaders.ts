@@ -12,7 +12,11 @@ export const findPatients = async (query) => {
     }
 };
 
-export const buildEncounterFromCandidate = async (candidate, selectedDate) => {
+export const buildEncounterFromCandidate = async (
+    candidate,
+    selectedDate,
+    onSummary,
+) => {
     let fullTemplateData = candidate.template_data || {};
     try {
         const fullPatient = await patientApi.fetchPatientDetails(candidate.id);
@@ -34,15 +38,17 @@ export const buildEncounterFromCandidate = async (candidate, selectedDate) => {
         previous_visit_template_data: fullTemplateData,
         previous_visit_template_key: candidate.template_key,
         previous_visit_encounter_date: candidate.encounter_date,
+        previous_visit_summary_pending: true,
     };
 
-    // Fetch the previous visit summary
-    try {
-        const summaryData = await patientApi.fetchPatientSummary(candidate.id);
-        newPatient.previous_visit_summary = summaryData.summary;
-    } catch (error) {
-        console.error("Error fetching previous visit summary:", error);
-    }
+
+    patientApi
+        .fetchPatientSummary(candidate.id)
+        .then((summaryData) => onSummary?.(summaryData.summary))
+        .catch((error) => {
+            console.error("Error fetching previous visit summary:", error);
+            onSummary?.(null);
+        });
 
     return newPatient;
 };

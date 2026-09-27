@@ -51,7 +51,7 @@ async def refine_field_content(
             format_details = determine_format_details(field, prompts)
 
             # Build system prompt with style example if available
-            system_prompt = build_system_prompt(field, format_details, prompts, is_ambient)
+            system_prompt = build_system_prompt(field, format_details, is_ambient)
 
             # Escalate with an explicit instruction after an empty response
             if attempt > 0:
@@ -141,7 +141,6 @@ def determine_format_details(field: TemplateField, prompts: dict) -> dict:
 def build_system_prompt(
     field: TemplateField,
     format_details: dict,
-    prompts: dict,
     is_ambient: bool = True,
 ) -> str:
     """Build the system prompt using format guidance and style examples."""
@@ -184,13 +183,6 @@ def build_system_prompt(
     else:
         # If no style example, start with base prompt
         system_prompt = format_details["base_prompt"]
-
-        # Apply custom refinement rules if specified and no style example exists
-        if field.refinement_rules:
-            for rule in field.refinement_rules:
-                if rule in prompts["prompts"]["refinement"]:
-                    system_prompt = prompts["prompts"]["refinement"][rule]
-                    break
 
         # Minimal JSON shape hint for flaky endpoints (top-level keys only)
         system_prompt += "\n\nReturn ONLY valid JSON with this top-level shape:\n"

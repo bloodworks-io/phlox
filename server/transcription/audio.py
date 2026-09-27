@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import time
 from typing import Union
@@ -18,9 +19,13 @@ def _get_whisper_port() -> str:
     return str(get_whisper_port())
 
 
-async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
+async def transcribe_audio(
+    audio_buffer: bytes, streaming: bool = False
+) -> dict[str, Union[str, float]]:
     """
     Transcribe an audio buffer using a Whisper endpoint.
+
+    streaming=True routes to WHISPER_STREAM_URL (no-diarization) for live utterances.
     """
     try:
         config = config_manager.get_config()
@@ -45,7 +50,9 @@ async def transcribe_audio(audio_buffer: bytes) -> dict[str, Union[str, float]]:
             return await _transcribe_local_whisper(audio_buffer, stt_language)
         else:
             logger.info("Using external API for transcription")
-            return await _transcribe_external_api(audio_buffer, config, preferred_language)
+            return await _transcribe_external_api(
+                audio_buffer, config, preferred_language, streaming
+            )
     except Exception as error:
         logger.error(f"Error in transcribe_audio function: {error}")
         raise
@@ -99,6 +106,12 @@ async def _transcribe_local_whisper(
             # Clean repetitive text patterns
             transcript_text = _clean_repetitive_text(transcript_text)
 
+            logger.info(
+                "Local STT returned %d chars in %.2fs",
+                len(transcript_text or ""),
+                transcription_duration,
+            )
+
             return {
                 "text": transcript_text,
                 "transcriptionDuration": float(f"{transcription_duration:.2f}"),
@@ -108,7 +121,7 @@ async def _transcribe_local_whisper(
 
 
 async def _transcribe_external_api(
-    audio_buffer: bytes, config: dict, language: str = "en"
+    audio_buffer: bytes, config: dict, language: str = "en", streaming: bool = False
 ) -> dict[str, Union[str, float]]:
     """Transcribe using external Whisper API (existing logic)."""
     filename, content_type = _detect_audio_format(audio_buffer)
@@ -131,12 +144,21 @@ async def _transcribe_external_api(
             headers["Authorization"] = f"Bearer {whisper_key}"
 
         try:
-            whisper_base_url = (config.get("WHISPER_BASE_URL") or "").strip().rstrip("/")
-            if whisper_base_url.lower().endswith("/v1"):
-                whisper_base_url = whisper_base_url[:-3]
+            stream_url = (
+                os.getenv("WHISPER_STREAM_URL", "").strip() if streaming else ""
+            )
+            if stream_url:
+                whisper_endpoint = stream_url
+            else:
+                whisper_base_url = (
+                    config.get("WHISPER_BASE_URL") or ""
+                ).strip().rstrip("/")
+                if whisper_base_url.lower().endswith("/v1"):
+                    whisper_base_url = whisper_base_url[:-3]
+                whisper_endpoint = f"{whisper_base_url}/v1/audio/transcriptions"
 
             response = await client.post(
-                f"{whisper_base_url}/v1/audio/transcriptions",
+                whisper_endpoint,
                 data=data,
                 files=files,
                 headers=headers,

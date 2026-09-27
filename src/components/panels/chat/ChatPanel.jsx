@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Text } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import ChatHeader from "./ChatHeader";
 import ChatMessages from "./ChatMessages";
 import ChatInput from "./ChatInput";
@@ -24,6 +25,7 @@ const ChatPanel = ({
     currentTemplate,
     patientData,
 }) => {
+    const { t } = useTranslation();
     const [userSettings, setUserSettings] = useState(null);
     const messagesEndRef = useRef(null);
     const scrollContainerRef = useRef(null);
@@ -152,7 +154,7 @@ const ChatPanel = ({
                 />
 
                 <Text textAlign="center" fontSize="xs" color="overlay0">
-                    Phlox may make mistakes. Always verify critical information.
+                    {t("chat.disclaimer")}
                 </Text>
             </Box>
 

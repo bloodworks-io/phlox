@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { IconButton, Box } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ChatIcon } from "./icons";
@@ -18,10 +19,11 @@ const FloatingActionMenu = ({
     isDocumentOpen,
     isPreviousVisitOpen,
     hasCriticalReasoning,
-    hasPreviousVisitSummary = false,
+    hasPreviousVisit = false,
     showPreviousVisitDot = false,
     isEncounterSaved = false,
 }) => {
+    const { t } = useTranslation();
     const surfaceBg = "surface";
 
     const getButtonBg = (isOpen) => (isOpen ? surfaceBg : "transparent");
@@ -41,7 +43,7 @@ const FloatingActionMenu = ({
             {/* Document Upload button */}
             {isChatEnabled() && (
                 <Tooltip
-                    content="Upload Document"
+                    content={t("common.fab.uploadDocument")}
                     positioning={{
                         placement: "left",
                     }}
@@ -49,7 +51,7 @@ const FloatingActionMenu = ({
                     <IconButton
                         id="fab-document"
                         onClick={onOpenDocument}
-                        aria-label="Open Document Upload"
+                        aria-label={t("common.fab.openDocumentUpload")}
                         size="xs"
                         borderRadius="full"
                         variant="ghost"
@@ -66,9 +68,9 @@ const FloatingActionMenu = ({
             <Box position="relative" display="inline-block">
                 <Tooltip
                     content={
-                        hasPreviousVisitSummary
-                            ? "Previous Visit"
-                            : "No previous visit available"
+                        hasPreviousVisit
+                            ? t("common.fab.previousVisit")
+                            : t("common.fab.noPreviousVisit")
                     }
                     positioning={{
                         placement: "left",
@@ -77,7 +79,7 @@ const FloatingActionMenu = ({
                     <IconButton
                         id="fab-previous-visit"
                         onClick={onOpenPreviousVisit}
-                        aria-label="Open Previous Visit"
+                        aria-label={t("common.fab.openPreviousVisit")}
                         size="xs"
                         borderRadius="full"
                         variant="ghost"
@@ -85,16 +87,16 @@ const FloatingActionMenu = ({
                         bg={getButtonBg(isPreviousVisitOpen)}
                         _hover={{ bg: surfaceBg }}
                         className="pill-box-icons"
-                        disabled={!hasPreviousVisitSummary}
-                        opacity={!hasPreviousVisitSummary ? 0.4 : 1}
+                        disabled={!hasPreviousVisit}
+                        opacity={!hasPreviousVisit ? 0.4 : 1}
                         cursor={
-                            !hasPreviousVisitSummary ? "not-allowed" : "pointer"
+                            !hasPreviousVisit ? "not-allowed" : "pointer"
                         }
                     >
                         <FaClock />
                     </IconButton>
                 </Tooltip>
-                {showPreviousVisitDot && hasPreviousVisitSummary && (
+                {showPreviousVisitDot && hasPreviousVisit && (
                     <Box
                         position="absolute"
                         top="0"
@@ -111,7 +113,7 @@ const FloatingActionMenu = ({
             {/* Chat button */}
             {isChatEnabled() && (
                 <Tooltip
-                    content="Chat with Phlox"
+                    content={t("common.fab.chatWithPhlox")}
                     positioning={{
                         placement: "left",
                     }}
@@ -119,7 +121,7 @@ const FloatingActionMenu = ({
                     <IconButton
                         id="fab-chat"
                         onClick={onOpenChat}
-                        aria-label="Open Chat"
+                        aria-label={t("common.fab.openChat")}
                         size="xs"
                         borderRadius="full"
                         m={0}
@@ -138,8 +140,8 @@ const FloatingActionMenu = ({
                     <Tooltip
                         content={
                             isEncounterSaved
-                                ? "Chart Insights"
-                                : "Save encounter to access Chart Insights"
+                                ? t("common.fab.chartInsights")
+                                : t("common.fab.saveForChartInsights")
                         }
                         positioning={{
                             placement: "left",
@@ -148,7 +150,7 @@ const FloatingActionMenu = ({
                         <IconButton
                             id="fab-reasoning"
                             onClick={onOpenReasoning}
-                            aria-label="Open Reasoning"
+                            aria-label={t("common.fab.openReasoning")}
                             size="xs"
                             borderRadius="full"
                             m={0}
@@ -184,8 +186,8 @@ const FloatingActionMenu = ({
             <Tooltip
                 content={
                     isEncounterSaved
-                        ? "Patient Letter"
-                        : "Save encounter to access Letter"
+                        ? t("common.fab.patientLetter")
+                        : t("common.fab.saveForLetter")
                 }
                 positioning={{
                     placement: "left",
@@ -194,7 +196,7 @@ const FloatingActionMenu = ({
                 <IconButton
                     id="fab-letter"
                     onClick={onOpenLetter}
-                    aria-label="Open Letter"
+                    aria-label={t("common.fab.openLetter")}
                     size="sm"
                     borderRadius="full"
                     m={0}

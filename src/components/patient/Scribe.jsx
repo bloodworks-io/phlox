@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useTranscription } from "../../utils/hooks/useTranscription";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { AudioRecorder } from "../../utils/audioRecorder";
 
-const SCRIBE_MODE_STORAGE_KEY = "phlox-scribe-mode";
+export const SCRIBE_MODE_STORAGE_KEY = "phlox-scribe-mode";
 
 // Hook to manage scribe state and logic
 // This can be used by ScribePillBox to control recording
@@ -17,6 +18,7 @@ export const useScribe = ({
     setLoading,
     onSendStart,
 }) => {
+    const { t } = useTranslation();
     const [isAmbient, setIsAmbient] = useState(
         () => localStorage.getItem(SCRIBE_MODE_STORAGE_KEY) !== "dictate",
     );
@@ -97,12 +99,12 @@ export const useScribe = ({
             } catch (error) {
                 console.error("Transcription failed:", error);
                 lastFailedRef.current = { blob, meta: { ...meta }, isAmbient };
-                const message = error?.message || "Transcription failed";
+                const message = error?.message || t("patient.transcriptionFailed");
                 setSendError({ message });
                 return false;
             }
         },
-        [transcribeAudio, isAmbient, clearLastFailed],
+        [transcribeAudio, isAmbient, clearLastFailed, t],
     );
 
     const retrySend = useCallback(async () => {
@@ -114,11 +116,11 @@ export const useScribe = ({
             return true;
         } catch (error) {
             console.error("Transcription retry failed:", error);
-            const message = error?.message || "Transcription failed";
+            const message = error?.message || t("patient.transcriptionFailed");
             setSendError({ message });
             return false;
         }
-    }, [transcribeAudio, clearLastFailed]);
+    }, [transcribeAudio, clearLastFailed, t]);
 
     const downloadLastRecording = useCallback(() => {
         const { blob } = lastFailedRef.current;
@@ -155,9 +157,9 @@ export const useScribe = ({
             setTimer(0);
         } catch (error) {
             console.error("Error starting recording:", error);
-            alert("Could not access microphone. Please check your permissions.");
+            alert(t("patient.microphoneAccessError"));
         }
-    }, []);
+    }, [t]);
 
     const pauseRecording = useCallback(() => {
         audioRecorderRef.current?.pause();
@@ -209,15 +211,13 @@ export const useScribe = ({
         resetRecordingState();
     }, [isRecording, resetRecordingState]);
 
-    // Capture mode persists per-device in localStorage.
-    const toggleAmbientMode = useCallback(async () => {
-        const newValue = !isAmbient;
-        setIsAmbient(newValue);
-        localStorage.setItem(
-            SCRIBE_MODE_STORAGE_KEY,
-            newValue ? "ambient" : "dictate",
-        );
-    }, [isAmbient]);
+    // Capture-mode selection for the pill's mode dial. The live agent is
+    // armed/persisted by PatientDetails; only dictate/ambient land here.
+    const selectCaptureMode = useCallback((mode) => {
+        if (mode !== "dictate" && mode !== "ambient") return;
+        setIsAmbient(mode === "ambient");
+        localStorage.setItem(SCRIBE_MODE_STORAGE_KEY, mode);
+    }, []);
 
     // Handle audio file drop
     const handleAudioDrop = useCallback(
@@ -253,7 +253,7 @@ export const useScribe = ({
         resumeRecording,
         stopAndSendRecording,
         resetRecording,
-        toggleAmbientMode,
+        selectCaptureMode,
         handleAudioDrop,
         retrySend,
         downloadLastRecording,

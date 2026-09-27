@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { colors } from "../../../theme/colors";
 import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
@@ -40,6 +41,7 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
       px={4}
       py={2}
       boxShadow="md"
+      className="anim-fade"
     >
       {bars.map((bar, i) => (
         <Box
@@ -93,6 +95,7 @@ const DictationWidget = ({
   setLoading,
   isDisabled,
 }) => {
+  const { t } = useTranslation();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -111,8 +114,8 @@ const DictationWidget = ({
   const startRecording = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       toaster.create({
-        title: "Error",
-        description: "Audio recording is not supported in this browser.",
+        title: t("toast.error"),
+        description: t("dictation.unsupported"),
         type: "error",
         duration: 3000,
       });
@@ -132,9 +135,8 @@ const DictationWidget = ({
     } catch (error) {
       console.error("Error starting recording:", error);
       toaster.create({
-        title: "Error",
-        description:
-          "Failed to start recording. Please check microphone permissions.",
+        title: t("toast.error"),
+        description: t("dictation.startFailed"),
         type: "error",
         duration: 3000,
       });
@@ -171,7 +173,7 @@ const DictationWidget = ({
 
       // 2. Find Dictation Template
       const dictationTemplate = letterTemplates?.find(
-        (t) => t.name === "Dictation",
+        (tpl) => tpl.name === "Dictation",
       );
       const instructions =
         dictationTemplate?.instructions ||
@@ -196,8 +198,8 @@ const DictationWidget = ({
       if (letterResponse && letterResponse.letter) {
         setFinalCorrespondence(letterResponse.letter);
         toaster.create({
-          title: "Success",
-          description: "Letter generated from dictation",
+          title: t("toast.success"),
+          description: t("dictation.generated"),
           type: "success",
           duration: 3000,
         });
@@ -207,8 +209,8 @@ const DictationWidget = ({
     } catch (error) {
       console.error("Error processing dictation:", error);
       toaster.create({
-        title: "Error",
-        description: "Failed to process dictation",
+        title: t("toast.error"),
+        description: t("dictation.processFailed"),
         type: "error",
         duration: 3000,
       });
@@ -226,7 +228,7 @@ const DictationWidget = ({
         timer={timer}
       />
       <Tooltip
-        content={isRecording ? "Stop Dictation" : "Start Dictation"}
+        content={isRecording ? t("dictation.stop") : t("dictation.start")}
         disabled={isDisabled || isProcessing}
         positioning={{
           placement: "left"
@@ -236,7 +238,7 @@ const DictationWidget = ({
           onClick={isRecording ? stopRecording : startRecording}
           disabled={isDisabled || isProcessing}
           colorPalette={isRecording ? "red" : "gray"}
-          aria-label="Dictate"
+          aria-label={t("scribe.mode.dictate")}
           position="absolute"
           bottom={4}
           // Positioned to the left of the refinement button (which is at right: 4 = 16px)

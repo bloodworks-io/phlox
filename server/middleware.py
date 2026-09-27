@@ -42,6 +42,12 @@ STATIC_EXTENSIONS = (
 )
 
 
+def _is_live_audio_chunk(path: str) -> bool:
+    """Match /api/agent-live/sessions/{sid}/audio (high-frequency uploads)."""
+    prefix = "/api/agent-live/sessions/"
+    return path.startswith(prefix) and path.endswith("/audio")
+
+
 def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
     """Check if path should skip auth/rate-limiting middleware.
 
@@ -132,7 +138,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Restrict resources to same origin, allow inline scripts for React
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self'; "
+            "script-src 'self' 'wasm-unsafe-eval'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: blob:; "
             "media-src 'self' blob:; "
@@ -370,6 +376,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "/api/templates": (30, 2),
         "/api/letter": (30, 2),
         "/api/dashboard": (30, 2),
+        # Live scribe: audio segments arrive every few seconds during a visit
+        "/api/agent-live": (120, 2),
     }
     DEFAULT_LIMIT = (60, 2)  # requests_per_minute, burst_multiplier
 
@@ -571,9 +579,13 @@ class AuditMiddleware(BaseHTTPMiddleware):
         #  - the audit endpoints themselves (write-on-read loop)
         #  - the frontend config-status poller (fires every ~15s, would dominate
         #    the log and drown out real access events)
+        #  - live-agent audio segment uploads (every few seconds during a
+        #    consultation; same drowning concern, no PHI in identifiers)
         if not path.startswith("/api/") or path.startswith("/api/audit"):
             return await call_next(request)
         if path == "/api/config/status" and request.method == "GET":
+            return await call_next(request)
+        if _is_live_audio_chunk(path):
             return await call_next(request)
 
         start = time.monotonic()

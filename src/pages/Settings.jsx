@@ -7,7 +7,8 @@ import {
     Spinner,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { useState, useEffect, useCallback } from "react";
 import { settingsService } from "../utils/settings/settingsUtils";
 import { settingsApi } from "../utils/api/settingsApi";
 import { authApi } from "../utils/api/authApi";
@@ -16,14 +17,14 @@ import { syncLanguage } from "../i18n";
 import { UI_LANGUAGES } from "../utils/i18n/languages";
 import UserSettingsPanel from "../components/settings/UserSettingsPanel";
 import AdminSettingsPanel from "../components/settings/AdminSettingsPanel";
-import PromptSettingsPanel from "../components/settings/PromptSettingsPanel";
 import { SPECIALTIES } from "../utils/constants";
-import { templateService } from "../utils/templates/templateService";
+import { useTemplate } from "../utils/templates/templateContext";
 import { localModelApi } from "../utils/api/localModelApi";
 import { useDebounce } from "../utils/hooks/useDebounce";
 import { useAutosave } from "../utils/hooks/useAutosave";
 
 const Settings = () => {
+    const { t } = useTranslation();
     const [userSettings, setUserSettings] = useState({
         name: "",
         specialty: "",
@@ -36,12 +37,16 @@ const Settings = () => {
     });
     const [prompts, setPrompts] = useState(null);
     const [options, setOptions] = useState({
-        general: { num_ctx: 0 },
-        secondary: { num_ctx: 0 },
         letter: { temperature: 0 },
     });
-    const [templates, setTemplates] = useState({});
     const [letterTemplates, setLetterTemplates] = useState([]);
+
+    // Template list comes from the app-wide template store so edits and
+    // default changes made here are visible everywhere immediately.
+    const {
+        templates: providerTemplates,
+        setDefaultTemplate: persistDefaultTemplate,
+    } = useTemplate();
 
     const [config, setConfig] = useState(null);
     const [coreLoading, setCoreLoading] = useState(true);
@@ -61,12 +66,8 @@ const Settings = () => {
     const [collapseStates, setCollapseStates] = useState({
         userSettings: false,
         modelSettings: true,
-        promptSettings: true,
         localModels: true,
     });
-
-    // Track default_template separately — it persists via a different endpoint
-    const lastDefaultTemplateRef = useRef(null);
 
     const fetchCoreSettings = useCallback(async () => {
         try {
@@ -81,7 +82,7 @@ const Settings = () => {
             setConfig(configData);
 
             // Letter templates fetched here instead of a separate useEffect
-            const [letterResponse, prompts, optionsData, userSettings, templates] = await Promise.all([
+            const [letterResponse, prompts, optionsData, userSettings] = await Promise.all([
                 settingsService.fetchLetterTemplates().catch((error) => {
                     console.error(
                         "Failed to fetch letter templates:",
@@ -94,7 +95,6 @@ const Settings = () => {
                     ? settingsApi.fetchOptions()
                     : Promise.resolve(null),
                 settingsApi.fetchUserSettings(),
-                settingsApi.fetchTemplates(),
             ]);
 
             setPrompts(prompts);
@@ -102,8 +102,6 @@ const Settings = () => {
                 setOptions(settingsHelpers.processOptionsData(optionsData));
             } else {
                 setOptions({
-                    general: { num_ctx: 0 },
-                    secondary: { num_ctx: 0 },
                     letter: { temperature: 0 },
                 });
             }
@@ -113,7 +111,6 @@ const Settings = () => {
                 userSettings.preferred_language = "en";
             }
             setUserSettings(userSettings);
-            setTemplates(templates);
 
             // Sync the preferred language to the localStorage mirror and i18n
             // so locale-aware formatting tracks the clinic language.
@@ -131,17 +128,16 @@ const Settings = () => {
                 }
             }
 
-            // Fetch and merge default template into user settings
-            const defaultTemplate = await templateService.getDefaultTemplate();
+            // Fetch the default template key for the dropdown's initial value
+            const defaultTemplate = await settingsApi.getDefaultTemplate();
             setUserSettings((prev) => ({
                 ...prev,
                 default_template: defaultTemplate.template_key,
             }));
-            lastDefaultTemplateRef.current = defaultTemplate.template_key;
         } catch (error) {
             console.error("Error loading settings:", error);
             toaster.create({
-                title: "Error loading settings",
+                title: t("page.settings.toasts.loadError"),
                 description: error.message,
                 type: "error",
                 duration: 3000,
@@ -283,18 +279,41 @@ const Settings = () => {
     };
 
     const saveUserSettingsFn = async (newSettings) => {
-        const { default_template, ...rest } = newSettings;
-        await settingsApi.saveUserSettings({
-            ...rest,
-            default_letter_template_id:
-                newSettings.default_letter_template_id || null,
-        });
-        if (
-            default_template &&
-            default_template !== lastDefaultTemplateRef.current
-        ) {
-            await templateService.setDefaultTemplate(default_template);
-            lastDefaultTemplateRef.current = default_template;
+        // default_template persists immediately via handleDefaultTemplateChange
+        const {
+            default_template: _defaultTemplate,
+            default_template_key: _defaultTemplateKey,
+            ...rest
+        } = newSettings;
+        try {
+            await settingsApi.saveUserSettings({
+                ...rest,
+                default_letter_template_id:
+                    newSettings.default_letter_template_id || null,
+            });
+        } catch (error) {
+            toaster.create({
+                title: t("toast.error"),
+                description: t("page.settings.toasts.saveUserError"),
+                type: "error",
+                duration: 3000,
+            });
+            throw error;
+        }
+    };
+
+    const handleDefaultTemplateChange = async (templateKey) => {
+        setUserSettings((prev) => ({ ...prev, default_template: templateKey }));
+        try {
+            await persistDefaultTemplate(templateKey);
+        } catch (error) {
+            console.error("Failed to set default template:", error);
+            toaster.create({
+                title: t("toast.error"),
+                description: t("page.settings.toasts.defaultTemplateError"),
+                type: "error",
+                duration: 3000,
+            });
         }
     };
 
@@ -361,15 +380,17 @@ const Settings = () => {
                 await settingsService.resetIndividualPrompt(promptType);
             setPrompts(updatedPrompts);
             toaster.create({
-                title: "Success",
-                description: `${promptType} prompt reset to default`,
+                title: t("toast.success"),
+                description: t("page.settings.toasts.promptReset", {
+                    promptType,
+                }),
                 type: "success",
                 duration: 3000,
             });
         } catch {
             toaster.create({
-                title: "Error",
-                description: "Failed to reset prompt",
+                title: t("toast.error"),
+                description: t("page.settings.toasts.promptResetError"),
                 type: "error",
                 duration: 3000,
             });
@@ -382,15 +403,15 @@ const Settings = () => {
             const optionsData = await settingsApi.fetchOptions();
             setOptions(settingsHelpers.processOptionsData(optionsData));
             toaster.create({
-                title: "Success",
-                description: "Advanced options reset to defaults",
+                title: t("toast.success"),
+                description: t("page.settings.toasts.optionsReset"),
                 type: "success",
                 duration: 3000,
             });
         } catch {
             toaster.create({
-                title: "Error",
-                description: "Failed to reset advanced options",
+                title: t("toast.error"),
+                description: t("page.settings.toasts.optionsResetError"),
                 type: "error",
                 duration: 3000,
             });
@@ -435,8 +456,8 @@ const Settings = () => {
 
     useEffect(() => {
         if (!coreLoading) return;
-        const t = setTimeout(() => setShowSpinner(true), 150);
-        return () => clearTimeout(t);
+        const timer = setTimeout(() => setShowSpinner(true), 150);
+        return () => clearTimeout(timer);
     }, [coreLoading]);
 
     if (coreLoading) {
@@ -449,7 +470,7 @@ const Settings = () => {
     return (
         <Box p="5" borderRadius="sm" w="100%">
             <Text as="h2" mb="4">
-                Settings
+                {t("page.settings.title")}
             </Text>
             <VStack gap="5" align="stretch">
                 <UserSettingsPanel
@@ -458,40 +479,45 @@ const Settings = () => {
                     userSettings={userSettings}
                     setUserSettings={setUserSettings}
                     specialties={SPECIALTIES}
-                    templates={templates}
+                    templates={providerTemplates || []}
                     letterTemplates={letterTemplates}
-                    setTemplates={setTemplates}
+                    onDefaultTemplateChange={handleDefaultTemplateChange}
                 />
 
                 {isAdmin && (
-                    <AdminSettingsPanel
-                        isCollapsed={collapseStates.modelSettings}
-                        setIsCollapsed={() => toggleCollapse("modelSettings")}
-                        config={config}
-                        handleConfigChange={handleConfigChange}
-                        modelOptions={modelOptions}
-                        embeddingModelOptions={modelOptions}
-                        whisperModelOptions={whisperModelOptions}
-                        whisperModelListAvailable={whisperModelListAvailable}
-                        whisperModelsLoading={whisperModelsLoading}
-                        llmModelsLoading={llmModelsLoading}
-                        urlStatus={urlStatus}
-                        handleReEmbed={handleReEmbed}
-                    />
-                )}
-
-                {isAdmin && (
-                    <PromptSettingsPanel
-                        isCollapsed={collapseStates.promptSettings}
-                        setIsCollapsed={() => toggleCollapse("promptSettings")}
-                        prompts={prompts}
-                        handlePromptChange={handlePromptChange}
-                        handlePromptReset={handlePromptReset}
-                        options={options}
-                        handleOptionChange={handleOptionChange}
-                        handleOptionsReset={handleOptionsReset}
-                        config={config}
-                    />
+                    <Box
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.2s" }}
+                    >
+                        <AdminSettingsPanel
+                            isCollapsed={collapseStates.modelSettings}
+                            setIsCollapsed={() =>
+                                toggleCollapse("modelSettings")
+                            }
+                            config={config}
+                            handleConfigChange={handleConfigChange}
+                            modelOptions={modelOptions}
+                            embeddingModelOptions={modelOptions}
+                            whisperModelOptions={whisperModelOptions}
+                            whisperModelListAvailable={whisperModelListAvailable}
+                            whisperModelsLoading={whisperModelsLoading}
+                            llmModelsLoading={llmModelsLoading}
+                            urlStatus={urlStatus}
+                            handleReEmbed={handleReEmbed}
+                            prompts={prompts}
+                            handlePromptChange={handlePromptChange}
+                            handlePromptReset={handlePromptReset}
+                            letterTemperature={options?.letter?.temperature}
+                            onLetterTemperatureChange={(value) =>
+                                handleOptionChange(
+                                    "letter",
+                                    "temperature",
+                                    value,
+                                )
+                            }
+                            onOptionsReset={handleOptionsReset}
+                        />
+                    </Box>
                 )}
             </VStack>
         </Box>

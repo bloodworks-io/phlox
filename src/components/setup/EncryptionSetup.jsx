@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon, Alert } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
@@ -16,6 +17,7 @@ import {
 
 const EncryptionSetup = ({ onComplete }) => {
 
+  const { t } = useTranslation();
   const [passphrase, setPassphrase] = useState("");
   const [confirmPassphrase, setConfirmPassphrase] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43,13 +45,13 @@ const EncryptionSetup = ({ onComplete }) => {
   const handleSubmit = useCallback(async () => {
     if (!isValid()) {
       toaster.create({
-        title: "Invalid Passphrase",
+        title: t("encryption.invalidPassphrase"),
         description:
           passphrase.length < 12
-            ? "Passphrase must be at least 12 characters"
+            ? t("encryption.tooShort")
             : passphrase !== confirmPassphrase
-              ? "Passphrases do not match"
-              : "Please use a stronger passphrase",
+              ? t("encryption.mismatch")
+              : t("encryption.stronger"),
         type: "warning",
         duration: 3000,
       });
@@ -90,7 +92,7 @@ const EncryptionSetup = ({ onComplete }) => {
       } catch (serverError) {
         console.error("Server start failed:", serverError);
         toaster.create({
-          title: "Server Warning",
+          title: t("encryption.serverWarning"),
           description: serverError.toString(),
           type: "warning",
           duration: 5000,
@@ -98,24 +100,23 @@ const EncryptionSetup = ({ onComplete }) => {
       }
 
       toaster.create({
-        title: "Encryption Setup Complete",
-        description:
-          "Your encryption key has been created. Your data is now secure.",
+        title: t("encryption.setupComplete"),
+        description: t("encryption.setupCompleteDesc"),
         type: "success",
         duration: 5000,
       });
       onComplete();
     } catch (error) {
       toaster.create({
-        title: "Setup Failed",
-        description: error.toString() || "An error occurred during setup",
+        title: t("encryption.setupFailed"),
+        description: error.toString() || t("encryption.setupErrorFallback"),
         type: "error",
         duration: 5000,
       });
     } finally {
       setIsSubmitting(false);
     }
-  }, [passphrase, confirmPassphrase, isValid, onComplete]);
+  }, [passphrase, confirmPassphrase, isValid, onComplete, t]);
 
   const getStrengthColor = () => {
     if (strength.score <= 1) return "red";
@@ -177,7 +178,7 @@ const EncryptionSetup = ({ onComplete }) => {
         />
 
         <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
-          <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
+          <Image src="/logo.webp" alt={t("encryption.logoAlt")} height="40px" width="auto" />
           <Heading as="h2" size="md" color="textPrimary" textAlign="center">
             {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
           </Heading>
@@ -197,7 +198,7 @@ const EncryptionSetup = ({ onComplete }) => {
               </Progress.Track>
             </Progress.Root>
             <Text fontSize="xs" color="textSecondary" whiteSpace="nowrap" ml={3}>
-              {currentStepIndex + 1} of {totalSteps}
+              {t("splash.stepOf", { current: currentStepIndex + 1, total: totalSteps })}
             </Text>
           </HStack>
         </VStack>
@@ -215,7 +216,7 @@ const EncryptionSetup = ({ onComplete }) => {
             <Alert.Indicator />
             <Box>
               <Alert.Description>
-                If you forget your passphrase, your data cannot be recovered.
+                {t("encryption.forgotWarning")}
               </Alert.Description>
             </Box>
           </Alert.Root>
@@ -223,12 +224,12 @@ const EncryptionSetup = ({ onComplete }) => {
           <VStack gap={4} align="stretch" mt={4}>
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
-                Passphrase
+                {t("encryption.passphrase")}
               </Text>
               <HStack>
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter a secure passphrase (min 12 characters)"
+                  placeholder={t("encryption.passphrasePlaceholder")}
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
                   size="sm"
@@ -238,17 +239,21 @@ const EncryptionSetup = ({ onComplete }) => {
                   size="sm"
                   variant="ghost"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label="Toggle password visibility"
+                  aria-label={t("common.togglePasswordVisibility")}
                 >
                   <Icon asChild>{showPassword ? <FaEyeSlash /> : <FaEye />}</Icon>
                 </Button>
               </HStack>
 
               {passphrase.length > 0 && (
-                <Box mt={2}>
+                <Box
+                  mt={2}
+                  className="anim-fade-slide-up"
+                  css={{ animationDuration: "0.2s" }}
+                >
                   <HStack justify="space-between" mb={1}>
                     <Text fontSize="xs" color="textSecondary">
-                      Strength
+                      {t("encryption.strength")}
                     </Text>
                     <Text
                       fontSize="xs"
@@ -274,12 +279,12 @@ const EncryptionSetup = ({ onComplete }) => {
 
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
-                Confirm Passphrase
+                {t("encryption.confirmPassphrase")}
               </Text>
               <HStack>
                 <Input
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your passphrase"
+                  placeholder={t("encryption.confirmPlaceholder")}
                   value={confirmPassphrase}
                   onChange={(e) => setConfirmPassphrase(e.target.value)}
                   size="sm"
@@ -294,7 +299,7 @@ const EncryptionSetup = ({ onComplete }) => {
                   size="sm"
                   variant="ghost"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  aria-label="Toggle confirm password visibility"
+                  aria-label={t("encryption.toggleConfirmVisibility")}
                 >
                   <Icon asChild>
                     {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
@@ -304,8 +309,14 @@ const EncryptionSetup = ({ onComplete }) => {
 
               {confirmPassphrase.length > 0 &&
                 passphrase !== confirmPassphrase && (
-                  <Text mt={1} fontSize="xs" color="dangerButton">
-                    Passphrases do not match
+                  <Text
+                    mt={1}
+                    fontSize="xs"
+                    color="dangerButton"
+                    className="anim-fade-slide-up"
+                    css={{ animationDuration: "0.15s" }}
+                   >
+                    {t("encryption.mismatch")}
                   </Text>
                 )}
             </Box>
@@ -324,7 +335,7 @@ const EncryptionSetup = ({ onComplete }) => {
           <Button
             onClick={handleSubmit}
             loading={isSubmitting}
-            loadingText="Setting up encryption..."
+            loadingText={t("encryption.settingUp")}
             disabled={!isValid()}
             size="md"
             borderRadius="2xl"
@@ -334,7 +345,7 @@ const EncryptionSetup = ({ onComplete }) => {
               fontWeight: "600",
             }}
           >
-            Continue
+            {t("action.continue")}
           </Button>
         </Flex>
       </Box>

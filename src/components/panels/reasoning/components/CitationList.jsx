@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Text, VStack, HStack, Link } from "@chakra-ui/react";
 import { FaChevronRight, FaChevronDown } from "react-icons/fa";
 import {
@@ -40,6 +41,7 @@ const normalize = (c) => {
 // Collapsible Sources footer.
 export const CitationList = ({ citations, citedOriginals, inline = false }) => {
     const [open, setOpen] = useState(false);
+    const { t } = useTranslation();
 
     if (!citations || citations.length === 0) return null;
 
@@ -84,7 +86,7 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                     color="overlay0"
                     _dark={{ color: "overlay0" }}
                 >
-                    Sources ({entries.length})
+                    {t("reasoning.sources", { number: entries.length })}
                 </Text>
             </HStack>
 
@@ -95,7 +97,7 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                         const isString = c.type === "string";
                         const title = isString
                             ? c.label
-                            : c.title || c.source || "Source";
+                            : c.title || c.source || t("rag.source");
                         const isDownload = !!c.url && c.url.startsWith("/");
                         return (
                             <HStack key={key} gap={2} align="start">
@@ -128,7 +130,7 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                                         _hover={{ textDecoration: "underline" }}
                                         lineClamp={1}
                                     >
-                                        {isDownload ? `⬇ ${title}` : title}
+                                        {isDownload ? t("reasoning.downloadLink", { title }) : title}
                                     </Link>
                                 )}
                             </HStack>

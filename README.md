@@ -20,7 +20,7 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 
 ## Key Features 
 - **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local.
-- **👥 Multi-User:** Account-based access control; each user's encounters, templates, and knowledge base stay their own.
+- **👥 Multi-User:** Account-based access control; with per user encounters, templates, and documents.
 - **🌍 Multilingual:** Transcribe and generate notes and letters in multiple languages.
 - **🎤 Ambient Note Generation** Automatically generate structured clinical notes with customizable templates.
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.

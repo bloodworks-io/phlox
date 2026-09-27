@@ -6,43 +6,57 @@ import { DownloadIcon } from "../common/icons";
 import { FaFilePdf } from "react-icons/fa";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
+import { useTranslation } from "react-i18next";
+import { t as tStatic } from "@/i18n";
 
-const FormFillArtifact = ({ artifact }) => {
-    const [loading, setLoading] = useState(false);
-
+/** Download a form_fill artifact as a filled PDF (shared with the live-agent chips). */
+export const downloadFormFillArtifact = async (artifact) => {
     const { template_id, template_name } = artifact;
     const filename = `${template_name || "form"}_filled.pdf`;
+
+    try {
+        const [template, pdfData] = await Promise.all([
+            pdfFormsApi.fetchTemplate(template_id),
+            pdfFormsApi.fetchTemplatePdf(template_id),
+        ]);
+
+        const filledBytes = await fillPdf(
+            new Uint8Array(pdfData),
+            template,
+            artifact.field_values,
+        );
+
+        const blob = new Blob([filledBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        toaster.create({
+            title: tStatic("toast.error"),
+            description: tStatic("forms.failedToGenerate", {
+                message: error.message,
+            }),
+            type: "error",
+            duration: 3000,
+        });
+    }
+};
+
+const FormFillArtifact = ({ artifact }) => {
+    const { t } = useTranslation();
+    const [loading, setLoading] = useState(false);
+
+    const filename = `${artifact.template_name || "form"}_filled.pdf`;
 
     const handleDownload = async () => {
         setLoading(true);
         try {
-            const [template, pdfData] = await Promise.all([
-                pdfFormsApi.fetchTemplate(template_id),
-                pdfFormsApi.fetchTemplatePdf(template_id),
-            ]);
-
-            const filledBytes = await fillPdf(
-                new Uint8Array(pdfData),
-                template,
-                artifact.field_values,
-            );
-
-            const blob = new Blob([filledBytes], { type: "application/pdf" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            toaster.create({
-                title: "Error",
-                description: `Failed to generate PDF: ${error.message}`,
-                type: "error",
-                duration: 3000,
-            });
+            await downloadFormFillArtifact(artifact);
         } finally {
             setLoading(false);
         }
@@ -59,21 +73,21 @@ const FormFillArtifact = ({ artifact }) => {
         >
             <HStack gap={2} mb={1}>
                 <FaFilePdf size="1.2em" color="gray" />
-                <Text fontSize="xs" fontWeight="semibold" isTruncated flex={1}>
-                    {filename}
-                </Text>
+            <Text fontSize="xs" fontWeight="semibold" truncate minW="0" flex={1}>
+                {filename}
+            </Text>
             </HStack>
             <HStack gap={2} justify="space-between">
                 <Text fontSize="xs" color="overlay0">
-                    PDF form · filled
+                    {t("forms.pdfFormFilled")}
                 </Text>
                 <Button
                     size="xs"
                     variant="ghost"
                     colorPalette="blue"
-                    aria-label="Download filled PDF"
+                    aria-label={t("forms.downloadFilledPdf")}
                     onClick={handleDownload}
-                    loading={loading}><DownloadIcon />Save
+                    loading={loading}><DownloadIcon />{t("action.save")}
                                     </Button>
             </HStack>
         </Box>

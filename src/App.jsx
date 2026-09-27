@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Box } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { mutate } from "swr";
 import { useColorMode } from "./components/ui/color-mode";
 import { useLocation } from "react-router";
@@ -9,7 +10,7 @@ import { ApiToastProvider } from "./utils/helpers/apiToastContext";
 import { AppInitContext } from "./utils/context/appInit";
 import AppLayout from "./components/layout/AppLayout";
 import AppRoutes from "./components/layout/AppRoutes";
-import ConfirmLeaveModal from "./components/modals/ConfirmLeaveModal";
+import ConfirmDialog from "./components/common/ConfirmDialog";
 import NewNoteModal from "./components/modals/NewNoteModal";
 import { handleError } from "./utils/helpers/errorHandlers";
 import { handleLoadPatientDetails } from "./utils/patient/patientHandlers";
@@ -21,6 +22,7 @@ import { useNewNoteFlow } from "./utils/hooks/useNewNoteFlow";
 import { usePatientScope } from "./utils/hooks/usePatientScope";
 
 function AppContent({ setIsInitializing }) {
+    const { t } = useTranslation();
     const [isModified, setIsModified] = useState(false);
     const [isFromOutstandingJobs, setIsFromOutstandingJobs] = useState(false);
     const { isAdmin, patientScope, setPatientScope } = usePatientScope();
@@ -39,9 +41,7 @@ function AppContent({ setIsInitializing }) {
 
     const bootstrap = useAppBootstrap();
     const nav = useNavigationGuard(isModified, setIsModified);
-    const newNote = useNewNoteFlow({
-        guardedNavigate: nav.guardedNavigate,
-    });
+    const newNote = useNewNoteFlow();
     const { isSidebarCollapsed, toggleSidebar, isSmallScreen } =
         useSidebarState();
     const { colorMode, toggleColorMode } = useColorMode();
@@ -109,7 +109,7 @@ function AppContent({ setIsInitializing }) {
                 colorMode={colorMode}
                 toggleSidebar={toggleSidebar}
                 sidebarProps={{
-                    onNewPatient: newNote.openNewNoteModal,
+                    onNewPatient: () => nav.guardedAction(newNote.openNewNoteModal),
                     onSelectPatient: handleSelectPatient,
                     selectedPatientId: location.pathname.startsWith("/note/")
                         ? patient?.id
@@ -152,10 +152,13 @@ function AppContent({ setIsInitializing }) {
                 selectedDate={selectedDate}
                 onComplete={newNote.completeNewNote}
             />
-            <ConfirmLeaveModal
+            <ConfirmDialog
                 isOpen={nav.isLeaveOpen}
                 onClose={nav.cancelNavigation}
-                confirmNavigation={nav.confirmNavigation}
+                onConfirm={nav.confirmNavigation}
+                title={t("navigation.confirmTitle")}
+                body={t("navigation.leaveWarning")}
+                confirmLabel={t("navigation.leave")}
             />
         </>
     );

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Text, HStack, Button } from "@chakra-ui/react";
 
 const TemplateSelector = ({
@@ -6,14 +7,15 @@ const TemplateSelector = ({
   selectedTemplate,
   onTemplateSelect,
 }) => {
+  const { t } = useTranslation();
   return (
     <Box mb="4" px="4">
       <Text mb="2" fontSize="sm" fontWeight="bold">
-        Letter Template:
+        {t("letter.templateLabel")}
       </Text>
       <HStack gap="2" overflowX="auto" pb="2">
         {letterTemplates
-          .filter((t) => t.name !== "Dictation")
+          .filter((tpl) => tpl.name !== "Dictation")
           .map((template) => (
             <Button
               key={template.id}
@@ -39,7 +41,7 @@ const TemplateSelector = ({
           minWidth="auto"
           flexShrink={0}
         >
-          Custom
+          {t("settings.templates.badgeCustom")}
         </Button>
       </HStack>
     </Box>

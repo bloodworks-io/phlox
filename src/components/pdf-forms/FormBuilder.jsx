@@ -4,6 +4,15 @@ import { Box, Flex, HStack, IconButton, Text, Spinner } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
+import {
+    layoutTextField,
+    checkboxMark,
+    getHelveticaMeasure,
+} from "../../utils/pdf/fieldLayout";
+import { useTranslation } from "react-i18next";
+
+// Canvas-safe overflow warning color (matches Chakra red-ish used elsewhere)
+const OVERFLOW_COLOR = "#e53e3e";
 
 
 // Canvas-safe colors mapped from field types (can't use Chakra tokens in canvas)
@@ -41,15 +50,34 @@ const FormBuilder = ({
     _onToggleDrawing,
     activeFieldType = "text",
     _onFieldTypeChange,
+    previewOn = false,
+    previewValues = {},
+    currentPage = 1,
+    onCurrentPageChange = () => {},
 }) => {
+    const { t } = useTranslation();
     const containerRef = useRef(null);
     const pdfCanvasRef = useRef(null);
     const overlayCanvasRef = useRef(null);
-    const [currentPage, setCurrentPage] = useState(1);
     const [renderScale, setRenderScale] = useState(1);
     const [rendering, setRendering] = useState(false);
     const [pdfDoc, setPdfDoc] = useState(null);
     const [renderGeneration, setRenderGeneration] = useState(0);
+
+    // Helvetica metrics matching fillPdf exactly (for WYSIWYG text preview)
+    const measureRef = useRef(null);
+    const [measureReady, setMeasureReady] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        getHelveticaMeasure().then((m) => {
+            if (cancelled) return;
+            measureRef.current = m;
+            setMeasureReady(true);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // Drawing state (controlled by parent via isDrawing prop)
     const [drawStart, setDrawStart] = useState(null);
@@ -194,6 +222,8 @@ const FormBuilder = ({
         const ctx = overlay.getContext("2d");
         ctx.clearRect(0, 0, overlay.width, overlay.height);
 
+        const pageHeights = template?.page_heights || [];
+        const pageHeight = pageHeights[currentPage - 1] || 792;
         const pageFields = fields.filter((f) => f.page_number === currentPage);
         for (const field of pageFields) {
             const rect = fieldToCanvas(field);
@@ -201,7 +231,27 @@ const FormBuilder = ({
                 FIELD_CANVAS_COLORS[field.field_type] ||
                 FIELD_CANVAS_COLORS.text;
 
-            ctx.strokeStyle = colors.stroke;
+            // WYSIWYG preview: same layout math fillPdf uses
+            const wantsPreview = previewOn || field.id === selectedFieldId;
+            const sample = previewValues[field.id] ?? field.name ?? "";
+            let preview = null;
+            let overflow = false;
+            if (measureRef.current && wantsPreview) {
+                if (field.field_type === "checkbox") {
+                    preview = checkboxMark(field, measureRef.current);
+                } else if (sample.trim()) {
+                    const layout = layoutTextField(
+                        field,
+                        sample,
+                        measureRef.current,
+                    );
+                    preview = layout;
+                    overflow =
+                        layout.hiddenLineCount > 0 || layout.overflowsWidth;
+                }
+            }
+
+            ctx.strokeStyle = overflow ? OVERFLOW_COLOR : colors.stroke;
             ctx.lineWidth = field.id === selectedFieldId ? 3 : 1.5;
             ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
 
@@ -212,9 +262,37 @@ const FormBuilder = ({
             ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
 
             if (field.name) {
-                ctx.fillStyle = "rgba(0,0,0,0.7)";
+                ctx.fillStyle = overflow
+                    ? OVERFLOW_COLOR
+                    : "rgba(0,0,0,0.7)";
                 ctx.font = "10px sans-serif";
-                ctx.fillText(field.name, rect.x + 2, rect.y - 3);
+                ctx.fillText(
+                    overflow ? `${field.name} ⚠` : field.name,
+                    rect.x + 2,
+                    rect.y - 3,
+                );
+            }
+
+            if (preview) {
+                ctx.fillStyle = "rgba(0,0,0,0.85)";
+                ctx.textBaseline = "alphabetic";
+                if (field.field_type === "checkbox") {
+                    ctx.font = `${preview.size * renderScale}px Helvetica, Arial, sans-serif`;
+                    ctx.fillText(
+                        preview.mark,
+                        preview.x * renderScale,
+                        (pageHeight - preview.y) * renderScale,
+                    );
+                } else {
+                    ctx.font = `${preview.fontSize * renderScale}px Helvetica, Arial, sans-serif`;
+                    for (const line of preview.lines) {
+                        ctx.fillText(
+                            line.text,
+                            line.x * renderScale,
+                            (pageHeight - line.y) * renderScale,
+                        );
+                    }
+                }
             }
 
             // Draw resize handle on the selected field's lower-right corner
@@ -230,7 +308,16 @@ const FormBuilder = ({
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fields, currentPage, selectedFieldId, renderScale]);
+    }, [
+        fields,
+        currentPage,
+        selectedFieldId,
+        renderScale,
+        previewOn,
+        previewValues,
+        measureReady,
+        template,
+    ]);
 
     // Redraw overlay when fields, selection, or PDF render change
     useEffect(() => {
@@ -471,10 +558,10 @@ const FormBuilder = ({
                         size="sm"
                         variant="ghost"
                         onClick={() =>
-                            setCurrentPage((p) => Math.max(1, p - 1))
+                            onCurrentPageChange(Math.max(1, currentPage - 1))
                         }
                         disabled={currentPage <= 1}
-                        aria-label="Previous page"><ChevronLeftIcon /></IconButton>
+                        aria-label={t("forms.previousPage")}><ChevronLeftIcon /></IconButton>
                     <Text fontSize="sm">
                         {currentPage} / {template?.page_count || 1}
                     </Text>
@@ -482,12 +569,12 @@ const FormBuilder = ({
                         size="sm"
                         variant="ghost"
                         onClick={() =>
-                            setCurrentPage((p) =>
-                                Math.min(template?.page_count || 1, p + 1),
+                            onCurrentPageChange(
+                                Math.min(template?.page_count || 1, currentPage + 1),
                             )
                         }
                         disabled={currentPage >= (template?.page_count || 1)}
-                        aria-label="Next page"><ChevronRightIcon /></IconButton>
+                        aria-label={t("forms.nextPage")}><ChevronRightIcon /></IconButton>
                 </HStack>
             </HStack>
             {/* Canvas area */}

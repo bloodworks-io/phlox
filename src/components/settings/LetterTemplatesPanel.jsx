@@ -9,6 +9,7 @@ import {
     Badge,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
+import { useTranslation } from "react-i18next";
 
 
 import { AddIcon, DeleteIcon, EditIcon } from "../common/icons";
@@ -19,6 +20,7 @@ import { settingsService } from "../../utils/settings/settingsUtils";
 import LetterTemplateEditModal from "../modals/LetterTemplateEditModal";
 
 const LetterTemplatesPanel = () => {
+    const { t } = useTranslation();
     const [letterTemplates, setLetterTemplates] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [editTemplate, setEditTemplate] = useState(null);
@@ -30,8 +32,8 @@ const LetterTemplatesPanel = () => {
         } catch (error) {
             console.error("Failed to fetch letter templates", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to fetch letter templates",
+                title: t("toast.error"),
+                description: t("settings.letterTemplates.fetchFailed"),
                 type: "error",
                 duration: 3000,
             });
@@ -46,8 +48,10 @@ const LetterTemplatesPanel = () => {
         try {
             await settingsService.saveLetterTemplate(template);
             toaster.create({
-                title: "Success",
-                description: `Letter template ${template?.id ? "updated" : "created"} successfully`,
+                title: t("toast.success"),
+                description: template?.id
+                    ? t("settings.letterTemplates.updatedSuccessfully")
+                    : t("settings.letterTemplates.createdSuccessfully"),
                 type: "success",
                 duration: 3000,
             });
@@ -59,8 +63,8 @@ const LetterTemplatesPanel = () => {
         } catch (error) {
             console.error("Failed to save letter template", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to save letter template",
+                title: t("toast.error"),
+                description: t("settings.letterTemplates.saveFailed"),
                 type: "error",
                 duration: 3000,
             });
@@ -71,8 +75,8 @@ const LetterTemplatesPanel = () => {
         try {
             await settingsService.deleteLetterTemplate(templateId);
             toaster.create({
-                title: "Success",
-                description: "Letter template deleted successfully",
+                title: t("toast.success"),
+                description: t("settings.letterTemplates.deletedSuccessfully"),
                 type: "success",
                 duration: 3000,
             });
@@ -80,8 +84,8 @@ const LetterTemplatesPanel = () => {
         } catch (error) {
             console.error("Failed to delete letter template", error);
             toaster.create({
-                title: "Error",
-                description: "Failed to delete letter template",
+                title: t("toast.error"),
+                description: t("settings.letterTemplates.deleteFailed"),
                 type: "error",
                 duration: 3000,
             });
@@ -101,8 +105,7 @@ const LetterTemplatesPanel = () => {
         <VStack gap={3} align="stretch">
             <Flex justify="space-between" align="center">
                 <Text fontSize="xs" className="pill-box-icons" maxW="55%">
-                    Letter templates define the tone and content of generated
-                    letters.
+                    {t("settings.letterTemplates.description")}
                 </Text>
                 <HStack>
                     <Button
@@ -110,7 +113,7 @@ const LetterTemplatesPanel = () => {
                         size="sm"
                         className="red-button"
                     >
-                        Reset to Defaults
+                        {t("settings.letterTemplates.resetToDefaults")}
                     </Button>
                     <Button
                         onClick={() => {
@@ -120,7 +123,7 @@ const LetterTemplatesPanel = () => {
                         variant="outline"
                         size="sm"
                         className="nav-button"
-                    ><AddIcon />New Template
+                    ><AddIcon />{t("settings.templates.newTemplate")}
                     </Button>
                 </HStack>
             </Flex>
@@ -138,10 +141,10 @@ const LetterTemplatesPanel = () => {
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
                     <Text fontSize="sm" className="pill-box-icons">
-                        No letter templates
+                        {t("settings.letterTemplates.emptyTitle")}
                     </Text>
                     <Text fontSize="xs" className="pill-box-icons" mt={1}>
-                        Create one or reset to defaults
+                        {t("settings.letterTemplates.emptyDescription")}
                     </Text>
                 </Box>
             ) : (
@@ -181,8 +184,8 @@ const LetterTemplatesPanel = () => {
                                                     fontSize="xs"
                                                 >
                                                     {isDefault
-                                                        ? "Default"
-                                                        : "Custom"}
+                                                        ? t("settings.templates.badgeDefault")
+                                                        : t("settings.templates.badgeCustom")}
                                                 </Badge>
                                             </HStack>
                                             {template.instructions && (
@@ -197,11 +200,11 @@ const LetterTemplatesPanel = () => {
                                         </Box>
                                     </HStack>
                                     <HStack gap={1}>
-                                        <Tooltip content="Edit template">
+                                        <Tooltip content={t("settings.templates.editTemplate")}>
                                             <IconButton
                                                 variant="ghost"
                                                 size="sm"
-                                                aria-label="Edit template"
+                                                aria-label={t("settings.templates.editTemplate")}
                                                 onClick={() => {
                                                     setEditTemplate(template);
                                                     setIsEditing(true);
@@ -209,12 +212,12 @@ const LetterTemplatesPanel = () => {
                                             ><EditIcon /></IconButton>
                                         </Tooltip>
                                         {!isDefault && (
-                                            <Tooltip content="Delete template">
+                                            <Tooltip content={t("settings.templates.deleteTemplate")}>
                                                 <IconButton
                                                     variant="ghost"
                                                     size="sm"
                                                     colorPalette="red"
-                                                    aria-label="Delete template"
+                                                    aria-label={t("settings.templates.deleteTemplate")}
                                                     onClick={() =>
                                                         handleDelete(
                                                             template.id,

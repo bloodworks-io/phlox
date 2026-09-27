@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateTemplatesStep } from "../../../utils/splash/validators";
@@ -7,6 +8,7 @@ import { settingsApi } from "../../../utils/api/settingsApi";
 import { KEYS } from "../../cache/keys";
 
 export const useTemplatesStep = (currentStep) => {
+  const { t } = useTranslation();
   const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const shouldFetch = currentStep === SPLASH_STEPS.TEMPLATES;
@@ -21,13 +23,13 @@ export const useTemplatesStep = (currentStep) => {
   useEffect(() => {
     if (error) {
       toaster.create({
-        title: "Error fetching templates",
-        description: error.message || "Could not load templates",
+        title: t("splash.templates.fetchErrorTitle"),
+        description: error.message || t("splash.templates.fetchErrorFallback"),
         type: "error",
         duration: 3000,
       });
     }
-  }, [error]);
+  }, [error, t]);
 
   // Auto-select first option when data arrives and nothing is selected
   useEffect(() => {

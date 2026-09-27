@@ -1,5 +1,6 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const toolsApi = {
   fetchToolServers: async () =>
@@ -8,7 +9,7 @@ export const toolsApi = {
         const url = await buildApiUrl("/api/config/mcp");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch tool servers",
+      errorMessage: t("api.tools.fetchFailed"),
     }),
 
   fetchEnabledToolServers: async () =>
@@ -17,7 +18,7 @@ export const toolsApi = {
         const url = await buildApiUrl("/api/config/mcp/enabled");
         return universalFetch(url);
       },
-      errorMessage: "Failed to fetch enabled tool servers",
+      errorMessage: t("api.tools.fetchEnabledFailed"),
     }),
 
   addToolServer: async (server) =>
@@ -30,7 +31,7 @@ export const toolsApi = {
           body: JSON.stringify(server),
         });
       },
-      errorMessage: "Failed to add tool server",
+      errorMessage: t("toolServers.toast.addFailed"),
     }),
 
   updateToolServer: async (serverId, server) =>
@@ -43,7 +44,7 @@ export const toolsApi = {
           body: JSON.stringify(server),
         });
       },
-      errorMessage: "Failed to update tool server",
+      errorMessage: t("api.tools.updateFailed"),
     }),
 
   deleteToolServer: async (serverId) =>
@@ -54,7 +55,7 @@ export const toolsApi = {
           method: "DELETE",
         });
       },
-      errorMessage: "Failed to delete tool server",
+      errorMessage: t("toolServers.toast.deleteFailed"),
     }),
 
   toggleToolServer: async (serverId, enabled) =>
@@ -67,7 +68,7 @@ export const toolsApi = {
           body: JSON.stringify({ enabled }),
         });
       },
-      errorMessage: `Failed to ${enabled ? "enable" : "disable"} tool server`,
+      errorMessage: enabled ? t("api.tools.enableFailed") : t("api.tools.disableFailed"),
     }),
 
   testToolServer: async (serverId) =>
@@ -78,7 +79,7 @@ export const toolsApi = {
           method: "POST",
         });
       },
-      errorMessage: "Failed to test tool server",
+      errorMessage: t("toolServers.toast.testFailed"),
     }),
 
   refreshTools: async () =>
@@ -89,6 +90,6 @@ export const toolsApi = {
           method: "POST",
         });
       },
-      errorMessage: "Failed to refresh tools",
+      errorMessage: t("api.tools.refreshFailed"),
     }),
 };

@@ -1,7 +1,10 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Text, Progress } from "@chakra-ui/react";
 
 export const ReEmbedProgress = ({ progress }) => {
+    const { t } = useTranslation();
+
     if (!progress) return null;
 
     const {
@@ -16,8 +19,11 @@ export const ReEmbedProgress = ({ progress }) => {
     return (
         <Box w="100%">
             <Text fontSize="xs" color="textTertiary" mb={1}>
-                Collection {collection_index + 1} of {total_collections}
-                {collection_name ? `: ${collection_name}` : ""}
+                {t("common.reEmbed.collection", {
+                    index: collection_index + 1,
+                    total: total_collections,
+                    name: collection_name ? `: ${collection_name}` : "",
+                })}
             </Text>
             <Progress.Root value={percentage} colorPalette="blue" size="sm" striped animated>
                 <Progress.Track>
@@ -25,8 +31,10 @@ export const ReEmbedProgress = ({ progress }) => {
                 </Progress.Track>
             </Progress.Root>
             <Text fontSize="xs" color="overlay0" mt={1}>
-                {chunks_embedded} of {total_chunks_in_collection} chunks
-                embedded
+                {t("common.reEmbed.chunksEmbedded", {
+                    embedded: chunks_embedded,
+                    total: total_chunks_in_collection,
+                })}
             </Text>
         </Box>
     );

@@ -1,5 +1,6 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const authApi = {
     fetchStatus: async () =>
@@ -8,7 +9,7 @@ export const authApi = {
                 const url = await buildApiUrl("/api/auth/status");
                 return universalFetch(url);
             },
-            errorMessage: "Failed to check auth status",
+            errorMessage: t("api.auth.checkStatusFailed"),
         }),
 
     setup: async (username, password) =>
@@ -21,7 +22,7 @@ export const authApi = {
                     body: JSON.stringify({ username, password }),
                 });
             },
-            errorMessage: "Setup failed",
+            errorMessage: t("api.auth.setupFailed"),
         }),
 
     login: async (username, password) => {
@@ -44,7 +45,7 @@ export const authApi = {
                 const url = await buildApiUrl("/api/auth/me");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch current user",
+            errorMessage: t("api.auth.fetchMeFailed"),
         }),
 
     fetchUsers: async () =>
@@ -53,7 +54,7 @@ export const authApi = {
                 const url = await buildApiUrl("/api/auth/users");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch users",
+            errorMessage: t("api.auth.fetchUsersFailed"),
         }),
 
     createUser: async (username, password, role) =>
@@ -66,7 +67,7 @@ export const authApi = {
                     body: JSON.stringify({ username, password, role }),
                 });
             },
-            successMessage: "User created",
+            successMessage: t("api.auth.userCreated"),
             toast: true,
         }),
 
@@ -80,7 +81,7 @@ export const authApi = {
                     body: JSON.stringify({ password }),
                 });
             },
-            successMessage: "Password reset",
+            successMessage: t("api.auth.passwordReset"),
             toast: true,
         }),
 
@@ -94,7 +95,7 @@ export const authApi = {
                     body: JSON.stringify({ disabled }),
                 });
             },
-            successMessage: disabled ? "User disabled" : "User enabled",
+            successMessage: disabled ? t("api.auth.userDisabled") : t("api.auth.userEnabled"),
             toast: true,
         }),
 };

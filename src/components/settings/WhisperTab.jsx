@@ -1,6 +1,7 @@
 import { Box, Text, InputGroup, Input, NativeSelect, VStack, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { CheckCircleIcon } from "../common/icons";
+import { useTranslation } from "react-i18next";
 
 const WhisperTab = ({
     config,
@@ -10,30 +11,30 @@ const WhisperTab = ({
     whisperModelsLoading = false,
     urlStatus = { whisper: false },
 }) => {
+    const { t } = useTranslation();
     return (
         <VStack gap={4} align="stretch">
             <Box>
                 <Text fontSize="md" fontWeight="bold">
-                    Whisper (Speech-to-Text)
+                    {t("settings.whisper.title")}
                 </Text>
                 <Text fontSize="sm" color="overlay0">
-                    Configure the speech-to-text service for transcribing audio
-                    recordings
+                    {t("settings.whisper.description")}
                 </Text>
             </Box>
 
             <VStack gap={3} align="stretch">
                 <Box>
-                    <Tooltip content="Base URL for the Whisper API (e.g., https://api.openai.com)">
+                    <Tooltip content={t("settings.whisper.baseUrlTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            API Base URL
+                            {t("settings.whisper.baseUrlLabel")}
                         </Text>
                     </Tooltip>
                     <InputGroup
                         size="sm"
                         endElement={
                             urlStatus.whisper ? (
-                                <Tooltip content="Connection successful">
+                                <Tooltip content={t("settings.connectionSuccessful")}>
                                     <CheckCircleIcon color="successButton" />
                                 </Tooltip>
                             ) : undefined
@@ -54,9 +55,9 @@ const WhisperTab = ({
                 </Box>
 
                 <Box>
-                    <Tooltip content="Model to use for Whisper transcription (e.g., whisper-1)">
+                    <Tooltip content={t("settings.whisper.modelTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            Model
+                            {t("settings.whisper.model")}
                         </Text>
                     </Tooltip>
 
@@ -64,7 +65,7 @@ const WhisperTab = ({
                         <HStack gap="2">
                             <Spinner size="sm" />
                             <Text fontSize="sm" color="overlay0">
-                                Loading models...
+                                {t("settings.loadingModels")}
                             </Text>
                         </HStack>
                     ) : (
@@ -81,7 +82,7 @@ const WhisperTab = ({
                                         e.target.value,
                                     )
                                 }
-                                placeholder="Select Whisper model"
+                                placeholder={t("settings.whisper.selectModel")}
                                 className="input-style"
                             >
                                 {whisperModelOptions.map((model) => (
@@ -95,7 +96,7 @@ const WhisperTab = ({
                     ) : (
                         <Input
                             size="sm"
-                            placeholder="Enter model name (e.g., whisper-1)"
+                            placeholder={t("settings.whisper.modelNamePlaceholder")}
                             value={config?.WHISPER_MODEL || ""}
                             onChange={(e) =>
                                 handleConfigChange(
@@ -109,9 +110,9 @@ const WhisperTab = ({
                 </Box>
 
                 <Box>
-                    <Tooltip content="API key for authenticating with the Whisper service">
+                    <Tooltip content={t("settings.whisper.apiKeyTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            API Key
+                            {t("settings.apiKeyLabel")}
                         </Text>
                     </Tooltip>
                     <Input

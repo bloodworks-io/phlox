@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { useTemplate } from "../templates/templateContext";
 import {
@@ -7,6 +8,7 @@ import {
 } from "../patient/patientLoaders";
 
 export const usePatientSession = () => {
+    const { t } = useTranslation();
     const [patient, setPatient] = useState(null);
     const [selectedDate, setSelectedDate] = useState(
         new Date().toISOString().split("T")[0],
@@ -52,9 +54,8 @@ export const usePatientSession = () => {
         } catch (error) {
             console.error("Error creating new patient:", error);
             toaster.create({
-                title: "Error",
-                description:
-                    "Failed to create new patient: No default template available",
+                title: t("toast.error"),
+                description: t("patient.toast.createFailedNoTemplate"),
                 type: "error",
                 duration: 3000,
             });
@@ -66,6 +67,18 @@ export const usePatientSession = () => {
         const newPatient = await buildEncounterFromCandidate(
             candidate,
             selectedDate,
+            // Guard: don't apply a stale summary if the user switched patients
+            (summary) =>
+                setPatient((prev) =>
+                    prev?.isNewEncounter &&
+                    prev.ur_number === candidate.ur_number
+                        ? {
+                              ...prev,
+                              previous_visit_summary: summary ?? undefined,
+                              previous_visit_summary_pending: false,
+                          }
+                        : prev,
+                ),
         );
         setPatient(newPatient);
         return newPatient;

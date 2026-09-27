@@ -9,6 +9,7 @@ import {
   Center,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import { FaMoon, FaSun, FaSignOutAlt } from "react-icons/fa";
 import { TbVersions } from "react-icons/tb";
 import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
@@ -20,6 +21,7 @@ import { APP_VERSION } from "../../utils/constants/version";
 import changelogContent from "../../../CHANGELOG.md?raw";
 
 const StatusIcon = ({ serverStatus, isCollapsed }) => {
+  const { t } = useTranslation();
   // embedding is null in Docker/external mode (no distinct embedding server);
   // only count it when the backend reports it as applicable.
   const embeddingApplicable =
@@ -30,15 +32,21 @@ const StatusIcon = ({ serverStatus, isCollapsed }) => {
     (!embeddingApplicable || serverStatus.embedding);
 
   const embeddingLine = embeddingApplicable
-    ? `, ${serverStatus.embedding ? "✓" : "✗"} Embedding`
+    ? t("sidebar.status.embeddingSuffix", {
+        mark: serverStatus.embedding ? "✓" : "✗",
+      })
     : "";
 
   return (
     <Tooltip
       content={
         allServicesUp
-          ? "All services connected"
-          : `Services: ${serverStatus.llm ? "✓" : "✗"} LLM, ${serverStatus.whisper ? "✓" : "✗"} Transcription${embeddingLine}`
+          ? t("sidebar.status.allConnected")
+          : t("sidebar.status.services", {
+              llm: serverStatus.llm ? "✓" : "✗",
+              whisper: serverStatus.whisper ? "✓" : "✗",
+              embedding: embeddingLine,
+            })
       }
       positioning={{
         placement: isCollapsed ? "right" : "top",
@@ -57,6 +65,7 @@ const StatusIcon = ({ serverStatus, isCollapsed }) => {
 };
 
 const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
+  const { t } = useTranslation();
   const { open, onOpen, onClose } = useDisclosure();
   const [serverStatus, setServerStatus] = useState({
     whisper: false,
@@ -101,7 +110,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
       <Box position="relative" width="100%">
         <VStack gap={2} align="center" width="100%">
           <Tooltip
-            content="View Version Info"
+            content={t("sidebar.versionInfoTooltip")}
             positioning={{
               placement: "right",
             }}
@@ -118,7 +127,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
           </Tooltip>
 
           {!isTauri() && (
-            <Tooltip content="Sign out" positioning={{ placement: "right" }}>
+            <Tooltip content={t("sidebar.signOut")} positioning={{ placement: "right" }}>
               <Box
                 onClick={handleLogout}
                 cursor="pointer"
@@ -134,8 +143,8 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
           <Tooltip
             content={
               colorMode === "light"
-                ? "Switch to Dark Mode"
-                : "Switch to Light Mode"
+                ? t("sidebar.switchToDarkMode")
+                : t("sidebar.switchToLightMode")
             }
             positioning={{
               placement: "right",
@@ -170,7 +179,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
       {/* Center the version, GitHub icon, and status icon */}
       <Center width="100%">
         <HStack gap={4}>
-          <Tooltip content="View Changelog">
+          <Tooltip content={t("sidebar.changelogTooltip")}>
             <Text
               fontSize="md"
               onClick={onOpen}
@@ -186,7 +195,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
           </Tooltip>
 
           {!isTauri() && (
-            <Tooltip content="Sign out">
+            <Tooltip content={t("sidebar.signOut")}>
               <Box
                 onClick={handleLogout}
                 cursor="pointer"
@@ -202,8 +211,8 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
           <Tooltip
             content={
               colorMode === "light"
-                ? "Switch to Dark Mode"
-                : "Switch to Light Mode"
+                ? t("sidebar.switchToDarkMode")
+                : t("sidebar.switchToLightMode")
             }
           >
             <Box

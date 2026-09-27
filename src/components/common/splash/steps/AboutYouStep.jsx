@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { VStack, HStack, Input, NativeSelect, Field } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { InfoIcon } from "../../icons";
@@ -37,17 +38,20 @@ export const AboutYouStep = ({
   language,
   setLanguage,
   letters,
-}) => (
+}) => {
+  const { t } = useTranslation();
+
+  return (
   <VStack key="about-you" className="anim-fade-slide-right" gap={4} w="100%">
     <Field.Root required>
       <HStack>
-        <Field.Label fontSize="sm" color="textSecondary">Your Name</Field.Label>
-        <Tooltip content="Used to personalize your experience and generated documents" showArrow>
+        <Field.Label fontSize="sm" color="textSecondary">{t("splash.step.aboutYou.nameLabel")}</Field.Label>
+        <Tooltip content={t("splash.step.aboutYou.nameTooltip")} showArrow>
           <InfoIcon boxSize={3} color="textSecondary" />
         </Tooltip>
       </HStack>
       <Input
-        placeholder="Ada Lovelace"
+        placeholder={t("splash.step.aboutYou.namePlaceholder")}
         value={name}
         onChange={(e) => setName(e.target.value)}
         className="input-style"
@@ -57,21 +61,23 @@ export const AboutYouStep = ({
 
     <Field.Root required>
       <HStack>
-        <Field.Label fontSize="sm" color="textSecondary">Your Specialty</Field.Label>
-        <Tooltip content="Your medical specialty helps Phlox provide more relevant assistance" showArrow>
+        <Field.Label fontSize="sm" color="textSecondary">{t("splash.step.aboutYou.specialtyLabel")}</Field.Label>
+        <Tooltip content={t("splash.step.aboutYou.specialtyTooltip")} showArrow>
           <InfoIcon boxSize={3} color="textSecondary" />
         </Tooltip>
       </HStack>
       <NativeSelect.Root>
         <NativeSelect.Field
-          placeholder="Select your specialty"
+          placeholder={t("splash.step.aboutYou.specialtyPlaceholder")}
           value={specialty}
           onChange={(e) => setSpecialty(e.target.value)}
           className="input-style"
           size="sm"
         >
           {SPECIALTIES.map((spec) => (
-            <option key={spec} value={spec}>{spec}</option>
+            <option key={spec} value={spec}>
+              {t(`specialty.${spec.toLowerCase().replace(/ /g, "_")}`)}
+            </option>
           ))}
         </NativeSelect.Field>
         <NativeSelect.Indicator />
@@ -80,8 +86,8 @@ export const AboutYouStep = ({
 
     <Field.Root>
       <HStack>
-        <Field.Label fontSize="sm" color="textSecondary">Preferred Language</Field.Label>
-        <Tooltip content="Language for the interface, transcription, and note and letter generation" showArrow>
+        <Field.Label fontSize="sm" color="textSecondary">{t("splash.step.aboutYou.languageLabel")}</Field.Label>
+        <Tooltip content={t("splash.step.aboutYou.languageTooltip")} showArrow>
           <InfoIcon boxSize={3} color="textSecondary" />
         </Tooltip>
       </HStack>
@@ -106,14 +112,14 @@ export const AboutYouStep = ({
     {letters && letters.availableLetterTemplates.length > 0 && (
       <Field.Root>
         <HStack>
-          <Field.Label fontSize="sm" color="textSecondary">Default Letter Template</Field.Label>
-          <Tooltip content="Used when generating letters. Optional — you can set this later." showArrow>
+          <Field.Label fontSize="sm" color="textSecondary">{t("splash.step.aboutYou.letterTemplateLabel")}</Field.Label>
+          <Tooltip content={t("splash.step.aboutYou.letterTemplateTooltip")} showArrow>
             <InfoIcon boxSize={3} color="textSecondary" />
           </Tooltip>
         </HStack>
         <NativeSelect.Root>
           <NativeSelect.Field
-            placeholder="Select a letter template"
+            placeholder={t("splash.step.aboutYou.letterTemplatePlaceholder")}
             value={letters.selectedLetterTemplate}
             onChange={(e) => letters.setSelectedLetterTemplate(e.target.value)}
             className="input-style"
@@ -128,4 +134,5 @@ export const AboutYouStep = ({
       </Field.Root>
     )}
   </VStack>
-);
+  );
+};

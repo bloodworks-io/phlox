@@ -1,4 +1,5 @@
 import React, { forwardRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useColorMode } from "../../ui/color-mode";
 import { Box, Flex, Text, Button } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
@@ -16,6 +17,7 @@ const ReasoningPanel = forwardRef(
         _ref,
     ) => {
         const { colorMode } = useColorMode();
+        const { t } = useTranslation();
         const {
             loading,
             reasoning,
@@ -59,15 +61,15 @@ const ReasoningPanel = forwardRef(
                     >
                         <Flex align="center">
                             <FaAtom size="1em" style={{ marginRight: "8px" }} />
-                            <Text fontWeight="bold">Chart Insights</Text>
+                            <Text fontWeight="bold">{t("common.fab.chartInsights")}</Text>
                         </Flex>
                         {reasoning && (
-                            <Tooltip content="Regenerate reasoning">
+                            <Tooltip content={t("reasoning.regenerateTooltip")}>
                                 <Button
                                     onClick={handleGenerateReasoning}
                                     loading={loading}
                                     size="xs"
-                                    className="orange-button"><FaSync size="10px" />Regenerate
+                                    className="orange-button"><FaSync size="10px" />{t("reasoning.regenerate")}
                                                                     </Button>
                             </Tooltip>
                         )}
@@ -81,12 +83,21 @@ const ReasoningPanel = forwardRef(
                         flexDirection="column"
                     >
                         {reasoning ? (
-                            <ReasoningContent
-                                reasoning={reasoning}
-                                tabIndex={tabIndex}
-                                setTabIndex={setTabIndex}
-                                colorMode={colorMode}
-                            />
+                            <Box
+                                flex="1"
+                                display="flex"
+                                flexDirection="column"
+                                overflow="hidden"
+                                className="anim-fade-scale"
+                                css={{ animationDuration: "0.25s" }}
+                            >
+                                <ReasoningContent
+                                    reasoning={reasoning}
+                                    tabIndex={tabIndex}
+                                    setTabIndex={setTabIndex}
+                                    colorMode={colorMode}
+                                />
+                            </Box>
                         ) : (
                             <EmptyState
                                 loading={loading}

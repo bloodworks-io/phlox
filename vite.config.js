@@ -75,6 +75,7 @@ export default defineConfig({
 
     watch: {
       ignored: [
+        "**/server/.venv/**",
         "**/build-dir/**",
         "**/.flatpak-builder/**",
         "**/src-tauri/llama.cpp/**",

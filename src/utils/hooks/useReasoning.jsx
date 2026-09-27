@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 const toast = toaster.create;
 import { patientApi } from "../api/patientApi";
 
 
 export const useReasoning = (options = {}) => {
+    const { t } = useTranslation();
     const { noteId, initialReasoning, onReasoningGenerated } = options;
 
     const [isReasoningOpen, setIsReasoningOpen] = useState(false);
@@ -30,7 +32,7 @@ export const useReasoning = (options = {}) => {
         if (!noteId) return;
 
         setLoading(true);
-        setStatus("Initializing reasoning engine...");
+        setStatus(t("reasoning.status.initializing"));
         try {
             const res = await patientApi.generateReasoningStream(
                 noteId,
@@ -48,7 +50,7 @@ export const useReasoning = (options = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [noteId, onReasoningGenerated]);
+    }, [noteId, onReasoningGenerated, t]);
 
     const openReasoning = useCallback(() => {
         setIsReasoningOpen(true);

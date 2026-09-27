@@ -1,6 +1,6 @@
 [project]
 name = "phlox-server"
-version = "2.3.0"
+version = "2.4.2"
 requires-python = ">=3.12"
 dependencies = [
     "APScheduler==3.11.3",
@@ -21,6 +21,8 @@ rag = [
     "mcp==1.28.1",
     "numpy==2.5.1",
     "pypdf==6.18.1",
+    "sherpa-onnx==1.13.8",
+    "sherpa-onnx-core==1.13.8",
     "sqlite-vec==0.1.9",
     "tiktoken==0.12.0",
 ]

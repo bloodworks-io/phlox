@@ -8,8 +8,10 @@ import { FaCloudUploadAlt } from "react-icons/fa";
 import { ragApi } from "../../utils/api/ragApi";
 import { extractPdfMetadata } from "../../utils/helpers/pdfExtractHelpers";
 import BulkUploader from "./BulkUploader";
+import { useTranslation } from "react-i18next";
 
 const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
+    const { t } = useTranslation();
     const [pdfFile, setPdfFile] = useState(null);
      
     const [, setSuggestedCollection] = useState("");
@@ -31,8 +33,8 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
         try {
             if (!pdfFile) {
                 toaster.create({
-                    title: "No file selected",
-                    description: "Please select a PDF file to upload",
+                    title: t("rag.toast.noFileSelected"),
+                    description: t("rag.toast.selectPdfToUpload"),
                     type: "warning",
                     duration: 3000,
                 });
@@ -48,19 +50,19 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
             setFocusArea(result.focus_area);
             setTitle(result.title || "");
             toaster.create({
-                title: "Extraction Successful",
+                title: t("rag.toast.extractionSuccessful"),
                 description: result.extractedText
-                    ? "PDF information extracted successfully"
-                    : "PDF information extracted via backend fallback",
+                    ? t("rag.toast.extractedSuccessfully")
+                    : t("rag.toast.extractedViaFallback"),
                 type: "success",
                 duration: 3000,
             });
         } catch (error) {
             console.error("Error extracting PDF info:", error);
             toaster.create({
-                title: "Extraction Failed",
+                title: t("rag.toast.extractionFailed"),
                 description:
-                    error.message || "Failed to extract PDF information",
+                    error.message || t("rag.toast.failedToExtract"),
                 type: "error",
                 duration: 3000,
             });
@@ -72,8 +74,8 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
     const handleCommitToDatabase = async () => {
         if (!pdfData) {
             toaster.create({
-                title: "No Data to Commit",
-                description: "Please extract PDF information first",
+                title: t("rag.toast.noDataToCommit"),
+                description: t("rag.toast.extractFirst"),
                 type: "warning",
                 duration: 3000,
             });
@@ -117,17 +119,17 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
             setFilename("");
             setPdfData(null);
             toaster.create({
-                title: "Commit Successful",
-                description: "Data successfully committed to the database",
+                title: t("rag.toast.commitSuccessful"),
+                description: t("rag.toast.committedToDatabase"),
                 type: "success",
                 duration: 3000,
             });
         } catch (error) {
             console.error("Error committing to database:", error);
             toaster.create({
-                title: "Error",
+                title: t("toast.error"),
                 description:
-                    error.message || "Failed to commit data to the database",
+                    error.message || t("rag.toast.failedToCommit"),
                 type: "error",
                 duration: 3000,
             });
@@ -141,7 +143,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                 <Flex align="center">
                     <IconButton
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        aria-label="Toggle collapse"
+                        aria-label={t("rag.toggleCollapse")}
                         variant="outline"
                         size="sm"
                         mr="2"
@@ -152,7 +154,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                         )}</IconButton>
                     <HStack gap={2}>
                         <MdFileUpload size="1.2em" />
-                        <Text as="h3">Upload Documents</Text>
+                        <Text as="h3">{t("rag.uploadDocuments")}</Text>
                     </HStack>
                 </Flex>
             </Flex>
@@ -163,13 +165,13 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                             <Tabs.Trigger className="tab-style" value="0">
                                 <HStack>
                                     <MdFileUpload />
-                                    <Text>Single Upload</Text>
+                                    <Text>{t("rag.singleUpload")}</Text>
                                 </HStack>
                             </Tabs.Trigger>
                             <Tabs.Trigger className="tab-style" value="1">
                                 <HStack>
                                     <FaCloudUploadAlt />
-                                    <Text>Bulk Upload</Text>
+                                    <Text>{t("rag.bulkUpload")}</Text>
                                 </HStack>
                             </Tabs.Trigger>
                         </Tabs.List>
@@ -186,20 +188,26 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                         onClick={handleExtractPdfInfo}
                                         width="220px"
                                         loading={isExtracting}
-                                        loadingText="Extracting..."
+                                        loadingText={t("rag.status.extracting")}
                                         className="orange-button"
-                                        alignSelf="flex-start"><AddIcon />Extract PDF Info
+                                        alignSelf="flex-start"><AddIcon />{t("rag.extractPdfInfo")}
                                                                         </Button>
                                     {pdfData && (
-                                        <VStack gap={3} align="stretch" mt={2}>
-                                            <Text fontWeight="bold">Extracted Information</Text>
+                                        <VStack
+                                            gap={3}
+                                            align="stretch"
+                                            mt={2}
+                                            className="anim-fade-slide-up"
+                                            css={{ animationDuration: "0.2s" }}
+                                        >
+                                            <Text fontWeight="bold">{t("rag.extractedInformation")}</Text>
                                             <Field.Root>
                                             <Field.Label htmlFor="custom-collection">
-                                                Collection Name:
+                                                {t("rag.collectionName")}:
                                             </Field.Label>
                                             <Input
                                                 id="custom-collection"
-                                                placeholder="Custom Collection Name"
+                                                placeholder={t("rag.customCollectionName")}
                                                 className="input-style"
                                                 value={customCollectionName}
                                                 onChange={(e) =>
@@ -209,11 +217,11 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                             </Field.Root>
                                             <Field.Root>
                                             <Field.Label htmlFor="document-source">
-                                                Document Source:
+                                                {t("rag.documentSource")}:
                                             </Field.Label>
                                             <Input
                                                 id="document-source"
-                                                placeholder="Document Source"
+                                                placeholder={t("rag.documentSource")}
                                                 className="input-style"
                                                 value={documentSource}
                                                 onChange={(e) =>
@@ -223,11 +231,11 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                             </Field.Root>
                                             <Field.Root>
                                             <Field.Label htmlFor="focus-area">
-                                                Focus Area:
+                                                {t("rag.focusArea")}:
                                             </Field.Label>
                                             <Input
                                                 id="focus-area"
-                                                placeholder="Focus Area"
+                                                placeholder={t("rag.focusArea")}
                                                 className="input-style"
                                                 value={focusArea}
                                                 onChange={(e) => setFocusArea(e.target.value)}
@@ -235,11 +243,11 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                             </Field.Root>
                                             <Field.Root>
                                             <Field.Label htmlFor="document-title">
-                                                Document Title:
+                                                {t("rag.documentTitle")}:
                                             </Field.Label>
                                             <Input
                                                 id="document-title"
-                                                placeholder="Document Title"
+                                                placeholder={t("rag.documentTitle")}
                                                 className="input-style"
                                                 value={title}
                                                 onChange={(e) => setTitle(e.target.value)}
@@ -248,10 +256,10 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                                             <Button
                                                 onClick={handleCommitToDatabase}
                                                 loading={isCommitting}
-                                                loadingText="Committing..."
+                                                loadingText={t("rag.status.committing")}
                                                 className="green-button"
                                                 width="220px"
-                                                alignSelf="flex-start"><AddIcon />Commit to Database
+                                                alignSelf="flex-start"><AddIcon />{t("rag.commitToDatabase")}
                                                                                         </Button>
                                         </VStack>
                                     )}

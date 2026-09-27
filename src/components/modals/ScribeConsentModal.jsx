@@ -1,9 +1,11 @@
 import { Button, HStack, Heading, Text, Dialog, Portal } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { getLocale } from "../../utils/helpers/formatHelpers";
 
 const formatDate = (iso) => {
     if (!iso) return "";
     const d = new Date(iso);
-    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString();
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(getLocale());
 };
 
 const ScribeConsentModal = ({
@@ -15,7 +17,8 @@ const ScribeConsentModal = ({
     declinedDate = null,
     patientName = "",
 }) => {
-    const name = patientName || "This patient";
+    const { t } = useTranslation();
+    const name = patientName || t("modal.scribeConsent.thisPatient");
     return (
         <Dialog.Root
             open={isOpen}
@@ -35,28 +38,24 @@ const ScribeConsentModal = ({
                         <Dialog.Header>
                             <Heading as="h2" size="md" fontFamily="heading">
                                 {hasDeclined
-                                    ? "Previously declined"
-                                    : "Ambient scribe consent"}
+                                    ? t("modal.scribeConsent.declinedTitle")
+                                    : t("modal.scribeConsent.consentTitle")}
                             </Heading>
                         </Dialog.Header>
                         <Dialog.CloseTrigger />
                         <Dialog.Body>
                             {hasDeclined ? (
                                 <Text>
-                                    {name} previously declined consent for ambient
-                                    scribing
-                                    {declinedDate
-                                        ? ` on ${formatDate(declinedDate)}`
-                                        : ""}
-                                    . Would you like to re-request consent before
-                                    recording?
+                                    {t("modal.scribeConsent.declinedBody", {
+                                        name,
+                                        date: declinedDate
+                                            ? ` on ${formatDate(declinedDate)}`
+                                            : "",
+                                    })}
                                 </Text>
                             ) : (
                                 <Text>
-                                    {name} hasn&apos;t yet consented to ambient
-                                    scribing. Ambient mode records the consultation
-                                    &mdash; please confirm the patient has consented
-                                    before recording.
+                                    {t("modal.scribeConsent.consentBody", { name })}
                                 </Text>
                             )}
                         </Dialog.Body>
@@ -68,7 +67,7 @@ const ScribeConsentModal = ({
                                         mr={3}
                                         onClick={onClose}
                                     >
-                                        Cancel
+                                        {t("action.cancel")}
                                     </Button>
                                 ) : (
                                     <Button
@@ -76,11 +75,11 @@ const ScribeConsentModal = ({
                                         mr={3}
                                         onClick={onDecline}
                                     >
-                                        Decline
+                                        {t("modal.scribeConsent.decline")}
                                     </Button>
                                 )}
                                 <Button className="green-button" onClick={onConsent}>
-                                    {hasDeclined ? "Re-request consent" : "Consent"}
+                                    {hasDeclined ? t("modal.scribeConsent.reRequest") : t("modal.scribeConsent.consent")}
                                 </Button>
                             </HStack>
                         </Dialog.Footer>

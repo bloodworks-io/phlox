@@ -5,8 +5,10 @@ import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 import { GreenButton, GreyButton } from "../common/Buttons";
+import { useTranslation } from "react-i18next";
 
 const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }) => {
+  const { t } = useTranslation();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -18,8 +20,8 @@ const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }) => {
     const selected = e.target.files?.[0];
     if (selected && !selected.name.toLowerCase().endsWith(".pdf")) {
       toaster.create({
-        title: "Invalid file",
-        description: "Please select a PDF file",
+        title: t("forms.invalidFile"),
+        description: t("forms.selectPdfFile"),
         type: "error",
         duration: 2000,
       });
@@ -46,13 +48,16 @@ const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }) => {
 
       if (pageCount !== expectedPages) {
         throw new Error(
-          `Replacement must have ${expectedPages} page(s); got ${pageCount}.`,
+          t("forms.replacePageMismatch", {
+            expected: expectedPages,
+            actual: pageCount,
+          }),
         );
       }
       for (let i = 0; i < pageHeights.length; i++) {
         if (Math.abs(pageHeights[i] - expectedHeights[i]) > 0.5) {
           throw new Error(
-            `Page ${i + 1} height differs from the original; fields would misalign.`,
+            t("forms.replaceHeightMismatch", { page: i + 1 }),
           );
         }
       }
@@ -67,8 +72,8 @@ const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }) => {
         formData,
       );
       toaster.create({
-        title: "PDF replaced",
-        description: "Field definitions kept",
+        title: t("forms.pdfReplaced"),
+        description: t("forms.fieldDefinitionsKept"),
         type: "success",
         duration: 2000,
       });
@@ -76,7 +81,7 @@ const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }) => {
       handleClose();
     } catch (error) {
       toaster.create({
-        title: "Replace failed",
+        title: t("forms.replaceFailed"),
         description: error.message,
         type: "error",
         duration: 3000,
@@ -101,13 +106,13 @@ const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }) => {
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header>
-              <Text as="h3">Replace PDF</Text>
+              <Text as="h3">{t("forms.replacePdf")}</Text>
             </Dialog.Header>
             <Dialog.Body>
               <VStack gap="4">
                 <Box w="100%">
                   <Text fontSize="sm" fontWeight="bold" mb="2">
-                    New PDF for &ldquo;{template?.name}&rdquo;
+                    {t("forms.newPdfFor", { name: template?.name })}
                   </Text>
                   <input
                     ref={fileInputRef}
@@ -118,17 +123,16 @@ const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }) => {
                   />
                 </Box>
                 <Text fontSize="xs" color="overlay0">
-                  Field definitions are kept. The new PDF must have{" "}
-                  {expectedPages} page(s) with matching dimensions.
+                  {t("forms.replaceInstructions", { pages: expectedPages })}
                 </Text>
               </VStack>
             </Dialog.Body>
             <Dialog.Footer>
               <GreyButton mr="3" onClick={handleClose}>
-                Cancel
+                {t("action.cancel")}
               </GreyButton>
               <GreenButton onClick={handleSubmit} loading={uploading} disabled={!file}>
-                Replace
+                {t("forms.replace")}
               </GreenButton>
             </Dialog.Footer>
           </Dialog.Content>
