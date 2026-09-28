@@ -253,6 +253,7 @@ pub fn run() {
 
 /// Install cleanup hooks for abnormal process termination.
 fn install_cleanup_hooks() {
+    #[cfg(unix)]
     extern "C" fn on_signal(_sig: libc::c_int) {
         crate::process::kill_all_processes();
         std::process::exit(130);

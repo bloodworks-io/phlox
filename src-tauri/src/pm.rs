@@ -499,6 +499,7 @@ fn set_nonblocking(fd: std::os::unix::io::RawFd, nonblocking: bool) -> std::io::
 fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String> {
     use std::io::Read;
 
+    #[cfg(unix)]
     let child_pid = child.id();
     let stdout = child.stdout.as_mut().ok_or("Failed to capture stdout")?;
     let stderr = child.stderr.as_mut().ok_or("Failed to capture stderr")?;

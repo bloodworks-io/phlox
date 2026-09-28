@@ -26,12 +26,12 @@ fn is_process_alive(pid: u32) -> bool {
     use windows::Win32::System::Threading::PROCESS_QUERY_INFORMATION;
 
     unsafe {
-        let handle = OpenProcess(PROCESS_QUERY_INFORMATION, false, pid);
-        if !handle.is_invalid() {
-            CloseHandle(handle);
-            true
-        } else {
-            false
+        match OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) {
+            Ok(handle) => {
+                let _ = CloseHandle(handle);
+                true
+            }
+            Err(_) => false,
         }
     }
 }
