@@ -499,6 +499,7 @@ fn set_nonblocking(fd: std::os::unix::io::RawFd, nonblocking: bool) -> std::io::
 fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String> {
     use std::io::Read;
 
+    let child_pid = child.id();
     let stdout = child.stdout.as_mut().ok_or("Failed to capture stdout")?;
     let stderr = child.stderr.as_mut().ok_or("Failed to capture stderr")?;
 
@@ -572,6 +573,17 @@ fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String> {
         match stdout_reader.read(&mut stdout_byte) {
             Ok(0) => {
                 log::warn!("EOF reached while waiting for server signal");
+                #[cfg(unix)]
+                unsafe {
+                    let mut wstatus: i32 = 0;
+                    if libc::waitpid(child_pid as libc::pid_t, &mut wstatus, libc::WNOHANG) > 0 {
+                        if libc::WIFSIGNALED(wstatus) {
+                            log::warn!("Server killed by signal {}", libc::WTERMSIG(wstatus));
+                        } else if libc::WIFEXITED(wstatus) {
+                            log::warn!("Server exited with code {}", libc::WEXITSTATUS(wstatus));
+                        }
+                    }
+                }
                 log::warn!(
                     "Stdout content: {}",
                     String::from_utf8_lossy(&stdout_buffer)
@@ -780,6 +792,12 @@ fn start_server() -> Result<ManagedProcess, String> {
     cmd.env("RATE_LIMIT_ENABLED", "true");
     // Tell Python which PID to watch so it self-terminates if we die
     cmd.env("PHLOX_PARENT_PID", std::process::id().to_string());
+
+    // Ignore host config on Linux.
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("OPENSSL_CONF").is_none() {
+        cmd.env("OPENSSL_CONF", "/dev/null");
+    }
 
     if cfg!(debug_assertions) {
         cmd.env("PHLOX_DEMO_MODE", "true");
