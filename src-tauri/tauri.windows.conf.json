@@ -3,8 +3,11 @@
     "targets": ["nsis"],
     "externalBin": [
       "binaries/phlox-llama-server",
-      "binaries/phlox-whisper-server",
-      "binaries/vulkan-1"
-    ]
+      "binaries/phlox-whisper-server"
+    ],
+    "resources": {
+      "server_dist": "server_dist",
+      "binaries/vulkan-1-x86_64-pc-windows-msvc.dll": "vulkan-1.dll"
+    }
   }
 }

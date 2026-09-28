@@ -30,6 +30,12 @@ else
     echo "Mode: RELEASE (for production)"
 fi
 
+IS_WINDOWS=false
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]] \
+   || [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -s)" == CYGWIN* ]]; then
+    IS_WINDOWS=true
+fi
+
 PARAKEET_PINNED_SHA="e8acc6172a94e20a952cf1843decace5d771a94b"
 
 if [ ! -d "$PARAKEET_DIR" ]; then
@@ -67,7 +73,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         -DPARAKEET_GGML_METAL=ON
     )
     BACKEND_DESC="Metal"
-elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+elif [[ "$IS_WINDOWS" == true ]]; then
     # Windows: Vulkan + CPU fallback (mirrors the Flatpak build)
     JOBS=$(nproc)
     CMAKE_BACKEND_FLAGS=(
@@ -99,7 +105,7 @@ cmake -S "$PARAKEET_DIR" -B "$PARAKEET_DIR/build" \
 echo "Building parakeet-server binary..."
 cmake --build "$PARAKEET_DIR/build" --config Release --target parakeet-server -j"$JOBS"
 
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+if [[ "$IS_WINDOWS" == true ]]; then
     # Windows (multi-config VS generator): exe lands in a Release/ subdir
     SERVER_BIN="$(ls "$PARAKEET_DIR/build/examples/server/Release/parakeet-server.exe" 2>/dev/null || find "$PARAKEET_DIR/build" -name 'parakeet-server.exe' | head -1)"
     if [ -z "$SERVER_BIN" ]; then

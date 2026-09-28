@@ -54,6 +54,12 @@ else
     echo "Mode: RELEASE (for production)"
 fi
 
+IS_WINDOWS=false
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]] \
+   || [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -s)" == CYGWIN* ]]; then
+    IS_WINDOWS=true
+fi
+
 # Detect platform (using Rust target triple naming for Tauri compatibility)
 if [[ "$OSTYPE" == "darwin"* ]]; then
     if [[ $(uname -m) == "arm64" ]]; then
@@ -66,12 +72,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     PLATFORM="x86_64-unknown-linux-gnu"
     echo "Platform: Linux x86_64"
-elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+elif [[ "$IS_WINDOWS" == true ]]; then
     PLATFORM="x86_64-pc-windows-msvc"
     echo "Platform: Windows x86_64"
 else
     PLATFORM="aarch64-apple-darwin"
-    echo "Platform: Unknown, defaulting to macOS ARM64"
+    echo "Platform: Unknown (OSTYPE=$OSTYPE, uname=$(uname -s)), defaulting to macOS ARM64"
 fi
 
 # ========================================

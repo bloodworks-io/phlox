@@ -29,6 +29,12 @@ else
     echo "Mode: RELEASE (for production)"
 fi
 
+IS_WINDOWS=false
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]] \
+   || [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -s)" == CYGWIN* ]]; then
+    IS_WINDOWS=true
+fi
+
 LLAMA_PINNED_SHA="aa46bda89b9a8378ae76bb15fc2ce2f571f0983c"
 
 if [ ! -d "$LLAMA_DIR" ]; then
@@ -64,7 +70,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         -DLLAMA_ACCELERATE=ON
     )
     BACKEND_DESC="Metal"
-elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+elif [[ "$IS_WINDOWS" == true ]]; then
     # Windows: Vulkan + CPU fallback (mirrors the Flatpak build)
     JOBS=$(nproc)
     CMAKE_BACKEND_FLAGS=(
@@ -100,7 +106,7 @@ cmake .. \
 echo "Building llama-server binary..."
 cmake --build . --config Release --target llama-server -j"$JOBS"
 
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+if [[ "$IS_WINDOWS" == true ]]; then
     # Windows (multi-config VS generator): exe lands in bin/Release/
     LLAMA_OUT="$(ls bin/Release/llama-server.exe 2>/dev/null || find bin -name 'llama-server.exe' | head -1)"
     if [ -z "$LLAMA_OUT" ]; then
@@ -112,13 +118,20 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
 
     # Bundle the Vulkan loader next to the servers: machines without a Vulkan
     # driver still load (loader enumerates 0 devices -> ggml CPU fallback).
-    SDK_BIN="$(cygpath -u "${VULKAN_SDK:-}")/Bin"
-    if [ -f "$SDK_BIN/vulkan-1.dll" ]; then
+    SDK_ROOT="$(cygpath -u "${VULKAN_SDK:-}")"
+    LOADER=""
+    for CAND in "$SDK_ROOT/Bin/vulkan-1.dll" "$SDK_ROOT/Runtime/vulkan-1.dll" "/c/Windows/System32/vulkan-1.dll"; do
+        if [ -f "$CAND" ]; then
+            LOADER="$CAND"
+            break
+        fi
+    done
+    if [ -n "$LOADER" ]; then
         mkdir -p "$SCRIPT_DIR/binaries"
-        cp "$SDK_BIN/vulkan-1.dll" "$SCRIPT_DIR/binaries/vulkan-1-x86_64-pc-windows-msvc.dll"
-        echo "Bundled vulkan-1.dll for Tauri externalBin"
+        cp "$LOADER" "$SCRIPT_DIR/binaries/vulkan-1-x86_64-pc-windows-msvc.dll"
+        echo "Bundled vulkan-1.dll (from $LOADER) for Tauri externalBin"
     else
-        echo "ERROR: VULKAN_SDK not set or vulkan-1.dll missing - build would produce a binary that fails to start on GPU-less machines"
+        echo "ERROR: vulkan-1.dll not found (VULKAN_SDK='${VULKAN_SDK:-}', checked Bin/ Runtime/ System32) - build would produce a binary that fails to start on GPU-less machines"
         exit 1
     fi
 elif [ -f "bin/llama-server" ]; then

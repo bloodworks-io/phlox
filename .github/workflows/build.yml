@@ -218,8 +218,12 @@ jobs:
       # Vulkan SDK: shader compiler (glslc) at build time; build-llama.sh also
       # bundles the redistributable loader (vulkan-1.dll) for CPU-only fallback.
       - name: Install Vulkan SDK
+        env:
+          VULKAN_VERSION: 1.4.357.0
         run: |
-          choco install -y vulkansdk
+          curl -L --retry 3 -o "$RUNNER_TEMP/vulkansdk.exe" \
+            "https://sdk.lunarg.com/sdk/download/${VULKAN_VERSION}/windows/vulkansdk-windows-X64-${VULKAN_VERSION}.exe"
+          "$RUNNER_TEMP/vulkansdk.exe" --accept-licenses --default-answer --confirm-command install
           SDK_DIR=$(ls -d /c/VulkanSDK/*/ | sort -V | tail -1)
           echo "VULKAN_SDK=$(cygpath -w "$SDK_DIR")" >> "$GITHUB_ENV"
           echo "$(cygpath -u "$SDK_DIR")/Bin" >> "$GITHUB_PATH"
@@ -292,6 +296,7 @@ jobs:
           manifest-path: packaging/com.phlox.app.yaml
           arch: x86_64
           verbose: true
+          upload-artifact: false
 
       - name: Upload Flatpak bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

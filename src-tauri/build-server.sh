@@ -31,6 +31,12 @@ else
     echo "Mode: RELEASE (for production)"
 fi
 
+IS_WINDOWS=false
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]] \
+   || [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -s)" == CYGWIN* ]]; then
+    IS_WINDOWS=true
+fi
+
 # Detect architecture
 if [[ "$OSTYPE" == "darwin"* ]]; then
     if [[ $(uname -m) == "arm64" ]]; then
@@ -46,7 +52,7 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     ARCH="x86_64"
     TARGET="phlox-server-x86_64-unknown-linux-gnu"
     echo "Detected Linux x86_64"
-elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+elif [[ "$IS_WINDOWS" == true ]]; then
     ARCH="x86_64"
     TARGET="phlox-server-x86_64-pc-windows-msvc.exe"
     echo "Detected Windows x86_64"
@@ -139,7 +145,7 @@ cp "$PROJECT_DIR/CHANGELOG.md" "$SCRIPT_DIR/server_dist/"
 
 # Create a wrapper script for prod (not on Windows: no bash there; the Rust
 # side spawns server_dist/phlox-server.exe from the resources directly).
-if [[ "$OSTYPE" != "msys" && "$OSTYPE" != "win32" ]]; then
+if [[ "$IS_WINDOWS" != true ]]; then
     cat > "$SCRIPT_DIR/binaries/$TARGET" << 'EOF'
 #!/bin/bash
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
