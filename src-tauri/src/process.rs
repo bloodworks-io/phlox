@@ -83,11 +83,10 @@ fn kill_process_by_pid(pid: u32, service_name: &str) {
     {
         use std::process::Command;
         log::info!("Killing {} process (PID: {})", service_name, pid);
-        let _ = Command::new("taskkill")
-            .arg("/F")
-            .arg("/PID")
-            .arg(pid.to_string())
-            .output();
+        let mut cmd = Command::new("taskkill");
+        cmd.arg("/F").arg("/PID").arg(pid.to_string());
+        crate::pm::set_windows_spawn_flags(&mut cmd, false);
+        let _ = cmd.output();
 
         // Wait for process to exit
         for _ in 0..50 {
@@ -122,11 +121,10 @@ fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
 #[cfg(target_os = "windows")]
 fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
     log::info!("Killing {} processes matching: {}", service_name, pattern);
-    std::process::Command::new("taskkill")
-        .arg("/F")
-        .arg("/IM")
-        .arg(pattern)
-        .output()
+    let mut cmd = std::process::Command::new("taskkill");
+    cmd.arg("/F").arg("/IM").arg(pattern);
+    crate::pm::set_windows_spawn_flags(&mut cmd, false);
+    cmd.output()
         .map(|o| o.status.success())
         .unwrap_or(false)
 }

@@ -15,6 +15,19 @@ pub const LLAMA_PORT: u16 = 8082;
 pub const WHISPER_PORT: u16 = 8081;
 pub const EMBEDDING_PORT: u16 = 8083;
 
+#[cfg(windows)]
+pub(crate) fn set_windows_spawn_flags(cmd: &mut Command, new_process_group: bool) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    let flags = if new_process_group {
+        CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW
+    } else {
+        CREATE_NO_WINDOW
+    };
+    cmd.creation_flags(flags);
+}
+
 /// Ports allocated by the Python server after passphrase unlock.
 #[derive(Debug, Clone)]
 pub struct AllocatedPorts {
@@ -341,6 +354,11 @@ fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
         cmd.process_group(0);
     }
 
+    #[cfg(windows)]
+    {
+        set_windows_spawn_flags(&mut cmd, false);
+    }
+
     cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
     let child = cmd
@@ -393,6 +411,11 @@ fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
         cmd.process_group(0);
     }
 
+    #[cfg(windows)]
+    {
+        set_windows_spawn_flags(&mut cmd, false);
+    }
+
     cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
     let child = cmd
@@ -442,6 +465,11 @@ fn start_embedding(port: Option<u16>) -> Result<ManagedProcess, String> {
     {
         use std::os::unix::process::CommandExt;
         cmd.process_group(0);
+    }
+
+    #[cfg(windows)]
+    {
+        set_windows_spawn_flags(&mut cmd, false);
     }
 
     cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
@@ -812,11 +840,10 @@ fn start_server() -> Result<ManagedProcess, String> {
 
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        // CREATE_NEW_PROCESS_GROUP so we can later send CTRL_BREAK_EVENT
-        // via GenerateConsoleCtrlEvent for graceful shutdown.
-        const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
-        cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
+        // Own process group so CTRL_BREAK_EVENT can be sent via
+        // GenerateConsoleCtrlEvent for graceful shutdown; CREATE_NO_WINDOW
+        // keeps the child's console hidden.
+        set_windows_spawn_flags(&mut cmd, true);
     }
 
     cmd.stderr(Stdio::piped());
@@ -953,11 +980,10 @@ fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
 #[cfg(target_os = "windows")]
 fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
     log::info!("Killing {} processes matching: {}", service_name, pattern);
-    Command::new("taskkill")
-        .arg("/F")
-        .arg("/IM")
-        .arg(pattern)
-        .output()
+    let mut cmd = Command::new("taskkill");
+    cmd.arg("/F").arg("/IM").arg(pattern);
+    set_windows_spawn_flags(&mut cmd, false);
+    cmd.output()
         .map(|o| o.status.success())
         .unwrap_or(false)
 }
