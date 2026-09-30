@@ -20,6 +20,7 @@ from server.agent_live.tools import (
     execute_live_tool,
     get_live_tools_definition,
 )
+from server.utils.current_user import CurrentUser, get_current_user, set_current_user
 
 app = FastAPI()
 app.include_router(agent_live_router.router, prefix="/api/agent-live")
@@ -44,7 +45,7 @@ def _make_session(**overrides: Any):
     ]
     defaults: dict[str, Any] = {
         "id": "sess-test",
-        "owner": "local",
+        "owner_user": CurrentUser(1, "local", "admin"),
         "patient_context": {"name": "Test Patient"},
         "template_key": "phlox_01",
         "template_fields": template_fields,
@@ -64,6 +65,20 @@ def clean_sessions():
 def reset_gate_readout_flag(monkeypatch):
     monkeypatch.setattr("server.agent_live.engine._GATE_LOGPROBS_OK", True)
     yield
+
+
+@pytest.fixture(autouse=True)
+def router_identity(request, monkeypatch):
+    """Bind the implicit local admin on the bare (middleware-less) test app.
+
+    Tests marked ``no_default_user`` opt out to exercise the 401 path.
+    """
+    if "no_default_user" in request.keywords:
+        return
+    monkeypatch.setattr(
+        "server.agent_live.router.get_current_user",
+        lambda: CurrentUser(1, "local", "admin"),
+    )
 
 
 # --------------------------------------------------------------------- tools
@@ -597,7 +612,7 @@ def test_engine_routes_all_live_tools():
 
 def test_session_manager_create_and_get():
     session = session_manager.create(
-        owner="alice",
+        owner_user=CurrentUser(2, "alice", "clinician"),
         patient_context={"name": "X"},
         template_key=None,
         template_fields=[],
@@ -613,7 +628,10 @@ def test_session_prune_removes_old_ended_sessions():
     import time
 
     session = session_manager.create(
-        owner="alice", patient_context={}, template_key=None, template_fields=[]
+        owner_user=CurrentUser(2, "alice", "clinician"),
+        patient_context={},
+        template_key=None,
+        template_fields=[],
     )
     session.end()
     session.ended_at = time.time() - 3600  # pretend it ended an hour ago
@@ -815,7 +833,7 @@ def test_unknown_session_404():
 
 
 def test_ownership_enforced():
-    session = _make_session(id="sess-alice", owner="alice")
+    session = _make_session(id="sess-alice", owner_user=CurrentUser(2, "alice", "clinician"))
     session_manager._sessions[session.id] = session
 
     with pytest.raises(Exception) as bob_error:
@@ -829,6 +847,12 @@ def test_ownership_enforced():
 def test_current_owner_defaults_to_local():
     request: Any = SimpleNamespace(state=SimpleNamespace())
     assert _current_owner(request) == "local"
+
+
+@pytest.mark.no_default_user
+def test_start_session_requires_identity():
+    response = client.post("/api/agent-live/sessions", json={})
+    assert response.status_code == 401
 
 
 # ------------------------------------------------------------------- engine
@@ -1242,6 +1266,33 @@ async def test_handle_audio_empty_text_skips_segment(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_handle_audio_rebinds_owner_identity(monkeypatch):
+    from server.agent_live import engine as engine_module
+
+    alice = CurrentUser(2, "alice", "clinician")
+    captured = {}
+
+    async def fake_transcribe(_audio_bytes, **_kwargs):
+        captured["user"] = get_current_user()
+        return {"text": ""}
+
+    monkeypatch.setattr(engine_module, "transcribe_audio", fake_transcribe)
+    session = _make_session(owner_user=alice)
+    session.speakers = _StaticSpeakers([None])
+    engine = _audio_engine(session)
+    session.emit = AsyncMock()
+    engine._schedule_tick = lambda _reason: pytest.fail("no utterance to intake")
+
+    set_current_user(None)
+    try:
+        await engine.handle_audio(b"RIFF....")
+    finally:
+        set_current_user(None)
+
+    assert captured["user"] is alice
+
+
+@pytest.mark.asyncio
 async def test_intake_utterance_gates_when_idle():
     from server.agent_live.engine import LiveAgentEngine
 
@@ -1329,6 +1380,58 @@ async def test_request_tidy_schedules_consolidation_tick(monkeypatch):
     assert tick is not None
     await tick
     run_tick.assert_awaited_once_with("tidy_tick")
+
+
+@pytest.mark.asyncio
+async def test_tick_loop_rebinds_owner_identity(monkeypatch):
+    import asyncio
+
+    from server.agent_live.engine import LiveAgentEngine
+
+    alice = CurrentUser(2, "alice", "clinician")
+    session = _make_session(owner_user=alice)
+    engine = LiveAgentEngine(session)
+    captured = {}
+
+    async def capture_user(_reason):
+        captured["user"] = get_current_user()
+
+    monkeypatch.setattr(engine, "_run_tick", AsyncMock(side_effect=capture_user))
+
+    set_current_user(None)
+    try:
+        # Real production shape: the tick runs as its own task copied from a
+        # context with no bound user.
+        task = asyncio.create_task(engine._tick_loop("NOTE"))
+        await asyncio.wait_for(task, timeout=5)
+    finally:
+        set_current_user(None)
+
+    assert captured["user"] is alice
+
+
+@pytest.mark.asyncio
+async def test_registry_tool_blocked_without_user_identity(monkeypatch):
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+
+    async def fail_stream(*_args, **_kwargs):
+        raise AssertionError("execute_tool_streaming must not run without a bound user")
+
+    monkeypatch.setattr("server.chat.tools.execute_tool_streaming", fail_stream)
+
+    set_current_user(None)
+    try:
+        content, artifacts = await engine._run_registry_tool(
+            {"function": {"name": "search_patient", "arguments": "{}"}}, "search_patient"
+        )
+    finally:
+        set_current_user(None)
+
+    assert content == "Tool execution blocked: no user context."
+    assert artifacts == []
 
 
 def test_request_tidy_refuses_ended_session():

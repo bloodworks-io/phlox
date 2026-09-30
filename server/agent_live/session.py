@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from server.transcription.speakers import SessionSpeakers
+from server.utils.current_user import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class LiveSession:
     """In-memory state for one live scribe session."""
 
     id: str
-    owner: str
+    owner_user: CurrentUser = field(repr=False, compare=False)
     patient_context: dict[str, Any]
     template_key: str | None
     template_fields: list[dict[str, Any]]
@@ -120,7 +121,7 @@ class SessionManager:
 
     def create(
         self,
-        owner: str,
+        owner_user: CurrentUser,
         patient_context: dict[str, Any],
         template_key: str | None,
         template_fields: list[dict[str, Any]],
@@ -130,7 +131,7 @@ class SessionManager:
         self._prune()
         session = LiveSession(
             id=uuid.uuid4().hex,
-            owner=owner,
+            owner_user=owner_user,
             patient_context=patient_context,
             template_key=template_key,
             template_fields=template_fields,

@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from server.agent_live.engine import LiveAgentEngine
 from server.agent_live.session import LiveSession, session_manager
 from server.transcription.speakers import split_speaker_segment
+from server.utils.current_user import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ def _get_owned_session(session_id: str, request: Request) -> LiveSession:
     session = session_manager.get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Live session not found")
-    if session.owner != _current_owner(request):
+    if session.owner_user.username != _current_owner(request):
         raise HTTPException(status_code=403, detail="Not your live session")
     return session
 
@@ -85,7 +86,10 @@ def _final_state(session: LiveSession) -> dict:
 
 
 @router.post("/sessions")
-async def start_session(body: LiveStartRequest, request: Request):
+async def start_session(body: LiveStartRequest):
+    user = get_current_user()
+    if user is None:
+        raise HTTPException(status_code=401, detail="No authenticated user for live session")
     template_fields: list[dict] = []
     if body.template_key:
         from server.database.repositories.templates import get_template_fields
@@ -96,7 +100,7 @@ async def start_session(body: LiveStartRequest, request: Request):
         ]
 
     session = session_manager.create(
-        owner=_current_owner(request),
+        owner_user=user,
         patient_context=body.patient,
         template_key=body.template_key,
         template_fields=template_fields,
@@ -114,7 +118,7 @@ async def start_session(body: LiveStartRequest, request: Request):
             session.id,
             exc,
         )
-    logger.info("Live session %s started (owner=%s)", session.id, session.owner)
+    logger.info("Live session %s started (owner=%s)", session.id, session.owner_user.username)
     return {"session_id": session.id}
 
 

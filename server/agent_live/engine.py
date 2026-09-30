@@ -37,6 +37,7 @@ from server.agent_live.tools import execute_live_tool, get_live_tools_definition
 from server.database.config.manager import config_manager
 from server.transcription.audio import transcribe_audio
 from server.transcription.speakers import format_segment, split_speaker_segment
+from server.utils.current_user import get_current_user, set_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +177,7 @@ class LiveAgentEngine:
 
     async def handle_audio(self, audio_bytes: bytes) -> None:
         """Transcribe one audio segment and feed the gate/agent pipeline."""
+        set_current_user(self.session.owner_user)
         session = self.session
         async with self._audio_lock:
             logger.info("Live session %s: transcribing %d bytes", session.id, len(audio_bytes))
@@ -361,6 +363,7 @@ class LiveAgentEngine:
         self.session.track_task(self._tick_task)
 
     async def _tick_loop(self, reason: str | None) -> None:
+        set_current_user(self.session.owner_user)
         while reason and not self.session.is_ended:
             try:
                 await self._run_tick(reason)
@@ -521,6 +524,13 @@ class LiveAgentEngine:
 
     async def _run_registry_tool(self, tool_call: dict, name: str) -> tuple[str, list]:
         """Execute a chat-registry tool (incl. MCP) and capture artifacts."""
+        if get_current_user() is None:
+            logger.error(
+                "Live session %s: refusing registry tool '%s' with no bound user identity",
+                self.session.id,
+                name,
+            )
+            return "Tool execution blocked: no user context.", []
         from server.chat.tools import execute_tool_streaming
 
         content = ""
