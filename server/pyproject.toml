@@ -80,6 +80,7 @@ replace-imports-with-any = [
     "sqlite_vec.**",
     "mcp.**",
     "numpy.**",
+    "sherpa_onnx.**",
 ]
 
 [[tool.ty.overrides]]

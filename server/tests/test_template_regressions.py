@@ -120,16 +120,19 @@ def test_family_latest_prefers_fork_over_old_versions():
     try:
         # Family resolution for a fork key (broken split("_")[0] -> "custom")
         resolved = repo.get_template_by_key("custom_progress_1", exact_match=False)
+        assert resolved is not None
         assert resolved["template_key"] == "custom_progress_1"
 
         # The fork outranks the newer-looking protected version
         resolved = repo.get_template_by_key("progress_2", exact_match=False)
+        assert resolved is not None
         assert resolved["template_key"] == "custom_progress_1"
         assert resolved["fields"][0]["field_name"] == "Primary Haematological History"
 
         # Without a fork, the numerically latest version wins
         _delete_template_rows("custom_progress_1")
         resolved = repo.get_template_by_key("progress_2", exact_match=False)
+        assert resolved is not None
         assert resolved["template_key"] == "progress_3"
     finally:
         _delete_template_rows("progress_2", "progress_3", "custom_progress_1")
@@ -205,6 +208,7 @@ def test_delete_default_non_fork_template_repoints_default():
         assert response.status_code == 200
 
         new_default = config_manager.get_default_template_key()
+        assert new_default is not None
         assert new_default != "custom_gout_1"
         assert is_protected_template_key(new_default)
         assert repo.get_template_by_key(new_default) is not None

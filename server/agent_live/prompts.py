@@ -9,7 +9,7 @@ native in llama.cpp).
 from typing import Any
 
 
-def _condense(text: str, cap: int = 800) -> str:
+def _condense(text: str | None, cap: int = 800) -> str:
     """Collapse whitespace and cap length (system prompts can be verbose)."""
     condensed = " ".join((text or "").split())
     if len(condensed) > cap:

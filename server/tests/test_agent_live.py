@@ -4,7 +4,7 @@ import json
 import math
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import FastAPI
@@ -42,7 +42,7 @@ def _make_session(**overrides: Any):
         {"field_key": "clinical_history", "field_name": "Current History"},
         {"field_key": "plan", "field_name": "Plan"},
     ]
-    defaults = {
+    defaults: dict[str, Any] = {
         "id": "sess-test",
         "owner": "local",
         "patient_context": {"name": "Test Patient"},
@@ -653,6 +653,7 @@ def test_start_session_loads_template_fields():
     )
     session_id = response.json()["session_id"]
     session = session_manager.get(session_id)
+    assert session is not None
     assert session.template_fields, "expected phlox_01 fields to be loaded"
     assert any(f.get("field_key") == "plan" for f in session.template_fields)
 
@@ -664,6 +665,7 @@ def test_audio_upload_accepted_with_mocked_engine():
     )
     session_id = response.json()["session_id"]
     session = session_manager.get(session_id)
+    assert session is not None
     session.engine.handle_audio = AsyncMock()
 
     audio = b"RIFF" + b"\x00" * 64
@@ -693,6 +695,7 @@ def test_feedback_marks_clinician_edits():
     assert response.status_code == 200
 
     session = session_manager.get(session_id)
+    assert session is not None
     assert session.field_drafts["plan"] == "1. Clinician rewrite"
     assert "plan" in session.user_touched
     assert "bogus" not in session.field_drafts
@@ -705,6 +708,7 @@ def test_stop_session_replays_final_state():
     )
     session_id = response.json()["session_id"]
     session = session_manager.get(session_id)
+    assert session is not None
     session.engine.enter_tidy_mode = AsyncMock()
     session.transcript_segments.append("hello")
 
@@ -713,7 +717,9 @@ def test_stop_session_replays_final_state():
     body = response.json()
     assert body["transcript"] == "hello"
     assert body["mode"] == "live"
-    assert session_manager.get(session_id).is_ended
+    ended = session_manager.get(session_id)
+    assert ended is not None
+    assert ended.is_ended
 
 
 def test_events_stream_replays_and_ends():
@@ -723,6 +729,7 @@ def test_events_stream_replays_and_ends():
     )
     session_id = response.json()["session_id"]
     session = session_manager.get(session_id)
+    assert session is not None
     session.engine.handle_audio = AsyncMock()
     session.transcript_segments.append("already spoken")
     session.field_drafts["plan"] = "1. Drafted"
@@ -771,6 +778,7 @@ def test_mode_switch_calls_engine():
     )
     session_id = response.json()["session_id"]
     session = session_manager.get(session_id)
+    assert session is not None
     session.engine.enter_tidy_mode = AsyncMock()
 
     response = client.post(f"/api/agent-live/sessions/{session_id}/mode", json={"mode": "tidy"})
@@ -791,6 +799,7 @@ def test_push_jobs_seeds_staged_list():
     )
     assert response.status_code == 200
     session = session_manager.get(session_id)
+    assert session is not None
     assert session.staged_jobs == [{"text": "Email CDU", "checked": True}]
 
     # Final state includes the staged jobs.
@@ -818,7 +827,7 @@ def test_ownership_enforced():
 
 
 def test_current_owner_defaults_to_local():
-    request = SimpleNamespace(state=SimpleNamespace())
+    request: Any = SimpleNamespace(state=SimpleNamespace())
     assert _current_owner(request) == "local"
 
 
@@ -1316,7 +1325,9 @@ async def test_request_tidy_schedules_consolidation_tick(monkeypatch):
 
     assert engine.request_tidy() is True
 
-    await engine._tick_task
+    tick = engine._tick_task
+    assert tick is not None
+    await tick
     run_tick.assert_awaited_once_with("tidy_tick")
 
 
@@ -1338,6 +1349,7 @@ def test_tidy_endpoint_calls_engine():
     )
     session_id = response.json()["session_id"]
     session = session_manager.get(session_id)
+    assert session is not None
     session.engine.request_tidy = lambda: True
 
     response = client.post(f"/api/agent-live/sessions/{session_id}/tidy")
@@ -1420,7 +1432,7 @@ async def test_run_tick_clears_backlog():
     session = _make_session()
     engine = LiveAgentEngine(session)
     session.emit = AsyncMock()
-    engine._tools = lambda: []
+    engine._tools = Mock(return_value=[])
     engine._chat = AsyncMock(return_value={"message": {"content": "done"}})
 
     await engine._run_tick("NOTE")

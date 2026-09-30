@@ -360,7 +360,7 @@ class LiveAgentEngine:
         self._tick_task = asyncio.create_task(self._tick_loop(reason))
         self.session.track_task(self._tick_task)
 
-    async def _tick_loop(self, reason: str) -> None:
+    async def _tick_loop(self, reason: str | None) -> None:
         while reason and not self.session.is_ended:
             try:
                 await self._run_tick(reason)
