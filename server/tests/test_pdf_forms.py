@@ -2,11 +2,16 @@
 Tests for the PDF form template "replace PDF, keep fields" path.
 """
 
+import json as _json
+from types import SimpleNamespace
+
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
+import server.api.pdf_forms as pdf_forms_module
 from server.api.pdf_forms import router as pdf_forms_router
+from server.schemas.pdf_forms import DetectFieldsRequest
 
 app = FastAPI()
 app.include_router(pdf_forms_router, prefix="/api/pdf-forms")
@@ -151,12 +156,6 @@ def test_pdf_form_reads_stay_shared():
 
 # --- detect-fields: one image per request, page numbers are ground truth ------
 
-import json as _json
-from types import SimpleNamespace
-
-import server.api.pdf_forms as pdf_forms_module
-from server.schemas.pdf_forms import DetectFieldsRequest
-
 
 def _page(n):
     return {"page_number": n, "data_url": f"data:image/png;base64,PG{n}"}
@@ -165,8 +164,8 @@ def _page(n):
 def _install_fake_llm(monkeypatch, script):
     calls = []
 
-    async def fake_chat(model, messages, schema, options):
-        calls.append(messages)
+    async def fake_chat(**kwargs):
+        calls.append(kwargs["messages"])
         action = script.pop(0)
         if isinstance(action, Exception):
             raise action
@@ -175,7 +174,7 @@ def _install_fake_llm(monkeypatch, script):
     monkeypatch.setattr(
         pdf_forms_module,
         "get_llm_client",
-        lambda timeout=80: SimpleNamespace(
+        lambda **_kwargs: SimpleNamespace(
             chat_with_structured_output=fake_chat
         ),
     )

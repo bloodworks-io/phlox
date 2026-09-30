@@ -296,7 +296,9 @@ class SessionSpeakers:
             self._centroids[label] = list(embedding)
             return
         alpha = self.ema_alpha
-        self._centroids[label] = [(1 - alpha) * c + alpha * v for c, v in zip(centroid, embedding)]
+        self._centroids[label] = [
+            (1 - alpha) * c + alpha * v for c, v in zip(centroid, embedding, strict=True)
+        ]
 
 
 # Default session registry factory for LiveSession.

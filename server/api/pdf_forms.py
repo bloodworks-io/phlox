@@ -289,7 +289,7 @@ async def detect_fields(template_id: str, body: DetectFieldsRequest):  # noqa: A
 
     fields: list[dict] = []
     last_error: Exception | None = None
-    for page, result in zip(valid_pages, results):
+    for page, result in zip(valid_pages, results, strict=True):
         if isinstance(result, BaseException):
             last_error = result
             logger.error(

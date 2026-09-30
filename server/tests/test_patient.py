@@ -196,7 +196,7 @@ def test_get_patient_includes_previous_encounter(monkeypatch):
     )
     monkeypatch.setattr(
         "server.api.patient.get_latest_encounter",
-        lambda ur_number, exclude_date=None: {
+        lambda _ur_number, **_kwargs: {
             "id": 1,
             "encounter_date": "2024-05-01",
             "template_key": "phlox_01",
@@ -224,7 +224,7 @@ def test_get_patient_without_previous_encounter(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "server.api.patient.get_latest_encounter", lambda *args, **kwargs: None
+        "server.api.patient.get_latest_encounter", lambda *_args, **_kwargs: None
     )
     response = client.get("/api/note/id/2")
     assert response.status_code == 200

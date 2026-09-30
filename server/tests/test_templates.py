@@ -38,7 +38,7 @@ def test_get_default_template(monkeypatch):
 
 def test_get_template(monkeypatch):
     # Patch get_template_by_key
-    def fake_get_template(template_key: str, exact_match: bool = True, include_deleted: bool = False):
+    def fake_get_template(template_key: str, **_kwargs):
         return {"template_key": template_key, "template_name": "Test Template", "fields": []}
 
     monkeypatch.setattr("server.api.templates.get_template_by_key", fake_get_template)
