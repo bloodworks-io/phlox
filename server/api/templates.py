@@ -72,9 +72,7 @@ def _reassign_default_after_delete(deleted_key: str) -> None:
     if fork_base is not None:
         candidates.append(f"{fork_base}_01")
     candidates += [
-        t["template_key"]
-        for t in get_all_templates()
-        if _is_protected(t["template_key"])
+        t["template_key"] for t in get_all_templates() if _is_protected(t["template_key"])
     ]
     for key in candidates:
         if template_exists(key):

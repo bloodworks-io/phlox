@@ -55,9 +55,7 @@ def _template(key, name=None, field=None):
 
 def _insert_template(key, name=None, field=None, deleted=False):
     now = datetime.now().isoformat()
-    payload = json.dumps(
-        [TemplateField(**(field or _field())).model_dump()]
-    )
+    payload = json.dumps([TemplateField(**(field or _field())).model_dump()])
     with get_db().transaction() as cursor:
         cursor.execute(
             "INSERT OR REPLACE INTO clinical_templates "
@@ -70,9 +68,7 @@ def _insert_template(key, name=None, field=None, deleted=False):
 def _delete_template_rows(*keys):
     with get_db().transaction() as cursor:
         for key in keys:
-            cursor.execute(
-                "DELETE FROM clinical_templates WHERE template_key = ?", (key,)
-            )
+            cursor.execute("DELETE FROM clinical_templates WHERE template_key = ?", (key,))
 
 
 def test_config_user_save_cannot_clobber_default_template():
@@ -148,9 +144,7 @@ def test_version_bump_beyond_nine_avoids_collision():
     _insert_template("custom_goutreg_9")
     _insert_template("custom_goutreg_10", deleted=True)
     try:
-        new_key = repo.update_template(
-            _template("custom_goutreg_9", field=_field("Renamed Field"))
-        )
+        new_key = repo.update_template(_template("custom_goutreg_9", field=_field("Renamed Field")))
         assert new_key == "custom_goutreg_11"
         with get_db().read() as cursor:
             cursor.execute(
@@ -158,9 +152,7 @@ def test_version_bump_beyond_nine_avoids_collision():
             )
             assert cursor.fetchone()["deleted"] == 1  # untouched
     finally:
-        _delete_template_rows(
-            "custom_goutreg_9", "custom_goutreg_10", "custom_goutreg_11"
-        )
+        _delete_template_rows("custom_goutreg_9", "custom_goutreg_10", "custom_goutreg_11")
 
 
 def test_get_template_by_key_hides_deleted_unless_opted_in():
@@ -168,10 +160,7 @@ def test_get_template_by_key_hides_deleted_unless_opted_in():
     _insert_template("haem_review_1", deleted=True)
     try:
         assert repo.get_template_by_key("haem_review_1") is None
-        assert (
-            repo.get_template_by_key("haem_review_1", include_deleted=True)
-            is not None
-        )
+        assert repo.get_template_by_key("haem_review_1", include_deleted=True) is not None
 
         response = client.get("/api/templates/haem_review_1")
         assert response.status_code == 404
@@ -188,9 +177,7 @@ def test_update_template_moves_default_pointer():
     _insert_template("haem_summary_1")
     try:
         config_manager.set_default_template_key("haem_summary_1")
-        new_key = repo.update_template(
-            _template("haem_summary_1", field=_field("Renamed Field"))
-        )
+        new_key = repo.update_template(_template("haem_summary_1", field=_field("Renamed Field")))
         assert new_key == "haem_summary_2"
         assert config_manager.get_default_template_key() == "haem_summary_2"
     finally:

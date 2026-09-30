@@ -277,9 +277,7 @@ async def detect_fields(template_id: str, body: DetectFieldsRequest):  # noqa: A
             field["page_number"] = page.page_number
         return result.get("fields", [])
 
-    valid_pages = [
-        page for page in body.pages if page.data_url.startswith("data:image/")
-    ]
+    valid_pages = [page for page in body.pages if page.data_url.startswith("data:image/")]
     if not valid_pages:
         raise HTTPException(status_code=400, detail="No valid image data URLs supplied")
 

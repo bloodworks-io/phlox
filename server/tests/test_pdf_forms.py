@@ -174,9 +174,7 @@ def _install_fake_llm(monkeypatch, script):
     monkeypatch.setattr(
         pdf_forms_module,
         "get_llm_client",
-        lambda **_kwargs: SimpleNamespace(
-            chat_with_structured_output=fake_chat
-        ),
+        lambda **_kwargs: SimpleNamespace(chat_with_structured_output=fake_chat),
     )
     monkeypatch.setattr(
         pdf_forms_module,
@@ -204,9 +202,7 @@ async def test_detect_fields_one_image_per_page(monkeypatch):
 
     assert len(calls) == 2  # one request per page, never batched
     for messages in calls:
-        images = [
-            b for b in messages[1]["content"] if b.get("type") == "image_url"
-        ]
+        images = [b for b in messages[1]["content"] if b.get("type") == "image_url"]
         assert len(images) == 1  # provider cap: at most 1 image in context
     assert [f["page_number"] for f in result["fields"]] == [1, 2]  # ground truth
 
@@ -230,7 +226,5 @@ async def test_detect_fields_partial_failure_returns_rest(monkeypatch):
 async def test_detect_fields_all_failed_502(monkeypatch):
     _install_fake_llm(monkeypatch, [RuntimeError("down"), RuntimeError("down")])
     with pytest.raises(HTTPException) as exc:
-        await pdf_forms_module.detect_fields(
-            "t", DetectFieldsRequest(pages=[_page(1), _page(2)])
-        )
+        await pdf_forms_module.detect_fields("t", DetectFieldsRequest(pages=[_page(1), _page(2)]))
     assert exc.value.status_code == 502

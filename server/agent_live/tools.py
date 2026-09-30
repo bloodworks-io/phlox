@@ -293,8 +293,8 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
                 "name": "wrap_up",
                 "description": (
                     "Open the clinician's wrap-up flow when they clearly signal "
-                    "the visit is ending (e.g. \"that's everything\", \"let's wrap "
-                    "up\"). Jobs are then extracted from the plan by the standard "
+                    'the visit is ending (e.g. "that\'s everything", "let\'s wrap '
+                    'up"). Jobs are then extracted from the plan by the standard '
                     "pipeline and you switch to tidy mode for spoken note edits."
                 ),
                 "parameters": {
@@ -381,9 +381,7 @@ def _apply_seed_markers(content: str, seed: str | None) -> str:
         return content
     if not _numbered(seed):
         return "\n".join(
-            line
-            if not line.strip() or _ENTRY_MARKER.match(line)
-            else f"{seed} {line.strip()}"
+            line if not line.strip() or _ENTRY_MARKER.match(line) else f"{seed} {line.strip()}"
             for line in content.splitlines()
         )
     closing = ")" if seed.endswith(")") else "."
@@ -416,7 +414,7 @@ def _remove_sentences(content: str, phrase: str) -> tuple[str, bool]:
         # Keep the leading list marker when the item text is dropped.
         marker_match = _ENTRY_MARKER.match(line)
         prefix = marker_match.group(0) if marker_match else ""
-        body = line[marker_match.end():] if marker_match else line
+        body = line[marker_match.end() :] if marker_match else line
         sentences = re.split(r"(?<=[.!?])\s+", body)
         kept = []
         for sentence in sentences:
@@ -514,9 +512,7 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
         session.field_drafts[key] = new_content
         return {
             "content": f"Removed mention of '{phrase}' from '{key}'.",
-            "events": [
-                {"type": "field_update", "field_key": key, "content": new_content}
-            ],
+            "events": [{"type": "field_update", "field_key": key, "content": new_content}],
         }
 
     if name == "stage_artifact":
@@ -545,9 +541,7 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
             for job in session.staged_jobs
         )
         return {
-            "content": (
-                "Wrap-up job list (checked items are saved at confirm):\n" + listing
-            ),
+            "content": ("Wrap-up job list (checked items are saved at confirm):\n" + listing),
             "events": [],
         }
 
@@ -596,8 +590,7 @@ async def _stage_artifact(session, args: dict[str, Any]) -> dict[str, Any]:
     if template is None:
         return {
             "content": (
-                f"Template '{template_id}' not found. Use list_pdf_form_templates "
-                "to see valid IDs."
+                f"Template '{template_id}' not found. Use list_pdf_form_templates to see valid IDs."
             ),
             "events": [],
         }
@@ -634,9 +627,7 @@ def _list_letter_templates() -> dict[str, Any]:
         from server.database.repositories.letter import get_letter_templates
 
         templates = get_letter_templates()
-        default_id = config_manager.get_user_settings().get(
-            "default_letter_template_id"
-        )
+        default_id = config_manager.get_user_settings().get("default_letter_template_id")
     except Exception as exc:
         logger.error("list_letter_templates: error: %s", exc)
         return {"content": f"Error fetching letter templates: {exc}", "events": []}
@@ -677,16 +668,11 @@ async def _stage_letter(session, args: dict[str, Any]) -> dict[str, Any]:
         if template is None:
             names = ", ".join(str(t.get("name", "")) for t in templates) or "(none)"
             return {
-                "content": (
-                    f"Letter template '{template_name}' not found. "
-                    f"Available: {names}."
-                ),
+                "content": (f"Letter template '{template_name}' not found. Available: {names}."),
                 "events": [],
             }
     else:
-        default_id = config_manager.get_user_settings().get(
-            "default_letter_template_id"
-        )
+        default_id = config_manager.get_user_settings().get("default_letter_template_id")
         template = next((t for t in templates if t.get("id") == default_id), None)
 
     additional = str((template or {}).get("instructions") or "")
@@ -694,9 +680,7 @@ async def _stage_letter(session, args: dict[str, Any]) -> dict[str, Any]:
         additional = f"{additional}\n\n{instruction}".strip()
 
     # A staged letter makes this a refinement pass.
-    prior = next(
-        (a for a in session.staged_artifacts if a.get("type") == "letter"), None
-    )
+    prior = next((a for a in session.staged_artifacts if a.get("type") == "letter"), None)
     context = None
     if prior is not None:
         context = [
@@ -737,9 +721,7 @@ async def _stage_letter(session, args: dict[str, Any]) -> dict[str, Any]:
 
 
 def _save_letter(session) -> dict[str, Any]:
-    letter = next(
-        (a for a in session.staged_artifacts if a.get("type") == "letter"), None
-    )
+    letter = next((a for a in session.staged_artifacts if a.get("type") == "letter"), None)
     if letter is None:
         return {
             "content": "No staged letter to save. Draft one with stage_letter first.",

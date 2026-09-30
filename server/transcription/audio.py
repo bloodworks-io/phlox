@@ -144,15 +144,11 @@ async def _transcribe_external_api(
             headers["Authorization"] = f"Bearer {whisper_key}"
 
         try:
-            stream_url = (
-                os.getenv("WHISPER_STREAM_URL", "").strip() if streaming else ""
-            )
+            stream_url = os.getenv("WHISPER_STREAM_URL", "").strip() if streaming else ""
             if stream_url:
                 whisper_endpoint = stream_url
             else:
-                whisper_base_url = (
-                    config.get("WHISPER_BASE_URL") or ""
-                ).strip().rstrip("/")
+                whisper_base_url = (config.get("WHISPER_BASE_URL") or "").strip().rstrip("/")
                 if whisper_base_url.lower().endswith("/v1"):
                     whisper_base_url = whisper_base_url[:-3]
                 whisper_endpoint = f"{whisper_base_url}/v1/audio/transcriptions"

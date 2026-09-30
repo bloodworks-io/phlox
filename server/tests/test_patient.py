@@ -223,9 +223,7 @@ def test_get_patient_without_previous_encounter(monkeypatch):
             "template_data": {},
         },
     )
-    monkeypatch.setattr(
-        "server.api.patient.get_latest_encounter", lambda *_args, **_kwargs: None
-    )
+    monkeypatch.setattr("server.api.patient.get_latest_encounter", lambda *_args, **_kwargs: None)
     response = client.get("/api/note/id/2")
     assert response.status_code == 200
     assert "previous_visit_template_data" not in response.json()
