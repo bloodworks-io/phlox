@@ -88,8 +88,8 @@ const TranscriptionPanel = ({
 
             {/* Footer: Reprocess button and stats */}
             <Flex justify="space-between" align="center">
-              {/* Stats */}
-              {transcriptionDuration && (
+              {/* Stats (guard with > 0: a bare falsy check renders "0" in JSX) */}
+              {Number(transcriptionDuration) > 0 && (
                 <HStack fontSize="10px" color="overlay0" gap={2}>
                   <Tooltip content={t("transcription.transcriptionTime")} showArrow positioning={{
                     placement: "top"
