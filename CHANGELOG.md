@@ -1,5 +1,58 @@
 # Changelog
 
+## [2.5.0](https://github.com/bloodworks-io/phlox/compare/v2.4.2...v2.5.0) (2026-10-01)
+
+
+### Features
+
+* **agent-live:** periodic tidy ticks replace tidy mode ([8f5eac6](https://github.com/bloodworks-io/phlox/commit/8f5eac67d61a21d46ecf39e3d1e03a5819c62ce7))
+* **agent:** single-token logprob readout gate (Jev/SemIf-style option-logit decision readout) ([563769f](https://github.com/bloodworks-io/phlox/commit/563769fea0162fdd8aa0d2cd346abc271b798862))
+* attach previous encounter to note fetch ([caefdcf](https://github.com/bloodworks-io/phlox/commit/caefdcf5a5c557b79984d6e9560ccacfd300df37))
+* **audio:** live agent utterance segmentation via TEN VAD ([55e9dcc](https://github.com/bloodworks-io/phlox/commit/55e9dcc9d92936c7edfabca43715c6dad1eed72d))
+* **i18n:** localise data layer — api errors, hook toasts, specialty constants ([977eb13](https://github.com/bloodworks-io/phlox/commit/977eb13314a3c17da89997e77d0660a22ae20502))
+* **i18n:** route components and pages through the translation catalog ([c890826](https://github.com/bloodworks-io/phlox/commit/c8908267e3fb62676abcf4b8041203dc412dd748))
+* **i18n:** translation infra — plain t export, keyed shared toasts, locale-aware date helpers ([1a91796](https://github.com/bloodworks-io/phlox/commit/1a91796c23eb0be5729b3b0b70264cb6f38bdc39))
+* lightweight speaker diarization with CAM++ ([b509de3](https://github.com/bloodworks-io/phlox/commit/b509de34cc856622f788c5a7c8783842b92333e2))
+* persist scribe capture mode in localStorage ([14547a2](https://github.com/bloodworks-io/phlox/commit/14547a21c7a423dc6e7acd7d6e7e7f41c8d06b1f))
+* **settings:** docker policy toggles for streaming capture and cache ([adff157](https://github.com/bloodworks-io/phlox/commit/adff1573e4e5e90d6750a0bbd64277cbd92b6856))
+* **transcription:** let the cache-warming toggle override the provider ([e0e8114](https://github.com/bloodworks-io/phlox/commit/e0e8114ebbe364cc56af5ba70bf193091633e58b))
+* **ui:** confirm before switching patients with unsaved note changes ([a0c1f89](https://github.com/bloodworks-io/phlox/commit/a0c1f89ee672da7a617e627d37daa99efd8f23dd))
+* **ui:** stream ambient/dictate utterances to capture sessions ([11d5e94](https://github.com/bloodworks-io/phlox/commit/11d5e9460729269443a1aea08246d58ad048a8dc))
+
+
+### Bug Fixes
+
+* **agent-live:** lean the gate toward NOTE; show queued speech while the backstop waits ([4c99631](https://github.com/bloodworks-io/phlox/commit/4c99631bbe5b43d41d2e58e343911bdd43af334e))
+* **agent:** expose list of letters ([aa9230d](https://github.com/bloodworks-io/phlox/commit/aa9230d8cc36dc958627fff9245aa5da9389dd11))
+* **agent:** scope background tool execution to the session owner ([c3c0d8d](https://github.com/bloodworks-io/phlox/commit/c3c0d8d7a203aaaea6a8ecdcf8da46da109da277))
+* changed note guard failed to fire on new note ([a8dc8d9](https://github.com/bloodworks-io/phlox/commit/a8dc8d9e2b9598ff4eed9e545e73d44335b8c1e7))
+* **csp:** allow wasm-unsafe-eval for VAD worker ([747c0d6](https://github.com/bloodworks-io/phlox/commit/747c0d62c04af9459b9f506b0f2a11660de87018))
+* **deps:** align @tauri-apps/plugin-http with Rust crate 2.6.1 ([e6763f8](https://github.com/bloodworks-io/phlox/commit/e6763f82858e7646afdf216b26ac37bb064bb442))
+* **dev:** download diarization model for dev image ([279c6b5](https://github.com/bloodworks-io/phlox/commit/279c6b5e651b24a79e0cdb6760c42d6773598909))
+* further hardening of template selector; fix race conditions ([a510f54](https://github.com/bloodworks-io/phlox/commit/a510f547d628e07dbb45ac594e85e2e5b086f67d))
+* improve pdf tool use for live agent ([1c36647](https://github.com/bloodworks-io/phlox/commit/1c366476423cadf6479a49fdc6fb0b657bb0d12f))
+* improvements to speaker diarisation pipeline ([e754a16](https://github.com/bloodworks-io/phlox/commit/e754a160409356b87a4ecbe5d0b6b7c8c671afa2))
+* inverted transcript gradient ([42019e5](https://github.com/bloodworks-io/phlox/commit/42019e5df011b58ed9d10c590f476a3fd635629e))
+* legacy prepend for summary generation no longer required. ([913c467](https://github.com/bloodworks-io/phlox/commit/913c467a7292f90d8a15f10561dd4408f0637580))
+* **linux:** ignore host OpenSSL ([fc33b6c](https://github.com/bloodworks-io/phlox/commit/fc33b6cc337c71b2e71d5ac18a3c440eb920cc17))
+* models under-call SKIP at argmax ([22bf801](https://github.com/bloodworks-io/phlox/commit/22bf80141f3d9fbe207a36bf7b030e77547835dc))
+* panel isthmus positioning ([b513ff1](https://github.com/bloodworks-io/phlox/commit/b513ff17004561fcbf5fe1b5bc778c349f481c17))
+* scribe pill box loading states ([50e67d8](https://github.com/bloodworks-io/phlox/commit/50e67d8b884531aca45c0d6570bdf64b898cdcca))
+* **tauri:** incorrect speaker model bundled ([fb0bf77](https://github.com/bloodworks-io/phlox/commit/fb0bf776e5bf0dbaecd5b5458c64e757de8947a5))
+* **transcription:** raw strict-prefix prefill warms for the local llama ([db858e4](https://github.com/bloodworks-io/phlox/commit/db858e4d2e4c60be992e24bf4eb94b5bb43ea0a3))
+* **ui:** end entrance animations at transform:none so fixed surfaces stay viewport-anchored ([e93fdd5](https://github.com/bloodworks-io/phlox/commit/e93fdd5d0f99614eaa1927d2bfdf7d4b377de4d6))
+* **ui:** guard zero transcription duration rendering a stray "0" ([ef8377f](https://github.com/bloodworks-io/phlox/commit/ef8377f3dbe641b7ab628aeaf0ebeeb8465fac13))
+* **ui:** new note flow state ([ef66147](https://github.com/bloodworks-io/phlox/commit/ef661478f319cf2eb5202dfadd6a148d01db7626))
+* **ui:** show all models when RAM filter empties recommendations ([2cc81ae](https://github.com/bloodworks-io/phlox/commit/2cc81ae093556a5fef8387bede62b0d7f92f3105))
+* **windows:** handle windows-rs 0.62 OpenProcess Result and gate unix-only code ([3efb101](https://github.com/bloodworks-io/phlox/commit/3efb1010d228248157d7d4eec8e838c1c46feb6e))
+* **windows:** hide console windows for app and sidecars ([c3fb3a4](https://github.com/bloodworks-io/phlox/commit/c3fb3a41f7c9a63208ed3de8a0c1236965a4d738))
+
+
+### Performance Improvements
+
+* **note:** fetch previous visit summary without blocking new note ([92226c5](https://github.com/bloodworks-io/phlox/commit/92226c5489756e5ebe0c2795c36b6fcce69b5ff9))
+* streaming capture with KV-cache warming for ambient and dictate ([a21779d](https://github.com/bloodworks-io/phlox/commit/a21779dc19b72c379b61f51c94921b83e1c0ba2d))
+
 ## [2.4.2](https://github.com/bloodworks-io/phlox/compare/v2.4.1...v2.4.2) (2026-09-20)
 
 
