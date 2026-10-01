@@ -35,7 +35,7 @@ from server.agent_live.prompts import (
 from server.agent_live.session import LiveSession
 from server.agent_live.tools import execute_live_tool, get_live_tools_definition
 from server.database.config.manager import config_manager
-from server.transcription.audio import transcribe_audio
+from server.transcription.intake import intake_utterance
 from server.transcription.speakers import format_segment, split_speaker_segment
 from server.utils.current_user import get_current_user, set_current_user
 
@@ -181,26 +181,14 @@ class LiveAgentEngine:
         session = self.session
         async with self._audio_lock:
             logger.info("Live session %s: transcribing %d bytes", session.id, len(audio_bytes))
-            embed_task = asyncio.create_task(
-                asyncio.to_thread(session.speakers.assign, audio_bytes)
-            )
-            text = ""
             try:
-                result = await transcribe_audio(audio_bytes, streaming=True)
+                speaker, text, _stt_duration = await intake_utterance(audio_bytes, session.speakers)
             except Exception as exc:
                 logger.error("Live session %s: transcription failed: %s", session.id, exc)
-                embed_task.cancel()
                 await session.emit(
                     {"type": "error", "content": "Transcription failed for one segment."}
                 )
                 return
-            text = str(result.get("text", "")).strip()
-
-            speaker = None
-            try:
-                speaker = await embed_task
-            except Exception as exc:
-                logger.debug("Live session %s: diarization failed: %s", session.id, exc)
 
             if not text:
                 logger.info(

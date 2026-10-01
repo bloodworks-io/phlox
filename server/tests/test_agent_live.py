@@ -1171,10 +1171,10 @@ def _audio_engine(session):
 
 @pytest.mark.asyncio
 async def test_handle_audio_labels_and_prefixes_segment(monkeypatch):
-    from server.agent_live import engine as engine_module
+    from server.transcription import intake as intake_module
 
     monkeypatch.setattr(
-        engine_module,
+        intake_module,
         "transcribe_audio",
         AsyncMock(return_value={"text": "the pain is worse on exertion"}),
     )
@@ -1206,10 +1206,10 @@ async def test_handle_audio_labels_and_prefixes_segment(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_audio_without_label_stores_plain_segment(monkeypatch):
-    from server.agent_live import engine as engine_module
+    from server.transcription import intake as intake_module
 
     monkeypatch.setattr(
-        engine_module,
+        intake_module,
         "transcribe_audio",
         AsyncMock(return_value={"text": "hello again"}),
     )
@@ -1229,10 +1229,10 @@ async def test_handle_audio_without_label_stores_plain_segment(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_audio_transcription_failure_cancels_embed(monkeypatch):
-    from server.agent_live import engine as engine_module
+    from server.transcription import intake as intake_module
 
     monkeypatch.setattr(
-        engine_module,
+        intake_module,
         "transcribe_audio",
         AsyncMock(side_effect=RuntimeError("stt down")),
     )
@@ -1251,9 +1251,9 @@ async def test_handle_audio_transcription_failure_cancels_embed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_audio_empty_text_skips_segment(monkeypatch):
-    from server.agent_live import engine as engine_module
+    from server.transcription import intake as intake_module
 
-    monkeypatch.setattr(engine_module, "transcribe_audio", AsyncMock(return_value={"text": "  "}))
+    monkeypatch.setattr(intake_module, "transcribe_audio", AsyncMock(return_value={"text": "  "}))
     session = _make_session()
     session.speakers = _StaticSpeakers(["S1"])
     engine = _audio_engine(session)
@@ -1267,7 +1267,7 @@ async def test_handle_audio_empty_text_skips_segment(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_audio_rebinds_owner_identity(monkeypatch):
-    from server.agent_live import engine as engine_module
+    from server.transcription import intake as intake_module
 
     alice = CurrentUser(2, "alice", "clinician")
     captured = {}
@@ -1276,7 +1276,7 @@ async def test_handle_audio_rebinds_owner_identity(monkeypatch):
         captured["user"] = get_current_user()
         return {"text": ""}
 
-    monkeypatch.setattr(engine_module, "transcribe_audio", fake_transcribe)
+    monkeypatch.setattr(intake_module, "transcribe_audio", fake_transcribe)
     session = _make_session(owner_user=alice)
     session.speakers = _StaticSpeakers([None])
     engine = _audio_engine(session)
