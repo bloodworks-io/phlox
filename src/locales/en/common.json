@@ -1267,6 +1267,11 @@
             "stopFailed": "Could not stop live session",
             "streamFailed": "Event stream failed ({{status}})"
         },
+        "capture": {
+            "startFailed": "Could not start streaming capture",
+            "audioUploadFailed": "Capture audio upload failed ({{status}})",
+            "stopFailed": "Could not finish streaming capture"
+        },
         "encryption": {
             "minLength": "Use at least 12 characters",
             "longerBetter": "16+ characters is better",

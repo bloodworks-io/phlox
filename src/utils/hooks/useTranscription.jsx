@@ -1,10 +1,34 @@
 import { useState } from "react";
 import { transcriptionApi } from "../api/transcriptionApi";
+import { captureApi } from "../api/captureApi";
 import { extractFromFile } from "../helpers/documentExtraction";
 
 export const useTranscription = (onTranscriptionComplete, setLoading) => {
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [transcriptionError, setTranscriptionError] = useState(null);
+
+    const finalizeCaptureSession = async (sessionId) => {
+        setIsTranscribing(true);
+        setTranscriptionError(null);
+        if (setLoading) setLoading(true);
+
+        try {
+            const data = await captureApi.stopSession(sessionId);
+            if (data?.fallback) {
+                return data;
+            }
+            if (onTranscriptionComplete) {
+                onTranscriptionComplete(data, true);
+            }
+            return data;
+        } catch (error) {
+            console.error("Capture finalize failed; falling back to batch:", error);
+            return { fallback: true, reason: error?.message };
+        } finally {
+            setIsTranscribing(false);
+            if (setLoading) setLoading(false);
+        }
+    };
 
     const transcribeAudio = async (audioBlob, metadata, isAmbient = true) => {
         setIsTranscribing(true);
@@ -129,6 +153,7 @@ export const useTranscription = (onTranscriptionComplete, setLoading) => {
         transcribeAudio,
         processDocument,
         reprocessTranscription,
+        finalizeCaptureSession,
         isTranscribing,
         transcriptionError,
     };
