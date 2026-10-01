@@ -42,7 +42,7 @@ const SidebarPatientList = ({
             {/* Patient List heading — whole row toggles the section */}
             {!isCollapsed && (
                 <Flex
-                    pt={2}
+                    pt={3}
                     pb={1}
                     flexShrink={0}
                     align="center"

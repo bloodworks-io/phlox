@@ -22,6 +22,8 @@ import { patientApi } from "../../utils/api/patientApi";
 import { KEYS } from "../../utils/cache/keys";
 import { isTauri } from "../../utils/helpers/apiConfig";
 
+const IS_MAC = /Mac/i.test(navigator.userAgent);
+
 const CollapseIcon = ({ boxSize = "20px" }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -190,7 +192,7 @@ const Sidebar = ({
       left="0"
       {...navStyle}
       p="4"
-      pt={isCollapsed ? (isTauri() ? "1" : "2") : isTauri() ? "10" : "4"}
+      pt={isTauri() ? "3" : "4"}
       display="flex"
       flexDirection="column"
       w={sidebarWidth(isCollapsed)}
@@ -217,7 +219,7 @@ const Sidebar = ({
         <IconButton
           onClick={toggleSidebar}
           position="absolute"
-          top={isTauri() ? "32px" : "12px"}
+          top={isTauri() ? (IS_MAC ? "44px" : "24px") : "12px"}
           right="15px"
           size="sm"
           borderRadius="full"
@@ -233,20 +235,13 @@ const Sidebar = ({
       {/* Logo Area + inline collapse toggle */}
       <Flex
         width="100%"
+        h="40px"
         align="center"
         justify="space-between"
         overflow="hidden"
         transition="margin-top 0.3s ease"
-        mt={
-          isCollapsed
-            ? isTauri()
-              ? "50px"
-              : "8px"
-            : isTauri()
-              ? "15px"
-              : "0px"
-        }
-        mb={isCollapsed ? "21px" : "15px"}
+        mt={isTauri() ? (IS_MAC ? "30px" : "4px") : "0px"}
+        mb="12px"
       >
         <Box cursor={isCollapsed ? "e-resize" : "pointer"} asChild ml="10px">
           <button
@@ -272,11 +267,11 @@ const Sidebar = ({
                     alt={t("sidebar.logoAlt")}
                     width="100%"
                     height="100%"
-                    mt="2px"
                     objectFit="contain"
                     position="absolute"
-                    top="0"
+                    top="50%"
                     left="0"
+                    transform="translateY(-50%)"
                     transition="opacity 0.2s"
                     _groupHover={{ opacity: 0 }}
                   />
