@@ -82,6 +82,57 @@ async def process_transcription(
         raise
 
 
+def build_extraction_messages(
+    transcript_text: str,
+    fields: list[TemplateField],
+    patient_context: dict[str, str | None],
+    is_ambient: bool = True,
+    primary_condition: str | None = None,
+    intro_override: str | None = None,
+) -> list[dict[str, str]]:
+    """Build the [system, user] message pair for the multi-field extraction call."""
+    field_instructions = []
+    for field in fields:
+        field_instruction = f"""FIELD: {field.field_key}
+NAME: {field.field_name}
+INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
+        field_instructions.append(field_instruction)
+
+    patient_context_str = _build_patient_context(patient_context)
+
+    # Use mode-specific intro for the system prompt
+    if intro_override is not None:
+        intro = intro_override
+    elif is_ambient:
+        intro = "Extract relevant information for each of the following fields from the medical transcript."
+    else:
+        intro = "Extract and organize information from the clinician's direct dictation for each of the following fields."
+
+    if primary_condition:
+        intro += f" This is a returning patient who sees the clinician for {primary_condition}."
+
+    # Live-agent and capture transcripts carry best-effort speaker labels.
+    legend = speaker_legend_hint(transcript_text)
+    if legend:
+        intro += f" {legend}"
+
+    system_content = f"""{intro}
+
+{patient_context_str}
+
+For each field, extract only the most relevant discussion points. If no relevant information is found for a field, return an empty list for that field.
+
+FIELDS:
+{chr(10).join(field_instructions)}
+
+Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapping field_key to array of strings)."""
+
+    return [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": transcript_text},
+    ]
+
+
 async def process_all_fields_concurrently(
     transcript_text: str,
     fields: list[TemplateField],
@@ -108,49 +159,14 @@ async def process_all_fields_concurrently(
             response_format = MultiFieldResponse.model_json_schema()
             model_name = config["PRIMARY_MODEL"]
 
-            # Build the combined system prompt with all field instructions
-            field_instructions = []
-            for field in fields:
-                field_instruction = f"""FIELD: {field.field_key}
-NAME: {field.field_name}
-INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
-                field_instructions.append(field_instruction)
-
-            patient_context_str = _build_patient_context(patient_context)
-
-            # Use mode-specific intro for the system prompt
-            if intro_override is not None:
-                intro = intro_override
-            elif is_ambient:
-                intro = "Extract relevant information for each of the following fields from the medical transcript."
-            else:
-                intro = "Extract and organize information from the clinician's direct dictation for each of the following fields."
-
-            if primary_condition:
-                intro += (
-                    f" This is a returning patient who sees the clinician for {primary_condition}."
-                )
-
-            # Live-agent transcripts carry best-effort speaker labels.
-            legend = speaker_legend_hint(transcript_text)
-            if legend:
-                intro += f" {legend}"
-
-            system_content = f"""{intro}
-
-{patient_context_str}
-
-For each field, extract only the most relevant discussion points. If no relevant information is found for a field, return an empty list for that field.
-
-FIELDS:
-{chr(10).join(field_instructions)}
-
-Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapping field_key to array of strings)."""
-
-            request_body = [
-                {"role": "system", "content": system_content},
-                {"role": "user", "content": transcript_text},
-            ]
+            request_body = build_extraction_messages(
+                transcript_text,
+                fields,
+                patient_context,
+                is_ambient,
+                primary_condition,
+                intro_override,
+            )
 
             random_seed = random.randint(0, 2**32 - 1)  # nosec B311
 
