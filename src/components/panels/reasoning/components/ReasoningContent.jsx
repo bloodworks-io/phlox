@@ -241,6 +241,7 @@ export const ReasoningContent = ({
     return (
         <Tabs.Root
             variant="enclosed"
+            className="compact-tabs"
             value={tabIndex}
             onValueChange={({ value }) => setTabIndex(value)}
             display="flex"
