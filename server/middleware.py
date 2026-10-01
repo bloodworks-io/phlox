@@ -43,9 +43,12 @@ STATIC_EXTENSIONS = (
 
 
 def _is_live_audio_chunk(path: str) -> bool:
-    """Match /api/agent-live/sessions/{sid}/audio (high-frequency uploads)."""
-    prefix = "/api/agent-live/sessions/"
-    return path.startswith(prefix) and path.endswith("/audio")
+    """Match per-utterance audio uploads (high-frequency during a visit)."""
+    live_prefix = "/api/agent-live/sessions/"
+    capture_prefix = "/api/transcribe/capture/sessions/"
+    return (path.startswith(live_prefix) or path.startswith(capture_prefix)) and path.endswith(
+        "/audio"
+    )
 
 
 def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
@@ -180,6 +183,7 @@ class RequestBodyLimitMiddleware:
     """Reject request bodies over a size cap (decompression-bomb / OOM protection)."""
 
     AUDIO_PATHS = ("/api/transcribe/audio", "/api/transcribe/dictate")
+    AUDIO_PREFIXES = ("/api/transcribe/capture/sessions/", "/api/agent-live/sessions/")
     GUARDED_METHODS = ("POST", "PUT", "PATCH")
 
     def __init__(self, app):
@@ -192,11 +196,11 @@ class RequestBodyLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
-        limit = (
-            constants.MAX_AUDIO_BODY_BYTES
-            if scope.get("path") in self.AUDIO_PATHS
-            else constants.MAX_BODY_BYTES
+        path = scope.get("path", "")
+        is_audio = path in self.AUDIO_PATHS or (
+            path.startswith(self.AUDIO_PREFIXES) and path.endswith("/audio")
         )
+        limit = constants.MAX_AUDIO_BODY_BYTES if is_audio else constants.MAX_BODY_BYTES
 
         # Fast path: reject an oversized declared Content-Length before reading anything.
         for name, value in scope.get("headers", []):
@@ -369,6 +373,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     # Burst multiplier allows 2x rate in first 10 seconds of window
     # Tauri mode multiplies rate_limit by RATE_LIMIT_DESKTOP_MULTIPLIER
     RATE_LIMITS = {
+        "/api/transcribe/capture": (120, 2),
         "/api/transcribe": (10, 2),
         "/api/chat": (30, 2),
         "/api/rag": (20, 2),

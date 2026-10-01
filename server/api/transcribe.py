@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 
@@ -6,6 +7,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Request,
     UploadFile,
 )
 from pydantic import BaseModel, Field
@@ -20,8 +22,11 @@ from server.nlp_tools.document_processing import (
 )
 from server.schemas.documents import VisualDocumentPage
 from server.schemas.patient import TranscribeResponse
+from server.transcription import capture
 from server.transcription.audio import transcribe_audio
+from server.transcription.capture import capture_manager, streaming_capture_enabled
 from server.transcription.text import process_transcription
+from server.utils.current_user import get_current_user
 
 router = APIRouter()
 
@@ -393,3 +398,117 @@ async def process_document_from_text(payload: ProcessDocumentFromTextRequest):
     except Exception as e:
         logging.error(f"Error processing extracted document text: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+class CaptureStartRequest(BaseModel):
+    mode: str = Field(pattern="^(ambient|dictate)$")
+    templateKey: str | None = None
+    name: str | None = None
+    gender: str | None = None
+    dob: str | None = None
+    noteId: int | None = None
+
+
+def _current_capture_owner(request: Request) -> str:
+    return getattr(request.state, "user", "local")
+
+
+def _get_owned_capture_session(session_id: str, request: Request) -> capture.CaptureSession:
+    session = capture_manager.get(session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Capture session not found")
+    if session.owner_user.username != _current_capture_owner(request):
+        raise HTTPException(status_code=403, detail="Not your capture session")
+    return session
+
+
+@router.post("/capture/sessions")
+async def start_capture_session(body: CaptureStartRequest):
+    """Start a streaming capture session (ambient/dictate utterance intake)."""
+    user = get_current_user()
+    if user is None:
+        raise HTTPException(status_code=401, detail="No authenticated user for capture session")
+    if not streaming_capture_enabled():
+        raise HTTPException(status_code=409, detail="Streaming capture is disabled")
+
+    template_fields = []
+    if body.templateKey:
+        from server.database.repositories.templates import get_template_fields
+
+        template_fields = get_template_fields(body.templateKey)
+
+    primary_condition = None
+    if body.noteId:
+        from server.database.repositories.encounter import get_patient_by_id
+
+        existing_patient = get_patient_by_id(body.noteId)
+        if existing_patient and existing_patient.get("primary_condition"):
+            primary_condition = existing_patient["primary_condition"]
+
+    formatted_name = _format_patient_display_name(body.name)
+    patient_context = {"name": formatted_name, "dob": body.dob, "gender": body.gender}
+
+    session = capture_manager.create(
+        owner_user=user,
+        mode=body.mode,
+        template_key=body.templateKey,
+        template_fields=template_fields,
+        patient_context=patient_context,
+        primary_condition=primary_condition,
+        note_id=body.noteId,
+    )
+    logging.info(
+        "Capture session %s started (owner=%s, mode=%s)",
+        session.id,
+        user.username,
+        session.mode,
+    )
+    return {"session_id": session.id}
+
+
+@router.post("/capture/sessions/{session_id}/audio")
+async def upload_capture_audio(session_id: str, request: Request, file: UploadFile = File(...)):
+    """Upload one utterance-bounded audio segment (transcribed in background)."""
+    session = _get_owned_capture_session(session_id, request)
+    if session.is_ended:
+        raise HTTPException(status_code=409, detail="Capture session already ended")
+
+    audio_bytes = await file.read()
+    session.track_task(asyncio.create_task(capture.handle_audio(session, audio_bytes)))
+    return {"accepted": True}
+
+
+@router.post("/capture/sessions/{session_id}/stop")
+async def stop_capture_session(session_id: str, request: Request):
+    """End the session and run the regular batch pipeline over the transcript."""
+    session = _get_owned_capture_session(session_id, request)
+    if getattr(session, "stop_result", None) is not None:
+        return session.stop_result
+
+    session.end()
+    await capture.drain(session)
+
+    if not session.transcript_segments:
+        session.stop_result = {
+            "session_id": session.id,
+            "fallback": True,
+            "reason": "No transcript captured",
+        }
+        return session.stop_result
+    if session.failed_segments:
+        session.stop_result = {
+            "session_id": session.id,
+            "fallback": True,
+            "reason": f"{session.failed_segments} utterance(s) failed to transcribe",
+        }
+        return session.stop_result
+
+    try:
+        result = await capture.finalize(session)
+    except Exception as e:
+        logging.error(f"Error finalizing capture session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+    session.stop_result = {"session_id": session.id, **result}
+    logging.info("Capture session %s stopped", session.id)
+    return session.stop_result
