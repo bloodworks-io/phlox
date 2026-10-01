@@ -29,7 +29,7 @@ import { buildApiUrl, isTauri } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
 
-const PolicyTab = ({ config, handleConfigChange }) => {
+const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
     const { t } = useTranslation();
     return (
     <VStack gap={3} align="stretch">
@@ -77,6 +77,54 @@ const PolicyTab = ({ config, handleConfigChange }) => {
                 </Switch.Control>
             </Switch.Root>
         </Flex>
+        {isDocker && (
+            <>
+                <Flex justify="space-between" align="center">
+                    <Box>
+                        <Text fontSize="sm" fontWeight="medium">
+                            {t("settings.policy.streamingCapture")}
+                        </Text>
+                        <Text fontSize="xs" className="pill-box-icons">
+                            {t("settings.policy.streamingCaptureDescription")}
+                        </Text>
+                    </Box>
+                    <Switch.Root
+                        size="sm"
+                        checked={config?.STREAMING_CAPTURE_ENABLED === true}
+                        onCheckedChange={({ checked }) =>
+                            handleConfigChange("STREAMING_CAPTURE_ENABLED", checked)
+                        }
+                    >
+                        <Switch.HiddenInput />
+                        <Switch.Control>
+                            <Switch.Thumb />
+                        </Switch.Control>
+                    </Switch.Root>
+                </Flex>
+                <Flex justify="space-between" align="center">
+                    <Box>
+                        <Text fontSize="sm" fontWeight="medium">
+                            {t("settings.policy.kvWarming")}
+                        </Text>
+                        <Text fontSize="xs" className="pill-box-icons">
+                            {t("settings.policy.kvWarmingDescription")}
+                        </Text>
+                    </Box>
+                    <Switch.Root
+                        size="sm"
+                        checked={config?.KV_WARMING_ENABLED === true}
+                        onCheckedChange={({ checked }) =>
+                            handleConfigChange("KV_WARMING_ENABLED", checked)
+                        }
+                    >
+                        <Switch.HiddenInput />
+                        <Switch.Control>
+                            <Switch.Thumb />
+                        </Switch.Control>
+                    </Switch.Root>
+                </Flex>
+            </>
+        )}
     </VStack>
     );
 };
@@ -391,6 +439,7 @@ const AdminSettingsPanel = ({
                                     <PolicyTab
                                         config={config}
                                         handleConfigChange={handleConfigChange}
+                                        isDocker={isDocker}
                                     />
                                 </Tabs.Content>
                                 {!isTauri() && (
@@ -607,6 +656,7 @@ const AdminSettingsPanel = ({
                                     <PolicyTab
                                         config={config}
                                         handleConfigChange={handleConfigChange}
+                                        isDocker={isDocker}
                                     />
                                 </Tabs.Content>
                                 {!isTauri() && (

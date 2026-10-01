@@ -837,7 +837,11 @@
             "storeOriginalPdfs": "Store Original PDFs",
             "storeOriginalPdfsDescription": "Keep original PDF files in the database after upload. Increases storage usage.",
             "requireScribeConsent": "Require patient consent for ambient scribing",
-            "requireScribeConsentDescription": "Prompt each patient for consent before ambient (transcription) recording. Dictation is unaffected; consent is remembered per patient."
+            "requireScribeConsentDescription": "Prompt each patient for consent before ambient (transcription) recording. Dictation is unaffected; consent is remembered per patient.",
+            "streamingCapture": "Streaming capture",
+            "streamingCaptureDescription": "Transcribe Ambient and Dictate recordings utterance-by-utterance while you record, with speaker labels from Phlox itself. The note is ready faster at stop. Always on in the desktop app.",
+            "kvWarming": "Prompt cache warming",
+            "kvWarmingDescription": "Pre-warm the note-generation prompt with the transcript as it grows. Only applies when Phlox runs its own local model; no effect with remote endpoints."
         },
         "prompt": {
             "chatTitle": "Chat Prompt",
