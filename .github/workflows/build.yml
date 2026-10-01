@@ -19,6 +19,18 @@ permissions:
   contents: read
 
 jobs:
+  # Loud guard: recovery mode requires BOTH run_id and tag. Without this job,
+  # a missing tag would silently skip every job in the run (conclusion:
+  # "skipped", no explanation).
+  dispatch-guards:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_id != '' && inputs.tag == ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject incomplete recovery dispatch
+        run: |
+          echo "❌ recovery mode (run_id) requires the tag input (e.g. v2.5.0) — re-dispatch with both fields"
+          exit 1
+
   build:
     if: inputs.run_id == ''
     permissions:
@@ -356,12 +368,16 @@ jobs:
 
 
   release-evidence:
+    # !cancelled() suppresses the implicit success() status check, which would
+    # otherwise skip this job whenever a needed job is skipped (recovery mode).
     if: >-
-      (inputs.run_id != '' && inputs.tag != '') ||
-      ((inputs.tag != '' || startsWith(github.ref, 'refs/tags/')) &&
-       needs.build.result == 'success' &&
-       needs.build-windows.result == 'success' &&
-       needs.build-flatpak.result == 'success')
+      !cancelled() && (
+        (inputs.run_id != '' && inputs.tag != '') ||
+        ((inputs.tag != '' || startsWith(github.ref, 'refs/tags/')) &&
+         needs.build.result == 'success' &&
+         needs.build-windows.result == 'success' &&
+         needs.build-flatpak.result == 'success')
+      )
     needs: [build, build-windows, build-flatpak]
     permissions:
       contents: write
