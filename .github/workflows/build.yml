@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag whose draft release gets the artifacts (e.g. v2.5.0); leave empty for a gates-only dry run"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -344,7 +349,7 @@ jobs:
 
 
   release-evidence:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/')
     needs: [build, build-windows, build-flatpak]
     permissions:
       contents: write
@@ -359,6 +364,7 @@ jobs:
 
       - name: Generate SHASUMS256.txt and manifest.json
         env:
+          TAG_NAME: ${{ inputs.tag || github.ref_name }}
           MACOS_GATE: ${{ needs.build.outputs.macos_gate }}
           WINDOWS_SIGNATURE: ${{ needs.build-windows.outputs.windows_signature }}
         run: |
@@ -386,7 +392,7 @@ jobs:
               raise SystemExit("missing Linux flatpak artifact")
 
           manifest = {
-              "tag": os.environ["GITHUB_REF_NAME"],
+              "tag": os.environ.get("TAG_NAME") or os.environ["GITHUB_REF_NAME"],
               "commit": os.environ["GITHUB_SHA"],
               "run_url": "{}/{}/actions/runs/{}".format(
                   os.environ["GITHUB_SERVER_URL"],
@@ -420,6 +426,7 @@ jobs:
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           draft: true
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: |
             release/*.dmg
             release/*-setup.exe
@@ -437,7 +444,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: read
       packages: write
@@ -458,8 +465,10 @@ jobs:
 
       - name: Extract version from tag
         id: meta
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
+          VERSION=${TAG#v}
           if [[ ! "$VERSION" =~ ^[0-9] ]]; then
             VERSION="2.0.0"
           fi
