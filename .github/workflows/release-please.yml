@@ -6,6 +6,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 name: release-please
 
@@ -14,7 +15,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@f3969c04a4ec81d7a9aa4010d84ae6a7602f86a7 # v4.1.1
+        id: release
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # The draft release has no git tag until it is published, so tag-push
+      # triggers can never fire at this point. Dispatch the build directly:
+      # workflow_dispatch events trigger workflows even with GITHUB_TOKEN.
+      - name: Dispatch build for the new draft release
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          curl -sS -f -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/actions/workflows/build.yml/dispatches" \
+            -d '{"ref":"main","inputs":{"tag":"'"$TAG"'"}}'
