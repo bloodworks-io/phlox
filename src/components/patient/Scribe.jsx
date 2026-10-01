@@ -30,6 +30,7 @@ export const useScribe = ({
     const [streamingCapture, setStreamingCapture] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
+    const [isFinishing, setIsFinishing] = useState(false);
     const [timer, setTimer] = useState(0);
     const audioRecorderRef = useRef(null);
     const timerIntervalRef = useRef(null);
@@ -228,37 +229,45 @@ export const useScribe = ({
         if (!isRecording || !audioRecorderRef.current) {
             return null;
         }
-        const recorder = audioRecorderRef.current;
-        audioRecorderRef.current = null;
-        setIsRecording(false);
-        setIsPaused(false);
-        const blob = await recorder.stop();
-        const meta = {
-            name,
-            gender,
-            dob,
-            templateKey: template?.template_key,
-            noteId,
-        };
+        setIsFinishing(true);
+        try {
+            const recorder = audioRecorderRef.current;
+            audioRecorderRef.current = null;
+            setIsRecording(false);
+            setIsPaused(false);
+            const blob = await recorder.stop();
+            const meta = {
+                name,
+                gender,
+                dob,
+                templateKey: template?.template_key,
+                noteId,
+            };
 
-        // Streaming capture path: settle the flushed tail utterance, then
-        // finalize. Any failure or server fallback reruns as batch with the
-        // full-recording WAV.
-        const capture = captureRef.current;
-        captureRef.current = null;
-        if (capture && capture.failures === 0) {
-            await new Promise((resolve) =>
-                setTimeout(resolve, CAPTURE_TAIL_SETTLE_MS),
-            );
-            const data = await finalizeCaptureSession(capture.id);
-            if (!data?.fallback) {
-                return blob;
+            // Streaming capture path: settle the flushed tail utterance, then
+            // finalize. Any failure or server fallback reruns as batch with the
+            // full-recording WAV.
+            const capture = captureRef.current;
+            captureRef.current = null;
+            if (capture && capture.failures === 0) {
+                await new Promise((resolve) =>
+                    setTimeout(resolve, CAPTURE_TAIL_SETTLE_MS),
+                );
+                const data = await finalizeCaptureSession(capture.id);
+                if (!data?.fallback) {
+                    return blob;
+                }
+                console.warn(
+                    "Streaming capture fell back to batch:",
+                    data.reason,
+                );
             }
-            console.warn("Streaming capture fell back to batch:", data.reason);
-        }
 
-        await sendForTranscription(blob, meta);
-        return blob;
+            await sendForTranscription(blob, meta);
+            return blob;
+        } finally {
+            setIsFinishing(false);
+        }
     }, [
         isRecording,
         sendForTranscription,
@@ -312,7 +321,7 @@ export const useScribe = ({
         isRecording,
         isPaused,
         timer,
-        isLoading: isTranscribing,
+        isLoading: isTranscribing || isFinishing,
         sendError,
 
         // Actions
