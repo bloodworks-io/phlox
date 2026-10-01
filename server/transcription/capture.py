@@ -81,6 +81,11 @@ class CaptureSession:
     speakers: SessionSpeakers | None = None
     audio_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False, compare=False)
     warm_task: asyncio.Task | None = field(default=None, repr=False, compare=False)
+    # Raw strict-prefix warming (local provider): turn terminator + header
+    # derived once from the model's chat template; degraded=True falls
+    # back to chat warms.
+    warm_tail: str | None = field(default=None, repr=False, compare=False)
+    warm_raw_degraded: bool = field(default=False, repr=False, compare=False)
     _tasks: set = field(default_factory=set, repr=False, compare=False)
     # Set by the stop route; a repeat stop returns it unchanged.
     stop_result: dict | None = field(default=None, repr=False, compare=False)
@@ -227,6 +232,7 @@ async def _warm(session: CaptureSession) -> None:
     set_current_user(session.owner_user)
     try:
         from server.llm_client.client import get_llm_client
+        from server.llm_client.utils import ensure_system_messages_first
         from server.transcription.text import build_extraction_messages
 
         # KV prefix dies at the first differing FIELDS block if not byte identical.
@@ -241,11 +247,19 @@ async def _warm(session: CaptureSession) -> None:
             primary_condition=session.primary_condition,
         )
         client = get_llm_client(timeout=WARM_TIMEOUT_SECONDS)
+        # The same serialization chat() applies, so the raw prompt matches
+        # the extraction call byte-for-byte up to the stripped header.
+        messages = client._with_language_directive(ensure_system_messages_first(messages))
+
+        is_local = _is_local_provider()
+        if is_local and await _try_raw_warm(session, messages):
+            return
+
         options: dict = {
             "temperature": 0.0,
             "num_predict": 1,  # one decode step, discarded
         }
-        if _is_local_provider():
+        if is_local:
             options["extra_body"] = {"cache_prompt": True}
         await client.chat(
             model=config["PRIMARY_MODEL"],
@@ -254,6 +268,44 @@ async def _warm(session: CaptureSession) -> None:
         )
     except Exception as exc:
         logger.debug("Capture session %s: warm-up skipped (%s)", session.id, exc)
+
+
+async def _try_raw_warm(session: CaptureSession, messages: list[dict]) -> bool:
+    """Raw strict-prefix warm. Marks the session degraded (permanently,
+    for this session) when the model's template does not cooperate.
+    Returns False to fall back to a chat warm; raises on transient errors
+    so the next warm retries raw.
+    """
+    from server.transcription import warm_prompt
+
+    if session.warm_raw_degraded:
+        return False
+    if session.warm_tail is None:
+        tail = await warm_prompt.derive_generation_tail(
+            messages[0]["content"], WARM_TIMEOUT_SECONDS
+        )
+        if not tail:
+            session.warm_raw_degraded = True
+            logger.info(
+                "Capture session %s: template has no generation tail; using chat warms",
+                session.id,
+            )
+            return False
+        session.warm_tail = tail
+
+    rendered = await warm_prompt.render_prompt(messages, WARM_TIMEOUT_SECONDS)
+    prompt = warm_prompt.strip_generation_tail(rendered, session.warm_tail)
+    if prompt is None:
+        session.warm_raw_degraded = True
+        session.warm_tail = None
+        logger.info(
+            "Capture session %s: template render mismatch; using chat warms",
+            session.id,
+        )
+        return False
+
+    await warm_prompt.prefill(prompt, WARM_TIMEOUT_SECONDS)
+    return True
 
 
 async def drain(session: CaptureSession, timeout: float = FINAL_DRAIN_SECONDS) -> None:

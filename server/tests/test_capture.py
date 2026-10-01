@@ -275,10 +275,185 @@ async def test_handle_audio_rebinds_owner_identity(monkeypatch):
 
 # --------------------------------------------------------------- warming
 
+# Mini chat-template pieces for the raw warm-path tests. The strip target
+# is terminator + generation header ("tail").
+_TAIL = "<|im_end|>\n<|im_start|>assistant\n"
+
+
+class _WarmFakeClient:
+    """LLM client stub: identity language directive + captured chat calls."""
+
+    def __init__(self, directive=""):
+        self.directive = directive
+        self.chats = []
+
+    def _with_language_directive(self, messages):
+        if not self.directive:
+            return messages
+        merged = {
+            **messages[0],
+            "content": f"{self.directive}\n\n{messages[0]['content']}",
+        }
+        return [merged, *messages[1:]]
+
+    async def chat(self, **kwargs):
+        self.chats.append(kwargs)
+        return {"message": {"content": "x"}}
+
+
+def _mock_warm_prompt(monkeypatch, tail=_TAIL, rendered=None):
+    """Mock the native warm endpoints; returns a per-call recording dict."""
+    calls = {"derive": [], "render": [], "prefill": []}
+
+    async def fake_derive(system_content, _timeout):
+        calls["derive"].append(system_content)
+        return tail
+
+    async def fake_render(messages, _timeout):
+        calls["render"].append(messages)
+        user = messages[1]["content"]
+        return rendered if rendered is not None else (f"<|im_start|>user\n{user}{_TAIL}")
+
+    async def fake_prefill(prompt, _timeout):
+        calls["prefill"].append(prompt)
+
+    from server.transcription import warm_prompt as warm_prompt_module
+
+    monkeypatch.setattr(warm_prompt_module, "derive_generation_tail", fake_derive)
+    monkeypatch.setattr(warm_prompt_module, "render_prompt", fake_render)
+    monkeypatch.setattr(warm_prompt_module, "prefill", fake_prefill)
+    return calls
+
 
 @pytest.mark.asyncio
-async def test_warm_messages_byte_identical_to_extraction(monkeypatch):
-    """The warm-up prompt must serialise exactly like the real extraction call."""
+async def test_warm_raw_prompt_strips_tail_and_chains_strict_prefix(monkeypatch):
+    """Raw warms must be strict prefixes of each other, header stripped —
+    that is what lets llama.cpp resume above the old checkpoint pin."""
+    session = _make_session()
+    session.transcript_segments = ["S1: hello there"]
+    session.words_since_warm = capture_module.WARM_MIN_WORDS
+
+    client = _WarmFakeClient(directive="DIRECTIVE")
+    calls = _mock_warm_prompt(monkeypatch)
+
+    monkeypatch.setattr(
+        "server.transcription.capture.config_manager.get_config",
+        lambda: _local_config({"PRIMARY_MODEL": "test-model"}),
+    )
+    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: client)
+
+    await capture_module._warm(session)
+
+    # Transcript grows; warm again.
+    session.transcript_segments.append("S2: general kenobi")
+    session.words_since_warm = capture_module.WARM_MIN_WORDS
+    await capture_module._warm(session)
+
+    assert len(calls["prefill"]) == 2
+    first, second = calls["prefill"]
+    assert second.startswith(first)  # strict-prefix chain
+    assert not first.endswith(_TAIL) and not second.endswith(_TAIL)
+    assert _TAIL in first + _TAIL  # sanity: header really was the suffix
+
+    # Header derived once per session, reused on the second warm.
+    assert len(calls["derive"]) == 1
+
+    # The rendered messages carry the same language directive the chat
+    # extraction call would apply — byte-identity of the shared prefix.
+    rendered_system = calls["render"][0][0]["content"]
+    assert rendered_system.startswith("DIRECTIVE\n\n")
+
+    # The chat endpoint was never used on the local raw path.
+    assert client.chats == []
+
+
+@pytest.mark.asyncio
+async def test_warm_raw_transient_error_does_not_degrade(monkeypatch):
+    session = _make_session()
+    session.transcript_segments = ["S1: hello"]
+    client = _WarmFakeClient()
+    calls = _mock_warm_prompt(monkeypatch)
+
+    async def failing_render(_messages, _timeout):
+        raise RuntimeError("llama restarting")
+
+    from server.transcription import warm_prompt as warm_prompt_module
+
+    monkeypatch.setattr(warm_prompt_module, "render_prompt", failing_render)
+    monkeypatch.setattr(
+        "server.transcription.capture.config_manager.get_config",
+        lambda: _local_config({"PRIMARY_MODEL": "test-model"}),
+    )
+    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: client)
+
+    await capture_module._warm(session)  # swallowed
+
+    assert session.warm_raw_degraded is False
+    assert calls["prefill"] == []
+    assert client.chats == []  # transient failure skips the warm entirely
+
+    # Next warm retries raw and succeeds (header already derived).
+    monkeypatch.setattr(warm_prompt_module, "render_prompt", _mock_render_ok())
+    await capture_module._warm(session)
+    assert len(calls["prefill"]) == 1
+    assert session.warm_raw_degraded is False
+
+
+def _mock_render_ok():
+    async def render_ok(messages, _timeout):
+        user = messages[1]["content"]
+        return f"<|im_start|>user\n{user}<|im_end|>\n{_TAIL}"
+
+    return render_ok
+
+
+@pytest.mark.asyncio
+async def test_warm_degrades_when_template_has_no_tail(monkeypatch):
+    session = _make_session()
+    client = _WarmFakeClient()
+    _mock_warm_prompt(monkeypatch, tail=None)
+
+    monkeypatch.setattr(
+        "server.transcription.capture.config_manager.get_config",
+        lambda: _local_config({"PRIMARY_MODEL": "test-model"}),
+    )
+    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: client)
+
+    await capture_module._warm(session)
+
+    assert session.warm_raw_degraded is True
+    # Fell back to a chat warm for this session.
+    assert len(client.chats) == 1
+    assert client.chats[0]["options"]["extra_body"] == {"cache_prompt": True}
+
+
+@pytest.mark.asyncio
+async def test_warm_degrades_when_strip_mismatches(monkeypatch):
+    session = _make_session()
+    client = _WarmFakeClient()
+    calls = _mock_warm_prompt(monkeypatch, tail=_TAIL, rendered="no suffix match")
+
+    monkeypatch.setattr(
+        "server.transcription.capture.config_manager.get_config",
+        lambda: _local_config({"PRIMARY_MODEL": "test-model"}),
+    )
+    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: client)
+
+    await capture_module._warm(session)
+
+    assert session.warm_raw_degraded is True
+    assert session.warm_tail is None
+    assert len(client.chats) == 1
+
+    # Permanently degraded: the second warm goes straight to chat.
+    await capture_module._warm(session)
+    assert len(client.chats) == 2
+    assert len(calls["derive"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_warm_chat_fallback_byte_identical_to_extraction(monkeypatch):
+    """Degraded chat warms must serialise exactly like the real extraction call."""
     from server.schemas.templates import TemplateField
     from server.transcription.text import build_extraction_messages
 
@@ -311,24 +486,18 @@ async def test_warm_messages_byte_identical_to_extraction(monkeypatch):
         ]
     )
     session.transcript_segments = ["S1: hello there", "S2: general kenobi"]
-    session.words_since_warm = capture_module.WARM_MIN_WORDS
-
-    sent = {}
-
-    class _FakeClient:
-        async def chat(self, **kwargs):
-            sent["kwargs"] = kwargs
-            return {"message": {"content": "x"}}
+    session.warm_raw_degraded = True  # force the chat path
+    client = _WarmFakeClient()
 
     monkeypatch.setattr(
         "server.transcription.capture.config_manager.get_config",
         lambda: _local_config({"PRIMARY_MODEL": "test-model"}),
     )
-    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: _FakeClient())
+    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: client)
 
     await capture_module._warm(session)
 
-    kwargs = sent["kwargs"]
+    kwargs = client.chats[0]
     assert kwargs["model"] == "test-model"
     # Mirror of process_transcription's filter (non-persistent only).
     filtered_fields = [f for f in session.template_fields if not f.persistent]
@@ -355,40 +524,40 @@ async def test_warm_scopes_cache_prompt_to_bundled_provider(monkeypatch):
     """cache_prompt is llama.cpp-only; sending it to vLLM etc. would 400
     and silently kill every warm under the toggle override."""
     session = _make_session()
-    sent = {}
-
-    class _FakeClient:
-        async def chat(self, **kwargs):
-            sent["kwargs"] = kwargs
-            return {"message": {"content": "x"}}
+    client = _WarmFakeClient()
 
     monkeypatch.setattr(
         "server.transcription.capture.config_manager.get_config",
         lambda: {"LLM_PROVIDER": "openai", "PRIMARY_MODEL": "vllm-model"},
     )
-    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: _FakeClient())
+    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: client)
 
     await capture_module._warm(session)
 
-    assert sent["kwargs"]["options"].get("extra_body") is None
+    assert client.chats[0]["options"].get("extra_body") is None
 
 
 @pytest.mark.asyncio
 async def test_warm_rebinds_owner_identity(monkeypatch):
     alice = CurrentUser(2, "alice", "clinician")
     session = _make_session(owner_user=alice)
+    client = _WarmFakeClient()
     captured = {}
 
-    class _FakeClient:
-        async def chat(self, **_kwargs):
-            captured["user"] = get_current_user()
-            return {"message": {"content": "x"}}
+    async def capturing_prefill(_prompt, _timeout):
+        captured["user"] = get_current_user()
+
+    from server.transcription import warm_prompt as warm_prompt_module
+
+    monkeypatch.setattr(warm_prompt_module, "prefill", capturing_prefill)
+    _mock_warm_prompt(monkeypatch)
+    monkeypatch.setattr(warm_prompt_module, "prefill", capturing_prefill)
 
     monkeypatch.setattr(
         "server.transcription.capture.config_manager.get_config",
         lambda: _local_config({"PRIMARY_MODEL": "test-model"}),
     )
-    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: _FakeClient())
+    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: client)
 
     set_current_user(None)
     try:
@@ -549,6 +718,50 @@ async def test_drain_waits_for_pending_tasks():
     session.track_task(asyncio.create_task(pending()))
     await capture_module.drain(session, timeout=5)
     assert done.is_set()
+
+
+# ------------------------------------------------- warm_prompt (pure unit)
+
+
+def test_common_prefix_len():
+    from server.transcription import warm_prompt
+
+    assert warm_prompt.common_prefix_len("abcXY", "abcZQ") == 3
+    assert warm_prompt.common_prefix_len("", "abc") == 0
+    assert warm_prompt.common_prefix_len("same", "same") == 4
+
+
+def test_strip_generation_tail():
+    from server.transcription import warm_prompt
+
+    assert warm_prompt.strip_generation_tail("PROMPT<HDR>", "<HDR>") == "PROMPT"
+    assert warm_prompt.strip_generation_tail("PROMPT-X", "<HDR>") is None
+
+
+@pytest.mark.asyncio
+async def test_derive_generation_tail_diffs_probes(monkeypatch):
+    from server.transcription import warm_prompt
+
+    # Realistic chatml-shaped renders. Probes differ only in the final
+    # content char ("x" vs "xy"), so the shared prefix ends at the content
+    # and the suffix of the first render is the full tail: turn terminator
+    # + generation header. Both must be stripped — a terminator left
+    # behind would be replaced by the next warm's transcript text.
+    tail = "<|im_end|>\n<|im_start|>assistant\n"
+
+    async def fake_render(messages, _timeout):
+        user = messages[1]["content"]
+        return f"<|im_start|>system\nSYS<|im_end|>\n<|im_start|>user\n{user}{tail}"
+
+    monkeypatch.setattr(warm_prompt, "render_prompt", fake_render)
+    assert await warm_prompt.derive_generation_tail("SYS", 1.0) == tail
+
+    # Template without a generation tail -> None (degrade signal).
+    async def tailless_render(_messages, _timeout):
+        return "no tail here"
+
+    monkeypatch.setattr(warm_prompt, "render_prompt", tailless_render)
+    assert await warm_prompt.derive_generation_tail("SYS", 1.0) is None
 
 
 def test_manager_prune_removes_old_ended_sessions():
