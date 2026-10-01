@@ -84,13 +84,13 @@ Authentication is required for Docker deployments: the first browser visit walks
 
 The Docker image does not have any inference or transcription capability built-in. OpenAI compatible endpoints are required for transcription and note generation. 
 
-Note quality benefits from speaker diarization. [parakeet-diarized](https://github.com/jfgonsalves/parakeet-diarized) provides an easy to use Docker container that serves a diarization-enabled OpenAI Whisper-comptaible endpoint.
+Note quality benefits from speaker diarization. When **Streaming capture** is enabled in Settings → Policy: Phlox will transcribe sessions utterance-by-utterance while you record and adds its own built-in speaker labels, so a plain (non-diarizing) Whisper endpoint is enough.
 
 ## Architecture
 
 Ambient scribing is a relatively simple task for LLMs. In particular, large frontier models are very adept at one-shotting a decent note given a transcript and a style example. Smaller models capable of running on consumer hardware are able to summarise medical consultations reasonably well; however, they often struggle with replicating specific note styles.
 
-Phlox approaches this by chunking transcripts per template field and constraining outputs to structured JSON. After getting the model to make a targeted summary for a given field, a dedicated refinement pass then allows the model to focus on matching output to the users personal style example. Finally an adaptive-refinement feedback loop allows the model to improve note quality as it is used more.
+Phlox approaches this by chunking transcripts per template field and constraining outputs to structured JSON. After getting the model to make a targeted summary for a given field, a dedicated refinement pass then allows the model to focus on matching output to the users personal style example. Finally an adaptive-refinement feedback loop allows the model to improve note quality as it is used more. Ambient and Dictate recordings are transcribed utterance-by-utterance as they finalize (with built-in speaker labeling), and the growing transcript pre-warms the prompt cache so the note is ready faster when you stop recording.
 
 [Live Agent](https://phlox.bloodworks.io/docs/features/live-agent) mode takes a different path for real-time scribing: the consultation is segmented into utterances on-device (TEN VAD) and each utterance is streamed through a cheap gate; a single-token logprob classification that decides whether the speech should reach the note (NOTE), trigger an action (ACT), or be ignored as filler (SKIP, buffered with a debounce backstop so nothing is lost). NOTE and ACT utterances run through a tool-calling loop on the main model, which edits the running note, stages letters and PDF forms for review, and curates the wrap-up task list. Best-effort speaker diarisation (CAM++) labels who said what, and the conversation is kept append-only so the prompt cache stays warm between passes.
 
