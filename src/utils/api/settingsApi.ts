@@ -1,5 +1,6 @@
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const settingsApi = {
     fetchUserSettings: async () =>
@@ -8,7 +9,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/config/user");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch user settings",
+            errorMessage: t("api.settings.fetchUserSettingsFailed"),
         }),
 
     fetchPrompts: async () =>
@@ -17,7 +18,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/config/prompts");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch prompts",
+            errorMessage: t("api.settings.fetchPromptsFailed"),
         }),
 
     fetchDefaultPrompts: async () =>
@@ -26,7 +27,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/config/prompts/defaults");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch default prompts",
+            errorMessage: t("api.settings.fetchDefaultPromptsFailed"),
         }),
 
     fetchConfig: async () =>
@@ -35,7 +36,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/config/global");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch config",
+            errorMessage: t("api.settings.fetchConfigFailed"),
         }),
 
     fetchCapabilities: async () =>
@@ -44,7 +45,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/config/capabilities");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch capabilities",
+            errorMessage: t("api.settings.fetchCapabilitiesFailed"),
         }),
 
     fetchOptions: async () =>
@@ -53,7 +54,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/config/options");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch options",
+            errorMessage: t("api.settings.fetchOptionsFailed"),
         }),
 
     // New method to fetch models for any LLM provider
@@ -74,7 +75,7 @@ export const settingsApi = {
                 const url = await buildApiUrl(endpoint);
                 return universalFetch(url, { signal });
             },
-            errorMessage: `Failed to fetch ${providerType} models`,
+            errorMessage: t("api.settings.fetchModelsForFailed", { provider: providerType }),
         });
     },
 
@@ -88,7 +89,7 @@ export const settingsApi = {
                 const url = await buildApiUrl(endpoint);
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch models",
+            errorMessage: t("api.settings.fetchModelsFailed"),
         });
     },
 
@@ -103,7 +104,7 @@ export const settingsApi = {
                     body: JSON.stringify(prompts),
                 });
             },
-            errorMessage: "Failed to save prompts",
+            errorMessage: t("api.settings.savePromptsFailed"),
         }),
 
     saveConfig: async (config) =>
@@ -117,7 +118,7 @@ export const settingsApi = {
                     body: JSON.stringify(config),
                 });
             },
-            errorMessage: "Failed to save config",
+            errorMessage: t("api.settings.saveConfigFailed"),
         }),
 
     saveOptions: async (category, options) =>
@@ -133,7 +134,7 @@ export const settingsApi = {
                     body: JSON.stringify(options),
                 });
             },
-            errorMessage: `Failed to save options for ${category}`,
+            errorMessage: t("api.settings.saveOptionsForFailed", { category }),
         }),
 
     saveUserSettings: async (userSettings) =>
@@ -151,7 +152,7 @@ export const settingsApi = {
                     }),
                 });
             },
-            errorMessage: "Failed to save user settings",
+            errorMessage: t("page.settings.toasts.saveUserError"),
         }),
 
     fetchTemplates: async () =>
@@ -160,7 +161,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/templates");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to fetch templates",
+            errorMessage: t("api.templates.fetchFailed"),
         }),
 
     setDefaultTemplate: async (templateKey) =>
@@ -171,7 +172,7 @@ export const settingsApi = {
                 );
                 return universalFetch(url, { signal, method: "POST" });
             },
-            errorMessage: "Failed to set default template",
+            errorMessage: t("page.settings.toasts.defaultTemplateError"),
         }),
 
     getDefaultTemplate: async () =>
@@ -180,7 +181,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/templates/default");
                 return universalFetch(url, { signal });
             },
-            errorMessage: "Failed to get default template",
+            errorMessage: t("api.settings.getDefaultTemplateFailed"),
         }),
 
     saveLetterTemplateSetting: async (templateId) =>
@@ -191,7 +192,7 @@ export const settingsApi = {
                 );
                 return universalFetch(url, { signal, method: "POST" });
             },
-            errorMessage: "Failed to set default letter template",
+            errorMessage: t("api.settings.setDefaultLetterTemplateFailed"),
         }),
 
     resetOptionsToDefaults: async () =>
@@ -202,7 +203,7 @@ export const settingsApi = {
                 );
                 return universalFetch(url, { signal, method: "POST" });
             },
-            errorMessage: "Failed to reset options to defaults",
+            errorMessage: t("api.settings.resetOptionsFailed"),
         }),
 
     clearDatabase: async () =>
@@ -211,7 +212,7 @@ export const settingsApi = {
                 const url = await buildApiUrl("/api/rag/clear-database");
                 return universalFetch(url, { signal, method: "POST" });
             },
-            errorMessage: "Failed to clear RAG database",
+            errorMessage: t("api.settings.clearRagDatabaseFailed"),
         }),
 
     validateUrl: async (type: string, url: string) => {
@@ -228,7 +229,7 @@ export const settingsApi = {
                     );
                     return universalFetch(fullUrl, { signal });
                 },
-                errorMessage: `Failed to validate ${type} URL`,
+                errorMessage: t("api.settings.validateUrlForFailed", { type }),
             });
             return Boolean(data?.valid);
         } catch (error) {
@@ -245,7 +246,7 @@ export const settingsApi = {
                 );
                 return universalFetch(url, { signal, method: "POST" });
             },
-            errorMessage: "Failed to mark splash screen as complete",
+            errorMessage: t("api.settings.markSplashFailed"),
         }),
 
     fetchServerStatus: async (signal?: AbortSignal) => {
@@ -260,7 +261,7 @@ export const settingsApi = {
                 // No JSON body
             }
             throw new Error(
-                detail || `HTTP error! status: ${response.status}`,
+                detail || t("api.error.httpStatus", { status: response.status }),
             );
         }
         return response.json();

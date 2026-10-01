@@ -57,6 +57,10 @@ RUN python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
 # Copy remaining server code
 COPY server/ ./server
 
+# Speaker embedding model for live diarization (pinned; skipped when the
+# build context already carries a checksum-valid copy)
+RUN python server/scripts/fetch_speaker_model.py
+
 # Change permissions
 RUN chown -R phlox:phlox /usr/src/app
 

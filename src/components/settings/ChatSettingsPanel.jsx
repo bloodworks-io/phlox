@@ -1,7 +1,9 @@
 import { HStack, Text, Input, InputGroup, VStack } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { QuestionIcon } from "../common/icons";
 
 const ChatSettingsPanel = ({ userSettings, setUserSettings }) => {
+    const { t } = useTranslation();
     const handleQuickChatChange = (key, value) => {
         setUserSettings((prev) => ({
             ...prev,
@@ -12,8 +14,7 @@ const ChatSettingsPanel = ({ userSettings, setUserSettings }) => {
     return (
         <VStack gap={2} align="stretch">
             <Text fontSize="xs" className="pill-box-icons">
-                Configure the quick chat buttons that appear in the chat
-                interface.
+                {t("settings.chat.description")}
             </Text>
             <HStack gap={2}>
                 <Text
@@ -22,10 +23,10 @@ const ChatSettingsPanel = ({ userSettings, setUserSettings }) => {
                     fontWeight="medium"
                     w="40%"
                 >
-                    Button Text
+                    {t("settings.chat.buttonText")}
                 </Text>
                 <Text fontSize="xs" color="overlay0" fontWeight="medium" flex="1">
-                    Prompt
+                    {t("settings.chat.prompt")}
                 </Text>
             </HStack>
             {[1, 2, 3].map((n) => (
@@ -37,7 +38,7 @@ const ChatSettingsPanel = ({ userSettings, setUserSettings }) => {
                     >
                         <Input
                             className="input-style quick-chat-title-input"
-                            placeholder="Button text"
+                            placeholder={t("settings.chat.buttonTextPlaceholder")}
                             value={
                                 userSettings[`quick_chat_${n}_title`] || ""
                             }
@@ -53,7 +54,7 @@ const ChatSettingsPanel = ({ userSettings, setUserSettings }) => {
                         size="sm"
                         flex="1"
                         className="input-style"
-                        placeholder="Prompt sent to AI"
+                        placeholder={t("settings.chat.promptPlaceholder")}
                         value={
                             userSettings[`quick_chat_${n}_prompt`] || ""
                         }

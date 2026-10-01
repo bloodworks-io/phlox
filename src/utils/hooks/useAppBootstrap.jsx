@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Box } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { invoke } from "@tauri-apps/api/core";
 import SplashScreen from "../../components/common/SplashScreen";
@@ -16,6 +17,7 @@ import { encryptionApi } from "../../utils/api/encryptionApi";
 import { localModelApi } from "../../utils/api/localModelApi";
 
 export const useAppBootstrap = () => {
+    const { t } = useTranslation();
     const [showSplashScreen, setShowSplashScreen] = useState(undefined);
     const [, setIsLoadingSplashCheck] = useState(!isTauri());
     const [, setEncryptionStatus] = useState(null);
@@ -171,8 +173,9 @@ export const useAppBootstrap = () => {
         setShowServerStartupLoader(false);
         // Show error toast
         toaster.create({
-            title: "Server Error",
-            description: error.message || "Failed to start the server",
+            title: t("bootstrap.toast.serverError"),
+            description:
+                error.message || t("bootstrap.toast.serverStartFailed"),
             type: "error",
             duration: 5000,
         });

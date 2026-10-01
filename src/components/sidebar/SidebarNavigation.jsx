@@ -1,5 +1,6 @@
 import { Box, VStack, Flex, Icon, Text, Badge } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import { FaTasks, FaNotesMedical, FaBrain, FaCog } from "react-icons/fa";
 import { useLocation } from "react-router";
 import { colors } from "../../theme/colors";
@@ -127,19 +128,20 @@ const SidebarNavigation = ({
     onNewPatient,
 }) => {
     const location = useLocation();
+    const { t } = useTranslation();
     const isActive = (to) =>
         location.pathname === to || location.pathname.startsWith(`${to}/`);
 
     return (
         <VStack gap="1" align="stretch" w="100%" py="1">
             <Tooltip
-                content="Start a new clinical note"
+                content={t("nav.newNote.tooltip")}
                 positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
             >
                 <Box>
                     <NavButton
                         icon={FaNotesMedical}
-                        label="New Note"
+                        label={t("nav.newNote.label")}
                         onClick={onNewPatient}
                         isCollapsed={isCollapsed}
                         accent={colors.dark.brand}
@@ -149,13 +151,13 @@ const SidebarNavigation = ({
             </Tooltip>
 
             <Tooltip
-                content="Outstanding clinic jobs"
+                content={t("nav.allJobs.tooltip")}
                 positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
             >
                 <Box>
                     <NavButton
                         icon={FaTasks}
-                        label="All Jobs"
+                        label={t("nav.allJobs.label")}
                         onClick={() => handleNavigation("/outstanding-jobs")}
                         isCollapsed={isCollapsed}
                         badge={
@@ -168,13 +170,13 @@ const SidebarNavigation = ({
 
             {isRagEnabled() && (
                 <Tooltip
-                    content="Knowledge base & uploaded documents"
+                    content={t("nav.documents.tooltip")}
                     positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
                 >
                     <Box mb={isCollapsed ? "1px" : "0px"}>
                         <NavButton
                             icon={FaBrain}
-                            label="Documents"
+                            label={t("page.rag.title")}
                             onClick={() => handleNavigation("/rag")}
                             isCollapsed={isCollapsed}
                             isActive={isActive("/rag")}
@@ -184,13 +186,13 @@ const SidebarNavigation = ({
             )}
 
             <Tooltip
-                content="Models, templates & preferences"
+                content={t("nav.settings.tooltip")}
                 positioning={{ placement: isCollapsed ? "right" : "top" }} openDelay={700}
             >
                 <Box>
                     <NavButton
                         icon={FaCog}
-                        label="Settings"
+                        label={t("page.settings.title")}
                         onClick={() => handleNavigation("/settings")}
                         isCollapsed={isCollapsed}
                         isActive={isActive("/settings")}

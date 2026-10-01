@@ -238,6 +238,17 @@ const floatingStyles = (props) => ({
         justifyContent: "center",
         alignItems: "center",
     },
+    // Live scribe: small-caps section labels inside the live window
+    ".live-section-label": {
+        fontSize: "9px !important",
+        fontWeight: "700 !important",
+        letterSpacing: "0.9px !important",
+        textTransform: "uppercase !important",
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textTertiary} !important`
+                : `${colors.dark.textTertiary} !important`,
+    },
     ".floating-action-menu": {
         backgroundColor:
             props.colorMode === "light"

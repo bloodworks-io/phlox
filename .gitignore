@@ -51,6 +51,9 @@ src-tauri/parakeet.cpp/
 src-tauri/omi-med-stt-runtime/
 src-tauri/llama.cpp/
 
+# Speaker embedding model (fetched at build time, not committed)
+server/assets/models/*.onnx
+
 # Coverage
 AGENTS.md
 CLAUDE.md
@@ -64,3 +67,4 @@ __pycache__/
 *.pyc
 package-lock.old
 package-lock.old
+.zcode

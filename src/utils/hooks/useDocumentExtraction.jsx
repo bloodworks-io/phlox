@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 
 export const useDocumentExtraction = ({
@@ -6,6 +7,7 @@ export const useDocumentExtraction = ({
     setPatient,
     setIsModified,
 }) => {
+    const { t } = useTranslation();
     const [originalContent, setOriginalContent] = useState({});
     const [replacedFields, setReplacedFields] = useState({});
     const [extractedDocData, setExtractedDocData] = useState(null);
@@ -20,8 +22,8 @@ export const useDocumentExtraction = ({
             setExtractedDocData(data);
 
             toaster.create({
-                title: "Document processed",
-                description: "Use the toggle buttons to update fields",
+                title: t("documentExtraction.toast.processed"),
+                description: t("documentExtraction.toast.processedDescription"),
                 type: "success",
                 duration: 3000,
             });
@@ -53,9 +55,8 @@ export const useDocumentExtraction = ({
         );
         if (!hasExtractedContent) {
             toaster.create({
-                title: "No content available",
-                description:
-                    "This field doesn't have any content in the uploaded document",
+                title: t("documentExtraction.toast.noContent"),
+                description: t("documentExtraction.toast.noContentDescription"),
                 type: "info",
                 duration: 2000,
             });

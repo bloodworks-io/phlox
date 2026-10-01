@@ -54,6 +54,12 @@ else
     echo "Mode: RELEASE (for production)"
 fi
 
+IS_WINDOWS=false
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]] \
+   || [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -s)" == CYGWIN* ]]; then
+    IS_WINDOWS=true
+fi
+
 # Detect platform (using Rust target triple naming for Tauri compatibility)
 if [[ "$OSTYPE" == "darwin"* ]]; then
     if [[ $(uname -m) == "arm64" ]]; then
@@ -66,12 +72,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     PLATFORM="x86_64-unknown-linux-gnu"
     echo "Platform: Linux x86_64"
-elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+elif [[ "$IS_WINDOWS" == true ]]; then
     PLATFORM="x86_64-pc-windows-msvc"
     echo "Platform: Windows x86_64"
 else
     PLATFORM="aarch64-apple-darwin"
-    echo "Platform: Unknown, defaulting to macOS ARM64"
+    echo "Platform: Unknown (OSTYPE=$OSTYPE, uname=$(uname -s)), defaulting to macOS ARM64"
 fi
 
 # ========================================
@@ -133,7 +139,7 @@ echo "=========================================="
 if [ "$SKIP_WHISPER" = true ]; then
     echo "⏭️  Skipping parakeet.cpp build (--skip-whisper)"
     WHISPER_BIN="src-tauri/phlox-whisper-server"
-    if [[ "$PLATFORM" == "windows-"* ]]; then
+    if [[ "$PLATFORM" == *windows-msvc ]]; then
         WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
     fi
     if [ ! -f "$WHISPER_BIN" ]; then
@@ -147,7 +153,7 @@ else
     fi
 
     # Check if whisper-server was built
-    if [[ "$PLATFORM" == "windows-"* ]]; then
+    if [[ "$PLATFORM" == *windows-msvc ]]; then
         WHISPER_BIN="src-tauri/phlox-whisper-server.exe"
     else
         WHISPER_BIN="src-tauri/phlox-whisper-server"
@@ -172,7 +178,7 @@ echo "=========================================="
 if [ "$SKIP_LLAMA" = true ]; then
     echo "⏭️  Skipping llama.cpp build (--skip-llama)"
     LLAMA_BIN="src-tauri/phlox-llama-server"
-    if [[ "$PLATFORM" == "windows-"* ]]; then
+    if [[ "$PLATFORM" == *windows-msvc ]]; then
         LLAMA_BIN="src-tauri/phlox-llama-server.exe"
     fi
     if [ ! -f "$LLAMA_BIN" ]; then
@@ -186,7 +192,7 @@ else
     fi
 
     # Check if llama-server was built
-    if [[ "$PLATFORM" == "windows-"* ]]; then
+    if [[ "$PLATFORM" == *windows-msvc ]]; then
         LLAMA_BIN="src-tauri/phlox-llama-server.exe"
     else
         LLAMA_BIN="src-tauri/phlox-llama-server"
@@ -210,10 +216,17 @@ echo "=========================================="
 
 mkdir -p "src-tauri/binaries"
 
+# Windows externalBin files carry the platform triple + .exe extension
+if [[ "$PLATFORM" == *windows-msvc ]]; then
+    EXT=".exe"
+else
+    EXT=""
+fi
+
 # Copy llama-server
 if [ -f "$LLAMA_BIN" ]; then
-    cp "$LLAMA_BIN" "src-tauri/binaries/phlox-llama-server-${PLATFORM}"
-    chmod +x "src-tauri/binaries/phlox-llama-server-${PLATFORM}"
+    cp "$LLAMA_BIN" "src-tauri/binaries/phlox-llama-server-${PLATFORM}${EXT}"
+    chmod +x "src-tauri/binaries/phlox-llama-server-${PLATFORM}${EXT}"
     echo "✅ Copied phlox-llama-server"
 else
     echo "⚠️  Warning: phlox-llama-server not found, skipping"
@@ -221,8 +234,8 @@ fi
 
 # Copy whisper-server
 if [ -f "$WHISPER_BIN" ]; then
-    cp "$WHISPER_BIN" "src-tauri/binaries/phlox-whisper-server-${PLATFORM}"
-    chmod +x "src-tauri/binaries/phlox-whisper-server-${PLATFORM}"
+    cp "$WHISPER_BIN" "src-tauri/binaries/phlox-whisper-server-${PLATFORM}${EXT}"
+    chmod +x "src-tauri/binaries/phlox-whisper-server-${PLATFORM}${EXT}"
     echo "✅ Copied phlox-whisper-server"
 else
     echo "⚠️  Warning: phlox-whisper-server not found, skipping"

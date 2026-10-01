@@ -4,6 +4,8 @@ services:
         image: localhost/phlox-dev:latest
         container_name: phlox-dev
         network_mode: host
+        env_file:
+            - .env
         environment:
             DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
             NODE_ENV: development

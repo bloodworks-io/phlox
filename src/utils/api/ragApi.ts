@@ -1,11 +1,12 @@
 // API functions for RAG related operations.
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 async function* streamPostSSE(url) {
     const response = await universalFetch(url, { method: "POST" });
     if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(t("api.error.httpStatus", { status: response.status }) as string);
     }
 
     const reader = response.body.getReader();
@@ -38,7 +39,7 @@ export const ragApi = {
                 const url = await buildApiUrl("/api/rag/files");
                 return universalFetch(url);
             },
-            errorMessage: "Failed to fetch collections",
+            errorMessage: t("api.rag.fetchCollectionsFailed"),
         });
     },
 
@@ -50,7 +51,7 @@ export const ragApi = {
                 );
                 return universalFetch(url);
             },
-            errorMessage: `Error loading files for ${collectionName}`,
+            errorMessage: t("api.rag.loadFilesFailed", { name: collectionName }),
         });
     },
 
@@ -67,8 +68,8 @@ export const ragApi = {
                     }),
                 });
             },
-            successMessage: `Successfully renamed to ${newName}`,
-            errorMessage: "Failed to rename collection",
+            successMessage: t("api.rag.renameToast", { name: newName }),
+            errorMessage: t("rag.toast.failedToRename"),
         });
     },
 
@@ -82,8 +83,8 @@ export const ragApi = {
                     method: "DELETE",
                 });
             },
-            successMessage: `Successfully deleted ${collectionName}`,
-            errorMessage: "Failed to delete collection",
+            successMessage: t("api.rag.deleteToast", { name: collectionName }),
+            errorMessage: t("api.rag.deleteCollectionFailed"),
         });
     },
 
@@ -100,8 +101,8 @@ export const ragApi = {
                     }),
                 });
             },
-            successMessage: `Successfully deleted ${fileName}`,
-            errorMessage: "Failed to delete file",
+            successMessage: t("api.rag.deleteToast", { name: fileName }),
+            errorMessage: t("api.rag.deleteFileFailed"),
         });
     },
 
@@ -117,8 +118,8 @@ export const ragApi = {
                     body: JSON.stringify(data),
                 });
             },
-            successMessage: "Document updated",
-            errorMessage: "Failed to update document",
+            successMessage: t("api.rag.documentUpdatedToast"),
+            errorMessage: t("rag.toast.failedToUpdateDocument"),
         });
     },
 
@@ -131,7 +132,7 @@ export const ragApi = {
                     body: formData,
                 });
             },
-            errorMessage: "Failed to extract PDF information",
+            errorMessage: t("rag.toast.failedToExtract"),
         });
     },
 
@@ -147,8 +148,7 @@ export const ragApi = {
                     body: JSON.stringify(payload),
                 });
             },
-            errorMessage:
-                "Failed to extract PDF information from extracted text",
+            errorMessage: t("api.rag.extractPdfInfoFromTextFailed"),
         });
     },
 
@@ -162,8 +162,8 @@ export const ragApi = {
                     body: JSON.stringify(data),
                 });
             },
-            successMessage: "Successfully committed to database",
-            errorMessage: "Failed to commit data to database",
+            successMessage: t("api.rag.commitSuccess"),
+            errorMessage: t("api.rag.commitFailed"),
         });
     },
 
@@ -177,7 +177,7 @@ export const ragApi = {
                     body: JSON.stringify(data),
                 });
             },
-            errorMessage: "Failed to commit data to database",
+            errorMessage: t("api.rag.commitFailed"),
         });
     },
 
@@ -187,7 +187,7 @@ export const ragApi = {
         );
         const response = await universalFetch(url);
         if (!response.ok) {
-            throw new Error(`Failed to download PDF: ${response.statusText}`);
+            throw new Error(t("api.rag.downloadPdfFailed", { status: response.statusText }) as string);
         }
         return response.blob();
     },
@@ -200,7 +200,7 @@ export const ragApi = {
                     method: "POST",
                 });
             },
-            errorMessage: "Failed to re-embed documents",
+            errorMessage: t("api.rag.reEmbedFailed"),
         });
     },
 

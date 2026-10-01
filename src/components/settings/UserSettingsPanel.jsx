@@ -2,7 +2,7 @@
 import { Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, Tabs, VStack, Field } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRightIcon, ChevronDownIcon } from "../common/icons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { FaUser, FaFileAlt, FaEnvelopeOpenText, FaComments } from "react-icons/fa";
 import TemplateSettingsPanel from "./TemplateSettingsPanel";
 import LetterTemplatesPanel from "./LetterTemplatesPanel";
@@ -20,7 +20,7 @@ const UserSettingsPanel = ({
   specialties,
   templates,
   letterTemplates,
-  setTemplates,
+  onDefaultTemplateChange,
 }) => {
   const { t } = useTranslation();
   const [capabilities, setCapabilities] = useState(null);
@@ -57,6 +57,7 @@ const UserSettingsPanel = ({
       ...prev,
       default_template: templateKey,
     }));
+    onDefaultTemplateChange?.(templateKey);
   };
   const handleDefaultLetterTemplateChange = (templateId) => {
     setUserSettings((prev) => ({
@@ -70,13 +71,13 @@ const UserSettingsPanel = ({
         <Flex align="center">
           <IconButton
             onClick={() => setIsCollapsed(!isCollapsed)}
-            aria-label="Toggle collapse"
+            aria-label={t("settings.toggleCollapse")}
             variant="outline"
             size="sm"
             mr="2"
-            className="collapse-toggle">{isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}</IconButton>
+            className="collapse-toggle"><AnimatedChevron isOpen={!isCollapsed} /></IconButton>
           <FaUser size="1.2em" style={{ marginRight: "5px" }} />
-          <Text as="h3">User Settings</Text>
+          <Text as="h3">{t("settings.userPanel.title")}</Text>
         </Flex>
       </Flex>
       <Collapsible.Root open={!isCollapsed}>
@@ -86,36 +87,36 @@ const UserSettingsPanel = ({
               <Tabs.Trigger className="tab-style" value="0">
                 <HStack>
                   <FaUser />
-                  <Text>General</Text>
+                  <Text>{t("settings.userPanel.general")}</Text>
                 </HStack>
               </Tabs.Trigger>
               <Tabs.Trigger className="tab-style" value="2">
                 <HStack>
                   <FaFileAlt />
-                  <Text>Note Templates</Text>
+                  <Text>{t("settings.userPanel.noteTemplates")}</Text>
                 </HStack>
               </Tabs.Trigger>
               <Tabs.Trigger className="tab-style" value="3">
                 <HStack>
                   <FaEnvelopeOpenText />
-                  <Text>Letter Templates</Text>
+                  <Text>{t("settings.userPanel.letterTemplatesTab")}</Text>
                 </HStack>
               </Tabs.Trigger>
               {isChatEnabled() && (
                 <Tabs.Trigger className="tab-style" value="4">
                   <HStack>
                     <FaComments />
-                    <Text>Quick Chat</Text>
+                    <Text>{t("settings.userPanel.quickChat")}</Text>
                   </HStack>
                 </Tabs.Trigger>
               )}
             </Tabs.List>
-            
+
               <Tabs.Content value="0" className="floating-main">
                 <VStack gap={4} align="stretch">
                   <Box>
                     <Text fontSize="sm" mb="1">
-                      Name
+                      {t("settings.userPanel.name")}
                     </Text>
                     <Input
                       size="sm"
@@ -127,12 +128,12 @@ const UserSettingsPanel = ({
                         }))
                       }
                       className="input-style"
-                      placeholder="Enter your name"
+                      placeholder={t("settings.userPanel.namePlaceholder")}
                     />
                   </Box>
                   <Box>
                     <Text fontSize="sm" mb="1">
-                      Specialty
+                      {t("settings.userPanel.specialty")}
                     </Text>
                     <NativeSelect.Root>
                       <NativeSelect.Field
@@ -145,10 +146,19 @@ const UserSettingsPanel = ({
                           }))
                         }
                         className="input-style"
-                        placeholder="Select your specialty">
+                        placeholder={t("settings.userPanel.specialtyPlaceholder")}>
                         {specialties.map((specialty) => (
-                          <option key={specialty} value={specialty}>
-                            {specialty}
+                          <option
+                            key={specialty}
+                            value={specialty}
+                          >
+                            {t(
+                              `specialty.${specialty
+                                  .trim()
+                                  .toLowerCase()
+                                  .replace(/ /g, "_")}`,
+                              { defaultValue: specialty },
+                            )}
                           </option>
                         ))}
                       </NativeSelect.Field>
@@ -186,7 +196,7 @@ const UserSettingsPanel = ({
                   </Field.Root>
                   <Field.Root>
                     <Field.Label fontSize="sm" fontWeight={"bold"}>
-                      Default Template
+                      {t("settings.userPanel.defaultTemplate")}
                     </Field.Label>
                     <NativeSelect.Root>
                       <NativeSelect.Field
@@ -194,7 +204,7 @@ const UserSettingsPanel = ({
                         value={userSettings.default_template || ""}
                         onChange={(e) => handleDefaultTemplateChange(e.target.value)}
                         className="input-style"
-                        placeholder="Select default template">
+                        placeholder={t("settings.userPanel.defaultTemplatePlaceholder")}>
                         {/* Change this part to map over templates array correctly */}
                         {templates.map((template) => (
                           <option
@@ -210,7 +220,7 @@ const UserSettingsPanel = ({
                   </Field.Root>
                   <Field.Root>
                     <Field.Label fontSize="sm" fontWeight={"bold"}>
-                      Default Letter Template
+                      {t("settings.userPanel.defaultLetterTemplate")}
                     </Field.Label>
                     <NativeSelect.Root>
                       <NativeSelect.Field
@@ -220,7 +230,7 @@ const UserSettingsPanel = ({
                           handleDefaultLetterTemplateChange(e.target.value)
                         }
                         className="input-style"
-                        placeholder="Select default letter template">
+                        placeholder={t("settings.userPanel.defaultLetterTemplatePlaceholder")}>
                         {letterTemplates.map((template) => (
                           <option key={template.id} value={template.id}>
                             {template.name}
@@ -234,10 +244,7 @@ const UserSettingsPanel = ({
               </Tabs.Content>
 
               <Tabs.Content value="2" className="floating-main">
-                <TemplateSettingsPanel
-                  templates={templates}
-                  setTemplates={setTemplates}
-                />
+                <TemplateSettingsPanel />
               </Tabs.Content>
               <Tabs.Content value="3" className="floating-main">
                 <LetterTemplatesPanel />

@@ -6,7 +6,7 @@
             "changelog-path": "CHANGELOG.md",
             "include-v-in-tag": true,
             "include-component-in-tag": false,
-            "draft": false,
+            "draft": true,
             "extra-files": [
                 {
                     "type": "toml",

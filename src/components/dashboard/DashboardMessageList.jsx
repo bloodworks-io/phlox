@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useColorMode } from "../ui/color-mode";
 import { Box, Flex, VStack, HStack, Text, Spinner, Badge, Icon, Image } from "@chakra-ui/react";
 import { AttachmentIcon } from "../common/icons";
@@ -19,6 +20,7 @@ const DashboardMessageList = ({
     messagesEndRef,
 }) => {
     const [expandedToolBlocks, setExpandedToolBlocks] = useState({});
+    const { t } = useTranslation();
     const { colorMode } = useColorMode();
 
     const getThinkingBlockState = (message, blockIndex = 0) => {
@@ -95,6 +97,8 @@ const DashboardMessageList = ({
                                 ? "flex-start"
                                 : "flex-end"
                         }
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.2s" }}
                     >
                         <Box
                             className={`message-box ${message.role}`}
@@ -114,7 +118,7 @@ const DashboardMessageList = ({
                                         <HStack gap={2} mb={0.5}>
                                             <Image
                                                 src="/logo.webp"
-                                                alt="Phlox Logo"
+                                                alt={t("chat.logoAlt")}
                                                 h="16px"
                                                 w="auto"
                                                 objectFit="contain"
@@ -124,7 +128,7 @@ const DashboardMessageList = ({
                                                 fontWeight="semibold"
                                                 color="overlay0"
                                             >
-                                                Phlox Assistant
+                                                {t("chat.assistant")}
                                             </Text>
                                         </HStack>
                                     )}

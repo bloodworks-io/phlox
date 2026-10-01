@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { SPLASH_STEPS } from "../../../components/common/splash/constants";
 import { validateLLMStep } from "../../../utils/splash/validators";
@@ -11,6 +12,7 @@ import { useDebounce } from "../useDebounce";
 import { KEYS } from "../../cache/keys";
 
 export const useLLMStep = (currentStep) => {
+    const { t } = useTranslation();
 
     // Desktop detection
     const isDesktop = isTauri();
@@ -73,15 +75,15 @@ export const useLLMStep = (currentStep) => {
     useEffect(() => {
         if (llmError) {
             toaster.create({
-                title: "Error fetching LLM models",
+                title: t("splash.llm.fetchErrorTitle"),
                 description:
                     llmError.message ||
-                    "Could not connect or provider returned an error.",
+                    t("splash.llm.connectErrorFallback"),
                 type: "error",
                 duration: 3000,
             });
         }
-    }, [llmError]);
+    }, [llmError, t]);
 
     // Local mode state
     const [localAvailableModels, setLocalAvailableModels] = useState([]);
@@ -116,14 +118,14 @@ export const useLLMStep = (currentStep) => {
         } catch (error) {
             console.error("Error fetching local models:", error);
             toaster.create({
-                title: "Error fetching local models",
+                title: t("splash.llm.localFetchErrorTitle"),
                 description:
-                    error.message || "Could not retrieve local model list.",
+                    error.message || t("splash.llm.localFetchErrorFallback"),
                 type: "error",
                 duration: 3000,
             });
         }
-    }, [inferenceMode, primaryLocalModel]);
+    }, [inferenceMode, primaryLocalModel, t]);
 
     // Download local model with progress
     const downloadLocalModel = useCallback(

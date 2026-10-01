@@ -1,12 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
-import {
-    useTemplateSelection,
-    useTemplate,
-} from "../templates/templateContext";
-import { getTemplateFamilyBase } from "../templates/templateService";
+import { useTemplateSelection, useTemplate } from "../templates/templateContext";
+import { latestInFamily } from "../templates/templateFamily";
 import { useToastMessage } from "./UseToastMessage";
 
+// Decides which template applies to the encounter being viewed or edited:
+//   - historical encounter: locked to the template it was saved with
+//     (pinned keys may be soft-deleted, so they resolve with
+//     includeDeleted)
+//   - new encounter without a template: the default template
+//   - new encounter for a returning patient whose previous template key is
+//     no longer active: upgrade to the latest member of its family, where
+//     the user's customizations (forks) outrank old protected versions
 export const usePatientTemplate = ({
     patient,
     setPatient,
@@ -15,12 +21,11 @@ export const usePatientTemplate = ({
     initialPatient,
     isSearchLoading,
 }) => {
+    const { t } = useTranslation();
     const { showWarningToast } = useToastMessage();
-    const hasDefaultTemplateBeenSet = useRef(false);
 
     const {
         currentTemplate,
-        isTemplateChanging,
         defaultTemplate,
         templates,
         status: templateStatus,
@@ -30,78 +35,112 @@ export const usePatientTemplate = ({
 
     const { refreshTemplates } = useTemplate();
 
-    // Handle template errors
+    // Surface template errors
     useEffect(() => {
         if (templateError) {
             toaster.create({
-                title: "Template Error",
+                title: t("patient.toast.templateError"),
                 description: templateError,
                 type: "error",
                 duration: 5000,
             });
         }
-    }, [templateError]);
+    }, [templateError, t]);
 
-    // Handle template consistency for already saved (historical) encounters
+    // Resolve the active template for the current encounter context
     useEffect(() => {
-        if (!currentTemplate || !patient || isTemplateChanging) return;
+        const resolveTemplate = async () => {
+            if (!patient || !templates) {
+                return;
+            }
 
-        const shouldLockTemplate = !isNewPatient && !patient.isNewEncounter;
+            const isHistoricalView = !isNewPatient && !patient.isNewEncounter;
 
-        if (
-            shouldLockTemplate &&
-            currentTemplate.template_key !== patient.template_key
-        ) {
-            selectTemplate(
-                patient.template_key,
-                "Maintaining historical template",
-            );
-        }
-    }, [
-        currentTemplate,
-        patient,
-        isNewPatient,
-        selectTemplate,
-        isTemplateChanging,
-    ]);
-
-    // Set default template for new patients
-    useEffect(() => {
-        const initializeNewPatient = async () => {
-            if (isNewPatient && defaultTemplate && !patient?.template_key) {
+            if (isHistoricalView) {
+                // Historical encounter: keep the template it was created
+                // with, even if a newer version has since replaced it.
                 if (
-                    !hasDefaultTemplateBeenSet.current &&
-                    !patient?.template_key
+                    patient.template_key &&
+                    currentTemplate?.template_key !== patient.template_key
                 ) {
-                    hasDefaultTemplateBeenSet.current = true;
-                    try {
-                        await selectTemplate(defaultTemplate.template_key);
-                        setPatient((prev) => ({
-                            ...prev,
-                            template_key: defaultTemplate.template_key,
-                        }));
-                    } catch (error) {
-                        console.error("Failed to set default template:", error);
-                        toaster.create({
-                            title: "Error",
-                            description: "Failed to set default template",
-                            type: "error",
-                            duration: 3000,
-                        });
-                    }
+                    await selectTemplate(patient.template_key, {
+                        includeDeleted: true,
+                    });
                 }
+                return;
+            }
+
+            if (!patient.template_key) {
+
+                const fallbackKey =
+                    defaultTemplate?.template_key ??
+                    templates[0]?.template_key;
+                if (fallbackKey) {
+                    await selectTemplate(fallbackKey);
+                    setPatient((prev) =>
+                        prev.template_key === fallbackKey
+                            ? prev
+                            : {
+                                  ...prev,
+                                  template_key: fallbackKey,
+                              },
+                    );
+                }
+                return;
+            }
+
+            // New encounter pre-filled from a previous visit: keep the key
+            // while it is still active, otherwise upgrade to the latest
+            // member of its family (forks first).
+            const isActive = templates.some(
+                (t) => t.template_key === patient.template_key,
+            );
+            if (isActive) {
+                if (currentTemplate?.template_key !== patient.template_key) {
+                    await selectTemplate(patient.template_key);
+                }
+                return;
+            }
+
+            const fallback =
+                latestInFamily(templates, patient.template_key) ??
+                defaultTemplate ??
+                templates[0];
+            if (!fallback || fallback.template_key === patient.template_key) {
+                return;
+            }
+
+            setPatient((prev) => ({
+                ...prev,
+                template_key: fallback.template_key,
+            }));
+            await selectTemplate(fallback.template_key);
+
+            if (isSearchedPatient) {
+                showWarningToast(
+                    t("patient.toast.usingTemplate", {
+                        name: fallback.template_name,
+                    }),
+                );
             }
         };
-        initializeNewPatient();
+
+        resolveTemplate();
     }, [
+        patient?.template_key,
+        patient?.isNewEncounter,
         isNewPatient,
-        defaultTemplate,
-        patient,
+        isSearchedPatient,
+        defaultTemplate?.template_key,
+        templates,
+        currentTemplate?.template_key,
         selectTemplate,
         setPatient,
+        showWarningToast,
+        t,
     ]);
 
-    // Handle template data for historical patients
+    // Map historical encounter data onto the current template's fields
     useEffect(() => {
         if (
             !isNewPatient &&
@@ -110,7 +149,7 @@ export const usePatientTemplate = ({
             !isSearchLoading
         ) {
             const newTemplateData = {};
-            currentTemplate.fields.forEach((field) => {
+            currentTemplate.fields?.forEach((field) => {
                 newTemplateData[field.field_key] =
                     initialPatient.template_data?.[field.field_key] || "";
             });
@@ -129,92 +168,8 @@ export const usePatientTemplate = ({
         isSearchLoading,
     ]);
 
-    useEffect(() => {
-        const handleHistoricalTemplate = async () => {
-            if (!isNewPatient && !isSearchedPatient) {
-                console.log(
-                    "Viewing historical encounter - keeping original template",
-                );
-                return;
-            }
-
-            if (
-                patient?.template_key &&
-                defaultTemplate?.template_key &&
-                patient?.template_key !== defaultTemplate?.template_key &&
-                templates?.length > 0 &&
-                (isNewPatient || isSearchedPatient)
-            ) {
-                const activeTemplate = templates.find(
-                    (t) => t.template_key === patient.template_key,
-                );
-
-                if (!activeTemplate) {
-                    console.warn(
-                        "Pre-fill template is not active. Finding fallback...",
-                    );
-
-                    const baseKey = getTemplateFamilyBase(patient.template_key);
-                    const latestVersion = templates
-                        .filter(
-                            (t) =>
-                                t.template_key.startsWith(baseKey) ||
-                                t.template_key.startsWith(`custom_${baseKey}_`),
-                        )
-                        .sort((a, b) =>
-                            b.template_key.localeCompare(a.template_key),
-                        )[0];
-
-                    const fallback =
-                        latestVersion || defaultTemplate || templates[0];
-
-                    if (fallback) {
-                        if (fallback.template_key === patient.template_key)
-                            return;
-
-                        console.log(
-                            `Upgrading pre-fill template to: ${fallback.template_key}`,
-                        );
-
-                        setPatient((prev) => ({
-                            ...prev,
-                            template_key: fallback.template_key,
-                            template_data: {
-                                ...prev.template_data,
-                            },
-                        }));
-
-                        await selectTemplate(fallback.template_key);
-
-                        if (
-                            fallback.template_key !== patient.template_key &&
-                            isSearchedPatient
-                        ) {
-                            showWarningToast(
-                                `Using ${fallback.template_name} template for this new encounter.`,
-                            );
-                        }
-                    }
-                }
-            }
-        };
-
-        handleHistoricalTemplate();
-    }, [
-        isNewPatient,
-        isSearchedPatient,
-        patient?.template_key,
-        defaultTemplate?.template_key,
-        templates,
-        defaultTemplate,
-        selectTemplate,
-        setPatient,
-        showWarningToast,
-    ]);
-
     return {
         currentTemplate,
-        isTemplateChanging,
         defaultTemplate,
         templates,
         templateStatus,

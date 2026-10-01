@@ -13,7 +13,7 @@ const ChatSuggestions = ({ handleSendMessage, userSettings }) => {
       flexDirection="column"
       wrap="wrap"
     >
-      <Flex wrap="wrap" justify="center">
+      <Flex wrap="wrap" justify="center" className="anim-stagger">
         {[1, 2, 3].map((n) => {
           const title = userSettings[`quick_chat_${n}_title`];
           const prompt = userSettings[`quick_chat_${n}_prompt`];

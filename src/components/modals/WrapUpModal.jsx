@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     HStack,
     Heading,
@@ -20,6 +21,7 @@ import { FaCheckDouble, FaPlus, FaTimes } from "react-icons/fa";
 import useSWRMutation from "swr/mutation";
 import { patientApi } from "../../utils/api/patientApi";
 import { GreenButton } from "../common/Buttons";
+import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { KEYS } from "../../utils/cache/keys";
 
 const Section = ({ title, children }) => (
@@ -31,7 +33,17 @@ const Section = ({ title, children }) => (
     </Box>
 );
 
-const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
+const WrapUpModal = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    planText,
+    submitting,
+    // Live-agent voice curation; no-ops for the manual flow.
+    stagedJobs,
+    onExtracted,
+}) => {
+    const { t } = useTranslation();
     const [actionItems, setActionItems] = useState([]);
     const [excluded, setExcluded] = useState([]);
     const [fallback, setFallback] = useState(null);
@@ -59,16 +71,26 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
 
     useEffect(() => {
         if (data) {
-            setActionItems(
-                (data.action_items || []).map((j) => ({
-                    text: j.text,
-                    checked: true,
-                })),
-            );
+            const mapped = (data.action_items || []).map((j) => ({
+                text: j.text,
+                checked: true,
+            }));
+            setActionItems(mapped);
             setExcluded((data.excluded || []).map((j) => ({ text: j.text })));
             setFallback(data.fallback || null);
+            onExtracted?.(mapped);
         }
-    }, [data]);
+    }, [data, onExtracted]);
+
+    // Voice curation via set_jobs; last writer wins with hand edits.
+    useEffect(() => {
+        if (isOpen && stagedJobs) {
+            setActionItems(stagedJobs.map((j) => ({
+                text: j.text,
+                checked: j.checked !== false,
+            })));
+        }
+    }, [stagedJobs, isOpen]);
 
     useEffect(() => {
         if (error) {
@@ -142,7 +164,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                             <HStack>
                                 <FaCheckDouble />
                                 <Heading as="h3" size="xl" fontFamily="heading">
-                                    Wrap Up
+                                    {t("modal.wrapUp.title")}
                                 </Heading>
                             </HStack>
                         </Dialog.Header>
@@ -153,7 +175,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                             className="custom-scrollbar"
                         >
                             <VStack align="stretch" gap={4}>
-                                <Section title="Jobs to action">
+                                <Section title={t("modal.wrapUp.jobsToAction")}>
                                     {extracting ? (
                                         <Center py={6}>
                                             <Spinner size="sm" />
@@ -164,8 +186,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                     "textSecondary"
                                                 }
                                             >
-                                                Extracting tasks from the
-                                                plan...
+                                                {t("modal.wrapUp.extracting")}
                                             </Text>
                                         </Center>
                                     ) : actionItems.length === 0 &&
@@ -174,7 +195,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                             fontSize="sm"
                                             color={"textSecondary"}
                                         >
-                                            No tasks extracted — add any below.
+                                            {t("modal.wrapUp.noTasksExtracted")}
                                         </Text>
                                     ) : null}
 
@@ -185,6 +206,10 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                 align="flex-start"
                                                 gap={2}
                                                 w="100%"
+                                                className="anim-fade-slide-up"
+                                                css={{
+                                                    animationDuration: "0.15s",
+                                                }}
                                             >
                                                 <Checkbox.Root
                                                     className="checkbox task-checkbox"
@@ -227,7 +252,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                     }}
                                                 />
                                                 <IconButton
-                                                    aria-label="Remove task"
+                                                    aria-label={t("modal.wrapUp.removeTask")}
                                                     size="xs"
                                                     variant="ghost"
                                                     onClick={() =>
@@ -242,7 +267,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
 
                                     <HStack mt={2}>
                                         <Input
-                                            placeholder="Add a task..."
+                                            placeholder={t("modal.wrapUp.addTaskPlaceholder")}
                                             value={newTaskText}
                                             onChange={(e) =>
                                                 setNewTaskText(e.target.value)
@@ -257,7 +282,7 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                             className="input-style"
                                         />
                                         <IconButton
-                                            aria-label="Add task"
+                                            aria-label={t("modal.wrapUp.addTask")}
                                             size="sm"
                                             onClick={addTask}
                                         >
@@ -278,9 +303,13 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                 setShowExcluded((s) => !s)
                                             }
                                         >
-                                            {showExcluded ? "▾" : "▸"} Not tasks
-                                            (review/follow-up) —{" "}
-                                            {excluded.length}
+                                            <AnimatedChevron
+                                                isOpen={showExcluded}
+                                                display="inline-block"
+                                                verticalAlign="-2px"
+                                                mr="2px"
+                                            />
+                                            {t("modal.wrapUp.notTasks", { count: excluded.length })}
                                         </Text>
                                         <Collapsible.Root open={showExcluded}>
                                             <Collapsible.Content>
@@ -304,8 +333,8 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                                                 >
                                                                     {item.text}
                                                                 </Text>
-                                                                <IconButton
-                                                                    aria-label="Promote to task"
+                                                                 <IconButton
+                                                                     aria-label={t("modal.wrapUp.promoteToTask")}
                                                                     size="xs"
                                                                     variant="ghost"
                                                                     onClick={() =>
@@ -325,23 +354,21 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                     </Box>
                                 )}
 
-                                {fallback === "empty" && (
-                                    <Alert.Root status="info" borderRadius="md">
-                                        <Alert.Indicator />
-                                        No plan text to extract tasks from. Add
-                                        any tasks above.
-                                    </Alert.Root>
-                                )}
-                                {fallback === "heuristic" && (
-                                    <Alert.Root
-                                        status="warning"
-                                        borderRadius="md"
-                                    >
-                                        <Alert.Indicator />
-                                        Smart extraction unavailable — showing
-                                        basic tasks. Edit freely.
-                                    </Alert.Root>
-                                )}
+                                 {fallback === "empty" && (
+                                     <Alert.Root status="info" borderRadius="md">
+                                         <Alert.Indicator />
+                                         {t("modal.wrapUp.noPlanText")}
+                                     </Alert.Root>
+                                 )}
+                                 {fallback === "heuristic" && (
+                                     <Alert.Root
+                                         status="warning"
+                                         borderRadius="md"
+                                     >
+                                         <Alert.Indicator />
+                                         {t("modal.wrapUp.heuristicFallback")}
+                                     </Alert.Root>
+                                 )}
 
                                 {/* TODO: billing suggestions section */}
                             </VStack>
@@ -361,15 +388,15 @@ const WrapUpModal = ({ isOpen, onClose, onConfirm, planText, submitting }) => {
                                     mr={3}
                                     disabled={submitting}
                                 >
-                                    Cancel
+                                    {t("action.cancel")}
                                 </Button>
                                 <GreenButton
                                     onClick={handleConfirm}
                                     loading={submitting}
-                                    loadingText="Saving"
+                                    loadingText={t("modal.wrapUp.saving")}
                                     disabled={!canConfirm}
                                 >
-                                    Confirm &amp; Finish
+                                    {t("modal.wrapUp.confirmFinish")}
                                 </GreenButton>
                             </HStack>
                         </Dialog.Footer>

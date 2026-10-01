@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Flex, Text, HStack, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon } from "./icons";
+import AnimatedChevron from "./icons/AnimatedChevron";
 import {
     getToolName,
     getToolPresentation,
@@ -26,6 +27,7 @@ const ActivityTraceBlock = ({
     expandedToolBlocks,
     toggleToolExpanded,
 }) => {
+    const { t } = useTranslation();
     const isTraceExpanded = getThinkingBlockState
         ? Boolean(
               getThinkingBlockState(message, TRACE_EXPANDED_KEY) ||
@@ -62,9 +64,11 @@ const ActivityTraceBlock = ({
     };
 
     const collapsedLabel = currentActivity.isOngoing
-        ? `${currentActivity.label}...`
+        ? t("common.activityTrace.ongoing", { label: currentActivity.label })
         : elapsedSeconds !== null
-          ? `Thought for ${formatDuration(elapsedSeconds)}`
+          ? t("common.activityTrace.thoughtFor", {
+                duration: formatDuration(elapsedSeconds),
+            })
           : currentActivity.label;
 
     return (
@@ -89,20 +93,18 @@ const ActivityTraceBlock = ({
                     </>
                 ) : (
                     <Text mr="2" fontWeight="medium" fontSize="xs" color="overlay0">
-                        {stepCount} {stepCount === 1 ? "step" : "steps"}
+                        {t("common.activityTrace.steps", { count: stepCount })}
                     </Text>
                 )}
                 <IconButton
                     aria-label={
-                        isTraceExpanded ? "Collapse trace" : "Expand trace"
+                        isTraceExpanded
+                            ? t("common.activityTrace.collapseTrace")
+                            : t("common.activityTrace.expandTrace")
                     }
                     variant="ghost"
                     size="xs"
-                    className="chat-disclosure-icon">{isTraceExpanded ? (
-                        <ChevronUpIcon />
-                    ) : (
-                        <ChevronDownIcon />
-                    )}</IconButton>
+                    className="chat-disclosure-icon"><AnimatedChevron isOpen={isTraceExpanded} direction="up" /></IconButton>
             </Flex>
             {/* Expanded — full trace of all steps */}
             <Collapsible.Root open={isTraceExpanded}>
@@ -137,22 +139,19 @@ const ActivityTraceBlock = ({
                                                 fontSize="xs"
                                                 fontWeight="medium"
                                             >
-                                                Thinking
-                                                {block.isPartial ? "..." : ""}
+                                                {block.isPartial
+                                                    ? t("common.activityTrace.thinkingPartial")
+                                                    : t("common.activityTrace.thinking")}
                                             </Text>
                                             <IconButton
                                                 aria-label={
                                                     isExpanded
-                                                        ? "Collapse thinking"
-                                                        : "Expand thinking"
+                                                        ? t("common.activityTrace.collapseThinking")
+                                                        : t("common.activityTrace.expandThinking")
                                                 }
                                                 variant="ghost"
                                                 size="xs"
-                                                className="chat-disclosure-icon">{isExpanded ? (
-                                                    <ChevronUpIcon />
-                                                ) : (
-                                                    <ChevronDownIcon />
-                                                )}</IconButton>
+                                                className="chat-disclosure-icon"><AnimatedChevron isOpen={isExpanded} direction="up" /></IconButton>
                                         </Flex>
                                         <Collapsible.Root open={isExpanded}>
                                             <Collapsible.Content>
@@ -222,16 +221,12 @@ const ActivityTraceBlock = ({
                                             <IconButton
                                                 aria-label={
                                                     isExpanded
-                                                        ? "Collapse tool output"
-                                                        : "Expand tool output"
+                                                        ? t("common.activityTrace.collapseToolOutput")
+                                                        : t("common.activityTrace.expandToolOutput")
                                                 }
                                                 variant="ghost"
                                                 size="xs"
-                                                className="chat-disclosure-icon">{isExpanded ? (
-                                                    <ChevronUpIcon />
-                                                ) : (
-                                                    <ChevronDownIcon />
-                                                )}</IconButton>
+                                                className="chat-disclosure-icon"><AnimatedChevron isOpen={isExpanded} direction="up" /></IconButton>
                                         </Flex>
                                         <Collapsible.Root open={isExpanded}>
                                             <Collapsible.Content>
@@ -251,7 +246,7 @@ const ActivityTraceBlock = ({
                                                         mb={1}
                                                     >
                                                         {toolContent ||
-                                                            "(No tool output)"}
+                                                            t("common.activityTrace.noToolOutput")}
                                                     </Text>
                                                 </Box>
                                             </Collapsible.Content>

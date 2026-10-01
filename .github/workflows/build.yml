@@ -12,7 +12,9 @@ permissions:
 jobs:
   build:
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      macos_gate: ${{ steps.macgate.outputs.status }}
     strategy:
       matrix:
         include:
@@ -113,7 +115,7 @@ jobs:
           cache: "npm"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           version-file: "server/pyproject.toml"
 
@@ -155,23 +157,164 @@ jobs:
         run: |
           npm run tauri -- build --target aarch64-apple-darwin -- --locked
 
+      - name: Verify codesign, Gatekeeper, and notarization ticket
+        id: macgate
+        run: |
+          set -euo pipefail
+          DMG=$(ls src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg)
+          echo "Verifying ${DMG}"
+
+          PLIST=$(hdiutil attach "$DMG" -nobrowse -readonly -plist)
+          DEVICE=$(/usr/libexec/PlistBuddy -c 'Print :system-entities:0:dev-entry' /dev/stdin <<< "$PLIST")
+          MOUNT_POINT=$(/usr/libexec/PlistBuddy -c 'Print :system-entities:0:mount-point' /dev/stdin <<< "$PLIST")
+          # Detach even when a check below fails
+          trap 'hdiutil detach "$DEVICE" -force >/dev/null 2>&1 || true' EXIT
+
+          APP=$(ls -d "$MOUNT_POINT"/*.app)
+          echo "App bundle: ${APP}"
+
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          echo "## macOS release verification (fail-hard)" >> "$SUMMARY"
+          echo "- DMG: ${DMG}" >> "$SUMMARY"
+
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          echo "- ✅ codesign: signature valid (deep + strict)" >> "$SUMMARY"
+
+          spctl --assess --type execute --verbose "$APP"
+          echo "- ✅ Gatekeeper: assessment passed" >> "$SUMMARY"
+
+          xcrun stapler validate "$APP"
+          echo "- ✅ notarization: ticket stapled" >> "$SUMMARY"
+
+          echo "status=verified (codesign+gatekeeper+stapler)" >> "$GITHUB_OUTPUT"
+
       - name: Upload DMG
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Phlox-${{ matrix.os }}-${{ matrix.arch }}
           path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
 
-      - name: Attach to Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+  build-windows:
+    permissions:
+      contents: read
+    outputs:
+      windows_signature: ${{ steps.winsig.outputs.status }}
+      windows_signer: ${{ steps.winsig.outputs.signer }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          files: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          persist-credentials: false
+          submodules: false
+
+      - name: Enable long paths
+        run: git config --system core.longpaths true
+
+      # parakeet.cpp (patched for the Omi Med STT adapter) - pinned commit e8acc617
+      - name: Checkout parakeet.cpp and apply Omi adapter patch
+        run: |
+          git clone https://github.com/mudler/parakeet.cpp.git src-tauri/parakeet.cpp
+          cd src-tauri/parakeet.cpp && git checkout e8acc6172a94e20a952cf1843decace5d771a94b
+          EXPECTED="e8acc6172a94e20a952cf1843decace5d771a94b"
+          ACTUAL=$(git rev-parse HEAD)
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "❌ SHA mismatch: expected $EXPECTED, got $ACTUAL"
+            exit 1
+          fi
+          git submodule update --init --recursive
+          git apply --recount ../parakeet-cpp-omi-adapter.patch
+          rm -rf src-tauri/parakeet.cpp/.git
+
+      # llama.cpp pinned aa46bda
+      - name: Checkout llama.cpp
+        run: |
+          git clone https://github.com/ggml-org/llama.cpp.git src-tauri/llama.cpp
+          cd src-tauri/llama.cpp && git checkout aa46bda89b9a8378ae76bb15fc2ce2f571f0983c
+          EXPECTED="aa46bda89b9a8378ae76bb15fc2ce2f571f0983c"
+          ACTUAL=$(git rev-parse HEAD)
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "❌ SHA mismatch: expected $EXPECTED, got $ACTUAL"
+            exit 1
+          fi
+          rm -rf src-tauri/llama.cpp/.git
+
+      # Vulkan SDK: shader compiler (glslc) at build time; build-llama.sh also
+      # bundles the redistributable loader (vulkan-1.dll) for CPU-only fallback.
+      - name: Install Vulkan SDK
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VULKAN_VERSION: 1.4.357.0
+        run: |
+          curl -L --retry 3 -o "$RUNNER_TEMP/vulkansdk.exe" \
+            "https://sdk.lunarg.com/sdk/download/${VULKAN_VERSION}/windows/vulkansdk-windows-X64-${VULKAN_VERSION}.exe"
+          "$RUNNER_TEMP/vulkansdk.exe" --accept-licenses --default-answer --confirm-command install
+          SDK_DIR=$(ls -d /c/VulkanSDK/*/ | sort -V | tail -1)
+          echo "VULKAN_SDK=$(cygpath -w "$SDK_DIR")" >> "$GITHUB_ENV"
+          echo "$(cygpath -u "$SDK_DIR")/Bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.18.0"
+          cache: "npm"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version-file: "server/pyproject.toml"
+
+      - name: Cache Nuitka and ccache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            C:\Users\runneradmin\AppData\Local\Nuitka
+          key: nuitka-ccache-${{ runner.os }}-${{ hashFiles('server/**/*.py', 'server/uv.lock') }}
+          restore-keys: |
+            nuitka-ccache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all components
+        run: bash build-all.sh
+
+      - name: Build Tauri app (NSIS)
+        run: npx tauri build -- --locked
+
+      # Warn-only: the installer is not Authenticode-signed yet.
+      - name: Check Authenticode signature (warn-only)
+        id: winsig
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe" | Select-Object -First 1
+          if (-not $exe) { throw "No *-setup.exe found in NSIS bundle directory" }
+          $sig = Get-AuthenticodeSignature $exe.FullName
+          "status=$($sig.Status)" >> $env:GITHUB_OUTPUT
+          "signer=$($sig.SignerCertificate.Subject)" >> $env:GITHUB_OUTPUT
+          "- Installer: $($exe.Name)" >> $env:GITHUB_STEP_SUMMARY
+          "- Authenticode status: $($sig.Status)" >> $env:GITHUB_STEP_SUMMARY
+          if ($sig.Status -eq 'Valid') {
+            "- Signer: $($sig.SignerCertificate.Subject)" >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            Write-Warning "Installer is not Authenticode-signed (status: $($sig.Status)). Recorded in manifest; not failing the release."
+          }
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Phlox-windows-x86_64
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
 
   build-flatpak:
     permissions:
-      contents: write
+      contents: read
     runs-on: ubuntu-22.04
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48@sha256:50fea670968fd3ec4aeeb3a91d9d807d0af6eab3c3b44c33d4c40c311832c8fa
@@ -189,9 +332,9 @@ jobs:
         with:
           bundle: Phlox-linux-x86_64.flatpak
           manifest-path: packaging/com.phlox.app.yaml
-          cache-key: flatpak-builder-${{ github.sha }}
           arch: x86_64
           verbose: true
+          upload-artifact: false
 
       - name: Upload Flatpak bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -199,13 +342,98 @@ jobs:
           name: Phlox-linux-x86_64.flatpak
           path: Phlox-linux-x86_64.flatpak
 
-      - name: Attach to Release
-        if: startsWith(github.ref, 'refs/tags/')
+
+  release-evidence:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build, build-windows, build-flatpak]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Generate SHASUMS256.txt and manifest.json
+        env:
+          MACOS_GATE: ${{ needs.build.outputs.macos_gate }}
+          WINDOWS_SIGNATURE: ${{ needs.build-windows.outputs.windows_signature }}
+        run: |
+          set -euo pipefail
+          python3 - <<'EOF'
+          import hashlib
+          import json
+          import os
+
+          artifacts = {}
+          for name in sorted(os.listdir("release")):
+              if not name.endswith((".dmg", "-setup.exe", ".flatpak")):
+                  continue
+              digest = hashlib.sha256()
+              with open(os.path.join("release", name), "rb") as fh:
+                  for chunk in iter(lambda: fh.read(1 << 20), b""):
+                      digest.update(chunk)
+              artifacts[name] = digest.hexdigest()
+
+          if not any(n.endswith(".dmg") for n in artifacts):
+              raise SystemExit("missing macOS DMG artifact")
+          if not any(n.endswith("-setup.exe") for n in artifacts):
+              raise SystemExit("missing Windows installer artifact")
+          if not any(n.endswith(".flatpak") for n in artifacts):
+              raise SystemExit("missing Linux flatpak artifact")
+
+          manifest = {
+              "tag": os.environ["GITHUB_REF_NAME"],
+              "commit": os.environ["GITHUB_SHA"],
+              "run_url": "{}/{}/actions/runs/{}".format(
+                  os.environ["GITHUB_SERVER_URL"],
+                  os.environ["GITHUB_REPOSITORY"],
+                  os.environ["GITHUB_RUN_ID"],
+              ),
+              "verification": {
+                  "macos_signing_notarization": os.environ.get("MACOS_GATE", "unknown"),
+                  "windows_authenticode": os.environ.get("WINDOWS_SIGNATURE", "unknown"),
+                  "flatpak": "digest-only (no signature gate)",
+              },
+              "artifacts": artifacts,
+          }
+          with open("release/manifest.json", "w") as fh:
+              json.dump(manifest, fh, indent=2, sort_keys=True)
+              fh.write("\n")
+          with open("release/SHASUMS256.txt", "w") as fh:
+              fh.write("".join(f"{d}  {n}\n" for n, d in sorted(artifacts.items())))
+          print("Artifacts:")
+          for name, digest in sorted(artifacts.items()):
+              print(f"  {digest}  {name}")
+          EOF
+
+      - name: Self-check checksums file
+        run: |
+          cd release
+          shasum -a 256 -c SHASUMS256.txt
+          python3 -m json.tool manifest.json >/dev/null
+
+      - name: Attach artifacts and evidence to draft release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
-          files: Phlox-linux-x86_64.flatpak
+          draft: true
+          files: |
+            release/*.dmg
+            release/*-setup.exe
+            release/*.flatpak
+            release/SHASUMS256.txt
+            release/manifest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summarize for reviewer
+        run: |
+          echo "## Release evidence ready" >> "$GITHUB_STEP_SUMMARY"
+          echo "All artifacts, \`SHASUMS256.txt\`, and \`manifest.json\` are attached to the **draft** release." >> "$GITHUB_STEP_SUMMARY"
+          echo "Before publishing, review the checklist in \`.github/RELEASE.md\`." >> "$GITHUB_STEP_SUMMARY"
 
   docker:
     runs-on: ubuntu-latest
@@ -238,7 +466,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build and push
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           push: true
@@ -248,18 +476,3 @@ jobs:
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  notify-website:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, build-flatpak, docker]
-    steps:
-      - name: Trigger phlox-website rebuild
-        env:
-          GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
-        run: |
-          curl -sS -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/bloodworks-io/phlox-website/dispatches \
-            -d '{"event_type":"phlox-released","client_payload":{"version":"'"${GITHUB_REF_NAME}"'"}}'

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Box, Flex, Textarea, IconButton } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { ArrowUpIcon } from "../../common/icons";
 
 const MIN_HEIGHT = 32;
@@ -11,6 +12,7 @@ const ChatInput = ({
     handleSendMessage,
     chatLoading,
 }) => {
+    const { t } = useTranslation();
     const textareaRef = useRef(null);
 
     const canSend = Boolean(userInput.trim()) && !chatLoading;
@@ -52,7 +54,7 @@ const ChatInput = ({
                     value={userInput}
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
-                    placeholder="Message Phlox..."
+                    placeholder={t("chat.input.placeholder")}
                     rows={1}
                     resize="none"
                     variant="unstyled"
@@ -75,7 +77,7 @@ const ChatInput = ({
                     onClick={() => handleSendMessage(userInput)}
                     disabled={!canSend}
                     loading={chatLoading}
-                    aria-label="Send message"
+                    aria-label={t("chat.input.send")}
                     size="sm"
                     alignSelf="center"
                     borderRadius="full"

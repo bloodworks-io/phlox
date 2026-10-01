@@ -1,18 +1,23 @@
 import { Box, Text } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import { FaThumbtack } from "react-icons/fa";
 
 // Preview component that mimics Summary.jsx field rendering
 export const FieldPreview = ({ field }) => {
+    const { t } = useTranslation();
     const content = field.style_example || "";
 
     return (
-        <Box className="cohesive-field">
+        <Box
+            className="cohesive-field"
+            css={{ animation: "phloxFadeScaleIn 0.2s ease-out both" }}
+        >
             <Text className="cohesive-field-label">
-                {field.field_name || "Unnamed Field"}
+                {field.field_name || t("modal.fieldEditor.unnamedField")}
                 {field.persistent && (
                     <Tooltip
-                        content="Persists between encounters."
+                        content={t("modal.fieldPreview.persistsTooltip")}
                         showArrow
                         positioning={{
                             placement: "right"
@@ -39,8 +44,8 @@ export const FieldPreview = ({ field }) => {
                         asChild
                     ><i>
                             {field.persistent
-                                ? "Persistent field content carries over..."
-                                : "This field will be generated from the transcript..."}
+                                ? t("modal.fieldPreview.persistentContent")
+                                : t("modal.fieldPreview.dynamicContent")}
                         </i></Text>
                 )}
             </Box>

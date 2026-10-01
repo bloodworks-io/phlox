@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod commands;
 mod encryption;
 mod pm;
@@ -253,6 +255,7 @@ pub fn run() {
 
 /// Install cleanup hooks for abnormal process termination.
 fn install_cleanup_hooks() {
+    #[cfg(unix)]
     extern "C" fn on_signal(_sig: libc::c_int) {
         crate::process::kill_all_processes();
         std::process::exit(130);

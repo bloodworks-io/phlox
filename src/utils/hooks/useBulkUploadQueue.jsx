@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { ragApi } from "../api/ragApi";
 import { extractPdfMetadata } from "../helpers/pdfExtractHelpers";
@@ -25,6 +26,7 @@ function makeQueueEntry(file) {
 }
 
 export const useBulkUploadQueue = ({ setCollections } = {}) => {
+    const { t } = useTranslation();
     const [fileQueue, setFileQueue] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -88,7 +90,7 @@ export const useBulkUploadQueue = ({ setCollections } = {}) => {
                 );
                 updateQueueEntry(entry.id, {
                     status: STATUS.FAILED,
-                    error: error.message || "Extraction failed",
+                    error: error.message || t("bulkUpload.error.extractionFailed"),
                 });
             }
         }
@@ -104,15 +106,20 @@ export const useBulkUploadQueue = ({ setCollections } = {}) => {
                 }).length;
                 if (failedCount === 0) {
                     toaster.create({
-                        title: "Extraction Complete",
-                        description: `Successfully extracted ${pending.length} file(s)`,
+                        title: t("bulkUpload.toast.extractionComplete"),
+                        description: t("bulkUpload.toast.extractedSuccess", {
+                            count: pending.length,
+                        }),
                         type: "success",
                         duration: 3000,
                     });
                 } else {
                     toaster.create({
-                        title: "Extraction Partially Complete",
-                        description: `${pending.length - failedCount} of ${pending.length} file(s) extracted successfully`,
+                        title: t("bulkUpload.toast.extractionPartial"),
+                        description: t("bulkUpload.toast.partiallyExtracted", {
+                            extracted: pending.length - failedCount,
+                            total: pending.length,
+                        }),
                         type: "warning",
                         duration: 3000,
                     });
@@ -120,7 +127,7 @@ export const useBulkUploadQueue = ({ setCollections } = {}) => {
                 return current;
             });
         }
-    }, [fileQueue, updateQueueEntry]);
+    }, [fileQueue, updateQueueEntry, t]);
 
     const commitAll = useCallback(async () => {
         if (!setCollections) return;
@@ -163,7 +170,7 @@ export const useBulkUploadQueue = ({ setCollections } = {}) => {
                 );
                 updateQueueEntry(entry.id, {
                     status: STATUS.FAILED,
-                    error: error.message || "Commit failed",
+                    error: error.message || t("bulkUpload.error.commitFailed"),
                 });
             }
         }
@@ -184,12 +191,15 @@ export const useBulkUploadQueue = ({ setCollections } = {}) => {
         setIsProcessing(false);
 
         toaster.create({
-            title: "Commit Complete",
-            description: `${committedCount} of ${ready.length} file(s) committed successfully`,
+            title: t("bulkUpload.toast.commitComplete"),
+            description: t("bulkUpload.toast.committed", {
+                count: committedCount,
+                total: ready.length,
+            }),
             type: committedCount === ready.length ? "success" : "warning",
             duration: 3000,
         });
-    }, [fileQueue, setCollections, updateQueueEntry]);
+    }, [fileQueue, setCollections, updateQueueEntry, t]);
 
     return {
         fileQueue,

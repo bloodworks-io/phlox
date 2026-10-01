@@ -7,6 +7,7 @@ import {
   Flex,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import { useApiToast } from "../../utils/helpers/apiToastContext";
 import { useState, useEffect, useRef } from "react";
 import useSWR from "swr";
@@ -14,7 +15,7 @@ import useSWR from "swr";
 import VersionInfo from "./VersionInfo";
 import SidebarPatientList from "./SidebarPatientList";
 import SidebarNavigation from "./SidebarNavigation";
-import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import ConfirmDialog from "../common/ConfirmDialog";
 import { colors } from "../../theme/colors";
 import { sidebarWidth } from "../../theme/dimensions";
 import { patientApi } from "../../utils/api/patientApi";
@@ -69,6 +70,7 @@ const Sidebar = ({
   setPatientScope,
 }) => {
   // State declarations remain the same
+  const { t } = useTranslation();
   const { data: patientsData, mutate: mutatePatients } = useSWR(
     KEYS.noteList(selectedDate, false, patientScope),
     async () => {
@@ -219,7 +221,7 @@ const Sidebar = ({
           right="15px"
           size="sm"
           borderRadius="full"
-          aria-label="Close sidebar"
+          aria-label={t("sidebar.closeAriaLabel")}
           zIndex="200"
           variant="ghost"
           color={labelColor}
@@ -254,7 +256,7 @@ const Sidebar = ({
           >
             {isCollapsed ? (
               <Tooltip
-                content="Expand Sidebar"
+                content={t("sidebar.expandTooltip")}
                 positioning={{
                   placement: "right",
                 }}
@@ -267,7 +269,7 @@ const Sidebar = ({
                 >
                   <Image
                     src="/logo.webp"
-                    alt="Phlox logo"
+                    alt={t("sidebar.logoAlt")}
                     width="100%"
                     height="100%"
                     mt="2px"
@@ -296,12 +298,12 @@ const Sidebar = ({
               </Tooltip>
             ) : (
               <Tooltip
-                content="Chat dashboard"
+                content={t("sidebar.chatDashboardTooltip")}
                 positioning={{ placement: "bottom" }}
                 openDelay={700}
               >
               <Flex align="center" gap={3}>
-                <Image src="/logo.webp" alt="Phlox logo" width="28px" />
+                <Image src="/logo.webp" alt={t("sidebar.logoAlt")} width="28px" />
                 <Text
                   fontFamily="heading"
                   fontSize="3xl"
@@ -318,7 +320,7 @@ const Sidebar = ({
         </Box>
         {!isSmallScreen && !isCollapsed && (
           <Tooltip
-            content="Collapse Sidebar"
+            content={t("sidebar.collapseTooltip")}
             positioning={{ placement: "bottom" }}
           >
             <IconButton
@@ -326,7 +328,7 @@ const Sidebar = ({
               size="sm"
               variant="ghost"
               borderRadius="full"
-              aria-label="Collapse sidebar"
+              aria-label={t("sidebar.collapseAriaLabel")}
               color={labelColor}
               _hover={{ bg: hoverColor }}
             >
@@ -375,11 +377,19 @@ const Sidebar = ({
         />
       </Box>
       {/* Delete confirmation modal */}
-      <DeleteConfirmationModal
+      <ConfirmDialog
         isOpen={open}
         onClose={onClose}
-        onDelete={confirmDelete}
-        patientName={patientToDelete?.name}
+        onConfirm={confirmDelete}
+        title={t("sidebar.deletePatient.title")}
+        body={
+          patientToDelete?.name
+            ? t("sidebar.deletePatient.bodyWithName", {
+                name: patientToDelete?.name,
+              })
+            : t("sidebar.deletePatient.body")
+        }
+        confirmLabel={t("action.delete")}
       />
     </Box>
   );

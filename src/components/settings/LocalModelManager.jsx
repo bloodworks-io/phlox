@@ -5,6 +5,7 @@ import {
   Popover, Portal, Dialog,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import {
   FaMicrophone, FaDatabase, FaStar, FaExclamationTriangle, FaMemory, FaMicrochip,
 } from "react-icons/fa";
@@ -28,13 +29,14 @@ const RECOMMENDED_EMBEDDING = {
   size_mb: 639,
 };
 
-const getMachineLabel = (os) => {
-  if (os === "macos") return "Your Mac";
-  if (os === "windows") return "Your PC";
-  return "Your system";
+const getMachineLabel = (os, t) => {
+  if (os === "macos") return t("settings.localModels.yourMac");
+  if (os === "windows") return t("settings.localModels.yourPc");
+  return t("settings.localModels.yourSystem");
 };
 
 const PerformancePopover = ({ model, systemSpecs }) => {
+  const { t } = useTranslation();
   const perf =
     systemSpecs?.apple_silicon && model.parameters_billions
       ? calculateLLMPerformance(
@@ -59,12 +61,12 @@ const PerformancePopover = ({ model, systemSpecs }) => {
             <Popover.Body p={3}>
               <VStack gap={1} align="stretch">
                 <HStack justify="space-between">
-                  <Text fontSize="xs" className="pill-box-icons">Size</Text>
+                  <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.size")}</Text>
                   <Text fontSize="xs" fontWeight="bold">{model.size_mb}MB</Text>
                 </HStack>
                 {(model.active_parameters_billions || model.parameters_billions) && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">Parameters</Text>
+                    <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.parameters")}</Text>
                     <Text fontSize="xs" fontWeight="bold">
                       {model.active_parameters_billions ? `${model.active_parameters_billions}B` : `${model.parameters_billions}B`}
                     </Text>
@@ -72,22 +74,22 @@ const PerformancePopover = ({ model, systemSpecs }) => {
                 )}
                 {model.recommended_ram_gb && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">RAM needed</Text>
+                    <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.ramNeeded")}</Text>
                     <Text fontSize="xs" fontWeight="bold">{model.recommended_ram_gb}GB</Text>
                   </HStack>
                 )}
                 {systemSpecs && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">{getMachineLabel(systemSpecs.os)}</Text>
+                    <Text fontSize="xs" className="pill-box-icons">{getMachineLabel(systemSpecs.os, t)}</Text>
                     <Text fontSize="xs" fontWeight="bold" color={model.recommended_ram_gb && systemSpecs.total_memory_gb >= model.recommended_ram_gb ? "successButton" : "secondaryButton"}>
                       {systemSpecs.total_memory_gb.toFixed(0)}GB
                     </Text>
                   </HStack>
                 )}
                 {perf && (
-                  <Tooltip content="Estimated processing time for a 10-minute consultation" showArrow>
+                  <Tooltip content={t("settings.localModels.estTimeTooltip")} showArrow>
                     <HStack justify="space-between">
-                      <Text fontSize="xs" className="pill-box-icons">Est. time</Text>
+                      <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.estTime")}</Text>
                       <Text fontSize="xs" fontWeight="bold">~{Math.round(perf.estimatedTime)}s</Text>
                     </HStack>
                   </Tooltip>
@@ -102,6 +104,7 @@ const PerformancePopover = ({ model, systemSpecs }) => {
 };
 
 const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDownload, systemSpecs }) => {
+  const { t } = useTranslation();
   const isDownloadingThis = isDownloading && downloadProgress !== null;
 
   return (
@@ -124,7 +127,7 @@ const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDow
       <HStack w="full" justify="space-between">
         <HStack gap={1}>
           {model.recommendedType === "recommended" && (
-            <Tooltip content="Recommended for your Mac" showArrow>
+            <Tooltip content={t("settings.localModels.recommendedTooltip")} showArrow>
               <Box color="secondaryButton" display="flex" alignItems="center" cursor="default"><FaStar size="12" /></Box>
             </Tooltip>
           )}
@@ -144,17 +147,19 @@ const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDow
           <Text fontSize="2xs" className="pill-box-icons" textAlign="right">{(downloadProgress?.percentage || 0).toFixed(0)}%</Text>
         </Box>
       ) : isDownloaded ? (
-        <GreenButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>Downloaded</GreenButton>
+        <GreenButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>{t("settings.localModels.downloaded")}</GreenButton>
       ) : (
         <NavButton size="sm" w="full" onClick={onDownload}>
-          <DownloadIcon />Download
+          <DownloadIcon />{t("settings.localModels.download")}
         </NavButton>
       )}
     </Box>
   );
 };
 
-const SupportingModelRow = ({ icon, iconColor, label, required, isReady, isDownloading, progress, onDownload, tooltipContent }) => (
+const SupportingModelRow = ({ icon, iconColor, label, required, isReady, isDownloading, progress, onDownload, tooltipContent }) => {
+  const { t } = useTranslation();
+  return (
   <Box
     flex={1}
     p={2}
@@ -175,7 +180,7 @@ const SupportingModelRow = ({ icon, iconColor, label, required, isReady, isDownl
         <Box color={iconColor} display="flex" alignItems="center">{icon}</Box>
         <Text fontSize="xs" fontWeight="bold">{label}</Text>
         <Badge colorPalette={required ? "red" : "gray"} fontSize="2xs" variant={required ? "solid" : "outline"}>
-          {required ? "Required" : "Optional"}
+          {required ? t("settings.localModels.required") : t("settings.localModels.optional")}
         </Badge>
         <Tooltip content={tooltipContent} showArrow>
           <InfoIcon boxSize={3} color="textSecondary" />
@@ -191,15 +196,17 @@ const SupportingModelRow = ({ icon, iconColor, label, required, isReady, isDownl
           <Text fontSize="2xs" className="pill-box-icons" whiteSpace="nowrap">{progress.toFixed(0)}%</Text>
         </HStack>
       ) : (
-        <Button size="xs" variant="ghost" aria-label={`Download ${label}`} onClick={onDownload}>
+        <Button size="xs" variant="ghost" aria-label={t("settings.localModels.downloadLabel", { label })} onClick={onDownload}>
           <DownloadIcon boxSize={3.5} />
         </Button>
       )}
     </HStack>
   </Box>
-);
+  );
+};
 
 const LocalModelManager = ({ className }) => {
+  const { t } = useTranslation();
   const {
     models, availableModels, localStatus, systemSpecs,
     downloadProgress, isDownloading, downloadingModelId,
@@ -294,7 +301,7 @@ const LocalModelManager = ({ className }) => {
     return (
       <HStack gap={2} py={4}>
         <Spinner size="sm" animationDuration="0.65s" />
-        <Text fontSize="sm" color="textSecondary">Loading...</Text>
+        <Text fontSize="sm" color="textSecondary">{t("settings.localModels.loading")}</Text>
       </HStack>
     );
   }
@@ -304,8 +311,8 @@ const LocalModelManager = ({ className }) => {
       <Alert.Root status="warning" borderRadius="md">
         <Alert.Indicator asChild><FaExclamationTriangle /></Alert.Indicator>
         <Box>
-          <Alert.Title fontSize="sm">Local Models Not Available</Alert.Title>
-          <Alert.Description fontSize="xs">Local models are only available in Tauri builds.</Alert.Description>
+          <Alert.Title fontSize="sm">{t("settings.localModels.notAvailableTitle")}</Alert.Title>
+          <Alert.Description fontSize="xs">{t("settings.localModels.notAvailableDescription")}</Alert.Description>
         </Box>
       </Alert.Root>
     );
@@ -320,18 +327,18 @@ const LocalModelManager = ({ className }) => {
         <HStack gap={4} fontSize="xs" className="pill-box-icons">
           <HStack gap={1}>
             <Icon className="blue-icon" asChild><FaMemory /></Icon>
-            <Text>{systemSpecs.total_memory_gb.toFixed(1)}GB RAM</Text>
+            <Text>{t("settings.localModels.ram", { value: systemSpecs.total_memory_gb.toFixed(1) })}</Text>
           </HStack>
           <HStack gap={1}>
             <Icon className="blue-icon" asChild><FaMicrochip /></Icon>
-            <Text>{systemSpecs.cpu_count} cores</Text>
+            <Text>{t("settings.localModels.cores", { value: systemSpecs.cpu_count })}</Text>
           </HStack>
         </HStack>
       )}
 
       {/* AI Model carousel */}
       <VStack align="start" gap={2} w="100%">
-        <Text fontSize="sm" fontWeight="bold">AI Model</Text>
+        <Text fontSize="sm" fontWeight="bold">{t("settings.localModels.aiModel")}</Text>
         {smartRecommendations.length > 0 ? (
           <HStack w="100%" align="stretch" gap={2}>
             {smartRecommendations.length > MODELS_PER_PAGE && (
@@ -393,43 +400,43 @@ const LocalModelManager = ({ className }) => {
             )}
           </HStack>
         ) : (
-          <Text fontSize="xs" className="pill-box-icons">No models available for your system.</Text>
+          <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.noneAvailable")}</Text>
         )}
 
         {models.length > 0 && (
           <HStack fontSize="xs" className="pill-box-icons">
-            <Text>Current:</Text>
+            <Text>{t("settings.localModels.current")}</Text>
             <Text fontWeight="bold">{models[0].filename}</Text>
-            {models[0].is_selected && <Badge colorPalette="green" size="xs">Active</Badge>}
+            {models[0].is_selected && <Badge colorPalette="green" size="xs">{t("settings.active")}</Badge>}
           </HStack>
         )}
       </VStack>
 
       {/* Supporting Models */}
       <VStack align="start" gap={1} w="100%">
-        <Text fontSize="xs" fontWeight="bold" className="pill-box-icons">Supporting Models</Text>
+        <Text fontSize="xs" fontWeight="bold" className="pill-box-icons">{t("settings.localModels.supportingModels")}</Text>
         <HStack w="100%" gap={3} align="stretch">
           <SupportingModelRow
             icon={<FaMicrophone size="12" />}
             iconColor="secondaryButton"
-            label="Transcription"
+            label={t("settings.localModels.transcription")}
             required
             isReady={whisperReady}
             isDownloading={whisperDownloading}
             progress={downloadProgress.whisper?.percentage || 0}
             onDownload={() => recommendedWhisper && downloadWhisperModel(recommendedWhisper.id)}
-            tooltipContent={`Required for speech-to-text. ${recommendedWhisper ? `(${recommendedWhisper.size})` : ""}`}
+            tooltipContent={`${t("settings.localModels.transcriptionTooltip")}${recommendedWhisper ? ` (${recommendedWhisper.size})` : ""}`}
           />
           <SupportingModelRow
             icon={<FaDatabase size="12" />}
             iconColor="neutralButton"
-            label="Embeddings"
+            label={t("settings.localModels.embeddings")}
             required={false}
             isReady={embeddingDownloaded}
             isDownloading={isDownloadingEmbedding}
             progress={embeddingProgress}
             onDownload={handleDownloadEmbedding}
-            tooltipContent={`Required for document search (RAG). (${RECOMMENDED_EMBEDDING.size_mb}MB)`}
+            tooltipContent={`${t("settings.localModels.embeddingsTooltip")} (${RECOMMENDED_EMBEDDING.size_mb}MB)`}
           />
         </HStack>
       </VStack>
@@ -438,7 +445,7 @@ const LocalModelManager = ({ className }) => {
       {hasAnyModels && (
         <Box mt={2}>
           <Button variant="outline" size="sm" colorPalette="red" borderRadius="lg" onClick={() => setIsResetOpen(true)}>
-            <FaExclamationTriangle /> Reset All Models
+            <FaExclamationTriangle /> {t("settings.localModels.resetAll")}
           </Button>
         </Box>
       )}
@@ -452,37 +459,37 @@ const LocalModelManager = ({ className }) => {
               <Dialog.Header>
                 <HStack>
                   <Box display="flex" alignItems="center"><FaExclamationTriangle /></Box>
-                  <ModalTitle>Reset All Models?</ModalTitle>
+                  <ModalTitle>{t("settings.localModels.resetAllTitle")}</ModalTitle>
                 </HStack>
               </Dialog.Header>
               <Dialog.CloseTrigger />
               <Dialog.Body>
                 <VStack gap={3} align="stretch">
-                  <Text fontSize="sm">This will permanently delete:</Text>
+                  <Text fontSize="sm">{t("settings.localModels.resetWarning")}</Text>
                   <VStack gap={1} align="start" pl={4}>
                     {models.length > 0 && (
-                      <Text fontSize="sm" className="pill-box-icons">• LLM model — clinical notes and chat will stop working</Text>
+                      <Text fontSize="sm" className="pill-box-icons">{t("settings.localModels.resetLlm")}</Text>
                     )}
                     {whisperReady && (
-                      <Text fontSize="sm" className="pill-box-icons">• Transcription model — voice transcription will stop</Text>
+                      <Text fontSize="sm" className="pill-box-icons">{t("settings.localModels.resetTranscription")}</Text>
                     )}
                     {embeddingDownloaded && (
-                      <Text fontSize="sm" className="pill-box-icons">• Embedding model — document search will stop</Text>
+                      <Text fontSize="sm" className="pill-box-icons">{t("settings.localModels.resetEmbedding")}</Text>
                     )}
                   </VStack>
                   <Text fontSize="sm" color="successButton">
-                    Your patient data, notes, and settings are NOT affected.
+                    {t("settings.localModels.resetSafe")}
                   </Text>
-                  <Text fontSize="sm">You'll need to re-download models to use AI features again.</Text>
+                  <Text fontSize="sm">{t("settings.localModels.resetRedownload")}</Text>
                 </VStack>
               </Dialog.Body>
               <Dialog.Footer>
                 <HStack justify="flex-end" width="100%">
                   <Button className="red-button" mr={3} onClick={() => setIsResetOpen(false)}>
-                    Cancel
+                    {t("action.cancel")}
                   </Button>
-                  <Button className="green-button" onClick={handleResetAll} loading={isResetting} loadingText="Deleting...">
-                    Delete All Models
+                  <Button className="green-button" onClick={handleResetAll} loading={isResetting} loadingText={t("settings.localModels.deleting")}>
+                    {t("settings.localModels.deleteAll")}
                   </Button>
                 </HStack>
               </Dialog.Footer>

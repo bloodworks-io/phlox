@@ -1,25 +1,26 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
 import { FaServer } from "react-icons/fa";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
 
 const LOADING_MESSAGES = [
-  "Reticulating splines...",
-  "Initializing quip database...",
-  "Herding cats...",
-  "Warming up the hamsters...",
-  "Calculating escape velocity...",
-  "Decrypting the arc of the covenant...",
-  "Consulting the oracle...",
-  "Synergizing our core competencies...",
-  "Aligning our chakras...",
-  "Loading next experience point...",
-  "Polishing the bits...",
-  "Defragmenting the ether...",
-  "Convincing the AI to cooperate...",
-  "Applying coffee to the problem...",
-  "Downloading more RAM...",
+  "setup.serverStartup.loading1",
+  "setup.serverStartup.loading2",
+  "setup.serverStartup.loading3",
+  "setup.serverStartup.loading4",
+  "setup.serverStartup.loading5",
+  "setup.serverStartup.loading6",
+  "setup.serverStartup.loading7",
+  "setup.serverStartup.loading8",
+  "setup.serverStartup.loading9",
+  "setup.serverStartup.loading10",
+  "setup.serverStartup.loading11",
+  "setup.serverStartup.loading12",
+  "setup.serverStartup.loading13",
+  "setup.serverStartup.loading14",
+  "setup.serverStartup.loading15",
 ];
 
 const POLL_INTERVAL = 2000; // ms - increased to reduce CPU load
@@ -27,6 +28,7 @@ const TIMEOUT = 60000; // 60 seconds - increased for slower systems
 
 const ServerStartupLoader = ({ onReady, onError }) => {
 
+  const { t } = useTranslation();
   const [messageIndex, setMessageIndex] = useState(0);
   const [isTimedOut, setIsTimedOut] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -90,7 +92,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       shouldPollRef.current = false;
       setShouldPoll(false);
       setIsTimedOut(true);
-      onErrorRef.current(new Error("Server startup timed out"));
+      onErrorRef.current(new Error(t("setup.serverStartup.timeout")));
     }, TIMEOUT);
 
     // Cleanup ALL intervals
@@ -100,8 +102,8 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       clearInterval(messageInterval);
       clearTimeout(timeoutId);
     };
-     
-  }, [shouldPoll]);
+
+  }, [shouldPoll, t]);
 
   const handleRetry = () => {
     setIsTimedOut(false);
@@ -153,14 +155,15 @@ const ServerStartupLoader = ({ onReady, onError }) => {
                 fontWeight: "700"
               }}
             >
-              Server Taking Too Long
+              {t("setup.serverStartup.takingLong")}
             </Heading>
             <Text color={"textSecondary"}>
-              The server is taking longer than expected to start. This might be
-              due to system resources or other factors.
+              {t("setup.serverStartup.takingLongDesc")}
             </Text>
             <Text color={"textSecondary"} fontSize="sm">
-              Waited {Math.floor(elapsed / 1000)} seconds
+              {t("setup.serverStartup.waited", {
+                seconds: Math.floor(elapsed / 1000),
+              })}
             </Text>
             <Button
               onClick={handleRetry}
@@ -171,7 +174,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
                 fontWeight: "600"
               }}
             >
-              Try Again
+              {t("setup.serverStartup.tryAgain")}
             </Button>
           </VStack>
         </Box>
@@ -227,10 +230,17 @@ const ServerStartupLoader = ({ onReady, onError }) => {
               fontWeight: "700"
             }}
           >
-            Starting Server
+            {t("setup.serverStartup.starting")}
           </Heading>
-          <Text color={"textSecondary"} fontSize="lg" minH="2rem">
-            {LOADING_MESSAGES[messageIndex]}
+          <Text
+            color={"textSecondary"}
+            fontSize="lg"
+            minH="2rem"
+            key={messageIndex}
+            className="anim-fade-slide-up"
+            css={{ animationDuration: "0.3s" }}
+          >
+            {t(LOADING_MESSAGES[messageIndex])}
           </Text>
         </VStack>
         </Box>

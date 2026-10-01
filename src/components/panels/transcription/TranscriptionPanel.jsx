@@ -1,13 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
-import FloatingPanel from "../../common/FloatingPanel";
+import SpeakerText from "../../transcript/SpeakerText";
 
 const TranscriptionPanel = ({
-  isOpen,
-  _onClose,
   rawTranscription,
   transcriptionDuration,
   processDuration,
@@ -21,6 +20,7 @@ const TranscriptionPanel = ({
   noteId,
 }) => {
   const [showSuccess, setShowSuccess] = useState(false);
+  const { t } = useTranslation();
   const { reprocessTranscription, isTranscribing } = useTranscription(onReprocess, () => {});
 
   const handleReprocess = async () => {
@@ -40,28 +40,14 @@ const TranscriptionPanel = ({
   };
 
   return (
-    <FloatingPanel
-      isOpen={isOpen}
-      position="bottom-center"
-      showArrow={false}
-      width="280px"
+    <Box
+      p={3}
       maxHeight="280px"
+      backdropFilter="blur(12px)"
+      borderRadius="xl"
+      position="relative"
+      className="slim-scrollbar"
     >
-      <Box
-        p={3}
-        maxHeight="280px"
-        backdropFilter="blur(12px)"
-        borderRadius="xl"
-        position="relative"
-        css={{
-          "&::-webkit-scrollbar": { width: "4px" },
-          "&::-webkit-scrollbar-track": { background: "transparent" },
-          "&::-webkit-scrollbar-thumb": {
-            background: "var(--chakra-colors-scrollbar-thumb)",
-            borderRadius: "24px",
-          },
-        }}
-      >
         {/* Success overlay */}
         {showSuccess && (
           <Flex
@@ -92,55 +78,46 @@ const TranscriptionPanel = ({
           <>
             {/* Transcription text - scrollable */}
             <Box
+              className="slim-scrollbar"
               maxHeight="180px"
               overflowY="auto"
               mb={2}
-              css={{
-                "&::-webkit-scrollbar": { width: "4px" },
-                "&::-webkit-scrollbar-track": { background: "transparent" },
-                "&::-webkit-scrollbar-thumb": {
-                  background: "var(--chakra-colors-scrollbar-thumb)",
-                  borderRadius: "24px",
-                },
-              }}
             >
-              <Text whiteSpace="pre-wrap" fontSize="xs" lineHeight="1.5">
-                {rawTranscription}
-              </Text>
+              <SpeakerText text={rawTranscription} fontSize="xs" lineHeight="1.5" />
             </Box>
 
             {/* Footer: Reprocess button and stats */}
             <Flex justify="space-between" align="center">
-              {/* Stats */}
-              {transcriptionDuration && (
+              {/* Stats (guard with > 0: a bare falsy check renders "0" in JSX) */}
+              {Number(transcriptionDuration) > 0 && (
                 <HStack fontSize="10px" color="overlay0" gap={2}>
-                  <Tooltip content="Transcription time" showArrow positioning={{
+                  <Tooltip content={t("transcription.transcriptionTime")} showArrow positioning={{
                     placement: "top"
                   }}>
                     <HStack gap={1}>
                       <Box size="8px" asChild><FaClock /></Box>
-                      <Text>{transcriptionDuration}s</Text>
+                      <Text>{t("transcription.durationSeconds", { duration: transcriptionDuration })}</Text>
                     </HStack>
                   </Tooltip>
-                  <Tooltip content="Processing time" showArrow positioning={{
+                  <Tooltip content={t("transcription.processingTime")} showArrow positioning={{
                     placement: "top"
                   }}>
                     <HStack gap={1}>
                       <Box size="8px" asChild><FaCogs /></Box>
-                      <Text>{processDuration}s</Text>
+                      <Text>{t("transcription.durationSeconds", { duration: processDuration })}</Text>
                     </HStack>
                   </Tooltip>
                 </HStack>
               )}
 
               {/* Reprocess button */}
-              <Tooltip content="Reprocess" showArrow positioning={{
+              <Tooltip content={t("transcription.reprocess")} showArrow positioning={{
                 placement: "top"
               }}>
                 <IconButton
                   onClick={handleReprocess}
                   disabled={isTranscribing}
-                  aria-label="Reprocess"
+                  aria-label={t("transcription.reprocess")}
                   size="xs"
                   variant="ghost"
                   opacity={0.5}
@@ -154,11 +131,10 @@ const TranscriptionPanel = ({
           </>
         ) : (
           <Text color="overlay0" textAlign="center" fontSize="xs" py={3}>
-            No transcription
+            {t("transcription.empty")}
           </Text>
         )}
       </Box>
-    </FloatingPanel>
   );
 };
 

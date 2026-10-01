@@ -31,6 +31,12 @@ else
     echo "Mode: RELEASE (for production)"
 fi
 
+IS_WINDOWS=false
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]] \
+   || [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -s)" == CYGWIN* ]]; then
+    IS_WINDOWS=true
+fi
+
 # Detect architecture
 if [[ "$OSTYPE" == "darwin"* ]]; then
     if [[ $(uname -m) == "arm64" ]]; then
@@ -46,7 +52,7 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     ARCH="x86_64"
     TARGET="phlox-server-x86_64-unknown-linux-gnu"
     echo "Detected Linux x86_64"
-elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+elif [[ "$IS_WINDOWS" == true ]]; then
     ARCH="x86_64"
     TARGET="phlox-server-x86_64-pc-windows-msvc.exe"
     echo "Detected Windows x86_64"
@@ -70,11 +76,22 @@ uv sync --locked --extra rag --directory "$SERVER_DIR"
 # Use .venv python if available (local dev), otherwise fall back to uv run (CI)
 if [ -f "$SERVER_DIR/.venv/bin/python" ]; then
     PYTHON="$SERVER_DIR/.venv/bin/python"
-    NUITKA_CMD="$PYTHON -m nuitka"
+elif [ -f "$SERVER_DIR/.venv/Scripts/python.exe" ]; then
+    # Windows venv layout
+    PYTHON="$SERVER_DIR/.venv/Scripts/python.exe"
 else
     echo "No .venv found, using uv run for Nuitka..."
     NUITKA_CMD="uv run --locked --extra rag --directory $SERVER_DIR python -m nuitka"
 fi
+if [ -z "$NUITKA_CMD" ]; then
+    NUITKA_CMD="$PYTHON -m nuitka"
+fi
+
+# Speaker embedding model for live diarization (idempotent; the script holds
+# the pinned URL and checksum). Required before Nuitka packs it below.
+FETCH_PYTHON="$PYTHON"
+command -v "$FETCH_PYTHON" >/dev/null 2>&1 || FETCH_PYTHON=python3
+"$FETCH_PYTHON" "$SERVER_DIR/scripts/fetch_speaker_model.py"
 
 SQLITE_VEC_DIR="$("$PYTHON" -c 'import sqlite_vec, os; print(os.path.dirname(sqlite_vec.__file__))' 2>/dev/null)"
 VEC0_NAME="$(ls "$SQLITE_VEC_DIR"/vec0.* 2>/dev/null | head -1)"
@@ -97,8 +114,11 @@ $NUITKA_CMD \
     --include-package=server \
     --include-module=sqlcipher3 \
     --include-package=sqlite_vec \
-    $([[ "$OSTYPE" != "linux-gnu"* ]] && echo "--include-data-files=$VEC0_NAME=sqlite_vec/$(basename "$VEC0_NAME")") \
-    --include-data-files="$PROJECT_DIR/server/demo/example_patients.json=server/demo/example_patients.json" \
+    $([[ "$OSTYPE" == "darwin"* ]] && echo "--include-data-files=$VEC0_NAME=sqlite_vec/$(basename "$VEC0_NAME")") \
+    --include-data-files="server/demo/example_patients.json=server/demo/example_patients.json" \
+    --include-data-files="server/assets/models/campplus-zh-en.onnx=server/assets/models/campplus-zh-en.onnx" \
+    --include-package=sherpa_onnx \
+    --include-package-data=sherpa_onnx \
     --include-package=pypdf \
     --include-package=mcp \
     --nofollow-import-to=server.tests \
@@ -123,8 +143,10 @@ cp -r "$SERVER_DIR/dist/server.dist" "$SCRIPT_DIR/server_dist"
 # Copy CHANGELOG.md to server_dist for version detection
 cp "$PROJECT_DIR/CHANGELOG.md" "$SCRIPT_DIR/server_dist/"
 
-# Create a wrapper script for prod
-cat > "$SCRIPT_DIR/binaries/$TARGET" << 'EOF'
+# Create a wrapper script for prod (not on Windows: no bash there; the Rust
+# side spawns server_dist/phlox-server.exe from the resources directly).
+if [[ "$IS_WINDOWS" != true ]]; then
+    cat > "$SCRIPT_DIR/binaries/$TARGET" << 'EOF'
 #!/bin/bash
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # On macOS app bundles, resources live in Contents/Resources/ while this
@@ -136,8 +158,9 @@ else
 fi
 EOF
 
-chmod +x "$SCRIPT_DIR/binaries/$TARGET"
-chmod +x "$SCRIPT_DIR/server_dist/phlox-server"
+    chmod +x "$SCRIPT_DIR/binaries/$TARGET"
+    chmod +x "$SCRIPT_DIR/server_dist/phlox-server"
+fi
 
 # In debug mode, also copy to target/debug for dev mode (tauri dev)
 if [ "$DEBUG_MODE" = true ]; then

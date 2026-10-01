@@ -1,4 +1,5 @@
 import { Box, Flex } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { useColorMode } from "../ui/color-mode";
 import { colors } from "../../theme/colors";
 import { FaTimes } from "react-icons/fa";
@@ -11,6 +12,7 @@ import {
 
 export function CustomToast(props) {
     const { status, title, description, onClose } = props;
+    const { t } = useTranslation();
 
     const { colorMode } = useColorMode();
     const c = colors[colorMode];
@@ -82,7 +84,7 @@ export function CustomToast(props) {
                 color={c.textSecondary}
                 opacity={0.6}
                 _hover={{ opacity: 1 }}
-                aria-label="Close"
+                aria-label={t("action.close")}
             >
                 <FaTimes size={12} />
             </Box>

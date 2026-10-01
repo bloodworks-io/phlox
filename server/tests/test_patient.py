@@ -182,6 +182,54 @@ def test_scribe_consent_roundtrip_and_clearing_db():
     assert result["scribe_consent_declined_at"] is None
 
 
+def test_get_patient_includes_previous_encounter(monkeypatch):
+    """GET /id/{id} attaches the prior encounter for the previous-visit panel."""
+    monkeypatch.setattr(
+        "server.api.patient.get_patient_by_id",
+        lambda _id: {
+            "id": 2,
+            "ur_number": "URPREV1",
+            "encounter_date": "2024-06-15",
+            "template_key": "phlox_01",
+            "template_data": {},
+        },
+    )
+    monkeypatch.setattr(
+        "server.api.patient.get_latest_encounter",
+        lambda _ur_number, **_kwargs: {
+            "id": 1,
+            "encounter_date": "2024-05-01",
+            "template_key": "phlox_01",
+            "template_data": '{"assessment": "Anaemia responding"}',
+        },
+    )
+    response = client.get("/api/note/id/2")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["previous_visit_encounter_date"] == "2024-05-01"
+    assert data["previous_visit_template_key"] == "phlox_01"
+    assert data["previous_visit_template_data"] == {"assessment": "Anaemia responding"}
+
+
+def test_get_patient_without_previous_encounter(monkeypatch):
+    """No prior encounter — previous_visit_* fields are absent."""
+    monkeypatch.setattr(
+        "server.api.patient.get_patient_by_id",
+        lambda _id: {
+            "id": 2,
+            "ur_number": "URPREV2",
+            "encounter_date": "2024-06-15",
+            "template_key": "phlox_01",
+            "template_data": {},
+        },
+    )
+    monkeypatch.setattr("server.api.patient.get_latest_encounter", lambda *_args, **_kwargs: None)
+    response = client.get("/api/note/id/2")
+    assert response.status_code == 200
+    assert "previous_visit_template_data" not in response.json()
+    assert "previous_visit_encounter_date" not in response.json()
+
+
 def test_scribe_consent_targeted_upsert_preserves_demographics_db():
     from server.database.repositories.patient import (
         get_patient_profile,

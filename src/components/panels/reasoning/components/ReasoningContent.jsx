@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Text, Tabs, VStack, Box, Badge, Button } from "@chakra-ui/react";
+import { t as translate } from "@/i18n";
 import { ReasoningItem } from "./ReasoningItem";
 import { CitationList } from "./CitationList";
 import MarkdownRenderer from "../../../common/MarkdownRenderer";
@@ -19,13 +21,13 @@ const renderItems = (section, reasoning, colorMode) => {
     if (!items || items.length === 0) {
         return (
             <Text fontSize="sm" color="overlay0">
-                No items available
+                {translate("reasoning.noItems")}
             </Text>
         );
     }
 
     return (
-        <VStack align="stretch" gap={2}>
+        <VStack align="stretch" gap={2} className="anim-stagger">
             {items.map((item, i) => (
                 <ReasoningItem
                     key={i}
@@ -115,17 +117,17 @@ const getCardAccent = (type) => {
 const getCardBadge = (type) => {
     switch (type) {
         case "iteration":
-            return "Iteration";
+            return translate("reasoning.badge.iteration");
         case "tool_call":
-            return "Tool";
+            return translate("reasoning.badge.tool");
         case "tool_result":
-            return "Result";
+            return translate("reasoning.badge.result");
         case "reasoning_snapshot":
-            return "Reasoning";
+            return translate("reasoning.badge.reasoning");
         case "final_reasoning":
-            return "Reasoning";
+            return translate("reasoning.badge.reasoning");
         default:
-            return "Note";
+            return translate("patient.noteHeading");
     }
 };
 
@@ -135,6 +137,7 @@ const truncateText = (text, maxChars) => {
 };
 
 const ThinkingCard = ({ step, index }) => {
+    const { t } = useTranslation();
     const isResultCard = step.type === "tool_result";
     const [isResultCollapsed, setIsResultCollapsed] = useState(isResultCard);
 
@@ -169,7 +172,9 @@ const ThinkingCard = ({ step, index }) => {
                     variant="outline"
                     onClick={() => setIsResultCollapsed((prev) => !prev)}
                 >
-                    {isResultCollapsed ? "Expand result" : "Collapse result"}
+                    {isResultCollapsed
+                        ? t("reasoning.expandResult")
+                        : t("reasoning.collapseResult")}
                 </Button>
             )}
         </Box>
@@ -182,7 +187,7 @@ const renderThinkingCards = (thinking, colorMode) => {
     if (!steps.length) {
         return (
             <Text fontSize="sm" color="overlay0">
-                No thinking trace available
+                {translate("reasoning.noThinkingTrace")}
             </Text>
         );
     }
@@ -244,19 +249,19 @@ export const ReasoningContent = ({
         >
             <Tabs.List>
                 <Tabs.Trigger className="tab-style" value="0">
-                    Summary
+                    {translate("settings.admin.tabSummary")}
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="1">
-                    Possible Conditions
+                    {translate("reasoning.tabConditions")}
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="2">
-                    Suggested Workup
+                    {translate("reasoning.tabWorkup")}
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="3">
-                    Considerations
+                    {translate("reasoning.tabConsiderations")}
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="4">
-                    Thinking
+                    {translate("common.activityTrace.thinking")}
                 </Tabs.Trigger>
             </Tabs.List>
             {/* Summary Tab */}

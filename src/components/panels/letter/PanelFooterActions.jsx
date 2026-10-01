@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Flex, Button, Spinner } from "@chakra-ui/react";
 import { RepeatIcon, CopyIcon, CheckIcon } from "../../common/icons";
 import { FaSave } from "react-icons/fa";
@@ -12,22 +13,28 @@ const PanelFooterActions = ({
     letterLoading,
     additionalInstructions,
 }) => {
+    const { t } = useTranslation();
     const getSaveButtonProps = () => {
         switch (saveState) {
             case "saving":
                 return {
                     leftIcon: <Spinner size="sm" />,
-                    children: "Saving...",
+                    children: t("patient.savingOngoing"),
                 };
             case "saved":
                 return {
-                    leftIcon: <CheckIcon />,
-                    children: "Saved!",
+                    leftIcon: (
+                        <CheckIcon
+                            className="anim-fade-scale"
+                            css={{ animationDuration: "0.2s" }}
+                        />
+                    ),
+                    children: t("letter.saved"),
                 };
             default:
                 return {
                     leftIcon: <FaSave />,
-                    children: "Save Letter",
+                    children: t("letter.save"),
                 };
         }
     };
@@ -37,14 +44,23 @@ const PanelFooterActions = ({
             <Button
                 onClick={() => handleGenerateLetter(additionalInstructions)}
                 className="red-button"
-                disabled={letterLoading || saveState !== "idle"}><RepeatIcon />Regenerate Letter
+                disabled={letterLoading || saveState !== "idle"}><RepeatIcon />{t("letter.regenerate")}
                             </Button>
             <Flex>
                 <Button
                     onClick={handleCopy}
                     className="grey-button"
                     mr="2"
-                    disabled={letterLoading}>{recentlyCopied ? <CheckIcon /> : <CopyIcon />}{recentlyCopied ? "Copied!" : "Copy Letter"}</Button>
+                    disabled={letterLoading}>{
+                        recentlyCopied ? (
+                            <CheckIcon
+                                className="anim-fade-scale"
+                                css={{ animationDuration: "0.2s" }}
+                            />
+                        ) : (
+                            <CopyIcon />
+                        )
+                    }{recentlyCopied ? t("letter.copied") : t("letter.copy")}</Button>
                 <Button
                     onClick={handleSave}
                     className="green-button"

@@ -2,11 +2,16 @@
 Tests for the PDF form template "replace PDF, keep fields" path.
 """
 
+import json as _json
+from types import SimpleNamespace
+
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
+import server.api.pdf_forms as pdf_forms_module
 from server.api.pdf_forms import router as pdf_forms_router
+from server.schemas.pdf_forms import DetectFieldsRequest
 
 app = FastAPI()
 app.include_router(pdf_forms_router, prefix="/api/pdf-forms")
@@ -147,3 +152,79 @@ def test_pdf_form_reads_stay_shared():
     with pytest.raises(HTTPException) as exc:
         get_template("no-such-template")
     assert exc.value.status_code == 404
+
+
+# --- detect-fields: one image per request, page numbers are ground truth ------
+
+
+def _page(n):
+    return {"page_number": n, "data_url": f"data:image/png;base64,PG{n}"}
+
+
+def _install_fake_llm(monkeypatch, script):
+    calls = []
+
+    async def fake_chat(**kwargs):
+        calls.append(kwargs["messages"])
+        action = script.pop(0)
+        if isinstance(action, Exception):
+            raise action
+        return action
+
+    monkeypatch.setattr(
+        pdf_forms_module,
+        "get_llm_client",
+        lambda **_kwargs: SimpleNamespace(chat_with_structured_output=fake_chat),
+    )
+    monkeypatch.setattr(
+        pdf_forms_module,
+        "config_manager",
+        SimpleNamespace(
+            get_config=lambda: {"PRIMARY_MODEL": "fake"},
+            get_prompts_and_options=lambda: {"options": {"general": {}}},
+        ),
+    )
+    return calls
+
+
+@pytest.mark.asyncio
+async def test_detect_fields_one_image_per_page(monkeypatch):
+    calls = _install_fake_llm(
+        monkeypatch,
+        [
+            _json.dumps({"fields": [{"name": "A", "page_number": 99}]}),
+            _json.dumps({"fields": [{"name": "B", "page_number": 99}]}),
+        ],
+    )
+    result = await pdf_forms_module.detect_fields(
+        "t", DetectFieldsRequest(pages=[_page(1), _page(2)])
+    )
+
+    assert len(calls) == 2  # one request per page, never batched
+    for messages in calls:
+        images = [b for b in messages[1]["content"] if b.get("type") == "image_url"]
+        assert len(images) == 1  # provider cap: at most 1 image in context
+    assert [f["page_number"] for f in result["fields"]] == [1, 2]  # ground truth
+
+
+@pytest.mark.asyncio
+async def test_detect_fields_partial_failure_returns_rest(monkeypatch):
+    _install_fake_llm(
+        monkeypatch,
+        [
+            RuntimeError("flaky"),
+            _json.dumps({"fields": [{"name": "B"}]}),
+        ],
+    )
+    result = await pdf_forms_module.detect_fields(
+        "t", DetectFieldsRequest(pages=[_page(1), _page(2)])
+    )
+    assert [f["name"] for f in result["fields"]] == ["B"]
+
+
+@pytest.mark.asyncio
+async def test_detect_fields_all_failed_502(monkeypatch):
+    _install_fake_llm(monkeypatch, [RuntimeError("down"), RuntimeError("down")])
+    with pytest.raises(HTTPException) as exc:
+        await pdf_forms_module.detect_fields("t", DetectFieldsRequest(pages=[_page(1), _page(2)]))
+    assert exc.value.status_code == 502

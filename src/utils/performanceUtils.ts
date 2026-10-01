@@ -85,6 +85,14 @@ export function getSmartRecommendations(availableModels, systemSpecs) {
     return ram >= recommendedRam + RAM_BUFFER_GB;
   });
 
+  // If nothing fits, show all models
+  if (usableModels.length === 0) {
+    return sortedModels.map((model) => ({
+      ...model,
+      recommendedType: null,
+    }));
+  }
+
   // Determine tier based on machine RAM
   let tier;
   if (ram < 16) {

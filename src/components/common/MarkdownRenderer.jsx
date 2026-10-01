@@ -1,5 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
+import { useTranslation } from "react-i18next";
 import { Box, Text, Link, Popover } from "@chakra-ui/react";
 import remarkGfm from "remark-gfm";
 import { FaTimes, FaWikipediaW, FaBookMedical, FaDatabase, FaGlobe } from "react-icons/fa";
@@ -112,9 +113,10 @@ const pillVisual = (Icon, index, { as = "span", ...rest } = {}) => (
 );
 
 const CitationTag = ({ index, citation, displayLabel }) => {
+    const { t } = useTranslation();
     const c = normalizeCitation(citation);
     const url = c?.url;
-    const title = c?.title || c?.source || c?.label || `Source ${index}`;
+    const title = c?.title || c?.source || c?.label || t("common.citation.sourceTitle", { index });
     const snippet = c?.snippet;
     const icon = iconFor(c);
     const [open, setOpen] = React.useState(false);
@@ -137,9 +139,9 @@ const CitationTag = ({ index, citation, displayLabel }) => {
 
     const isInternal = url && url.startsWith("/");
     const footerLabel = isInternal
-        ? "⬇ Download PDF"
+        ? t("common.citation.downloadPdf")
         : url
-          ? "Open source ↗"
+          ? t("common.citation.openSource")
           : null;
 
     const openUrl = (e) => {
@@ -221,7 +223,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                             color="textSecondary"
                             opacity={0.6}
                             _hover={{ opacity: 1 }}
-                            aria-label="Close"
+                            aria-label={t("action.close")}
                             flexShrink={0}
                             display="flex"
                             alignItems="center"
@@ -242,7 +244,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                             </Text>
                         ) : (
                             <Text fontSize="xs" color="textSecondary">
-                                No excerpt available.
+                                {t("common.citation.noExcerpt")}
                             </Text>
                         )}
                     </Popover.Body>
@@ -277,6 +279,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
  * with a hover popup (pass ``citations`` = array keyed 1..N from message.context).
  */
 const MarkdownRenderer = ({ children, citations, citationRemap, ...props }) => {
+    const { t } = useTranslation();
     const citationsArr = Array.isArray(citations) ? citations : [];
     const remap = citationRemap instanceof Map ? citationRemap : null;
 
@@ -303,7 +306,7 @@ const MarkdownRenderer = ({ children, citations, citationRemap, ...props }) => {
                         );
                     }
 
-                    let domain = "external link";
+                    let domain = t("common.citation.externalLink");
                     if (href) {
                         try {
                             const url = new URL(href);

@@ -15,6 +15,19 @@ pub const LLAMA_PORT: u16 = 8082;
 pub const WHISPER_PORT: u16 = 8081;
 pub const EMBEDDING_PORT: u16 = 8083;
 
+#[cfg(windows)]
+pub(crate) fn set_windows_spawn_flags(cmd: &mut Command, new_process_group: bool) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    let flags = if new_process_group {
+        CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW
+    } else {
+        CREATE_NO_WINDOW
+    };
+    cmd.creation_flags(flags);
+}
+
 /// Ports allocated by the Python server after passphrase unlock.
 #[derive(Debug, Clone)]
 pub struct AllocatedPorts {
@@ -151,13 +164,36 @@ fn find_whisper_server() -> Option<PathBuf> {
 /// The 'phlox-server' binary is a wrapper that points to ../Resources/server_dist/server.
 fn find_python_server() -> Option<PathBuf> {
     let exe_dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
-    let path = exe_dir.join("phlox-server");
 
-    if path.exists() {
-        Some(path)
-    } else {
-        log::warn!("Python server not found at {:?}", path);
-        None
+    #[cfg(target_os = "windows")]
+    {
+        // No bash wrapper on Windows: spawn the Nuitka dist exe shipped as a
+        // resource. NSIS keeps resources next to the installed exe; the
+        // resources/ variant covers alternate layouts.
+        let candidates = [
+            exe_dir.join("server_dist").join("phlox-server.exe"),
+            exe_dir
+                .join("resources")
+                .join("server_dist")
+                .join("phlox-server.exe"),
+        ];
+        let found = candidates.iter().find(|p| p.exists()).cloned();
+        if found.is_none() {
+            log::warn!("Python server not found in server_dist/ next to exe");
+        }
+        found
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let path = exe_dir.join("phlox-server");
+
+        if path.exists() {
+            Some(path)
+        } else {
+            log::warn!("Python server not found at {:?}", path);
+            None
+        }
     }
 }
 
@@ -280,7 +316,15 @@ fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
         .arg("--model")
         .arg(model_path.to_string_lossy().as_ref())
         .arg("--ctx-size")
-        .arg("16384")
+        .arg("32768")
+        // Two slots with continuous batching: the live agent's cheap gate
+        // calls can run (and stay KV-cached) alongside a long agent tick
+        // instead of queueing behind it. Unified KV shares one pool across
+        // the slots, so each sequence may address the full 32k context —
+        // the growing agent conversation is not capped at half.
+        .arg("--parallel")
+        .arg("2")
+        .arg("--kv-unified")
         .arg("--n-gpu-layers")
         .arg("99")
         .arg("--jinja")
@@ -308,6 +352,11 @@ fn start_llama(port: Option<u16>) -> Result<ManagedProcess, String> {
     {
         use std::os::unix::process::CommandExt;
         cmd.process_group(0);
+    }
+
+    #[cfg(windows)]
+    {
+        set_windows_spawn_flags(&mut cmd, false);
     }
 
     cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
@@ -362,6 +411,11 @@ fn start_whisper(port: Option<u16>) -> Result<ManagedProcess, String> {
         cmd.process_group(0);
     }
 
+    #[cfg(windows)]
+    {
+        set_windows_spawn_flags(&mut cmd, false);
+    }
+
     cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
     let child = cmd
@@ -411,6 +465,11 @@ fn start_embedding(port: Option<u16>) -> Result<ManagedProcess, String> {
     {
         use std::os::unix::process::CommandExt;
         cmd.process_group(0);
+    }
+
+    #[cfg(windows)]
+    {
+        set_windows_spawn_flags(&mut cmd, false);
     }
 
     cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
@@ -468,6 +527,8 @@ fn set_nonblocking(fd: std::os::unix::io::RawFd, nonblocking: bool) -> std::io::
 fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String> {
     use std::io::Read;
 
+    #[cfg(unix)]
+    let child_pid = child.id();
     let stdout = child.stdout.as_mut().ok_or("Failed to capture stdout")?;
     let stderr = child.stderr.as_mut().ok_or("Failed to capture stderr")?;
 
@@ -541,6 +602,17 @@ fn wait_for_server_signal(child: &mut Child) -> Result<ServerSignal, String> {
         match stdout_reader.read(&mut stdout_byte) {
             Ok(0) => {
                 log::warn!("EOF reached while waiting for server signal");
+                #[cfg(unix)]
+                unsafe {
+                    let mut wstatus: i32 = 0;
+                    if libc::waitpid(child_pid as libc::pid_t, &mut wstatus, libc::WNOHANG) > 0 {
+                        if libc::WIFSIGNALED(wstatus) {
+                            log::warn!("Server killed by signal {}", libc::WTERMSIG(wstatus));
+                        } else if libc::WIFEXITED(wstatus) {
+                            log::warn!("Server exited with code {}", libc::WEXITSTATUS(wstatus));
+                        }
+                    }
+                }
                 log::warn!(
                     "Stdout content: {}",
                     String::from_utf8_lossy(&stdout_buffer)
@@ -750,6 +822,12 @@ fn start_server() -> Result<ManagedProcess, String> {
     // Tell Python which PID to watch so it self-terminates if we die
     cmd.env("PHLOX_PARENT_PID", std::process::id().to_string());
 
+    // Ignore host config on Linux.
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("OPENSSL_CONF").is_none() {
+        cmd.env("OPENSSL_CONF", "/dev/null");
+    }
+
     if cfg!(debug_assertions) {
         cmd.env("PHLOX_DEMO_MODE", "true");
     }
@@ -762,11 +840,10 @@ fn start_server() -> Result<ManagedProcess, String> {
 
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        // CREATE_NEW_PROCESS_GROUP so we can later send CTRL_BREAK_EVENT
-        // via GenerateConsoleCtrlEvent for graceful shutdown.
-        const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
-        cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
+        // Own process group so CTRL_BREAK_EVENT can be sent via
+        // GenerateConsoleCtrlEvent for graceful shutdown; CREATE_NO_WINDOW
+        // keeps the child's console hidden.
+        set_windows_spawn_flags(&mut cmd, true);
     }
 
     cmd.stderr(Stdio::piped());
@@ -903,11 +980,10 @@ fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
 #[cfg(target_os = "windows")]
 fn kill_by_name_inner(pattern: &str, service_name: &str) -> bool {
     log::info!("Killing {} processes matching: {}", service_name, pattern);
-    Command::new("taskkill")
-        .arg("/F")
-        .arg("/IM")
-        .arg(pattern)
-        .output()
+    let mut cmd = Command::new("taskkill");
+    cmd.arg("/F").arg("/IM").arg(pattern);
+    set_windows_spawn_flags(&mut cmd, false);
+    cmd.output()
         .map(|o| o.status.success())
         .unwrap_or(false)
 }

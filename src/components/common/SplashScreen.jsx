@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Progress } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
@@ -17,12 +18,15 @@ import { useLLMStep } from "../../utils/hooks/splash/useLLMStep";
 import { useTranscriptionStep } from "../../utils/hooks/splash/useTranscriptionStep";
 import { useTemplatesStep } from "../../utils/hooks/splash/useTemplatesStep";
 import { useLettersStep } from "../../utils/hooks/splash/useLettersStep";
+import { useTemplate } from "../../utils/templates/templateContext";
 
 const SplashScreen = ({ onComplete }) => {
+  const { t } = useTranslation();
 
   const [currentStep, setCurrentStep] = useState(SPLASH_STEPS.ABOUT_YOU);
   const [isLoading, setIsLoading] = useState(false);
   const [showLlmStep, setShowLlmStep] = useState(false);
+  const { setDefaultTemplate } = useTemplate();
 
   useEffect(() => {
     let cancelled = false;
@@ -83,17 +87,17 @@ const SplashScreen = ({ onComplete }) => {
   const getValidationMessage = () => {
     switch (currentStep) {
       case SPLASH_STEPS.ABOUT_YOU:
-        return "Please enter your name and select your specialty.";
+        return t("splash.validation.nameSpecialty");
       case SPLASH_STEPS.AI_MODELS:
         if (llm.inferenceMode === "local") {
-          if (!llm.validate()) return "Please download and select a model.";
-          return "Please download the transcription model.";
+          if (!llm.validate()) return t("splash.validation.downloadAndSelectModel");
+          return t("splash.validation.downloadTranscriptionModel");
         }
-        return "Please select a primary model.";
+        return t("splash.validation.selectPrimaryModel");
       case SPLASH_STEPS.TEMPLATES:
-        return "Please select a default template.";
+        return t("splash.validation.selectTemplate");
       default:
-        return "Please complete all required fields.";
+        return t("splash.validation.completeAll");
     }
   };
 
@@ -101,7 +105,7 @@ const SplashScreen = ({ onComplete }) => {
     const validator = getCurrentValidator();
     if (!validator()) {
       toaster.create({
-        title: "Missing Information",
+        title: t("splash.missingInformation"),
         description: getValidationMessage(),
         type: "warning",
         duration: 3000,
@@ -142,6 +146,7 @@ const SplashScreen = ({ onComplete }) => {
           ? parseInt(lettersData.selectedLetterTemplate)
           : null,
       };
+      delete userSettingsToSave.default_template_key;
 
       await settingsApi.saveUserSettings(userSettingsToSave);
 
@@ -161,21 +166,22 @@ const SplashScreen = ({ onComplete }) => {
       }
 
       if (templatesData.selectedTemplate) {
-        await settingsApi.setDefaultTemplate(templatesData.selectedTemplate);
+
+        await setDefaultTemplate(templatesData.selectedTemplate);
       }
 
       await settingsApi.markSplashCompleted();
       toaster.create({
-        title: "Setup Complete!",
-        description: "You're ready to start using Phlox.",
+        title: t("splash.setupComplete"),
+        description: t("splash.setupCompleteDescription"),
         type: "success",
         duration: 5000,
       });
       onComplete();
     } catch (error) {
       toaster.create({
-        title: "Error Saving Settings",
-        description: error.message || "An unexpected error occurred.",
+        title: t("splash.errorSavingTitle"),
+        description: error.message || t("splash.unexpectedError"),
         type: "error",
         duration: 5000,
       });
@@ -254,10 +260,27 @@ const SplashScreen = ({ onComplete }) => {
         {/* Header — logo, title, description, progress */}
         <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
           <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
-          <Heading as="h2" size="md" color="textPrimary" textAlign="center">
+          <Heading
+            as="h2"
+            size="md"
+            color="textPrimary"
+            textAlign="center"
+            key={currentStep}
+            className="anim-fade-slide-up"
+            sx={{ animationDuration: "0.2s" }}
+          >
             {STEP_TITLES[currentStep]}
           </Heading>
-          <Text fontSize="sm" color="textSecondary" textAlign="center" maxW="420px" lineHeight="1.5">
+          <Text
+            fontSize="sm"
+            color="textSecondary"
+            textAlign="center"
+            maxW="420px"
+            lineHeight="1.5"
+            key={`desc-${currentStep}`}
+            className="anim-fade-slide-up"
+            sx={{ animationDuration: "0.2s" }}
+          >
             {STEP_DESCRIPTIONS[currentStep]}
           </Text>
           <HStack w="100%" justify="space-between" mt={1}>
@@ -273,7 +296,7 @@ const SplashScreen = ({ onComplete }) => {
               </Progress.Track>
             </Progress.Root>
             <Text fontSize="xs" color="textSecondary" whiteSpace="nowrap" ml={3}>
-              {currentStepIndex + 1} of {totalSteps}
+              {t("splash.stepOf", { current: currentStepIndex + 1, total: totalSteps })}
             </Text>
           </HStack>
         </VStack>
@@ -307,7 +330,7 @@ const SplashScreen = ({ onComplete }) => {
             borderRadius="2xl"
             className="switch-mode"
           >
-            <FaArrowLeft />Back
+            <FaArrowLeft />{t("action.back")}
           </Button>
 
           <Button
@@ -315,8 +338,8 @@ const SplashScreen = ({ onComplete }) => {
             loading={isLoading}
             loadingText={
               currentStepIndex === totalSteps - 1
-                ? "Completing setup..."
-                : "Processing..."
+                ? t("splash.completingSetup")
+                : t("splash.processing")
             }
             disabled={!canProceedToNext()}
             size="md"
@@ -327,7 +350,7 @@ const SplashScreen = ({ onComplete }) => {
               fontWeight: "600",
             }}
           >
-            {currentStepIndex === totalSteps - 1 ? "Start Using Phlox" : "Continue"}
+            {currentStepIndex === totalSteps - 1 ? t("splash.startUsingPhlox") : t("action.continue")}
             {currentStepIndex !== totalSteps - 1 && <FaArrowRight />}
           </Button>
         </Flex>

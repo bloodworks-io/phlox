@@ -1,4 +1,6 @@
 import { Box, Flex, IconButton } from "@chakra-ui/react";
+import { useLocation } from "react-router";
+import { useTranslation } from "react-i18next";
 import Sidebar from "../sidebar/Sidebar";
 import CollapseIcon from "../common/icons/CollapseIcon";
 import { isTauri } from "../../utils/helpers/apiConfig";
@@ -11,6 +13,8 @@ const AppLayout = ({
     sidebarProps,
     children,
 }) => {
+    const location = useLocation();
+    const { t } = useTranslation();
     return (
         <Flex position="relative">
             {/* Floating hamburger button for small screens */}
@@ -21,8 +25,9 @@ const AppLayout = ({
                     top="6"
                     left="6"
                     zIndex="101"
-                    aria-label="Toggle sidebar"
-                    className="dark-toggle"
+                    aria-label={t("nav.toggleSidebar")}
+                    className="dark-toggle anim-fade-scale"
+                    css={{ animationDuration: "0.2s" }}
                 >
                     <CollapseIcon />
                 </IconButton>
@@ -65,7 +70,14 @@ const AppLayout = ({
                     overflowY="auto"
                     position="relative"
                 >
+                {/* opacity-only fade — a transform would trap position:fixed surfaces */}
+                <Box
+                    key={location.pathname}
+                    className="anim-fade"
+                    css={{ animationDuration: "0.2s" }}
+                >
                     {children}
+                </Box>
                 </Box>
             </Box>
         </Flex>

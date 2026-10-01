@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Box, Button, Flex, HStack, Input, NativeSelect, Text, VStack } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { authApi } from "../../utils/api/authApi";
 
 const UsersTab = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [me, setMe] = useState(null);
   const [newUsername, setNewUsername] = useState("");
@@ -43,7 +45,7 @@ const UsersTab = () => {
   };
 
   const handleResetPassword = async (user) => {
-    const password = window.prompt(`New password for ${user.username}`);
+    const password = window.prompt(t("settings.users.newPasswordPrompt", { username: user.username }));
     if (!password) return;
     try {
       await authApi.resetPassword(user.id, password);
@@ -76,16 +78,16 @@ const UsersTab = () => {
           <Box>
             <Text fontSize="sm" fontWeight="medium" color="textPrimary">
               {user.username}
-              {me && user.id === me.id ? " (you)" : ""}
+              {me && user.id === me.id ? t("settings.users.you") : ""}
             </Text>
             <Text fontSize="xs" color="textSecondary">
               {user.role}
-              {user.disabled ? " • disabled" : ""}
+              {user.disabled ? t("settings.users.disabledSuffix") : ""}
             </Text>
           </Box>
           <HStack gap={2}>
             <Button size="xs" variant="ghost" onClick={() => handleResetPassword(user)}>
-              Reset password
+              {t("settings.users.resetPassword")}
             </Button>
             <Button
               size="xs"
@@ -93,7 +95,7 @@ const UsersTab = () => {
               disabled={me && user.id === me.id}
               onClick={() => handleToggleDisabled(user)}
             >
-              {user.disabled ? "Enable" : "Disable"}
+              {user.disabled ? t("settings.enable") : t("settings.disable")}
             </Button>
           </HStack>
         </Flex>
@@ -103,7 +105,7 @@ const UsersTab = () => {
         <Input
           size="sm"
           width="160px"
-          placeholder="username"
+          placeholder={t("settings.users.usernamePlaceholder")}
           value={newUsername}
           onChange={(e) => setNewUsername(e.target.value)}
         />
@@ -111,7 +113,7 @@ const UsersTab = () => {
           size="sm"
           width="180px"
           type="password"
-          placeholder="password"
+          placeholder={t("settings.users.passwordPlaceholder")}
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
         />
@@ -128,7 +130,7 @@ const UsersTab = () => {
           disabled={!newUsername || !newPassword}
           onClick={handleCreate}
         >
-          Add user
+          {t("settings.users.addUser")}
         </Button>
       </HStack>
     </VStack>

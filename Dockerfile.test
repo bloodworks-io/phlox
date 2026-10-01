@@ -23,6 +23,9 @@ RUN uv sync --directory server --locked --extra docker
 # Then copy the rest of the application
 COPY server/ /usr/src/app/server/
 
+# Speaker embedding model so the real-model diarization test runs in CI
+RUN python server/scripts/fetch_speaker_model.py
+
 # Set environment variables
 ENV PYTHONPATH=/usr/src/app
 ENV TESTING=true

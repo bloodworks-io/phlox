@@ -1,7 +1,9 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Text, Badge, HStack, VStack } from "@chakra-ui/react";
 
 export const ReasoningItem = ({ item, section }) => {
+    const { t } = useTranslation();
     // Check if item is in legacy format (string) or new format (object)
     const isLegacyFormat = typeof item === "string";
 
@@ -52,7 +54,7 @@ export const ReasoningItem = ({ item, section }) => {
                                 fontSize="xs"
                                 textTransform="uppercase"
                             >
-                                Priority
+                                {t("reasoning.priority")}
                             </Badge>
                         )}
                     </HStack>

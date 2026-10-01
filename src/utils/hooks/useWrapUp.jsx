@@ -1,13 +1,14 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useDisclosure } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { patientApi } from "../api/patientApi";
 
 const REQUIRED_WRAP_UP_FIELDS = [
-    { key: "name", label: "Name" },
-    { key: "dob", label: "Date of Birth" },
-    { key: "ur_number", label: "UR Number" },
-    { key: "gender", label: "Gender" },
+    { key: "name", label: "patient.field.name" },
+    { key: "dob", label: "patient.field.dob" },
+    { key: "ur_number", label: "patient.field.urNumber" },
+    { key: "gender", label: "patient.field.gender" },
 ];
 
 export const useWrapUp = ({
@@ -23,6 +24,7 @@ export const useWrapUp = ({
     hasTranscriptionOccurred,
     initialTranscriptionContent,
 }) => {
+    const { t } = useTranslation();
     const [wrapUpLoading, setWrapUpLoading] = useState(false);
     const {
         open: isWrapUpOpen,
@@ -33,19 +35,21 @@ export const useWrapUp = ({
     const handleOpenWrapUp = useCallback(() => {
         const missingFields = REQUIRED_WRAP_UP_FIELDS.filter(
             (f) => !patient?.[f.key],
-        ).map((f) => f.label);
+        ).map((f) => t(f.label));
 
         if (missingFields.length > 0) {
             toaster.create({
-                title: "Missing Required Fields",
-                description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
+                title: t("patient.toast.missingFields"),
+                description: t("patient.toast.missingFieldsDescription", {
+                    fields: missingFields.join(", "),
+                }),
                 type: "error",
                 duration: 3000,
             });
             return;
         }
         openWrapUp();
-    }, [patient, openWrapUp]);
+    }, [patient, openWrapUp, t]);
 
     const handleWrapUpConfirm = useCallback(
         async (curatedJobs) => {
@@ -67,9 +71,8 @@ export const useWrapUp = ({
                 } catch (jobsErr) {
                     console.error("Failed to write curated jobs:", jobsErr);
                     toaster.create({
-                        title: "Jobs not saved",
-                        description:
-                            "The note was saved, but the curated jobs couldn't be written. Please try again.",
+                        title: t("wrapUp.toast.jobsNotSaved"),
+                        description: t("wrapUp.toast.jobsNotSavedDescription"),
                         type: "warning",
                         duration: 5000,
                     });
@@ -101,6 +104,7 @@ export const useWrapUp = ({
             closeWrapUp,
             resetSearchFlow,
             onOpenNewNoteModal,
+            t,
         ],
     );
 

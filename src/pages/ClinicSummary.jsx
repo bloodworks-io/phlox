@@ -1,5 +1,6 @@
 // Page component that renders a summary of patients for a selected date.
 import useSWR from "swr";
+import { useTranslation } from "react-i18next";
 import PatientTable from "../components/patient/PatientTable";
 import { patientApi } from "../utils/api/patientApi";
 import { KEYS } from "../utils/cache/keys";
@@ -18,12 +19,14 @@ const ClinicSummary = ({
     handleSelectPatient,
     refreshSidebar,
 }) => {
+    const { t } = useTranslation();
     const { data, mutate } = useSWR(
         KEYS.noteList(selectedDate, true),
         clinicSummaryFetcher(selectedDate, true),
         { revalidateOnMount: true },
     );
     const patients = data || [];
+    const isLoading = data === undefined;
 
     // SWR-backed setter so PatientTable can do local row edits without
     // triggering a revalidation round-trip.
@@ -35,7 +38,8 @@ const ClinicSummary = ({
             setPatients={setPatients}
             handleSelectPatient={handleSelectPatient}
             refreshSidebar={refreshSidebar}
-            title={`Clinic Summary for ${selectedDate}`}
+            title={t("page.clinicSummary.title", { date: selectedDate })}
+            isLoading={isLoading}
         />
     );
 };

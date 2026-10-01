@@ -21,6 +21,8 @@ rag = [
     "mcp==1.28.1",
     "numpy==2.5.1",
     "pypdf==6.18.1",
+    "sherpa-onnx==1.13.8",
+    "sherpa-onnx-core==1.13.8",
     "sqlite-vec==0.1.9",
     "tiktoken==0.12.0",
 ]
@@ -78,6 +80,7 @@ replace-imports-with-any = [
     "sqlite_vec.**",
     "mcp.**",
     "numpy.**",
+    "sherpa_onnx.**",
 ]
 
 [[tool.ty.overrides]]

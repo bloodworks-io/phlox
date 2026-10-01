@@ -5,6 +5,7 @@ import {
   FaInfoCircle,
   FaLock,
 } from "react-icons/fa";
+import { t } from "@/i18n";
 
 export const SPLASH_STEPS = {
   ENCRYPTION: -1,
@@ -17,32 +18,25 @@ export const SPLASH_STEPS = {
 };
 
 export const STEP_TITLES = {
-  [SPLASH_STEPS.ENCRYPTION]: "Secure Your Data",
-  [SPLASH_STEPS.ABOUT_YOU]: "About You",
-  [SPLASH_STEPS.AI_MODELS]: "AI Models",
-  [SPLASH_STEPS.TEMPLATES]: "Choose Your Template",
+  [SPLASH_STEPS.ENCRYPTION]: t("splash.step.encryption.title"),
+  [SPLASH_STEPS.ABOUT_YOU]: t("splash.step.aboutYou.title"),
+  [SPLASH_STEPS.AI_MODELS]: t("splash.step.aiModels.title"),
+  [SPLASH_STEPS.TEMPLATES]: t("splash.step.templates.title"),
 };
 
 export const STEP_DESCRIPTIONS = {
-  [SPLASH_STEPS.ENCRYPTION]:
-    "Create a passphrase to encrypt and protect your patient data.",
-  [SPLASH_STEPS.ABOUT_YOU]:
-    "Your name, specialty, and preferred language personalize your notes and letters.",
-  [SPLASH_STEPS.TEMPLATES]:
-    "Choose the note template you'll use for patient encounters.",
-  [SPLASH_STEPS.AI_MODELS]:
-    "Download a model to run on your Mac, or connect to an API.",
+  [SPLASH_STEPS.ENCRYPTION]: t("splash.step.encryption.description"),
+  [SPLASH_STEPS.ABOUT_YOU]: t("splash.step.aboutYou.description"),
+  [SPLASH_STEPS.TEMPLATES]: t("splash.step.templates.description"),
+  [SPLASH_STEPS.AI_MODELS]: t("splash.step.aiModels.description"),
 };
 
 export const TEMPLATE_DESCRIPTIONS = {
-  phlox_01:
-    "Physician consultations — primary condition, history, impression, and plan.",
-  soap_01: "Standard SOAP format — Subjective, Objective, Assessment, Plan.",
-  progress_01: "Follow-up visits — interval history, current status, and plan.",
-  procedure_01:
-    "Procedural documentation — indication, details, complications.",
-  consult_01:
-    "Specialist consultations — reason, findings, impression, recommendations.",
+  phlox_01: t("splash.template.phlox01"),
+  soap_01: t("splash.template.soap01"),
+  progress_01: t("splash.template.progress01"),
+  procedure_01: t("splash.template.procedure01"),
+  consult_01: t("splash.template.consult01"),
 };
 
 export const getStepIcon = (step) => {

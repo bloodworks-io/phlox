@@ -20,16 +20,17 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 
 ## Key Features 
 - **🔒 100% Local & Private:** Runs entirely on your machine with no third-party services - all data stays local.
-- **👥 Multi-User:** Account-based access control; each user's encounters, templates, and knowledge base stay their own.
+- **👥 Multi-User:** Account-based access control; with per user encounters, templates, and documents.
 - **🌍 Multilingual:** Transcribe and generate notes and letters in multiple languages.
-- **🎤 Ambient Note Generation** Automatically generate structured clinical notes with customizable templates.
+- **🎤 Ambient Note Generation** Automatically generate structured notes with custom templates.
+- **⚡ Live Agent:** Drafts the note in realtime while you consult.
 - **💡 Adaptive Refinement:** Outputs improve the more you use it; Phlox learns from your previous notes.
 - **📝 Flexible Template System:**  Including automated template generation from example notes you provide.
 - **🤖 AI-agent:** Your local assistant with access to literature in your own local knowledge base.
 - **🔌 MCP Server Support:** Connect external tool servers to give your agent new capabilties.
 - **✅ Task Manager:**  Parse clinical plans into to-do lists to keep up-to-date with your outstanding tasks.
 - **✉️  Correspondence Generation:**  One-click generation of patient letters based on clinical notes.
-- **📄 Document Processing:** Fill-in forms, extract demographics, and more using local Vision Language Models.
+- **📄 Document Processing:** Fill-in forms, extract demographics, and more with Vision Language Models.
 
 <p align="center">
   <img src="/assets/readme_screenshot.png" width="600" alt="Phlox Screenshot">
@@ -39,7 +40,7 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 
 ### Desktop App
 
-Pre-built Apple Silicon (macOS) binaries and Flatpaks (Linux - Vulkan) are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases). 
+Pre-built Apple Silicon (macOS) binaries, Flatpaks (Linux - Vulkan), and Windows (x86_64) Installers are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases). Every release ships with `SHASUMS256.txt` and a `manifest.json` recording artifact digests and verification results. See [the release process](/.github/RELEASE.md) for how releases are signed and verified.
 
 The desktop app comes bundled with both transcription and LLM inference engines. Models can be downloaded from within the application.
 
@@ -83,15 +84,15 @@ Authentication is required for Docker deployments: the first browser visit walks
 
 The Docker image does not have any inference or transcription capability built-in. OpenAI compatible endpoints are required for transcription and note generation. 
 
-Note quality benefits from speaker diarization. [parakeet-diarized](https://github.com/jfgonsalves/parakeet-diarized) provides an easy to use Docker container that serves a diarization-enabled OpenAI Whisper-comptaible endpoint.
+Note quality benefits from speaker diarization. When **Streaming capture** is enabled in Settings → Policy: Phlox will transcribe sessions utterance-by-utterance while you record and adds its own built-in speaker labels, so a plain (non-diarizing) Whisper endpoint is enough.
 
 ## Architecture
 
 Ambient scribing is a relatively simple task for LLMs. In particular, large frontier models are very adept at one-shotting a decent note given a transcript and a style example. Smaller models capable of running on consumer hardware are able to summarise medical consultations reasonably well; however, they often struggle with replicating specific note styles.
 
-Phlox approaches this by chunking transcripts per template field and constraining outputs to structured JSON. After getting the model to make a targeted summary for a given field, a dedicated refinement pass then allows the model to focus on matching output to the users personal style example. Finally an adaptive-refinement feedback loop allows the model to improve note quality as it is used more.
+Phlox approaches this by chunking transcripts per template field and constraining outputs to structured JSON. After getting the model to make a targeted summary for a given field, a dedicated refinement pass then allows the model to focus on matching output to the users personal style example. Finally an adaptive-refinement feedback loop allows the model to improve note quality as it is used more. Ambient and Dictate recordings are transcribed utterance-by-utterance as they finalize (with built-in speaker labeling), and the growing transcript pre-warms the prompt cache so the note is ready faster when you stop recording.
 
-### Technical Stack
+[Live Agent](https://phlox.bloodworks.io/docs/features/live-agent) mode takes a different path for real-time scribing: the consultation is segmented into utterances on-device (TEN VAD) and each utterance is streamed through a cheap gate; a single-token logprob classification that decides whether the speech should reach the note (NOTE), trigger an action (ACT), or be ignored as filler (SKIP, buffered with a debounce backstop so nothing is lost). NOTE and ACT utterances run through a tool-calling loop on the main model, which edits the running note, stages letters and PDF forms for review, and curates the wrap-up task list. Best-effort speaker diarisation (CAM++) labels who said what, and the conversation is kept append-only so the prompt cache stays warm between passes.
 
 - **Frontend:** [Chakra UI](https://github.com/chakra-ui/chakra-ui) (React)
 - **Backend:** [FastAPI](https://github.com/fastapi/fastapi) (Python)

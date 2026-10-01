@@ -10,6 +10,8 @@ const tabStyles = (props) => ({
         marginBottom: "-1px",
         fontSize: "16px !important",
         fontWeight: "400 !important",
+        transition:
+            "background-color 0.15s ease, color 0.15s ease !important",
     },
     ".tab-style[aria-selected='true']": {
         backgroundColor:

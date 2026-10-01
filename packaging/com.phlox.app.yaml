@@ -18,6 +18,7 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --env=XDG_CACHE_HOME=/app/cache
+  - --env=OPENSSL_CONF=/dev/null
 
 cleanup:
   - /include
@@ -103,6 +104,12 @@ modules:
         pip3 install --prefix=/app
         "uv$(python3 -c 'import tomllib; print(tomllib.load(open("server/pyproject.toml", "rb"))["tool"]["uv"]["required-version"])')"
       - cd server && UV_PYTHON=/usr/bin/python3 /app/bin/uv sync --locked --extra rag
+      # pbs cpython (uv-managed, from build-server.sh's unpinned sync) injects
+      # "-l:libatomic.a" into sysconfig MODLIBS (clang-built OpenSSL); the SDK
+      # ships no libatomic.a. Satisfy the linker with the shared lib via
+      # /app/lib (already on the link and runtime library path).
+      - install -Dm755 "$(find /usr/lib -name 'libatomic.so*' | head -1)" /app/lib/libatomic.so.1
+      - ln -sf libatomic.so.1 /app/lib/libatomic.a
       - bash src-tauri/build-server.sh
       - install -d /app/bin/server_dist
       - cp -a src-tauri/server_dist/. /app/bin/server_dist/
@@ -120,6 +127,7 @@ modules:
   - name: phlox
     buildsystem: simple
     build-commands:
+      - install -d -m 1777 /app/cache
       - install -d src-tauri/binaries
       - ln -s /app/bin/server_dist src-tauri/server_dist
       - ln -sf /app/bin/phlox-server-x86_64-unknown-linux-gnu src-tauri/binaries/

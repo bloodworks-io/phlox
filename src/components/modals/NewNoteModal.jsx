@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Box,
     Flex,
@@ -32,6 +33,7 @@ const NewNoteModal = ({
     selectedDate,
     onComplete,
 }) => {
+    const { t } = useTranslation();
 
     const [view, setView] = useState("choose");
     const [query, setQuery] = useState("");
@@ -45,9 +47,8 @@ const NewNoteModal = ({
         const q = (query || "").trim();
         if (!q) {
             toaster.create({
-                title: "Enter a UR number or name",
-                description:
-                    "Type a UR number or patient name, then click search.",
+                title: t("modal.newNote.searchPromptTitle"),
+                description: t("modal.newNote.searchPromptDescription"),
                 type: "warning",
                 ...DEFAULT_TOAST_CONFIG,
             });
@@ -61,8 +62,8 @@ const NewNoteModal = ({
                     setView("results");
                 } else {
                     toaster.create({
-                        title: "No patient found",
-                        description: `No patient matches "${q}". Fill in their details to create a new record.`,
+                        title: t("modal.newNote.noPatientTitle"),
+                        description: t("modal.newNote.noPatientDescription", { query: q }),
                         type: "info",
                         ...DEFAULT_TOAST_CONFIG,
                     });
@@ -70,8 +71,8 @@ const NewNoteModal = ({
             })
             .catch(() => {
                 toaster.create({
-                    title: "Search failed",
-                    description: "Couldn't search patients. Please try again.",
+                    title: t("modal.newNote.searchFailedTitle"),
+                    description: t("modal.newNote.searchFailedDescription"),
                     type: "error",
                     duration: 3000,
                 });
@@ -85,8 +86,8 @@ const NewNoteModal = ({
             .then(() => onComplete({ cameFromSearch: true }))
             .catch(() => {
                 toaster.create({
-                    title: "Couldn't load patient",
-                    description: "Please try again.",
+                    title: t("modal.newNote.loadFailedTitle"),
+                    description: t("modal.newNote.pleaseTryAgain"),
                     type: "error",
                     duration: 3000,
                 });
@@ -107,8 +108,8 @@ const NewNoteModal = ({
             })
             .catch(() => {
                 toaster.create({
-                    title: "Couldn't start new patient",
-                    description: "Please try again.",
+                    title: t("modal.newNote.newPatientFailedTitle"),
+                    description: t("modal.newNote.pleaseTryAgain"),
                     type: "error",
                     duration: 3000,
                 });
@@ -117,12 +118,12 @@ const NewNoteModal = ({
 
     const subtitle =
         view === "search"
-            ? "Enter a UR number or name to find an existing patient."
+            ? t("modal.newNote.subtitleSearch")
             : view === "results"
-              ? "Confirm the patient to start a new visit."
+              ? t("modal.newNote.subtitleResults")
               : view === "new-patient"
-                ? "Enter the patient's details to create a new record."
-                : "Find an existing patient to start a new visit, or create a new patient record.";
+                ? t("modal.newNote.subtitleNewPatient")
+                : t("modal.newNote.subtitleChoose");
 
     return (
         <Dialog.Root
@@ -147,7 +148,7 @@ const NewNoteModal = ({
                                     fontFamily: '"Space Grotesk", sans-serif',
                                 }}
                             >
-                                New encounter
+                                {t("modal.newNote.title")}
                             </Heading>
                         </Dialog.Header>
                         <Dialog.CloseTrigger />
@@ -165,21 +166,25 @@ const NewNoteModal = ({
                                 {subtitle}
                             </Text>
 
-                            <Box key={view}>
+                            <Box
+                                key={view}
+                                className="anim-fade-slide-up"
+                                css={{ animationDuration: "0.25s" }}
+                            >
                                 {view === "choose" ? (
                                     <Flex gap={3} mb={2}>
                                         <PathHalf
                                             icon={FaUserPlus}
-                                            title="New patient"
-                                            subtitle="Create a new record"
+                                            title={t("modal.newNote.newPatient")}
+                                            subtitle={t("modal.newNote.createRecord")}
                                             accent="primaryButton"
                                             tileBg="tile"
                                             onClick={handleNewPatient}
                                         />
                                         <PathHalf
                                             icon={FaSearch}
-                                            title="Search"
-                                            subtitle="Existing patient"
+                                            title={t("modal.newNote.search")}
+                                            subtitle={t("modal.newNote.existingPatient")}
                                             accent="secondaryButton"
                                             tileBg="tile"
                                             onClick={() => setView("search")}
@@ -197,7 +202,7 @@ const NewNoteModal = ({
                                                     onSearch={handleFind}
                                                     isLoading={isSearchLoading}
                                                     autoFocus
-                                                    placeholder="UR number or name"
+                                                    placeholder={t("modal.newNote.urPlaceholder")}
                                                 />
                                             </form>
                                         </Flex>
@@ -212,12 +217,12 @@ const NewNoteModal = ({
                                             onClick={() => setView("choose")}
                                         >
                                             <FaArrowLeft />
-                                            Back
+                                            {t("action.back")}
                                         </Button>
                                     </Box>
                                 ) : view === "results" ? (
                                     <Box>
-                                        <VStack gap={3} align="stretch">
+                                        <VStack gap={3} align="stretch" className="anim-stagger">
                                             {results.map((cand) => (
                                                 <CandidateRow
                                                     key={
@@ -248,7 +253,7 @@ const NewNoteModal = ({
                                             onClick={() => setView("search")}
                                         >
                                             <FaArrowLeft />
-                                            Back
+                                            {t("action.back")}
                                         </Button>
                                     </Box>
                                 ) : (
@@ -258,7 +263,7 @@ const NewNoteModal = ({
                                         setPatient={setDraftPatient}
                                         onSaved={commitNewPatient}
                                         onCancel={() => setView("choose")}
-                                        cancelLabel="Back"
+                                        cancelLabel={t("action.back")}
                                         cancelIcon={<FaArrowLeft />}
                                     />
                                 )}

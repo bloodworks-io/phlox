@@ -6,18 +6,20 @@ import {
   Popover,
   Portal,
 } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
 import { InfoIcon } from "../../icons";
 import { calculateLLMPerformance } from "../../../../utils/performanceUtils";
 
-const getMachineLabel = (os) => {
-  if (os === "macos") return "Your Mac";
-  if (os === "windows") return "Your PC";
-  return "Your system";
+const getMachineLabel = (t, os) => {
+  if (os === "macos") return t("splash.performance.machineMac");
+  if (os === "windows") return t("splash.performance.machinePc");
+  return t("splash.performance.machineSystem");
 };
 
 // Performance info popover — info icon is the trigger
 export const PerformancePopover = ({ model, systemSpecs }) => {
+  const { t } = useTranslation();
   const perf =
     systemSpecs?.apple_silicon && model.parameters_billions
       ? calculateLLMPerformance(
@@ -53,7 +55,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
               <VStack gap={1} align="stretch">
                 <HStack justify="space-between">
                   <Text fontSize="xs" className="pill-box-icons">
-                    Size
+                    {t("splash.performance.size")}
                   </Text>
                   <Text fontSize="xs" fontWeight="bold">
                     {model.size_mb}MB
@@ -63,7 +65,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                   model.parameters_billions) && (
                   <HStack justify="space-between">
                     <Text fontSize="xs" className="pill-box-icons">
-                      Parameters
+                      {t("splash.performance.parameters")}
                     </Text>
                     <Text fontSize="xs" fontWeight="bold">
                       {model.active_parameters_billions
@@ -75,7 +77,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                 {model.recommended_ram_gb && (
                   <HStack justify="space-between">
                     <Text fontSize="xs" className="pill-box-icons">
-                      RAM needed
+                      {t("splash.performance.ramNeeded")}
                     </Text>
                     <Text fontSize="xs" fontWeight="bold">
                       {model.recommended_ram_gb}GB
@@ -85,7 +87,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                 {systemSpecs && (
                   <HStack justify="space-between">
                     <Text fontSize="xs" className="pill-box-icons">
-                      {getMachineLabel(systemSpecs.os)}
+                      {getMachineLabel(t, systemSpecs.os)}
                     </Text>
                     <Text
                       fontSize="xs"
@@ -103,12 +105,12 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                 )}
                 {perf && (
                   <Tooltip
-                    content="Estimated processing time for a 10-minute consultation"
+                    content={t("splash.performance.estTimeTooltip")}
                     showArrow
                   >
                     <HStack justify="space-between">
                       <Text fontSize="xs" className="pill-box-icons">
-                        Est. time
+                        {t("splash.performance.estTime")}
                       </Text>
                       <Text fontSize="xs" fontWeight="bold">
                         ~{Math.round(perf.estimatedTime)}s

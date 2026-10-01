@@ -1,5 +1,6 @@
 """API router for PDF form template management."""
 
+import asyncio
 import json
 import logging
 
@@ -221,70 +222,85 @@ _DETECT_FIELDS_SCHEMA = {
 }
 
 _DETECT_SYSTEM_PROMPT = (
-    "You are a form field detection assistant. "
-    "Each PDF page image has ruler marks along the top and left edges showing percentage "
-    "positions (0% to 100%). Identify all fillable form fields (text inputs, checkboxes, "
-    "date fields, number fields). For each field provide:\n"
-    "- name: a descriptive label for the field\n"
+    "You are a form field detection assistant. You are given a rendered image of "
+    "a PDF form page. Identify every fillable "
+    "form field (text inputs, checkboxes, date fields, number fields). For each "
+    "field provide:\n"
+    "- name: the printed label of the field\n"
     "- field_type: one of text, checkbox, date, or number\n"
     "- page_number: the page number (starting from 1)\n"
-    "- x_pct: left edge position as a percentage of page width (0–100)\n"
-    "- y_pct: top edge position as a percentage of page height (0–100)\n"
-    "- width_pct: width as a percentage of page width\n"
-    "- height_pct: height as a percentage of page height\n\n"
-    "Use the ruler marks as guides to estimate positions. "
-    "Return a JSON object with a 'fields' array."
+    "- x_pct: left edge of the fillable region as a percentage of page width (0–100)\n"
+    "- y_pct: top edge of the fillable region as a percentage of page height (0–100)\n"
+    "- width_pct: width of the fillable region as a percentage of page width\n"
+    "- height_pct: height of the fillable region as a percentage of page height\n\n"
+    "Locate the bounding box of the region the user would fill in — the input box, "
+    "underline, or empty cell — NOT its printed label. Estimate positions as "
+    "precisely as possible using fractional percentages; do not round to "
+    "multiples of 5 or 10. Return a JSON object with a 'fields' array."
 )
 
 
 @router.post("/templates/{template_id}/detect-fields")
 async def detect_fields(template_id: str, body: DetectFieldsRequest):  # noqa: ARG001
-    """Use a vision model to detect form fields from grid-overlaid PDF page images."""
-    if not body.pages:
-        raise HTTPException(status_code=400, detail="No page images supplied")
-
-    # Build image content blocks — label each page so the VLM assigns correct page_number
-    user_content: list[dict] = []
-    for page in body.pages:
-        if not page.data_url.startswith("data:image/"):
-            continue
-        user_content.append({"type": "text", "text": f"--- Page {page.page_number} ---"})
-        user_content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": page.data_url},
-            }
-        )
-
-    if not user_content:
-        raise HTTPException(status_code=400, detail="No valid image data URLs supplied")
-
+    """Use a vision model to detect form fields from PDF page images."""
+    # One fresh request per page — many providers cap images per prompt and
+    # per conversation context, so pages must never share a request.
     config = config_manager.get_config()
     prompts = config_manager.get_prompts_and_options()
     options = prompts["options"]["general"].copy()
     options.pop("stop", None)
-
-    messages = [
-        {"role": "system", "content": _DETECT_SYSTEM_PROMPT},
-        {"role": "user", "content": user_content},
-    ]
-
     client = get_llm_client(timeout=180)
-    try:
+
+    async def detect_page(page):
+        messages = [
+            {"role": "system", "content": _DETECT_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Identify all fillable form fields on this page.",
+                    },
+                    {"type": "image_url", "image_url": {"url": page.data_url}},
+                ],
+            },
+        ]
         raw = await client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],
             messages=messages,
             schema=_DETECT_FIELDS_SCHEMA,
             options=options,
         )
-    except Exception as exc:
-        logger.error("VLM field detection failed: %s", exc)
-        raise HTTPException(status_code=502, detail=f"Vision model error: {exc}") from exc
+        result = json.loads(raw) if isinstance(raw, str) else raw
+        # Page is ground truth from the request, not the model
+        for field in result.get("fields", []):
+            field["page_number"] = page.page_number
+        return result.get("fields", [])
 
-    # Parse and return
-    if isinstance(raw, str):
-        result = json.loads(raw)
-    else:
-        result = raw
+    valid_pages = [page for page in body.pages if page.data_url.startswith("data:image/")]
+    if not valid_pages:
+        raise HTTPException(status_code=400, detail="No valid image data URLs supplied")
 
-    return result
+    results = await asyncio.gather(
+        *(detect_page(page) for page in valid_pages), return_exceptions=True
+    )
+
+    fields: list[dict] = []
+    last_error: BaseException | None = None
+    for page, result in zip(valid_pages, results, strict=True):
+        if isinstance(result, BaseException):
+            last_error = result
+            logger.error(
+                "VLM field detection failed for page %s: %s",
+                page.page_number,
+                result,
+            )
+            continue
+        fields.extend(result)
+
+    if not fields and last_error is not None:
+        raise HTTPException(
+            status_code=502, detail=f"Vision model error: {last_error}"
+        ) from last_error
+
+    return {"fields": fields}

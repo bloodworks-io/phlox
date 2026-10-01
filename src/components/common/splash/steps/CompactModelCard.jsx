@@ -5,6 +5,7 @@ import {
   Button,
   Progress,
 } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   DownloadIcon,
@@ -25,6 +26,7 @@ export const CompactModelCard = ({
   onDownload,
   systemSpecs,
 }) => {
+  const { t } = useTranslation();
   const isRecommended = model.recommendedType === "recommended";
 
   return (
@@ -60,7 +62,7 @@ export const CompactModelCard = ({
       <HStack w="full" justify="space-between">
         <HStack gap={1}>
           {model.recommendedType === "recommended" && (
-            <Tooltip content="Recommended for your Mac" showArrow>
+            <Tooltip content={t("splash.step.aiModels.recommendedTooltip")} showArrow>
               <Box color="secondaryButton" display="flex" alignItems="center" cursor="default">
                 <FaStar size="12" />
               </Box>
@@ -105,18 +107,18 @@ export const CompactModelCard = ({
       {/* Action button */}
       {!isDownloading && isDownloaded && isSelected && (
         <GreenButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>
-          Selected
+          {t("splash.step.aiModels.selected")}
         </GreenButton>
       )}
       {!isDownloading && isDownloaded && !isSelected && (
         <Button size="sm" w="full" variant="outline" onClick={onSelect}>
-          Select
+          {t("splash.step.aiModels.select")}
         </Button>
       )}
       {!isDownloading && !isDownloaded && (
         <NavButton size="sm" w="full" onClick={onDownload}>
           <DownloadIcon />
-          Download
+          {t("splash.step.aiModels.download")}
         </NavButton>
       )}
     </Box>

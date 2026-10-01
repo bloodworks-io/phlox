@@ -43,6 +43,8 @@ export const LoadingStatus = ({ status, colorMode }) => {
             }
             flexDirection="column"
             gap={4}
+            className="anim-fade-scale"
+            css={{ animationDuration: "0.2s" }}
         >
             <VStack gap={4}>
                 <Spinner size="lg" color="secondaryButton" borderWidth="3px" />

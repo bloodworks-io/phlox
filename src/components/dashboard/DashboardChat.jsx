@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Box, Flex, VStack, Text, Button } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { InfoIcon, SearchIcon, QuestionIcon } from "../common/icons";
 import { useChat } from "../../utils/hooks/useChat";
 import DashboardChatInput from "./DashboardChatInput";
@@ -24,13 +25,20 @@ const normalizeProcessingMode = (value) => {
 };
 
 const pickSuggestions = (specialty) => {
-    const pool =
-        SPECIALTY_SUGGESTIONS[String(specialty || "").trim().toLowerCase()] ||
-        SPECIALTY_SUGGESTIONS["general practice"];
-    return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+    const key = String(specialty || "").trim().toLowerCase();
+    const known = Object.hasOwn(SPECIALTY_SUGGESTIONS, key);
+    const pool = known
+        ? SPECIALTY_SUGGESTIONS[key]
+        : SPECIALTY_SUGGESTIONS["general practice"];
+    const slug = (known ? key : "general practice").replace(/ /g, "_");
+    return pool
+        .map((_, index) => ({ slug, index }))
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
 };
 
 const DashboardChat = () => {
+    const { t } = useTranslation();
     const {
         messages,
         setMessages,
@@ -276,7 +284,8 @@ const DashboardChat = () => {
                             });
 
                             const userVisibleText =
-                                messageText || "Analyze attached image";
+                                messageText ||
+                                t("chat.attachment.analyzeLabel");
 
                             setPendingImage(null);
                             setUserInput("");
@@ -299,7 +308,7 @@ const DashboardChat = () => {
                                     role: "assistant",
                                     content:
                                         visualResponse.answer ||
-                                        "I couldn't analyze that image.",
+                                        t("chat.attachment.analysisFailed"),
                                 },
                             ]);
                             return;
@@ -367,19 +376,23 @@ const DashboardChat = () => {
                     isIntroFading && !isProcessingImage ? "none" : "auto"
                 }
             >
-                <VStack gap={8} w="100%" maxW="800px">
-                    {/* Greeting */}
-                    <VStack gap={2}>
+                    <VStack gap={8} w="100%" maxW="800px">
+                        {/* Greeting */}
+                        <VStack
+                            gap={2}
+                            className="anim-fade-slide-up"
+                            css={{ animationDuration: "0.25s" }}
+                        >
                         <Text
                             fontSize="2xl"
                             fontWeight="bold"
                             fontFamily="heading"
                             className="dashboard-chat-greeting"
                         >
-                            How can I help you today?
+                            {t("dashboard.chat.greeting")}
                         </Text>
                         <Text fontSize="md" color="overlay0">
-                            Ask about patients, evidence, or outstanding jobs
+                            {t("dashboard.chat.subtitle")}
                         </Text>
                     </VStack>
 
@@ -391,23 +404,28 @@ const DashboardChat = () => {
                             gap={3}
                             className="anim-stagger"
                         >
-                            {ragSuggestions.map((suggestion, index) => (
-                                <Button
-                                    key={index}
-                                    onClick={() =>
-                                        handleSendMessage(suggestion)
-                                    }
-                                    className="dashboard-chat-suggestions"
-                                    size="sm">{
-                                        index === 0 ? (
-                                            <InfoIcon />
-                                        ) : index === 1 ? (
-                                            <SearchIcon />
-                                        ) : (
-                                            <QuestionIcon />
-                                        )
-                                    }{suggestion}</Button>
-                            ))}
+                            {ragSuggestions.map(({ slug, index }) => {
+                                const suggestionText = t(
+                                    `specialtySuggestion.${slug}.${index}`,
+                                );
+                                return (
+                                    <Button
+                                        key={`${slug}-${index}`}
+                                        onClick={() =>
+                                            handleSendMessage(suggestionText)
+                                        }
+                                        className="dashboard-chat-suggestions"
+                                        size="sm">{
+                                            index === 0 ? (
+                                                <InfoIcon />
+                                            ) : index === 1 ? (
+                                                <SearchIcon />
+                                            ) : (
+                                                <QuestionIcon />
+                                            )
+                                        }{suggestionText}</Button>
+                                );
+                            })}
                         </Flex>
                     )}
 
@@ -464,12 +482,13 @@ const DashboardChat = () => {
     // Active chat state - messages at top, input at bottom
     return (
         <Box
-            className="dashboard-chat-container"
+            className="dashboard-chat-container anim-fade-slide-up"
             display="flex"
             flexDirection="column"
             h="100%"
             position="relative"
             pt="60px"
+            css={{ animationDuration: "0.25s" }}
         >
             {/* Messages Area - scrollable middle */}
             <Box

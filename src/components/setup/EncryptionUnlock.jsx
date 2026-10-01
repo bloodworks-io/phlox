@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
@@ -8,6 +9,7 @@ import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
 
 const EncryptionUnlock = ({ onComplete }) => {
 
+  const { t } = useTranslation();
   const [passphrase, setPassphrase] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,8 +19,8 @@ const EncryptionUnlock = ({ onComplete }) => {
   const handleSubmit = useCallback(async () => {
     if (passphrase.length < 1) {
       toaster.create({
-        title: "Passphrase Required",
-        description: "Please enter your passphrase to unlock.",
+        title: t("encryption.passphraseRequired"),
+        description: t("encryption.enterToUnlock"),
         type: "warning",
         duration: 3000,
       });
@@ -75,8 +77,8 @@ const EncryptionUnlock = ({ onComplete }) => {
       }
 
       toaster.create({
-        title: "Unlocked",
-        description: "Your database has been unlocked successfully.",
+        title: t("encryption.unlocked"),
+        description: t("encryption.unlockedDesc"),
         type: "success",
         duration: 3000,
       });
@@ -92,11 +94,11 @@ const EncryptionUnlock = ({ onComplete }) => {
 
       toaster.create({
         title: isPassphraseError
-          ? "Incorrect Passphrase"
-          : "Server Failed to Start",
+          ? t("encryption.incorrectPassphrase")
+          : t("encryption.serverFailedTitle"),
         description: isPassphraseError
-          ? "The passphrase you entered is incorrect. Please try again."
-          : "The server couldn't start (this isn't a passphrase problem). Click Unlock to retry — it will re-launch the server.",
+          ? t("encryption.incorrectDesc")
+          : t("encryption.serverFailedDesc"),
         type: "error",
         duration: 6000,
       });
@@ -107,7 +109,7 @@ const EncryptionUnlock = ({ onComplete }) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [passphrase, attempts, onComplete]);
+  }, [passphrase, attempts, onComplete, t]);
 
   const handleKeyPress = useCallback(
     (e) => {
@@ -170,7 +172,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             align="center"
             mb={2}
           >
-            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
+            <Image src="/logo.webp" alt={t("chat.logoAlt")} width="60px" mb={3} />
             <Heading
               as="h1"
               textAlign="center"
@@ -183,7 +185,7 @@ const EncryptionUnlock = ({ onComplete }) => {
                 marginBottom: "0.5rem"
               }}
             >
-              Unlock Your Data
+              {t("encryption.unlockTitle")}
             </Heading>
             <Text
               textAlign="center"
@@ -192,16 +194,21 @@ const EncryptionUnlock = ({ onComplete }) => {
               maxW="350px"
               lineHeight="1.6"
             >
-              Enter your passphrase to decrypt and access your patient data.
+              {t("encryption.unlockSubtitle")}
             </Text>
           </Flex>
 
           {attempts > 0 && lastWasPassphrase && (
-            <Alert.Root status="warning" borderRadius="md" fontSize="sm">
+            <Alert.Root
+              status="warning"
+              borderRadius="md"
+              fontSize="sm"
+              className="anim-fade-slide-up"
+              css={{ animationDuration: "0.2s" }}
+            >
               <Alert.Indicator />
               <Text fontSize="xs">
-                Incorrect passphrase. Please try again. ({attempts} attempt
-                {attempts > 1 ? "s" : ""})
+                {t("encryption.incorrectAttempt", { count: attempts })}
               </Text>
             </Alert.Root>
           )}
@@ -214,12 +221,12 @@ const EncryptionUnlock = ({ onComplete }) => {
                 fontWeight="500"
                 color={"textPrimary"}
               >
-                Passphrase
+                {t("encryption.passphrase")}
               </Text>
               <HStack>
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your passphrase"
+                  placeholder={t("encryption.unlockPlaceholder")}
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -240,7 +247,7 @@ const EncryptionUnlock = ({ onComplete }) => {
                   size="md"
                   variant="ghost"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label="Toggle password visibility"
+                  aria-label={t("common.togglePasswordVisibility")}
                 >
                   <Icon as={showPassword ? FaEyeSlash : FaEye} />
                 </Button>
@@ -251,7 +258,7 @@ const EncryptionUnlock = ({ onComplete }) => {
           <Button
             onClick={handleSubmit}
             loading={isSubmitting}
-            loadingText="Unlocking..."
+            loadingText={t("encryption.unlocking")}
             disabled={passphrase.length < 1}
             borderRadius="2xl"
             size="lg"
@@ -262,7 +269,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             }}
             mt={2}
           >
-            Unlock
+            {t("encryption.unlock")}
           </Button>
         </VStack>
       </Box>

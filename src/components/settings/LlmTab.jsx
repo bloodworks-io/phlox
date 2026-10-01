@@ -1,9 +1,24 @@
-import { Box, Text, InputGroup, Input, NativeSelect, VStack, HStack, Badge, Button, Alert, Spinner } from "@chakra-ui/react";
+import {
+    Box,
+    Text,
+    InputGroup,
+    Input,
+    NativeSelect,
+    VStack,
+    HStack,
+    Badge,
+    Button,
+    Alert,
+    Spinner,
+    NumberInput,
+} from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from "@/components/ui/tooltip";
 import { CheckCircleIcon } from "../common/icons";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { chatApi } from "../../utils/api/chatApi";
+import { FiRefreshCw } from "react-icons/fi";
 
 const LlmTab = ({
     config,
@@ -11,7 +26,11 @@ const LlmTab = ({
     modelOptions,
     llmModelsLoading = false,
     urlStatus = { llm: false },
+    letterTemperature,
+    onLetterTemperatureChange,
+    onOptionsReset,
 }) => {
+    const { t } = useTranslation();
     const [isProbingVision, setIsProbingVision] = useState(false);
     const [visionProbeDetail, setVisionProbeDetail] = useState("");
     const [visionProbeStatus, setVisionProbeStatus] = useState("info");
@@ -51,8 +70,8 @@ const LlmTab = ({
             const detail =
                 result?.detail ||
                 (capable
-                    ? "Vision input accepted by endpoint/model."
-                    : "Vision input was not accepted by endpoint/model.");
+                    ? t("settings.llm.visionAccepted")
+                    : t("settings.llm.visionNotAccepted"));
 
             if (!config?.DOCUMENT_IMAGE_PROCESSING_MODE) {
                 handleConfigChange("DOCUMENT_IMAGE_PROCESSING_MODE", "auto");
@@ -65,21 +84,21 @@ const LlmTab = ({
 
             toaster.create({
                 title: capable
-                    ? "Vision capability detected"
-                    : "Vision capability not detected",
+                    ? t("settings.llm.visionDetected")
+                    : t("settings.llm.visionNotDetected"),
                 description: detail,
                 status: capable ? "success" : "warning",
                 duration: 4500,
             });
         } catch (error) {
             const detail =
-                error?.message || "Failed to probe visual capability.";
+                error?.message || t("settings.llm.probeFailed");
             setVisionProbeStatus("error");
             setVisionProbeDetail(detail);
             setCurrentVisionCapability(null);
 
             toaster.create({
-                title: "Vision capability probe failed",
+                title: t("settings.llm.probeFailedTitle"),
                 description: detail,
                 type: "error",
                 duration: 5000,
@@ -93,26 +112,25 @@ const LlmTab = ({
         <VStack gap={4} align="stretch">
             <Box>
                 <Text fontSize="md" fontWeight="bold">
-                    Large Language Model (LLM)
+                    {t("settings.llm.title")}
                 </Text>
                 <Text fontSize="sm" color="overlay0">
-                    Configure the language model provider for generating
-                    responses
+                    {t("settings.llm.description")}
                 </Text>
             </Box>
 
             <VStack gap={3} align="stretch">
                 <Box>
-                    <Tooltip content="Base URL for your OpenAI/Ollama-compatible LLM API endpoint">
+                    <Tooltip content={t("settings.llm.baseUrlTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            OpenAI/Ollama API Base URL
+                            {t("settings.llm.baseUrlLabel")}
                         </Text>
                     </Tooltip>
                     <InputGroup
                         size="sm"
                         endElement={
                             urlStatus.llm ? (
-                                <Tooltip content="Connection successful">
+                                <Tooltip content={t("settings.connectionSuccessful")}>
                                     <CheckCircleIcon color="successButton" />
                                 </Tooltip>
                             ) : undefined
@@ -133,9 +151,9 @@ const LlmTab = ({
                 </Box>
 
                 <Box>
-                    <Tooltip content="API key for authenticating with the OpenAI/Ollama-compatible service">
+                    <Tooltip content={t("settings.llm.apiKeyTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            API Key
+                            {t("settings.apiKeyLabel")}
                         </Text>
                     </Tooltip>
                     <Input
@@ -151,16 +169,16 @@ const LlmTab = ({
                 </Box>
 
                 <Box>
-                    <Tooltip content="Primary model for generating responses and clinical notes">
+                    <Tooltip content={t("settings.llm.primaryModelTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            Primary Model
+                            {t("settings.llm.primaryModel")}
                         </Text>
                     </Tooltip>
                     {llmModelsLoading ? (
                         <HStack gap="2">
                             <Spinner size="sm" />
                             <Text fontSize="sm" color="overlay0">
-                                Loading models...
+                                {t("settings.loadingModels")}
                             </Text>
                         </HStack>
                     ) : (
@@ -174,7 +192,7 @@ const LlmTab = ({
                                         e.target.value,
                                     )
                                 }
-                                placeholder="Select model"
+                                placeholder={t("settings.llm.selectModel")}
                                 className="input-style"
                             >
                                 {modelOptions.map((model) => (
@@ -189,16 +207,16 @@ const LlmTab = ({
                 </Box>
 
                 <Box>
-                    <Tooltip content="Secondary model for tasks requiring different capabilities or for comparison">
+                    <Tooltip content={t("settings.llm.secondaryModelTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            Secondary Model
+                            {t("settings.llm.secondaryModel")}
                         </Text>
                     </Tooltip>
                     {llmModelsLoading ? (
                         <HStack gap="2">
                             <Spinner size="sm" />
                             <Text fontSize="sm" color="overlay0">
-                                Loading models...
+                                {t("settings.loadingModels")}
                             </Text>
                         </HStack>
                     ) : (
@@ -212,7 +230,7 @@ const LlmTab = ({
                                         e.target.value,
                                     )
                                 }
-                                placeholder="Select model"
+                                placeholder={t("settings.llm.selectModel")}
                                 className="input-style"
                             >
                                 {modelOptions.map((model) => (
@@ -227,9 +245,9 @@ const LlmTab = ({
                 </Box>
 
                 <Box>
-                    <Tooltip content="Choose how PDFs/images are handled: visual LLM, OCR fallback, or automatic selection">
+                    <Tooltip content={t("settings.llm.processingModeTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            Document/Image Processing Mode
+                            {t("settings.llm.processingMode")}
                         </Text>
                     </Tooltip>
                     <NativeSelect.Root>
@@ -247,24 +265,22 @@ const LlmTab = ({
                             className="input-style"
                         >
                             <option value="auto">
-                                Auto (prefer visual if available)
+                                {t("settings.llm.modeAuto")}
                             </option>
-                            <option value="vision">Vision only</option>
-                            <option value="ocr">OCR only</option>
+                            <option value="vision">{t("settings.llm.modeVision")}</option>
+                            <option value="ocr">{t("settings.llm.modeOcr")}</option>
                         </NativeSelect.Field>
                         <NativeSelect.Indicator />
                     </NativeSelect.Root>
                     <Text fontSize="xs" color="overlay0" mt="1">
-                        Auto uses visual processing when vision capability is
-                        detected; otherwise it falls back to OCR-compatible
-                        endpoints.
+                        {t("settings.llm.processingModeHint")}
                     </Text>
                 </Box>
 
                 <Box>
-                    <Tooltip content="Send a tiny test image to check whether the selected endpoint/model accepts image inputs">
+                    <Tooltip content={t("settings.llm.probeTooltip")}>
                         <Text fontSize="sm" mb="1" fontWeight={"bold"}>
-                            Vision Capability Probe
+                            {t("settings.llm.probeLabel")}
                         </Text>
                     </Tooltip>
 
@@ -275,7 +291,7 @@ const LlmTab = ({
                             onClick={handleProbeVisionCapability}
                             loading={isProbingVision}
                         >
-                            Test Vision Support
+                            {t("settings.llm.testVision")}
                         </Button>
                         <Badge
                             colorPalette={
@@ -288,17 +304,19 @@ const LlmTab = ({
                         >
                             {currentVisionCapability
                                 ? currentVisionCapability.vision_capable
-                                    ? "Vision capable"
-                                    : "Not vision-capable"
-                                    : "Unknown"}
+                                    ? t("settings.llm.visionCapable")
+                                    : t("settings.llm.visionNotCapable")
+                                    : t("settings.llm.unknown")}
                         </Badge>
                     </HStack>
                     {currentVisionCapability ? (
                         <Text fontSize="xs" color="overlay0" mb={2}>
-                            Source:{" "}
+                            {t("settings.llm.source")}{" "}
                             {currentVisionCapability.source || "cache"}
                             {currentVisionCapability.probed_at
-                                ? ` • Probed: ${currentVisionCapability.probed_at}`
+                                ? t("settings.llm.probedAt", {
+                                      value: currentVisionCapability.probed_at,
+                                  })
                                 : ""}
                         </Text>
                     ) : null}
@@ -316,6 +334,48 @@ const LlmTab = ({
                         </Alert.Root>
                     ) : null}
                 </Box>
+
+                {onLetterTemperatureChange && (
+                    <Box>
+                        <HStack justify="space-between" mb="1">
+                            <Tooltip content={t("settings.llm.temperatureTooltip")}>
+                                <Text fontSize="sm" fontWeight="bold">
+                                    {t("settings.llm.temperature")}
+                                </Text>
+                            </Tooltip>
+                            {onOptionsReset && (
+                                <Button
+                                    size="sm"
+                                    h="30px"
+                                    minH="30px"
+                                    className="red-button"
+                                    onClick={onOptionsReset}
+                                >
+                                    <FiRefreshCw />
+                                    {t("settings.resetToDefault")}
+                                </Button>
+                            )}
+                        </HStack>
+                        <HStack>
+                            <NumberInput.Root
+                                size="sm"
+                                width="100px"
+                                min={0}
+                                max={2}
+                                step={0.1}
+                                value={String(letterTemperature ?? "")}
+                                onValueChange={(details) =>
+                                    onLetterTemperatureChange(details.value)
+                                }
+                            >
+                                <NumberInput.Input className="input-style" />
+                            </NumberInput.Root>
+                            <Text fontSize="xs" color="overlay0">
+                                {t("settings.llm.temperatureHint")}
+                            </Text>
+                        </HStack>
+                    </Box>
+                )}
             </VStack>
         </VStack>
     );

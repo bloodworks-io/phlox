@@ -4,7 +4,6 @@ import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../api/pdfFormsApi";
 import { chatApi } from "../api/chatApi";
 import { loadPdfDocument } from "../helpers/pdfVisionHelpers";
-import { renderRulerOverlay } from "../pdf/renderGridOverlay";
 
 const VALID_FIELD_TYPES = ["text", "checkbox", "date", "number"];
 
@@ -138,12 +137,49 @@ export const usePdfForms = () => {
       // 1. Fetch the PDF
       const pdfData = await pdfFormsApi.fetchTemplatePdf(selectedTemplate.id);
 
-      // 2. Render pages to canvases with ruler overlay
+      // 2. Render pages; harvest AcroForm widgets (exact geometry) where
+      //    present so only widget-free pages go through the VLM
       const doc = await loadPdfDocument({ data: pdfData });
 
-      const rulerPages = [];
+      const makeField = (pageNumber, props) => ({
+        id: `field_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        description: "",
+        required: false,
+        font_size: 12,
+        page_number: pageNumber,
+        ...props,
+      });
+
+      const vlmPages = [];
+      const pageDims = []; // actual PDF-point dimensions per page
+      const acroFields = [];
       for (let i = 1; i <= Math.min(doc.numPages, 6); i++) {
         const page = await doc.getPage(i);
+
+        // AcroForm widgets come with exact rects in PDF points
+        const widgets = (await page.getAnnotations()).filter(
+          (a) => a.subtype === "Widget" && Array.isArray(a.rect),
+        );
+        if (widgets.length > 0) {
+          for (const w of widgets) {
+            const [x1, y1, x2, y2] = w.rect;
+            const width = Math.abs(x2 - x1);
+            const height = Math.abs(y2 - y1);
+            if (width < 1 || height < 1) continue;
+            acroFields.push(
+              makeField(i, {
+                name: w.fieldName || "",
+                field_type: w.fieldType === "Btn" ? "checkbox" : "text",
+                x: Math.min(x1, x2),
+                y: Math.min(y1, y2),
+                width,
+                height,
+              }),
+            );
+          }
+          continue; // exact fields found — no render/VLM needed for this page
+        }
+
         const viewport = page.getViewport({ scale: 1.75 });
 
         const canvas = document.createElement("canvas");
@@ -152,59 +188,60 @@ export const usePdfForms = () => {
         const ctx = canvas.getContext("2d");
 
         await page.render({ canvasContext: ctx, viewport }).promise;
-        const rulerDataUrl = renderRulerOverlay(canvas, { pageNumber: i });
-        rulerPages.push({ page_number: i, data_url: rulerDataUrl });
+        vlmPages.push({
+          page_number: i,
+          data_url: canvas.toDataURL("image/png"),
+        });
+
+        const base = page.getViewport({ scale: 1 });
+        pageDims[i - 1] = { width: base.width, height: base.height };
 
         // Release memory
         canvas.width = 1;
         canvas.height = 1;
       }
 
-      // 3. Send to server for VLM detection
-      const result = await pdfFormsApi.detectFields(
-        selectedTemplate.id,
-        rulerPages
-      );
+      // 3. VLM detection only for pages without AcroForm fields
+      let vlmFields = [];
+      if (vlmPages.length > 0) {
+        const result = await pdfFormsApi.detectFields(
+          selectedTemplate.id,
+          vlmPages,
+        );
 
-      // 4. Convert percentages to PDF coordinates
-      const pageHeights = selectedTemplate.page_heights || [];
-      const detectedFields = (result.fields || []).map((f) => {
-        const pageNum = Math.max(1, f.page_number || 1);
-        const ph = pageHeights[pageNum - 1] || 792;
-        const pw = ph * (8.5 / 11);
+        // Convert percentages to PDF coordinates using real page dimensions
+        const pageHeights = selectedTemplate.page_heights || [];
+        vlmFields = (result.fields || []).map((f) => {
+          const pageNum = Math.max(1, f.page_number || 1);
+          const dims = pageDims[pageNum - 1];
+          const ph = dims?.height ?? pageHeights[pageNum - 1] ?? 792;
+          const pw = dims?.width ?? ph * (8.5 / 11);
 
-        // Sanitize field_type
-        let fieldType = (f.field_type || "text").toLowerCase().trim();
-        if (!VALID_FIELD_TYPES.includes(fieldType)) fieldType = "text";
+          // Sanitize field_type
+          let fieldType = (f.field_type || "text").toLowerCase().trim();
+          if (!VALID_FIELD_TYPES.includes(fieldType)) fieldType = "text";
 
-        // Convert percentages to PDF points
-        const x = ((f.x_pct || 0) / 100) * pw;
-        const y = ph - (((f.y_pct || 0) + (f.height_pct || 5)) / 100) * ph; // PDF y is bottom-up
-        const width = Math.max(1, ((f.width_pct || 10) / 100) * pw);
-        const height = Math.max(1, ((f.height_pct || 5) / 100) * ph);
+          return makeField(pageNum, {
+            name: f.name || "",
+            field_type: fieldType,
+            // Convert percentages to PDF points (y is bottom-up)
+            x: ((f.x_pct || 0) / 100) * pw,
+            y: ph - (((f.y_pct || 0) + (f.height_pct || 5)) / 100) * ph,
+            width: Math.max(1, ((f.width_pct || 10) / 100) * pw),
+            height: Math.max(1, ((f.height_pct || 5) / 100) * ph),
+          });
+        });
+      }
 
-        return {
-          id: `field_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-          name: f.name || "",
-          description: "",
-          field_type: fieldType,
-          required: false,
-          page_number: pageNum,
-          x,
-          y,
-          width,
-          height,
-          font_size: 12,
-        };
-      });
+      const detectedFields = [...acroFields, ...vlmFields];
 
-      // 5. Set fields
+      // 4. Set fields
       setFields(detectedFields);
       if (detectedFields.length > 0) {
         setSelectedFieldId(detectedFields[0].id);
       }
 
-      // 6. Auto-save (strip id — storage generates its own)
+      // 5. Auto-save (strip id — storage generates its own)
       const savePayload = detectedFields.map(({ _id, ...rest }) => rest);
       await pdfFormsApi.saveFields(selectedTemplate.id, savePayload);
       toaster.create({

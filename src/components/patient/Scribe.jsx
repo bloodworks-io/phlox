@@ -1,9 +1,14 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useTranscription } from "../../utils/hooks/useTranscription";
 import { settingsApi } from "../../utils/api/settingsApi";
+import { captureApi } from "../../utils/api/captureApi";
 import { AudioRecorder } from "../../utils/audioRecorder";
+import { isTauri } from "../../utils/helpers/apiConfig";
 
-const SCRIBE_MODE_STORAGE_KEY = "phlox-scribe-mode";
+export const SCRIBE_MODE_STORAGE_KEY = "phlox-scribe-mode";
+
+const CAPTURE_TAIL_SETTLE_MS = 1200;
 
 // Hook to manage scribe state and logic
 // This can be used by ScribePillBox to control recording
@@ -17,29 +22,33 @@ export const useScribe = ({
     setLoading,
     onSendStart,
 }) => {
+    const { t } = useTranslation();
     const [isAmbient, setIsAmbient] = useState(
         () => localStorage.getItem(SCRIBE_MODE_STORAGE_KEY) !== "dictate",
     );
     const [requireConsent, setRequireConsent] = useState(false);
+    const [streamingCapture, setStreamingCapture] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [timer, setTimer] = useState(0);
     const audioRecorderRef = useRef(null);
     const timerIntervalRef = useRef(null);
+    const captureRef = useRef(null);
 
     const [sendError, setSendError] = useState(null); // null = ok, else { message }
     const lastFailedRef = useRef({ blob: null, meta: null, isAmbient: null });
 
     // Transcription API
-    const { transcribeAudio, isTranscribing } = useTranscription((data) => {
-        if (data?.error) return;
-        handleTranscriptionComplete({
-            fields: data.fields,
-            rawTranscription: data.rawTranscription,
-            transcriptionDuration: data.transcriptionDuration,
-            processDuration: data.processDuration,
-        });
-    }, setLoading);
+    const { transcribeAudio, finalizeCaptureSession, isTranscribing } =
+        useTranscription((data) => {
+            if (data?.error) return;
+            handleTranscriptionComplete({
+                fields: data.fields,
+                rawTranscription: data.rawTranscription,
+                transcriptionDuration: data.transcriptionDuration,
+                processDuration: data.processDuration,
+            });
+        }, setLoading);
 
     // Fetch system-policy settings on mount
     useEffect(() => {
@@ -47,6 +56,9 @@ export const useScribe = ({
             try {
                 const globalConfig = await settingsApi.fetchConfig();
                 setRequireConsent(Boolean(globalConfig?.REQUIRE_SCRIBE_CONSENT));
+                setStreamingCapture(
+                    isTauri() || globalConfig?.STREAMING_CAPTURE_ENABLED === true,
+                );
             } catch (error) {
                 console.error("Error fetching settings:", error);
             }
@@ -72,6 +84,7 @@ export const useScribe = ({
         setTimer(0);
         setSendError(null);
         lastFailedRef.current = { blob: null, meta: null, isAmbient: null };
+        captureRef.current = null;
         if (audioRecorderRef.current) {
             audioRecorderRef.current.stop().catch(() => {});
         }
@@ -97,12 +110,12 @@ export const useScribe = ({
             } catch (error) {
                 console.error("Transcription failed:", error);
                 lastFailedRef.current = { blob, meta: { ...meta }, isAmbient };
-                const message = error?.message || "Transcription failed";
+                const message = error?.message || t("patient.transcriptionFailed");
                 setSendError({ message });
                 return false;
             }
         },
-        [transcribeAudio, isAmbient, clearLastFailed],
+        [transcribeAudio, isAmbient, clearLastFailed, t],
     );
 
     const retrySend = useCallback(async () => {
@@ -114,11 +127,11 @@ export const useScribe = ({
             return true;
         } catch (error) {
             console.error("Transcription retry failed:", error);
-            const message = error?.message || "Transcription failed";
+            const message = error?.message || t("patient.transcriptionFailed");
             setSendError({ message });
             return false;
         }
-    }, [transcribeAudio, clearLastFailed]);
+    }, [transcribeAudio, clearLastFailed, t]);
 
     const downloadLastRecording = useCallback(() => {
         const { blob } = lastFailedRef.current;
@@ -146,6 +159,41 @@ export const useScribe = ({
         clearLastFailed();
     }, [clearLastFailed]);
 
+    const startCaptureStreaming = useCallback(
+        async (recorder) => {
+            try {
+                const { session_id } = await captureApi.startSession({
+                    mode: isAmbient ? "ambient" : "dictate",
+                    templateKey: template?.template_key,
+                    name,
+                    gender,
+                    dob,
+                    noteId,
+                });
+                // Recording may have been stopped while the session was
+                // being created; don't arm a stale session.
+                if (audioRecorderRef.current !== recorder) {
+                    return;
+                }
+                captureRef.current = { id: session_id, failures: 0 };
+                recorder.enableSegmentStreaming(async (blob) => {
+                    const capture = captureRef.current;
+                    if (!capture) return;
+                    try {
+                        await captureApi.sendAudioChunk(capture.id, blob);
+                    } catch (error) {
+                        console.error("Capture segment upload failed:", error);
+                        capture.failures += 1;
+                    }
+                });
+            } catch (error) {
+                console.warn("Streaming capture unavailable; using batch:", error);
+                captureRef.current = null;
+            }
+        },
+        [isAmbient, template, name, gender, dob, noteId],
+    );
+
     const startRecording = useCallback(async () => {
         try {
             const recorder = new AudioRecorder();
@@ -153,11 +201,14 @@ export const useScribe = ({
             audioRecorderRef.current = recorder;
             setIsRecording(true);
             setTimer(0);
+            if (streamingCapture) {
+                startCaptureStreaming(recorder);
+            }
         } catch (error) {
             console.error("Error starting recording:", error);
-            alert("Could not access microphone. Please check your permissions.");
+            alert(t("patient.microphoneAccessError"));
         }
-    }, []);
+    }, [t, streamingCapture, startCaptureStreaming]);
 
     const pauseRecording = useCallback(() => {
         audioRecorderRef.current?.pause();
@@ -182,17 +233,36 @@ export const useScribe = ({
         setIsRecording(false);
         setIsPaused(false);
         const blob = await recorder.stop();
-        await sendForTranscription(blob, {
+        const meta = {
             name,
             gender,
             dob,
             templateKey: template?.template_key,
             noteId,
-        });
+        };
+
+        // Streaming capture path: settle the flushed tail utterance, then
+        // finalize. Any failure or server fallback reruns as batch with the
+        // full-recording WAV.
+        const capture = captureRef.current;
+        captureRef.current = null;
+        if (capture && capture.failures === 0) {
+            await new Promise((resolve) =>
+                setTimeout(resolve, CAPTURE_TAIL_SETTLE_MS),
+            );
+            const data = await finalizeCaptureSession(capture.id);
+            if (!data?.fallback) {
+                return blob;
+            }
+            console.warn("Streaming capture fell back to batch:", data.reason);
+        }
+
+        await sendForTranscription(blob, meta);
         return blob;
     }, [
         isRecording,
         sendForTranscription,
+        finalizeCaptureSession,
         name,
         gender,
         dob,
@@ -209,15 +279,13 @@ export const useScribe = ({
         resetRecordingState();
     }, [isRecording, resetRecordingState]);
 
-    // Capture mode persists per-device in localStorage.
-    const toggleAmbientMode = useCallback(async () => {
-        const newValue = !isAmbient;
-        setIsAmbient(newValue);
-        localStorage.setItem(
-            SCRIBE_MODE_STORAGE_KEY,
-            newValue ? "ambient" : "dictate",
-        );
-    }, [isAmbient]);
+    // Capture-mode selection for the pill's mode dial. The live agent is
+    // armed/persisted by PatientDetails; only dictate/ambient land here.
+    const selectCaptureMode = useCallback((mode) => {
+        if (mode !== "dictate" && mode !== "ambient") return;
+        setIsAmbient(mode === "ambient");
+        localStorage.setItem(SCRIBE_MODE_STORAGE_KEY, mode);
+    }, []);
 
     // Handle audio file drop
     const handleAudioDrop = useCallback(
@@ -253,7 +321,7 @@ export const useScribe = ({
         resumeRecording,
         stopAndSendRecording,
         resetRecording,
-        toggleAmbientMode,
+        selectCaptureMode,
         handleAudioDrop,
         retrySend,
         downloadLastRecording,

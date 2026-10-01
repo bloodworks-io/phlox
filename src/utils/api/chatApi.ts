@@ -1,6 +1,7 @@
 // API functions for interacting with the chat service backend.
 import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
+import { t } from "@/i18n";
 
 export const chatApi = {
     sendMessage: async (
@@ -21,7 +22,7 @@ export const chatApi = {
                     }),
                 });
             },
-            errorMessage: "Error in chat communication",
+            errorMessage: t("api.chat.sendMessageFailed"),
         });
     },
 
@@ -35,8 +36,8 @@ export const chatApi = {
                     body: JSON.stringify(letterData),
                 });
             },
-            successMessage: "Letter generated successfully.",
-            errorMessage: "Error generating letter",
+            successMessage: t("api.chat.letterGeneratedToast"),
+            errorMessage: t("api.chat.generateLetterFailed"),
         });
     },
 
@@ -52,7 +53,7 @@ export const chatApi = {
                     body: JSON.stringify(payload),
                 });
             },
-            errorMessage: "Error analyzing document visuals",
+            errorMessage: t("api.chat.analyzeVisualFailed"),
         });
     },
 
@@ -66,7 +67,7 @@ export const chatApi = {
                     body: JSON.stringify(payload),
                 });
             },
-            errorMessage: "Error probing vision capability",
+            errorMessage: t("api.chat.probeVisionFailed"),
         });
     },
 
@@ -78,7 +79,7 @@ export const chatApi = {
                 );
                 return universalFetch(url);
             },
-            errorMessage: "Error fetching current vision capability",
+            errorMessage: t("api.chat.fetchVisionCapabilityFailed"),
         });
     },
 
@@ -92,7 +93,7 @@ export const chatApi = {
                     body: JSON.stringify(payload),
                 });
             },
-            errorMessage: "Error generating visual response",
+            errorMessage: t("api.chat.respondVisualFailed"),
         });
     },
 
@@ -107,7 +108,7 @@ export const chatApi = {
                     body: formData,
                 });
             },
-            errorMessage: "Error uploading image",
+            errorMessage: t("api.chat.uploadImageFailed"),
         });
     },
 
@@ -128,7 +129,7 @@ export const chatApi = {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(t("api.error.httpStatus", { status: response.status }) as string);
         }
 
         const reader = response.body.getReader();

@@ -340,6 +340,20 @@ class ConfigManager:
                 ),
             )
 
+    def set_splash_completed(self) -> None:
+        """Mark splash completion for the current user without rewriting the row."""
+        self.refresh_db()
+        where, params = self._user_settings_where()
+        updated = False
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                f"UPDATE user_settings SET has_completed_splash_screen = TRUE WHERE {where}",
+                params,
+            )
+            updated = cursor.rowcount > 0
+        if not updated:
+            self.update_user_settings({"has_completed_splash_screen": True})
+
     def get_default_template_key(self) -> str | None:
         """Return the current default template key, or None if unset."""
         return self.get_user_settings().get("default_template_key")

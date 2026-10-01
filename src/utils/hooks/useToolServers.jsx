@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import useSWR from "swr";
 import { toolsApi } from "../api/toolsApi";
 import { settingsApi } from "../api/settingsApi";
@@ -8,6 +9,7 @@ import { KEYS } from "../cache/keys";
 const DEFAULT_DISABLED_TOOLS = ["pubmed_search", "wiki_search"];
 
 export const useToolServers = () => {
+    const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(false);
     const [testingServerId, setTestingServerId] = useState(null);
 
@@ -39,18 +41,18 @@ export const useToolServers = () => {
             try {
                 await toolsApi.addToolServer(serverData);
                 await toolsApi.refreshTools();
-                toastApiSuccess("Tool server added successfully");
+                toastApiSuccess(t("toolServers.toast.added"));
                 await mutateServers();
                 return true;
             } catch (error) {
                 console.error("Error adding tool server:", error);
-                toastApiError("Failed to add tool server");
+                toastApiError(t("toolServers.toast.addFailed"));
                 return false;
             } finally {
                 setIsLoading(false);
             }
         },
-        [mutateServers],
+        [mutateServers, t],
     );
 
     const deleteServer = useCallback(
@@ -59,18 +61,18 @@ export const useToolServers = () => {
             try {
                 await toolsApi.deleteToolServer(serverId);
                 await toolsApi.refreshTools();
-                toastApiSuccess("Tool server deleted");
+                toastApiSuccess(t("toolServers.toast.deleted"));
                 await mutateServers();
                 return true;
             } catch (error) {
                 console.error("Error deleting tool server:", error);
-                toastApiError("Failed to delete tool server");
+                toastApiError(t("toolServers.toast.deleteFailed"));
                 return false;
             } finally {
                 setIsLoading(false);
             }
         },
-        [mutateServers],
+        [mutateServers, t],
     );
 
     const toggleServer = useCallback(
@@ -79,18 +81,26 @@ export const useToolServers = () => {
             try {
                 await toolsApi.toggleToolServer(serverId, enabled);
                 await toolsApi.refreshTools();
-                toastApiSuccess(`Tool server ${enabled ? "enabled" : "disabled"}`);
+                toastApiSuccess(
+                    t("toolServers.toast.serverToggled", {
+                        state: t(
+                            enabled
+                                ? "toolServers.status.enabled"
+                                : "toolServers.status.disabled",
+                        ),
+                    }),
+                );
                 await mutateServers();
                 return true;
             } catch (error) {
                 console.error("Error toggling tool server:", error);
-                toastApiError("Failed to toggle tool server");
+                toastApiError(t("toolServers.toast.toggleFailed"));
                 return false;
             } finally {
                 setIsLoading(false);
             }
         },
-        [mutateServers],
+        [mutateServers, t],
     );
 
     const toggleSensitiveData = useCallback(
@@ -102,48 +112,71 @@ export const useToolServers = () => {
                 });
                 await toolsApi.refreshTools();
                 toastApiSuccess(
-                    `Sensitive data ${allowSensitive ? "allowed" : "sanitized"}`,
+                    t("toolServers.toast.sensitiveData", {
+                        state: t(
+                            allowSensitive
+                                ? "toolServers.status.allowed"
+                                : "toolServers.status.sanitized",
+                        ),
+                    }),
                 );
                 await mutateServers();
                 return true;
             } catch (error) {
                 console.error("Error toggling sensitive data:", error);
-                toastApiError("Failed to update sensitive data setting");
+                toastApiError(t("toolServers.toast.sensitiveDataFailed"));
                 return false;
             } finally {
                 setIsLoading(false);
             }
         },
-        [mutateServers],
+        [mutateServers, t],
     );
 
-    const testServer = useCallback(async (serverId) => {
-        setTestingServerId(serverId);
-        try {
-            const result = await toolsApi.testToolServer(serverId);
-            if (result.success) {
-                const toolCount = result.tools?.length || 0;
-                const serverName = result.server_info?.name || "";
-                const serverVersion = result.server_info?.version || "";
-                const description = serverName
-                    ? `${serverName}${serverVersion ? ` v${serverVersion}` : ""} - ${toolCount} tools`
-                    : `Found ${toolCount} tools`;
-                toastApiSuccess(description, "Connection Successful");
-                return true;
+    const testServer = useCallback(
+        async (serverId) => {
+            setTestingServerId(serverId);
+            try {
+                const result = await toolsApi.testToolServer(serverId);
+                if (result.success) {
+                    const toolCount = result.tools?.length || 0;
+                    const serverName = result.server_info?.name || "";
+                    const serverVersion = result.server_info?.version || "";
+                    const description = serverName
+                        ? serverVersion
+                            ? t("toolServers.toast.connectionSummaryVersioned", {
+                                  name: serverName,
+                                  version: serverVersion,
+                                  count: toolCount,
+                              })
+                            : t("toolServers.toast.connectionSummary", {
+                                  name: serverName,
+                                  count: toolCount,
+                              })
+                        : t("toolServers.toast.toolsFound", {
+                              count: toolCount,
+                          });
+                    toastApiSuccess(
+                        description,
+                        t("toolServers.toast.connectionSuccessful"),
+                    );
+                    return true;
+                }
+                toastApiError(
+                    result.message || t("toolServers.toast.connectFailed"),
+                    t("toolServers.toast.connectionFailed"),
+                );
+                return false;
+            } catch (error) {
+                console.error("Error testing tool server:", error);
+                toastApiError(t("toolServers.toast.testFailed"));
+                return false;
+            } finally {
+                setTestingServerId(null);
             }
-            toastApiError(
-                result.message || "Failed to connect to server",
-                "Connection Failed",
-            );
-            return false;
-        } catch (error) {
-            console.error("Error testing tool server:", error);
-            toastApiError("Failed to test tool server");
-            return false;
-        } finally {
-            setTestingServerId(null);
-        }
-    }, []);
+        },
+        [t],
+    );
 
     const toggleBuiltInTool = useCallback(
         async (toolName, enabled) => {
@@ -158,15 +191,24 @@ export const useToolServers = () => {
                     (prev) => ({ ...prev, DISABLED_TOOLS: newDisabledTools }),
                     { revalidate: false },
                 );
-                toastApiSuccess(`${toolName} ${enabled ? "enabled" : "disabled"}`);
+                toastApiSuccess(
+                    t("toolServers.toast.toolToggled", {
+                        name: toolName,
+                        state: t(
+                            enabled
+                                ? "toolServers.status.enabled"
+                                : "toolServers.status.disabled",
+                        ),
+                    }),
+                );
                 return true;
             } catch (error) {
                 console.error("Error saving tool settings:", error);
-                toastApiError("Failed to save tool settings");
+                toastApiError(t("toolServers.toast.saveSettingsFailed"));
                 return false;
             }
         },
-        [disabledTools, mutateGlobalConfig],
+        [disabledTools, mutateGlobalConfig, t],
     );
 
     const isToolEnabled = useCallback(

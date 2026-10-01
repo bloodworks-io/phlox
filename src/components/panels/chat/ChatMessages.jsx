@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useColorMode } from "../../ui/color-mode";
 import { Flex, Box, Text, HStack, VStack, Spinner, Image } from "@chakra-ui/react";
 import {
@@ -18,6 +19,7 @@ const ChatMessages = ({
     getThinkingBlockState,
 }) => {
     const [expandedToolBlocks, setExpandedToolBlocks] = useState({});
+    const { t } = useTranslation();
     const { colorMode } = useColorMode();
 
     const filteredMessages = useMemo(
@@ -71,6 +73,8 @@ const ChatMessages = ({
                                 : "flex-end"
                         }
                         mb="2"
+                        className="anim-fade-slide-up"
+                        css={{ animationDuration: "0.2s" }}
                     >
                         <Box
                             className={`message-box ${message.role}`}
@@ -107,7 +111,7 @@ const ChatMessages = ({
                                         <HStack gap={1.5} mb={0.5}>
                                             <Image
                                                 src="/logo.webp"
-                                                alt="Phlox Assistant"
+                                                alt={t("chat.assistant")}
                                                 boxSize="14px"
                                                 objectFit="contain"
                                             />
@@ -117,7 +121,7 @@ const ChatMessages = ({
                                                 color="overlay0"
                                                 lineHeight="1"
                                             >
-                                                Phlox Assistant
+                                                {t("chat.assistant")}
                                             </Text>
                                         </HStack>
                                     )}

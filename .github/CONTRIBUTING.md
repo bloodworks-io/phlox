@@ -44,6 +44,7 @@ Keep translation PRs focused — one language per pull request, and translate th
 
 - Keep PRs focused — one feature or fix per pull request.
 - Describe what the change does, why it's needed, and how you tested it.
+- Use [conventional commit messages](https://www.conventionalcommits.org) — they drive the automated release PRs (see [RELEASE.md](RELEASE.md) for the full release process).
 
 ## A Note on AI-Generated Code
 

@@ -11,6 +11,7 @@ import {
     Portal,
 } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
+import { useTranslation } from "react-i18next";
 import {
     AddIcon,
     EditIcon,
@@ -29,6 +30,7 @@ const TemplateEditor = ({
     isNewTemplate = false,
     isDefaultTemplate = false,
 }) => {
+    const { t } = useTranslation();
     const [editedTemplate, setEditedTemplate] = useState(
         () => template ? { ...template, fields: template.fields || [] } : null,
     );
@@ -45,10 +47,10 @@ const TemplateEditor = ({
                     <Dialog.Backdrop />
                     <Dialog.Positioner>
                         <Dialog.Content className="modal-style">
-                            <Dialog.Header><Heading as="h2" size="md" fontFamily="heading">Loading Template...</Heading></Dialog.Header>
+                            <Dialog.Header><Heading as="h2" size="md" fontFamily="heading">{t("modal.templateEditor.loadingTitle")}</Heading></Dialog.Header>
                             <Dialog.CloseTrigger />
                             <Dialog.Body>
-                                <Text>Loading template data...</Text>
+                                <Text>{t("modal.templateEditor.loadingBody")}</Text>
                             </Dialog.Body>
                         </Dialog.Content>
                     </Dialog.Positioner>
@@ -124,7 +126,7 @@ const TemplateEditor = ({
                 <Dialog.Positioner>
                     <Dialog.Content className="modal-style" maxW="1200px">
                         <Dialog.Header>
-                            <Tooltip content="Click to edit template name">
+                            <Tooltip content={t("modal.templateEditor.editTemplateNameTooltip")}>
                                 <Flex
                                     align="center"
                                     cursor="pointer"
@@ -134,7 +136,7 @@ const TemplateEditor = ({
                                 >
                                     <Box position="relative" width="fit-content">
                                         <Input
-                                            placeholder="Template Name"
+                                            placeholder={t("modal.templateNamePlaceholder")}
                                             value={editedTemplate.template_name || ""}
                                             onChange={(e) =>
                                                 updateTemplateName(e.target.value)
@@ -214,13 +216,10 @@ const TemplateEditor = ({
                                         </Box>
                                         <VStack align="start" gap={1} flex="1">
                                             <Text fontWeight="600" fontSize="sm">
-                                                Creating a New Note Template
+                                                {t("modal.templateEditor.newTemplateBanner")}
                                             </Text>
                                             <Text fontSize="xs" opacity={0.8}>
-                                                Define the structure of your clinical
-                                                letter. Add fields, set which ones
-                                                persist between encounters, and provide
-                                                instructions for AI generation.
+                                                {t("modal.templateEditor.newTemplateDescription")}
                                             </Text>
                                         </VStack>
                                     </HStack>
@@ -253,12 +252,10 @@ const TemplateEditor = ({
                                         </Box>
                                         <VStack align="start" gap={1} flex="1">
                                             <Text fontWeight="600" fontSize="sm">
-                                                Editing a Default Template
+                                                {t("modal.templateEditor.defaultTemplateBanner")}
                                             </Text>
                                             <Text fontSize="xs" opacity={0.8}>
-                                                Saving stores your changes as your
-                                                own copy — the original default
-                                                stays untouched.
+                                                {t("modal.templateEditor.defaultTemplateDescription")}
                                             </Text>
                                         </VStack>
                                     </HStack>
@@ -281,7 +278,7 @@ const TemplateEditor = ({
                                                 color: "var(--chakra-colors-text-tertiary)"
                                             }}
                                         >
-                                            Editor
+                                            {t("modal.templateEditor.editor")}
                                         </Text>
                                     </Box>
                                     <Box
@@ -313,13 +310,12 @@ const TemplateEditor = ({
                                                     bg="transparent"
                                                     borderRadius="sm"
                                                 >
-                                                    <strong>Pin</strong> =
-                                                    Carries over between
-                                                    encounters &nbsp;•&nbsp;{" "}
-                                                    <strong>Dyn</strong> =
-                                                    Generated from transcript
+                                                    <strong>{t("modal.templateEditor.pin")}</strong>{" = "}
+                                                    {t("modal.templateEditor.pinCarriesOver")} &nbsp;•&nbsp;{" "}
+                                                    <strong>{t("modal.templateEditor.dyn")}</strong>{" = "}
+                                                    {t("modal.templateEditor.dynGenerated")}
                                                 </Box>
-                                                <Button onClick={addField} className="summary-buttons" size="sm"><AddIcon />Add Field
+                                                <Button onClick={addField} className="summary-buttons" size="sm"><AddIcon />{t("modal.templateEditor.addField")}
                                                 </Button>
                                             </VStack>
                                         </Box>
@@ -336,7 +332,7 @@ const TemplateEditor = ({
                                                 color: "var(--chakra-colors-text-tertiary)"
                                             }}
                                         >
-                                            Preview
+                                            {t("modal.templateEditor.preview")}
                                         </Text>
                                     </Box>
                                     <Box
@@ -360,10 +356,7 @@ const TemplateEditor = ({
                                                     opacity={0.8}
                                                 >
                                                     <Text mb={1}>
-                                                        💡 <strong>Tip:</strong> Add
-                                                        "Style Examples" in Advanced
-                                                        Settings to see how fields will
-                                                        appear in the final letter.
+                                                        💡 <strong>{t("modal.templateEditor.tipLabel")}</strong> {t("modal.templateEditor.tipBody")}
                                                     </Text>
                                                 </Box>
                                             )}
@@ -393,7 +386,7 @@ const TemplateEditor = ({
                                 }}
                                 mr={3}
                             >
-                                Cancel
+                                {t("action.cancel")}
                             </Button>
                             <Button
                                 onClick={handleSave}
@@ -405,7 +398,7 @@ const TemplateEditor = ({
                                     fontWeight: "600",
                                 }}
                             >
-                                Save Changes
+                                {t("modal.templateEditor.saveChanges")}
                             </Button>
                         </Dialog.Footer>
                     </Dialog.Content>
