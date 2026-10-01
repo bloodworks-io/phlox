@@ -10,29 +10,12 @@ on:
         description: "Release tag whose draft release gets the artifacts (e.g. v2.5.0); leave empty for a gates-only dry run"
         required: false
         type: string
-      run_id:
-        description: "Recovery mode: reuse artifacts from this workflow run ID (skips all builds; requires tag)"
-        required: false
-        type: string
 
 permissions:
   contents: read
 
 jobs:
-  # Loud guard: recovery mode requires BOTH run_id and tag. Without this job,
-  # a missing tag would silently skip every job in the run (conclusion:
-  # "skipped", no explanation).
-  dispatch-guards:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_id != '' && inputs.tag == ''
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reject incomplete recovery dispatch
-        run: |
-          echo "❌ recovery mode (run_id) requires the tag input (e.g. v2.5.0) — re-dispatch with both fields"
-          exit 1
-
   build:
-    if: inputs.run_id == ''
     permissions:
       contents: read
     outputs:
@@ -217,7 +200,6 @@ jobs:
           path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
 
   build-windows:
-    if: inputs.run_id == ''
     permissions:
       contents: read
     outputs:
@@ -336,7 +318,6 @@ jobs:
           path: src-tauri/target/release/bundle/nsis/*-setup.exe
 
   build-flatpak:
-    if: inputs.run_id == ''
     permissions:
       contents: read
     runs-on: ubuntu-22.04
@@ -368,16 +349,7 @@ jobs:
 
 
   release-evidence:
-    # !cancelled() suppresses the implicit success() status check, which would
-    # otherwise skip this job whenever a needed job is skipped (recovery mode).
-    if: >-
-      !cancelled() && (
-        (inputs.run_id != '' && inputs.tag != '') ||
-        ((inputs.tag != '' || startsWith(github.ref, 'refs/tags/')) &&
-         needs.build.result == 'success' &&
-         needs.build-windows.result == 'success' &&
-         needs.build-flatpak.result == 'success')
-      )
+    if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/')
     needs: [build, build-windows, build-flatpak]
     permissions:
       contents: write
@@ -385,100 +357,11 @@ jobs:
 
     steps:
       - name: Download release artifacts
-        if: inputs.run_id == ''
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           path: release
           merge-multiple: true
           pattern: Phlox-*
-
-      # Recovery mode (run_id input): reuse artifacts from a previous run whose
-      # builds succeeded, so an evidence-only failure never costs a full
-      # multi-hour rebuild. download-artifact cannot cross runs, so fetch the
-      # archives from the artifacts API directly.
-      - name: Recover artifacts from source run
-        if: inputs.run_id != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ inputs.run_id }}
-          TAG: ${{ inputs.tag }}
-        run: |
-          set -euo pipefail
-          if [ -z "$TAG" ]; then
-            echo "❌ run_id recovery requires the tag input (e.g. v2.5.0)"
-            exit 1
-          fi
-          python3 - <<'EOF'
-          import json
-          import os
-          import subprocess
-          import sys
-          import urllib.request
-
-          repo = os.environ["REPO"]
-          run_id = os.environ["RUN_ID"]
-          headers = {
-              "Authorization": "Bearer " + os.environ["GH_TOKEN"],
-              "Accept": "application/vnd.github+json",
-          }
-
-
-          def api(url):
-              req = urllib.request.Request(url, headers=headers)
-              with urllib.request.urlopen(req) as resp:
-                  return json.load(resp)
-
-
-          # Assert the source run's build jobs succeeded. The fail-hard macOS
-          # verification gate is part of the build job, so a green job means
-          # the gate passed.
-          jobs = api(
-              f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
-          )["jobs"]
-          conclusions = {j["name"]: j["conclusion"] for j in jobs if j["name"].startswith("build")}
-          missing = [n for n in ("build-windows", "build-flatpak") if n not in conclusions]
-          if missing or not any(n.startswith("build (") for n in conclusions):
-              sys.exit(f"source run {run_id} is missing build jobs; found: {sorted(conclusions)}")
-          failed = {n: c for n, c in conclusions.items() if c != "success"}
-          if failed:
-              sys.exit(f"source run {run_id} build jobs not successful: {failed}")
-
-          run = api(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}")
-          with open(os.environ["GITHUB_ENV"], "a") as env_file:
-              env_file.write(f"RECOVERY_COMMIT={run['head_sha']}\n")
-              env_file.write(f"RECOVERY_RUN_URL={run['html_url']}\n")
-              env_file.write(
-                  "RECOVERY_MACOS_GATE=verified (source run build job succeeded; gate is fail-hard within the job)\n"
-              )
-              env_file.write("RECOVERY_WINDOWS_SIGNATURE=recovered run (see source run log)\n")
-
-          os.makedirs("release", exist_ok=True)
-          arts = api(
-              f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100"
-          )["artifacts"]
-          wanted = [a for a in arts if a["name"].startswith("Phlox-")]
-          if len(wanted) != 3:
-              sys.exit(
-                  f"expected 3 Phlox-* artifacts in run {run_id}, found: {[a['name'] for a in wanted]}"
-              )
-          for artifact in wanted:
-              print(f"downloading {artifact['name']} ({artifact['size_in_bytes']} bytes)")
-              req = urllib.request.Request(artifact["archive_download_url"], headers=headers)
-              zip_path = artifact["name"] + ".zip"
-              with urllib.request.urlopen(req) as resp, open(zip_path, "wb") as fh:
-                  while True:
-                      chunk = resp.read(1 << 20)
-                      if not chunk:
-                          break
-                      fh.write(chunk)
-              subprocess.run(
-                  ["unzip", "-o", "-q", zip_path, "-d", "release"], check=True
-              )
-          print("Recovered artifacts:")
-          for name in sorted(os.listdir("release")):
-              print(f"  release/{name}")
-          EOF
 
       - name: Generate SHASUMS256.txt and manifest.json
         env:
@@ -511,25 +394,19 @@ jobs:
 
           manifest = {
               "tag": os.environ.get("TAG_NAME") or os.environ["GITHUB_REF_NAME"],
-              "commit": os.environ.get("RECOVERY_COMMIT") or os.environ["GITHUB_SHA"],
+              "commit": os.environ["GITHUB_SHA"],
               "run_url": "{}/{}/actions/runs/{}".format(
                   os.environ["GITHUB_SERVER_URL"],
                   os.environ["GITHUB_REPOSITORY"],
                   os.environ["GITHUB_RUN_ID"],
               ),
               "verification": {
-                  "macos_signing_notarization": os.environ.get("MACOS_GATE")
-                  or os.environ.get("RECOVERY_MACOS_GATE")
-                  or "unknown",
-                  "windows_authenticode": os.environ.get("WINDOWS_SIGNATURE")
-                  or os.environ.get("RECOVERY_WINDOWS_SIGNATURE")
-                  or "unknown",
+                  "macos_signing_notarization": os.environ.get("MACOS_GATE", "unknown"),
+                  "windows_authenticode": os.environ.get("WINDOWS_SIGNATURE", "unknown"),
                   "flatpak": "digest-only (no signature gate)",
               },
               "artifacts": artifacts,
           }
-          if os.environ.get("RECOVERY_RUN_URL"):
-              manifest["recovered_from_run"] = os.environ["RECOVERY_RUN_URL"]
           with open("release/manifest.json", "w") as fh:
               json.dump(manifest, fh, indent=2, sort_keys=True)
               fh.write("\n")
@@ -568,7 +445,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    if: inputs.run_id == '' && (inputs.tag != '' || startsWith(github.ref, 'refs/tags/'))
+    if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: read
       packages: write
