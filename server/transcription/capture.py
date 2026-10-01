@@ -45,14 +45,11 @@ def streaming_capture_enabled() -> bool:
 
 
 def kv_warming_enabled() -> bool:
-    """KV-cache warming: hard-gated to the local provider (remote endpoints
-    bill input tokens even on cache hits), then honors the explicit toggle."""
-    if not _is_local_provider():
-        return False
+    """KV-cache warming: on by default for the bundled local provider only."""
     value = config_manager.get_config().get(KV_WARMING_KEY)
     if isinstance(value, bool):
         return value
-    return True
+    return _is_local_provider()
 
 
 @dataclass
@@ -244,14 +241,16 @@ async def _warm(session: CaptureSession) -> None:
             primary_condition=session.primary_condition,
         )
         client = get_llm_client(timeout=WARM_TIMEOUT_SECONDS)
+        options: dict = {
+            "temperature": 0.0,
+            "num_predict": 1,  # one decode step, discarded
+        }
+        if _is_local_provider():
+            options["extra_body"] = {"cache_prompt": True}
         await client.chat(
             model=config["PRIMARY_MODEL"],
             messages=messages,
-            options={
-                "temperature": 0.0,
-                "num_predict": 1,  # one decode step, discarded
-                "extra_body": {"cache_prompt": True},
-            },
+            options=options,
         )
     except Exception as exc:
         logger.debug("Capture session %s: warm-up skipped (%s)", session.id, exc)

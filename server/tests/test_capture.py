@@ -122,19 +122,26 @@ def test_streaming_capture_explicit_setting_wins(monkeypatch):
     assert capture_module.streaming_capture_enabled() is True
 
 
-def test_kv_warming_hard_gated_to_local(monkeypatch):
-    # Remote provider: never warmed, even with the toggle on.
-    monkeypatch.setattr(
-        "server.transcription.capture.config_manager.get_config",
-        lambda: {"LLM_PROVIDER": "openai", "KV_WARMING_ENABLED": True},
-    )
-    assert capture_module.kv_warming_enabled() is False
-
+def test_kv_warming_toggle_overrides_provider_default(monkeypatch):
+    # Default: only the bundled local provider warms.
     monkeypatch.setattr(
         "server.transcription.capture.config_manager.get_config", lambda: _local_config()
     )
     assert capture_module.kv_warming_enabled() is True
 
+    monkeypatch.setattr(
+        "server.transcription.capture.config_manager.get_config",
+        lambda: {"LLM_PROVIDER": "openai"},
+    )
+    assert capture_module.kv_warming_enabled() is False
+
+    monkeypatch.setattr(
+        "server.transcription.capture.config_manager.get_config",
+        lambda: {"LLM_PROVIDER": "openai", "KV_WARMING_ENABLED": True},
+    )
+    assert capture_module.kv_warming_enabled() is True
+
+    # ...and can force it off for the bundled provider too.
     monkeypatch.setattr(
         "server.transcription.capture.config_manager.get_config",
         lambda: _local_config({"KV_WARMING_ENABLED": False}),
@@ -341,6 +348,29 @@ async def test_warm_messages_byte_identical_to_extraction(monkeypatch):
     assert kwargs["options"]["extra_body"]["cache_prompt"] is True
     # No grammar constraining the warm-up.
     assert "format" not in kwargs
+
+
+@pytest.mark.asyncio
+async def test_warm_scopes_cache_prompt_to_bundled_provider(monkeypatch):
+    """cache_prompt is llama.cpp-only; sending it to vLLM etc. would 400
+    and silently kill every warm under the toggle override."""
+    session = _make_session()
+    sent = {}
+
+    class _FakeClient:
+        async def chat(self, **kwargs):
+            sent["kwargs"] = kwargs
+            return {"message": {"content": "x"}}
+
+    monkeypatch.setattr(
+        "server.transcription.capture.config_manager.get_config",
+        lambda: {"LLM_PROVIDER": "openai", "PRIMARY_MODEL": "vllm-model"},
+    )
+    monkeypatch.setattr("server.llm_client.client.get_llm_client", lambda **_kwargs: _FakeClient())
+
+    await capture_module._warm(session)
+
+    assert sent["kwargs"]["options"].get("extra_body") is None
 
 
 @pytest.mark.asyncio

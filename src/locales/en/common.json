@@ -841,7 +841,7 @@
             "streamingCapture": "Streaming capture",
             "streamingCaptureDescription": "Transcribe Ambient and Dictate recordings utterance-by-utterance while you record, with speaker labels from Phlox itself. The note is ready faster at stop. Always on in the desktop app.",
             "kvWarming": "Prompt cache warming",
-            "kvWarmingDescription": "Pre-warm the note-generation prompt with the transcript as it grows. Only applies when Phlox runs its own local model; no effect with remote endpoints."
+            "kvWarmingDescription": "Pre-warm the note-generation prompt with the transcript as it grows. On by default with the bundled local model; enabling overrides that for any endpoint; effective for self-hosted servers (vLLM, Ollama), but multiplies billed input tokens on metered cloud APIs."
         },
         "prompt": {
             "chatTitle": "Chat Prompt",
