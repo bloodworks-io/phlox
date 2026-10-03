@@ -1,5 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import { layoutTextField, checkboxMark } from "./fieldLayout";
+import { layoutTextField, checkboxMark, winAnsiSafe } from "./fieldLayout";
 
 /**
  * Fill a PDF form template with the provided values and return the completed PDF bytes.
@@ -52,7 +52,8 @@ export async function fillPdf(templatePdfBytes, template, values) {
  */
 function drawTextInField(page, field, value, font) {
     const measure = (text, size) => font.widthOfTextAtSize(text, size);
-    const { lines, fontSize } = layoutTextField(field, value, measure);
+    const safeValue = winAnsiSafe(String(value));
+    const { lines, fontSize } = layoutTextField(field, safeValue, measure);
     for (const line of lines) {
         page.drawText(line.text, {
             x: line.x,

@@ -1,5 +1,29 @@
 import { PDFDocument, StandardFonts } from "pdf-lib";
 
+export type Measure = (text: string, size: number) => number;
+
+const WINANSI_EXTRA = new Set(
+    // 0x80–0x9F region of cp1252 (Windows-1252 specific)
+    "\u20AC\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u017E\u0178",
+);
+
+export function canEncodeWinAnsi(char: string): boolean {
+    const cp = char.codePointAt(0);
+    if (cp === undefined) return false;
+    if (cp < 0x20) return cp === 0x09 || cp === 0x0a || cp === 0x0d; // tab/lf/cr
+    if (cp >= 0x20 && cp <= 0x7e) return true;
+    if (cp >= 0xa0 && cp <= 0xff) return true;
+    return WINANSI_EXTRA.has(char);
+}
+
+export function winAnsiSafe(text: string, replacement = "?"): string {
+    let out = "";
+    for (const char of text) {
+        out += canEncodeWinAnsi(char) ? char : replacement;
+    }
+    return out;
+}
+
 /**
  * Greedy word-wrap to maxWidth using the injected measure function,
  * then hard-break any word wider than maxWidth so no line overflows.
@@ -118,12 +142,21 @@ let measurePromise = null;
 /**
  * Cached Helvetica measure function identical to the one fillPdf uses,
  * so browser-side preview metrics match the final PDF exactly.
+ * Unencodable characters (emoji, PUA glyphs, …) fall back to the "?"
+ * width instead of throwing — field names and values are user input.
  */
-export function getHelveticaMeasure() {
+export function getHelveticaMeasure(): Promise<Measure> {
     if (!measurePromise) {
         measurePromise = PDFDocument.create().then(async (doc) => {
             const font = await doc.embedFont(StandardFonts.Helvetica);
-            return (text, size) => font.widthOfTextAtSize(text, size);
+            return (text, size) => {
+                const safe = winAnsiSafe(text);
+                try {
+                    return font.widthOfTextAtSize(safe, size);
+                } catch {
+                    return safe.length * size * 0.5; // last-resort estimate
+                }
+            };
         });
     }
     return measurePromise;
