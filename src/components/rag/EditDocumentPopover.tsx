@@ -14,6 +14,7 @@ import { EditIcon } from "../common/icons";
 import { FaTimes } from "react-icons/fa";
 import { ragApi } from "../../utils/api/ragApi";
 import { useTranslation } from "react-i18next";
+import type { RagFileObject } from "./types";
 
 const FOCUS_AREA_OPTIONS = [
     "guidelines",
@@ -27,7 +28,13 @@ const FOCUS_AREA_OPTIONS = [
     "miscellaneous",
 ];
 
-export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
+interface EditDocumentPopoverProps {
+    collectionName: string;
+    file: RagFileObject;
+    onSaved: (updated: RagFileObject) => void;
+}
+
+export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocumentPopoverProps) => {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [title, setTitle] = useState(file.title || "");
@@ -65,7 +72,6 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }) => {
             open={open}
             onOpenChange={(d) => setOpen(d.open)}
             positioning={{ placement: "left" }}
-            lazyRender
         >
             <Popover.Trigger asChild>
                 <IconButton

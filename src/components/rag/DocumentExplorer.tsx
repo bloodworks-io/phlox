@@ -24,6 +24,19 @@ import { ragApi } from "../../utils/api/ragApi";
 import { formatCollectionName } from "../../utils/helpers/formatHelpers";
 import { EditDocumentPopover } from "./EditDocumentPopover";
 import { useTranslation } from "react-i18next";
+import type {
+    DocumentCollection,
+    ItemToDelete,
+} from "./types";
+
+interface DocumentExplorerProps {
+    isCollapsed: boolean;
+    setIsCollapsed: (collapsed: boolean) => void;
+    collections: DocumentCollection[];
+    setCollections: React.Dispatch<React.SetStateAction<DocumentCollection[]>>;
+    loading: boolean;
+    setItemToDelete: (item: ItemToDelete | null) => void;
+}
 
 const DocumentExplorer = ({
     isCollapsed,
@@ -32,9 +45,11 @@ const DocumentExplorer = ({
     setCollections,
     loading,
     setItemToDelete,
-}) => {
+}: DocumentExplorerProps) => {
     const { t } = useTranslation();
-    const [expandedCollections, setExpandedCollections] = useState({});
+    const [expandedCollections, setExpandedCollections] = useState<{
+        [name: string]: boolean;
+    }>({});
 
     useEffect(() => {
         if (collections.length > 0 && collections.every((c) => !c.loaded)) {
@@ -42,7 +57,7 @@ const DocumentExplorer = ({
         }
     }, [collections]);
 
-    const toggleCollection = async (collectionName) => {
+    const toggleCollection = async (collectionName: string) => {
         setExpandedCollections((prev) => ({
             ...prev,
             [collectionName]: !prev[collectionName],
@@ -70,7 +85,10 @@ const DocumentExplorer = ({
         }
     };
 
-    const handleRenameCollection = async (oldName, newName) => {
+    const handleRenameCollection = async (
+        oldName: string,
+        newName: string | null,
+    ) => {
         if (newName) {
             ragApi
                 .renameCollection(oldName, newName)
@@ -116,7 +134,10 @@ const DocumentExplorer = ({
         }
     };
 
-    const handleDownloadPdf = async (collectionName, filename) => {
+    const handleDownloadPdf = async (
+        collectionName: string,
+        filename: string,
+    ) => {
         try {
             const blob = await ragApi.downloadPdf(collectionName, filename);
             const url = window.URL.createObjectURL(blob);
@@ -378,12 +399,15 @@ const DocumentExplorer = ({
                                                                                                                               "string"
                                                                                                                                   ? f
                                                                                                                                   : f.filename;
-                                                                                                                          return fn ===
+                                                                                                                           return fn ===
                                                                                                                               updated.filename
-                                                                                                                              ? {
-                                                                                                                                    ...f,
-                                                                                                                                    ...updated,
-                                                                                                                                }
+                                                                                                                              ? typeof f ===
+                                                                                                "string"
+                                                                                                  ? updated
+                                                                                                  : {
+                                                                                                        ...f,
+                                                                                                        ...updated,
+                                                                                                    }
                                                                                                                               : f;
                                                                                                                       },
                                                                                                                   ),

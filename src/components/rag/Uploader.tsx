@@ -9,22 +9,33 @@ import { ragApi } from "../../utils/api/ragApi";
 import { extractPdfMetadata } from "../../utils/helpers/pdfExtractHelpers";
 import BulkUploader from "./BulkUploader";
 import { useTranslation } from "react-i18next";
+import type {
+    DocumentCollection,
+    PdfMetadataResult,
+} from "./types";
 
-const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
+interface UploaderProps {
+    isCollapsed: boolean;
+    setIsCollapsed: (collapsed: boolean) => void;
+    setCollections: React.Dispatch<React.SetStateAction<DocumentCollection[]>>;
+}
+
+const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }: UploaderProps) => {
     const { t } = useTranslation();
-    const [pdfFile, setPdfFile] = useState(null);
-     
+    const [pdfFile, setPdfFile] = useState<File | null>(null);
+
     const [, setSuggestedCollection] = useState("");
     const [customCollectionName, setCustomCollectionName] = useState("");
     const [documentSource, setDocumentSource] = useState("");
     const [focusArea, setFocusArea] = useState("");
     const [title, setTitle] = useState("");
     const [filename, setFilename] = useState("");
-    const [pdfData, setPdfData] = useState(null);
+    const [pdfData, setPdfData] = useState<PdfMetadataResult | null>(null);
     const [isExtracting, setIsExtracting] = useState(false);
     const [isCommitting, setIsCommitting] = useState(false);
-    const handlePdfUpload = (event) => {
-        const file = event.target.files[0];
+    const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
         setPdfFile(file);
         setFilename(file.name);
     };
@@ -41,7 +52,9 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }) => {
                 return;
             }
 
-            const result = await extractPdfMetadata(pdfFile);
+            const result = (await extractPdfMetadata(
+                pdfFile,
+            )) as PdfMetadataResult;
 
             setPdfData(result);
             setSuggestedCollection(result.disease_name);
