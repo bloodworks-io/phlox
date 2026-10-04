@@ -4,21 +4,21 @@
 import { Button } from "@chakra-ui/react";
 
 // Primary Action Buttons
-export const GreenButton = ({ children, leftIcon, ...props }) => (
+export const GreenButton = ({ children, leftIcon = null, ...props }) => (
   <Button className="green-button" gap="2" {...props}>
     {leftIcon}
     {children}
   </Button>
 );
 
-export const RedButton = ({ children, leftIcon, ...props }) => (
+export const RedButton = ({ children, leftIcon = null, ...props }) => (
   <Button className="red-button" gap="2" {...props}>
     {leftIcon}
     {children}
   </Button>
 );
 
-export const GreyButton = ({ children, leftIcon, ...props }) => (
+export const GreyButton = ({ children, leftIcon = null, ...props }) => (
   <Button className="grey-button" gap="2" {...props}>
     {leftIcon}
     {children}

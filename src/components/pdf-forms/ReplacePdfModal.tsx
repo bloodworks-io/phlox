@@ -6,17 +6,25 @@ import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTranslation } from "react-i18next";
+import type { FormTemplate } from "./types";
 
-const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }) => {
+interface ReplacePdfModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    template: FormTemplate | null;
+    onReplaced: (template: FormTemplate) => void;
+}
+
+const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }: ReplacePdfModalProps) => {
   const { t } = useTranslation();
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const expectedPages = template?.page_count;
   const expectedHeights = template?.page_heights || [];
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected && !selected.name.toLowerCase().endsWith(".pdf")) {
       toaster.create({

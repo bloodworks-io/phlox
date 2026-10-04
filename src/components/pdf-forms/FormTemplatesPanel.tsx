@@ -9,6 +9,33 @@ import FormBuilder from "./FormBuilder";
 import FieldEditor from "./FieldEditor";
 import FieldList from "./FieldList";
 import { useTranslation } from "react-i18next";
+import type { FieldType, FormField, FormTemplate } from "./types";
+
+interface FormTemplatesPanelProps {
+  templates: FormTemplate[];
+  templatesLoading: boolean;
+  selectedTemplate: FormTemplate | null;
+  fields: FormField[];
+  selectedField: FormField | null;
+  selectedFieldId: string | null;
+  saving: boolean;
+  isDrawingMode: boolean;
+  activeFieldType: FieldType;
+  visionCapable: boolean;
+  detecting: boolean;
+  onSetDrawingMode: (drawing: boolean) => void;
+  onSetFieldType: (type: FieldType) => void;
+  onAutoDetect: () => void;
+  onOpenUpload: () => void;
+  onReplaceTemplate: (template: FormTemplate) => void;
+  onSelectTemplate: (id: string) => void;
+  onDeleteTemplate: (id: string) => void;
+  onFieldsChange: (fields: FormField[]) => void;
+  onSelectField: (id: string | null) => void;
+  onUpdateField: (field: FormField) => void;
+  onDeleteField: (id: string) => void;
+  onSaveFields: () => void;
+}
 
 const FormTemplatesPanel = ({
   templates,
@@ -34,10 +61,10 @@ const FormTemplatesPanel = ({
   onUpdateField,
   onDeleteField,
   onSaveFields,
-}) => {
+}: FormTemplatesPanelProps) => {
   const { t } = useTranslation();
   const [previewOn, setPreviewOn] = useState(false);
-  const [previewValues, setPreviewValues] = useState({});
+  const [previewValues, setPreviewValues] = useState<Record<string, string>>({});
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -90,9 +117,7 @@ const FormTemplatesPanel = ({
               onSelectField={onSelectField}
               onUpdateField={onUpdateField}
               isDrawing={isDrawingMode}
-              onToggleDrawing={() => onSetDrawingMode(!isDrawingMode)}
               activeFieldType={activeFieldType}
-              onFieldTypeChange={onSetFieldType}
               previewOn={previewOn}
               previewValues={previewValues}
               currentPage={currentPage}
@@ -139,9 +164,8 @@ const FormTemplatesPanel = ({
                 </HStack>
                 <NativeSelect.Root>
                   <NativeSelect.Field
-                    size="xs"
                     value={activeFieldType}
-                    onChange={(e) => onSetFieldType(e.target.value)}
+                    onChange={(e) => onSetFieldType(e.target.value as FieldType)}
                     className="input-style">
                     <option value="text">{t("forms.fieldTypes.text")}</option>
                     <option value="checkbox">{t("forms.fieldTypes.checkbox")}</option>

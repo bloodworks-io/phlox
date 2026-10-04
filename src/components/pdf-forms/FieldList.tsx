@@ -4,14 +4,23 @@ import { Box, Text, VStack, HStack, IconButton } from "@chakra-ui/react";
 import { DeleteIcon } from "../common/icons";
 import { FIELD_COLORS } from "./FieldEditor";
 import { useTranslation } from "react-i18next";
+import type { FormField } from "./types";
+
+interface FieldListProps {
+    fields: FormField[];
+    selectedFieldId: string | null;
+    onSelectField: (id: string | null) => void;
+    onDeleteField: (id: string) => void;
+    onJumpToPage: (page: number) => void;
+}
 
 const FieldList = ({
-  fields,
-  selectedFieldId,
-  onSelectField,
-  onDeleteField,
-  onJumpToPage,
-}) => {
+    fields,
+    selectedFieldId,
+    onSelectField,
+    onDeleteField,
+    onJumpToPage,
+}: FieldListProps) => {
   const { t } = useTranslation();
   if (!fields.length) {
     return (
