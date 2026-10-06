@@ -369,7 +369,7 @@ async def test_save_letter_saves_staged_letter(monkeypatch):
     saved = {}
     monkeypatch.setattr(
         "server.database.repositories.letter.update_patient_letter",
-        lambda note_id, letter: saved.update(note_id=note_id, letter=letter),
+        lambda note_id, letter: saved.update(note_id=note_id, letter=letter) or True,
     )
 
     result = await execute_live_tool(session, "save_letter", {})
