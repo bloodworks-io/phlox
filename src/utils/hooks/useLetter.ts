@@ -1,18 +1,42 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { letterApi } from "../api/letterApi";
+import type { LetterMessage, LetterTemplatesResponse } from "../api/letterApi";
 import { validateLetterData } from "../helpers/validationHelpers";
 import { useToastMessage } from "./UseToastMessage";
 
-export const useLetter = (setIsModified) => {
+export type SaveState = "idle" | "saving" | "saved";
+
+export interface LetterPatient {
+    id: number | null;
+    name: string;
+    gender: string;
+    dob: string;
+    template_key: string | null;
+    template_data: Record<string, unknown> | null;
+}
+
+export type SetIsModified = (value: boolean) => void;
+
+interface RefineLetterArgs {
+    patient: LetterPatient;
+    additionalInstructions?: string | null;
+    refinementInput: string;
+    onSuccess?: () => void;
+}
+
+export const useLetter = (setIsModified: SetIsModified) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [finalCorrespondence, setFinalCorrespondence] = useState("");
-    const [letterContext, setLetterContext] = useState([]);
-    const [saveState, setSaveState] = useState("idle"); // Added saveState
+    const [letterContext, setLetterContext] = useState<LetterMessage[]>([]);
+    const [saveState, setSaveState] = useState<SaveState>("idle");
     const { showSuccessToast, showErrorToast } = useToastMessage();
 
-    const generateLetter = async (patient, additionalInstructions) => {
+    const generateLetter = async (
+        patient: LetterPatient,
+        additionalInstructions?: string | null,
+    ) => {
         // Clear context at the start of generation
         setLetterContext([]);
         // We require both template_data and a template key
@@ -34,7 +58,7 @@ export const useLetter = (setIsModified) => {
 
             // If no additional instructions were provided, use default instructions from the template
             if (!additionalInstructions) {
-                const responseTemplates =
+                const responseTemplates: LetterTemplatesResponse =
                     await letterApi.fetchLetterTemplates();
                 if (
                     responseTemplates &&
@@ -71,7 +95,7 @@ export const useLetter = (setIsModified) => {
         }
     };
 
-    const saveLetter = async (noteId) => {
+    const saveLetter = async (noteId: number) => {
         if (!noteId || !finalCorrespondence) {
             showErrorToast(t("letter.toast.saveRequired"));
             return;
@@ -97,13 +121,13 @@ export const useLetter = (setIsModified) => {
         additionalInstructions,
         refinementInput,
         onSuccess = () => {},
-    }) {
+    }: RefineLetterArgs) {
         if (!refinementInput.trim()) return;
 
         setLoading(true);
         try {
             // Start with a copy of the current letter context.
-            let updatedContext = [...letterContext];
+            const updatedContext: LetterMessage[] = [...letterContext];
 
             // If there is no context yet but we have an initial generated letter,
             // include it as the first assistant message.
@@ -125,13 +149,13 @@ export const useLetter = (setIsModified) => {
                 patientName: patient.name,
                 gender: patient.gender,
                 dob: patient.dob,
-                template_data: patient.template_data,
+                template_data: patient.template_data ?? {},
                 additional_instruction: additionalInstructions,
                 context: updatedContext,
             });
 
             // Append the assistant's response.
-            const newContext = [
+            const newContext: LetterMessage[] = [
                 ...(response.context || []),
                 {
                     role: "assistant",
@@ -156,17 +180,15 @@ export const useLetter = (setIsModified) => {
         setLetterContext([]);
     }
 
-    async function loadLetter(noteId) {
+    async function loadLetter(noteId: number) {
         setLoading(true);
         try {
             const response = await letterApi.fetchLetter(noteId);
-            setFinalCorrespondence(
-                response.letter || t("letter.toast.noneAttached"),
-            );
+            setFinalCorrespondence(response.letter || "");
             setIsModified(false);
         } catch (error) {
             console.error("Error loading letter:", error);
-            setFinalCorrespondence(t("letter.toast.noneAttached"));
+            setFinalCorrespondence("");
             showErrorToast(t("letter.toast.loadFailed"));
         } finally {
             setLoading(false);

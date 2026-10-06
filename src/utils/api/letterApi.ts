@@ -2,8 +2,43 @@ import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 import { t } from "@/i18n";
 
+export interface LetterTemplate {
+  id?: number;
+  name: string;
+  instructions: string;
+  created_at?: string | null;
+}
+
+export interface LetterTemplatesResponse {
+  templates: LetterTemplate[];
+  default_template_id: number | null;
+}
+
+export interface LetterMessage {
+  role: "assistant" | "user" | "system";
+  content: string;
+}
+
+export interface GenerateLetterParams {
+  patientName: string;
+  gender: string;
+  dob: string;
+  template_data: Record<string, unknown>;
+  additional_instruction?: string | null;
+  context?: LetterMessage[] | null;
+}
+
+export interface GenerateLetterResponse {
+  letter: string;
+  context: LetterMessage[] | null;
+}
+
+export interface FetchLetterResponse {
+  letter: string | null;
+}
+
 export const letterApi = {
-  fetchLetterTemplates: async () =>
+  fetchLetterTemplates: async (): Promise<LetterTemplatesResponse> =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/letter/templates");
@@ -12,7 +47,7 @@ export const letterApi = {
       errorMessage: t("settings.letterTemplates.fetchFailed"),
     }),
 
-  getLetterTemplate: async (templateId) =>
+  getLetterTemplate: async (templateId: number): Promise<LetterTemplate> =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(`/api/letter/templates/${templateId}`);
@@ -21,7 +56,7 @@ export const letterApi = {
       errorMessage: t("api.letters.fetchTemplateFailed"),
     }),
 
-  createLetterTemplate: async (template) =>
+  createLetterTemplate: async (template: LetterTemplate) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/letter/templates");
@@ -35,7 +70,7 @@ export const letterApi = {
       errorMessage: t("api.letters.createFailed"),
     }),
 
-  updateLetterTemplate: async (templateId, template) =>
+  updateLetterTemplate: async (templateId: number, template: LetterTemplate) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(`/api/letter/templates/${templateId}`);
@@ -49,7 +84,7 @@ export const letterApi = {
       errorMessage: t("api.letters.updateFailed"),
     }),
 
-  deleteLetterTemplate: async (templateId) =>
+  deleteLetterTemplate: async (templateId: number) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(`/api/letter/templates/${templateId}`);
@@ -80,7 +115,7 @@ export const letterApi = {
     template_data,
     context,
     additional_instruction,
-  }) => {
+  }: GenerateLetterParams): Promise<GenerateLetterResponse> => {
     return handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/letter/generate");
@@ -101,7 +136,7 @@ export const letterApi = {
     });
   },
 
-  fetchLetter: async (noteId) => {
+  fetchLetter: async (noteId: number): Promise<FetchLetterResponse> => {
     return handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl(
@@ -109,10 +144,11 @@ export const letterApi = {
         );
         return universalFetch(url);
       },
+      errorMessage: t("letter.toast.loadFailed"),
     });
   },
 
-  saveLetter: async (noteId, content) =>
+  saveLetter: async (noteId: number, content: string) =>
     handleApiRequest({
       apiCall: async () => {
         const url = await buildApiUrl("/api/letter/save");
