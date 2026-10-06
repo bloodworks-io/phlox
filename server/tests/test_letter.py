@@ -36,18 +36,75 @@ def test_generate_letter(monkeypatch):
     assert "generated letter" in data["letter"]
 
 
-@pytest.mark.asyncio
-async def test_save_letter(monkeypatch):
-    async def fake_generate_letter_content(*_args, **_kwargs):
-        return {"letter": "This is a generated letter.", "context": []}
+def test_save_letter(monkeypatch):
+    def fake_update_patient_letter(_noteId, _letter):
+        return True
 
-    monkeypatch.setattr("server.api.letter.generate_letter_content", fake_generate_letter_content)
+    monkeypatch.setattr("server.api.letter.update_patient_letter", fake_update_patient_letter)
     payload = {"noteId": 123, "letter": "This is a saved letter."}
     response = client.post("/api/letter/save", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert "message" in data
     assert "saved" in data["message"].lower()
+
+
+def test_save_letter_persists():
+    """End-to-end save against the test database."""
+    from server.database.core.connection import get_db
+
+    with get_db().transaction() as cursor:
+        cursor.execute(
+            "INSERT INTO encounters (ur_number, encounter_date) VALUES (?, ?)",
+            ("URLETTER1", "2024-01-01"),
+        )
+        note_id = cursor.lastrowid
+
+    response = client.post("/api/letter/save", json={"noteId": note_id, "letter": "Real letter."})
+    assert response.status_code == 200
+
+    with get_db().read() as cursor:
+        cursor.execute("SELECT final_letter FROM encounters WHERE id = ?", (note_id,))
+        assert cursor.fetchone()["final_letter"] == "Real letter."
+
+
+def test_save_letter_not_found():
+    """Saving against a nonexistent note must 404, not silently succeed."""
+    response = client.post(
+        "/api/letter/save", json={"noteId": 999999999, "letter": "Orphan letter."}
+    )
+    assert response.status_code == 404
+
+
+def test_note_save_does_not_clobber_letter():
+    """A note save must not overwrite a saved letter with a stale final_letter."""
+    from server.database.core.connection import get_db
+    from server.database.repositories.encounter import update_patient
+    from server.database.repositories.letter import update_patient_letter
+    from server.schemas.patient import Patient
+
+    with get_db().transaction() as cursor:
+        cursor.execute(
+            "INSERT INTO encounters (ur_number, encounter_date) VALUES (?, ?)",
+            ("URLETTER2", "2024-01-02"),
+        )
+        note_id = cursor.lastrowid
+
+    assert update_patient_letter(note_id, "legit letter") is True
+
+    update_patient(
+        Patient(
+            id=note_id,
+            name="Smith, John",
+            ur_number="URLETTER2",
+            encounter_date="2024-01-02",
+            final_letter="STALE COPY",
+        )
+    )
+
+    with get_db().read() as cursor:
+        cursor.execute("SELECT final_letter FROM encounters WHERE id = ?", (note_id,))
+        assert cursor.fetchone()["final_letter"] == "legit letter"
 
 
 def test_fetch_letter(monkeypatch):
@@ -60,6 +117,18 @@ def test_fetch_letter(monkeypatch):
     data = response.json()
     assert "letter" in data
     assert "Fetched letter content" in data["letter"]
+
+
+def test_fetch_letter_none_when_absent(monkeypatch):
+    """No letter attached must be JSON null, not a placeholder string."""
+
+    def fake_fetch_patient_letter(_noteId):
+        return None
+
+    monkeypatch.setattr("server.api.letter.fetch_patient_letter", fake_fetch_patient_letter)
+    response = client.get("/api/letter/fetch-letter?noteId=123")
+    assert response.status_code == 200
+    assert response.json()["letter"] is None
 
 
 def test_get_templates(monkeypatch):
