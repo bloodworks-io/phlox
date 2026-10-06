@@ -64,7 +64,7 @@ export const letterApi = {
   resetLetterTemplates: async () =>
     handleApiRequest({
       apiCall: async () => {
-        const url = await buildApiUrl("/api/letter/letter/templates/reset");
+        const url = await buildApiUrl("/api/letter/templates/reset");
         return universalFetch(url, {
           method: "POST",
         });
