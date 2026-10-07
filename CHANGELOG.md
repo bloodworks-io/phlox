@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.1](https://github.com/bloodworks-io/phlox/compare/v2.5.0...v2.5.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **agent-live:** report failed letter saves instead of false succes ([5449a5c](https://github.com/bloodworks-io/phlox/commit/5449a5cf9535ae079c54a42495506520cbd9bd93))
+* **forms:** incorrect names for AcroForm fields ([d9bedfa](https://github.com/bloodworks-io/phlox/commit/d9bedfa4d82febd935734c6d47e31a9d033c8223))
+* **letter:** 404 letter saves, return null for absent letters, saved ([db390b7](https://github.com/bloodworks-io/phlox/commit/db390b792063b7b340b72abeb6636435373eee58))
+* **letter:** double-prefixed templates reset endpoint url ([68ac428](https://github.com/bloodworks-io/phlox/commit/68ac428b6b34b177439b25c5be0eff2a634e7776))
+* **pdf-forms:** stop encode crashes on unencodable text ([333bb7b](https://github.com/bloodworks-io/phlox/commit/333bb7b3579ed2bc2714908be9f1291bb027ee5b))
+* **ui:** scribe loading pill shrinking, animation ([db2b3a9](https://github.com/bloodworks-io/phlox/commit/db2b3a978947e3603511d9b4efde0d38798daa52))
+
 ## [2.5.0](https://github.com/bloodworks-io/phlox/compare/v2.4.2...v2.5.0) (2026-10-01)
 
 
