@@ -739,7 +739,13 @@ def _save_letter(session) -> dict[str, Any]:
     try:
         from server.database.repositories.letter import update_patient_letter
 
-        update_patient_letter(session.note_id, str(letter.get("content") or ""))
+        updated = update_patient_letter(session.note_id, str(letter.get("content") or ""))
+        if not updated:
+            logger.error("save_letter: no row updated for note %s", session.note_id)
+            return {
+                "content": "Could not save the letter: the encounter was not found.",
+                "events": [],
+            }
     except Exception as exc:
         logger.error("save_letter: error: %s", exc)
         return {"content": f"Error saving letter: {exc}", "events": []}

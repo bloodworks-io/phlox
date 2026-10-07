@@ -8,10 +8,26 @@ import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { FaRegEye } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
+import type { FormTemplate } from "./types";
+
+interface PdfDocLike {
+    numPages: number;
+    getPage: (pageNumber: number) => Promise<{
+        getViewport: (params: { scale: number }) => { width: number; height: number };
+        render: (params: {
+            canvasContext: CanvasRenderingContext2D;
+            viewport: unknown;
+        }) => { promise: Promise<void> };
+    }>;
+}
+
+interface PdfPageStackProps {
+    doc: PdfDocLike;
+}
 
 // Renders every page of a pdfjs document as stacked canvases.
-const PdfPageStack = ({ doc }) => {
-  const containerRef = useRef(null);
+const PdfPageStack = ({ doc }: PdfPageStackProps) => {
+    const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,23 +61,29 @@ const PdfPageStack = ({ doc }) => {
   return <Box ref={containerRef} maxH="55vh" overflowY="auto" />;
 };
 
-const FillFormModal = ({ isOpen, onClose, template }) => {
-  const { t } = useTranslation();
-  const [values, setValues] = useState({});
-  const [filling, setFilling] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState(null);
+interface FillFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    template: FormTemplate | null;
+}
 
-  const fields = template?.fields || [];
+const FillFormModal = ({ isOpen, onClose, template }: FillFormModalProps) => {
+    const { t } = useTranslation();
+    const [values, setValues] = useState<Record<string, string>>({});
+    const [filling, setFilling] = useState(false);
+    const [previewing, setPreviewing] = useState(false);
+    const [previewDoc, setPreviewDoc] = useState<PdfDocLike | null>(null);
 
-  const handleChange = (fieldName, value) => {
-    setValues((prev) => ({ ...prev, [fieldName]: value }));
-  };
+    const fields = template?.fields || [];
 
-  const buildFilled = async () => {
-    const pdfData = await pdfFormsApi.fetchTemplatePdf(template.id);
-    return fillPdf(new Uint8Array(pdfData), template, values);
-  };
+    const handleChange = (fieldName: string, value: string) => {
+        setValues((prev) => ({ ...prev, [fieldName]: value }));
+    };
+
+    const buildFilled = async () => {
+        const pdfData = await pdfFormsApi.fetchTemplatePdf(template!.id);
+        return fillPdf(new Uint8Array(pdfData), template!, values);
+    };
 
   const handlePreview = async () => {
     if (!template) return;
@@ -89,7 +111,9 @@ const FillFormModal = ({ isOpen, onClose, template }) => {
     try {
       const filledBytes = await buildFilled();
 
-      const blob = new Blob([filledBytes], { type: "application/pdf" });
+      const blob = new Blob([filledBytes as unknown as BlobPart], {
+        type: "application/pdf",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

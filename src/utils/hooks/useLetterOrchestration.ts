@@ -1,20 +1,27 @@
 import { useEffect, useCallback } from "react";
 import { useLetter } from "./useLetter";
+import type { LetterPatient, SetIsModified } from "./useLetter";
+
+interface UseLetterOrchestrationArgs {
+    patient: LetterPatient | null;
+    setIsModified: SetIsModified;
+    onResetLetter?: (resetLetter: () => void) => void;
+    openLetter: () => void;
+}
 
 export const useLetterOrchestration = ({
     patient,
     setIsModified,
     onResetLetter,
     openLetter,
-    toast,
-}) => {
+}: UseLetterOrchestrationArgs) => {
     const letterHook = useLetter(setIsModified);
     const { loadLetter, generateLetter, saveLetter, setFinalCorrespondence, resetLetter } = letterHook;
 
     // Load letter when patient changes
     useEffect(() => {
         if (patient?.id) {
-            loadLetter(patient.id, toast);
+            loadLetter(patient.id);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [patient?.id]);
@@ -27,27 +34,23 @@ export const useLetterOrchestration = ({
     }, [onResetLetter, resetLetter]);
 
     const handleGenerateLetterClick = useCallback(
-        async (additionalInstructions) => {
+        async (additionalInstructions?: string | null) => {
             if (!patient) return;
             openLetter();
-            await generateLetter(
-                patient,
-                additionalInstructions,
-                toast,
-                setFinalCorrespondence,
-            );
+            await generateLetter(patient, additionalInstructions);
         },
-        [patient, openLetter, toast, generateLetter, setFinalCorrespondence],
+        [patient, openLetter, generateLetter],
     );
 
     const handleLetterSave = async () => {
+        if (!patient?.id) return;
         await saveLetter(patient.id);
         setIsModified(false);
     };
 
     // Wrap setFinalCorrespondence to also flip the modified flag
     const setFinalCorrespondenceWithFlag = useCallback(
-        (value) => {
+        (value: string) => {
             setFinalCorrespondence(value);
             setIsModified(true);
         },

@@ -40,7 +40,7 @@ Phlox is a free, open-source, AI scribe with a built-in patient management syste
 
 ### Desktop App
 
-Pre-built Apple Silicon (macOS) binaries, Flatpaks (Linux - Vulkan), and Windows (x86_64) Installers are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases). Every release ships with `SHASUMS256.txt` and a `manifest.json` recording artifact digests and verification results. See [the release process](/.github/RELEASE.md) for how releases are signed and verified.
+Pre-built Apple Silicon (macOS) binaries, Flatpaks (Linux - Vulkan), and Windows (x86-64) Installers are available from [GitHub Releases](https://github.com/bloodworks-io/phlox/releases). See [the release process](/.github/RELEASE.md) for how releases are signed and verified.
 
 The desktop app comes bundled with both transcription and LLM inference engines. Models can be downloaded from within the application.
 
@@ -119,4 +119,4 @@ Third-party models, runtimes, and library attributions: [Credits](https://phlox.
 
 [Contributing Guidelines](.github/CONTRIBUTING.md)
 
-This repo has made extensive use of AI development tools. All AI generated code has been vetted by me and I ask that any contributors do the same prior to submitting PRs.
+Whilst this repo has made extensive use of AI development tools; all code generated with AI-assistance must be manually vetted prior to submission.

@@ -4,40 +4,67 @@ import { Box, Flex, HStack, IconButton, Text, Spinner } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
+import { getHelveticaMeasure } from "../../utils/pdf/fieldLayout";
 import {
-    layoutTextField,
-    checkboxMark,
-    getHelveticaMeasure,
-} from "../../utils/pdf/fieldLayout";
+    FIELD_CANVAS_COLORS,
+    MIN_FIELD_SIZE,
+    canvasToPdf,
+    createFieldDraft,
+    drawFieldOverlays,
+    fieldToCanvas,
+    findFieldAtPos,
+    isOnResizeHandle,
+    normalizeRect,
+} from "./formBuilderUtils";
+import type { CoordContext } from "./formBuilderUtils";
 import { useTranslation } from "react-i18next";
+import type { Measure } from "../../utils/pdf/fieldLayout";
+import type { FieldType, FormField, FormTemplate } from "./types";
 
-// Canvas-safe overflow warning color (matches Chakra red-ish used elsewhere)
-const OVERFLOW_COLOR = "#e53e3e";
+interface PdfViewport {
+    width: number;
+    height: number;
+}
+interface PdfRenderTask {
+    promise: Promise<void>;
+    cancel: () => void;
+}
+interface PdfPageProxy {
+    getViewport: (params: { scale: number }) => PdfViewport;
+    render: (params: {
+        canvasContext: CanvasRenderingContext2D;
+        viewport: PdfViewport;
+    }) => PdfRenderTask;
+}
+interface PdfDocProxy {
+    getPage: (pageNumber: number) => Promise<PdfPageProxy>;
+}
 
+interface CanvasPoint {
+    x: number;
+    y: number;
+}
+interface ResizeOrigin {
+    canvasX: number;
+    canvasY: number;
+    fieldW: number;
+    fieldH: number;
+}
 
-// Canvas-safe colors mapped from field types (can't use Chakra tokens in canvas)
-const FIELD_CANVAS_COLORS = {
-    text: {
-        stroke: "#3182ce",
-        fill: "rgba(49,130,206,0.1)",
-        fillSelected: "rgba(49,130,206,0.2)",
-    },
-    checkbox: {
-        stroke: "#38a169",
-        fill: "rgba(56,161,105,0.1)",
-        fillSelected: "rgba(56,161,105,0.2)",
-    },
-    date: {
-        stroke: "#dd6b20",
-        fill: "rgba(221,107,32,0.1)",
-        fillSelected: "rgba(221,107,32,0.2)",
-    },
-    number: {
-        stroke: "#805ad5",
-        fill: "rgba(128,90,213,0.1)",
-        fillSelected: "rgba(128,90,213,0.2)",
-    },
-};
+interface FormBuilderProps {
+    template: FormTemplate;
+    fields: FormField[];
+    onFieldsChange: (fields: FormField[]) => void;
+    selectedFieldId: string | null;
+    onSelectField: (id: string | null) => void;
+    onUpdateField: (field: FormField) => void;
+    isDrawing?: boolean;
+    activeFieldType?: FieldType;
+    previewOn?: boolean;
+    previewValues?: Record<string, string>;
+    currentPage?: number;
+    onCurrentPageChange?: (page: number) => void;
+}
 
 const FormBuilder = ({
     template,
@@ -47,25 +74,23 @@ const FormBuilder = ({
     onSelectField,
     onUpdateField,
     isDrawing = false,
-    _onToggleDrawing,
     activeFieldType = "text",
-    _onFieldTypeChange,
     previewOn = false,
     previewValues = {},
     currentPage = 1,
     onCurrentPageChange = () => {},
-}) => {
+}: FormBuilderProps) => {
     const { t } = useTranslation();
-    const containerRef = useRef(null);
-    const pdfCanvasRef = useRef(null);
-    const overlayCanvasRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+    const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
     const [renderScale, setRenderScale] = useState(1);
     const [rendering, setRendering] = useState(false);
-    const [pdfDoc, setPdfDoc] = useState(null);
+    const [pdfDoc, setPdfDoc] = useState<PdfDocProxy | null>(null);
     const [renderGeneration, setRenderGeneration] = useState(0);
 
     // Helvetica metrics matching fillPdf exactly (for WYSIWYG text preview)
-    const measureRef = useRef(null);
+    const measureRef = useRef<Measure | null>(null);
     const [measureReady, setMeasureReady] = useState(false);
     useEffect(() => {
         let cancelled = false;
@@ -80,22 +105,28 @@ const FormBuilder = ({
     }, []);
 
     // Drawing state (controlled by parent via isDrawing prop)
-    const [drawStart, setDrawStart] = useState(null);
-    const [drawCurrent, setDrawCurrent] = useState(null);
+    const [drawStart, setDrawStart] = useState<CanvasPoint | null>(null);
+    const [drawCurrent, setDrawCurrent] = useState<CanvasPoint | null>(null);
 
     // Drag state for moving existing fields
     const [isDragging, setIsDragging] = useState(false);
-    const [dragFieldId, setDragFieldId] = useState(null);
-    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [dragFieldId, setDragFieldId] = useState<string | null>(null);
+    const [dragOffset, setDragOffset] = useState<CanvasPoint>({ x: 0, y: 0 });
 
     // Resize state for resizing fields via lower-right handle
     const [isResizing, setIsResizing] = useState(false);
-    const [resizeFieldId, setResizeFieldId] = useState(null);
-    const [resizeOrigin, setResizeOrigin] = useState(null); // { canvasX, canvasY, fieldW, fieldH }
+    const [resizeFieldId, setResizeFieldId] = useState<string | null>(null);
+    const [resizeOrigin, setResizeOrigin] = useState<ResizeOrigin | null>(null);
 
     const overlayBg = "var(--chakra-colors-hover-overlay)";
-    const renderTaskRef = useRef(null);
+    const renderTaskRef = useRef<PdfRenderTask | null>(null);
     const isRenderingRef = useRef(false);
+
+    const coord: CoordContext = {
+        pageHeights: template?.page_heights || [],
+        currentPage,
+        renderScale,
+    };
 
     // Load the PDF via pdfjs-dist
     useEffect(() => {
@@ -185,128 +216,27 @@ const FormBuilder = ({
             isRenderingRef.current = false;
             setRendering(false);
         }
-         
+
     }, [pdfDoc, currentPage]);
 
     useEffect(() => {
         renderPage();
     }, [renderPage]);
 
-    // Coordinate conversion
-    const fieldToCanvas = (field) => {
-        const pageHeights = template?.page_heights || [];
-        const pageHeight = pageHeights[currentPage - 1] || 792;
-        return {
-            x: field.x * renderScale,
-            y: (pageHeight - field.y - field.height) * renderScale,
-            width: field.width * renderScale,
-            height: field.height * renderScale,
-        };
-    };
-
-    const canvasToPdf = (canvasX, canvasY, canvasW, canvasH) => {
-        const pageHeights = template?.page_heights || [];
-        const pageHeight = pageHeights[currentPage - 1] || 792;
-        return {
-            x: canvasX / renderScale,
-            y: pageHeight - (canvasY + canvasH) / renderScale,
-            width: canvasW / renderScale,
-            height: canvasH / renderScale,
-        };
-    };
-
     // Draw all fields on the overlay
     const drawFields = useCallback(() => {
         const overlay = overlayCanvasRef.current;
         if (!overlay) return;
         const ctx = overlay.getContext("2d");
-        ctx.clearRect(0, 0, overlay.width, overlay.height);
-
-        const pageHeights = template?.page_heights || [];
-        const pageHeight = pageHeights[currentPage - 1] || 792;
-        const pageFields = fields.filter((f) => f.page_number === currentPage);
-        for (const field of pageFields) {
-            const rect = fieldToCanvas(field);
-            const colors =
-                FIELD_CANVAS_COLORS[field.field_type] ||
-                FIELD_CANVAS_COLORS.text;
-
-            // WYSIWYG preview: same layout math fillPdf uses
-            const wantsPreview = previewOn || field.id === selectedFieldId;
-            const sample = previewValues[field.id] ?? field.name ?? "";
-            let preview = null;
-            let overflow = false;
-            if (measureRef.current && wantsPreview) {
-                if (field.field_type === "checkbox") {
-                    preview = checkboxMark(field, measureRef.current);
-                } else if (sample.trim()) {
-                    const layout = layoutTextField(
-                        field,
-                        sample,
-                        measureRef.current,
-                    );
-                    preview = layout;
-                    overflow =
-                        layout.hiddenLineCount > 0 || layout.overflowsWidth;
-                }
-            }
-
-            ctx.strokeStyle = overflow ? OVERFLOW_COLOR : colors.stroke;
-            ctx.lineWidth = field.id === selectedFieldId ? 3 : 1.5;
-            ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
-
-            ctx.fillStyle =
-                field.id === selectedFieldId
-                    ? colors.fillSelected
-                    : colors.fill;
-            ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
-
-            if (field.name) {
-                ctx.fillStyle = overflow
-                    ? OVERFLOW_COLOR
-                    : "rgba(0,0,0,0.7)";
-                ctx.font = "10px sans-serif";
-                ctx.fillText(
-                    overflow ? `${field.name} ⚠` : field.name,
-                    rect.x + 2,
-                    rect.y - 3,
-                );
-            }
-
-            if (preview) {
-                ctx.fillStyle = "rgba(0,0,0,0.85)";
-                ctx.textBaseline = "alphabetic";
-                if (field.field_type === "checkbox") {
-                    ctx.font = `${preview.size * renderScale}px Helvetica, Arial, sans-serif`;
-                    ctx.fillText(
-                        preview.mark,
-                        preview.x * renderScale,
-                        (pageHeight - preview.y) * renderScale,
-                    );
-                } else {
-                    ctx.font = `${preview.fontSize * renderScale}px Helvetica, Arial, sans-serif`;
-                    for (const line of preview.lines) {
-                        ctx.fillText(
-                            line.text,
-                            line.x * renderScale,
-                            (pageHeight - line.y) * renderScale,
-                        );
-                    }
-                }
-            }
-
-            // Draw resize handle on the selected field's lower-right corner
-            if (field.id === selectedFieldId) {
-                const handleSize = 6;
-                ctx.fillStyle = colors.stroke;
-                ctx.fillRect(
-                    rect.x + rect.width - handleSize,
-                    rect.y + rect.height - handleSize,
-                    handleSize,
-                    handleSize,
-                );
-            }
-        }
+        if (!ctx) return;
+        drawFieldOverlays(ctx, {
+            fields,
+            coord,
+            selectedFieldId,
+            previewOn,
+            previewValues,
+            measure: measureRef.current,
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         fields,
@@ -325,48 +255,13 @@ const FormBuilder = ({
         drawFields();
     }, [fields, selectedFieldId, drawFields, pdfDoc, renderGeneration]);
 
-    const getCanvasPos = (e) => {
+    const getCanvasPos = (e: React.MouseEvent<HTMLCanvasElement>): CanvasPoint => {
         const overlay = overlayCanvasRef.current;
         const rect = overlay.getBoundingClientRect();
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
 
-    const findFieldAtPos = (canvasX, canvasY) => {
-        const pageFields = fields.filter((f) => f.page_number === currentPage);
-        for (let i = pageFields.length - 1; i >= 0; i--) {
-            const field = pageFields[i];
-            const rect = fieldToCanvas(field);
-            if (
-                canvasX >= rect.x &&
-                canvasX <= rect.x + rect.width &&
-                canvasY >= rect.y &&
-                canvasY <= rect.y + rect.height
-            ) {
-                return field;
-            }
-        }
-        return null;
-    };
-
-    const HANDLE_SIZE = 6;
-    const isOnResizeHandle = (canvasX, canvasY) => {
-        if (!selectedFieldId) return false;
-        const field = fields.find(
-            (f) => f.id === selectedFieldId && f.page_number === currentPage,
-        );
-        if (!field) return false;
-        const rect = fieldToCanvas(field);
-        const hx = rect.x + rect.width - HANDLE_SIZE;
-        const hy = rect.y + rect.height - HANDLE_SIZE;
-        return (
-            canvasX >= hx &&
-            canvasX <= hx + HANDLE_SIZE &&
-            canvasY >= hy &&
-            canvasY <= hy + HANDLE_SIZE
-        );
-    };
-
-    const handleMouseDown = (e) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (e.button !== 0) return;
         const pos = getCanvasPos(e);
 
@@ -376,9 +271,9 @@ const FormBuilder = ({
             setDrawCurrent(pos);
         } else {
             // Check resize handle first (only on already-selected field)
-            if (isOnResizeHandle(pos.x, pos.y)) {
+            if (isOnResizeHandle(fields, selectedFieldId, pos.x, pos.y, coord)) {
                 const field = fields.find((f) => f.id === selectedFieldId);
-                const rect = fieldToCanvas(field);
+                const rect = fieldToCanvas(field, coord);
                 setIsResizing(true);
                 setResizeFieldId(selectedFieldId);
                 setResizeOrigin({
@@ -389,11 +284,11 @@ const FormBuilder = ({
                 });
             } else {
                 // Select/move mode
-                const clickedField = findFieldAtPos(pos.x, pos.y);
+                const clickedField = findFieldAtPos(fields, pos.x, pos.y, coord);
                 if (clickedField) {
                     onSelectField(clickedField.id);
                     // Start dragging
-                    const rect = fieldToCanvas(clickedField);
+                    const rect = fieldToCanvas(clickedField, coord);
                     setIsDragging(true);
                     setDragFieldId(clickedField.id);
                     setDragOffset({ x: pos.x - rect.x, y: pos.y - rect.y });
@@ -404,7 +299,7 @@ const FormBuilder = ({
         }
     };
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const pos = getCanvasPos(e);
 
         if (isDrawing && drawStart) {
@@ -417,10 +312,10 @@ const FormBuilder = ({
 
             const dx = pos.x - resizeOrigin.canvasX;
             const dy = pos.y - resizeOrigin.canvasY;
-            const newW = Math.max(10, resizeOrigin.fieldW + dx);
-            const newH = Math.max(10, resizeOrigin.fieldH + dy);
-            const fieldRect = fieldToCanvas(field);
-            const pdfPos = canvasToPdf(fieldRect.x, fieldRect.y, newW, newH);
+            const newW = Math.max(MIN_FIELD_SIZE, resizeOrigin.fieldW + dx);
+            const newH = Math.max(MIN_FIELD_SIZE, resizeOrigin.fieldH + dy);
+            const fieldRect = fieldToCanvas(field, coord);
+            const pdfPos = canvasToPdf(fieldRect.x, fieldRect.y, newW, newH, coord);
             onUpdateField({
                 ...field,
                 x: pdfPos.x,
@@ -435,13 +330,14 @@ const FormBuilder = ({
 
             const newCanvasX = pos.x - dragOffset.x;
             const newCanvasY = pos.y - dragOffset.y;
-            const rect = fieldToCanvas(field);
+            const rect = fieldToCanvas(field, coord);
 
             const pdfPos = canvasToPdf(
                 newCanvasX,
                 newCanvasY,
                 rect.width,
                 rect.height,
+                coord,
             );
             onUpdateField({
                 ...field,
@@ -452,41 +348,30 @@ const FormBuilder = ({
             // Hover: change cursor based on what's under the mouse
             const overlay = overlayCanvasRef.current;
             if (overlay) {
-                if (isOnResizeHandle(pos.x, pos.y)) {
+                if (isOnResizeHandle(fields, selectedFieldId, pos.x, pos.y, coord)) {
                     overlay.style.cursor = "nwse-resize";
                 } else {
-                    const hovered = findFieldAtPos(pos.x, pos.y);
+                    const hovered = findFieldAtPos(fields, pos.x, pos.y, coord);
                     overlay.style.cursor = hovered ? "move" : "default";
                 }
             }
         }
     };
 
-    const handleMouseUp = (e) => {
+    const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (isDrawing && drawStart) {
             // Finish drawing a new field
             const pos = getCanvasPos(e);
-            const x = Math.min(drawStart.x, pos.x);
-            const y = Math.min(drawStart.y, pos.y);
-            const width = Math.abs(pos.x - drawStart.x);
-            const height = Math.abs(pos.y - drawStart.y);
+            const { x, y, width, height } = normalizeRect(drawStart, pos);
 
-            if (width >= 10 && height >= 10) {
-                const pdfPos = canvasToPdf(x, y, width, height);
+            if (width >= MIN_FIELD_SIZE && height >= MIN_FIELD_SIZE) {
+                const pdfPos = canvasToPdf(x, y, width, height, coord);
 
-                const newField = {
-                    id: `field_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                    name: "",
-                    description: "",
-                    field_type: activeFieldType,
-                    required: false,
-                    page_number: currentPage,
-                    x: pdfPos.x,
-                    y: pdfPos.y,
-                    width: pdfPos.width,
-                    height: pdfPos.height,
-                    font_size: 12,
-                };
+                const newField = createFieldDraft(
+                    pdfPos,
+                    activeFieldType,
+                    currentPage,
+                );
 
                 onFieldsChange([...fields, newField]);
                 onSelectField(newField.id);
@@ -530,13 +415,11 @@ const FormBuilder = ({
         const overlay = overlayCanvasRef.current;
         if (!overlay) return;
         const ctx = overlay.getContext("2d");
+        if (!ctx) return;
 
         drawFields();
 
-        const x = Math.min(drawStart.x, drawCurrent.x);
-        const y = Math.min(drawStart.y, drawCurrent.y);
-        const w = Math.abs(drawCurrent.x - drawStart.x);
-        const h = Math.abs(drawCurrent.y - drawStart.y);
+        const { x, y, width: w, height: h } = normalizeRect(drawStart, drawCurrent);
 
         const colors =
             FIELD_CANVAS_COLORS[activeFieldType] || FIELD_CANVAS_COLORS.text;

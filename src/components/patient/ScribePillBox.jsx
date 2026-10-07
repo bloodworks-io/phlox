@@ -105,9 +105,6 @@ const ScribePillBox = ({
                 px={2}
                 py={2}
                 gap={0}
-                minHeight="65px"
-                w="182px"
-                justify="center"
             >
                 <LoadingOrb size={46} />
             </PillBox>

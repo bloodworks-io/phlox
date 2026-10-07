@@ -37,6 +37,11 @@ const tabStyles = (props) => ({
                 ? `${colors.light.surface} !important`
                 : `${colors.dark.surface} !important`,
     },
+    ".compact-tabs .tab-style": {
+        fontSize: "13px !important",
+        paddingLeft: "8px !important",
+        paddingRight: "8px !important",
+    },
     ".tab-panel-container": {
         minHeight: "180px !important",
         display: "flex !important",

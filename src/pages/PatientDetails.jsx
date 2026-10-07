@@ -143,7 +143,6 @@ const PatientDetails = ({
         setIsModified: setIsLetterModified,
         onResetLetter,
         openLetter: () => open("letter"),
-        toast,
     });
 
     // Scribe hook for recording controls

@@ -20,7 +20,7 @@ dependencies = [
 rag = [
     "mcp==1.28.1",
     "numpy==2.5.1",
-    "pypdf==6.18.1",
+    "pypdf==6.19.0",
     "sherpa-onnx==1.13.8",
     "sherpa-onnx-core==1.13.8",
     "sqlite-vec==0.1.9",

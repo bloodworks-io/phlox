@@ -6,11 +6,28 @@ import { DeleteIcon, RepeatIcon } from "../common/icons";
 import { FiFileText } from "react-icons/fi";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { useTranslation } from "react-i18next";
+import type { FormTemplate } from "./types";
 
-const FormTemplateList = ({ templates, loading, onSelect, onDelete, onReplace, selectedTemplateId }) => {
-  const { t } = useTranslation();
+interface FormTemplateListProps {
+    templates: FormTemplate[];
+    loading: boolean;
+    onSelect: (id: string) => void;
+    onDelete: (id: string) => void;
+    onReplace: (template: FormTemplate) => void;
+    selectedTemplateId?: string | null;
+}
 
-  const handleDelete = async (e, id, name) => {
+const FormTemplateList = ({
+    templates,
+    loading,
+    onSelect,
+    onDelete,
+    onReplace,
+    selectedTemplateId,
+}: FormTemplateListProps) => {
+    const { t } = useTranslation();
+
+    const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
     try {
       await pdfFormsApi.deleteTemplate(id);

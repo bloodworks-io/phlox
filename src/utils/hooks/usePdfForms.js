@@ -4,6 +4,11 @@ import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../api/pdfFormsApi";
 import { chatApi } from "../api/chatApi";
 import { loadPdfDocument } from "../helpers/pdfVisionHelpers";
+import {
+    dedupeFieldNames,
+    deriveAcroFieldName,
+    isJunkFieldName,
+} from "../../components/pdf-forms/acroNaming";
 
 const VALID_FIELD_TYPES = ["text", "checkbox", "date", "number"];
 
@@ -161,6 +166,19 @@ export const usePdfForms = () => {
           (a) => a.subtype === "Widget" && Array.isArray(a.rect),
         );
         if (widgets.length > 0) {
+          // Internal names are often junk ("Text1", "checkbox 2"); harvest
+          // printed labels from the page text when we can't do better.
+          const needsHarvest = widgets.some(
+            (w) =>
+              !w.alternativeText && isJunkFieldName(w.fieldName),
+          );
+          const textItems = needsHarvest
+            ? (await page.getTextContent()).items.filter(
+                (it) => typeof it.str === "string",
+              )
+            : [];
+          const widgetRects = widgets.map((w) => w.rect);
+
           for (const w of widgets) {
             const [x1, y1, x2, y2] = w.rect;
             const width = Math.abs(x2 - x1);
@@ -168,7 +186,7 @@ export const usePdfForms = () => {
             if (width < 1 || height < 1) continue;
             acroFields.push(
               makeField(i, {
-                name: w.fieldName || "",
+                name: deriveAcroFieldName(w, textItems, widgetRects),
                 field_type: w.fieldType === "Btn" ? "checkbox" : "text",
                 x: Math.min(x1, x2),
                 y: Math.min(y1, y2),
@@ -233,7 +251,9 @@ export const usePdfForms = () => {
         });
       }
 
-      const detectedFields = [...acroFields, ...vlmFields];
+      // Names are the fill key for the LLM — keep them unique across
+      // both AcroForm and VLM detection paths.
+      const detectedFields = dedupeFieldNames([...acroFields, ...vlmFields]);
 
       // 4. Set fields
       setFields(detectedFields);

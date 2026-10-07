@@ -14,15 +14,24 @@ import {
   Field,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "../common/icons";
-import { layoutTextField, getHelveticaMeasure } from "../../utils/pdf/fieldLayout";
+import { layoutTextField, getHelveticaMeasure, type Measure } from "../../utils/pdf/fieldLayout";
 import { useTranslation } from "react-i18next";
+import type { FieldType, FormField } from "./types";
 
-const FIELD_COLORS = {
+const FIELD_COLORS: Record<FieldType, string> = {
   text: "blue.400",
   checkbox: "green.400",
   date: "orange.400",
   number: "purple.400",
 };
+
+interface FieldEditorProps {
+  field: FormField | null;
+  onChange: (field: FormField) => void;
+  onDelete: (id: string) => void;
+  previewValue: string;
+  onPreviewValueChange: (value: string) => void;
+}
 
 const FieldEditor = ({
   field,
@@ -30,10 +39,10 @@ const FieldEditor = ({
   onDelete,
   previewValue,
   onPreviewValueChange,
-}) => {
+}: FieldEditorProps) => {
   const { t } = useTranslation();
   // Helvetica metrics for the overflow warning (matches fillPdf exactly)
-  const [measure, setMeasure] = useState(null);
+  const [measure, setMeasure] = useState<{ m: Measure } | null>(null);
   useEffect(() => {
     let cancelled = false;
     getHelveticaMeasure().then((m) => {
@@ -104,9 +113,10 @@ const FieldEditor = ({
         </Field.Label>
         <NativeSelect.Root>
           <NativeSelect.Field
-            size="sm"
             value={field.field_type}
-            onChange={(e) => onChange({ ...field, field_type: e.target.value })}
+            onChange={(e) =>
+              onChange({ ...field, field_type: e.target.value as FieldType })
+            }
             className="input-style">
             <option value="text">{t("forms.fieldTypes.text")}</option>
             <option value="checkbox">{t("forms.fieldTypes.checkbox")}</option>
@@ -153,7 +163,9 @@ const FieldEditor = ({
             value={String(field.font_size || 12)}
             min={6}
             max={72}
-            onValueChange={(_, val) => onChange({ ...field, font_size: val || 12 })}
+            onValueChange={(details) =>
+              onChange({ ...field, font_size: details.valueAsNumber || 12 })
+            }
           >
             <NumberInput.Input className="input-style" />
           </NumberInput.Root>
@@ -167,7 +179,9 @@ const FieldEditor = ({
             size="sm"
             value={String(field.page_number)}
             min={1}
-            onValueChange={(_, val) => onChange({ ...field, page_number: val || 1 })}
+            onValueChange={(details) =>
+              onChange({ ...field, page_number: details.valueAsNumber || 1 })
+            }
           >
             <NumberInput.Input className="input-style" />
           </NumberInput.Root>
@@ -185,7 +199,9 @@ const FieldEditor = ({
       )}
       <Checkbox.Root
         size="sm"
-        onCheckedChange={({ checked }) => onChange({ ...field, required: checked })}
+        onCheckedChange={({ checked }) =>
+          onChange({ ...field, required: checked === true })
+        }
         checked={field.required}
       >
         <Checkbox.HiddenInput />

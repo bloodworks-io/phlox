@@ -45,9 +45,13 @@ async def generate_letter(request: LetterRequest):
 def save_letter(request: LetterSave):
     """Saves a letter."""
     try:
-        update_patient_letter(request.noteId, request.letter)
+        updated = update_patient_letter(request.noteId, request.letter)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Note not found")
         logging.info(f"Patient letter updated for ID: {request.noteId}")
         return {"message": "Letter saved successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -55,10 +59,10 @@ def save_letter(request: LetterSave):
 
 @router.get("/fetch-letter")
 def fetch_letter(noteId: int):
-    """Fetches a letter by note ID."""
+    """Fetches a letter by note ID. Returns null when no letter is attached."""
     try:
         letter = fetch_patient_letter(noteId)
-        return JSONResponse(content={"letter": letter or "No letter attached to encounter"})
+        return JSONResponse(content={"letter": letter})
     except Exception as e:
         logging.error(f"Error fetching letter: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e

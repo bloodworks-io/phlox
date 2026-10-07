@@ -1290,8 +1290,6 @@
         },
         "chat": {
             "sendMessageFailed": "Error in chat communication",
-            "letterGeneratedToast": "Letter generated successfully.",
-            "generateLetterFailed": "Error generating letter",
             "analyzeVisualFailed": "Error analyzing document visuals",
             "probeVisionFailed": "Error probing vision capability",
             "fetchVisionCapabilityFailed": "Error fetching current vision capability",

@@ -7,13 +7,16 @@ from server.schemas.letter import LetterTemplate
 from server.utils.current_user import current_user_id, scoped, scoped_or_shared
 
 
-def update_patient_letter(note_id: int, letter: str) -> None:
+def update_patient_letter(note_id: int, letter: str) -> bool:
     """
     Update a patient's final letter.
 
     Args:
         note_id (int): The patient's ID.
         letter (str): The letter content.
+
+    Returns:
+        bool: True if a row was updated (note exists and is in scope).
     """
     try:
         scope_sql, scope_params = scoped("created_by")
@@ -27,6 +30,7 @@ def update_patient_letter(note_id: int, letter: str) -> None:
                 """,
                 (letter, datetime.now().isoformat(), note_id, *scope_params),
             )
+            return cursor.rowcount > 0
     except Exception as e:
         logging.error(f"Error updating patient letter: {e}")
         raise

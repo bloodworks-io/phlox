@@ -8,9 +8,16 @@ import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
 import { useTranslation } from "react-i18next";
 import { t as tStatic } from "@/i18n";
+import type { FormFillArtifactData } from "./types";
+
+interface FormFillArtifactProps {
+    artifact: FormFillArtifactData;
+}
 
 /** Download a form_fill artifact as a filled PDF (shared with the live-agent chips). */
-export const downloadFormFillArtifact = async (artifact) => {
+export const downloadFormFillArtifact = async (
+    artifact: FormFillArtifactData,
+): Promise<void> => {
     const { template_id, template_name } = artifact;
     const filename = `${template_name || "form"}_filled.pdf`;
 
@@ -26,7 +33,9 @@ export const downloadFormFillArtifact = async (artifact) => {
             artifact.field_values,
         );
 
-        const blob = new Blob([filledBytes], { type: "application/pdf" });
+        const blob = new Blob([filledBytes as unknown as BlobPart], {
+            type: "application/pdf",
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -47,7 +56,7 @@ export const downloadFormFillArtifact = async (artifact) => {
     }
 };
 
-const FormFillArtifact = ({ artifact }) => {
+const FormFillArtifact = ({ artifact }: FormFillArtifactProps) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
 

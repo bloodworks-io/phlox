@@ -3,15 +3,29 @@ import React from "react";
 import { VStack } from "@chakra-ui/react";
 import DocumentExplorer from "./DocumentExplorer";
 import Uploader from "./Uploader";
+import type {
+    CollapseState,
+    DocumentCollection,
+    ItemToDelete,
+} from "./types";
+
+interface KnowledgeBasePanelProps {
+    collapseExplorer: CollapseState;
+    collapseUploader: CollapseState;
+    collections: DocumentCollection[];
+    setCollections: React.Dispatch<React.SetStateAction<DocumentCollection[]>>;
+    loading: boolean;
+    setItemToDelete: (item: ItemToDelete | null) => void;
+}
 
 const KnowledgeBasePanel = ({
-  collapseExplorer,
-  collapseUploader,
-  collections,
-  setCollections,
-  loading,
-  setItemToDelete,
-}) => (
+    collapseExplorer,
+    collapseUploader,
+    collections,
+    setCollections,
+    loading,
+    setItemToDelete,
+}: KnowledgeBasePanelProps) => (
   <VStack gap="5" align="stretch">
     <DocumentExplorer
       isCollapsed={collapseExplorer.isCollapsed}

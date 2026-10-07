@@ -10,9 +10,14 @@ import {
 } from "../common/icons";
 import { FaFilePdf, FaCloudUploadAlt } from "react-icons/fa";
 import { useBulkUploadQueue, STATUS } from "../../utils/hooks/useBulkUploadQueue";
+import { filterPdfFiles } from "./utils";
 import { useTranslation } from "react-i18next";
+import type { DocumentCollection } from "./types";
 
-const StatusIcon = ({ status }) => {
+type QueueApi = ReturnType<typeof useBulkUploadQueue>;
+type QueueEntry = QueueApi["fileQueue"][number];
+
+const StatusIcon = ({ status }: { status: string }) => {
     switch (status) {
         case STATUS.EXTRACTING:
         case STATUS.COMMITTING:
@@ -36,11 +41,15 @@ const StatusIcon = ({ status }) => {
     }
 };
 
-const BulkUploader = ({ setCollections }) => {
+interface BulkUploaderProps {
+    setCollections: React.Dispatch<React.SetStateAction<DocumentCollection[]>>;
+}
+
+const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
     const { t } = useTranslation();
     const [isDragOver, setIsDragOver] = useState(false);
-    const [expandedFile, setExpandedFile] = useState(null);
-    const fileInputRef = useRef(null);
+    const [expandedFile, setExpandedFile] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {
         fileQueue,
@@ -69,15 +78,11 @@ const BulkUploader = ({ setCollections }) => {
         setIsDragOver(false);
     };
 
-    const handleDrop = (e) => {
+    const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
         const files = Array.from(e.dataTransfer?.files || []);
-        const pdfFiles = files.filter(
-            (f) =>
-                f.type === "application/pdf" ||
-                f.name.toLowerCase().endsWith(".pdf"),
-        );
+        const pdfFiles = filterPdfFiles(files);
         if (pdfFiles.length === 0) {
             toaster.create({
                 title: t("rag.toast.noPdfFiles"),
@@ -100,7 +105,7 @@ const BulkUploader = ({ setCollections }) => {
         addFiles(pdfFiles);
     };
 
-    const handleFileSelect = (e) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (files.length > 0) {
             addFiles(files);
@@ -110,7 +115,7 @@ const BulkUploader = ({ setCollections }) => {
 
     // --- Status icon ---
 
-    const statusLabel = (entry) => {
+    const statusLabel = (entry: QueueEntry) => {
         switch (entry.status) {
             case STATUS.PENDING:
                 return t("rag.status.pending");

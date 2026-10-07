@@ -26,21 +26,6 @@ export const chatApi = {
         });
     },
 
-    generateLetter: async (letterData) => {
-        return handleApiRequest({
-            apiCall: async () => {
-                const url = await buildApiUrl("/api/generate-letter");
-                return universalFetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(letterData),
-                });
-            },
-            successMessage: t("api.chat.letterGeneratedToast"),
-            errorMessage: t("api.chat.generateLetterFailed"),
-        });
-    },
-
     analyzeVisualDocument: async (payload) => {
         return handleApiRequest({
             apiCall: async () => {
