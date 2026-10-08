@@ -20,6 +20,7 @@ downgraded to SKIP (never ACT; the debounce backstop bounds misses).
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import math
@@ -391,7 +392,11 @@ class LiveAgentEngine:
         for key in names:
             content = session.field_drafts.get(key, "")
             touched = " [clinician-edited]" if key in session.user_touched else ""
-            preview = content if len(content) <= 500 else content[:500] + "..."
+            preview = (
+                content
+                if len(content) <= 500
+                else content[:500] + " ...[truncated, call read_note_field for full content]"
+            )
             lines.append(f"{key}{touched}: {preview or '(empty)'}")
         return "\n".join(lines)
 
@@ -435,6 +440,8 @@ class LiveAgentEngine:
 
     async def _run_tick(self, reason: str) -> None:
         session = self.session
+        if session.is_ended:
+            return
         self._ensure_agent_messages()
 
         await session.emit({"type": "agent_state", "state": "working"})
@@ -467,6 +474,9 @@ class LiveAgentEngine:
 
             if not tool_calls:
                 final_text = content
+                break
+
+            if session.is_ended:
                 break
 
             for tool_call in tool_calls:
@@ -562,6 +572,17 @@ class LiveAgentEngine:
         self._ensure_agent_messages()
         session.agent_messages.append({"role": "user", "content": build_tidy_transition_message()})
         await session.emit({"type": "mode", "mode": "tidy"})
+
+    async def stop(self) -> None:
+        """Cancel any in-flight tick so post-stop tool calls cannot mutate fields."""
+        task = self._tick_task
+        self._tick_pending = None
+        self._tick_task = None
+        if task is None or task.done():
+            return
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await task
 
 
 def _is_local_provider() -> bool:

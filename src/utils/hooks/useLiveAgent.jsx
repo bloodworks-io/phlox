@@ -327,6 +327,21 @@ export const useLiveAgent = ({
 
         await new Promise((resolve) => setTimeout(resolve, TAIL_SETTLE_MS));
 
+        // Flush any debounced field edits so the server's final state
+        // includes them (the feedback debounce can outlive the settle wait).
+        if (feedbackTimerRef.current) {
+            clearTimeout(feedbackTimerRef.current);
+            feedbackTimerRef.current = null;
+        }
+        const pendingFields = templateDataRef.current;
+        if (pendingFields) {
+            await liveAgentApi
+                .sendFeedback(sessionId, pendingFields)
+                .catch((error) => {
+                    console.error("Live feedback flush failed:", error);
+                });
+        }
+
         try {
             const finalState = await liveAgentApi.stopSession(sessionId);
             if (finalState?.fields) {

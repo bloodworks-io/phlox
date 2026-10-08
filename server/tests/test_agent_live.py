@@ -94,6 +94,62 @@ async def test_get_note_fields_lists_state():
 
 
 @pytest.mark.asyncio
+async def test_get_note_fields_marks_long_fields_as_truncated():
+    session = _make_session()
+    session.field_drafts = {"plan": "x" * 400}
+    result = await execute_live_tool(session, "get_note_fields", {})
+    assert "x" * 300 in result["content"]
+    assert "truncated, call read_note_field" in result["content"]
+
+
+@pytest.mark.asyncio
+async def test_read_note_field_returns_full_content():
+    session = _make_session()
+    long_content = "antithrombin (mildly elevated). " * 20  # exceeds preview caps
+    session.field_drafts = {"plan": long_content}
+    result = await execute_live_tool(session, "read_note_field", {"field_key": "plan"})
+    assert long_content in result["content"]
+    assert "truncated" not in result["content"]
+
+
+@pytest.mark.asyncio
+async def test_read_note_field_marks_clinician_edits_and_unknown_keys():
+    session = _make_session()
+    session.field_drafts = {"plan": "1. Book PET scan"}
+    session.user_touched.add("plan")
+    result = await execute_live_tool(session, "read_note_field", {"field_key": "plan"})
+    assert "[clinician-edited]" in result["content"]
+    assert "1. Book PET scan" in result["content"]
+
+    result = await execute_live_tool(session, "read_note_field", {"field_key": "nope"})
+    assert "Unknown field_key 'nope'" in result["content"]
+    assert "plan" in result["content"]
+
+
+@pytest.mark.asyncio
+async def test_execute_live_tool_refuses_mutations_after_end():
+    session = _make_session()
+    session.field_drafts = {"plan": "1. Book PET scan"}
+    session.end()
+
+    for name, args in [
+        ("update_note_field", {"field_key": "plan", "content": "overwrite"}),
+        ("append_to_field", {"field_key": "plan", "entry": "late addition"}),
+        ("remove_from_field", {"field_key": "plan", "phrase": "PET"}),
+        ("set_jobs", {"jobs": [{"text": "email CDU", "checked": True}]}),
+    ]:
+        result = await execute_live_tool(session, name, args)
+        assert "ended" in result["content"].lower()
+        assert result["events"] == []
+
+    assert session.field_drafts["plan"] == "1. Book PET scan"
+    assert session.staged_jobs == []
+
+    result = await execute_live_tool(session, "read_note_field", {"field_key": "plan"})
+    assert "1. Book PET scan" in result["content"]
+
+
+@pytest.mark.asyncio
 async def test_update_note_field_replaces_and_emits_event():
     session = _make_session()
     result = await execute_live_tool(
@@ -585,6 +641,7 @@ def test_live_tool_definitions_shape():
     names = {t["function"]["name"] for t in definitions}
     assert names == {
         "get_note_fields",
+        "read_note_field",
         "update_note_field",
         "append_to_field",
         "remove_from_field",
@@ -738,6 +795,57 @@ def test_stop_session_replays_final_state():
     ended = session_manager.get(session_id)
     assert ended is not None
     assert ended.is_ended
+
+
+@pytest.mark.asyncio
+async def test_stop_cancels_inflight_tick_and_preserves_user_edit(monkeypatch):
+    import asyncio
+
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    session.mode = "tidy"
+    engine = LiveAgentEngine(session)
+    session.engine = engine
+
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def blocking_chat(**_kwargs):
+        started.set()
+        await release.wait()
+        return {
+            "message": {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call-1",
+                        "type": "function",
+                        "function": {
+                            "name": "update_note_field",
+                            "arguments": json.dumps(
+                                {"field_key": "plan", "content": "agent rewrite", "format": None}
+                            ),
+                        },
+                    }
+                ],
+            }
+        }
+
+    monkeypatch.setattr(engine, "_chat", blocking_chat)
+    engine._schedule_tick("tidy_command")
+    await asyncio.wait_for(started.wait(), timeout=5)
+
+    session.field_drafts["plan"] = "clinician rewrite"
+    session.user_touched.add("plan")
+    session.end()
+    tick = engine._tick_task
+    await engine.stop()
+    release.set()
+
+    assert tick is not None and tick.cancelled()
+    assert session.field_drafts["plan"] == "clinician rewrite"
 
 
 def test_events_stream_replays_and_ends():
@@ -1541,6 +1649,56 @@ async def test_run_tick_clears_backlog():
     await engine._run_tick("NOTE")
 
     session.emit.assert_any_await({"type": "backlog", "count": 0})
+
+
+@pytest.mark.asyncio
+async def test_run_tick_returns_early_after_end():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+    session.emit = AsyncMock()
+    session.end()
+    engine._chat = AsyncMock(side_effect=AssertionError("no LLM calls after end"))
+
+    await engine._run_tick("NOTE")
+
+    engine._chat.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_run_tick_breaks_tool_loop_when_session_ends_mid_tick(monkeypatch):
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+    session.emit = AsyncMock()
+    engine._tools = Mock(return_value=[])
+
+    async def end_during_chat(**_kwargs):
+        session.end()
+        return {
+            "message": {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call-1",
+                        "type": "function",
+                        "function": {
+                            "name": "append_to_field",
+                            "arguments": json.dumps({"field_key": "plan", "entry": "late"}),
+                        },
+                    }
+                ],
+            }
+        }
+
+    monkeypatch.setattr(engine, "_chat", end_during_chat)
+
+    await engine._run_tick("NOTE")
+
+    assert "late" not in (session.field_drafts.get("plan") or "")
 
 
 @pytest.mark.asyncio
