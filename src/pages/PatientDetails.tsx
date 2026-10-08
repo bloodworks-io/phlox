@@ -4,14 +4,20 @@ import { useClipboard } from "../utils/hooks/useClipboard";
 import { toaster } from "@/components/ui/toaster";
 const toast = toaster.create;
 import { useState, useEffect, useRef, useMemo } from "react";
+import type {
+    ComponentType,
+    Dispatch,
+    FormEvent,
+    SetStateAction,
+} from "react";
 import { useNavigate, useLocation } from "react-router";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
 import NewNoteStartCard from "../components/patient/NewNoteStartCard";
 import { useScribe } from "../components/patient/Scribe";
-import Summary from "../components/patient/Summary";
+import SummaryBase from "../components/patient/Summary";
 import Chat from "../components/panels/chat/Chat";
-import Letter from "../components/panels/letter/Letter";
-import ReasoningPanel from "../components/panels/reasoning/ReasoningPanel";
+import LetterBase from "../components/panels/letter/Letter";
+import ReasoningPanelBase from "../components/panels/reasoning/ReasoningPanel";
 import AgentPanel from "../components/panels/agent/AgentPanel";
 import ScribePillBox from "../components/patient/ScribePillBox";
 import FloatingActionMenu from "../components/common/FloatingActionMenu";
@@ -33,11 +39,31 @@ import { useTranscriptionCapture } from "../utils/hooks/useTranscriptionCapture"
 import { useModificationFlags } from "../utils/hooks/useModificationFlags";
 import { useSearchFlow } from "../utils/hooks/useSearchFlow";
 import { useScribeConsent } from "../utils/hooks/useScribeConsent";
-import { useLiveAgent } from "../utils/hooks/useLiveAgent";
 import { useWrapUp } from "../utils/hooks/useWrapUp";
-import { SCRIBE_MODE_STORAGE_KEY } from "../components/patient/Scribe";
-import { handleProcessingComplete } from "../utils/helpers/processingHelpers";
 import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
+import { useScribeMode } from "../utils/hooks/useScribeMode";
+import { usePatientSwitching } from "../utils/hooks/usePatientSwitching";
+import { useTranscriptionApply } from "../utils/hooks/useTranscriptionApply";
+import { useLiveAgentPanel } from "../utils/hooks/useLiveAgentPanel";
+import type {
+    Patient,
+    ReasoningOutput,
+} from "../utils/patient/types";
+
+// loosen props until each is converted to .tsx
+const Summary = SummaryBase as unknown as ComponentType<any>;
+const Letter = LetterBase as unknown as ComponentType<any>;
+const ReasoningPanel = ReasoningPanelBase as unknown as ComponentType<any>;
+
+interface PatientDetailsProps {
+    patient: Patient | null;
+    setPatient: Dispatch<SetStateAction<Patient | null>>;
+    selectedDate: string;
+    refreshSidebar: () => void;
+    setIsModified: (value: boolean) => void;
+    onResetLetter?: () => void;
+    onOpenNewNoteModal?: () => void;
+}
 
 const PatientDetails = ({
     patient: initialPatient,
@@ -47,11 +73,14 @@ const PatientDetails = ({
     setIsModified: setParentIsModified,
     onResetLetter,
     onOpenNewNoteModal,
-}) => {
+}: PatientDetailsProps) => {
     const location = useLocation();
     const { t } = useTranslation();
     const isNewPatient = location.pathname === "/new-note";
-    const { viaModal, cameFromSearch } = location.state || {};
+    const { viaModal, cameFromSearch } = (location.state ?? {}) as {
+        viaModal?: boolean;
+        cameFromSearch?: boolean;
+    };
     const summaryRef = useRef(null);
     const [, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -68,8 +97,6 @@ const PatientDetails = ({
         capture: captureTranscription,
         reset: resetTranscription,
     } = useTranscriptionCapture();
-
-    const previousTranscriptionRef = useRef(null);
 
     const { isLetterModified, setIsLetterModified, isSummaryModified, setIsSummaryModified } =
         useModificationFlags(initialPatient?.id, setParentIsModified);
@@ -145,48 +172,8 @@ const PatientDetails = ({
         openLetter: () => open("letter"),
     });
 
-    // Scribe hook for recording controls
-    const scribeControls = useScribe({
-        name: patient?.name,
-        dob: patient?.dob,
-        gender: patient?.gender,
-        template: currentTemplate,
-        noteId: patient?.id,
-        handleTranscriptionComplete: (data) =>
-            handleTranscriptionComplete(data),
-        setLoading,
-        onSendStart: () => close("transcription"),
-    });
-
-    // Voice wrap-up funnels into the same handler as the button.
-    const wrapUpRequestRef = useRef(null);
-    const liveAgent = useLiveAgent({
-        patient,
-        setPatient,
-        currentTemplate,
-        onRequestWrapUp: () => wrapUpRequestRef.current?.(),
-        onLetterSaved: () => setIsLetterModified(false),
-        // agent-written content bypasses onChange
-        onNoteContentChanged: () => setIsSummaryModified(true),
-    });
-
-    // Agent letter refinements sync into the open editor; manual edits are
-    // never clobbered.
-    const {
-        finalCorrespondence: letterContent,
-        setFinalCorrespondence: setLetterContent,
-    } = letter;
-    const liveLetter = liveAgent.artifacts.find((a) => a.type === "letter");
-    const letterOpen = isOpen("letter");
-    const lastSyncedLetterRef = useRef(null);
-    useEffect(() => {
-        if (!liveLetter || !letterOpen) return;
-        if (liveLetter.content === lastSyncedLetterRef.current) return;
-        if (letterContent !== lastSyncedLetterRef.current) return;
-        lastSyncedLetterRef.current = liveLetter.content;
-        setLetterContent(liveLetter.content);
-    }, [liveLetter, letterOpen, letterContent, setLetterContent]);
-
+    // Wrap Up must be composed before the live agent: its open handler is
+    // the agent's onRequestWrapUp callback.
     const wrapUp = useWrapUp({
         patient,
         savePatientCore,
@@ -200,6 +187,71 @@ const PatientDetails = ({
         hasTranscriptionOccurred,
         initialTranscriptionContent,
     });
+
+    const { handleTranscriptionComplete } = useTranscriptionApply({
+        patient,
+        setPatient,
+        hasTranscriptionOccurred,
+        captureTranscription,
+        setIsSummaryModified,
+        setLoading,
+        setIsSummaryCollapsed: summary.setIsCollapsed,
+        summaryRef,
+    });
+
+    // Scribe hook for recording controls
+    const scribeControls = useScribe({
+        name: patient?.name,
+        dob: patient?.dob,
+        gender: patient?.gender,
+        template: currentTemplate,
+        noteId: patient?.id,
+        handleTranscriptionComplete: (data) =>
+            handleTranscriptionComplete(data),
+        setLoading,
+        onSendStart: () => close("transcription"),
+    });
+
+    const liveAgent = useLiveAgentPanel({
+        patient,
+        setPatient,
+        currentTemplate,
+        onRequestWrapUp: () => wrapUp.openWrapUp(),
+        onLetterSaved: () => setIsLetterModified(false),
+        onNoteContentChanged: () => setIsSummaryModified(true),
+        letterContent: letter.finalCorrespondence,
+        setLetterContent: letter.setFinalCorrespondence,
+        letterOpen: isOpen("letter"),
+        openPanel: open,
+    });
+
+    const {
+        scribeMode,
+        isLiveExpanded,
+        isModeMenuOpen,
+        toggleLiveExpand,
+        handleModeSelect,
+        handleLiveStop,
+        handleLiveResume,
+        handleRecordStart,
+        handleTranscriptOpenChange,
+        handleModeMenuOpenChange,
+    } = useScribeMode({
+        scribeControls,
+        liveAgent,
+        openPanel: open,
+        closePanel: close,
+    });
+
+    const { leaveModal, handleConfirmCandidate, cancelCandidateSwitch, confirmCandidateNavigation } =
+        usePatientSwitching({
+            searchFlow,
+            loadCandidate,
+            selectedDate,
+            isSummaryModified,
+            isLetterModified,
+            setIsSummaryModified,
+        });
 
     const textToCopy =
         patient && currentTemplate?.fields
@@ -215,7 +267,6 @@ const PatientDetails = ({
 
     const { onCopy: handleCopy, hasCopied: recentlyCopied } = useClipboard(
         textToCopy,
-        { format: "text/plain" },
     );
 
     useEffect(() => {
@@ -231,59 +282,7 @@ const PatientDetails = ({
         toaster.remove();
     }, []);
 
-    const handleTranscriptionComplete = (data, triggerResize = false) => {
-        const isRestoration = data.isRestoration === true;
-        previousTranscriptionRef.current = patient?.raw_transcription;
-
-        if (
-            !hasTranscriptionOccurred &&
-            data.fields &&
-            Object.keys(data.fields).length > 0 &&
-            !isRestoration
-        ) {
-            captureTranscription(data.fields);
-        }
-
-        if (!isRestoration) {
-            setIsSummaryModified(true);
-        }
-
-        handleProcessingComplete(data, {
-            setLoading,
-            setters: {
-                template_data: (_value) => {
-                    setPatient((prev) => ({
-                        ...prev,
-                        template_data: {
-                            ...prev.template_data,
-                            ...data.fields,
-                        },
-                    }));
-                },
-                rawTranscription: (_value) =>
-                    setPatient((prev) => ({
-                        ...prev,
-                        raw_transcription: data.rawTranscription,
-                    })),
-                transcriptionDuration: (_value) =>
-                    setPatient((prev) => ({
-                        ...prev,
-                        transcription_duration: data.transcriptionDuration,
-                    })),
-                processDuration: (_value) =>
-                    setPatient((prev) => ({
-                        ...prev,
-                        process_duration: data.processDuration,
-                    })),
-            },
-            setIsSourceCollapsed: () => {},
-            setIsSummaryCollapsed: () => summary.setIsCollapsed(false),
-            triggerResize,
-            summaryRef,
-        });
-    };
-
-    const handleSavePatientData = async (e) => {
+    const handleSavePatientData = async (e: FormEvent) => {
         e.preventDefault();
         setSaveLoading(true);
         try {
@@ -318,7 +317,7 @@ const PatientDetails = ({
         }
     };
 
-    const handleDemographicsSave = async (updatedPatient) => {
+    const handleDemographicsSave = async (updatedPatient: Patient) => {
         setInitialPatient(updatedPatient);
         if (!updatedPatient.id) return;
         await patientApi.savePatientData(
@@ -328,108 +327,13 @@ const PatientDetails = ({
         );
     };
 
-    // In-page patient swap bypasses the route guard — confirm first.
-    const [pendingCandidate, setPendingCandidate] = useState(null);
-    const leaveModal = useDisclosure();
-
-    const confirmCandidateSwitch = (candidate) =>
-        searchFlow.handleConfirmCandidate(candidate, selectedDate, loadCandidate);
-
-    const handleConfirmCandidate = (candidate) => {
-        if (isSummaryModified || isLetterModified) {
-            setPendingCandidate(candidate);
-            leaveModal.onOpen();
-            return;
-        }
-        confirmCandidateSwitch(candidate);
-    };
-
-    const cancelCandidateSwitch = () => {
-        setPendingCandidate(null);
-        leaveModal.onClose();
-    };
-
-    const confirmCandidateNavigation = () => {
-        const candidate = pendingCandidate;
-        cancelCandidateSwitch();
-        if (!candidate) return;
-        setIsSummaryModified(false);
-        confirmCandidateSwitch(candidate);
-    };
-
     // Functions for the Floating Action Menu
     const handleOpenLetter = () => toggle("letter");
     const handleOpenChat = () => toggle("chat");
     const handleOpenReasoning = () => toggle("reasoning");
-
-    const handleTranscriptOpenChange = (nextOpen) => {
-        if (nextOpen) {
-            setModeMenuOpen(false);
-            open("transcription");
-        } else {
-            close("transcription");
-        }
-    };
-
-    const handleModeMenuOpenChange = (open) => {
-        setModeMenuOpen(open);
-        if (open) close("transcription");
-    };
     const handleOpenDocument = () => toggle("document");
 
-    // Picking agent arms it — mic click starts the session; other picks end it.
-    // The picked mode persists so it stays the default across sessions.
-    const [isLiveExpanded, setIsLiveExpanded] = useState(false);
-    const [agentArmed, setAgentArmed] = useState(
-        () => localStorage.getItem(SCRIBE_MODE_STORAGE_KEY) === "agent",
-    );
-    // Mode popover and transcript panel are mutually exclusive.
-    const [modeMenuOpen, setModeMenuOpen] = useState(false);
-
-    const handleModeSelect = (mode) => {
-        localStorage.setItem(SCRIBE_MODE_STORAGE_KEY, mode);
-        if (mode === "agent") {
-            if (liveAgent.isLiveActive) return;
-            setAgentArmed(true);
-            return;
-        }
-        setAgentArmed(false);
-        if (liveAgent.isLiveActive) {
-            liveAgent.stopLive();
-        }
-        scribeControls.selectCaptureMode(mode);
-    };
-
-    const handleLiveStop = () => {
-        if (liveAgent.isLiveActive) liveAgent.stopLive();
-    };
-
-    const handleLiveResume = () => {
-        if (liveAgent.isLiveActive) return;
-        liveAgent.startLive().then((started) => {
-            if (started) setIsLiveExpanded(false);
-        });
-    };
-
-    const scribeMode =
-        agentArmed || liveAgent.isLiveActive
-            ? "agent"
-            : scribeControls.isAmbient
-              ? "ambient"
-              : "dictate";
-
-    // Agent mode: mic click starts the live session (compact card).
-    const handleRecordStart = () => {
-        if (scribeMode === "agent") {
-            liveAgent.startLive().then((started) => {
-                if (started) setIsLiveExpanded(false);
-            });
-            return;
-        }
-        scribeControls.startRecording();
-    };
-
-    // Must sit below handleRecordStart: consent grant resumes through it,
+    // Must sit below scribeMode: consent grant resumes through it,
     // so the armed capture mode (incl. live agent) is honoured, and agent
     // mode is consent-gated like ambient since it records the consultation.
     const scribeConsent = useScribeConsent({
@@ -447,10 +351,6 @@ const PatientDetails = ({
         wrapUp.openWrapUp();
     };
 
-    useEffect(() => {
-        wrapUpRequestRef.current = handleWrapUpClick;
-    });
-
     const handleWrapUpConfirm = async (curatedJobs) => {
         if (liveAgent.isLiveActive) {
             await liveAgent.stopLive();
@@ -465,7 +365,7 @@ const PatientDetails = ({
     };
 
     // Handle when reasoning is generated - update patient state for red dot indicator
-    const handleReasoningGenerated = (newReasoning) => {
+    const handleReasoningGenerated = (newReasoning: ReasoningOutput) => {
         setPatient((prev) => ({
             ...prev,
             reasoning_output: newReasoning,
@@ -609,6 +509,7 @@ const PatientDetails = ({
                 title={t("navigation.confirmTitle")}
                 body={t("navigation.leaveWarning")}
                 confirmLabel={t("navigation.leave")}
+                cancelLabel={undefined}
             />
             {/* Scribe Pill Box - centered at bottom */}
             <ScribePillBox
@@ -621,7 +522,7 @@ const PatientDetails = ({
                 onReset={scribeControls.resetRecording}
                 isLoading={scribeControls.isLoading}
                 mode={scribeMode}
-                isModeMenuOpen={modeMenuOpen}
+                isModeMenuOpen={isModeMenuOpen}
                 onModeMenuOpenChange={handleModeMenuOpenChange}
                 onModeSelect={handleModeSelect}
                 isLive={liveAgent.isLiveActive}
@@ -634,7 +535,7 @@ const PatientDetails = ({
                 liveStatus={liveAgent.status}
                 liveArtifactsCount={liveAgent.artifacts.length}
                 isLivePanelExpanded={isLiveExpanded}
-                onLiveExpand={() => setIsLiveExpanded((open) => !open)}
+                onLiveExpand={toggleLiveExpand}
                 onLiveRetry={liveAgent.retryLive}
                 onLiveDismissReview={liveAgent.dismissReview}
                 transcriptPanel={
@@ -643,6 +544,7 @@ const PatientDetails = ({
                         transcriptionDuration={patient.transcription_duration}
                         processDuration={patient.process_duration}
                         onReprocess={handleTranscriptionComplete}
+                        isTranscribing={undefined}
                         isAmbient={scribeControls.isAmbient}
                         name={patient.name}
                         gender={patient.gender}
@@ -686,6 +588,7 @@ const PatientDetails = ({
             {/* Document Panel */}
             <DocumentPanel
                 isOpen={isOpen("document")}
+                _onClose={undefined}
                 handleDocumentComplete={handleDocumentComplete}
                 toggleDocumentField={toggleDocumentField}
                 replacedFields={replacedFields}
@@ -702,6 +605,7 @@ const PatientDetails = ({
             {/* Previous Visit Panel */}
             <PreviousVisitPanel
                 isOpen={isOpen("previous-visit")}
+                _onClose={undefined}
                 previousVisitSummary={patient.previous_visit_summary}
                 previousVisitSummaryPending={
                     patient.previous_visit_summary_pending
@@ -722,12 +626,8 @@ const PatientDetails = ({
                 artifacts={liveAgent.artifacts}
                 lastError={liveAgent.lastError}
                 isExpanded={isLiveExpanded}
-                onToggleExpand={() => setIsLiveExpanded((open) => !open)}
-                onOpenLetter={(artifact) => {
-                    lastSyncedLetterRef.current = artifact.content;
-                    setLetterContent(artifact.content);
-                    open("letter");
-                }}
+                onToggleExpand={toggleLiveExpand}
+                onOpenLetter={liveAgent.onOpenLetter}
                 onRetry={liveAgent.retryLive}
                 onDismissReview={liveAgent.dismissReview}
             />
