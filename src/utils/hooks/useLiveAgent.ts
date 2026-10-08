@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { AudioRecorder } from "../audioRecorder";
 import { liveAgentApi } from "../api/liveAgentApi";
 import { toaster } from "@/components/ui/toaster";
+import type { Dispatch, SetStateAction } from "react";
+import type { NoteTemplate, Patient } from "../patient/types";
 
 // Let the flushed tail segment's transcription land before stop.
 const TAIL_SETTLE_MS = 1200;
@@ -10,6 +12,54 @@ const FEEDBACK_DEBOUNCE_MS = 1500;
 const MAX_STATUS_ITEMS = 8;
 
 const TIDY_TICK_MS = 3 * 60_000;
+
+export type LiveStatus = "idle" | "connecting" | "live" | "stopping" | "review" | "error";
+export type AgentState = "listening" | "working";
+
+export interface LiveArtifact {
+    type: string;
+    title?: string;
+    template_name?: string;
+    filename?: string;
+    content?: string;
+    data?: string;
+    mime_type?: string;
+    size?: number;
+    [key: string]: unknown;
+}
+
+export interface LiveStatusItem {
+    id: string;
+    content: string;
+    kind: "info" | "edit" | "command" | "artifact";
+}
+
+export interface LiveJob {
+    text: string;
+    checked: boolean;
+}
+
+interface LiveEvent {
+    type: string;
+    field_key?: string;
+    content?: string;
+    text?: string;
+    speaker?: string;
+    state?: AgentState;
+    count?: number;
+    jobs?: LiveJob[];
+    artifact?: LiveArtifact;
+    [key: string]: unknown;
+}
+
+interface UseLiveAgentArgs {
+    patient: Patient | null;
+    setPatient: Dispatch<SetStateAction<Patient | null>>;
+    currentTemplate: NoteTemplate | null;
+    onRequestWrapUp: () => void;
+    onLetterSaved: () => void;
+    onNoteContentChanged: () => void;
+}
 
 export const useLiveAgent = ({
     patient,
@@ -19,29 +69,29 @@ export const useLiveAgent = ({
     onLetterSaved,
 
     onNoteContentChanged,
-}) => {
+}: UseLiveAgentArgs) => {
     const { t } = useTranslation();
-    const [status, setStatus] = useState("idle"); // idle|connecting|live|stopping|review|error
-    const [agentState, setAgentState] = useState("listening");
-    const [transcripts, setTranscripts] = useState([]);
-    const [statuses, setStatuses] = useState([]);
-    const [artifacts, setArtifacts] = useState([]);
-    const [stagedJobs, setStagedJobs] = useState([]);
-    const [lastError, setLastError] = useState(null);
+    const [status, setStatus] = useState<LiveStatus>("idle");
+    const [agentState, setAgentState] = useState<AgentState>("listening");
+    const [transcripts, setTranscripts] = useState<string[]>([]);
+    const [statuses, setStatuses] = useState<LiveStatusItem[]>([]);
+    const [artifacts, setArtifacts] = useState<LiveArtifact[]>([]);
+    const [stagedJobs, setStagedJobs] = useState<LiveJob[]>([]);
+    const [lastError, setLastError] = useState<string | null>(null);
     const [backlog, setBacklog] = useState(0);
-    const [fieldFlash, setFieldFlash] = useState({}); // {field_key: timestamp}
+    const [fieldFlash, setFieldFlash] = useState<Record<string, number>>({});
 
-    const sessionIdRef = useRef(null);
-    const recorderRef = useRef(null);
+    const sessionIdRef = useRef<string | null>(null);
+    const recorderRef = useRef<AudioRecorder | null>(null);
     const runningRef = useRef(false);
     const toastRef = useRef(false);
-    const feedbackTimerRef = useRef(null);
+    const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     // Latest session content and status, readable inside stable callbacks
     // (stop/end transitions decide between "review" and "idle" from these).
-    const transcriptsRef = useRef([]);
-    const artifactsRef = useRef([]);
-    const statusRef = useRef("idle");
-    const agentStateRef = useRef("listening");
+    const transcriptsRef = useRef<string[]>([]);
+    const artifactsRef = useRef<LiveArtifact[]>([]);
+    const statusRef = useRef<LiveStatus>("idle");
+    const agentStateRef = useRef<AgentState>("listening");
     const templateDataRef = useRef(patient?.template_data);
     const currentTemplateRef = useRef(currentTemplate);
     const patientRef = useRef(patient);
@@ -62,14 +112,17 @@ export const useLiveAgent = ({
         agentStateRef.current = agentState;
     });
 
-    const pushStatus = useCallback((content, kind = "info") => {
-        setStatuses((prev) =>
-            [{ id: `${Date.now()}-${Math.random()}`, content, kind }, ...prev].slice(
-                0,
-                MAX_STATUS_ITEMS,
-            ),
-        );
-    }, []);
+    const pushStatus = useCallback(
+        (content: string, kind: LiveStatusItem["kind"] = "info") => {
+            setStatuses((prev) =>
+                [{ id: `${Date.now()}-${Math.random()}`, content, kind }, ...prev].slice(
+                    0,
+                    MAX_STATUS_ITEMS,
+                ),
+            );
+        },
+        [],
+    );
 
     const settleAfterSession = useCallback(() => {
         setStatus(
@@ -79,7 +132,7 @@ export const useLiveAgent = ({
         );
     }, []);
 
-    const decodeBinaryArtifact = useCallback((artifact) => {
+    const decodeBinaryArtifact = useCallback((artifact: LiveArtifact): LiveArtifact => {
         if (!artifact?.data) return artifact;
         try {
             const bytes = Uint8Array.from(atob(artifact.data), (c) => c.charCodeAt(0));
@@ -98,7 +151,7 @@ export const useLiveAgent = ({
     }, []);
 
     const handleEvent = useCallback(
-        async (event) => {
+        async (event: LiveEvent) => {
             switch (event.type) {
                 case "transcript": {
                     const line = event.speaker
@@ -386,17 +439,20 @@ export const useLiveAgent = ({
     }, []);
 
     // Called by WrapUpModal after the standard extract-jobs pipeline.
-    const pushExtractedJobs = useCallback((actionItems) => {
-        const sessionId = sessionIdRef.current;
-        if (!sessionId || !Array.isArray(actionItems)) return;
-        const jobs = actionItems.map((item) => ({
-            text: String(item.text ?? ""),
-            checked: item.checked !== false,
-        }));
-        liveAgentApi.pushJobs(sessionId, jobs).catch((error) => {
-            console.error("Live jobs push failed:", error);
-        });
-    }, []);
+    const pushExtractedJobs = useCallback(
+        (actionItems: Array<{ text?: string; checked?: boolean }>) => {
+            const sessionId = sessionIdRef.current;
+            if (!sessionId || !Array.isArray(actionItems)) return;
+            const jobs = actionItems.map((item) => ({
+                text: String(item.text ?? ""),
+                checked: item.checked !== false,
+            }));
+            liveAgentApi.pushJobs(sessionId, jobs).catch((error) => {
+                console.error("Live jobs push failed:", error);
+            });
+        },
+        [],
+    );
 
     // Push clinician edits back to the agent (debounced snapshot diff).
     const templateDataKey = JSON.stringify(patient?.template_data);
