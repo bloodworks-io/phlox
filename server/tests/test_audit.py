@@ -5,7 +5,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from server.database.core.connection import get_db
-from server.database.repositories.audit import log_event, purge_old_events
+from server.database.repositories.audit import (
+    flush_events_sync,
+    log_event,
+    purge_old_events,
+)
 from server.middleware import AuditMiddleware
 
 
@@ -31,6 +35,8 @@ def test_middleware_writes_audit_row():
     client = TestClient(_build_app())
     resp = client.get("/api/ping")
     assert resp.status_code == 200
+    # Middleware events are batch-queued; flush before asserting.
+    assert flush_events_sync() == 1
     after = _count_rows()
     assert after == before + 1
 
@@ -40,6 +46,18 @@ def test_middleware_writes_audit_row():
     assert row["method"] == "GET"
     assert row["path"] == "/api/ping"
     assert row["status"] == 200
+
+
+def test_middleware_batches_multiple_requests_into_one_flush():
+    before = _count_rows()
+    client = TestClient(_build_app())
+    for _ in range(4):
+        assert client.get("/api/ping").status_code == 200
+
+    assert flush_events_sync() == 4
+    assert _count_rows() == before + 4
+    # Nothing left to flush.
+    assert flush_events_sync() == 0
 
 
 def test_non_api_paths_not_audited():

@@ -8,6 +8,7 @@ from typing import Any
 
 from server.constants import is_protected_template_key
 from server.database.core.connection import get_db
+from server.utils.identity_cache import identity_cache
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,10 @@ def set_disabled(user_id: int, disabled: bool) -> None:
         cursor.execute("UPDATE users SET disabled = ? WHERE id = ?", (disabled, user_id))
         if disabled:
             cursor.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+    if disabled:
+        # Cached identities (tokens, usernames) must not outlive the
+        # disable; a full clear is fine for this rare admin operation.
+        identity_cache.invalidate()
 
 
 # Sessions
@@ -114,12 +119,18 @@ def get_user_for_session(raw_token: str) -> dict[str, Any] | None:
 def delete_session(raw_token: str) -> None:
     with get_db().transaction() as cursor:
         cursor.execute("DELETE FROM sessions WHERE token_hash = ?", (_hash_token(raw_token),))
+    # Drop any cached identity for this token so logout is immediate.
+    identity_cache.invalidate(f"token:{raw_token}")
 
 
 def purge_expired_sessions() -> int:
     with get_db().transaction() as cursor:
         cursor.execute("DELETE FROM sessions WHERE expires_at <= ?", (datetime.now().isoformat(),))
-        return cursor.rowcount
+        deleted = cursor.rowcount
+    if deleted:
+        # Cached identities for purged tokens can linger up to TOKEN_TTL
+        identity_cache.invalidate()
+    return deleted
 
 
 # Desktop / allow-unauthenticated modes
@@ -155,6 +166,10 @@ def claim_unowned(user_id: int) -> None:
                     (user_id, key),
                 )
     _claim_unowned_collections(user_id)
+
+    from server.database.config.manager import config_manager
+
+    config_manager.invalidate_user_settings_cache()
 
 
 def _claim_unowned_collections(user_id: int) -> None:

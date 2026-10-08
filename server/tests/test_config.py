@@ -485,3 +485,31 @@ async def test_whisper_models_requires_admin():
     with pytest.raises(HTTPException) as exc:
         await get_whisper_models(whisperEndpoint="http://127.0.0.1:1")
     assert exc.value.status_code == 403
+
+
+def test_user_settings_cached_until_invalidated(monkeypatch):
+    """get_user_settings must not hit the DB on every LLM/chat call; every
+    write path (update_user_settings) drops the cache."""
+    from server.database.config.manager import ConfigManager, config_manager
+
+    calls = {"n": 0}
+    original = ConfigManager._read_user_settings_from_db
+
+    def counting(self):
+        calls["n"] += 1
+        return original(self)
+
+    monkeypatch.setattr(ConfigManager, "_read_user_settings_from_db", counting)
+    config_manager.invalidate_user_settings_cache()
+
+    first = config_manager.get_user_settings()
+    second = config_manager.get_user_settings()
+    assert calls["n"] == 1
+    assert first == second
+
+    config_manager.update_user_settings({"name": "Cache Probe"})
+    third = config_manager.get_user_settings()
+    assert calls["n"] == 2
+    assert third["name"] == "Cache Probe"
+
+    config_manager.invalidate_user_settings_cache()

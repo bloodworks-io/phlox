@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from threading import Lock
 
 import sqlcipher3 as sqlite3
@@ -12,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 CAPABILITY_PREFIX = "CAPABILITY:"
 
+USER_SETTINGS_TTL = 30.0
+
 
 class ConfigManager:
     """Manages configuration settings, prompts, and options."""
@@ -19,6 +22,7 @@ class ConfigManager:
     _instance = None
     _lock = Lock()
     _cache_lock = Lock()
+    _settings_lock = Lock()
 
     def __new__(cls):
         with cls._lock:
@@ -28,6 +32,7 @@ class ConfigManager:
                 if cls._instance._is_database_empty():
                     cls._instance._initialize_database()
                 cls._instance._load_configs()
+                cls._instance._user_settings_cache = {}
             return cls._instance
 
     def refresh_db(self):
@@ -253,7 +258,26 @@ class ConfigManager:
         return "user_id = ?", [uid]
 
     def get_user_settings(self):
-        """Retrieves user settings for the current user from the database."""
+        """Retrieves user settings for the current user (cached, TTL-bounded)."""
+        uid = current_user_id()
+        key = "NULL" if uid is None else uid
+        with self._settings_lock:
+            entry = self._user_settings_cache.get(key)
+            if entry is not None and time.monotonic() < entry[1]:
+                return entry[0].copy()
+
+        settings = self._read_user_settings_from_db()
+        with self._settings_lock:
+            self._user_settings_cache[key] = (settings, time.monotonic() + USER_SETTINGS_TTL)
+        return settings.copy()
+
+    def invalidate_user_settings_cache(self) -> None:
+        """Drop all cached user settings (called by every write path and by
+        external row-movers like ownership claiming)."""
+        with self._settings_lock:
+            self._user_settings_cache.clear()
+
+    def _read_user_settings_from_db(self):
         self.refresh_db()
         where, params = self._user_settings_where()
         with self.db.read() as cursor:
@@ -339,6 +363,7 @@ class ConfigManager:
                     uid,
                 ),
             )
+        self.invalidate_user_settings_cache()
 
     def set_splash_completed(self) -> None:
         """Mark splash completion for the current user without rewriting the row."""
@@ -353,6 +378,8 @@ class ConfigManager:
             updated = cursor.rowcount > 0
         if not updated:
             self.update_user_settings({"has_completed_splash_screen": True})
+        else:
+            self.invalidate_user_settings_cache()
 
     def get_default_template_key(self) -> str | None:
         """Return the current default template key, or None if unset."""
@@ -376,6 +403,7 @@ class ConfigManager:
                 f"WHERE default_template_key = ? AND {where}",
                 (new, old, *params),
             )
+        self.invalidate_user_settings_cache()
 
     @staticmethod
     def _read_user_settings(cursor) -> dict:

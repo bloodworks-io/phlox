@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from server.api.auth import AUTH_PUBLIC_PATHS
+from server.utils.identity_cache import identity_cache
+from server.utils.identity_cache import resolve as resolve_identity
 
 logger = logging.getLogger(__name__)
 
@@ -265,15 +267,26 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
 
         if IS_DOCKER:
             if PHLOX_ALLOW_UNAUTHENTICATED:
-                # Explicit risk acceptance: resolve as implicit admin
-                user = users.ensure_implicit_admin()
+                # Explicit risk acceptance: resolve as implicit admin.
+                user = resolve_identity(
+                    "ensure:implicit-admin",
+                    users.ensure_implicit_admin,
+                    identity_cache.TOKEN_TTL,
+                )
             else:
                 if not provided_token:
                     return JSONResponse(
                         status_code=401,
                         content={"detail": "Missing or invalid Authorization header"},
                     )
-                user = users.get_user_for_session(provided_token)
+                # Session rows change rarely; a short TTL keeps the sync
+                # lookup off the per-request hot path while bounding
+                # revocation lag (logout also invalidates the key).
+                user = resolve_identity(
+                    f"token:{provided_token}",
+                    lambda: users.get_user_for_session(provided_token),
+                    identity_cache.TOKEN_TTL,
+                )
                 if user is None:
                     return JSONResponse(
                         status_code=401, content={"detail": "Invalid or expired session"}
@@ -295,7 +308,12 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
             if not secrets.compare_digest(provided_token, expected_token):
                 logger.warning(f"Invalid token for {path} (got {provided_token[:8]}...)")
                 return JSONResponse(status_code=403, content={"detail": "Invalid request token"})
-            user = users.get_user_by_username(users.IMPLICIT_ADMIN_USERNAME)
+
+            user = resolve_identity(
+                f"user:{users.IMPLICIT_ADMIN_USERNAME}",
+                lambda: users.get_user_by_username(users.IMPLICIT_ADMIN_USERNAME),
+                identity_cache.USERNAME_TTL,
+            )
 
         if user:
             set_current_user(CurrentUser(user["id"], user["username"], user["role"]))
@@ -350,8 +368,13 @@ class ProxyAuthMiddleware(BaseHTTPMiddleware):
 
         # Resolve the header identity to a real user account so that
         # ownership scoping (scoped()) and role gates (require_admin())
-        # apply on the proxy-auth path too.
-        user = users.get_user_by_username(user_name)
+        # apply on the proxy-auth path too. Short-TTL cached; disabling a
+        # user takes effect within USERNAME_TTL seconds.
+        user = resolve_identity(
+            f"user:{user_name}",
+            lambda: users.get_user_by_username(user_name),
+            identity_cache.USERNAME_TTL,
+        )
         if user is None or user.get("disabled"):
             logger.warning(f"Proxy auth identity not provisioned or disabled: {user_name}")
             return JSONResponse(status_code=401, content={"detail": "Authentication required"})
@@ -576,7 +599,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request, call_next):
-        from server.database.repositories.audit import log_event
+        from server.database.repositories.audit import enqueue_event
 
         path = request.url.path
 
@@ -599,7 +622,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             status = response.status_code
         except Exception:
             # Request never produced a response; record as 500 and re-raise.
-            log_event(
+            enqueue_event(
                 method=request.method,
                 path=path,
                 status=500,
@@ -609,7 +632,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             )
             raise
 
-        log_event(
+        enqueue_event(
             method=request.method,
             path=path,
             status=status,
