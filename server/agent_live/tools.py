@@ -37,6 +37,30 @@ def get_live_tools_definition() -> list[dict[str, Any]]:
         {
             "type": "function",
             "function": {
+                "name": "read_note_field",
+                "description": (
+                    "Read the FULL content of a single note field, untruncated. "
+                    "Field previews elsewhere are capped; if a preview ends with "
+                    "'...[truncated]', call this before rewriting or "
+                    "restructuring that field so no content is lost."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "field_key": {
+                            "type": "string",
+                            "description": "The field_key of the note field to read",
+                        },
+                    },
+                    "required": ["field_key"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "update_note_field",
                 "description": (
                     "Replace the full content of a note field with new content. "
@@ -313,6 +337,19 @@ _ENTRY_MARKER = re.compile(r"^\s*(?:[•\-\*]|\d+[.)])\s+")
 _NUMBER_MARKER = re.compile(r"\d+[.)]")
 _LIST_FORMATS = {"list", "narrative"}
 
+# Tools that mutate session state; refused once the session is ended so a
+# cancelled/in-flight tick cannot clobber the clinician's final edits.
+_MUTATING_LIVE_TOOLS = {
+    "update_note_field",
+    "append_to_field",
+    "remove_from_field",
+    "set_jobs",
+    "stage_artifact",
+    "stage_letter",
+    "save_letter",
+    "wrap_up",
+}
+
 
 def _field_names(session) -> dict[str, str]:
     return {
@@ -441,14 +478,32 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
     """
     fields = _field_names(session)
 
+    if name in _MUTATING_LIVE_TOOLS and session.is_ended:
+        return {"content": "Session ended; change not applied.", "events": []}
+
     if name == "get_note_fields":
         lines = []
         for key, field_name in fields.items():
             content = session.field_drafts.get(key, "")
             touched = " [clinician-edited]" if key in session.user_touched else ""
-            preview = content if len(content) <= 300 else content[:300] + "..."
+            preview = (
+                content
+                if len(content) <= 300
+                else content[:300] + " ...[truncated, call read_note_field for full content]"
+            )
             lines.append(f"{key} ({field_name}){touched}: {preview or '(empty)'}")
         return {"content": "\n".join(lines) or "No fields defined.", "events": []}
+
+    if name == "read_note_field":
+        key = args.get("field_key", "")
+        if key not in fields:
+            return {"content": _unknown_field_error(key, fields), "events": []}
+        content = session.field_drafts.get(key, "")
+        touched = " [clinician-edited]" if key in session.user_touched else ""
+        return {
+            "content": f"Full content of '{key}' ({fields[key]}){touched}:\n{content or '(empty)'}",
+            "events": [],
+        }
 
     if name == "update_note_field":
         key = args.get("field_key", "")
