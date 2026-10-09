@@ -14,6 +14,7 @@ export default tseslint.config(
             "server/**",
             "training/**",
             "src/components/ui/**",
+            "src/audio/ten-vad/**", // vendored TEN VAD wasm + emscripten glue
             "build-dir/**",
             ".flatpak-builder/**",
             "packaging/**",

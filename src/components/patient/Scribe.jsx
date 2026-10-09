@@ -2,7 +2,10 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranscription } from "../../utils/hooks/useTranscription";
 import { settingsService } from "../../utils/settings/settingsUtils";
 import { settingsApi } from "../../utils/api/settingsApi";
+import { captureApi } from "../../utils/api/captureApi";
 import { AudioRecorder } from "../../utils/audioRecorder";
+
+const CAPTURE_TAIL_SETTLE_MS = 1200;
 
 // Hook to manage scribe state and logic
 // This can be used by ScribePillBox to control recording
@@ -18,17 +21,20 @@ export const useScribe = ({
 }) => {
     const [isAmbient, setIsAmbient] = useState(true);
     const [requireConsent, setRequireConsent] = useState(false);
+    const [streamingCapture, setStreamingCapture] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
+    const [isFinishing, setIsFinishing] = useState(false);
     const [timer, setTimer] = useState(0);
     const audioRecorderRef = useRef(null);
     const timerIntervalRef = useRef(null);
+    const captureRef = useRef(null);
 
     const [sendError, setSendError] = useState(null); // null = ok, else { message }
     const lastFailedRef = useRef({ blob: null, meta: null, isAmbient: null });
 
     // Transcription API
-    const { transcribeAudio, isTranscribing } = useTranscription((data) => {
+    const { transcribeAudio, finalizeCaptureSession, isTranscribing } = useTranscription((data) => {
         if (data?.error) return;
         handleTranscriptionComplete({
             fields: data.fields,
@@ -50,6 +56,9 @@ export const useScribe = ({
                     setIsAmbient(data.scribe_is_ambient);
                 }
                 setRequireConsent(Boolean(globalConfig?.REQUIRE_SCRIBE_CONSENT));
+                // Browser demo: no isTauri() — the localBackend's global config
+                // flags streaming capture on (main gates via isTauri() || flag).
+                setStreamingCapture(globalConfig?.STREAMING_CAPTURE_ENABLED === true);
             } catch (error) {
                 console.error("Error fetching settings:", error);
             }
@@ -75,6 +84,7 @@ export const useScribe = ({
         setTimer(0);
         setSendError(null);
         lastFailedRef.current = { blob: null, meta: null, isAmbient: null };
+        captureRef.current = null;
         if (audioRecorderRef.current) {
             audioRecorderRef.current.stop().catch(() => {});
         }
@@ -149,6 +159,41 @@ export const useScribe = ({
         clearLastFailed();
     }, [clearLastFailed]);
 
+    const startCaptureStreaming = useCallback(
+        async (recorder) => {
+            try {
+                const { session_id } = await captureApi.startSession({
+                    mode: isAmbient ? "ambient" : "dictate",
+                    templateKey: template?.template_key,
+                    name,
+                    gender,
+                    dob,
+                    noteId,
+                });
+                // Recording may have been stopped while the session was
+                // being created; don't arm a stale session.
+                if (audioRecorderRef.current !== recorder) {
+                    return;
+                }
+                captureRef.current = { id: session_id, failures: 0 };
+                recorder.enableSegmentStreaming(async (blob) => {
+                    const capture = captureRef.current;
+                    if (!capture) return;
+                    try {
+                        await captureApi.sendAudioChunk(capture.id, blob);
+                    } catch (error) {
+                        console.error("Capture segment upload failed:", error);
+                        capture.failures += 1;
+                    }
+                });
+            } catch (error) {
+                console.warn("Streaming capture unavailable; using batch:", error);
+                captureRef.current = null;
+            }
+        },
+        [isAmbient, template, name, gender, dob, noteId],
+    );
+
     const startRecording = useCallback(async () => {
         try {
             const recorder = new AudioRecorder();
@@ -156,11 +201,14 @@ export const useScribe = ({
             audioRecorderRef.current = recorder;
             setIsRecording(true);
             setTimer(0);
+            if (streamingCapture) {
+                startCaptureStreaming(recorder);
+            }
         } catch (error) {
             console.error("Error starting recording:", error);
             alert("Could not access microphone. Please check your permissions.");
         }
-    }, []);
+    }, [streamingCapture, startCaptureStreaming]);
 
     const pauseRecording = useCallback(() => {
         audioRecorderRef.current?.pause();
@@ -180,22 +228,49 @@ export const useScribe = ({
         if (!isRecording || !audioRecorderRef.current) {
             return null;
         }
-        const recorder = audioRecorderRef.current;
-        audioRecorderRef.current = null;
-        setIsRecording(false);
-        setIsPaused(false);
-        const blob = await recorder.stop();
-        await sendForTranscription(blob, {
-            name,
-            gender,
-            dob,
-            templateKey: template?.template_key,
-            noteId,
-        });
-        return blob;
+        setIsFinishing(true);
+        try {
+            const recorder = audioRecorderRef.current;
+            audioRecorderRef.current = null;
+            setIsRecording(false);
+            setIsPaused(false);
+            const blob = await recorder.stop();
+            const meta = {
+                name,
+                gender,
+                dob,
+                templateKey: template?.template_key,
+                noteId,
+            };
+
+            // Streaming capture path: settle the flushed tail utterance, then
+            // finalize. Any failure or backend fallback reruns as batch with the
+            // full-recording WAV.
+            const capture = captureRef.current;
+            captureRef.current = null;
+            if (capture && capture.failures === 0) {
+                await new Promise((resolve) =>
+                    setTimeout(resolve, CAPTURE_TAIL_SETTLE_MS),
+                );
+                const data = await finalizeCaptureSession(capture.id);
+                if (!data?.fallback) {
+                    return blob;
+                }
+                console.warn(
+                    "Streaming capture fell back to batch:",
+                    data.reason,
+                );
+            }
+
+            await sendForTranscription(blob, meta);
+            return blob;
+        } finally {
+            setIsFinishing(false);
+        }
     }, [
         isRecording,
         sendForTranscription,
+        finalizeCaptureSession,
         name,
         gender,
         dob,
@@ -247,7 +322,7 @@ export const useScribe = ({
         isRecording,
         isPaused,
         timer,
-        isLoading: isTranscribing,
+        isLoading: isTranscribing || isFinishing,
         sendError,
 
         // Actions

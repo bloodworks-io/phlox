@@ -29,6 +29,7 @@ server/venv
 .vscode/
 .idea/
 .zed/
+.zcode/
 opencode.*
 server/.pytest_cache
 oom

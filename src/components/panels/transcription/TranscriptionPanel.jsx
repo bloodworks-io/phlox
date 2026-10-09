@@ -4,6 +4,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 import FloatingPanel from "../../common/FloatingPanel";
+import SpeakerText from "../../transcript/SpeakerText";
 
 const TranscriptionPanel = ({
   isOpen,
@@ -104,9 +105,8 @@ const TranscriptionPanel = ({
                 },
               }}
             >
-              <Text whiteSpace="pre-wrap" fontSize="xs" lineHeight="1.5">
-                {rawTranscription}
-              </Text>
+              {/* Speaker-labeled lines render their colored dots (plain text otherwise) */}
+              <SpeakerText text={rawTranscription} fontSize="xs" lineHeight="1.5" />
             </Box>
 
             {/* Footer: Reprocess button and stats */}

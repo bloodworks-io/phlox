@@ -13,5 +13,15 @@
         "error": "Error",
         "loading": "Loading…",
         "success": "Success"
+    },
+    "api": {
+        "capture": {
+            "startFailed": "Could not start streaming capture",
+            "audioUploadFailed": "Capture audio upload failed ({{status}})",
+            "stopFailed": "Could not finish streaming capture"
+        }
+    },
+    "transcript": {
+        "unattributed": "Unattributed"
     }
 }

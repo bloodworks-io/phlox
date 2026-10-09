@@ -29,6 +29,8 @@ export interface ChatOptions {
   images?: string[];
   /** JSON schema source text; constrains generation via XGrammar when available. */
   jsonSchema?: string;
+  /** Seed generation with the warm KV prefix (capture prefill reuse). */
+  seedCache?: boolean;
 }
 
 export const LLM_PRESETS = [
@@ -54,7 +56,7 @@ interface LoadedModel {
     generate: (inputs: Record<string, unknown>) => Promise<{
       sequences: { dims: number[]; [index: number]: { slice: (spec: unknown[]) => unknown } };
     }>;
-  };
+  } & CallableFunction; // callable: raw forward pass returns session outputs incl. present.* KV state
   RawImage: { fromDataURL: (url: string) => Promise<unknown> };
   device: string;
 }
@@ -90,8 +92,15 @@ export function invalidateModel(): void {
     cachedModelId = null;
     grammarRuntime = null;
     grammarModelId = null;
+    warmDisabled = false;
+    void clearWarmCache();
     emit({ state: "idle" });
   }
+}
+
+/** Device of the loaded model ("webgpu" | "wasm"), or null when not loaded. */
+export function currentModelDevice(): string | null {
+  return cached && cachedModelId === getModelId() ? cached.device : null;
 }
 
 function dtypeFor(device: "webgpu" | "wasm") {
@@ -223,11 +232,152 @@ export async function ensureModel(): Promise<LoadedModel> {
 // --- call serialization (model.generate is not concurrency-safe) ---
 
 let queueTail: Promise<unknown> = Promise.resolve();
+let queueDepth = 0;
 
 export function enqueueModelJob<T>(job: () => Promise<T>): Promise<T> {
+  queueDepth += 1;
   const run = queueTail.then(job, job);
-  queueTail = run.catch(() => {});
+  queueTail = run.finally(() => {
+    queueDepth -= 1;
+  });
   return run;
+}
+
+/** Jobs currently waiting/running on the model queue (warming cadence gate). */
+export function modelQueueDepth(): number {
+  return queueDepth;
+}
+
+// --- warm KV prefill (browser equivalent of llama.cpp cache_prompt) ---
+// A single-slot prefix cache: prefillMessages() runs a raw forward pass over
+// the prompt and keeps the resulting DynamicCache + token ids; a later chat()
+// with seedCache:true passes the cache into generate(), which slices the
+// input to the unprocessed suffix internally (verified in transformers.js
+// 4.2.0: generate accepts past_key_values, prepare_inputs_for_generation
+// handles mrope positions for seeded continuations).
+
+interface WarmCache {
+  modelId: string;
+  /** Prompt token ids the cache holds (strict prefix of the next prompt). */
+  tokens: number[];
+  cache: unknown;
+}
+
+let warmCache: WarmCache | null = null;
+let warmDisabled = false;
+
+export async function clearWarmCache(): Promise<void> {
+  const previous = warmCache;
+  warmCache = null;
+  await disposeCache(previous?.cache);
+}
+
+async function disposeCache(cache: unknown): Promise<void> {
+  try {
+    await (cache as { dispose?: () => Promise<void> } | null)?.dispose?.();
+  } catch {
+    // Already freed — nothing to do.
+  }
+}
+
+/** Longest common prefix length between stored warm tokens and current ids. */
+function warmPrefixLength(stored: number[], current: ArrayLike<number> | ArrayLike<bigint>): number {
+  const limit = Math.min(stored.length, current.length);
+  let length = 0;
+  while (length < limit && stored[length] === Number(current[length])) length += 1;
+  return length;
+}
+
+/** Rename raw forward present.* outputs into past_key_values cache entries. */
+function cacheFromOutputs(outputs: Record<string, unknown>): Record<string, unknown> | null {
+  const entries: Record<string, unknown> = Object.create(null);
+  for (const name of Object.keys(outputs)) {
+    if (!name.startsWith("present")) continue;
+    const newName = name
+      .replace("present_ssm", "past_ssm")
+      .replace("present_conv", "past_conv")
+      .replace("present_recurrent", "past_recurrent") // Qwen3.5 hybrid layers
+      .replace("present", "past_key_values");
+    entries[newName] = outputs[name];
+  }
+  return Object.keys(entries).length > 0 ? entries : null;
+}
+
+interface TensorLike {
+  data: ArrayLike<bigint> | ArrayLike<number>;
+  dims: number[];
+  slice: (...spec: unknown[]) => TensorLike;
+}
+
+function tensorIds(tensor: TensorLike): number[] {
+  const ids: number[] = [];
+  for (let i = 0; i < tensor.data.length; i++) ids.push(Number(tensor.data[i]));
+  return ids;
+}
+
+/**
+ * Prefill a prompt into the warm KV cache (output discarded, one forward
+ * pass). Mirrors server warm_prompt.prefill: the transcript grows
+ * append-only, so a previously warmed cache is extended rather than rebuilt.
+ */
+export async function prefillMessages(messages: ChatMessage[]): Promise<void> {
+  if (warmDisabled) return;
+  return enqueueModelJob(async () => {
+    const tf = await import("@huggingface/transformers");
+    const { processor, model } = await ensureModel();
+    // No generation prompt: the warm prompt must be a strict token prefix of
+    // the final chat() prompt (which renders the same messages plus the
+    // assistant opener) — the transcript only ever appends inside the user
+    // turn, before the terminator the warm prompt ends on.
+    const prompt = processor.tokenizer.apply_chat_template(messages, {
+      add_generation_prompt: false,
+      enable_thinking: false,
+      tokenize: false,
+    }) as string;
+    const inputs = (await processor(prompt)) as unknown as Record<string, TensorLike> & {
+      input_ids: TensorLike;
+      attention_mask?: TensorLike;
+    };
+    const total = inputs.input_ids.dims.at(-1) ?? 0;
+    if (total === 0) throw new Error("warm prefill: empty prompt after tokenization");
+
+    const previous = warmCache;
+    warmCache = null;
+    let feeds: Record<string, unknown> = { ...inputs };
+    let pastLength = 0;
+    if (previous && previous.modelId === getModelId() && previous.tokens.length < total) {
+      const prefix = warmPrefixLength(previous.tokens, inputs.input_ids.data);
+      if (prefix === previous.tokens.length && prefix > 0) {
+        // Strict extension: seed and prefill only the suffix.
+        pastLength = prefix;
+        feeds = {
+          input_ids: inputs.input_ids.slice(null, [pastLength, null]),
+          attention_mask:
+            inputs.attention_mask ??
+            new tf.Tensor("int64", BigInt64Array.from({ length: total }, () => 1n), [1, total]),
+          position_ids: new tf.Tensor(
+            "int64",
+            BigInt64Array.from({ length: total - pastLength }, (_, i) => BigInt(pastLength + i)),
+            [1, total - pastLength],
+          ),
+          past_key_values: previous.cache,
+          use_cache_branch: new tf.Tensor("bool", [true], [1]),
+        };
+      }
+    }
+
+    const outputs = (await (model as unknown as (input: Record<string, unknown>) => Promise<Record<string, unknown>>)(feeds)) as Record<string, unknown>;
+    const entries = cacheFromOutputs(outputs);
+    if (entries === null) {
+      warmDisabled = true;
+      await disposeCache(previous?.cache);
+      throw new Error("warm prefill: model produced no present.* KV outputs");
+    }
+    await disposeCache(previous?.cache);
+    const cache = new tf.DynamicCache(entries as unknown as Record<string, never>);
+    warmCache = { modelId: getModelId(), tokens: tensorIds(inputs.input_ids), cache };
+    console.info(`[llm] warm prefill: ${total}t (${total - pastLength}t new, ${pastLength}t cached)`);
+  });
 }
 
 // --- grammar-constrained decoding (XGrammar) ---
@@ -361,7 +511,7 @@ async function grammarHooks(matcher: GrammarMatcher): Promise<Record<string, unk
 }
 
 export async function chat(messages: ChatMessage[], options: ChatOptions): Promise<string> {
-  const { temperature, max_new_tokens = 768, images, jsonSchema } = options;
+  const { temperature, max_new_tokens = 768, images, jsonSchema, seedCache } = options;
   return enqueueModelJob(async () => {
     const started = performance.now();
     const { processor, model, RawImage } = await ensureModel();
@@ -381,11 +531,23 @@ export async function chat(messages: ChatMessage[], options: ChatOptions): Promi
       ? await Promise.all(images.map((url) => RawImage.fromDataURL(url)))
       : undefined;
     const inputs = ((prepared ? await processor(prompt, prepared) : await processor(prompt))) as unknown as {
-      input_ids: { dims: number[] };
+      input_ids: { dims: number[]; data: ArrayLike<bigint> };
     } & Record<string, unknown>;
     const inputLen = inputs.input_ids.dims.at(-1) ?? 0;
     if (inputLen === 0) {
       console.error(`[llm] empty prompt after tokenization; template output: ${JSON.stringify(String(prompt).slice(0, 200))}`);
+    }
+    // Warm-prefix seeding: the capture prefill holds a strict prefix of this
+    // prompt — hand generate() the cache and it slices/positions the suffix.
+    let seeded: unknown = null;
+    if (seedCache && !warmDisabled && !images && warmCache && warmCache.modelId === getModelId()) {
+      const prefix = warmPrefixLength(warmCache.tokens, inputs.input_ids.data);
+      if (prefix === warmCache.tokens.length && prefix > 0 && prefix < inputLen) {
+        seeded = warmCache.cache;
+        console.info(`[llm] seeding from warm cache: ${prefix}/${inputLen}t prefilled`);
+      } else if (prefix > 0) {
+        console.info(`[llm] warm cache unusable (prefix ${prefix}/${warmCache.tokens.length}t of ${inputLen}t); full prefill`);
+      }
     }
     let result: Awaited<ReturnType<LoadedModel["model"]["generate"]>>;
     try {
@@ -395,10 +557,24 @@ export async function chat(messages: ChatMessage[], options: ChatOptions): Promi
         do_sample: true,
         temperature,
         return_dict_in_generate: true,
+        ...(seeded ? { past_key_values: seeded } : null),
         ...(grammar ? await grammarHooks(grammar) : null),
       });
+    } catch (error) {
+      if (seeded) {
+        // Seeded generation broke (model/template mismatch with the cache):
+        // disable warming so the scribe retry prefills from scratch.
+        warmDisabled = true;
+        void clearWarmCache();
+      }
+      throw error;
     } finally {
       grammar?.dispose();
+      if (seeded) {
+        // generate() mutates the seeded cache in place; the store no longer
+        // holds a pure prompt prefix, so drop it.
+        void clearWarmCache();
+      }
     }
     // Decode only the newly generated tokens (everything after the prompt).
     const totalLen = result.sequences.dims.at(-1) ?? 0;

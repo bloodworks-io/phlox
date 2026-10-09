@@ -31,4 +31,7 @@ export const syncLanguage = (language) => {
     void i18n.changeLanguage(lang);
 };
 
+// Named t for non-hook call sites (api clients) — same export origin/main added.
+export const t = (key, options) => i18n.t(key, options);
+
 export default i18n;

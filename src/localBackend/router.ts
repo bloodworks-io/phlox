@@ -32,6 +32,7 @@ import type { ChatMessage } from "./llm";
 import { transcribe, AsrError } from "./asr";
 import { formatPatientDisplayName, processTranscription, TranscriptionProcessingError, extractFields } from "./scribe";
 import { generateLetterContent } from "./letter";
+import { captureManager, drain, finalize, handleAudio, streamingCaptureEnabled, type CaptureSession } from "./capture";
 
 export interface LocalRequestOptions {
   method?: string;
@@ -206,6 +207,96 @@ async function handleTranscribeAudio(options: LocalRequestOptions): Promise<Resp
     transcriptionDuration: transcription.duration,
     processDuration: result.process_duration,
   });
+}
+
+// --- streaming capture (server/api/transcribe.py capture routes) ---
+
+/** POST /api/transcribe/capture/sessions — start a streaming capture session. */
+async function handleCaptureStart(options: LocalRequestOptions): Promise<Response> {
+  if (!streamingCaptureEnabled()) {
+    return jsonResponse({ detail: "Streaming capture is disabled" }, 409);
+  }
+  const body = await readJsonBody(options);
+  const mode = body.mode === "ambient" ? "ambient" : body.mode === "dictate" ? "dictate" : null;
+  if (mode === null) return jsonResponse({ detail: "mode must be 'ambient' or 'dictate'" }, 422);
+  const templateKey = typeof body.templateKey === "string" ? body.templateKey : null;
+
+  let primaryCondition: string | null = null;
+  if (body.noteId) {
+    const existing = getPatientById(Number(body.noteId));
+    primaryCondition = existing?.primary_condition ?? null;
+  }
+
+  const session = captureManager.create({
+    mode,
+    templateKey,
+    templateFields: fieldsForKey(templateKey),
+    patientContext: {
+      name: formatPatientDisplayName(typeof body.name === "string" ? body.name : null),
+      dob: (body.dob as string) ?? null,
+      gender: (body.gender as string) ?? null,
+    },
+    primaryCondition,
+    noteId: typeof body.noteId === "number" ? body.noteId : null,
+  });
+  console.info(`Capture session ${session.id} started (mode=${session.mode})`);
+  return jsonResponse({ session_id: session.id });
+}
+
+// (single-user demo: no owner scoping — the Python 403 path does not apply)
+function lookupCaptureSession(sessionId: string): CaptureSession | Response {
+  const session = captureManager.get(sessionId);
+  return session ?? notFound("Capture session not found");
+}
+
+/** POST /api/transcribe/capture/sessions/{id}/audio — one utterance, transcribed in background. */
+async function handleCaptureAudio(sessionId: string, options: LocalRequestOptions): Promise<Response> {
+  const session = lookupCaptureSession(sessionId);
+  if (session instanceof Response) return session;
+  if (session.isEnded) return jsonResponse({ detail: "Capture session already ended" }, 409);
+  const form = options.body as FormData;
+  const file = form.get("file");
+  if (!(file instanceof Blob)) return jsonResponse({ detail: "file is required" }, 400);
+  void handleAudio(session, file);
+  return jsonResponse({ accepted: true });
+}
+
+/** POST /api/transcribe/capture/sessions/{id}/stop — end + run the batch pipeline over the transcript. */
+async function handleCaptureStop(sessionId: string): Promise<Response> {
+  const session = lookupCaptureSession(sessionId);
+  if (session instanceof Response) return session;
+
+  if (session.stopResult !== null) return jsonResponse(session.stopResult);
+
+  session.end();
+  await drain(session);
+
+  if (session.transcriptSegments.length === 0) {
+    session.stopResult = {
+      session_id: session.id,
+      fallback: true,
+      reason: "No transcript captured",
+    };
+    return jsonResponse(session.stopResult);
+  }
+  if (session.failedSegments) {
+    session.stopResult = {
+      session_id: session.id,
+      fallback: true,
+      reason: `${session.failedSegments} utterance(s) failed to transcribe`,
+    };
+    return jsonResponse(session.stopResult);
+  }
+
+  try {
+    const result = await finalize(session);
+    session.stopResult = { session_id: session.id, ...result };
+    console.info(`Capture session ${session.id} stopped`);
+    return jsonResponse(session.stopResult);
+  } catch (error) {
+    console.error(`Error finalizing capture session ${sessionId}: ${error}`);
+    return jsonResponse({ detail: "Internal server error" }, 500);
+  }
 }
 
 async function handleTranscribeReprocess(options: LocalRequestOptions): Promise<Response> {
@@ -412,6 +503,9 @@ export async function handleLocalRequest(url: string, options: LocalRequestOptio
         REQUIRE_SCRIBE_CONSENT: true,
         DOCUMENT_IMAGE_PROCESSING_MODE: "auto",
         VISION_MODEL_CAPABLE: false,
+        // Browser demo always runs its own local model — capture defaults on
+        // (the server exposes this toggle via AdminSettingsPanel).
+        STREAMING_CAPTURE_ENABLED: true,
       });
     }
     if (path === "/api/config/options" && method === "GET") {
@@ -583,6 +677,23 @@ export async function handleLocalRequest(url: string, options: LocalRequestOptio
     }
     if (path === "/api/transcribe/reprocess" && method === "POST" && formBody) {
       return await handleTranscribeReprocess(options);
+    }
+
+    // --- streaming capture sessions (mirror of server/api/transcribe.py) ---
+    if (path === "/api/transcribe/capture/sessions" && method === "POST") {
+      return await handleCaptureStart(options);
+    }
+    if (
+      segments[0] === "api" && segments[1] === "transcribe" && segments[2] === "capture" &&
+      segments[3] === "sessions" && segments[4] && segments[5] === "audio" && method === "POST"
+    ) {
+      return await handleCaptureAudio(segments[4], options);
+    }
+    if (
+      segments[0] === "api" && segments[1] === "transcribe" && segments[2] === "capture" &&
+      segments[3] === "sessions" && segments[4] && segments[5] === "stop" && method === "POST"
+    ) {
+      return await handleCaptureStop(segments[4]);
     }
 
     // --- documents ---

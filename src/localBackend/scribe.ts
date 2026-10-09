@@ -4,7 +4,8 @@
 // its format_refined_response schema formatting is applied here instead.
 
 import type { TemplateField } from "./defaults";
-import { chat } from "./llm";
+import { chat, type ChatMessage } from "./llm";
+import { speakerLegendHint } from "./speakers";
 
 export interface PatientContext {
   name?: string | null;
@@ -43,13 +44,29 @@ export class TranscriptionProcessingError extends Error {
   }
 }
 
-function buildSystemContent(
+/** server/transcription/text.py:build_extraction_messages — the [system, user] pair for the extraction call. */
+export function buildExtractionMessages(
+  transcriptText: string,
   fields: TemplateField[],
   patientContext: PatientContext,
-  isAmbient: boolean,
-  primaryCondition: string | null,
-  introOverride?: string,
-): string {
+  options: { isAmbient?: boolean; primaryCondition?: string | null; introOverride?: string } = {},
+): ChatMessage[] {
+  const { isAmbient = true, primaryCondition = null, introOverride } = options;
+
+  let intro = introOverride ?? (isAmbient
+    ? "Extract relevant information for each of the following fields from the medical transcript."
+    : "Extract and organize information from the clinician's direct dictation for each of the following fields.");
+
+  if (primaryCondition) {
+    intro += ` This is a returning patient who sees the clinician for ${primaryCondition}.`;
+  }
+
+  // Live-agent and capture transcripts carry best-effort speaker labels.
+  const legend = speakerLegendHint(transcriptText);
+  if (legend) {
+    intro += ` ${legend}`;
+  }
+
   const fieldInstructions = fields
     .map(
       (field) =>
@@ -57,19 +74,9 @@ function buildSystemContent(
     )
     .join("\n");
 
-  const patientContextStr = buildPatientContext(patientContext);
+  const systemContent = `${intro}
 
-  const intro = introOverride ?? (isAmbient
-    ? "Extract relevant information for each of the following fields from the medical transcript."
-    : "Extract and organize information from the clinician's direct dictation for each of the following fields.");
-
-  const introSuffix = primaryCondition
-    ? ` This is a returning patient who sees the clinician for ${primaryCondition}.`
-    : "";
-
-  return `${intro}${introSuffix}
-
-${patientContextStr}
+${buildPatientContext(patientContext)}
 
 For each field, extract only the most relevant discussion points. If no relevant information is found for a field, return an empty list for that field.
 
@@ -77,6 +84,11 @@ FIELDS:
 ${fieldInstructions}
 
 Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapping field_key to array of strings).`;
+
+  return [
+    { role: "system", content: systemContent },
+    { role: "user", content: transcriptText },
+  ];
 }
 
 /** Strict JSON schema for the extraction contract — consumed by XGrammar in llm.ts. */
@@ -168,23 +180,30 @@ async function attemptExtraction(
   primaryCondition: string | null,
   options: ExtractionOptions = {},
 ): Promise<Record<string, string>> {
-  const content = await chat(
-    [
-      {
-        role: "system",
-        content:
-          options.systemOverride ??
-          buildSystemContent(fields, patientContext, isAmbient, primaryCondition, options.introOverride),
-      },
-      {
-        role: "user",
-        content: options.images?.length
-          ? [...options.images.map(() => ({ type: "image" as const })), { type: "text" as const, text: transcriptText || "Extract the fields from the attached document." }]
-          : transcriptText,
-      },
-    ],
-    { temperature: 0.1, max_new_tokens: 1024, images: options.images, jsonSchema: buildExtractionSchema(fields) },
-  );
+  const messages = buildExtractionMessages(transcriptText, fields, patientContext, {
+    isAmbient,
+    primaryCondition,
+    introOverride: options.introOverride,
+  });
+  if (options.systemOverride) {
+    messages[0] = { role: "system", content: options.systemOverride };
+  }
+  if (options.images?.length) {
+    messages[1] = {
+      role: "user",
+      content: [
+        ...options.images.map(() => ({ type: "image" as const })),
+        { type: "text" as const, text: transcriptText || "Extract the fields from the attached document." },
+      ],
+    };
+  }
+  const content = await chat(messages, {
+    temperature: 0.1,
+    max_new_tokens: 1024,
+    images: options.images,
+    jsonSchema: buildExtractionSchema(fields),
+    seedCache: options.seedCache,
+  });
 
   const summaries = parseFieldSummaries(content, fields);
   console.info(`[scribe] extraction fields: ${Object.keys(summaries).join(", ")}`);
@@ -232,6 +251,8 @@ export interface ExtractionOptions {
   systemOverride?: string;
   /** Data-URL page images for vision extraction. */
   images?: string[];
+  /** Seed generation with the capture warm KV prefix (browser prompt cache). */
+  seedCache?: boolean;
 }
 
 export async function extractFields(
@@ -271,9 +292,10 @@ export async function processTranscription(
   patientContext: PatientContext,
   isAmbient = true,
   primaryCondition: string | null = null,
+  options: ExtractionOptions = {},
 ): Promise<{ fields: Record<string, string>; process_duration: number }> {
   const started = performance.now();
-  const extracted = await extractFields(transcriptText, fields, patientContext, isAmbient, primaryCondition);
+  const extracted = await extractFields(transcriptText, fields, patientContext, isAmbient, primaryCondition, options);
   return {
     fields: extracted,
     process_duration: Number(((performance.now() - started) / 1000).toFixed(2)),

@@ -94,3 +94,41 @@ Prereq: branch checked out, `npm install` done. Run `npm run start-react` (hub s
 - `/api/note/save` response: full stored row is a superset of every consumer (verified consumers use `id` and spread).
 - If a stripped-panel import is still referenced somewhere unexpected (build error), delete the referencing JSX block too — the strip list above is the intended final surface, not a strict diff.
 - transformers.js ONNX wasm binaries load from the jsdelivr CDN by default — demo requires network on first model load; no bundling of wasm attempted.
+
+## Streaming capture (carried from origin/main, Oct 2026)
+
+The ambient/dictate streaming-capture feature from `origin/main` (server
+commits `a21779d`/`adff157`/`e0e8114`, frontend `11d5e94` + TEN VAD series)
+runs in the demo with the frontend carried byte-identical and the Python
+backend ported 1:1 into TS. Whisper transcribes each VAD-cut utterance during
+recording, CAM++ labels speakers (ambient), the growing transcript warms the
+extraction prompt's KV cache, and stop returns in seconds.
+
+- Carried verbatim: `src/audio/ten-vad/*`, `src/audio/vad-worker.js`,
+  `src/audio/vadPipeline.js`, `src/utils/audioSegmenter.js`,
+  `src/utils/audioRecorder.js` (superset), `src/utils/api/captureApi.ts`,
+  `src/components/transcript/SpeakerText.jsx`, specs + `src/test/setup.js`.
+- Ported 1:1 (mirror `server/transcription/`): `capture.ts`, `speakers.ts`,
+  `intake.ts` + `buildExtractionMessages` in `scribe.ts` (incl. the speaker
+  legend) and the capture routes in `router.ts` (same shapes, 404/409,
+  idempotent `stop_result`, batch fallback via `{fallback: true}`).
+
+Intentional divergences (the demo's adapter points):
+- **KV warming** (llm.ts): llama.cpp `cache_prompt` slot reuse → transformers.js
+  `DynamicCache`. `prefillMessages()` renders without the generation prompt
+  (strict token prefix of the final chat prompt), runs a raw forward pass,
+  and keeps the cache; `chat({seedCache})` feeds it to `generate()`, which
+  slices/positions the suffix itself. Warms only fire when the model queue is
+  idle and the device is WebGPU; any failure disables warming for the session.
+- **Diarizer** (speakers.ts): sherpa-onnx CAM++ → `public/models/campplus-zh-en.onnx`
+  (28 MB, the same weights as `server/assets/models/`) via onnxruntime-web,
+  with a JS Kaldi fbank frontend (`fbank.ts`, 80 bins / 25 ms / 10 ms, CMVN).
+  Validated empirically: two distinct voices separate at cosine ~0.9 vs ~0.2
+  (`src/test/diarizeSanity.spec.js`, macOS `say` fixtures).
+- **Config gates**: `STREAMING_CAPTURE_ENABLED` is hardcoded true in the
+  localBackend global config (no AdminSettingsPanel); `useScribe` gates on it
+  instead of `isTauri() || flag`. Token counts are chars/4 (no cl100k).
+- **Live partial transcript** (`ScribePillBox`): origin/main shows interim text
+  only in the live agent; the demo adds a small per-utterance panel with the
+  same `SpeakerDot` rendering, driven by `onCaptureSegment` (modeled on
+  `onDocumentProgress`).

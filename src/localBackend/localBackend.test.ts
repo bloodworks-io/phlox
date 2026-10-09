@@ -150,6 +150,7 @@ describe("local backend route table", () => {
       REQUIRE_SCRIBE_CONSENT: true,
       DOCUMENT_IMAGE_PROCESSING_MODE: "auto",
       VISION_MODEL_CAPABLE: false,
+      STREAMING_CAPTURE_ENABLED: true,
     });
 
     const auth = await json("/api/auth/me");
