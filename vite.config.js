@@ -47,6 +47,28 @@ export default defineConfig({
   base: process.env.GITHUB_PAGES_BASE ?? "/",
   plugins: [
     react(),
+    // Local demo models under public/models: missing files must hard-404 instead of
+    // hitting the SPA index.html fallback — the ASR local-mirror probe (and any
+    // optional config fetch) expects 404-to-skip and chokes on
+    // JSON.parse("<!doctype html...").
+    {
+      name: "models-hard-404",
+      configureServer(server) {
+        server.middlewares.use("/models", (req, res, next) => {
+          const rel = (req.url ?? "").split("?")[0].replace(/^\/+/, "");
+          const fsPath = path.join(process.cwd(), "public", "models", rel);
+          const { access } = require("fs");
+          access(fsPath, (err) => {
+            if (err) {
+              res.statusCode = 404;
+              res.end("Not Found");
+            } else {
+              next();
+            }
+          });
+        });
+      },
+    },
     viteStaticCopy({
       targets: [
         { src: `${wasmDir}/*`, dest: "wasm", rename: { stripBase: true } },

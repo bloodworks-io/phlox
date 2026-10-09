@@ -15,3 +15,18 @@ if (typeof window !== "undefined" && !window.matchMedia) {
         dispatchEvent: () => false,
     });
 }
+
+// This jsdom build exposes no localStorage; localBackend/db.ts needs it.
+if (typeof window !== "undefined" && !window.localStorage) {
+    const map = new Map();
+    window.localStorage = {
+        getItem: (key) => (map.has(key) ? map.get(key) : null),
+        setItem: (key, value) => map.set(key, String(value)),
+        removeItem: (key) => map.delete(key),
+        clear: () => map.clear(),
+        key: (index) => [...map.keys()][index] ?? null,
+        get length() {
+            return map.size;
+        },
+    };
+}

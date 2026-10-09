@@ -154,7 +154,7 @@ export function setDefaultLetterTemplateId(id: number): void {
 // --- model selection ---
 
 export function getModelId(): string {
-  return read<string>(KEYS.model, "onnx-community/Qwen3.5-2B-ONNX-OPT");
+  return read<string>(KEYS.model, "phlox-0.8b-webllm");
 }
 
 export function setModelId(id: string): void {
@@ -162,7 +162,7 @@ export function setModelId(id: string): void {
 }
 
 export function getAsrModelId(): string {
-  return read<string>(KEYS.asrModel, "onnx-community/whisper-base.en");
+  return read<string>(KEYS.asrModel, "parakeet");
 }
 
 export function setAsrModelId(id: string): void {

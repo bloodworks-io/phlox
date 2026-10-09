@@ -6,11 +6,12 @@
 //    only when the model is loaded on WebGPU (wasm prefill cannot keep up
 //    with live capture, and remote-billing concerns do not apply in-page);
 //  - token counts are chars/4 approximations (no cl100k in the browser);
-//  - the llama.cpp raw strict-prefix warm becomes the DynamicCache prefill
-//    exposed by llm.ts prefillMessages()/chat({seedCache}).
+//  - the llama.cpp raw strict-prefix warm becomes the engine-aware prefill
+//    exposed by llm.ts warmPrompt() (DynamicCache on transformers.js, a
+//    1-token request on WebLLM) + chat({seedCache}) for the tjs final call.
 
 import type { TemplateField } from "./defaults";
-import { currentModelDevice, isModelReady, modelQueueDepth, prefillMessages } from "./llm";
+import { currentModelDevice, isModelReady, modelQueueDepth, preloadWebLLMForCapture, warmPrompt } from "./llm";
 import { buildExtractionMessages, processTranscription, type PatientContext } from "./scribe";
 import { createSessionSpeakers, formatSegment, type SessionSpeakers } from "./speakers";
 import { intakeUtterance } from "./intake";
@@ -20,8 +21,11 @@ const IDLE_TIMEOUT_SECONDS = 2 * 60 * 60; // abandon sessions with no activity f
 
 export const WARM_MIN_WORDS = 40;
 
-// Stop warming once the transcript exceeds this many tokens.
-export const WARM_MAX_TRANSCRIPT_TOKENS = 16_000;
+// Stop warming once the transcript exceeds this many tokens. Bound to the
+// WebLLM context (12288): transcript budget = window minus system+FIELDS
+// prompt overhead (~1k) and generation headroom (~1k). The transformers.js
+// engine has a far larger native window, so this cap only binds on WebLLM.
+export const WARM_MAX_TRANSCRIPT_TOKENS = 10_000;
 
 export const FINAL_DRAIN_SECONDS = 30;
 
@@ -31,6 +35,10 @@ export function streamingCaptureEnabled(): boolean {
 }
 
 export function kvWarmingEnabled(): boolean {
+  // Engine-aware: the transformers.js engine warms via DynamicCache prefill,
+  // WebLLM via a 1-token request riding its in-memory prefix reuse (both
+  // dispatched by llm.ts warmPrompt). Wasm tjs is excluded — its prefill
+  // cannot keep up with live capture.
   return isModelReady() && currentModelDevice() === "webgpu";
 }
 
@@ -150,6 +158,9 @@ class CaptureManager {
       noteId: options.noteId ?? null,
     });
     this.sessions.set(session.id, session);
+    // Engine residency head start: warmPrompt no-ops on an unloaded WebLLM
+    // engine, so load it (from cache only) the moment recording starts.
+    preloadWebLLMForCapture();
     return session;
   }
 
@@ -263,7 +274,7 @@ async function warm(session: CaptureSession): Promise<void> {
       isAmbient: session.isAmbient,
       primaryCondition: session.primaryCondition,
     });
-    await prefillMessages(messages);
+    await warmPrompt(messages);
   } catch (error) {
     console.debug(`Capture session ${session.id}: warm-up skipped (${error})`);
   }

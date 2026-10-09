@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>WebLLM spike — phlox-0.8b</title>
+    <style>
+      body { font-family: ui-monospace, monospace; max-width: 900px; margin: 24px auto; padding: 0 12px; }
+      textarea { width: 100%; height: 140px; }
+      button { padding: 6px 14px; margin: 4px 4px 4px 0; }
+      pre { background: #111; color: #9f9; padding: 10px; white-space: pre-wrap; min-height: 80px; }
+      #log { color: #888; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h3>WebLLM spike — phlox-0.8b (q4f16)</h3>
+    <button id="load">1. Load engine</button>
+    <button id="run" disabled>2. Generate</button>
+    <label><input type="checkbox" id="schema" checked /> constrain to scribe JSON schema</label>
+    <p id="status">idle</p>
+    <h4>system</h4><textarea id="sys"></textarea>
+    <h4>user (transcript)</h4><textarea id="usr"></textarea>
+    <h4>output</h4><pre id="out">—</pre>
+    <h4>metrics</h4><pre id="metrics">—</pre>
+    <div id="log"></div>
+    <script type="module" src="/src/webllmSpike.js"></script>
+  </body>
+</html>

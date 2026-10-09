@@ -106,6 +106,15 @@ for (let i = 1; i <= 8; i++) {
     };
 }
 
+// Live capture: pulsing dot on the caption card while the mic is hot
+// (ported from origin/main's live-agent theme).
+globalCss[".live-bolt-pulse"] = {
+    animation: "phloxBoltPulse 1.6s ease-in-out infinite",
+};
+globalCss["@media (prefers-reduced-motion: reduce)"] = {
+    ".live-bolt-pulse": { animation: "none !important" },
+};
+
 export const system = createSystem(defaultConfig, {
     globalCss,
     theme: {
@@ -131,6 +140,11 @@ export const system = createSystem(defaultConfig, {
                     opacity: "1",
                     transform: "scale(1) translateX(0)",
                 },
+            },
+            phloxBoltPulse: {
+                "0%": { opacity: "1" },
+                "50%": { opacity: "0.35" },
+                "100%": { opacity: "1" },
             },
         },
         tokens: {

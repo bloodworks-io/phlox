@@ -72,3 +72,11 @@ training/data/
 
 # fine-tuned model artifacts (large)
 weights/
+
+# local model artifacts (symlinks + multi-GB mirrors; see ENVS/docs in train-phlox)
+# (glob, not the dir itself — a negated file can't be re-included under an
+# excluded parent directory)
+public/models/*
+# the capture diarizer is small enough to ship with the repo (28 MB) and has
+# no HF mirror — keep it deployed through Pages with the app shell
+!public/models/campplus-zh-en.onnx

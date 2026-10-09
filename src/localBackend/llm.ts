@@ -33,10 +33,26 @@ export interface ChatOptions {
   seedCache?: boolean;
 }
 
+export const WEBLLM_ID = "phlox-0.8b-webllm";
+/** HF org hosting the phlox model repos (weights for production; see DEPLOY.md). */
+export const HF_ORG = "bloodworks-io";
+
 export const LLM_PRESETS = [
-  { id: "onnx-community/Qwen3.5-0.8B-ONNX-OPT", label: "0.8B · fast" },
-  { id: "onnx-community/Qwen3.5-2B-ONNX-OPT", label: "2B · balanced" },
-  { id: "onnx-community/Qwen3.5-4B-ONNX-OPT", label: "4B · best" },
+  {
+    id: WEBLLM_ID,
+    label: "phlox-0.8B · WebLLM (tuned, fast)",
+    description: "Fastest — tuned weights on the WebLLM runtime. Chrome/Edge (WebGPU) only; other browsers fall back automatically.",
+  },
+  {
+    id: `${HF_ORG}/phlox-0.8b-ONNX`,
+    label: "phlox-0.8B · tuned (transformers.js)",
+    description: "Same tuned weights via transformers.js. Slower than WebLLM, but runs everywhere including Safari.",
+  },
+  {
+    id: "onnx-community/Qwen3.5-4B-ONNX-OPT",
+    label: "4B · best",
+    description: "Untuned, largest — best raw quality, slowest to load and run.",
+  },
 ];
 
 export const CUSTOM_LLM_PRESET = "__custom__";
@@ -82,6 +98,7 @@ let cachedModelId: string | null = null;
 let loadPromise: Promise<LoadedModel> | null = null;
 
 export function isModelReady(): boolean {
+  if (webllmEngine !== null && getModelId() === WEBLLM_ID) return true;
   return cached !== null && cachedModelId === getModelId();
 }
 
@@ -94,12 +111,14 @@ export function invalidateModel(): void {
     grammarModelId = null;
     warmDisabled = false;
     void clearWarmCache();
+    void disposeWebLLM();
     emit({ state: "idle" });
   }
 }
 
-/** Device of the loaded model ("webgpu" | "wasm"), or null when not loaded. */
+/** Device of the active engine ("webgpu" | "wasm"), or null when not loaded. */
 export function currentModelDevice(): string | null {
+  if (webllmEngine !== null && getModelId() === WEBLLM_ID) return "webgpu";
   return cached && cachedModelId === getModelId() ? cached.device : null;
 }
 
@@ -154,8 +173,14 @@ export async function describeGpu(): Promise<GpuDescription> {
   }
 }
 
+// F1: transformers.js model id the WebLLM preset degrades to when the MLC
+// engine is unavailable (adapter limits, non-Chromium browsers). "phlox-0.8b-webllm"
+// is the MLC runtime's id, not a hub repo — every tjs load needs a real repo id.
+const TJS_TUNED_ID = `${HF_ORG}/phlox-0.8b-ONNX`;
+
 export async function ensureModel(): Promise<LoadedModel> {
-  const modelId = getModelId();
+  const requestedId = getModelId();
+  const modelId = requestedId === WEBLLM_ID ? TJS_TUNED_ID : requestedId;
   if (cached && cachedModelId === modelId) return cached;
   if (loadPromise) return loadPromise;
 
@@ -185,6 +210,8 @@ export async function ensureModel(): Promise<LoadedModel> {
     // Dynamic import keeps transformers.js (+onnxruntime-web) out of the main
     // bundle: only demo runs that touch the model download the multi-MB chunk.
     const tf = await import("@huggingface/transformers");
+    // Web-deployed demo: every tjs id is a HF hub repo (the WebLLM preset is
+    // remapped above), so never look for a local models/ mirror.
     tf.env.allowLocalModels = false;
     // Serve ort wasm from the bundled copy (vite staticCopy → <base>ort/)
     // instead of onnxruntime-web's jsdelivr CDN default.
@@ -227,6 +254,137 @@ export async function ensureModel(): Promise<LoadedModel> {
   } finally {
     loadPromise = null;
   }
+}
+
+// --- WebLLM engine (MLC-compiled WebGPU kernels; needs a Chrome-class adapter
+// --- with maxStorageBuffersPerShaderStage >= 10, e.g. Chrome/Edge) ---
+
+interface WebLLMChatEngine {
+  chat: {
+    completions: {
+      create(req: Record<string, unknown>): Promise<AsyncIterable<{ choices?: Array<{ delta?: { content?: string } }> }>>;
+    };
+  };
+  unload(): Promise<void>;
+}
+
+let webllmEngine: WebLLMChatEngine | null = null;
+let webllmDisabled = false; // set once per session after a failed probe
+
+async function disposeWebLLM(): Promise<void> {
+  await webllmEngine?.unload();
+  webllmEngine = null;
+}
+
+async function webllmAdapterOk(): Promise<boolean> {
+  try {
+    const gpu = (navigator as unknown as { gpu?: { requestAdapter(o?: unknown): Promise<unknown> } }).gpu;
+    if (!gpu) return false;
+    const adapter = (await gpu.requestAdapter({
+      powerPreference: "high-performance",
+    })) as null | { limits?: { maxStorageBuffersPerShaderStage?: number } };
+    if (!adapter?.limits) return false;
+    return (adapter.limits.maxStorageBuffersPerShaderStage ?? 0) >= 10;
+  } catch {
+    return false;
+  }
+}
+
+/** In-flight engine creation, so preload/extract/settings never race a double load. */
+let webllmLoading: Promise<WebLLMChatEngine | null> | null = null;
+
+// Web-deployed demo: MLC weights + wasm lib always stream from the HF repo
+// (no local mirror is ever served).
+const WEBLLM_MODEL_DIR = `https://huggingface.co/${HF_ORG}/phlox-0.8b-MLC`;
+const WEBLLM_WASM_URL = `${WEBLLM_MODEL_DIR}/resolve/main/phlox-0.8b-webgpu.wasm`;
+
+async function ensureWebLLM(): Promise<WebLLMChatEngine | null> {
+  if (webllmEngine) return webllmEngine;
+  if (webllmDisabled) return null;
+  if (webllmLoading) return webllmLoading;
+  webllmLoading = createWebLLMEngine().finally(() => {
+    webllmLoading = null;
+  });
+  return webllmLoading;
+}
+
+async function createWebLLMEngine(): Promise<WebLLMChatEngine | null> {
+  try {
+    if (!(await webllmAdapterOk())) throw new Error("adapter limits below WebLLM requirements");
+    const webllm = await import("@mlc-ai/web-llm");
+    emit({ state: "loading", modelId: WEBLLM_ID, device: "webgpu" });
+    webllmEngine = (await webllm.CreateMLCEngine(WEBLLM_ID, {
+      appConfig: {
+        model_list: [
+          {
+            model_id: WEBLLM_ID,
+            model: WEBLLM_MODEL_DIR,
+            model_lib: WEBLLM_WASM_URL,
+            vram_required_MB: 1900,
+            low_resource_required: true,
+            // 12k window ≈ 70+ min of ambient speech (native is 256k, but KV
+            // costs ~24KB/token — 12k keeps total VRAM under ~2GB).
+            overrides: { context_window_size: 12288 },
+          },
+        ],
+      },
+      initProgressCallback: (p: { text?: string; progress?: number }) => {
+        if (p.text) console.info(`[llm] webllm init: ${p.text}`);
+        emit({
+          state: "loading",
+          modelId: WEBLLM_ID,
+          device: "webgpu",
+          progress: p.progress !== undefined ? Math.round(p.progress * 100) : undefined,
+        });
+      },
+    })) as unknown as WebLLMChatEngine;
+    emit({ state: "ready", modelId: WEBLLM_ID, device: "webgpu" });
+    return webllmEngine;
+  } catch (e) {
+    console.warn(`[llm] WebLLM unavailable (${String(e)}) — falling back to transformers.js path`);
+    webllmDisabled = true;
+    await disposeWebLLM();
+    return null;
+  }
+}
+
+async function chatWebLLM(
+  messages: ChatMessage[],
+  temperature: number,
+  max_new_tokens: number,
+  jsonSchema: string | undefined,
+): Promise<string | null> {
+  const engine = await ensureWebLLM();
+  if (!engine) return null;
+  const stream = await engine.chat.completions.create({
+    messages,
+    temperature,
+    max_tokens: max_new_tokens,
+    stream: true,
+    // response_format natively constrains to the schema (xgrammar equivalent);
+    // matches the transformers.js path's enable_thinking:false — the tuned
+    // model expects the empty <think></think> preamble before its JSON
+    ...(jsonSchema ? { response_format: { type: "json_object", schema: jsonSchema } } : {}),
+    extra_body: { enable_thinking: false },
+  });
+  let text = "";
+  for await (const chunk of stream) {
+    text += chunk.choices?.[0]?.delta?.content ?? "";
+  }
+  return text.split("</think>").pop()?.trim() ?? "";
+}
+
+/** Load/warm whichever engine the current model id selects (settings button). */
+export async function warmModel(): Promise<void> {
+  if (getModelId() === WEBLLM_ID) {
+    const engine = await ensureWebLLM();
+    if (engine) return;
+    // Engine unavailable on this browser: pre-load the transformers.js
+    // fallback instead, so the button warms the engine chat() will use.
+    await ensureModel();
+    return;
+  }
+  await ensureModel();
 }
 
 // --- call serialization (model.generate is not concurrency-safe) ---
@@ -380,6 +538,58 @@ export async function prefillMessages(messages: ChatMessage[]): Promise<void> {
   });
 }
 
+/**
+ * Engine-aware capture warm. transformers.js: raw-forward DynamicCache
+ * prefill (above). WebLLM: a 1-token ordinary request — the engine keeps an
+ * in-memory KV prefix across requests, so the final extraction call matches
+ * the warm prompt's prefix and only prefills the transcript tail. (The
+ * resumability API is deliberately NOT used: it forces a fresh prefill and
+ * rejects JSON constraints.) Never loads an engine just to warm.
+ */
+export async function warmPrompt(messages: ChatMessage[]): Promise<void> {
+  if (getModelId() !== WEBLLM_ID) {
+    return prefillMessages(messages);
+  }
+  if (webllmEngine === null) return; // engine not loaded → nothing to warm
+  return enqueueModelJob(async () => {
+    try {
+      await chatWebLLM(messages, 0, 1, undefined);
+      console.info("[llm] webllm warm: prompt prefilled (engine prefix reuse)");
+    } catch (error) {
+      console.debug(`webllm warm skipped (${error})`);
+    }
+  });
+}
+
+/**
+ * Capture-start engine preload: warmPrompt() no-ops while the WebLLM engine is
+ * unloaded, so a session that never opened settings/onboarding would reach
+ * stop-time extraction with a cold engine (and no warmed prefix). Load the
+ * engine now — but only from the browser cache: hasModelInCache gates this so
+ * a first-ever run never starts the ~430MB download mid-recording; it loads at
+ * extraction time as before. Fire-and-forget; never rejects.
+ */
+export function preloadWebLLMForCapture(): void {
+  if (getModelId() !== WEBLLM_ID || webllmEngine !== null || webllmDisabled || webllmLoading) return;
+  void (async () => {
+    try {
+      if (!(await webllmAdapterOk())) return;
+      const webllm = await import("@mlc-ai/web-llm");
+      const cached = await webllm.hasModelInCache(WEBLLM_ID, {
+        model_list: [{ model_id: WEBLLM_ID, model: WEBLLM_MODEL_DIR, model_lib: WEBLLM_WASM_URL }],
+      });
+      if (!cached) {
+        console.debug("[llm] webllm weights not cached — skipping capture preload (download deferred to extraction)");
+        return;
+      }
+      console.info("[llm] webllm capture preload: loading cached engine for warming");
+      await ensureWebLLM();
+    } catch (error) {
+      console.debug(`webllm capture preload skipped (${error})`);
+    }
+  })();
+}
+
 // --- grammar-constrained decoding (XGrammar) ---
 
 interface GrammarMatcher {
@@ -514,6 +724,16 @@ export async function chat(messages: ChatMessage[], options: ChatOptions): Promi
   const { temperature, max_new_tokens = 768, images, jsonSchema, seedCache } = options;
   return enqueueModelJob(async () => {
     const started = performance.now();
+    if (getModelId() === WEBLLM_ID && !images?.length) {
+      const text = await chatWebLLM(messages, temperature, max_new_tokens, jsonSchema);
+      if (text !== null) {
+        console.info(
+          `[llm] webllm done in ${((performance.now() - started) / 1000).toFixed(1)}s${jsonSchema ? " (schema-constrained)" : ""}: ${text.length}ch`,
+        );
+        return text;
+      }
+      console.warn("[llm] webllm path unavailable — using transformers.js engine");
+    }
     const { processor, model, RawImage } = await ensureModel();
     const grammar = jsonSchema ? await setupMatcher(jsonSchema) : null;
     if (jsonSchema) console.info(grammar ? "[llm] grammar constraint active" : "[llm] grammar unavailable, unconstrained");

@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { Flex, Text, Button, VStack } from "@chakra-ui/react";
 import { FaDownload } from "react-icons/fa";
 import { QuestionIcon } from "./icons";
-import { describeGpu, ensureModel, isModelReady, onStatus } from "../../localBackend/llm";
-import { ensureAsr } from "../../localBackend/asr";
+import { describeGpu, warmModel, isModelReady, onStatus } from "../../localBackend/llm";
+import { warmAsr } from "../../localBackend/asr";
 import { toaster } from "@/components/ui/toaster";
 
 const downloadModels = async () => {
   try {
-    await ensureModel();
-    await ensureAsr();
+    // Engine-aware: warms WebLLM/parakeet when those presets are active,
+    // the transformers.js engines otherwise.
+    await warmModel();
+    await warmAsr();
     toaster.create({
       title: "Models ready",
       description: "Letter generation, scribe and document extraction are good to go",

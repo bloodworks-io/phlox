@@ -5,9 +5,12 @@ import { getAsrModelId } from "./db";
 import { enqueueModelJob } from "./llm";
 
 export const ASR_PRESETS = [
+  { id: "parakeet", label: "parakeet · fast (WebGPU)" },
   { id: "onnx-community/whisper-base.en", label: "whisper-base.en (default)" },
   { id: "onnx-community/whisper-tiny.en", label: "whisper-tiny.en (fast)" },
 ];
+
+export const PARAKEET_ID = "parakeet";
 
 type AsrPipeline = ((
   audio: Float32Array,
@@ -59,6 +62,91 @@ export function invalidateAsr(): void {
   for (const key of pipelines.keys()) {
     if (!key.startsWith(prefix)) pipelines.delete(key);
   }
+  if (getAsrModelId() !== PARAKEET_ID) disposeParakeet();
+}
+
+// --- parakeet.wgsl engine (WebGPU-only; whisper remains the fallback path) ---
+
+interface ParakeetController {
+  readonly initialized: boolean;
+  transcribe(audio: Blob, options?: Record<string, unknown>): Promise<{
+    text: string;
+    metrics: { speedFactor?: number; encoderMs?: number; decoderMs?: number; totalMs?: number };
+  }>;
+  dispose(): void;
+}
+
+let parakeetTranscriber: ParakeetController | null = null;
+let parakeetModelId: string | null = null;
+
+async function resolveParakeetModelUrls(tfBase: string): Promise<Record<string, string> | undefined> {
+  // Prefer the self-hosted mirror in public/models/parakeet; fall back to the
+  // project CDN when the mirror is absent so the repo works without the 850MB.
+  for (const prec of ["fp16", "fp32"]) {
+    const local = `${tfBase}models/parakeet/${prec}/manifest.json`;
+    try {
+      const probe = await fetch(local, { method: "HEAD" });
+      if (!probe.ok) return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return {
+    fp16: `${tfBase}models/parakeet/fp16/manifest.json`,
+    fp32: `${tfBase}models/parakeet/fp32/manifest.json`,
+  };
+}
+
+function disposeParakeet(): void {
+  parakeetTranscriber?.dispose();
+  parakeetTranscriber = null;
+  parakeetModelId = null;
+}
+
+async function ensureParakeet(): Promise<ParakeetController | null> {
+  if (parakeetTranscriber && parakeetModelId === PARAKEET_ID) return parakeetTranscriber;
+  disposeParakeet();
+  const pk = await import("parakeet.wgsl");
+  const support = await pk.checkSupport();
+  if (!support.supported) {
+    console.warn("[asr] parakeet unsupported (missing WebGPU?):", support.errors);
+    return null;
+  }
+  console.info(`[asr] parakeet profile: ${support.executionProfile?.precision}/${support.executionProfile?.kernelBackend} on ${support.adapter?.description ?? "gpu"}`);
+  const base = (import.meta.env.BASE_URL ?? "/") as string;
+  const modelUrls = await resolveParakeetModelUrls(base);
+  console.info(`[asr] parakeet models: ${modelUrls ? "local mirror" : "project CDN"}`);
+  parakeetTranscriber = pk.createTranscriber({
+    ...(modelUrls ? { modelUrls } : {}),
+    onLoadProgress: (p: { phase: string; fraction: number }) => {
+      if (p.phase === "weights") {
+        progressListener?.({ percent: Math.min(100, Math.round(p.fraction * 100)), modelId: PARAKEET_ID });
+      }
+    },
+  }) as unknown as ParakeetController;
+  parakeetModelId = PARAKEET_ID;
+  return parakeetTranscriber;
+}
+
+export function blobSourceName(blob: Blob): string {
+  const mime = blob.type ?? "";
+  if (mime.includes("webm")) return "audio.webm";
+  if (mime.includes("ogg")) return "audio.ogg";
+  if (mime.includes("mp4") || mime.includes("m4a")) return "audio.m4a";
+  if (mime.includes("mpeg")) return "audio.mp3";
+  if (mime.includes("wav")) return "audio.wav";
+  if (mime.includes("flac")) return "audio.flac";
+  return "audio.webm";
+}
+
+/** Load/warm whichever ASR engine the current preset selects (onboarding button). */
+export async function warmAsr(): Promise<void> {
+  if (getAsrModelId() === PARAKEET_ID) {
+    const parakeet = await ensureParakeet();
+    if (parakeet) return;
+    // WebGPU-less browser: pre-load the whisper fallback instead.
+  }
+  await ensureAsr();
 }
 
 export async function ensureAsr(device: AsrDevice = preferredDevice()): Promise<AsrPipeline> {
@@ -121,6 +209,21 @@ export async function ensureAsr(device: AsrDevice = preferredDevice()): Promise<
 export async function transcribe(blob: Blob): Promise<TranscribeResult> {
   const started = performance.now();
   return enqueueModelJob(async () => {
+    if (getAsrModelId() === PARAKEET_ID) {
+      const parakeet = await ensureParakeet();
+      if (parakeet) {
+        const result = await parakeet.transcribe(blob, { sourceName: blobSourceName(blob) });
+        const m = result.metrics ?? {};
+        console.info(
+          `[asr] parakeet done: ${(m.totalMs ?? 0) / 1000}s total, speedFactor=${m.speedFactor ?? "?"}, encoder=${m.encoderMs ?? "?"}ms decoder=${m.decoderMs ?? "?"}ms`,
+        );
+        return {
+          text: String(result.text ?? "").trim(),
+          duration: Number(((performance.now() - started) / 1000).toFixed(2)),
+        };
+      }
+      console.warn("[asr] parakeet unavailable — falling back to whisper path");
+    }
     const url = URL.createObjectURL(blob);
     let audio: Float32Array;
     try {

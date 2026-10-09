@@ -11,6 +11,7 @@ import {
   NativeSelect,
   Field,
   Progress,
+  RadioGroup,
   Tabs,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
@@ -31,7 +32,7 @@ import { SPECIALTIES } from "../../utils/constants";
 import {
   LLM_PRESETS,
   CUSTOM_LLM_PRESET,
-  ensureModel,
+  warmModel,
   invalidateModel,
   onStatus,
   type LlmStatus,
@@ -85,8 +86,7 @@ const DemoSettingsPanel = () => {
     invalidateModel();
   };
 
-  const handlePresetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
+  const handlePresetChange = (value: string) => {
     setSelectedPreset(value);
     if (value !== CUSTOM_LLM_PRESET) {
       applyLlmModel(value);
@@ -108,7 +108,9 @@ const DemoSettingsPanel = () => {
 
   const handleLoadModel = async () => {
     try {
-      await ensureModel();
+      // Engine-aware: pre-loads the WebLLM engine for the webllm preset,
+      // the transformers.js model otherwise (incl. the WebLLM fallback).
+      await warmModel();
       toaster.create({
         title: "Model ready",
         description: "Local model loaded and cached by the browser",
@@ -212,21 +214,35 @@ const DemoSettingsPanel = () => {
               <Field.Label fontSize="sm" color="textSecondary">
                 Letter / Summary Model (Qwen3.5)
               </Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  className="input-style"
-                  value={selectedPreset}
-                  onChange={handlePresetChange}
-                >
+              <RadioGroup.Root
+                value={selectedPreset}
+                onValueChange={(details) => handlePresetChange(details.value)}
+              >
+                <VStack gap={1} align="stretch">
                   {LLM_PRESETS.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label}
-                    </option>
+                    <RadioGroup.Item key={preset.id} value={preset.id} cursor="pointer" alignItems="start">
+                      <RadioGroup.ItemHiddenInput />
+                      <RadioGroup.ItemIndicator mt="2px" />
+                      <Box>
+                        <RadioGroup.ItemText>{preset.label}</RadioGroup.ItemText>
+                        <Text fontSize="xs" color="overlay0">
+                          {preset.description}
+                        </Text>
+                      </Box>
+                    </RadioGroup.Item>
                   ))}
-                  <option value={CUSTOM_LLM_PRESET}>Custom…</option>
-                </NativeSelect.Field>
-                <NativeSelect.Indicator />
-              </NativeSelect.Root>
+                  <RadioGroup.Item value={CUSTOM_LLM_PRESET} cursor="pointer" alignItems="start">
+                    <RadioGroup.ItemHiddenInput />
+                    <RadioGroup.ItemIndicator mt="2px" />
+                    <Box>
+                      <RadioGroup.ItemText>Custom…</RadioGroup.ItemText>
+                      <Text fontSize="xs" color="overlay0">
+                        Any transformers.js-compatible Hugging Face repo id.
+                      </Text>
+                    </Box>
+                  </RadioGroup.Item>
+                </VStack>
+              </RadioGroup.Root>
             </Field.Root>
 
             {selectedPreset === CUSTOM_LLM_PRESET && (
@@ -234,7 +250,7 @@ const DemoSettingsPanel = () => {
                 <Input
                   className="input-style"
                   size="sm"
-                  placeholder="HF repo id, e.g. onnx-community/Qwen3.5-0.8B-ONNX-OPT"
+                  placeholder="HF repo id, e.g. onnx-community/Qwen3.5-4B-ONNX-OPT"
                   value={customRepo}
                   onChange={(event) => setCustomRepo(event.target.value)}
                 />
@@ -289,9 +305,9 @@ const DemoSettingsPanel = () => {
             )}
 
             <Text fontSize="xs" color="textSecondary">
-              First load downloads the model from the Hugging Face CDN (2B preset
-              ≈ 2 GB); the browser caches it for later sessions. Whisper (~80 MB)
-              downloads on first use with toast progress.
+              First load downloads the model from the Hugging Face CDN (phlox
+              presets ≈ 600 MB); the browser caches it for later sessions.
+              Transcription (~80 MB) downloads on first use with toast progress.
             </Text>
           </VStack>
         </Tabs.Content>

@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Box, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import PillBox from "../common/PillBox";
 import { LoadingOrb } from "./scribeVisuals";
-import { SpeakerDot } from "../transcript/SpeakerText";
+import LiveCaptureCard from "./LiveCaptureCard";
 import { onCaptureSegment } from "../../localBackend/capture";
 import {
     RecordButton,
@@ -12,41 +12,6 @@ import {
 } from "./scribeButtons";
 
 const LIVE_TRANSCRIPT_MAX_LINES = 40;
-
-/** Live partial transcript: capture segments as they land during recording. */
-const LiveCapturePanel = ({ segments, words }) => (
-    <Box
-        position="fixed"
-        bottom="92px"
-        left="50%"
-        transform="translateX(-50%)"
-        width="300px"
-        maxHeight="220px"
-        overflowY="auto"
-        p={3}
-        borderRadius="xl"
-        backdropFilter="blur(12px)"
-        pointerEvents="none"
-        css={{
-            "&::-webkit-scrollbar": { width: "4px" },
-            "&::-webkit-scrollbar-track": { background: "transparent" },
-            "&::-webkit-scrollbar-thumb": {
-                background: "var(--chakra-colors-scrollbar-thumb)",
-                borderRadius: "24px",
-            },
-        }}
-    >
-        {segments.map((segment, index) => (
-            <Text key={index} as="div" whiteSpace="pre-wrap" fontSize="xs" lineHeight="1.5">
-                {segment.speaker ? <SpeakerDot speaker={segment.speaker} /> : null}
-                {segment.text}
-            </Text>
-        ))}
-        <Text fontSize="10px" color="overlay0" pt={1}>
-            {words} words · capturing
-        </Text>
-    </Box>
-);
 
 const ScribePillBox = ({
     // Recording state
@@ -173,10 +138,10 @@ const ScribePillBox = ({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
         >
-            {/* Live partial transcript while capturing */}
-        {isRecording && !isPaused && liveSegments.length > 0 && (
-            <LiveCapturePanel segments={liveSegments} words={liveWords} />
-        )}
+            {/* Live capture caption card while transcribing in-stream */}
+            {isRecording && !isPaused && liveSegments.length > 0 && (
+                <LiveCaptureCard segments={liveSegments} words={liveWords} />
+            )}
 
         {/* Drop zone overlay */}
             {isDragOver && (

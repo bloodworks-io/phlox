@@ -23,7 +23,11 @@ vi.mock("./llm", () => ({
 // vitest's jsdom environment exposes a method-less localStorage stub; db.ts
 // reads the ASR model id from it on every ensureAsr call.
 class MemoryStorage implements Storage {
-  private map = new Map<string, string>();
+  private map = new Map<string, string>([
+    // Pin whisper explicitly: the db default is now the parakeet preset, and
+    // these specs exercise the transformers.js whisper wiring only.
+    ["phlox_demo_asr_model", "onnx-community/whisper-base.en"],
+  ]);
   get length(): number {
     return this.map.size;
   }
@@ -133,5 +137,18 @@ describe("asr webgpu → wasm fallback", () => {
     expect(webgpuRun).not.toHaveBeenCalled();
     const [, , options] = pipelineMock.mock.calls[0] as [string, string, PipelineOptions];
     expect(options.device).toBe("wasm");
+  });
+});
+
+describe("blobSourceName (parakeet source naming)", () => {
+  it("maps blob mime types to parakeet source file names", async () => {
+    const { blobSourceName } = await import("./asr");
+    expect(blobSourceName(new Blob([], { type: "audio/wav" }))).toBe("audio.wav");
+    expect(blobSourceName(new Blob([], { type: "audio/webm;codecs=opus" }))).toBe("audio.webm");
+    expect(blobSourceName(new Blob([], { type: "audio/mp4" }))).toBe("audio.m4a");
+    expect(blobSourceName(new Blob([], { type: "audio/mpeg" }))).toBe("audio.mp3");
+    expect(blobSourceName(new Blob([], { type: "audio/ogg" }))).toBe("audio.ogg");
+    expect(blobSourceName(new Blob([], { type: "audio/flac" }))).toBe("audio.flac");
+    expect(blobSourceName(new Blob([], { type: "" }))).toBe("audio.webm");
   });
 });
