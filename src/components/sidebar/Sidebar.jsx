@@ -21,6 +21,7 @@ import { patientApi } from "../../utils/api/patientApi";
 import { KEYS } from "../../utils/cache/keys";
 import { isTauri } from "../../utils/helpers/apiConfig";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 const CollapseIcon = ({ boxSize = "20px" }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -266,7 +267,7 @@ const Sidebar = ({
                   className="group"
                 >
                   <Image
-                    src="/logo.webp"
+                    src={LOGO_SRC}
                     alt="Phlox logo"
                     width="100%"
                     height="100%"
@@ -301,7 +302,7 @@ const Sidebar = ({
                 openDelay={700}
               >
               <Flex align="center" gap={3}>
-                <Image src="/logo.webp" alt="Phlox logo" width="28px" />
+                <Image src={LOGO_SRC} alt="Phlox logo" width="28px" />
                 <Text
                   fontFamily="heading"
                   fontSize="3xl"

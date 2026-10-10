@@ -17,6 +17,7 @@ import { toaster } from "@/components/ui/toaster";
 import { setStoredToken } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 // First-run admin creation. Shown only when /api/auth/status reports
 // needs_setup (no real users exist yet).
 export const SetupWizard = ({ onSuccess }) => {
@@ -102,7 +103,7 @@ export const SetupWizard = ({ onSuccess }) => {
       >
         <VStack gap={6} align="stretch">
           <Flex direction="column" align="center" mb={2}>
-            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
+            <Image src={LOGO_SRC} alt="Phlox Logo" width="60px" mb={3} />
             <Heading
               as="h1"
               textAlign="center"

@@ -13,6 +13,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useRef, useEffect } from "react";
 import { FaUser, FaCalendarAlt, FaIdBadge, FaArrowRight } from "react-icons/fa";
 import { RepeatIcon } from "../common/icons";
+import { publicAsset } from "@/utils/publicAssets";
 import {
     resetJobsItems,
     debouncedUpdateJobsList,
@@ -75,9 +76,9 @@ const PatientTable = ({
 
     const sfxVolume = 0.3;
     const SFX = {
-        tick: "/sfx/tick.mp3",
-        complete: "/sfx/complete.mp3",
-        reset: "/sfx/reset.mp3",
+        tick: publicAsset("sfx/tick.mp3"),
+        complete: publicAsset("sfx/complete.mp3"),
+        reset: publicAsset("sfx/reset.mp3"),
     };
     const play = (url) => {
         try {

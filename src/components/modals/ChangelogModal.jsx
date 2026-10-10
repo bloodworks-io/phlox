@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import ModalTitle from "../common/ModalTitle";
 import { FaGithub } from "react-icons/fa";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 import {
     Box,
     Text,
@@ -41,7 +42,7 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                             <HStack justify="space-between" width="100%">
                                 <HStack>
                                     <Image
-                                        src="/logo.webp"
+                                        src={LOGO_SRC}
                                         alt="Phlox Logo"
                                         width="30px"
                                     />

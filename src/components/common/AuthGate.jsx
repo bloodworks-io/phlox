@@ -17,6 +17,7 @@ import { toaster } from "@/components/ui/toaster";
 import { setStoredToken } from "../../utils/helpers/apiConfig";
 import { universalFetch } from "../../utils/helpers/apiHelpers";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 export const AuthGate = ({ onSuccess }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -122,7 +123,7 @@ export const AuthGate = ({ onSuccess }) => {
             align="center"
             mb={2}
           >
-            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
+            <Image src={LOGO_SRC} alt="Phlox Logo" width="60px" mb={3} />
             <Heading
               as="h1"
               textAlign="center"

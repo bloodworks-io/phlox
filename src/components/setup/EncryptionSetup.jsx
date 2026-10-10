@@ -8,6 +8,7 @@ import {
   calculatePassphraseStrength,
 } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
+import { LOGO_SRC } from "@/utils/publicAssets";
 import {
   SPLASH_STEPS,
   STEP_TITLES,
@@ -177,7 +178,7 @@ const EncryptionSetup = ({ onComplete }) => {
         />
 
         <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
-          <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
+          <Image src={LOGO_SRC} alt="Phlox" height="40px" width="auto" />
           <Heading as="h2" size="md" color="textPrimary" textAlign="center">
             {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
           </Heading>

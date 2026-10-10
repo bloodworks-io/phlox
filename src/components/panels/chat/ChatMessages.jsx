@@ -12,6 +12,7 @@ import ArtifactCard from "../../common/ArtifactCard";
 import FormFillArtifact from "../../pdf-forms/FormFillArtifact";
 import { CitationList } from "../reasoning/components/CitationList";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 const ChatMessages = ({
     messages,
     toggleThinkingVisibility,
@@ -106,7 +107,7 @@ const ChatMessages = ({
                                     {message.role === "assistant" && (
                                         <HStack gap={1.5} mb={0.5}>
                                             <Image
-                                                src="/logo.webp"
+                                                src={LOGO_SRC}
                                                 alt="Phlox Assistant"
                                                 boxSize="14px"
                                                 objectFit="contain"

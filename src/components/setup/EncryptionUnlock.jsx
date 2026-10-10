@@ -6,6 +6,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 const EncryptionUnlock = ({ onComplete }) => {
 
   const [passphrase, setPassphrase] = useState("");
@@ -170,7 +171,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             align="center"
             mb={2}
           >
-            <Image src="/logo.webp" alt="Phlox Logo" width="60px" mb={3} />
+            <Image src={LOGO_SRC} alt="Phlox Logo" width="60px" mb={3} />
             <Heading
               as="h1"
               textAlign="center"

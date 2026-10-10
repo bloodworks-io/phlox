@@ -49,9 +49,9 @@ export const LLM_PRESETS = [
     description: "Same tuned weights via transformers.js. Slower than WebLLM, but runs everywhere including Safari.",
   },
   {
-    id: "onnx-community/Qwen3.5-4B-ONNX-OPT",
-    label: "4B · best",
-    description: "Untuned, largest — best raw quality, slowest to load and run.",
+    id: `${HF_ORG}/phlox-2b-ONNX`,
+    label: "phlox-2B · tuned (transformers.js)",
+    description: "Finetuned 2B via transformers.js — stronger than the 0.8B, slower to load. Needs the converted ONNX package on HF.",
   },
 ];
 

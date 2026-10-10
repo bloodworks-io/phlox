@@ -13,6 +13,7 @@ import { groupActivityTrace } from "../../utils/chat/activityTrace";
 import ActivityTraceBlock from "../common/ActivityTraceBlock";
 import { CitationList } from "../panels/reasoning/components/CitationList";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 const DashboardMessageList = ({
     visibleMessages = [],
     setMessages,
@@ -113,7 +114,7 @@ const DashboardMessageList = ({
                                     {message.role === "assistant" && (
                                         <HStack gap={2} mb={0.5}>
                                             <Image
-                                                src="/logo.webp"
+                                                src={LOGO_SRC}
                                                 alt="Phlox Logo"
                                                 h="16px"
                                                 w="auto"

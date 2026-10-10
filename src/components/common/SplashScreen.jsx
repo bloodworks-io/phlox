@@ -18,6 +18,7 @@ import { useTranscriptionStep } from "../../utils/hooks/splash/useTranscriptionS
 import { useTemplatesStep } from "../../utils/hooks/splash/useTemplatesStep";
 import { useLettersStep } from "../../utils/hooks/splash/useLettersStep";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 const SplashScreen = ({ onComplete }) => {
 
   const [currentStep, setCurrentStep] = useState(SPLASH_STEPS.ABOUT_YOU);
@@ -253,7 +254,7 @@ const SplashScreen = ({ onComplete }) => {
 
         {/* Header — logo, title, description, progress */}
         <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
-          <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
+          <Image src={LOGO_SRC} alt="Phlox" height="40px" width="auto" />
           <Heading as="h2" size="md" color="textPrimary" textAlign="center">
             {STEP_TITLES[currentStep]}
           </Heading>

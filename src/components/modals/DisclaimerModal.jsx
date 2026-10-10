@@ -15,6 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { FaExclamationTriangle } from "react-icons/fa";
 
+import { LOGO_SRC } from "@/utils/publicAssets";
 const DisclaimerModal = ({ isOpen, onClose }) => {
     const [agreed, setAgreed] = useState(false);
 
@@ -42,7 +43,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                     <Dialog.Content className="modal-style">
                         <Dialog.Header>
                             <HStack>
-                                <Image src="/logo.webp" alt="Phlox Logo" width="30px" />
+                                <Image src={LOGO_SRC} alt="Phlox Logo" width="30px" />
                                 <Heading as="h2" size="md" fontFamily="heading">Important Notice</Heading>
                             </HStack>
                         </Dialog.Header>
