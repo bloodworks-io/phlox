@@ -6,7 +6,7 @@ Pure in-browser demo: localStorage "backend" (src/localBackend), local ASR + LLM
 
 | component | primary | fallback | selection |
 |---|---|---|---|
-| LLM | **WebLLM** (MLC/TVM WebGPU kernels) — `phlox-0.8b-webllm` preset, weights from HF `bloodworks-io/phlox-0.8b-MLC` | transformers.js (ONNX q4) — tuned preset, weights from HF `bloodworks-io/phlox-0.8b-ONNX` | settings radio group; WebLLM path needs adapter `maxStorageBuffersPerShaderStage >= 10` (Chrome/Edge), else it silently falls back to the transformers.js engine |
+| LLM | **WebLLM** (MLC/TVM WebGPU kernels) — `phlox-0.8b-webllm` (default) and `phlox-2b-webllm` presets, weights from HF `bloodworks-io/phlox-{0.8b,2b}-MLC-v2` | transformers.js (ONNX q4) — tuned presets, weights from HF `bloodworks-io/phlox-{0.8b,2b}-ONNX-v2` | settings radio group; WebLLM path needs adapter `maxStorageBuffersPerShaderStage >= 10` (Chrome/Edge), else it silently falls back to that size's transformers.js preset |
 | ASR | **parakeet.wgsl** (raw WGSL compute shaders) — `parakeet` preset, mirror in `public/models/parakeet/{fp16,fp32}/` | whisper (transformers.js wasm) | settings dropdown; parakeet needs WebGPU (falls back to whisper otherwise) |
 | streaming capture | utterance-at-a-time ASR (TEN VAD segmentation) during recording + CAM++ speaker diarization (ambient) + KV prefill warming on both LLM engines | batch whole-blob path (record → one ASR pass → extraction) | automatic; capture falls back to batch on any failure (`{fallback: true}` from stop) |
 

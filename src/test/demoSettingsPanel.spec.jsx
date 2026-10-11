@@ -18,6 +18,7 @@ describe("DemoSettingsPanel model presets", () => {
         for (const label of [
             "phlox-0.8B · WebLLM (tuned, fast)",
             "phlox-0.8B · tuned (transformers.js)",
+            "phlox-2B · WebLLM (tuned)",
             "phlox-2B · tuned (transformers.js)",
             "Custom…",
         ]) {
@@ -30,9 +31,9 @@ describe("DemoSettingsPanel model presets", () => {
     });
 
     it("checks the persisted preset", () => {
-        setModelId("bloodworks-io/phlox-2b-ONNX");
+        setModelId("phlox-2b-webllm");
         const { container } = renderWithProviders(<DemoSettingsPanel />);
-        expect(checkedValue(container)).toBe("bloodworks-io/phlox-2b-ONNX");
+        expect(checkedValue(container)).toBe("phlox-2b-webllm");
         // (Click-through isn't simulated here: zag's hidden-input event wiring
         // needs real browser pointer activation; RTL's synthetic events don't
         // reach its handler in jsdom.)

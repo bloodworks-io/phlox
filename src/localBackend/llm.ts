@@ -3,6 +3,8 @@
 // verified against @huggingface/transformers 4.2.0.
 
 import { getModelId } from "./db";
+// type-only: erased at runtime, keeps web-llm out of the main bundle
+import type { AppConfig as WebLLMAppConfig } from "@mlc-ai/web-llm";
 
 export interface LlmStatus {
   state: "idle" | "loading" | "ready" | "error";
@@ -34,6 +36,7 @@ export interface ChatOptions {
 }
 
 export const WEBLLM_ID = "phlox-0.8b-webllm";
+export const WEBLLM_2B_ID = "phlox-2b-webllm";
 /** HF org hosting the phlox model repos (weights for production; see DEPLOY.md). */
 export const HF_ORG = "bloodworks-io";
 
@@ -44,14 +47,19 @@ export const LLM_PRESETS = [
     description: "Fastest — tuned weights on the WebLLM runtime. Chrome/Edge (WebGPU) only; other browsers fall back automatically.",
   },
   {
-    id: `${HF_ORG}/phlox-0.8b-ONNX`,
+    id: `${HF_ORG}/phlox-0.8b-ONNX-v2`,
     label: "phlox-0.8B · tuned (transformers.js)",
     description: "Same tuned weights via transformers.js. Slower than WebLLM, but runs everywhere including Safari.",
   },
   {
-    id: `${HF_ORG}/phlox-2b-ONNX`,
+    id: WEBLLM_2B_ID,
+    label: "phlox-2B · WebLLM (tuned)",
+    description: "Tuned 2B on the WebLLM runtime — higher quality than the 0.8B, ~1.2GB first load. Chrome/Edge (WebGPU) only; falls back automatically.",
+  },
+  {
+    id: `${HF_ORG}/phlox-2b-ONNX-v2`,
     label: "phlox-2B · tuned (transformers.js)",
-    description: "Finetuned 2B via transformers.js — stronger than the 0.8B, slower to load. Needs the converted ONNX package on HF.",
+    description: "Same tuned 2B via transformers.js — stronger than the 0.8B, at 2B speed. Runs everywhere including Safari.",
   },
 ];
 
@@ -98,7 +106,7 @@ let cachedModelId: string | null = null;
 let loadPromise: Promise<LoadedModel> | null = null;
 
 export function isModelReady(): boolean {
-  if (webllmEngine !== null && getModelId() === WEBLLM_ID) return true;
+  if (webllmEngine !== null && isWebLLMId(getModelId()) && webllmEngineModel === getModelId()) return true;
   return cached !== null && cachedModelId === getModelId();
 }
 
@@ -118,7 +126,7 @@ export function invalidateModel(): void {
 
 /** Device of the active engine ("webgpu" | "wasm"), or null when not loaded. */
 export function currentModelDevice(): string | null {
-  if (webllmEngine !== null && getModelId() === WEBLLM_ID) return "webgpu";
+  if (webllmEngine !== null && isWebLLMId(getModelId()) && webllmEngineModel === getModelId()) return "webgpu";
   return cached && cachedModelId === getModelId() ? cached.device : null;
 }
 
@@ -173,14 +181,18 @@ export async function describeGpu(): Promise<GpuDescription> {
   }
 }
 
-// F1: transformers.js model id the WebLLM preset degrades to when the MLC
-// engine is unavailable (adapter limits, non-Chromium browsers). "phlox-0.8b-webllm"
-// is the MLC runtime's id, not a hub repo — every tjs load needs a real repo id.
-const TJS_TUNED_ID = `${HF_ORG}/phlox-0.8b-ONNX`;
+// F1: transformers.js model ids the WebLLM presets degrade to when the MLC
+// engine is unavailable (adapter limits, non-Chromium browsers). The
+// "*-webllm" ids are MLC runtime ids, not hub repos — every tjs load needs a
+// real repo id.
+const TJS_FALLBACK: Record<string, string> = {
+  [WEBLLM_ID]: `${HF_ORG}/phlox-0.8b-ONNX-v2`,
+  [WEBLLM_2B_ID]: `${HF_ORG}/phlox-2b-ONNX-v2`,
+};
 
 export async function ensureModel(): Promise<LoadedModel> {
   const requestedId = getModelId();
-  const modelId = requestedId === WEBLLM_ID ? TJS_TUNED_ID : requestedId;
+  const modelId = TJS_FALLBACK[requestedId] ?? requestedId;
   if (cached && cachedModelId === modelId) return cached;
   if (loadPromise) return loadPromise;
 
@@ -269,11 +281,14 @@ interface WebLLMChatEngine {
 }
 
 let webllmEngine: WebLLMChatEngine | null = null;
-let webllmDisabled = false; // set once per session after a failed probe
+/** Which webllm preset id the loaded engine holds (switching presets reloads). */
+let webllmEngineModel: string | null = null;
+const webllmFailed = new Set<string>(); // per-model load failures this session
 
 async function disposeWebLLM(): Promise<void> {
   await webllmEngine?.unload();
   webllmEngine = null;
+  webllmEngineModel = null;
 }
 
 async function webllmAdapterOk(): Promise<boolean> {
@@ -293,56 +308,88 @@ async function webllmAdapterOk(): Promise<boolean> {
 /** In-flight engine creation, so preload/extract/settings never race a double load. */
 let webllmLoading: Promise<WebLLMChatEngine | null> | null = null;
 
-// Web-deployed demo: MLC weights + wasm lib always stream from the HF repo
-// (no local mirror is ever served).
-const WEBLLM_MODEL_DIR = `https://huggingface.co/${HF_ORG}/phlox-0.8b-MLC`;
-const WEBLLM_WASM_URL = `${WEBLLM_MODEL_DIR}/resolve/main/phlox-0.8b-webgpu.wasm`;
+// Web-deployed demo: MLC weights + wasm lib always stream from the HF repos
+// (no local mirror is ever served). One engine at a time — switching presets
+// unloads the previous model's GPU memory.
+interface WebLLMModelDef {
+  hfDir: string;
+  wasmFile: string;
+  vramRequiredMB: number;
+}
+
+const WEBLLM_MODELS: Record<string, WebLLMModelDef> = {
+  [WEBLLM_ID]: {
+    hfDir: `https://huggingface.co/${HF_ORG}/phlox-0.8b-MLC-v2`,
+    wasmFile: "phlox-0.8b-webgpu.wasm",
+    vramRequiredMB: 1900,
+  },
+  [WEBLLM_2B_ID]: {
+    hfDir: `https://huggingface.co/${HF_ORG}/phlox-2b-MLC-v2`,
+    wasmFile: "phlox-2b-webgpu.wasm",
+    vramRequiredMB: 3400,
+  },
+};
+
+function isWebLLMId(id: string): boolean {
+  return id in WEBLLM_MODELS;
+}
+
+/** appConfig describing one webllm preset (engine creation + cache probe). */
+function webllmAppConfig(modelId: string, def: WebLLMModelDef): WebLLMAppConfig {
+  return {
+    model_list: [
+      {
+        model_id: modelId,
+        model: def.hfDir,
+        model_lib: `${def.hfDir}/resolve/main/${def.wasmFile}`,
+        vram_required_MB: def.vramRequiredMB,
+        low_resource_required: true,
+        // 12k window ≈ 70+ min of ambient speech (native is 256k, but KV
+        // costs tens of KB per token — 12k keeps total VRAM in check).
+        overrides: { context_window_size: 12288 },
+      },
+    ],
+  };
+}
 
 async function ensureWebLLM(): Promise<WebLLMChatEngine | null> {
-  if (webllmEngine) return webllmEngine;
-  if (webllmDisabled) return null;
-  if (webllmLoading) return webllmLoading;
-  webllmLoading = createWebLLMEngine().finally(() => {
+  const modelId = getModelId();
+  const def = WEBLLM_MODELS[modelId];
+  if (!def) return null;
+  if (webllmEngine && webllmEngineModel === modelId) return webllmEngine;
+  if (webllmFailed.has(modelId)) return null;
+  if (webllmLoading) await webllmLoading;
+  if (webllmEngine && webllmEngineModel === modelId) return webllmEngine;
+  await disposeWebLLM();
+  webllmLoading = createWebLLMEngine(modelId, def).finally(() => {
     webllmLoading = null;
   });
   return webllmLoading;
 }
 
-async function createWebLLMEngine(): Promise<WebLLMChatEngine | null> {
+async function createWebLLMEngine(modelId: string, def: WebLLMModelDef): Promise<WebLLMChatEngine | null> {
   try {
     if (!(await webllmAdapterOk())) throw new Error("adapter limits below WebLLM requirements");
     const webllm = await import("@mlc-ai/web-llm");
-    emit({ state: "loading", modelId: WEBLLM_ID, device: "webgpu" });
-    webllmEngine = (await webllm.CreateMLCEngine(WEBLLM_ID, {
-      appConfig: {
-        model_list: [
-          {
-            model_id: WEBLLM_ID,
-            model: WEBLLM_MODEL_DIR,
-            model_lib: WEBLLM_WASM_URL,
-            vram_required_MB: 1900,
-            low_resource_required: true,
-            // 12k window ≈ 70+ min of ambient speech (native is 256k, but KV
-            // costs ~24KB/token — 12k keeps total VRAM under ~2GB).
-            overrides: { context_window_size: 12288 },
-          },
-        ],
-      },
+    emit({ state: "loading", modelId, device: "webgpu" });
+    webllmEngine = (await webllm.CreateMLCEngine(modelId, {
+      appConfig: webllmAppConfig(modelId, def),
       initProgressCallback: (p: { text?: string; progress?: number }) => {
         if (p.text) console.info(`[llm] webllm init: ${p.text}`);
         emit({
           state: "loading",
-          modelId: WEBLLM_ID,
+          modelId,
           device: "webgpu",
           progress: p.progress !== undefined ? Math.round(p.progress * 100) : undefined,
         });
       },
     })) as unknown as WebLLMChatEngine;
-    emit({ state: "ready", modelId: WEBLLM_ID, device: "webgpu" });
+    webllmEngineModel = modelId;
+    emit({ state: "ready", modelId, device: "webgpu" });
     return webllmEngine;
   } catch (e) {
-    console.warn(`[llm] WebLLM unavailable (${String(e)}) — falling back to transformers.js path`);
-    webllmDisabled = true;
+    console.warn(`[llm] WebLLM ${modelId} unavailable (${String(e)}) — falling back to transformers.js path`);
+    webllmFailed.add(modelId);
     await disposeWebLLM();
     return null;
   }
@@ -376,7 +423,7 @@ async function chatWebLLM(
 
 /** Load/warm whichever engine the current model id selects (settings button). */
 export async function warmModel(): Promise<void> {
-  if (getModelId() === WEBLLM_ID) {
+  if (isWebLLMId(getModelId())) {
     const engine = await ensureWebLLM();
     if (engine) return;
     // Engine unavailable on this browser: pre-load the transformers.js
@@ -547,7 +594,7 @@ export async function prefillMessages(messages: ChatMessage[]): Promise<void> {
  * rejects JSON constraints.) Never loads an engine just to warm.
  */
 export async function warmPrompt(messages: ChatMessage[]): Promise<void> {
-  if (getModelId() !== WEBLLM_ID) {
+  if (!isWebLLMId(getModelId())) {
     return prefillMessages(messages);
   }
   if (webllmEngine === null) return; // engine not loaded → nothing to warm
@@ -570,14 +617,14 @@ export async function warmPrompt(messages: ChatMessage[]): Promise<void> {
  * extraction time as before. Fire-and-forget; never rejects.
  */
 export function preloadWebLLMForCapture(): void {
-  if (getModelId() !== WEBLLM_ID || webllmEngine !== null || webllmDisabled || webllmLoading) return;
+  const modelId = getModelId();
+  const def = WEBLLM_MODELS[modelId];
+  if (!def || webllmEngine !== null || webllmLoading) return;
   void (async () => {
     try {
       if (!(await webllmAdapterOk())) return;
       const webllm = await import("@mlc-ai/web-llm");
-      const cached = await webllm.hasModelInCache(WEBLLM_ID, {
-        model_list: [{ model_id: WEBLLM_ID, model: WEBLLM_MODEL_DIR, model_lib: WEBLLM_WASM_URL }],
-      });
+      const cached = await webllm.hasModelInCache(modelId, webllmAppConfig(modelId, def));
       if (!cached) {
         console.debug("[llm] webllm weights not cached — skipping capture preload (download deferred to extraction)");
         return;
@@ -724,7 +771,7 @@ export async function chat(messages: ChatMessage[], options: ChatOptions): Promi
   const { temperature, max_new_tokens = 768, images, jsonSchema, seedCache } = options;
   return enqueueModelJob(async () => {
     const started = performance.now();
-    if (getModelId() === WEBLLM_ID && !images?.length) {
+    if (isWebLLMId(getModelId()) && !images?.length) {
       const text = await chatWebLLM(messages, temperature, max_new_tokens, jsonSchema);
       if (text !== null) {
         console.info(

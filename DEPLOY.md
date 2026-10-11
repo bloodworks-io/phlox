@@ -10,10 +10,11 @@ natively over CORS.
 | artifact | size | hosted at | loaded by |
 |---|---|---|---|
 | app shell (vite build) | ~2MB | GitHub Pages (`demo-pages.yml` auto-deploys on push to `demo/browser-only`) | — |
-| `phlox-0.8b-MLC` (WebLLM q4f16 package) | ~433MB | HF repo `bloodworks-io/phlox-0.8b-MLC` | WebLLM path (Chrome/Edge) |
-| `phlox-0.8b-ONNX` (transformers.js package) | ~600MB (q4 + q8 sets) | HF repo `bloodworks-io/phlox-0.8b-ONNX` | transformers.js fallback (Safari/Firefox) |
+| `phlox-0.8b-MLC-v2` (WebLLM q4f16 package) | ~443MB | HF repo `bloodworks-io/phlox-0.8b-MLC-v2` | WebLLM 0.8B preset (Chrome/Edge) |
+| `phlox-2b-MLC-v2` (WebLLM q4f16 package) | ~1.1GB | HF repo `bloodworks-io/phlox-2b-MLC-v2` | WebLLM 2B preset (Chrome/Edge) |
+| `phlox-*-ONNX-v2` (transformers.js packages) | 0.8B ~600MB / 2B ~1.4GB (q4 + q8 sets) | HF repos `bloodworks-io/phlox-{0.8b,2b}-ONNX-v2` | transformers.js presets + fallbacks (Safari/Firefox) |
 | parakeet ASR packages | 405/441MB | parakeet.wgsl project CDN (or your own HF mirror) | parakeet path (any WebGPU browser) |
-| WebLLM model lib (`phlox-0.8b-webgpu.wasm`) | 6MB | inside the MLC repo (also shipped by mlc's official lib CDN as fallback) | WebLLM |
+| WebLLM model libs (`phlox-{0.8b,2b}-webgpu.wasm`) | 6MB each | inside the MLC repos | WebLLM |
 | CAM++ speaker diarizer (`campplus-zh-en.onnx`) | 28MB | committed in-repo at `public/models/campplus-zh-en.onnx` (gitignore exception — no HF mirror) | capture diarization (`speakers.ts`) |
 
 Runtime URL selection: LLM weights always come from the HF repos configured
@@ -28,14 +29,18 @@ From the training box (`train-phlox`), with `hf` authenticated
 (`hf auth login`, write access to the org):
 
 ```bash
-# WebLLM package (converted weights + wasm + configs)
-hf upload bloodworks-io/phlox-0.8b-MLC dist/phlox-0.8b-q4f16-1-MLC . --repo-type model
+# WebLLM packages (converted weights + wasm + configs)
+hf upload bloodworks-io/phlox-0.8b-MLC-v2 dist/phlox-0.8b-v2-q4f16-1-MLC . --repo-type model
+hf upload bloodworks-io/phlox-2b-MLC-v2 dist/phlox-2b-q4f16-1-MLC . --repo-type model
 
-# transformers.js package (all dtype variants + tokenizer; excludes fp32/q4 decoder bulk if space matters)
-hf upload bloodworks-io/phlox-0.8b-ONNX out/onnx-tjs/phlox-0.8b . --repo-type model
+# transformers.js packages: upload the package ROOT so config/tokenizer sit
+# at the repo root and the weights land at onnx/*.onnx (transformers.js
+# resolves weights under the onnx/ subfolder — root-level .onnx files 404)
+hf upload bloodworks-io/phlox-0.8b-ONNX-v2 out/onnx-tjs/phlox-0.8b-v2 . --repo-type model
+hf upload bloodworks-io/phlox-2b-ONNX-v2 out/onnx-tjs/phlox-2b . --repo-type model
 ```
 
-Set both repos to **public** (Settings tab). HF serves every file with
+Set the repos to **public** (Settings tab). HF serves every file with
 `Access-Control-Allow-Origin: *`, which is all the engines need.
 
 Optional: mirror the parakeet packages under
