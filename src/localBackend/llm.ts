@@ -33,33 +33,32 @@ export interface ChatOptions {
   jsonSchema?: string;
   /** Seed generation with the warm KV prefix (capture prefill reuse). */
   seedCache?: boolean;
+  /**
+   * OpenAI-style frequency penalty (WebLLM only). Mild values (~0.3) break
+   * the repetition spirals small models fall into on out-of-domain input,
+   * which otherwise burn the whole token budget on one phrase.
+   */
+  frequencyPenalty?: number;
 }
 
-export const WEBLLM_ID = "phlox-0.8b-webllm";
-export const WEBLLM_2B_ID = "phlox-2b-webllm";
 /** HF org hosting the phlox model repos (weights for production; see DEPLOY.md). */
 export const HF_ORG = "bloodworks-io";
 
+/**
+ * User-facing model choices — the size only. The engine is an implementation
+ * detail: each id resolves to the WebLLM package where the browser's adapter
+ * allows, silently falling back to the transformers.js package otherwise.
+ */
 export const LLM_PRESETS = [
   {
-    id: WEBLLM_ID,
-    label: "phlox-0.8B · WebLLM (tuned, fast)",
-    description: "Fastest — tuned weights on the WebLLM runtime. Chrome/Edge (WebGPU) only; other browsers fall back automatically.",
+    id: "phlox-0.8b",
+    label: "phlox-0.8B · tuned (fast)",
+    description: "The default. Fastest letters, ~450MB first load.",
   },
   {
-    id: `${HF_ORG}/phlox-0.8b-ONNX-v2`,
-    label: "phlox-0.8B · tuned (transformers.js)",
-    description: "Same tuned weights via transformers.js. Slower than WebLLM, but runs everywhere including Safari.",
-  },
-  {
-    id: WEBLLM_2B_ID,
-    label: "phlox-2B · WebLLM (tuned)",
-    description: "Tuned 2B on the WebLLM runtime — higher quality than the 0.8B, ~1.2GB first load. Chrome/Edge (WebGPU) only; falls back automatically.",
-  },
-  {
-    id: `${HF_ORG}/phlox-2b-ONNX-v2`,
-    label: "phlox-2B · tuned (transformers.js)",
-    description: "Same tuned 2B via transformers.js — stronger than the 0.8B, at 2B speed. Runs everywhere including Safari.",
+    id: "phlox-2b",
+    label: "phlox-2B · tuned (strongest)",
+    description: "Higher-quality letters, ~1.2GB first load and slower generation.",
   },
 ];
 
@@ -162,32 +161,51 @@ export interface GpuDescription {
 }
 
 /** UI-facing variant of hasUsableWebGpu: tier + shader-f16 flag + adapter label. */
-export async function describeGpu(): Promise<GpuDescription> {
-  const gpu = (navigator as unknown as { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
-  if (!gpu) return { tier: "wasm", shaderF16: false, label: null };
-  try {
-    const adapter = (await gpu.requestAdapter()) as {
-      features?: Set<string>;
-      info?: { vendor?: string; architecture?: string; description?: string };
-    } | null;
-    if (!adapter) return { tier: "wasm", shaderF16: false, label: null };
-    const shaderF16 = adapter.features?.has("shader-f16") ?? false;
-    const info = adapter.info ?? {};
-    const label =
-      [info.description, info.architecture, info.vendor].find((part) => part && part.trim()) ?? null;
-    return { tier: shaderF16 ? "webgpu" : "wasm", shaderF16, label };
-  } catch {
-    return { tier: "wasm", shaderF16: false, label: null };
-  }
+let gpuDescriptionCache: Promise<GpuDescription> | null = null;
+export function describeGpu(): Promise<GpuDescription> {
+  // requestAdapter() is not free — memoize; adapter identity doesn't change
+  // within a page lifetime.
+  gpuDescriptionCache ??= (async () => {
+    const gpu = (navigator as unknown as { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+    if (!gpu) return { tier: "wasm", shaderF16: false, label: null };
+    try {
+      const adapter = (await gpu.requestAdapter()) as {
+        features?: Set<string>;
+        info?: { vendor?: string; architecture?: string; description?: string };
+      } | null;
+      if (!adapter) return { tier: "wasm", shaderF16: false, label: null };
+      const shaderF16 = adapter.features?.has("shader-f16") ?? false;
+      const info = adapter.info ?? {};
+      const label =
+        [info.description, info.architecture, info.vendor].find((part) => part && part.trim()) ?? null;
+      return { tier: shaderF16 ? "webgpu" : "wasm", shaderF16, label };
+    } catch {
+      return { tier: "wasm", shaderF16: false, label: null };
+    }
+  })();
+  return gpuDescriptionCache;
 }
 
-// F1: transformers.js model ids the WebLLM presets degrade to when the MLC
-// engine is unavailable (adapter limits, non-Chromium browsers). The
-// "*-webllm" ids are MLC runtime ids, not hub repos — every tjs load needs a
-// real repo id.
+/**
+ * Quality-first default for fresh installs: any adapter decent enough to run
+ * WebLLM (fp16 shaders + the storage-buffer gate) starts on the 2B (~10s per
+ * letter, ~2GB peak: 1.1GB q4f16 weights + 576MB KV at the 12,288 context +
+ * workspace — comfortable for 8GB+ machines, which is effectively what the
+ * gate selects for). Everything else — WebGPU-without-WebLLM (tjs ≈ 15s per
+ * 0.8B letter; the 2B would be ~35-40s) and CPU-only — starts on the 0.8B.
+ * Applied once at startup, never overriding an explicit Settings choice.
+ */
+export async function recommendedModelId(): Promise<"phlox-0.8b" | "phlox-2b"> {
+  const [description, adapterOk] = await Promise.all([describeGpu(), webllmAdapterOk()]);
+  return description.tier === "webgpu" && adapterOk ? "phlox-2b" : "phlox-0.8b";
+}
+
+// F1: transformers.js model ids each phlox preset degrades to when the MLC
+// engine is unavailable (adapter limits, non-Chromium browsers) — the silent
+// fallback behind the size-only presets.
 const TJS_FALLBACK: Record<string, string> = {
-  [WEBLLM_ID]: `${HF_ORG}/phlox-0.8b-ONNX-v2`,
-  [WEBLLM_2B_ID]: `${HF_ORG}/phlox-2b-ONNX-v2`,
+  "phlox-0.8b": `${HF_ORG}/phlox-0.8b-ONNX-v2`,
+  "phlox-2b": `${HF_ORG}/phlox-2b-ONNX-v2`,
 };
 
 export async function ensureModel(): Promise<LoadedModel> {
@@ -318,12 +336,12 @@ interface WebLLMModelDef {
 }
 
 const WEBLLM_MODELS: Record<string, WebLLMModelDef> = {
-  [WEBLLM_ID]: {
+  "phlox-0.8b": {
     hfDir: `https://huggingface.co/${HF_ORG}/phlox-0.8b-MLC-v2`,
     wasmFile: "phlox-0.8b-webgpu.wasm",
     vramRequiredMB: 1900,
   },
-  [WEBLLM_2B_ID]: {
+  "phlox-2b": {
     hfDir: `https://huggingface.co/${HF_ORG}/phlox-2b-MLC-v2`,
     wasmFile: "phlox-2b-webgpu.wasm",
     vramRequiredMB: 3400,
@@ -400,6 +418,7 @@ async function chatWebLLM(
   temperature: number,
   max_new_tokens: number,
   jsonSchema: string | undefined,
+  frequencyPenalty: number | undefined,
 ): Promise<string | null> {
   const engine = await ensureWebLLM();
   if (!engine) return null;
@@ -412,6 +431,7 @@ async function chatWebLLM(
     // matches the transformers.js path's enable_thinking:false — the tuned
     // model expects the empty <think></think> preamble before its JSON
     ...(jsonSchema ? { response_format: { type: "json_object", schema: jsonSchema } } : {}),
+    ...(frequencyPenalty ? { frequency_penalty: frequencyPenalty } : {}),
     extra_body: { enable_thinking: false },
   });
   let text = "";
@@ -600,7 +620,7 @@ export async function warmPrompt(messages: ChatMessage[]): Promise<void> {
   if (webllmEngine === null) return; // engine not loaded → nothing to warm
   return enqueueModelJob(async () => {
     try {
-      await chatWebLLM(messages, 0, 1, undefined);
+      await chatWebLLM(messages, 0, 1, undefined, undefined);
       console.info("[llm] webllm warm: prompt prefilled (engine prefix reuse)");
     } catch (error) {
       console.debug(`webllm warm skipped (${error})`);
@@ -768,11 +788,11 @@ async function grammarHooks(matcher: GrammarMatcher): Promise<Record<string, unk
 }
 
 export async function chat(messages: ChatMessage[], options: ChatOptions): Promise<string> {
-  const { temperature, max_new_tokens = 768, images, jsonSchema, seedCache } = options;
+  const { temperature, max_new_tokens = 768, images, jsonSchema, seedCache, frequencyPenalty } = options;
   return enqueueModelJob(async () => {
     const started = performance.now();
     if (isWebLLMId(getModelId()) && !images?.length) {
-      const text = await chatWebLLM(messages, temperature, max_new_tokens, jsonSchema);
+      const text = await chatWebLLM(messages, temperature, max_new_tokens, jsonSchema, frequencyPenalty);
       if (text !== null) {
         console.info(
           `[llm] webllm done in ${((performance.now() - started) / 1000).toFixed(1)}s${jsonSchema ? " (schema-constrained)" : ""}: ${text.length}ch`,

@@ -11,6 +11,8 @@ import AppLayout from "./components/layout/AppLayout";
 import AppRoutes from "./components/layout/AppRoutes";
 import ConfirmLeaveModal from "./components/modals/ConfirmLeaveModal";
 import NewNoteModal from "./components/modals/NewNoteModal";
+import { isModelIdSet, setModelId } from "./localBackend/db";
+import { recommendedModelId } from "./localBackend/llm";
 import { handleError } from "./utils/helpers/errorHandlers";
 import { handleLoadPatientDetails } from "./utils/patient/patientHandlers";
 import { usePatientSession } from "./utils/hooks/usePatientSession";
@@ -52,6 +54,15 @@ function AppContent({ setIsInitializing }) {
             setIsInitializing(bootstrap.isInitializing);
         }
     }, [bootstrap.isInitializing, setIsInitializing]);
+
+    // One-time intelligent model default: on a fresh profile, pick the
+    // strongest preset this machine can run (GPU/memory probe) before any
+    // lazy getModelId() consumer has read. Never overrides an explicit choice.
+    useEffect(() => {
+        if (!isModelIdSet()) {
+            void recommendedModelId().then(setModelId);
+        }
+    }, []);
 
     const fetchPatientDetailsWrapper = useCallback(
         async (noteId) => {

@@ -16,6 +16,15 @@ if (typeof window !== "undefined" && !window.matchMedia) {
     });
 }
 
+// jsdom also omits ResizeObserver; zag/floating-ui popover positioning calls it.
+if (typeof window !== "undefined" && !window.ResizeObserver) {
+    window.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+    };
+}
+
 // This jsdom build exposes no localStorage; localBackend/db.ts needs it.
 if (typeof window !== "undefined" && !window.localStorage) {
     const map = new Map();

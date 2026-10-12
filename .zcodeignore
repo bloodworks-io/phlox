@@ -1,0 +1,110 @@
+# macOS system files
+.DS_Store
+._*
+
+# Datafiles
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+data/
+
+# Logs
+logs/
+*.log
+server/logs/
+
+# Module Files
+node_modules/
+server/node_modules/
+server/venv
+*.egg-info/
+*.egg
+
+# Environment and IDE settings
+.env
+.env.development
+.env.local
+!.env.example
+!.env.test
+.vscode/
+.idea/
+.zed/
+.zcode/
+opencode.*
+server/.pytest_cache
+oom
+
+# Python compiled files
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build directories
+build/
+dist/
+.tmp/
+main.*/
+repo/
+
+# Cloned external repos (cloned by CI)
+src-tauri/parakeet.cpp/
+src-tauri/omi-med-stt-runtime/
+src-tauri/llama.cpp/
+
+# Coverage
+AGENTS.md
+CLAUDE.md
+.claude
+coverage/
+.coverage
+coverage.xml
+coverage.lcov
+.coveralls.yml
+__pycache__/
+*.pyc
+package-lock.old
+package-lock.old
+
+# training pipeline artifacts
+training/.venv/
+training/data/
+
+# fine-tuned model artifacts (large)
+weights/
+
+# local model artifacts (symlinks + multi-GB mirrors; see ENVS/docs in train-phlox)
+# (glob, not the dir itself — a negated file can't be re-included under an
+# excluded parent directory)
+public/models/*
+# the capture diarizer is small enough to ship with the repo (28 MB) and has
+# no HF mirror — keep it deployed through Pages with the app shell
+!public/models/campplus-zh-en.onnx
+
+# ===== ↑ 以上同步自 .gitignore（「从 .gitignore 同步」只重写以上部分）=====
+.git/
+.hg/
+.svn/
+bower_components/
+jspm_packages/
+site-packages/
+venv/
+htmlcov/
+lcov-report/
+cmakefiles/
+cmake-build-*/
+bazel-*/
+pods/
+deriveddata/
+storybook-static/
+playwright-report/
+test-results/
+allure-results/
+allure-report/
+cdk.out/
+*.dist-info/
+eggs/
+pip-wheel-metadata/
+wheels/
+# ----- ↑ 以上为 ZCode 默认排除规则（自定义规则请写在本行下方，不会被同步/恢复改动）-----
+# 自定义规则写在下方（本行提示可删除）

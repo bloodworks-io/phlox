@@ -297,6 +297,17 @@ export const useScribe = ({
         }
     }, [isAmbient]);
 
+    // Explicit mode choice from the pill's mode-dial popover.
+    const selectCaptureMode = useCallback(async (mode) => {
+        if (mode !== "dictate" && mode !== "ambient") return;
+        setIsAmbient(mode === "ambient");
+        try {
+            await settingsService.saveAmbientMode(mode === "ambient");
+        } catch (error) {
+            console.error("Failed to save ambient mode setting:", error);
+        }
+    }, []);
+
     // Handle audio file drop
     const handleAudioDrop = useCallback(
         async (file) => {
@@ -332,6 +343,7 @@ export const useScribe = ({
         stopAndSendRecording,
         resetRecording,
         toggleAmbientMode,
+        selectCaptureMode,
         handleAudioDrop,
         retrySend,
         downloadLastRecording,

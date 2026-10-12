@@ -13,15 +13,15 @@ natively over CORS.
 | `phlox-0.8b-MLC-v2` (WebLLM q4f16 package) | ~443MB | HF repo `bloodworks-io/phlox-0.8b-MLC-v2` | WebLLM 0.8B preset (Chrome/Edge) |
 | `phlox-2b-MLC-v2` (WebLLM q4f16 package) | ~1.1GB | HF repo `bloodworks-io/phlox-2b-MLC-v2` | WebLLM 2B preset (Chrome/Edge) |
 | `phlox-*-ONNX-v2` (transformers.js packages) | 0.8B ~600MB / 2B ~1.4GB (q4 + q8 sets) | HF repos `bloodworks-io/phlox-{0.8b,2b}-ONNX-v2` | transformers.js presets + fallbacks (Safari/Firefox) |
-| parakeet ASR packages | 405/441MB | parakeet.wgsl project CDN (or your own HF mirror) | parakeet path (any WebGPU browser) |
+| parakeet ASR packages | 405/441MB | HF repo `bloodworks-io/parakeet-wgsl-v1` (byte-exact mirror of the parakeet.wgsl package) | parakeet path (any WebGPU browser) |
 | WebLLM model libs (`phlox-{0.8b,2b}-webgpu.wasm`) | 6MB each | inside the MLC repos | WebLLM |
 | CAM++ speaker diarizer (`campplus-zh-en.onnx`) | 28MB | committed in-repo at `public/models/campplus-zh-en.onnx` (gitignore exception — no HF mirror) | capture diarization (`speakers.ts`) |
 
 Runtime URL selection: LLM weights always come from the HF repos configured
 in `src/localBackend/llm.ts` (`HF_ORG`) — the app never serves an LLM mirror.
 The ASR HEAD-probes `/models/parakeet/*` on its own origin first (dev mirror)
-and falls back to the parakeet CDN in `asr.ts`. No build-time configuration
-required.
+and falls back to the HF mirror in `asr.ts` — the package's third-party
+default CDN is never reached. No build-time configuration required.
 
 ## 1. Upload weights to Hugging Face (once per model version)
 
@@ -43,9 +43,32 @@ hf upload bloodworks-io/phlox-2b-ONNX-v2 out/onnx-tjs/phlox-2b . --repo-type mod
 Set the repos to **public** (Settings tab). HF serves every file with
 `Access-Control-Allow-Origin: *`, which is all the engines need.
 
-Optional: mirror the parakeet packages under
-`bloodworks-io/parakeet-mirror/{fp16,fp32}` and point `asr.ts`
-`resolveParakeetModelUrls` at HF — otherwise the project CDN is used.
+The parakeet mirror (`bloodworks-io/parakeet-wgsl-v1`) is a byte-exact copy of
+the canonical `parakeet-wgsl-models.narcotic.sh` packages — the runtime
+verifies manifest and per-file SHA-256s, so an exact mirror on any CORS host
+satisfies it. `parakeet.wgsl` is pinned to an exact version in `package.json`;
+a version bump can change the canonical hashes, at which point re-mirror
+(canonical URLs + hashes live in the parakeet.wgsl repo's `model/README.md`):
+
+```bash
+base=https://parakeet-wgsl-models.narcotic.sh/v1
+for prec in fp16 fp32; do
+  sha=<manifest sha256 from model/README.md>
+  mkdir -p mirror/$prec/$sha
+  (cd mirror/$prec/$sha &&
+   curl -fO $base/$prec/$sha/manifest.json &&
+   jq -r '.files[].name' manifest.json | xargs -P6 -I{} curl -fO $base/$prec/$sha/{})
+done
+hf upload bloodworks-io/parakeet-wgsl-v1 mirror/fp16 fp16 --repo-type model
+hf upload bloodworks-io/parakeet-wgsl-v1 mirror/fp32 fp32 --repo-type model
+```
+
+Then update `HF_PARAKEET_MANIFESTS` in `src/localBackend/asr.ts`.
+
+The packages are modified forms of NVIDIA Parakeet TDT 0.6B v2 (CC BY 4.0) —
+hosting the mirror redistributes them, so the repo carries attribution: a
+README + THIRD_PARTY_LICENSES at the repo root (NVIDIA source model + pinned
+revision, parakeet.wgsl repack credit). Keep them when re-mirroring.
 
 ## 2. Check app constants
 
@@ -79,8 +102,9 @@ Optional: mirror the parakeet packages under
       `[llm] seeding from warm cache` at stop on the transformers.js engine,
       or (WebLLM, second recording onwards) `[llm] webllm capture preload` at
       record start + `[llm] webllm warm: prompt prefilled (engine prefix reuse)`
-- [ ] Settings → model radio group lists the tuned phlox presets first, each
-      with its one-line explanation
+- [ ] Settings → model radio group offers exactly the two size presets
+      (0.8B / 2B) + Custom…, each with its one-line explanation — no engine
+      choices (the engine falls back silently)
 
 ## Notes & gotchas
 

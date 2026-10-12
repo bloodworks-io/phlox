@@ -203,9 +203,24 @@ async function attemptExtraction(
     images: options.images,
     jsonSchema: buildExtractionSchema(fields),
     seedCache: options.seedCache,
+    // Break repetition spirals on out-of-domain input (kids chatting, noise):
+    // without a penalty the model can loop one phrase until the token cap
+    // truncates the JSON mid-string.
+    frequencyPenalty: 0.3,
   });
 
-  const summaries = parseFieldSummaries(content, fields);
+  let summaries: Record<string, string[]>;
+  try {
+    summaries = parseFieldSummaries(content, fields);
+  } catch (error) {
+    // Garbage input can make the model ramble past the JSON — keep the raw
+    // response visible so the failure shape is diagnosable.
+    console.warn(
+      `[scribe] unparseable extraction response (${content.length}ch): ` +
+        `${content.slice(0, 2000)}${content.length > 2000 ? " …[truncated]" : ""}`,
+    );
+    throw error;
+  }
   console.info(`[scribe] extraction fields: ${Object.keys(summaries).join(", ")}`);
 
   const formatted: Record<string, string> = {};

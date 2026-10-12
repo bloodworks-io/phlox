@@ -6,11 +6,28 @@ import { enqueueModelJob } from "./llm";
 
 export const ASR_PRESETS = [
   { id: "parakeet", label: "parakeet · fast (WebGPU)" },
+  { id: "omimed", label: "omimed · medical STT (tuned parakeet)" },
   { id: "onnx-community/whisper-base.en", label: "whisper-base.en (default)" },
   { id: "onnx-community/whisper-tiny.en", label: "whisper-tiny.en (fast)" },
 ];
 
 export const PARAKEET_ID = "parakeet";
+
+/**
+ * Omi Med STT v1 — a fine-tune of parakeet-tdt-0.6b-v2 with per-layer
+ * adapters, converted into the parakeet.wgsl package format by the local
+ * fork (../parakeet.wgsl-omimed). Served only from the gitignored local
+ * mirror under public/models/parakeet-omimed: nothing is uploaded, so there
+ * is deliberately no remote fallback. fp16 only — fp32-class adapters fail
+ * loudly at the encoder config gate instead of loading the wrong package.
+ */
+export const OMIMED_ID = "omimed";
+const OMIMED_FP16_MANIFEST_SHA256 =
+  "cf535dd1050c9ce42b7785f05c1d0c164d64defc0220d74df4e91d159fc4fe39";
+
+function isParakeetEngine(id: string): boolean {
+  return id === PARAKEET_ID || id === OMIMED_ID;
+}
 
 type AsrPipeline = ((
   audio: Float32Array,
@@ -62,7 +79,7 @@ export function invalidateAsr(): void {
   for (const key of pipelines.keys()) {
     if (!key.startsWith(prefix)) pipelines.delete(key);
   }
-  if (getAsrModelId() !== PARAKEET_ID) disposeParakeet();
+  if (!isParakeetEngine(getAsrModelId())) disposeParakeet();
 }
 
 // --- parakeet.wgsl engine (WebGPU-only; whisper remains the fallback path) ---
@@ -79,21 +96,50 @@ interface ParakeetController {
 let parakeetTranscriber: ParakeetController | null = null;
 let parakeetModelId: string | null = null;
 
-async function resolveParakeetModelUrls(tfBase: string): Promise<Record<string, string> | undefined> {
+// Byte-exact HF mirror of the canonical parakeet.wgsl package (the runtime
+// verifies manifest + per-file hashes, so any exact mirror satisfies it).
+// Mirrors parakeet-wgsl-models.narcotic.sh so the demo never depends on that
+// third-party host — see DEPLOY.md for the re-mirroring procedure.
+const HF_PARAKEET_MANIFESTS = {
+  fp16: "https://huggingface.co/bloodworks-io/parakeet-wgsl-v1/resolve/main/fp16/11a359db3d050fd82b002c745b24a5280f3ff13a76834b548df671c95c786c65/manifest.json",
+  fp32: "https://huggingface.co/bloodworks-io/parakeet-wgsl-v1/resolve/main/fp32/28dee836aefc2bfb01236fda6d10e1df7447724d2489040168549999ea267b1b/manifest.json",
+} as const;
+
+interface ParakeetModelSources {
+  fp16: string;
+  fp32: string;
+  local: boolean;
+}
+
+async function resolveParakeetModelUrls(tfBase: string): Promise<ParakeetModelSources> {
+  // Model URLs must be absolute: the parakeet engine resolves them inside
+  // its module worker, where relative paths would resolve against the
+  // worker script location under node_modules.
+  const absolute = (path: string): string =>
+    new URL(path, window.location.origin).href;
+  if (getAsrModelId() === OMIMED_ID) {
+    // Local mirror only — no upload exists, so no remote fallback.
+    const manifest = absolute(
+      `${tfBase}models/parakeet-omimed/fp16/${OMIMED_FP16_MANIFEST_SHA256}/manifest.json`,
+    );
+    return { fp16: manifest, fp32: manifest, local: true };
+  }
   // Prefer the self-hosted mirror in public/models/parakeet; fall back to the
-  // project CDN when the mirror is absent so the repo works without the 850MB.
+  // HF mirror when it is absent so the repo works without the 850MB and the
+  // package's third-party default CDN is never reached.
   for (const prec of ["fp16", "fp32"]) {
     const local = `${tfBase}models/parakeet/${prec}/manifest.json`;
     try {
       const probe = await fetch(local, { method: "HEAD" });
-      if (!probe.ok) return undefined;
+      if (!probe.ok) return { ...HF_PARAKEET_MANIFESTS, local: false };
     } catch {
-      return undefined;
+      return { ...HF_PARAKEET_MANIFESTS, local: false };
     }
   }
   return {
-    fp16: `${tfBase}models/parakeet/fp16/manifest.json`,
-    fp32: `${tfBase}models/parakeet/fp32/manifest.json`,
+    fp16: absolute(`${tfBase}models/parakeet/fp16/manifest.json`),
+    fp32: absolute(`${tfBase}models/parakeet/fp32/manifest.json`),
+    local: true,
   };
 }
 
@@ -104,7 +150,9 @@ function disposeParakeet(): void {
 }
 
 async function ensureParakeet(): Promise<ParakeetController | null> {
-  if (parakeetTranscriber && parakeetModelId === PARAKEET_ID) return parakeetTranscriber;
+  const modelId = getAsrModelId();
+  if (!isParakeetEngine(modelId)) return null;
+  if (parakeetTranscriber && parakeetModelId === modelId) return parakeetTranscriber;
   disposeParakeet();
   const pk = await import("parakeet.wgsl");
   const support = await pk.checkSupport();
@@ -115,9 +163,9 @@ async function ensureParakeet(): Promise<ParakeetController | null> {
   console.info(`[asr] parakeet profile: ${support.executionProfile?.precision}/${support.executionProfile?.kernelBackend} on ${support.adapter?.description ?? "gpu"}`);
   const base = (import.meta.env.BASE_URL ?? "/") as string;
   const modelUrls = await resolveParakeetModelUrls(base);
-  console.info(`[asr] parakeet models: ${modelUrls ? "local mirror" : "project CDN"}`);
+  console.info(`[asr] parakeet models: ${modelUrls.local ? "local mirror" : "HF mirror"}`);
   parakeetTranscriber = pk.createTranscriber({
-    ...(modelUrls ? { modelUrls } : {}),
+    modelUrls: { fp16: modelUrls.fp16, fp32: modelUrls.fp32 },
     onLoadProgress: (p: { phase: string; fraction: number }) => {
       if (p.phase === "weights") {
         progressListener?.({ percent: Math.min(100, Math.round(p.fraction * 100)), modelId: PARAKEET_ID });
@@ -141,7 +189,7 @@ export function blobSourceName(blob: Blob): string {
 
 /** Load/warm whichever ASR engine the current preset selects (onboarding button). */
 export async function warmAsr(): Promise<void> {
-  if (getAsrModelId() === PARAKEET_ID) {
+  if (isParakeetEngine(getAsrModelId())) {
     const parakeet = await ensureParakeet();
     if (parakeet) return;
     // WebGPU-less browser: pre-load the whisper fallback instead.
@@ -209,7 +257,7 @@ export async function ensureAsr(device: AsrDevice = preferredDevice()): Promise<
 export async function transcribe(blob: Blob): Promise<TranscribeResult> {
   const started = performance.now();
   return enqueueModelJob(async () => {
-    if (getAsrModelId() === PARAKEET_ID) {
+    if (isParakeetEngine(getAsrModelId())) {
       const parakeet = await ensureParakeet();
       if (parakeet) {
         const result = await parakeet.transcribe(blob, { sourceName: blobSourceName(blob) });

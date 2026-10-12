@@ -265,8 +265,18 @@ const PatientDetails = ({
 
     // Functions for the Floating Action Menu
     const handleOpenLetter = () => toggle("letter");
-    const handleOpenTranscription = () => toggle("transcription");
+    const handleOpenTranscription = () => {
+        setModeMenuOpen(false); // mode popover and transcript panel are exclusive
+        toggle("transcription");
+    };
     const handleOpenDocument = () => toggle("document");
+
+    // Mode popover and transcript panel are mutually exclusive (as on main).
+    const [modeMenuOpen, setModeMenuOpen] = useState(false);
+    const handleModeMenuOpenChange = (openState) => {
+        setModeMenuOpen(openState);
+        if (openState) close("transcription");
+    };
 
     if (!patient) {
         return (
@@ -373,8 +383,10 @@ const PatientDetails = ({
                 onSend={scribeControls.stopAndSendRecording}
                 onReset={scribeControls.resetRecording}
                 isLoading={scribeControls.isLoading}
-                isAmbient={scribeControls.isAmbient}
-                onModeToggle={scribeControls.toggleAmbientMode}
+                mode={scribeControls.isAmbient ? "ambient" : "dictate"}
+                onModeSelect={scribeControls.selectCaptureMode}
+                isModeMenuOpen={modeMenuOpen}
+                onModeMenuOpenChange={handleModeMenuOpenChange}
                 onOpenTranscription={handleOpenTranscription}
                 isTranscriptionOpen={isOpen("transcription")}
                 hasRawTranscription={!!patient.raw_transcription}

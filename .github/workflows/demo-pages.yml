@@ -30,10 +30,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Build (repo subpath)
+      - name: Build (custom domain root)
         run: npm run build
         env:
-          GITHUB_PAGES_BASE: /${{ github.event.repository.name }}/
+          GITHUB_PAGES_BASE: /
 
       - uses: actions/upload-pages-artifact@v3
         with:

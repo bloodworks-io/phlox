@@ -111,8 +111,14 @@ for (let i = 1; i <= 8; i++) {
 globalCss[".live-bolt-pulse"] = {
     animation: "phloxBoltPulse 1.6s ease-in-out infinite",
 };
+// Popovers have no default motion in Chakra v3 — subtle fade-scale on open
+// (ported from origin/main: mode dial, transcripts, inline editors).
+globalCss[".chakra-popover-content"] = {
+    animation: "phloxFadeScaleIn 0.15s ease-out both",
+};
 globalCss["@media (prefers-reduced-motion: reduce)"] = {
     ".live-bolt-pulse": { animation: "none !important" },
+    ".chakra-popover-content": { animation: "none !important" },
 };
 
 export const system = createSystem(defaultConfig, {

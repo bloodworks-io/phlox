@@ -112,11 +112,19 @@ export default defineConfig({
 
   optimizeDeps: {
     entries: ["index.html"],
+    // Serve the local parakeet.wgsl fork unbundled: pre-bundling breaks its
+    // module worker's import.meta.url-relative asset URLs (dist/assets).
+    exclude: ["parakeet.wgsl"],
   },
 
   server: {
     host: "0.0.0.0",
     port: 3000,
+    // Dev-only: the embedded test browser over-caches module URLs; never
+    // store dev responses so local-fork rebuilds are picked up immediately.
+    headers: {
+      "Cache-Control": "no-store",
+    },
     strictPort: true,
     // Proxy API calls to the backend
     proxy: {

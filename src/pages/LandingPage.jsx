@@ -59,7 +59,8 @@ const LandingPage = () => {
             Welcome to Phlox Web
           </Text>
           <Text fontSize="md" color="overlay0">
-            Patients, encounters, letters and transcription — all local, nothing leaves this machine
+            The clinical scribe that runs entirely in your browser. No install,
+            nothing uploaded.
           </Text>
         </VStack>
 

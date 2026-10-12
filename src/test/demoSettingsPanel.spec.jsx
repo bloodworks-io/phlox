@@ -15,27 +15,30 @@ describe("DemoSettingsPanel model presets", () => {
 
     it("lists every preset with its explanation", () => {
         const { container } = renderWithProviders(<DemoSettingsPanel />);
-        for (const label of [
-            "phlox-0.8B · WebLLM (tuned, fast)",
-            "phlox-0.8B · tuned (transformers.js)",
-            "phlox-2B · WebLLM (tuned)",
-            "phlox-2B · tuned (transformers.js)",
-            "Custom…",
-        ]) {
+        for (const label of ["phlox-0.8B · tuned (fast)", "phlox-2B · tuned (strongest)", "Custom…"]) {
             expect(container.textContent).toContain(label);
         }
         // The old select had no per-option explanations; the radios carry them.
-        expect(container.textContent).toContain("other browsers fall back automatically");
-        expect(container.textContent).toContain("runs everywhere including Safari");
-        expect(container.textContent).not.toContain("4B · best");
+        expect(container.textContent).toContain("Fastest letters");
+        expect(container.textContent).toContain("Higher-quality letters");
+        // Engine choice is not surfaced — it's a silent fallback.
+        expect(container.textContent).not.toContain("WebLLM (");
+        expect(container.textContent).not.toContain("(transformers.js)");
     });
 
     it("checks the persisted preset", () => {
-        setModelId("phlox-2b-webllm");
+        setModelId("phlox-2b");
         const { container } = renderWithProviders(<DemoSettingsPanel />);
-        expect(checkedValue(container)).toBe("phlox-2b-webllm");
+        expect(checkedValue(container)).toBe("phlox-2b");
         // (Click-through isn't simulated here: zag's hidden-input event wiring
         // needs real browser pointer activation; RTL's synthetic events don't
         // reach its handler in jsdom.)
+    });
+
+    it("normalizes legacy engine-flavoured preset ids", () => {
+        setModelId("phlox-0.8b-webllm");
+        const { container } = renderWithProviders(<DemoSettingsPanel />);
+        expect(getModelId()).toBe("phlox-0.8b");
+        expect(checkedValue(container)).toBe("phlox-0.8b");
     });
 });

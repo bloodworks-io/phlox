@@ -6,7 +6,8 @@ import LiveCaptureCard from "./LiveCaptureCard";
 import { onCaptureSegment } from "../../localBackend/capture";
 import {
     RecordButton,
-    ModeResetButton,
+    ModeSelectButton,
+    ResetButton,
     TranscriptSendButton,
     TranscriptionFailurePill,
 } from "./scribeButtons";
@@ -23,9 +24,11 @@ const ScribePillBox = ({
     onSend,
     onReset,
     isLoading,
-    // Mode toggle
-    isAmbient,
-    onModeToggle,
+    // Mode dial popover
+    mode,
+    onModeSelect,
+    isModeMenuOpen,
+    onModeMenuOpenChange,
     // Panel handlers
     onOpenTranscription,
     // Panel states
@@ -160,13 +163,17 @@ const ScribePillBox = ({
                 />
             )}
 
-            {/* Left: Mode toggle / Reset */}
-            <ModeResetButton
-                isRecording={isRecording}
-                isAmbient={isAmbient}
-                onModeToggle={onModeToggle}
-                onReset={onReset}
-            />
+            {/* Left: Mode dial popover (idle) / Reset (recording) */}
+            {isRecording ? (
+                <ResetButton onReset={onReset} />
+            ) : (
+                <ModeSelectButton
+                    mode={mode}
+                    onSelect={onModeSelect}
+                    open={isModeMenuOpen}
+                    onOpenChange={onModeMenuOpenChange}
+                />
+            )}
 
             {/* Center: Record button */}
             <RecordButton

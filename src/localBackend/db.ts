@@ -153,8 +153,21 @@ export function setDefaultLetterTemplateId(id: number): void {
 
 // --- model selection ---
 
+// Preset ids are engine-agnostic sizes now; earlier builds persisted the
+// WebLLM-flavoured ids — normalize them so those browsers land on the preset.
+const LEGACY_MODEL_IDS: Record<string, string> = {
+  "phlox-0.8b-webllm": "phlox-0.8b",
+  "phlox-2b-webllm": "phlox-2b",
+};
+
 export function getModelId(): string {
-  return read<string>(KEYS.model, "phlox-0.8b-webllm");
+  const id = read<string>(KEYS.model, "phlox-0.8b");
+  return LEGACY_MODEL_IDS[id] ?? id;
+}
+
+/** True once a model has been chosen (Settings) or recommended (startup). */
+export function isModelIdSet(): boolean {
+  return read<string | null>(KEYS.model, null) !== null;
 }
 
 export function setModelId(id: string): void {

@@ -6,7 +6,7 @@ Pure in-browser demo: localStorage "backend" (src/localBackend), local ASR + LLM
 
 | component | primary | fallback | selection |
 |---|---|---|---|
-| LLM | **WebLLM** (MLC/TVM WebGPU kernels) — `phlox-0.8b-webllm` (default) and `phlox-2b-webllm` presets, weights from HF `bloodworks-io/phlox-{0.8b,2b}-MLC-v2` | transformers.js (ONNX q4) — tuned presets, weights from HF `bloodworks-io/phlox-{0.8b,2b}-ONNX-v2` | settings radio group; WebLLM path needs adapter `maxStorageBuffersPerShaderStage >= 10` (Chrome/Edge), else it silently falls back to that size's transformers.js preset |
+| LLM | **WebLLM** (MLC/TVM WebGPU kernels) — both size presets, weights from HF `bloodworks-io/phlox-{0.8b,2b}-MLC-v2` | transformers.js (ONNX q4) — same presets, weights from HF `bloodworks-io/phlox-{0.8b,2b}-ONNX-v2` | settings radio offers the model size only; the engine is automatic (WebLLM needs adapter `maxStorageBuffersPerShaderStage >= 10`, i.e. Chrome/Edge — otherwise silent fallback to transformers.js) |
 | ASR | **parakeet.wgsl** (raw WGSL compute shaders) — `parakeet` preset, mirror in `public/models/parakeet/{fp16,fp32}/` | whisper (transformers.js wasm) | settings dropdown; parakeet needs WebGPU (falls back to whisper otherwise) |
 | streaming capture | utterance-at-a-time ASR (TEN VAD segmentation) during recording + CAM++ speaker diarization (ambient) + KV prefill warming on both LLM engines | batch whole-blob path (record → one ASR pass → extraction) | automatic; capture falls back to batch on any failure (`{fallback: true}` from stop) |
 
@@ -43,7 +43,7 @@ Dev-only spike pages: `/webllm-spike.html` (WebLLM perf measurement), `?bench` i
 
 The LLM weights are always fetched from the HF hub (`bloodworks-io/phlox-0.8b-MLC` for WebLLM, `bloodworks-io/phlox-0.8b-ONNX` for transformers.js) — the demo is web-deployed and never serves an LLM mirror itself. Only the ASR keeps a local-mirror convention:
 
-- `parakeet/{fp16,fp32}` → optional byte-exact mirrors of the canonical parakeet.wgsl packages (probed first; the parakeet.wgsl project CDN is the fallback)
+- `parakeet/{fp16,fp32}` → optional byte-exact mirrors of the canonical parakeet.wgsl packages (probed first; the HF mirror `bloodworks-io/parakeet-wgsl-v1` is the fallback — the parakeet.wgsl project CDN is never reached)
 
 Exception: `public/models/campplus-zh-en.onnx` (28 MB, the capture
 diarizer's CAM++ embedding model — same weights as
