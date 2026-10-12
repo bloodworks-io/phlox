@@ -21,9 +21,7 @@ class TestCalculateContentChangeRatio:
 
     def test_partial_change_follows_levenshtein_ratio(self):
         # kitten -> sitting has edit distance 3 over length 7
-        assert calculate_content_change_ratio("kitten", "sitting") == pytest.approx(
-            3 / 7
-        )
+        assert calculate_content_change_ratio("kitten", "sitting") == pytest.approx(3 / 7)
 
     def test_ratio_is_symmetric(self):
         a, b = "The patient presents with fatigue.", "The patient presents with tiredness."

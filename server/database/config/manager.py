@@ -23,6 +23,7 @@ class ConfigManager:
     _lock = Lock()
     _cache_lock = Lock()
     _settings_lock = Lock()
+    _user_settings_cache: dict[str | int, tuple[dict, float]]
 
     def __new__(cls):
         with cls._lock:

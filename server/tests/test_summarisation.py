@@ -26,10 +26,7 @@ class TestFindBestConditionMatch:
 
     def test_picks_the_best_of_multiple_candidates(self):
         existing = ["diabetes", "diabetes insipidus"]
-        assert (
-            _find_best_condition_match("diabetes insipidus", existing)
-            == "diabetes insipidus"
-        )
+        assert _find_best_condition_match("diabetes insipidus", existing) == "diabetes insipidus"
 
     def test_empty_inputs_return_none(self):
         assert _find_best_condition_match("", ["diabetes"]) is None
@@ -37,10 +34,7 @@ class TestFindBestConditionMatch:
 
     def test_stricter_threshold_rejects_marginal_matches(self):
         assert _find_best_condition_match("Dibetes", ["diabetes"]) == "diabetes"
-        assert (
-            _find_best_condition_match("Dibetes", ["diabetes"], threshold=0.95)
-            is None
-        )
+        assert _find_best_condition_match("Dibetes", ["diabetes"], threshold=0.95) is None
 
     def test_returns_the_original_casing_of_the_stored_condition(self):
         assert _find_best_condition_match("asthma", ["Asthma"]) == "Asthma"
