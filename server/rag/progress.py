@@ -168,12 +168,12 @@ async def stream_re_embed_progress() -> AsyncGenerator[str, None]:
         # Check for exceptions from the thread
         try:
             count = task.result()
-        except Exception as exc:
+        except Exception:
             logger.exception("Error re-embedding collection '%s'", collection_name)
             yield _sse(
                 {
                     "type": "error",
-                    "message": str(exc),
+                    "message": "Failed to re-embed collection",
                     "collection_name": collection_name,
                 }
             )
