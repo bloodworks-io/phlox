@@ -262,7 +262,7 @@ const DemoSettingsPanel = () => {
 
             <Field.Root>
               <Field.Label fontSize="sm" color="textSecondary">
-                Transcription Model (Whisper)
+                Transcription Model
               </Field.Label>
               <NativeSelect.Root>
                 <NativeSelect.Field

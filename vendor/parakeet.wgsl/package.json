@@ -1,0 +1,15 @@
+{
+  "name": "parakeet.wgsl",
+  "version": "1.0.1-omimed.1",
+  "description": "NVIDIA's Parakeet TDT 0.6B V2 model ported to the browser, powered by WebGPU and WebAssembly (bloodworks-io OmiMed fork, prebuilt vendored copy)",
+  "type": "module",
+  "sideEffects": false,
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  }
+}

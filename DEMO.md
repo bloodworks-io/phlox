@@ -7,7 +7,7 @@ Pure in-browser demo: localStorage "backend" (src/localBackend), local ASR + LLM
 | component | primary | fallback | selection |
 |---|---|---|---|
 | LLM | **WebLLM** (MLC/TVM WebGPU kernels) — both size presets, weights from HF `bloodworks-io/phlox-{0.8b,2b}-MLC-v2` | transformers.js (ONNX q4) — same presets, weights from HF `bloodworks-io/phlox-{0.8b,2b}-ONNX-v2` | settings radio offers the model size only; the engine is automatic (WebLLM needs adapter `maxStorageBuffersPerShaderStage >= 10`, i.e. Chrome/Edge — otherwise silent fallback to transformers.js) |
-| ASR | **parakeet.wgsl** (raw WGSL compute shaders) — `parakeet` preset, mirror in `public/models/parakeet/{fp16,fp32}/` | whisper (transformers.js wasm) | settings dropdown; parakeet needs WebGPU (falls back to whisper otherwise) |
+| ASR | **parakeet.wgsl** (raw WGSL compute shaders) — `omimed` preset (Omi Med STT v1), mirror in `public/models/parakeet-omimed/fp16/<sha>/` | whisper (transformers.js wasm) | settings dropdown; omimed needs WebGPU (falls back to whisper otherwise) |
 | streaming capture | utterance-at-a-time ASR (TEN VAD segmentation) during recording + CAM++ speaker diarization (ambient) + KV prefill warming on both LLM engines | batch whole-blob path (record → one ASR pass → extraction) | automatic; capture falls back to batch on any failure (`{fallback: true}` from stop) |
 
 JSON-schema-constrained generation (scribe fields): WebLLM native
@@ -25,9 +25,9 @@ weights skips the preload and loads at extraction time as before.
 
 | browser | ASR | LLM |
 |---|---|---|
-| Chrome/Edge | parakeet ~20× RT | WebLLM (fast) |
-| Safari | parakeet ~20× RT | transformers.js q4 (~15s/scribe) — WebLLM blocked by adapter limit 9 < 10 |
-| Firefox | parakeet slow (first-run shader compile heavy; naga rejects the bitcast probe, portable kernels) | transformers.js |
+| Chrome/Edge | omimed ~8× RT | WebLLM (fast) |
+| Safari | omimed (wgsl engine) | transformers.js q4 (~15s/scribe) — WebLLM blocked by adapter limit 9 < 10 |
+| Firefox | omimed slow (first-run shader compile heavy; naga rejects the bitcast probe, portable kernels) | transformers.js |
 
 ## Dev
 
@@ -43,7 +43,7 @@ Dev-only spike pages: `/webllm-spike.html` (WebLLM perf measurement), `?bench` i
 
 The LLM weights are always fetched from the HF hub (`bloodworks-io/phlox-0.8b-MLC` for WebLLM, `bloodworks-io/phlox-0.8b-ONNX` for transformers.js) — the demo is web-deployed and never serves an LLM mirror itself. Only the ASR keeps a local-mirror convention:
 
-- `parakeet/{fp16,fp32}` → optional byte-exact mirrors of the canonical parakeet.wgsl packages (probed first; the HF mirror `bloodworks-io/parakeet-wgsl-v1` is the fallback — the parakeet.wgsl project CDN is never reached)
+- `parakeet-omimed/fp16/<manifest-sha>` → optional local mirror of the OmiMed package (probed first; the HF mirror `bloodworks-io/parakeet-omimed-v1` is the fallback)
 
 Exception: `public/models/campplus-zh-en.onnx` (28 MB, the capture
 diarizer's CAM++ embedding model — same weights as

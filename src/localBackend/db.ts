@@ -175,7 +175,7 @@ export function setModelId(id: string): void {
 }
 
 export function getAsrModelId(): string {
-  return read<string>(KEYS.asrModel, "parakeet");
+  return read<string>(KEYS.asrModel, "omimed");
 }
 
 export function setAsrModelId(id: string): void {

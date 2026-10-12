@@ -11,7 +11,7 @@ import { warmAsr } from "../../localBackend/asr";
 
 const downloadModels = async () => {
   try {
-    // Engine-aware: warms WebLLM/parakeet when those presets are active,
+    // Engine-aware: warms WebLLM/omimed when those presets are active,
     // the transformers.js engines otherwise.
     await warmModel();
     await warmAsr();

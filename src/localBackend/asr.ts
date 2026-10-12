@@ -5,20 +5,17 @@ import { getAsrModelId } from "./db";
 import { enqueueModelJob } from "./llm";
 
 export const ASR_PRESETS = [
-  { id: "parakeet", label: "parakeet · fast (WebGPU)" },
-  { id: "omimed", label: "omimed · medical STT (tuned parakeet)" },
+  { id: "omimed", label: "omimed · medical STT (WebGPU)" },
   { id: "onnx-community/whisper-base.en", label: "whisper-base.en (default)" },
   { id: "onnx-community/whisper-tiny.en", label: "whisper-tiny.en (fast)" },
 ];
 
-export const PARAKEET_ID = "parakeet";
-
 /**
  * Omi Med STT v1 — a fine-tune of parakeet-tdt-0.6b-v2 with per-layer
- * adapters, converted into the parakeet.wgsl package format by the local
- * fork (../parakeet.wgsl-omimed). Served only from the gitignored local
- * mirror under public/models/parakeet-omimed: nothing is uploaded, so there
- * is deliberately no remote fallback. fp16 only — fp32-class adapters fail
+ * adapters, converted into the parakeet.wgsl package format by the vendored
+ * fork (vendor/parakeet.wgsl). Served from the local mirror under
+ * public/models/parakeet-omimed when present, else the HF mirror
+ * bloodworks-io/parakeet-omimed-v1. fp16 only — fp32-class adapters fail
  * loudly at the encoder config gate instead of loading the wrong package.
  */
 export const OMIMED_ID = "omimed";
@@ -26,7 +23,7 @@ const OMIMED_FP16_MANIFEST_SHA256 =
   "cf535dd1050c9ce42b7785f05c1d0c164d64defc0220d74df4e91d159fc4fe39";
 
 function isParakeetEngine(id: string): boolean {
-  return id === PARAKEET_ID || id === OMIMED_ID;
+  return id === OMIMED_ID;
 }
 
 type AsrPipeline = ((
@@ -96,15 +93,6 @@ interface ParakeetController {
 let parakeetTranscriber: ParakeetController | null = null;
 let parakeetModelId: string | null = null;
 
-// Byte-exact HF mirror of the canonical parakeet.wgsl package (the runtime
-// verifies manifest + per-file hashes, so any exact mirror satisfies it).
-// Mirrors parakeet-wgsl-models.narcotic.sh so the demo never depends on that
-// third-party host — see DEPLOY.md for the re-mirroring procedure.
-const HF_PARAKEET_MANIFESTS = {
-  fp16: "https://huggingface.co/bloodworks-io/parakeet-wgsl-v1/resolve/main/fp16/11a359db3d050fd82b002c745b24a5280f3ff13a76834b548df671c95c786c65/manifest.json",
-  fp32: "https://huggingface.co/bloodworks-io/parakeet-wgsl-v1/resolve/main/fp32/28dee836aefc2bfb01236fda6d10e1df7447724d2489040168549999ea267b1b/manifest.json",
-} as const;
-
 interface ParakeetModelSources {
   fp16: string;
   fp32: string;
@@ -114,33 +102,23 @@ interface ParakeetModelSources {
 async function resolveParakeetModelUrls(tfBase: string): Promise<ParakeetModelSources> {
   // Model URLs must be absolute: the parakeet engine resolves them inside
   // its module worker, where relative paths would resolve against the
-  // worker script location under node_modules.
-  const absolute = (path: string): string =>
-    new URL(path, window.location.origin).href;
-  if (getAsrModelId() === OMIMED_ID) {
-    // Local mirror only — no upload exists, so no remote fallback.
-    const manifest = absolute(
-      `${tfBase}models/parakeet-omimed/fp16/${OMIMED_FP16_MANIFEST_SHA256}/manifest.json`,
-    );
-    return { fp16: manifest, fp32: manifest, local: true };
+  // worker script location under node_modules. A local mirror under
+  // public/models/parakeet-omimed wins when present; otherwise the
+  // byte-exact HF mirror (bloodworks-io/parakeet-omimed-v1, CC-BY-4.0
+  // attribution chain in its README). fp16 only — fp32-class adapters fail
+  // loudly at the encoder config gate instead of loading the wrong package.
+  const localManifest = new URL(
+    `${tfBase}models/parakeet-omimed/fp16/${OMIMED_FP16_MANIFEST_SHA256}/manifest.json`,
+    window.location.origin,
+  ).href;
+  try {
+    const probe = await fetch(localManifest, { method: "HEAD" });
+    if (probe.ok) return { fp16: localManifest, fp32: localManifest, local: true };
+  } catch {
+    // fall through to the HF mirror
   }
-  // Prefer the self-hosted mirror in public/models/parakeet; fall back to the
-  // HF mirror when it is absent so the repo works without the 850MB and the
-  // package's third-party default CDN is never reached.
-  for (const prec of ["fp16", "fp32"]) {
-    const local = `${tfBase}models/parakeet/${prec}/manifest.json`;
-    try {
-      const probe = await fetch(local, { method: "HEAD" });
-      if (!probe.ok) return { ...HF_PARAKEET_MANIFESTS, local: false };
-    } catch {
-      return { ...HF_PARAKEET_MANIFESTS, local: false };
-    }
-  }
-  return {
-    fp16: absolute(`${tfBase}models/parakeet/fp16/manifest.json`),
-    fp32: absolute(`${tfBase}models/parakeet/fp32/manifest.json`),
-    local: true,
-  };
+  const remoteManifest = `https://huggingface.co/bloodworks-io/parakeet-omimed-v1/resolve/main/fp16/${OMIMED_FP16_MANIFEST_SHA256}/manifest.json`;
+  return { fp16: remoteManifest, fp32: remoteManifest, local: false };
 }
 
 function disposeParakeet(): void {
@@ -168,11 +146,11 @@ async function ensureParakeet(): Promise<ParakeetController | null> {
     modelUrls: { fp16: modelUrls.fp16, fp32: modelUrls.fp32 },
     onLoadProgress: (p: { phase: string; fraction: number }) => {
       if (p.phase === "weights") {
-        progressListener?.({ percent: Math.min(100, Math.round(p.fraction * 100)), modelId: PARAKEET_ID });
+        progressListener?.({ percent: Math.min(100, Math.round(p.fraction * 100)), modelId: OMIMED_ID });
       }
     },
   }) as unknown as ParakeetController;
-  parakeetModelId = PARAKEET_ID;
+  parakeetModelId = modelId;
   return parakeetTranscriber;
 }
 

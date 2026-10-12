@@ -24,8 +24,8 @@ vi.mock("./llm", () => ({
 // reads the ASR model id from it on every ensureAsr call.
 class MemoryStorage implements Storage {
   private map = new Map<string, string>([
-    // Pin whisper explicitly: the db default is now the parakeet preset, and
-    // these specs exercise the transformers.js whisper wiring only.
+    // Pin whisper explicitly: the db default is the omimed (wgsl-engine)
+    // preset, and these specs exercise the transformers.js wiring only.
     ["phlox_demo_asr_model", "onnx-community/whisper-base.en"],
   ]);
   get length(): number {
@@ -140,8 +140,8 @@ describe("asr webgpu → wasm fallback", () => {
   });
 });
 
-describe("blobSourceName (parakeet source naming)", () => {
-  it("maps blob mime types to parakeet source file names", async () => {
+describe("blobSourceName (wgsl engine source naming)", () => {
+  it("maps blob mime types to wgsl engine source file names", async () => {
     const { blobSourceName } = await import("./asr");
     expect(blobSourceName(new Blob([], { type: "audio/wav" }))).toBe("audio.wav");
     expect(blobSourceName(new Blob([], { type: "audio/webm;codecs=opus" }))).toBe("audio.webm");

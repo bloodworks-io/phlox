@@ -13,15 +13,16 @@ natively over CORS.
 | `phlox-0.8b-MLC-v2` (WebLLM q4f16 package) | ~443MB | HF repo `bloodworks-io/phlox-0.8b-MLC-v2` | WebLLM 0.8B preset (Chrome/Edge) |
 | `phlox-2b-MLC-v2` (WebLLM q4f16 package) | ~1.1GB | HF repo `bloodworks-io/phlox-2b-MLC-v2` | WebLLM 2B preset (Chrome/Edge) |
 | `phlox-*-ONNX-v2` (transformers.js packages) | 0.8B ~600MB / 2B ~1.4GB (q4 + q8 sets) | HF repos `bloodworks-io/phlox-{0.8b,2b}-ONNX-v2` | transformers.js presets + fallbacks (Safari/Firefox) |
-| parakeet ASR packages | 405/441MB | HF repo `bloodworks-io/parakeet-wgsl-v1` (byte-exact mirror of the parakeet.wgsl package) | parakeet path (any WebGPU browser) |
+| OmiMed ASR package (fp16) | ~413MB | HF repo `bloodworks-io/parakeet-omimed-v1` (converted by the vendored fork; CC-BY-4.0 chain OmiMed → NVIDIA, see its README/NOTICE) | omimed preset — the only ASR option (any WebGPU browser; whisper otherwise) |
 | WebLLM model libs (`phlox-{0.8b,2b}-webgpu.wasm`) | 6MB each | inside the MLC repos | WebLLM |
 | CAM++ speaker diarizer (`campplus-zh-en.onnx`) | 28MB | committed in-repo at `public/models/campplus-zh-en.onnx` (gitignore exception — no HF mirror) | capture diarization (`speakers.ts`) |
 
 Runtime URL selection: LLM weights always come from the HF repos configured
 in `src/localBackend/llm.ts` (`HF_ORG`) — the app never serves an LLM mirror.
-The ASR HEAD-probes `/models/parakeet/*` on its own origin first (dev mirror)
-and falls back to the HF mirror in `asr.ts` — the package's third-party
-default CDN is never reached. No build-time configuration required.
+The ASR HEAD-probes `/models/parakeet-omimed/*` on its own origin first
+(dev mirror) and falls back to the HF mirror in `asr.ts` — the package's
+third-party default CDN is never reached. No build-time configuration
+required.
 
 ## 1. Upload weights to Hugging Face (once per model version)
 
@@ -43,32 +44,37 @@ hf upload bloodworks-io/phlox-2b-ONNX-v2 out/onnx-tjs/phlox-2b . --repo-type mod
 Set the repos to **public** (Settings tab). HF serves every file with
 `Access-Control-Allow-Origin: *`, which is all the engines need.
 
-The parakeet mirror (`bloodworks-io/parakeet-wgsl-v1`) is a byte-exact copy of
-the canonical `parakeet-wgsl-models.narcotic.sh` packages — the runtime
-verifies manifest and per-file SHA-256s, so an exact mirror on any CORS host
-satisfies it. `parakeet.wgsl` is pinned to an exact version in `package.json`;
-a version bump can change the canonical hashes, at which point re-mirror
-(canonical URLs + hashes live in the parakeet.wgsl repo's `model/README.md`):
 
-```bash
-base=https://parakeet-wgsl-models.narcotic.sh/v1
-for prec in fp16 fp32; do
-  sha=<manifest sha256 from model/README.md>
-  mkdir -p mirror/$prec/$sha
-  (cd mirror/$prec/$sha &&
-   curl -fO $base/$prec/$sha/manifest.json &&
-   jq -r '.files[].name' manifest.json | xargs -P6 -I{} curl -fO $base/$prec/$sha/{})
-done
-hf upload bloodworks-io/parakeet-wgsl-v1 mirror/fp16 fp16 --repo-type model
-hf upload bloodworks-io/parakeet-wgsl-v1 mirror/fp32 fp32 --repo-type model
-```
+## The parakeet.wgsl fork (vendored at `vendor/parakeet.wgsl`)
 
-Then update `HF_PARAKEET_MANIFESTS` in `src/localBackend/asr.ts`.
+The npm dependency is a **vendored prebuilt fork** of
+narcotic-sh/parakeet.wgsl (MIT) with per-layer encoder-adapter support
+(OmiMed's `medical_v1d_rank128`), consumed as `"parakeet.wgsl":
+"file:vendor/parakeet.wgsl"` so `npm ci` in the Pages workflow is
+self-contained — no npm publish or git dependency. Rebuilding it:
+
+1. Source lives at https://git.guthrie.dev/jfgonsalves/parakeet.wgsl-omimed
+   (fork of narcotic-sh/parakeet.wgsl; local checkout
+   `~/Code/parakeet.wgsl-omimed`).
+2. `npx pnpm@10.20.0 build` in the fork, then refresh `vendor/parakeet.wgsl`
+   (dist + license/notices; keep the minimal vendored package.json with no
+   lifecycle scripts) and `npm install` in this repo.
+3. The OmiMed package converter (`model/convert.py --precision fp16
+   --archive <omimedstt-v1.nemo>`) produces `model/files`; verify with
+   `verify_adapter_packing.py`, then `hf upload bloodworks-io/
+   parakeet-omimed-v1 model/files fp16/<manifest-sha>` and update
+   `OMIMED_FP16_MANIFEST_SHA256` + the fp16 manifest byte-length pin in the
+   fork's `webgpu-engine.ts` if the manifest hash changes.
+
+Note: the stock (unfinetuned) parakeet preset has been removed —
+`omimed` is the default and only parakeet.wgsl-engine option (whisper
+remains the non-WebGPU fallback). The encoder hard-requires the OmiMed
+adapter package regardless.
 
 The packages are modified forms of NVIDIA Parakeet TDT 0.6B v2 (CC BY 4.0) —
 hosting the mirror redistributes them, so the repo carries attribution: a
-README + THIRD_PARTY_LICENSES at the repo root (NVIDIA source model + pinned
-revision, parakeet.wgsl repack credit). Keep them when re-mirroring.
+README + NOTICE at the repo root (OmiMed → NVIDIA source models + pinned
+revisions, parakeet.wgsl repack credit). Keep them when re-uploading.
 
 ## 2. Check app constants
 
