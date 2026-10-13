@@ -89,15 +89,56 @@ jobs:
           flag-name: server
 
   coveralls-finish:
-    if: github.event_name != 'schedule'
-    needs: [lint, test]
+    # always() so one failed uploader doesn't strand the other flags' uploads
+    if: always() && github.event_name != 'schedule'
+    needs: [lint, test, rust]
     runs-on: ubuntu-latest
     steps:
       - uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
-          carryforward: "frontend,server"
+          carryforward: "frontend,server,rust"
+
+  rust:
+    if: github.event_name != 'schedule'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
+        with:
+          components: llvm-tools-preview
+
+      - name: Stub build-time assets for tauri-build
+        run: |
+          mkdir -p build
+          TRIPLE=$(rustc -vV | sed -n 's/^host: //p')
+          mkdir -p src-tauri/binaries
+          for bin in phlox-server phlox-llama-server phlox-whisper-server; do
+            touch "src-tauri/binaries/${bin}-${TRIPLE}"
+          done
+          mkdir -p src-tauri/server_dist
+          touch src-tauri/server_dist/placeholder
+
+      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        with:
+          workspaces: src-tauri
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@e407f7bafb71fd004bc5c2da3032e5470cbb6ef0 # v2.87.24
+        with:
+          tool: cargo-llvm-cov
+
+      - run: cargo llvm-cov --locked --lcov --output-path ../coverage.lcov
+        working-directory: src-tauri
+
+      - uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage.lcov
+          parallel: true
+          flag-name: rust
 
   audit:
     runs-on: ubuntu-latest

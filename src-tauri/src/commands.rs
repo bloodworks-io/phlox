@@ -544,3 +544,91 @@ pub async fn send_passphrase_command(
     .await
     .map_err(|e| format!("Passphrase task panicked: {}", e))?
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pm::ServiceStatus;
+
+    fn assert_apple(actual: Option<AppleSiliconInfo>, gen: u8, tier: &str) {
+        let info = actual.expect("expected Apple Silicon info");
+        assert!(info.is_apple_silicon);
+        assert_eq!(info.generation, Some(gen));
+        assert_eq!(info.tier.as_deref(), Some(tier));
+    }
+
+    #[test]
+    fn parse_apple_silicon_parses_generation_and_tier() {
+        assert_apple(parse_apple_silicon("Apple M3 Pro"), 3, "Pro");
+        assert_apple(parse_apple_silicon("Apple M4 Max"), 4, "Max");
+        assert_apple(parse_apple_silicon("Apple M2 Ultra"), 2, "Ultra");
+        assert_apple(parse_apple_silicon("Apple M1"), 1, "Base");
+        assert_apple(parse_apple_silicon("  Apple M3  "), 3, "Base");
+    }
+
+    #[test]
+    fn parse_apple_silicon_rejects_non_apple_chips() {
+        assert!(parse_apple_silicon("Intel(R) Core(TM) i9-14900K").is_none());
+        assert!(parse_apple_silicon("AMD Ryzen 9 7950X").is_none());
+        assert!(parse_apple_silicon("").is_none());
+    }
+
+    #[test]
+    fn parse_apple_silicon_requires_generation_digit() {
+        assert!(parse_apple_silicon("Apple M").is_none());
+        assert!(parse_apple_silicon("Apple M Pro").is_none());
+    }
+
+    #[test]
+    fn parse_apple_silicon_unknown_tier_falls_back_to_base() {
+        assert_apple(parse_apple_silicon("Apple M3 Extreme"), 3, "Base");
+    }
+
+    #[test]
+    fn port_from_status_uses_live_ports() {
+        let live = |port: u16| {
+            Some(ServiceStatus {
+                running: true,
+                pid: 1234,
+                port,
+            })
+        };
+        let status = StatusData {
+            llama: live(9100),
+            whisper: live(9101),
+            server: live(9102),
+            embedding: live(9103),
+            request_token: None,
+        };
+        assert_eq!(port_from_status(&status, "llama"), "9100");
+        assert_eq!(port_from_status(&status, "whisper"), "9101");
+        assert_eq!(port_from_status(&status, "server"), "9102");
+        assert_eq!(port_from_status(&status, "embedding"), "9103");
+    }
+
+    #[test]
+    fn port_from_status_falls_back_to_defaults() {
+        let status = StatusData::default();
+        assert_eq!(port_from_status(&status, "llama"), "8082");
+        assert_eq!(port_from_status(&status, "whisper"), "8081");
+        assert_eq!(port_from_status(&status, "server"), "5000");
+        assert_eq!(port_from_status(&status, "embedding"), "8083");
+    }
+
+    #[test]
+    fn port_from_status_unknown_service_is_zero() {
+        let mut status = StatusData::default();
+        status.server = Some(ServiceStatus {
+            running: true,
+            pid: 1,
+            port: 5000,
+        });
+        assert_eq!(port_from_status(&status, "unknown"), "0");
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    #[test]
+    fn synthesize_perf_class_is_none_outside_linux() {
+        assert!(synthesize_perf_class().is_none());
+    }
+}
