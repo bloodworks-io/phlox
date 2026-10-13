@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.5.2](https://github.com/bloodworks-io/phlox/compare/v2.5.1...v2.5.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* **agent-live:** add read_note_field tool to stop field truncation ([9dbe5f9](https://github.com/bloodworks-io/phlox/commit/9dbe5f9043d7b320e295963e0cd1a6f2366e3f5b))
+* **agent-live:** engine stop so ticks can't clobber edits ([2fbf772](https://github.com/bloodworks-io/phlox/commit/2fbf7720aa60d6a9df871320924ab3502d934999))
+* **security:** keep token/exception data out of logs and SSE error ([4de8208](https://github.com/bloodworks-io/phlox/commit/4de820840f8b30d1c2454952c7ff2883907dbe50))
+
+
+### Performance Improvements
+
+* **server:** keep per-request DB work off the event loop ([ee38ad3](https://github.com/bloodworks-io/phlox/commit/ee38ad3dc60253b3d1c29772c6f7259afdd3eba0))
+
 ## [2.5.1](https://github.com/bloodworks-io/phlox/compare/v2.5.0...v2.5.1) (2026-10-07)
 
 
