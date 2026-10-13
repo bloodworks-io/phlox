@@ -714,12 +714,11 @@ fn parse_ports_line(line: &str) -> Result<AllocatedPorts, String> {
     }
 
     log::info!(
-        "Parsed allocated ports: server={}, llama={}, whisper={}, embedding={}, token={}...",
+        "Parsed allocated ports: server={}, llama={}, whisper={}, embedding={}",
         server,
         llama,
         whisper,
-        embedding,
-        &token[..8.min(token.len())]
+        embedding
     );
 
     Ok(AllocatedPorts {
@@ -770,7 +769,11 @@ fn spawn_drain_threads(child: &mut Child) -> (JoinHandle<()>, JoinHandle<()>, Ar
                 if shutdown_stdout.load(Ordering::Relaxed) {
                     break;
                 }
-                log::info!("[server stdout] {}", line);
+                if line.contains("TOKEN:") {
+                    log::info!("[server stdout] <redacted>");
+                } else {
+                    log::info!("[server stdout] {}", line);
+                }
             }
         }
         log::debug!("Stdout drain thread exiting");
@@ -1147,14 +1150,7 @@ impl ProcessManagerState {
                         self.request_token = Some(ports.request_token.clone());
                         self.allocated_ports = Some(ports.clone());
                         self.server = Some(proc);
-                        log::info!(
-                            "Server PID {} unlocked; ports: server={}, llama={}, whisper={}, embedding={}",
-                            pid,
-                            ports.server,
-                            ports.llama,
-                            ports.whisper,
-                            ports.embedding
-                        );
+                        log::info!("Server PID {} unlocked", pid);
                         Ok(ports)
                     }
                     Err(e) => {

@@ -8,7 +8,7 @@ from json_repair import repair_json as library_repair_json
 logger = logging.getLogger(__name__)
 
 
-def repair_json(json_str: str) -> str:
+def repair_json(json_str: str | None) -> str:
     """Repair malformed JSON using json-repair library with LLM-specific preprocessing.
 
         This wrapper handles LLM-specific issues like ``

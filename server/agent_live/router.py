@@ -226,6 +226,10 @@ async def stop_session(session_id: str, request: Request):
     async with session.state_lock:
         already_ended = session.is_ended
         session.end()
+    # Quiesce the engine before reading state so an in-flight tick cannot
+    # mutate fields after (or during) the final-state read.
+    if session.engine is not None:
+        await session.engine.stop()
     if not already_ended:
         await session.emit({"type": "end"})
         logger.info("Live session %s stopped", session.id)

@@ -96,6 +96,10 @@ async def lifespan(_app: FastAPI):
 
     # Shutdown
     scheduler.shutdown()
+    # Best-effort flush of queued audit events (batched writer).
+    from server.database.repositories.audit import flush_events_sync
+
+    flush_events_sync()
 
 
 def validate_docker_auth(

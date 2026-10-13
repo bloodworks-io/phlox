@@ -168,9 +168,10 @@ async def download_llm_model_stream(model_id: str):
             yield f"data: {json.dumps({'type': 'complete', 'path': downloaded_path, 'filename': actual_filename, 'size_mb': file_size_mb})}\n\n"
 
         except ValueError as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-        except Exception as e:
-            logging.error(f"Download error: {e}")
+            logging.error(f"Download rejected: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Unknown or invalid model'})}\n\n"
+        except Exception:
+            logging.exception("Model download failed")
             yield f"data: {json.dumps({'type': 'error', 'message': 'An error occurred during download'})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

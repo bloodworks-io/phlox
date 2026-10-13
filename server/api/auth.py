@@ -235,7 +235,9 @@ def reset_for_tests() -> None:
     """Clear lockout state between tests."""
     _failed.clear()
     from server.database.core.connection import get_db
+    from server.utils.identity_cache import identity_cache
 
+    identity_cache.invalidate()
     with get_db().transaction() as cursor:
         cursor.execute("DELETE FROM sessions")
         cursor.execute("DELETE FROM users WHERE username != ?", (users.IMPLICIT_ADMIN_USERNAME,))

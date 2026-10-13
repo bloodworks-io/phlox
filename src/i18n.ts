@@ -33,9 +33,14 @@ i18n.use(initReactI18next).init({
 
 // For non-React contexts (api modules, plain helpers). Inside components and
 // hooks, prefer useTranslation().
-export const t = (key, options) => i18n.t(key, options);
+//
+// Typed to return `string`: with returnNull: false and no returnObjects usage,
+// i18next.t() always yields a string here. The inferred union (which includes
+// $SpecialObject) is what broke ReactNode-typed props (e.g. toast titles).
+export const t = (key: string, options?: Record<string, unknown>): string =>
+    i18n.t(key, options) as string;
 
-export const syncLanguage = (language) => {
+export const syncLanguage = (language?: string | null) => {
     const lang = language || "en";
     setStoredLanguage(lang);
     void i18n.changeLanguage(lang);

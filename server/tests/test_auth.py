@@ -91,6 +91,39 @@ def test_login_and_logout(monkeypatch):
     assert client.get("/api/probe", headers=headers).status_code == 401
 
 
+def test_token_identity_cached_with_bounded_revocation(monkeypatch):
+    """Documented trade-off: a session deleted out-of-band stays usable for
+    at most TOKEN_TTL seconds; logout (the normal path) invalidates at once
+    (covered by test_login_and_logout)."""
+    from server.utils.identity_cache import TOKEN_TTL, identity_cache
+
+    reset_for_tests()
+    client = _docker_client(monkeypatch)
+    client.post("/api/auth/setup", json={"username": "admin_t", "password": "strongpass123"})
+    token = client.post(
+        "/api/auth/login", json={"username": "admin_t", "password": "strongpass123"}
+    ).json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # First probe resolves and caches the identity.
+    assert client.get("/api/probe", headers=headers).status_code == 200
+    assert identity_cache.get(f"token:{token}") is not None
+
+    # Kill the session row directly in the DB (bypasses logout).
+    from server.database.core.connection import get_db
+
+    with get_db().transaction() as cursor:
+        cursor.execute("DELETE FROM sessions")
+
+    # Within TTL the cached identity still authenticates.
+    assert TOKEN_TTL > 0
+    assert client.get("/api/probe", headers=headers).status_code == 200
+
+    # Invalidation (logout/disable/purge path) ends it immediately.
+    identity_cache.invalidate()
+    assert client.get("/api/probe", headers=headers).status_code == 401
+
+
 def test_lockout_after_repeated_failures(monkeypatch):
     reset_for_tests()
     client = _docker_client(monkeypatch)

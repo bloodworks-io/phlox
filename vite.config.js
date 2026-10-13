@@ -55,6 +55,16 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.js"],
     exclude: ["**/node_modules/**", "**/dist/**", "src-tauri/**"],
+    coverage: {
+      reporter: ["text", "lcov"],
+      include: ["src/**"],
+      exclude: [
+        "src/locales/**",
+        "src/test/**",
+        "src/**/*.test.*",
+        "src/**/*.spec.*",
+      ],
+    },
   },
 
 
