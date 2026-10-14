@@ -17,8 +17,10 @@ from server.chat.streaming.response import (
     start_message,
     status_message,
     stream_llm_response,
+    tool_response_message,
 )
 from server.chat.tools import execute_tool_streaming, get_tools_definition
+from server.chat.tools.accumulator import coerce_stream_piece, merge_tool_call_delta
 from server.database.config.manager import config_manager
 from server.llm_client.client import get_llm_client
 from server.llm_client.thinking import chat_thinking_enabled
@@ -162,6 +164,8 @@ class ChatEngine:
                             or msg.get("thinking")
                         )
                         if reasoning_piece:
+                            reasoning_piece = coerce_stream_piece(reasoning_piece)
+                        if reasoning_piece:
                             if not thinking_open:
                                 opening_tag = "<think>\n"
                                 accumulated_output += opening_tag
@@ -179,7 +183,7 @@ class ChatEngine:
                                 yield chunk_message(closing_tag)
                                 thinking_open = False
 
-                            content_piece = msg["content"]
+                            content_piece = coerce_stream_piece(msg["content"])
                             accumulated_content += content_piece
                             accumulated_output += content_piece
                             yield chunk_message(content_piece)
@@ -187,32 +191,7 @@ class ChatEngine:
                         # Handle tool calls
                         if "tool_calls" in msg and msg["tool_calls"]:
                             for tc in msg["tool_calls"]:
-                                # OpenAI yields ChoiceDeltaToolCall objects with an index
-                                if hasattr(tc, "index"):
-                                    idx = tc.index
-                                    if idx not in accumulated_tool_calls:
-                                        accumulated_tool_calls[idx] = {
-                                            "id": getattr(tc, "id", ""),
-                                            "type": getattr(tc, "type", "function"),
-                                            "function": {"name": "", "arguments": ""},
-                                        }
-                                    if hasattr(tc, "function") and tc.function:
-                                        if hasattr(tc.function, "name") and tc.function.name:
-                                            accumulated_tool_calls[idx]["function"]["name"] += (
-                                                tc.function.name
-                                            )
-                                        if (
-                                            hasattr(tc.function, "arguments")
-                                            and tc.function.arguments
-                                        ):
-                                            accumulated_tool_calls[idx]["function"][
-                                                "arguments"
-                                            ] += tc.function.arguments
-                                # Ollama might yield dictionaries
-                                elif isinstance(tc, dict):
-                                    # Ollama usually yields the full tool call at the end of the stream
-                                    idx = len(accumulated_tool_calls)
-                                    accumulated_tool_calls[idx] = tc
+                                merge_tool_call_delta(accumulated_tool_calls, tc)
 
                 # If the stream ended while still in thinking mode, close the <think> block
                 if thinking_open:
@@ -259,81 +238,104 @@ class ChatEngine:
                         generated_final_answer = True
                         break
 
-                    # Execute the tool call and emit an explicit status event to the UI
-                    tool_call = final_tool_calls[0]
-                    tool_name = tool_call["function"]["name"]
+                    # Execute every tool call requested this turn (models may
+                    # emit several in parallel) and emit status events
+                    last_call_position = len(final_tool_calls) - 1
+                    for call_position, tool_call in enumerate(final_tool_calls):
+                        tool_name = tool_call["function"]["name"]
 
-                    # Include key args (like query) so the UI can show what is being executed
-                    tool_args_raw = tool_call.get("function", {}).get("arguments", "") or ""
-                    tool_query = ""
-
-                    try:
-                        parsed_args = {}
-                        if isinstance(tool_args_raw, str) and tool_args_raw.strip():
-                            parsed_args = json.loads(tool_args_raw)
-                        elif isinstance(tool_args_raw, dict):
-                            parsed_args = tool_args_raw
-
-                        if isinstance(parsed_args, dict):
-                            for key in ("query", "search_query", "topic", "question", "disease"):
-                                value = parsed_args.get(key)
-                                if isinstance(value, str) and value.strip():
-                                    tool_query = value.strip()
-                                    break
-                    except Exception:
-                        # If arguments are malformed, still emit a useful status without query details
+                        # Include key args (like query) so the UI can show what is being executed
+                        tool_args_raw = tool_call.get("function", {}).get("arguments", "") or ""
                         tool_query = ""
 
-                    if tool_query:
-                        # Keep status concise for UI rendering
-                        tool_query = tool_query[:200]
-                        yield status_message(f"Calling tool: {tool_name} | query: {tool_query}")
-                    else:
-                        yield status_message(f"Calling tool: {tool_name}")
+                        try:
+                            parsed_args = {}
+                            if isinstance(tool_args_raw, str) and tool_args_raw.strip():
+                                parsed_args = json.loads(tool_args_raw)
+                            elif isinstance(tool_args_raw, dict):
+                                parsed_args = tool_args_raw
 
-                    async for result in self._execute_tool_call(
-                        tool_call=tool_call,
-                        message_list=message_list,
-                        conversation_history=conversation_history,
-                        raw_transcription=raw_transcription,
-                        context_question_options=context_question_options,
-                    ):
-                        if result.get("type") == "end":
-                            function_response = result.get("function_response")
-                            # We MUST append the tool's response to the message_list to continue the loop
-                            if function_response and "content" in function_response:
-                                from server.chat.streaming.response import (
-                                    tool_response_message,
-                                )
+                            if isinstance(parsed_args, dict):
+                                for key in (
+                                    "query",
+                                    "search_query",
+                                    "topic",
+                                    "question",
+                                    "disease",
+                                ):
+                                    value = parsed_args.get(key)
+                                    if isinstance(value, str) and value.strip():
+                                        tool_query = value.strip()
+                                        break
+                        except Exception:
+                            # If arguments are malformed, still emit a useful status without query details
+                            tool_query = ""
 
-                                tool_content = function_response["content"]
-                                if not isinstance(tool_content, str):
-                                    tool_content = str(tool_content)
+                        if tool_query:
+                            # Keep status concise for UI rendering
+                            tool_query = tool_query[:200]
+                            yield status_message(f"Calling tool: {tool_name} | query: {tool_query}")
+                        else:
+                            yield status_message(f"Calling tool: {tool_name}")
 
-                                tool_citations = function_response.get("citations") or []
-                                tool_content = _shift_citation_markers(
-                                    tool_content, citation_offset
-                                )
-                                all_citations.extend(tool_citations)
-                                citation_offset += len(tool_citations)
-
-                                if iterations >= MAX_ITERATIONS:
-                                    tool_content += (
-                                        "\n\n[TOOL_LIMIT_REACHED] "
-                                        "Tool execution budget is exhausted for this response. "
-                                        "Do not call any more tools. "
-                                        "Provide a final plain-text response summarizing what has been completed "
-                                        "and what remains."
+                        async for result in self._execute_tool_call(
+                            tool_call=tool_call,
+                            message_list=message_list,
+                            conversation_history=conversation_history,
+                            raw_transcription=raw_transcription,
+                            context_question_options=context_question_options,
+                        ):
+                            if result.get("type") == "end":
+                                function_response = result.get("function_response")
+                                # We MUST append the tool's response to the message_list to continue the loop
+                                if function_response is not None:
+                                    tool_content = (
+                                        function_response.get("content")
+                                        if isinstance(function_response, dict)
+                                        else None
                                     )
+                                    if tool_content is None:
+                                        tool_content = str(function_response)
+                                    if not isinstance(tool_content, str):
+                                        tool_content = str(tool_content)
 
-                                message_list.append(
-                                    tool_response_message(
-                                        tool_call_id=str(final_tool_calls[0].get("id", "")),
-                                        content=tool_content,
+                                    tool_citations = (
+                                        function_response.get("citations") or []
+                                        if isinstance(function_response, dict)
+                                        else []
                                     )
-                                )
-                        elif result.get("type") != "end":
-                            yield result
+                                    if tool_citations:
+                                        # Bracketed markers in this tool's
+                                        # output refer to its own citations;
+                                        # renumber them into the shared list.
+                                        # Tools without citations keep their
+                                        # content untouched (e.g. todo ids).
+                                        tool_content = _shift_citation_markers(
+                                            tool_content, citation_offset
+                                        )
+                                        all_citations.extend(tool_citations)
+                                        citation_offset += len(tool_citations)
+
+                                    if (
+                                        iterations >= MAX_ITERATIONS
+                                        and call_position == last_call_position
+                                    ):
+                                        tool_content += (
+                                            "\n\n[TOOL_LIMIT_REACHED] "
+                                            "Tool execution budget is exhausted for this response. "
+                                            "Do not call any more tools. "
+                                            "Provide a final plain-text response summarizing what has been completed "
+                                            "and what remains."
+                                        )
+
+                                    message_list.append(
+                                        tool_response_message(
+                                            tool_call_id=str(tool_call.get("id", "")),
+                                            content=tool_content,
+                                        )
+                                    )
+                            else:
+                                yield result
 
             # If we hit MAX_ITERATIONS without a final non-tool answer, force one final pass.
             if not generated_final_answer and iterations >= MAX_ITERATIONS:
@@ -342,6 +344,24 @@ class ChatEngine:
                     "Forcing final non-tool response."
                 )
                 yield status_message("Finalizing response...")
+                try:
+                    async for chunk in stream_llm_response(
+                        llm_client=self.llm_client,
+                        model=self.config["PRIMARY_MODEL"],
+                        messages=message_list,
+                        options=context_question_options,
+                    ):
+                        yield chunk
+                except Exception as e:
+                    self.logger.error(f"Error forcing final response: {str(e)}")
+                    yield chunk_message("I was unable to complete this response. Please try again.")
+
+        except Exception as e:
+            self.logger.error(f"Error processing tool call: {str(e)}")
+            yield status_message("Error processing request. Generating direct response...")
+
+            # Fallback to direct response in case of error
+            try:
                 async for chunk in stream_llm_response(
                     llm_client=self.llm_client,
                     model=self.config["PRIMARY_MODEL"],
@@ -349,19 +369,12 @@ class ChatEngine:
                     options=context_question_options,
                 ):
                     yield chunk
-
-        except Exception as e:
-            self.logger.error(f"Error processing tool call: {str(e)}")
-            yield status_message("Error processing request. Generating direct response...")
-
-            # Fallback to direct response in case of error
-            async for chunk in stream_llm_response(
-                llm_client=self.llm_client,
-                model=self.config["PRIMARY_MODEL"],
-                messages=message_list,
-                options=context_question_options,
-            ):
-                yield chunk
+            except Exception as fallback_error:
+                # Never let the fallback failure kill the stream without an end event
+                self.logger.error(f"Error in fallback response: {str(fallback_error)}")
+                yield chunk_message(
+                    "Sorry, an error occurred while processing your request. Please try again."
+                )
 
         merged_response = {"citations": all_citations} if all_citations else function_response
         self.logger.info(
@@ -412,6 +425,7 @@ class ChatEngine:
         conversation_history: list,
         raw_transcription=None,
         patient_context: dict | None = None,
+        mode: str = "patient",
     ):
         """Stream chat response from the LLM
 
@@ -419,13 +433,14 @@ class ChatEngine:
             conversation_history: List of conversation messages
             raw_transcription: Optional raw transcription
             patient_context: Optional patient context dict
+            mode: Chat mode — 'patient' (default) or 'rag'
         """
         try:
             self.logger.info("Starting LLM stream...")
             yield start_message()
 
             async for chunk in self.get_streaming_response(
-                conversation_history, raw_transcription, patient_context
+                conversation_history, raw_transcription, patient_context, mode
             ):
                 yield chunk
 
