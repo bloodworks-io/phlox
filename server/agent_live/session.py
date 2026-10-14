@@ -35,6 +35,7 @@ class LiveSession:
     speakers: SessionSpeakers = field(default_factory=SessionSpeakers)
     field_drafts: dict[str, str] = field(default_factory=dict)
     user_touched: set[str] = field(default_factory=set)
+    field_last_editor: dict[str, str] = field(default_factory=dict)
     # Spoken format overrides: "list" | "narrative"; absent = template style.
     field_formats: dict[str, str] = field(default_factory=dict)
     staged_artifacts: list[dict[str, Any]] = field(default_factory=list)

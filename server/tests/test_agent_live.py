@@ -179,6 +179,30 @@ async def test_update_note_field_rejects_clinician_edits_in_live_mode():
 
 
 @pytest.mark.asyncio
+async def test_tool_edits_mark_agent_as_last_editor():
+    session = _make_session()
+    session.user_touched.add("plan")
+    refused = await execute_live_tool(
+        session, "update_note_field", {"field_key": "plan", "content": "overwritten"}
+    )
+    assert "clinician manually edited" in refused["content"]
+    assert session.field_last_editor == {}
+
+    session.user_touched.discard("plan")
+    await execute_live_tool(
+        session, "update_note_field", {"field_key": "plan", "content": "1. GP review"}
+    )
+    session.field_drafts["clinical_history"] = "• Fatigue"
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "clinical_history", "entry": "Weight loss"}
+    )
+    await execute_live_tool(
+        session, "remove_from_field", {"field_key": "clinical_history", "phrase": "Fatigue"}
+    )
+    assert session.field_last_editor == {"plan": "agent", "clinical_history": "agent"}
+
+
+@pytest.mark.asyncio
 async def test_append_to_field_matches_marker_style():
     session = _make_session()
     session.field_drafts["plan"] = "1. Book PET scan\n2. Bloods"
@@ -774,6 +798,60 @@ def test_feedback_marks_clinician_edits():
     assert session.field_drafts["plan"] == "1. Clinician rewrite"
     assert "plan" in session.user_touched
     assert "bogus" not in session.field_drafts
+
+
+def test_feedback_marks_clinician_as_last_editor():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={
+            "patient": {"name": "Test"},
+            "template_key": "phlox_01",
+            "template_data": {"plan": "1. Original"},
+        },
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.field_last_editor["plan"] = "agent"
+
+    response = client.post(
+        f"/api/agent-live/sessions/{session_id}/feedback",
+        json={"fields": {"plan": "1. Clinician rewrite"}},
+    )
+    assert response.status_code == 200
+    assert session.field_last_editor["plan"] == "clinician"
+
+
+def test_stop_final_state_includes_agent_edits():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.field_last_editor["pmh"] = "agent"
+
+    response = client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    assert response.status_code == 200
+    assert response.json()["agent_edits"] == {"pmh": "agent"}
+
+
+def test_events_stream_replays_agent_edits():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.field_last_editor["pmh"] = "agent"
+
+    client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    response = client.get(f"/api/agent-live/sessions/{session_id}/events")
+    payload = response.content.decode()
+    assert '"type": "agent_edits"' in payload
+    assert '"pmh": "agent"' in payload
 
 
 def test_stop_session_replays_final_state():

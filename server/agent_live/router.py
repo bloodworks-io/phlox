@@ -79,6 +79,7 @@ def _final_state(session: LiveSession) -> dict:
         "session_id": session.id,
         "mode": session.mode,
         "fields": dict(session.field_drafts),
+        "agent_edits": dict(session.field_last_editor),
         "transcript": "\n".join(session.transcript_segments),
         "artifacts": list(session.staged_artifacts),
         "jobs": list(session.staged_jobs),
@@ -149,6 +150,8 @@ async def stream_events(session_id: str, request: Request):
             for key, content in session.field_drafts.items():
                 # Replay as field_state so reconnect catch-up doesn't flash every field.
                 yield f"data: {json.dumps({'type': 'field_state', 'field_key': key, 'content': content})}\n\n"
+            if session.field_last_editor:
+                yield f"data: {json.dumps({'type': 'agent_edits', 'fields': session.field_last_editor})}\n\n"
             for artifact in session.staged_artifacts:
                 yield f"data: {json.dumps({'type': 'artifact_staged', 'artifact': artifact})}\n\n"
             if session.mode == "tidy":
@@ -185,6 +188,7 @@ async def push_feedback(session_id: str, body: LiveFeedbackRequest, request: Req
             if content != session.field_drafts.get(key):
                 session.field_drafts[key] = content
                 session.user_touched.add(key)
+                session.field_last_editor[key] = "clinician"
     return {"ok": True}
 
 
