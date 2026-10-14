@@ -36,11 +36,11 @@ const patient: Patient = {
 
 const markerLabel = () => t("patient.agentEditedPersistentField") as string;
 
-function renderSummary(agentEdits: Record<string, string>) {
+function renderSummary(agentEdits: Record<string, string>, overrides: Partial<Patient> = {}) {
     return renderWithProviders(
         <Summary
             isSummaryCollapsed={false}
-            patient={patient}
+            patient={{ ...patient, ...overrides }}
             setPatient={vi.fn()}
             handleGenerateLetterClick={vi.fn()}
             handleSavePatientData={vi.fn()}
@@ -73,5 +73,60 @@ describe("Summary persistent-field agent-edit marker", () => {
         );
         fireEvent.change(textareas[0], { target: { value: "• Hypertension, reviewed" } });
         expect(screen.queryByLabelText(markerLabel())).toBeNull();
+    });
+});
+
+describe("Summary citation grounding", () => {
+    const raw = "S1: tired\nS2: plan bloods\nS1: fine otherwise";
+    const grounded = (transcript_line_count: number): Patient => ({
+        ...patient,
+        raw_transcription: raw,
+        note_citations: {
+            transcript_line_count,
+            resolved: [],
+            fields: {
+                plan: [
+                    {
+                        line_index: 0,
+                        text: "1. Review",
+                        sources: [1],
+                        contradicts: [],
+                        verdict: "supported",
+                    },
+                ],
+                pmh: [
+                    {
+                        line_index: 0,
+                        text: "• Hypertension",
+                        sources: [],
+                        contradicts: [],
+                        verdict: "unverified",
+                    },
+                ],
+            },
+        },
+    });
+
+    it("shows the whole-field unverified banner instead of per-line noise", () => {
+        renderSummary({}, grounded(raw.split("\n").length));
+        expect(
+            screen.getAllByLabelText(t("patient.fieldUnverifiedBanner") as string),
+        ).toHaveLength(1);
+        // pmh is fully unverified -> banner, no per-line overlay for it.
+        // plan is supported -> one badge button rendered.
+        const badges = screen.getAllByRole("button").filter(
+            (el) => el.className.includes("citation-badge"),
+        );
+        expect(badges).toHaveLength(1);
+    });
+
+    it("suppresses all badges when the transcript line count guard fails", () => {
+        renderSummary({}, grounded(raw.split("\n").length + 5));
+        expect(
+            screen.queryByLabelText(t("patient.fieldUnverifiedBanner") as string),
+        ).toBeNull();
+        expect(
+            document.querySelectorAll(".citation-badge"),
+        ).toHaveLength(0);
     });
 });

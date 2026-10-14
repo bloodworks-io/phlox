@@ -70,7 +70,7 @@ describe("SpeakerText", () => {
         expect(screen.getByText("good morning")).toBeInTheDocument();
         expect(screen.getByText("no labels here")).toBeInTheDocument();
         expect(screen.getByText("thanks for coming in")).toBeInTheDocument();
-        const dots = document.querySelectorAll("[data-speaker]");
+        const dots = document.querySelectorAll<HTMLElement>("[data-speaker]");
         expect(dots).toHaveLength(2);
         expect(dots[0].getAttribute("data-speaker")).toBe("S1");
         expect(dots[1].getAttribute("data-speaker")).toBe("S2");
@@ -82,7 +82,7 @@ describe("SpeakerText", () => {
 
     it("renders a hollow dot for the unattributed S? marker", () => {
         renderWithProviders(<SpeakerText text={"S1: good morning\nS?: unclear who"} />);
-        const dots = document.querySelectorAll("[data-speaker]");
+        const dots = document.querySelectorAll<HTMLElement>("[data-speaker]");
         expect(dots).toHaveLength(2);
         const unknown = dots[1];
         expect(unknown.getAttribute("data-speaker")).toBe("S?");
@@ -98,5 +98,12 @@ describe("SpeakerText", () => {
         expect(screen.getByText("line one")).toBeInTheDocument();
         expect(screen.getByText("line two")).toBeInTheDocument();
         expect(document.querySelector("[data-speaker]")).toBeNull();
+    });
+
+    it("marks the highlighted line for citation navigation", () => {
+        renderWithProviders(<SpeakerText text={"line one\nline two"} highlightIndex={1} />);
+        const highlighted = document.querySelector(".transcript-line--highlighted");
+        expect(highlighted?.getAttribute("data-line")).toBe("1");
+        expect(document.querySelectorAll("[data-line]")).toHaveLength(2);
     });
 });

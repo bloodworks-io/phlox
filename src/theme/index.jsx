@@ -57,6 +57,28 @@ globalCss[".red-icon"] = { color: "dangerButton !important" };
 globalCss[".yellow-icon"] = { color: "secondaryButton !important" };
 globalCss[".blue-icon"] = { color: "primaryButton !important" };
 
+// Citation badges
+globalCss[".citation-badge"] = {
+    backgroundColor: "transparent",
+    border: "none",
+    cursor: "pointer",
+    zIndex: 1,
+    transition: "opacity 0.15s ease",
+};
+globalCss[".citation-badge[data-verdict='supported']"] = { opacity: 0.45 };
+globalCss[".citation-badge[data-verdict='unverified']"] = { opacity: 0.7 };
+globalCss[".citation-badge[data-verdict='conflict']"] = { opacity: 1 };
+globalCss[".citation-badge:hover"] = { opacity: 1 };
+globalCss[".citation-badge--conflict"] = {
+    boxShadow: { _light: "0 0 0 3px #d20f3915", _dark: "0 0 0 3px #ed879620" },
+    borderRadius: "full",
+};
+globalCss[".transcript-line--highlighted"] = {
+    backgroundColor: { _light: "rgba(135, 186, 255, 0.18)", _dark: "rgba(135, 186, 255, 0.22)" },
+    borderRadius: "4px",
+    boxShadow: "0 0 0 4px rgba(135, 186, 255, 0.12)",
+};
+
 globalCss[".chakra-button"] = {
     fontWeight: "600 !important",
     fontSize: "16px !important",

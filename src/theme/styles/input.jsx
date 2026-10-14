@@ -100,6 +100,7 @@ const inputStyles = (props) => ({
         borderRadius: "lg !important",
         border: "none !important",
         padding: "12px !important",
+        paddingRight: "72px !important",
         overflow: "hidden !important",
     },
     ".cohesive-field": {

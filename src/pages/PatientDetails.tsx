@@ -82,6 +82,8 @@ const PatientDetails = ({
     };
     const summaryRef = useRef(null);
     const [, setLoading] = useState(false);
+
+    const [highlightLine, setHighlightLine] = useState<number | null>(null);
     const navigate = useNavigate();
     const [saveLoading, setSaveLoading] = useState(false);
     const {
@@ -439,6 +441,7 @@ const PatientDetails = ({
                     isEncounterSaved={Boolean(patient?.id)}
                     liveUpdatedFields={liveAgent.fieldFlash}
                     agentEdits={liveAgent.agentEdits}
+                    onCiteLine={setHighlightLine}
                 />
 
                 <WrapUpModal
@@ -550,6 +553,8 @@ const PatientDetails = ({
                         dob={patient.dob}
                         templateKey={currentTemplate?.template_key}
                         noteId={patient?.id}
+                        highlightLine={highlightLine}
+                        onHighlightLineConsumed={() => setHighlightLine(null)}
                     />
                 }
                 onTranscriptOpenChange={handleTranscriptOpenChange}

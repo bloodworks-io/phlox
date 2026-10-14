@@ -1,10 +1,30 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 import SpeakerText from "../../transcript/SpeakerText";
+
+// How long a citation-driven highlight stays lit before auto-clearing.
+const HIGHLIGHT_CLEAR_MS = 2500;
+
+interface TranscriptionPanelProps {
+  rawTranscription: string | null;
+  transcriptionDuration: number | null;
+  processDuration: number | null;
+  isTranscribing?: boolean;
+  onReprocess: (data: unknown, triggerResize?: boolean) => void;
+  isAmbient: boolean;
+  name: string;
+  gender: string;
+  dob: string;
+  templateKey: string | null;
+  noteId: number | null;
+  /** Transcript line to scroll to and highlight (citation navigation). */
+  highlightLine?: number | null;
+  onHighlightLineConsumed?: () => void;
+}
 
 const TranscriptionPanel = ({
   rawTranscription,
@@ -18,10 +38,21 @@ const TranscriptionPanel = ({
   dob,
   templateKey,
   noteId,
-}) => {
+  highlightLine,
+  onHighlightLineConsumed,
+}: TranscriptionPanelProps) => {
   const [showSuccess, setShowSuccess] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const { reprocessTranscription, isTranscribing } = useTranscription(onReprocess, () => {});
+
+  useEffect(() => {
+    if (highlightLine == null) return undefined;
+    const element = scrollRef.current?.querySelector(`[data-line="${highlightLine}"]`);
+    element?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const id = window.setTimeout(() => onHighlightLineConsumed?.(), HIGHLIGHT_CLEAR_MS);
+    return () => window.clearTimeout(id);
+  }, [highlightLine, onHighlightLineConsumed]);
 
   const handleReprocess = async () => {
     if (!rawTranscription) return;
@@ -70,7 +101,7 @@ const TranscriptionPanel = ({
               }
             }}
           >
-            <Box size="32px" color="#48BB78" opacity={0.8} asChild><FaCheck /></Box>
+            <FaCheck size="32px" color="#48BB78" opacity={0.8} />
           </Flex>
         )}
 
@@ -78,12 +109,18 @@ const TranscriptionPanel = ({
           <>
             {/* Transcription text - scrollable */}
             <Box
+              ref={scrollRef}
               className="slim-scrollbar"
               maxHeight="180px"
               overflowY="auto"
               mb={2}
             >
-              <SpeakerText text={rawTranscription} fontSize="xs" lineHeight="1.5" />
+              <SpeakerText
+                text={rawTranscription}
+                fontSize="xs"
+                lineHeight="1.5"
+                highlightIndex={highlightLine}
+              />
             </Box>
 
             {/* Footer: Reprocess button and stats */}
@@ -95,7 +132,7 @@ const TranscriptionPanel = ({
                     placement: "top"
                   }}>
                     <HStack gap={1}>
-                      <Box size="8px" asChild><FaClock /></Box>
+                      <FaClock size="8px" />
                       <Text>{t("transcription.durationSeconds", { duration: transcriptionDuration })}</Text>
                     </HStack>
                   </Tooltip>
@@ -103,7 +140,7 @@ const TranscriptionPanel = ({
                     placement: "top"
                   }}>
                     <HStack gap={1}>
-                      <Box size="8px" asChild><FaCogs /></Box>
+                      <FaCogs size="8px" />
                       <Text>{t("transcription.durationSeconds", { duration: processDuration })}</Text>
                     </HStack>
                   </Tooltip>

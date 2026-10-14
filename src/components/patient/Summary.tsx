@@ -6,7 +6,6 @@ import React, {
 } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
-import TextareaAutosize from "react-textarea-autosize";
 import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
@@ -15,11 +14,14 @@ import {
   CopyIcon,
   CheckIcon,
 } from "../common/icons";
-import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText, FaExclamationTriangle } from "react-icons/fa";
+import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText, FaExclamationTriangle, FaExclamationCircle } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { useTemplateChange } from "../../utils/hooks/useTemplateChange";
 import ConfirmDialog from "../common/ConfirmDialog";
+import GroundedTextarea from "./GroundedTextarea";
+import { citationKey } from "../../utils/patient/citations";
+import { isFullyUnverified, matchCitationsToLines } from "../../utils/patient/citationMatching";
 import type { Patient } from "../../utils/patient/types";
 
 interface SummaryProps {
@@ -40,6 +42,7 @@ interface SummaryProps {
   isEncounterSaved?: boolean;
   liveUpdatedFields?: Record<string, number>;
   agentEdits?: Record<string, string>;
+  onCiteLine?: (lineIndex: number) => void;
 }
 
 export interface SummaryHandle {
@@ -66,6 +69,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
       isEncounterSaved = false,
       liveUpdatedFields = {},
       agentEdits = {},
+      onCiteLine,
     },
     ref,
   ) => {
@@ -122,7 +126,53 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
       });
     };
 
+    const handleDismissCitation = (fieldKey: string, lineIndex: number) => {
+      setPatient((prev) => {
+        const citations = prev?.note_citations;
+        if (!citations) return prev;
+        const key = citationKey(fieldKey, lineIndex);
+        if (citations.resolved.includes(key)) return prev;
+        return {
+          ...prev,
+          note_citations: {
+            ...citations,
+            resolved: [...citations.resolved, key],
+          },
+        };
+      });
+    };
+
+    const rawText = patient.raw_transcription ?? "";
+    const citationsActive =
+      patient.note_citations != null &&
+      patient.note_citations.transcript_line_count === rawText.split("\n").length;
+
     const renderField = (field) => {
+      const fieldValue = patient.template_data?.[field.field_key] || "";
+      const fieldCitations = citationsActive
+        ? patient.note_citations?.fields?.[field.field_key]
+        : undefined;
+      const fieldFullyUnverified = fieldCitations
+        ? isFullyUnverified(matchCitationsToLines(fieldValue, fieldCitations))
+        : false;
+      const unverifiedMarker = fieldFullyUnverified ? (
+        <Tooltip
+          content={t("patient.fieldUnverifiedBanner")}
+          showArrow
+          positioning={{
+            placement: "right"
+          }}
+        >
+          <Box
+            as="span"
+            className="cohesive-agent-edit-marker"
+            aria-label={t("patient.fieldUnverifiedBanner")}
+          >
+            <FaExclamationCircle />
+          </Box>
+        </Tooltip>
+      ) : null;
+
       const persistentMarker = field.persistent ? (
         <Tooltip
           content={t("patient.persistsBetweenEncounters")}
@@ -172,18 +222,24 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
           className={`cohesive-field${liveFlash ? " live-field-updated" : ""}`}
         >
           <Text className="cohesive-field-label">
-            {field.field_name}:{persistentMarker}{agentEditMarker}
+            {field.field_name}:{persistentMarker}{agentEditMarker}{unverifiedMarker}
           </Text>
-          <TextareaAutosize
+          <GroundedTextarea
             placeholder={t("patient.enterTextPlaceholder")}
-            value={patient.template_data?.[field.field_key] || ""}
+            value={fieldValue}
             onChange={(e) => {
               handleTemplateDataChange(field.field_key, e.target.value);
             }}
             className="cohesive-textarea"
-            ref={(el) => {
+            textareaRef={(el) => {
               textareasRefs.current[field.field_key] = el;
             }}
+            fieldKey={field.field_key}
+            citations={fieldCitations && !fieldFullyUnverified ? fieldCitations : undefined}
+            rawTranscription={patient.raw_transcription}
+            resolved={patient.note_citations?.resolved}
+            onDismiss={handleDismissCitation}
+            onCiteLine={onCiteLine}
           />
         </Box>
       );

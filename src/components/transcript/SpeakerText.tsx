@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useColorModeValue } from "@/components/ui/color-mode";
 
 // Catppuccin-derived accents, one per anonymous speaker label (S1..S4+).
-const SPEAKER_COLORS = [
+const SPEAKER_COLORS: [string, string][] = [
     ["#179299", "#8bd5ca"],
     ["#fe640b", "#f5a97f"],
     ["#7287fd", "#b7bdf8"],
@@ -16,23 +16,32 @@ const SPEAKER_LINE_RE = /^(S[1-9]\d*|S\?):\s/;
 
 /** Label for an utterance the diarizer heard but could not attribute. */
 export const UNKNOWN_SPEAKER = "S?";
-const UNKNOWN_COLORS = ["#6c6f85", "#a5adcb"];
+const UNKNOWN_COLORS: ["#6c6f85", "#a5adcb"] = ["#6c6f85", "#a5adcb"];
+
+export interface ParsedSpeakerLine {
+    speaker: string | null;
+    text: string;
+}
 
 /** Parse an optional speaker prefix: { speaker: "S2" | "S?" | null, text }. */
-export const parseSpeakerLine = (line) => {
+export const parseSpeakerLine = (line: string): ParsedSpeakerLine => {
     const match = SPEAKER_LINE_RE.exec(line);
     if (!match) return { speaker: null, text: line };
     return { speaker: match[1], text: line.slice(match[0].length) };
 };
 
 /** Light/dark hex pair for a speaker label (S5+ cycles the palette). */
-export const speakerColorPair = (speaker) => {
+export const speakerColorPair = (speaker: string): [string, string] => {
     if (speaker === UNKNOWN_SPEAKER) return UNKNOWN_COLORS;
     const num = parseInt(speaker.slice(1), 10);
     return SPEAKER_COLORS[(num - 1) % SPEAKER_COLORS.length];
 };
 
-export const SpeakerDot = ({ speaker }) => {
+interface SpeakerDotProps {
+    speaker: string;
+}
+
+export const SpeakerDot = ({ speaker }: SpeakerDotProps) => {
     const [light, dark] = speakerColorPair(speaker);
     const color = useColorModeValue(light, dark);
     const unknown = speaker === UNKNOWN_SPEAKER;
@@ -56,11 +65,25 @@ export const SpeakerDot = ({ speaker }) => {
     );
 };
 
-export const SpeakerText = ({ text, ...textProps }) =>
+interface SpeakerTextProps {
+    text: string;
+    /** Transcript line index to highlight (citation navigation). */
+    highlightIndex?: number | null;
+    [key: string]: unknown;
+}
+
+export const SpeakerText = ({ text, highlightIndex, ...textProps }: SpeakerTextProps) =>
     text.split("\n").map((line, i) => {
         const { speaker, text: body } = parseSpeakerLine(line);
         return (
-            <Text key={i} as="div" whiteSpace="pre-wrap" {...textProps}>
+            <Text
+                key={i}
+                as="div"
+                whiteSpace="pre-wrap"
+                data-line={i}
+                className={highlightIndex === i ? "transcript-line--highlighted" : undefined}
+                {...textProps}
+            >
                 {speaker ? <SpeakerDot speaker={speaker} /> : null}
                 {body}
             </Text>
