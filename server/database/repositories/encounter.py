@@ -76,10 +76,10 @@ def save_patient(patient: Patient) -> int:
                     template_key, template_data, raw_transcription,
                     transcription_duration, process_duration,
                     primary_condition, final_letter, jobs_list,
-                    all_jobs_completed, encounter_summary,
+                    all_jobs_completed, encounter_summary, note_citations,
                     created_at, updated_at, created_by
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     patient.ur_number,
@@ -94,6 +94,7 @@ def save_patient(patient: Patient) -> int:
                     jobs_list_json,  # Use generated jobs list instead of getting from patient
                     all_jobs_completed,
                     getattr(patient, "encounter_summary", None),
+                    json.dumps(patient.note_citations) if patient.note_citations else None,
                     now,
                     now,
                     current_user_id(),
@@ -241,6 +242,7 @@ def update_patient(patient: Patient) -> None:
                     encounter_summary = ?,
                     jobs_list = ?,
                     all_jobs_completed = ?,
+                    note_citations = ?,
                     updated_at = ?
                 WHERE id = ?{scope_sql}
                 """,
@@ -256,6 +258,7 @@ def update_patient(patient: Patient) -> None:
                     patient.encounter_summary,
                     jobs_list_json,
                     all_jobs_completed,
+                    json.dumps(patient.note_citations) if patient.note_citations else None,
                     datetime.now().isoformat(),
                     patient.id,
                     *scope_params,
@@ -415,6 +418,12 @@ def get_patient_by_id(note_id: int) -> dict[str, Any] | None:
                 patient["reasoning_output"] = json.loads(patient["reasoning_output"])
             except json.JSONDecodeError:
                 patient["reasoning_output"] = None
+
+        if patient.get("note_citations"):
+            try:
+                patient["note_citations"] = json.loads(patient["note_citations"])
+            except json.JSONDecodeError:
+                patient["note_citations"] = None
 
         _attach_profile_demographics(patient)
         return patient

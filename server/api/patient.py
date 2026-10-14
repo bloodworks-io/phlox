@@ -5,6 +5,7 @@ import logging
 from fastapi import APIRouter, BackgroundTasks
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field
 
 from server.database.repositories.analysis import generate_previous_visit_summary
 from server.database.repositories.encounter import (
@@ -46,9 +47,24 @@ from server.schemas.patient import (
     SavePatientRequest,
     ScribeConsentRequest,
 )
+from server.transcription.grounding import ground_note
 from server.utils.current_user import restrict_admin_scope
 
 router = APIRouter()
+
+
+class GroundNoteRequest(BaseModel):
+    """Post-hoc grounding of a note against its transcript (live-stop, re-grounds)."""
+
+    template_key: str | None = None
+    fields: dict[str, str] = Field(default_factory=dict)
+    raw_transcription: str
+    include_persistent: bool = False
+    name: str | None = None
+    gender: str | None = None
+    dob: str | None = None
+    noteId: int | None = None
+
 
 # Lock to prevent concurrent adaptive refinement operations
 _adaptive_refinement_lock = asyncio.Lock()
@@ -76,6 +92,50 @@ def set_consent(request: ScribeConsentRequest):
         return JSONResponse(content=consent)
     except Exception as e:
         logging.error(f"Error setting scribe consent: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.post("/ground")
+async def ground_note_endpoint(request: GroundNoteRequest):
+    """Ground a note's fields against its transcript and return the citation envelope."""
+    try:
+        template_fields = []
+        if request.template_key:
+            from server.database.repositories.templates import get_template_fields
+
+            template_fields = get_template_fields(request.template_key)
+
+        primary_condition = None
+        if request.noteId:
+            existing = get_patient_by_id(request.noteId)
+            if existing and existing.get("primary_condition"):
+                primary_condition = existing["primary_condition"]
+
+        from server.api.transcribe import _format_patient_display_name
+
+        citations = await ground_note(
+            template_fields,
+            request.fields,
+            request.raw_transcription,
+            {
+                "name": _format_patient_display_name(request.name),
+                "dob": request.dob,
+                "gender": request.gender,
+            },
+            is_ambient=True,
+            primary_condition=primary_condition,
+            include_persistent=request.include_persistent,
+        )
+        return {
+            "transcript_line_count": len(request.raw_transcription.split("\n")),
+            "resolved": [],
+            "fields": {
+                key: [citation.model_dump() for citation in lines]
+                for key, lines in citations.items()
+            },
+        }
+    except Exception as e:
+        logging.error(f"Error grounding note: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 

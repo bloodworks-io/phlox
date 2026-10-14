@@ -23,6 +23,8 @@ class Patient(BaseModel):
     raw_transcription: str | None = None
     transcription_duration: float | None = None
     process_duration: float | None = None
+    # Transcript-grounded citations envelope: {transcript_line_count, resolved, fields}.
+    note_citations: dict[str, Any] | None = None
     primary_condition: str | None = None
     final_letter: str | None = None
     encounter_summary: str | None = None

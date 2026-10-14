@@ -177,3 +177,48 @@ def test_history_family_plain_custom_base_stays_isolated(test_db, monkeypatch):
         )
     rows = encounter.get_patient_history("UR1", "custom_cardiology_1")
     assert {r["template_key"] for r in rows} == {"custom_cardiology_1"}
+
+
+def test_note_citations_round_trip(test_db, monkeypatch):
+    test_db.clear_test_database()
+    monkeypatch.setattr(encounter, "get_db", lambda: test_db)
+    from server.schemas.patient import Patient
+    from server.utils.current_user import CurrentUser, set_current_user
+
+    set_current_user(CurrentUser(1, "local", "admin"))
+    envelope = {
+        "transcript_line_count": 3,
+        "resolved": ["plan::1"],
+        "fields": {
+            "plan": [
+                {
+                    "line_index": 1,
+                    "text": "• Bloods",
+                    "sources": [0],
+                    "contradicts": [],
+                    "verdict": "supported",
+                }
+            ]
+        },
+    }
+    patient = Patient(
+        name="Jane Doe",
+        ur_number="UR1",
+        encounter_date="2024-06-01",
+        template_key="test",
+        template_data={"plan": "1. Bloods"},
+        raw_transcription="a\nb\nc",
+        note_citations=envelope,
+    )
+
+    note_id = encounter.save_patient(patient)
+    loaded = encounter.get_patient_by_id(note_id)
+    assert loaded["note_citations"] == envelope
+
+    # Update overwrites; None clears the column.
+    patient.id = note_id
+    patient.note_citations = None
+    encounter.update_patient(patient)
+    loaded = encounter.get_patient_by_id(note_id)
+    assert loaded["note_citations"] is None
+    set_current_user(None)
