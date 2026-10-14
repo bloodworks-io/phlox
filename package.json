@@ -13,7 +13,7 @@
         "@fontsource/roboto": "5.3.0",
         "@fontsource/space-grotesk": "5.3.0",
         "@tauri-apps/api": "2.12.2",
-        "@tauri-apps/plugin-http": "2.8.1",
+        "@tauri-apps/plugin-http": "2.8.2",
         "i18next": "26.4.2",
         "next-themes": "0.4.6",
         "pdf-lib": "1.17.1",
