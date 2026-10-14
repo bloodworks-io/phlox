@@ -110,30 +110,54 @@ export const patientApi = {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+    let buffer = "";
     let result = null;
 
+    const parseEvent = (part: string) => {
+      const line = part.split("\n").find((l) => l.startsWith("data: "));
+      if (!line) return;
+
+      let data;
+      try {
+        data = JSON.parse(line.slice(6));
+      } catch {
+        // Ignore parse errors for malformed events
+        return;
+      }
+
+      if (data.type === "status" && onStatus) {
+        onStatus(data.message);
+      } else if (data.type === "error") {
+        throw new Error(data.message || t("api.patient.generateReasoningFailed"));
+      } else if (data.type === "result") {
+        result = data.data;
+      }
+    };
+
     while (true) {
-      const { done, value } = await reader.read();
+      const { value, done } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split("\n");
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split("\n\n");
 
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          try {
-            const data = JSON.parse(line.slice(6));
+      // Keep the last part in the buffer — it may be incomplete
+      buffer = parts.pop() || "";
 
-            if (data.type === "status" && onStatus) {
-              onStatus(data.message);
-            } else if (data.type === "result") {
-              result = data.data;
-            }
-          } catch {
-            // Ignore parse errors for incomplete chunks
-          }
-        }
+      for (const part of parts) {
+        parseEvent(part);
       }
+    }
+
+    // Process any remaining complete event left in the buffer
+    if (buffer.trim()) {
+      parseEvent(buffer);
+    }
+
+    if (result === null) {
+      // Stream ended without a result event (e.g. aborted upstream or a
+      // dropped final payload) — must not surface as a silent success.
+      throw new Error(t("api.patient.generateReasoningFailed"));
     }
 
     if (toast) {
