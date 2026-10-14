@@ -278,4 +278,18 @@ export const patientApi = {
       errorMessage: t("api.patient.fetchSummaryFailed"),
     });
   },
+
+  groundNote: async (request) => {
+    return handleApiRequest({
+      apiCall: async () => {
+        const url = await buildApiUrl("/api/note/ground");
+        return universalFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+        });
+      },
+      errorMessage: t("api.patient.groundNoteFailed"),
+    });
+  },
 };

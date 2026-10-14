@@ -23,6 +23,24 @@ export interface ReasoningItem {
     [key: string]: unknown;
 }
 
+export type CitationVerdict = "supported" | "unverified" | "conflict";
+
+export interface LineCitation {
+    line_index: number;
+    text: string;
+    sources: number[];
+    contradicts: number[];
+    verdict: CitationVerdict;
+}
+
+/** Transcript-grounded citations for one note, keyed by field. */
+export interface NoteCitations {
+    transcript_line_count: number;
+    /** Dismissed flags that stay dismissed: "field_key::line_index". */
+    resolved: string[];
+    fields: Record<string, LineCitation[]>;
+}
+
 export interface ReasoningOutput {
     differentials?: ReasoningItem[];
     investigations?: ReasoningItem[];
@@ -44,6 +62,7 @@ export interface Patient {
     transcription_duration: number | null;
     process_duration: number | null;
     reasoning_output: ReasoningOutput | null;
+    note_citations?: NoteCitations | null;
     isNewEncounter?: boolean;
     previous_visit_summary?: string | null;
     previous_visit_summary_pending?: boolean;

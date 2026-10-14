@@ -1169,7 +1169,8 @@
             "deleteFailed": "Failed to delete patient",
             "fetchOutstandingJobsFailed": "Failed to fetch outstanding jobs",
             "searchFailed": "Failed to search patients",
-            "fetchSummaryFailed": "Failed to fetch patient summary"
+            "fetchSummaryFailed": "Failed to fetch patient summary",
+            "groundNoteFailed": "Failed to ground note citations"
         },
         "settings": {
             "fetchUserSettingsFailed": "Failed to fetch user settings",

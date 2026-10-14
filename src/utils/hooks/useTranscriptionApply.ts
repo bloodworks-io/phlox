@@ -1,7 +1,8 @@
 import { useRef } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { handleProcessingComplete } from "../helpers/processingHelpers";
-import type { Patient, TranscriptionResult } from "../patient/types";
+import { buildNoteCitations } from "../patient/citations";
+import type { LineCitation, Patient, TranscriptionResult } from "../patient/types";
 
 interface UseTranscriptionApplyArgs {
     patient: Patient | null;
@@ -73,6 +74,14 @@ export const useTranscriptionApply = ({
                     setPatient((prev) => ({
                         ...prev,
                         process_duration: data.processDuration,
+                    })),
+                citations: () =>
+                    setPatient((prev) => ({
+                        ...prev,
+                        note_citations: buildNoteCitations(
+                            data.citations as Record<string, LineCitation[]> | undefined,
+                            data.rawTranscription,
+                        ),
                     })),
             },
             setIsSourceCollapsed: () => {},
