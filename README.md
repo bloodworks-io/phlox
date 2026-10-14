@@ -1,5 +1,5 @@
-> [!WARNING]
-> Phlox is an experimental project. Please read the **[Usage Warning](#usage-warning-️)** section carefully before proceeding.
+> [!NOTE]
+> Phlox is not a certified medical device. AI-generated notes are drafts and must always be reviewed. See [Disclaimers](#disclaimers).
 
 <p align="center">
   <img src="/assets/phlox_icon.png" width="150" alt="Phlox Logo">
@@ -102,12 +102,11 @@ Phlox approaches this by chunking transcripts per template field and constrainin
 - **LLM Backend:** Any OpenAI-compatible endpoint (incl. Ollama), or bundled [llama.cpp ](https://github.com/ggml-org/llama.cpp) server
 - **Transcription:** Any OpenAI Whisper-compatible endpoint or bundled [parakeet.cpp](https://github.com/mudler/parakeet.cpp) server
 
-## Usage Warning 
+## Disclaimers
 
-Phlox is an experimental project intended for educational and personal use only. **It is not a certified medical device, should NOT be used for clinical decision-making, and is not suitable for production deployment as provided in this repo.** If you intend to use it in a clinical setting, you are responsible for ensuring compliance with local applicable regulations (HIPAA, GDPR, TGA, etc.)
+Phlox is not a certified medical device and has not been evaluated by any regulatory authority. It is a documentation tool: all AI-generated content (notes, letters, extracted data) is a draft and must be reviewed by the treating clinician before use.
 
-AI outputs can be unreliable. Always verify AI-generated content and use professional clinical judgment. The application displays a disclaimer on startup with full details.
-
+Regulatory compliance (HIPAA, GDPR, TGA, etc.) is a property of your deployment, not of this software; it depends on how and where you run it. Phlox keeps all data on hardware you control (encrypted at rest, no telemetry or third-party services by default), but you are responsible for ensuring your setup meets the obligations that apply to your practice. Provided as-is under the MIT License, without warranty of any kind.
 
 ## License 
 

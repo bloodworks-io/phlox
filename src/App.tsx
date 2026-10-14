@@ -1,0 +1,185 @@
+import { useState, useEffect, useCallback } from "react";
+import { Box } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { mutate } from "swr";
+import { useColorMode } from "./components/ui/color-mode";
+import { useLocation } from "react-router";
+
+import { TemplateProvider } from "./utils/templates/templateContext";
+import { ApiToastProvider } from "./utils/helpers/apiToastContext";
+import { AppInitContext } from "./utils/context/appInit";
+import AppLayout from "./components/layout/AppLayout";
+import AppRoutes from "./components/layout/AppRoutes";
+import ConfirmDialog from "./components/common/ConfirmDialog";
+import NewNoteModal from "./components/modals/NewNoteModal";
+import { handleError } from "./utils/helpers/errorHandlers";
+import { handleLoadPatientDetails } from "./utils/patient/patientHandlers";
+import { usePatientSession } from "./utils/hooks/usePatientSession";
+import { useAppBootstrap } from "./utils/hooks/useAppBootstrap";
+import { useNavigationGuard } from "./utils/hooks/useNavigationGuard";
+import { useSidebarState } from "./utils/hooks/useSidebarState";
+import { useNewNoteFlow } from "./utils/hooks/useNewNoteFlow";
+import { usePatientScope } from "./utils/hooks/usePatientScope";
+
+type AppContentProps = {
+    setIsInitializing: (isInitializing: boolean) => void;
+};
+
+function AppContent({ setIsInitializing }: AppContentProps) {
+    const { t } = useTranslation();
+    const [isModified, setIsModified] = useState(false);
+    const [isFromOutstandingJobs, setIsFromOutstandingJobs] = useState(false);
+    const { isAdmin, patientScope, setPatientScope } = usePatientScope();
+
+    // App-level patient "session": briefcase patient + shared selectedDate +
+    // new-note actions. The editor (PatientDetails) owns its own copy.
+    const {
+        patient,
+        setPatient,
+        selectedDate,
+        setSelectedDate,
+        createNewPatient,
+        findPatients,
+        loadSelectedPatient,
+    } = usePatientSession();
+
+    const bootstrap = useAppBootstrap();
+    const nav = useNavigationGuard(isModified, setIsModified);
+    const newNote = useNewNoteFlow();
+    const { isSidebarCollapsed, toggleSidebar, isSmallScreen } =
+        useSidebarState();
+    const { colorMode, toggleColorMode } = useColorMode();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (setIsInitializing) {
+            setIsInitializing(bootstrap.isInitializing);
+        }
+    }, [bootstrap.isInitializing, setIsInitializing]);
+
+    const fetchPatientDetailsWrapper = useCallback(
+        async (noteId) => {
+            try {
+                await handleLoadPatientDetails(noteId, {
+                    setPatient,
+                    setSelectedDate,
+                    isFromOutstandingJobs,
+                    setIsFromOutstandingJobs,
+                });
+            } catch (error) {
+                handleError(error);
+            }
+        },
+        [isFromOutstandingJobs, setPatient, setSelectedDate],
+    );
+
+    useEffect(() => {
+        if (location.pathname.startsWith("/note/")) {
+            const noteId = location.pathname.split("/").pop();
+            fetchPatientDetailsWrapper(noteId);
+        }
+    }, [location, fetchPatientDetailsWrapper]);
+
+    const refreshSidebar = useCallback(() => {
+        // Invalidate SWR-cached sidebar lists; matches the keys Sidebar subscribes to
+        mutate(
+            (key) =>
+                Array.isArray(key) &&
+                (key[0] === "noteList" || key[0] === "incompleteJobsCount"),
+        );
+    }, []);
+
+    const handleSelectPatient = (
+        selectedPatient,
+        fromOutstandingJobs = false,
+    ) => {
+        setIsFromOutstandingJobs(fromOutstandingJobs);
+        nav.guardedNavigate(`/note/${selectedPatient.id}`);
+    };
+
+    if (bootstrap.gate) {
+        return bootstrap.gate;
+    }
+
+    if (bootstrap.isInitializing) {
+        return <Box className="splash-bg" w="100vw" h="100dvh" />;
+    }
+
+    return (
+        <>
+            <AppLayout
+                isSmallScreen={isSmallScreen}
+                isCollapsed={isSidebarCollapsed}
+                toggleSidebar={toggleSidebar}
+                sidebarProps={{
+                    onNewPatient: () => nav.guardedAction(newNote.openNewNoteModal),
+                    onSelectPatient: handleSelectPatient,
+                    selectedPatientId: location.pathname.startsWith("/note/")
+                        ? patient?.id
+                        : undefined,
+                    selectedDate,
+                    setSelectedDate,
+                    handleNavigation: nav.guardedNavigate,
+                    isCollapsed: isSidebarCollapsed,
+                    toggleSidebar,
+                    isSmallScreen,
+                    colorMode,
+                    toggleColorMode,
+                    isAdmin,
+                    patientScope,
+                    setPatientScope,
+                }}
+            >
+                <AppRoutes
+                    patient={patient}
+                    setPatient={setPatient}
+                    selectedDate={selectedDate}
+                    refreshSidebar={refreshSidebar}
+                    setIsModified={setIsModified}
+                    onResetLetter={newNote.setResetLetter}
+                    onOpenNewNoteModal={newNote.openNewNoteModal}
+                    newNoteKey={newNote.newNoteKey}
+                    handleSelectPatient={handleSelectPatient}
+                    patientScope={patientScope}
+                />
+            </AppLayout>
+            <NewNoteModal
+                key={String(newNote.isNewNoteOpen)}
+                isOpen={newNote.isNewNoteOpen}
+                onClose={newNote.closeNewNoteModal}
+                _patient={undefined}
+                setPatient={setPatient}
+                createNewPatient={createNewPatient}
+                findPatients={findPatients}
+                loadSelectedPatient={loadSelectedPatient}
+                selectedDate={selectedDate}
+                onComplete={newNote.completeNewNote}
+            />
+            <ConfirmDialog
+                isOpen={nav.isLeaveOpen}
+                onClose={nav.cancelNavigation}
+                onConfirm={nav.confirmNavigation}
+                title={t("navigation.confirmTitle")}
+                body={t("navigation.leaveWarning")}
+                confirmLabel={t("navigation.leave")}
+                cancelLabel={undefined}
+            />
+        </>
+    );
+}
+
+function App() {
+    const [isInitializing, setIsInitializing] = useState(true);
+
+    return (
+        <AppInitContext.Provider value={{ isInitializing }}>
+            <ApiToastProvider>
+                <TemplateProvider>
+                    <AppContent setIsInitializing={setIsInitializing} />
+                </TemplateProvider>
+            </ApiToastProvider>
+        </AppInitContext.Provider>
+    );
+}
+
+export default App;

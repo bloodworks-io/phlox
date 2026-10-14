@@ -258,22 +258,22 @@
             "title": "Patient details"
         },
         "disclaimer": {
-            "agreement": "I have read and understand the above warnings. I agree to proceed at my own risk.",
+            "agreement": "I understand AI-generated content is draft output requiring clinician review, and that regulatory compliance of my deployment is my responsibility.",
             "aiHallucinationsBody": "LLM outputs, especially from smaller models, can be unreliable, inaccurate, and may present as plausible but incorrect information. Always verify AI-generated content against trusted sources and use your professional clinical judgment.",
-            "aiHallucinationsLabel": "AI Hallucinations:",
-            "experimentalCodeBody": "The codebase is a work in progress and may contain bugs and inconsistencies.",
-            "experimentalCodeLabel": "Experimental Code:",
-            "intro": "Phlox is an experimental project intended for educational and personal experimentation ONLY.",
-            "keyLimitations": "KEY LIMITATIONS:",
+            "aiHallucinationsLabel": "AI Output:",
+            "experimentalCodeBody": "The codebase is under active development and may contain bugs. Verify output before filing it in the record.",
+            "experimentalCodeLabel": "Actively Developed:",
+            "intro": "Phlox is a documentation tool. All AI-generated content (notes, letters, extracted data) is a draft and must be reviewed and approved by the treating clinician.",
+            "keyLimitations": "KEY POINTS:",
             "license": "This software is provided under the MIT License.",
-            "noAuthBody": "Naively exposing this application to the open internet is highly discouraged. Phlox has no user access controls and minimal input sanitisation.",
-            "noAuthLabel": "No User Authentication:",
-            "noComplianceBody": "Phlox lacks the necessary security and compliance measures for handling protected health information in regulated environments.",
-            "noComplianceLabel": "Not HIPAA/GDPR Compliant:",
-            "notCertified": "AS PROVIDED, IT IS NOT A CERTIFIED MEDICAL DEVICE AND MUST NOT BE USED IN ACTUAL CLINICAL SETTINGS OR FOR CLINICAL DECISION-MAKING.",
+            "noAuthBody": "Do not expose Phlox directly to the open internet. Enable authentication (built-in or via a reverse proxy) in shared environments.",
+            "noAuthLabel": "Network Exposure:",
+            "noComplianceBody": "Compliance (HIPAA, GDPR, TGA, etc.) depends on your deployment environment, not the software itself. Data stays on your hardware, encrypted at rest, but you are responsible for meeting the obligations that apply to your practice.",
+            "noComplianceLabel": "Regulatory Compliance:",
+            "notCertified": "Phlox is not a certified medical device and has not been evaluated by any regulatory authority.",
             "title": "Important Notice",
-            "useAtOwnRisk": "USE AT YOUR OWN RISK and only for non-clinical, educational purposes unless you have implemented robust security measures and undertaken thorough validation.",
-            "warning": "Experimental Software - Use at Your Own Risk"
+            "useAtOwnRisk": "Use at your own risk. Provided as-is, without warranty of any kind.",
+            "warning": "AI-assisted documentation: review all output before use"
         },
         "fieldEditor": {
             "advancedSettings": "Advanced Settings",
@@ -820,6 +820,7 @@
             "tabModelsTooltip": "Manage local LLM and Whisper models",
             "tabChat": "Chat",
             "tabSummary": "Summary",
+            "tabRagChat": "RAG Chat",
             "tabTools": "Tools",
             "tabToolsTooltip": "Configure external tool servers",
             "tabPolicy": "Policy",
@@ -847,7 +848,9 @@
             "chatTitle": "Chat Prompt",
             "chatSubtitle": "System prompt used for chat interactions",
             "summaryTitle": "Summary Prompt",
-            "summarySubtitle": "System prompt used for generating patient summaries"
+            "summarySubtitle": "System prompt used for generating patient summaries",
+            "ragTitle": "RAG Chat Prompt",
+            "ragSubtitle": "System prompt used for knowledge-base chat (no patient context)"
         },
         "chat": {
             "description": "Configure the quick chat buttons that appear in the chat interface.",
@@ -1459,6 +1462,7 @@
         "tabWorkup": "Suggested Workup",
         "tabConsiderations": "Considerations",
         "priority": "Priority",
+        "disclaimer": "Educational considerations for clinician review — not diagnoses. Verify against current guidelines.",
         "badge": {
             "iteration": "Iteration",
             "tool": "Tool",
