@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing! Phlox is an experimental, local-first project and contributions of all kinds are welcome.
 
-Before getting started, please read the [Usage Warning](https://github.com/bloodworks-io/phlox#usage-warning-%EF%B8%8F) — Phlox is experimental software intended for educational and personal use.
+Before getting started, please read the [Disclaimers](https://github.com/bloodworks-io/phlox#disclaimers) section.
 
 ## Ways to Contribute
 
