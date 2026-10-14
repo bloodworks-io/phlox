@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from server.chat.tools import execute_tool_non_streaming, get_tools_definition
+from server.chat.tools.accumulator import coerce_stream_piece, merge_tool_call_delta
 from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.manager import config_manager
 from server.llm_client import repair_json
@@ -49,7 +50,12 @@ async def stream_chart_insights_with_tools(
 
     age = calculate_age(dob, encounter_date)
     reasoning_options = prompts["options"].get("reasoning", {})
-    reasoning_prompt = DEFAULT_PROMPTS["prompts"]["reasoning"]["system"]
+    # Honour the user-configured reasoning prompt (Settings -> Prompts);
+    # fall back to the built-in default if the store predates it.
+    reasoning_prompt = (
+        prompts["prompts"].get("reasoning", {}).get("system")
+        or DEFAULT_PROMPTS["prompts"]["reasoning"]["system"]
+    )
 
     # Format the clinical note
     formatted_note = ""
@@ -115,28 +121,6 @@ Highlight potential documentation gaps and provide standard literature correlati
 
         return str(value).strip()
 
-    def _coerce_stream_piece(value) -> str:
-        if value is None:
-            return ""
-        if isinstance(value, str):
-            return value
-        if isinstance(value, list):
-            parts: list[str] = []
-            for item in value:
-                if isinstance(item, str):
-                    parts.append(item)
-                elif isinstance(item, dict):
-                    text_part = item.get("text") or item.get("content")
-                    if text_part:
-                        parts.append(str(text_part))
-            return "".join(parts)
-        if isinstance(value, dict):
-            text_part = value.get("content") or value.get("text") or value.get("reasoning")
-            if text_part is not None:
-                return _coerce_stream_piece(text_part)
-            return json.dumps(value)
-        return str(value)
-
     def _truncate_for_trace(text: str, max_len: int = 700) -> str:
         if len(text) <= max_len:
             return text
@@ -176,165 +160,139 @@ Highlight potential documentation gaps and provide standard literature correlati
     # Yield initial status
     yield {"type": "status", "message": "Analyzing clinical data..."}
 
-    # Loop for tool calls
-    while tool_iterations < max_tool_iterations:
-        stream = await client.chat(
-            model=config["REASONING_MODEL"],
-            messages=conversation,
-            tools=tools,
-            options=reasoning_options,
-            stream=True,
-        )
-
-        accumulated_reasoning = ""
-        accumulated_content = ""
-        accumulated_tool_calls: dict[int, dict[str, Any]] = {}
-
-        async for chunk in stream:
-            if "message" not in chunk:
-                continue
-
-            msg = chunk["message"]
-
-            reasoning_piece = (
-                msg.get("reasoning") or msg.get("reasoning_content") or msg.get("thinking")
+    # Loop for tool calls. Once the first status event has been yielded the
+    # HTTP response is committed, so LLM failures must surface as error
+    # events rather than exceptions that kill the stream mid-flight.
+    try:
+        while tool_iterations < max_tool_iterations:
+            stream = await client.chat(
+                model=config["REASONING_MODEL"],
+                messages=conversation,
+                tools=tools,
+                options=reasoning_options,
+                stream=True,
             )
-            if reasoning_piece:
-                accumulated_reasoning += _coerce_stream_piece(reasoning_piece)
 
-            if msg.get("content"):
-                accumulated_content += _coerce_stream_piece(msg.get("content"))
+            accumulated_reasoning = ""
+            accumulated_content = ""
+            accumulated_tool_calls: dict[int, dict[str, Any]] = {}
 
-            if "tool_calls" in msg and msg["tool_calls"]:
-                for tc in msg["tool_calls"]:
-                    if hasattr(tc, "index"):
-                        idx = tc.index
-                        if idx not in accumulated_tool_calls:
-                            accumulated_tool_calls[idx] = {
-                                "id": getattr(tc, "id", ""),
-                                "type": getattr(tc, "type", "function"),
-                                "function": {"name": "", "arguments": ""},
-                            }
+            async for chunk in stream:
+                if "message" not in chunk:
+                    continue
 
-                        if hasattr(tc, "function") and tc.function:
-                            if hasattr(tc.function, "name") and tc.function.name:
-                                accumulated_tool_calls[idx]["function"]["name"] += tc.function.name
-                            if hasattr(tc.function, "arguments") and tc.function.arguments:
-                                accumulated_tool_calls[idx]["function"]["arguments"] += (
-                                    tc.function.arguments
-                                )
-                    elif isinstance(tc, dict):
-                        idx = tc.get("index", len(accumulated_tool_calls))
-                        if idx not in accumulated_tool_calls:
-                            accumulated_tool_calls[idx] = {
-                                "id": tc.get("id", ""),
-                                "type": tc.get("type", "function"),
-                                "function": {"name": "", "arguments": ""},
-                            }
+                msg = chunk["message"]
 
-                        function_payload = tc.get("function", {}) or {}
-                        name_part = function_payload.get("name", "")
-                        args_part = function_payload.get("arguments", "")
-
-                        if name_part:
-                            accumulated_tool_calls[idx]["function"]["name"] += name_part
-                        if args_part:
-                            accumulated_tool_calls[idx]["function"]["arguments"] += args_part
-                        if tc.get("id"):
-                            accumulated_tool_calls[idx]["id"] = tc.get("id")
-                        if tc.get("type"):
-                            accumulated_tool_calls[idx]["type"] = tc.get("type")
-
-        accumulated_reasoning = _strip_think_markers(accumulated_reasoning).strip()
-        accumulated_content = _strip_think_markers(accumulated_content).strip()
-        tool_calls = [v for k, v in sorted(accumulated_tool_calls.items())]
-
-        assistant_message: dict[str, Any] = {
-            "role": "assistant",
-            "content": accumulated_content or "",
-        }
-        if accumulated_reasoning:
-            assistant_message["reasoning"] = accumulated_reasoning
-        if tool_calls:
-            assistant_message["tool_calls"] = tool_calls
-        conversation.append(assistant_message)
-
-        if tool_calls:
-            _append_trace_step(
-                f"Iteration {tool_iterations + 1}: model requested {len(tool_calls)} tool call(s)"
-            )
-            _append_reasoning(accumulated_reasoning, label="Pre-tool reasoning")
-            if not accumulated_reasoning:
-                _append_reasoning(accumulated_content, label="Pre-tool assistant note")
-        else:
-            _append_reasoning(
-                accumulated_reasoning or accumulated_content,
-                label="Final non-tool reasoning",
-            )
-            if tool_iterations == 0:
-                logger.info("Chart insights: LLM did not request any tools")
-            break
-
-        if tool_iterations == 0:
-            logger.info(f"Chart insights: LLM requested {len(tool_calls)} tool call(s)")
-
-        logger.info(f"Reasoning tool iteration {tool_iterations + 1}/{max_tool_iterations}")
-
-        # Execute each tool call and yield status
-        for tool_call in tool_calls:
-            try:
-                function_name = tool_call["function"]["name"]
-                function_args = _truncate_for_trace(
-                    _coerce_text(tool_call.get("function", {}).get("arguments"))
+                reasoning_piece = (
+                    msg.get("reasoning") or msg.get("reasoning_content") or msg.get("thinking")
                 )
+                if reasoning_piece:
+                    accumulated_reasoning += coerce_stream_piece(reasoning_piece)
+
+                if msg.get("content"):
+                    accumulated_content += coerce_stream_piece(msg.get("content"))
+
+                if "tool_calls" in msg and msg["tool_calls"]:
+                    for tc in msg["tool_calls"]:
+                        merge_tool_call_delta(accumulated_tool_calls, tc)
+
+            accumulated_reasoning = _strip_think_markers(accumulated_reasoning).strip()
+            accumulated_content = _strip_think_markers(accumulated_content).strip()
+            tool_calls = [v for k, v in sorted(accumulated_tool_calls.items())]
+
+            assistant_message: dict[str, Any] = {
+                "role": "assistant",
+                "content": accumulated_content or "",
+            }
+            if accumulated_reasoning:
+                assistant_message["reasoning"] = accumulated_reasoning
+            if tool_calls:
+                assistant_message["tool_calls"] = tool_calls
+            conversation.append(assistant_message)
+
+            if tool_calls:
                 _append_trace_step(
-                    f"Tool call: {function_name}"
-                    + (f" | args: {function_args}" if function_args else "")
+                    f"Iteration {tool_iterations + 1}: model requested {len(tool_calls)} tool call(s)"
                 )
+                _append_reasoning(accumulated_reasoning, label="Pre-tool reasoning")
+                if not accumulated_reasoning:
+                    _append_reasoning(accumulated_content, label="Pre-tool assistant note")
+            else:
+                _append_reasoning(
+                    accumulated_reasoning or accumulated_content,
+                    label="Final non-tool reasoning",
+                )
+                if tool_iterations == 0:
+                    logger.info("Chart insights: LLM did not request any tools")
+                break
 
-                # Yield status update based on tool type
-                if function_name == "pubmed_search":
-                    yield {"type": "status", "message": "Searching PubMed..."}
-                elif function_name == "wiki_search":
-                    yield {"type": "status", "message": "Searching Wikipedia..."}
-                elif function_name == "get_previous_encounter":
-                    yield {"type": "status", "message": "Retrieving previous encounters..."}
-                elif function_name == "get_relevant_literature":
-                    yield {"type": "status", "message": "Searching clinical guidelines..."}
-                elif function_name.startswith("mcp_"):
-                    tool_display = function_name.replace("mcp_", "").replace("_", " ")
-                    yield {"type": "status", "message": f"Running {tool_display}..."}
-                else:
-                    yield {"type": "status", "message": f"Processing {function_name}..."}
+            if tool_iterations == 0:
+                logger.info(f"Chart insights: LLM requested {len(tool_calls)} tool call(s)")
 
-                result, tool_citations = await execute_tool_non_streaming(
-                    tool_call, config, vector_store_manager=get_vector_store_manager()
-                )
-                result_preview = _truncate_for_trace(_coerce_text(result))
-                _append_trace_step(f"Tool result: {function_name}\n{result_preview}")
-                if tool_citations:
-                    citations.extend(tool_citations)
-                tool_id = tool_call.get("id", "")
-                conversation.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_id,
-                        "content": result,
-                    }
-                )
-            except Exception as e:
-                logger.error(f"Error executing tool in reasoning: {e}")
-                _append_trace_step(f"Tool error: {function_name} -> {str(e)}")
-                tool_id = tool_call.get("id", "")
-                conversation.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_id,
-                        "content": f"Error executing tool: {str(e)}",
-                    }
-                )
+            logger.info(f"Reasoning tool iteration {tool_iterations + 1}/{max_tool_iterations}")
 
-        tool_iterations += 1
+            # Execute each tool call and yield status
+            for tool_call in tool_calls:
+                try:
+                    function_name = tool_call["function"]["name"]
+                    function_args = _truncate_for_trace(
+                        _coerce_text(tool_call.get("function", {}).get("arguments"))
+                    )
+                    _append_trace_step(
+                        f"Tool call: {function_name}"
+                        + (f" | args: {function_args}" if function_args else "")
+                    )
+
+                    # Yield status update based on tool type
+                    if function_name == "pubmed_search":
+                        yield {"type": "status", "message": "Searching PubMed..."}
+                    elif function_name == "wiki_search":
+                        yield {"type": "status", "message": "Searching Wikipedia..."}
+                    elif function_name == "get_previous_encounter":
+                        yield {"type": "status", "message": "Retrieving previous encounters..."}
+                    elif function_name == "get_relevant_literature":
+                        yield {"type": "status", "message": "Searching clinical guidelines..."}
+                    elif function_name.startswith("mcp_"):
+                        tool_display = function_name.replace("mcp_", "").replace("_", " ")
+                        yield {"type": "status", "message": f"Running {tool_display}..."}
+                    else:
+                        yield {"type": "status", "message": f"Processing {function_name}..."}
+
+                    result, tool_citations = await execute_tool_non_streaming(
+                        tool_call, config, vector_store_manager=get_vector_store_manager()
+                    )
+                    result_preview = _truncate_for_trace(_coerce_text(result))
+                    _append_trace_step(f"Tool result: {function_name}\n{result_preview}")
+                    if tool_citations:
+                        citations.extend(tool_citations)
+                    tool_id = tool_call.get("id", "")
+                    conversation.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_id,
+                            "content": result,
+                        }
+                    )
+                except Exception as e:
+                    logger.error(f"Error executing tool in reasoning: {e}")
+                    _append_trace_step(f"Tool error: {function_name} -> {str(e)}")
+                    tool_id = tool_call.get("id", "")
+                    conversation.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_id,
+                            "content": f"Error executing tool: {str(e)}",
+                        }
+                    )
+
+            tool_iterations += 1
+    except Exception as e:
+        logger.error(f"Chart insights: LLM tool loop failed: {e}")
+        yield {
+            "type": "error",
+            "message": "Could not reach the analysis model. Please try again.",
+        }
+        return
 
     if tool_iterations > 0:
         logger.info(
@@ -390,16 +348,37 @@ Highlight potential documentation gaps and provide standard literature correlati
     # Yield final status
     yield {"type": "status", "message": "Generating final analysis..."}
 
-    final_response = await client.chat(
-        model=config["REASONING_MODEL"],
-        messages=conversation,
-        format=ChartInsights.model_json_schema(),
-        options=reasoning_options,
-    )
+    try:
+        final_response = await client.chat(
+            model=config["REASONING_MODEL"],
+            messages=conversation,
+            format=ChartInsights.model_json_schema(),
+            options=reasoning_options,
+        )
+    except Exception as e:
+        logger.error(f"Chart insights: final analysis request failed: {e}")
+        yield {
+            "type": "error",
+            "message": "Could not reach the analysis model. Please try regenerating.",
+        }
+        return
 
     raw_content = final_response["message"]["content"]
-    repaired_content = repair_json(raw_content)
-    content_dict = json.loads(repaired_content)
+
+    try:
+        repaired_content = repair_json(raw_content)
+        content_dict = json.loads(repaired_content)
+        if not isinstance(content_dict, dict):
+            raise ValueError("model output is not a JSON object")
+    except Exception as e:
+        # Malformed final output must not kill the stream — surface an
+        # error event so the UI can show a recoverable failure state.
+        logger.error(f"Chart insights: failed to parse final model output: {e}")
+        yield {
+            "type": "error",
+            "message": "The model returned an unreadable analysis. Please try regenerating.",
+        }
+        return
 
     accumulated_thinking = "\n\n".join([entry for entry in reasoning_trace if entry]).strip()
     accumulated_thinking = _strip_think_markers(accumulated_thinking).strip()
@@ -416,7 +395,15 @@ Highlight potential documentation gaps and provide standard literature correlati
         content_dict["citations"] = citations
         logger.info(f"Chart insights: Added {len(citations)} citation(s) to output")
 
-    result = ChartInsights.model_validate(content_dict)
+    try:
+        result = ChartInsights.model_validate(content_dict)
+    except Exception as e:
+        logger.error(f"Chart insights: final output failed schema validation: {e}")
+        yield {
+            "type": "error",
+            "message": "The model returned an incomplete analysis. Please try regenerating.",
+        }
+        return
 
     # Yield final result
     yield {"type": "result", "data": result.model_dump()}
