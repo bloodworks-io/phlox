@@ -509,7 +509,6 @@ const PatientDetails = ({
                 title={t("navigation.confirmTitle")}
                 body={t("navigation.leaveWarning")}
                 confirmLabel={t("navigation.leave")}
-                cancelLabel={undefined}
             />
             {/* Scribe Pill Box - centered at bottom */}
             <ScribePillBox

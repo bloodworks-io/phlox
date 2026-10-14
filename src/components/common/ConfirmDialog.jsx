@@ -8,7 +8,7 @@ const ConfirmDialog = ({
     title,
     body,
     confirmLabel,
-    cancelLabel,
+    cancelLabel = undefined,
 }) => {
     const { t } = useTranslation();
     const cancelText = cancelLabel ?? t("action.cancel");

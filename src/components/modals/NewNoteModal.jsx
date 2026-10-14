@@ -25,7 +25,6 @@ const btnSx = {
 const NewNoteModal = ({
     isOpen,
     onClose,
-    _patient,
     setPatient,
     createNewPatient,
     findPatients,

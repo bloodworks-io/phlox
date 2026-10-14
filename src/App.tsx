@@ -147,7 +147,6 @@ function AppContent({ setIsInitializing }: AppContentProps) {
                 key={String(newNote.isNewNoteOpen)}
                 isOpen={newNote.isNewNoteOpen}
                 onClose={newNote.closeNewNoteModal}
-                _patient={undefined}
                 setPatient={setPatient}
                 createNewPatient={createNewPatient}
                 findPatients={findPatients}
@@ -162,7 +161,6 @@ function AppContent({ setIsInitializing }: AppContentProps) {
                 title={t("navigation.confirmTitle")}
                 body={t("navigation.leaveWarning")}
                 confirmLabel={t("navigation.leave")}
-                cancelLabel={undefined}
             />
         </>
     );
