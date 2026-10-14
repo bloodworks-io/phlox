@@ -4,6 +4,7 @@ export type ScribeMode = "agent" | "ambient" | "dictate";
 export interface TemplateField {
     field_key: string;
     field_name: string;
+    persistent?: boolean;
     style_example?: string | null;
     system_prompt?: string | null;
     refinement_rules?: string[];

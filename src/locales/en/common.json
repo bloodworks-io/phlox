@@ -582,6 +582,7 @@
         "noPatientFound": "No patient found",
         "noPatientMatch": "No patient matches \"{{query}}\". Fill in their details to create a new record.",
         "noTasks": "No tasks",
+        "agentEditedPersistentField": "The live agent modified this persistent field — review before saving; it persists to future encounters.",
         "noteHeading": "Note",
         "patientDetails": "Patient Details",
         "persistsBetweenEncounters": "Persists between encounters.",

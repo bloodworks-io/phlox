@@ -1,8 +1,10 @@
 import React, {
+  useState,
   useRef,
   forwardRef,
   useImperativeHandle,
 } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import TextareaAutosize from "react-textarea-autosize";
 import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
@@ -13,13 +15,38 @@ import {
   CopyIcon,
   CheckIcon,
 } from "../common/icons";
-import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText } from "react-icons/fa";
+import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText, FaExclamationTriangle } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { useTemplateChange } from "../../utils/hooks/useTemplateChange";
 import ConfirmDialog from "../common/ConfirmDialog";
+import type { Patient } from "../../utils/patient/types";
 
-const Summary = forwardRef(
+interface SummaryProps {
+  isSummaryCollapsed: boolean;
+  patient: Patient;
+  setPatient: Dispatch<SetStateAction<Patient | null>>;
+  handleGenerateLetterClick: (letterTemplateKey: string | null) => void;
+  handleSavePatientData: (event?: React.FormEvent) => void | Promise<void>;
+  saveLoading?: boolean;
+  onWrapUp: () => void;
+  wrapUpLoading?: boolean;
+  setIsModified: (value: boolean) => void;
+  onCopy: () => void;
+  recentlyCopied?: boolean;
+  isNewPatient?: boolean;
+  selectTemplate: (templateKey: string) => void;
+  isSearchedPatient?: boolean;
+  isEncounterSaved?: boolean;
+  liveUpdatedFields?: Record<string, number>;
+  agentEdits?: Record<string, string>;
+}
+
+export interface SummaryHandle {
+  resizeTextarea: () => void;
+}
+
+const Summary = forwardRef<SummaryHandle, SummaryProps>(
   (
     {
       isSummaryCollapsed,
@@ -38,6 +65,7 @@ const Summary = forwardRef(
       isSearchedPatient,
       isEncounterSaved = false,
       liveUpdatedFields = {},
+      agentEdits = {},
     },
     ref,
   ) => {
@@ -48,7 +76,12 @@ const Summary = forwardRef(
       status: templateStatus,
     } = useTemplateSelection();
 
-    const textareasRefs = useRef({});
+    const textareasRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
+    // Fields edited locally since mount — clears the agent-edit review marker.
+    const [clinicianEdited, setClinicianEdited] = useState<Set<string>>(
+      new Set(),
+    );
+
     const {
         isChangeModalOpen: isTemplateChangeModalOpen,
         requestTemplateChange,
@@ -56,7 +89,7 @@ const Summary = forwardRef(
         confirmTemplateChange,
     } = useTemplateChange({ patient, setPatient, selectTemplate });
 
-    const handleTemplateChange = async (e) => {
+    const handleTemplateChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newTemplateKey = e.target.value;
 
       if (!isNewPatient && !isSearchedPatient) {
@@ -72,7 +105,7 @@ const Summary = forwardRef(
       requestTemplateChange(newTemplateKey);
     };
 
-    const handleTemplateDataChange = (fieldKey, value) => {
+    const handleTemplateDataChange = (fieldKey: string, value: string) => {
       setPatient((prev) => ({
         ...prev,
         template_data: {
@@ -81,6 +114,12 @@ const Summary = forwardRef(
         },
       }));
       setIsModified(true);
+      setClinicianEdited((prev) => {
+        if (prev.has(fieldKey)) return prev;
+        const next = new Set(prev);
+        next.add(fieldKey);
+        return next;
+      });
     };
 
     const renderField = (field) => {
@@ -98,6 +137,31 @@ const Summary = forwardRef(
         </Tooltip>
       ) : null;
 
+      // Persistent field last written by the live agent and not re-edited
+      // locally — flag it so the howler is reviewed before it persists
+      // into future encounters.
+      const agentEdited =
+        field.persistent &&
+        agentEdits[field.field_key] === "agent" &&
+        !clinicianEdited.has(field.field_key);
+      const agentEditMarker = agentEdited ? (
+        <Tooltip
+          content={t("patient.agentEditedPersistentField")}
+          showArrow
+          positioning={{
+            placement: "right"
+          }}
+        >
+          <Box
+            as="span"
+            className="cohesive-agent-edit-marker"
+            aria-label={t("patient.agentEditedPersistentField")}
+          >
+            <FaExclamationTriangle />
+          </Box>
+        </Tooltip>
+      ) : null;
+
       // Live agent update flash: re-mounts on each new timestamp so the
       // one-shot animation replays when the agent edits the field.
       const liveFlash = liveUpdatedFields[field.field_key];
@@ -108,7 +172,7 @@ const Summary = forwardRef(
           className={`cohesive-field${liveFlash ? " live-field-updated" : ""}`}
         >
           <Text className="cohesive-field-label">
-            {field.field_name}:{persistentMarker}
+            {field.field_name}:{persistentMarker}{agentEditMarker}
           </Text>
           <TextareaAutosize
             placeholder={t("patient.enterTextPlaceholder")}
@@ -117,7 +181,9 @@ const Summary = forwardRef(
               handleTemplateDataChange(field.field_key, e.target.value);
             }}
             className="cohesive-textarea"
-            ref={(el) => (textareasRefs.current[field.field_key] = el)}
+            ref={(el) => {
+              textareasRefs.current[field.field_key] = el;
+            }}
           />
         </Box>
       );
@@ -169,7 +235,7 @@ const Summary = forwardRef(
                     style={{ marginRight: "8px" }}
                     className="pill-box-icons"
                   />
-                  <NativeSelect.Root>
+                  <NativeSelect.Root size="sm" disabled={!isNewPatient}>
                     <NativeSelect.Field
                       placeholder={t("patient.selectTemplate")}
                       value={
@@ -178,10 +244,8 @@ const Summary = forwardRef(
                         ""
                       }
                       onChange={handleTemplateChange}
-                      size="sm"
                       width={["100px", "150px", "200px"]}
-                      className="input-style"
-                      disabled={!isNewPatient}>
+                      className="input-style">
                       {/* Show "Historical Template" only for viewing historical encounters */}
                       {!isNewPatient &&
                         !isSearchedPatient &&
@@ -324,6 +388,7 @@ const Summary = forwardRef(
           title={t("patient.templateChangeTitle")}
           body={t("patient.templateChangeBody")}
           confirmLabel={t("patient.templateChangeConfirm")}
+          cancelLabel={t("action.cancel")}
         />
       </>
     );

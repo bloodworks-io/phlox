@@ -49,6 +49,7 @@ interface LiveEvent {
     count?: number;
     jobs?: LiveJob[];
     artifact?: LiveArtifact;
+    fields?: Record<string, string>;
     [key: string]: unknown;
 }
 
@@ -80,6 +81,7 @@ export const useLiveAgent = ({
     const [lastError, setLastError] = useState<string | null>(null);
     const [backlog, setBacklog] = useState(0);
     const [fieldFlash, setFieldFlash] = useState<Record<string, number>>({});
+    const [agentEdits, setAgentEdits] = useState<Record<string, string>>({});
 
     const sessionIdRef = useRef<string | null>(null);
     const recorderRef = useRef<AudioRecorder | null>(null);
@@ -179,6 +181,10 @@ export const useLiveAgent = ({
                         ...prev,
                         [event.field_key]: Date.now(),
                     }));
+                    setAgentEdits((prev) => ({
+                        ...prev,
+                        [event.field_key]: "agent",
+                    }));
                     pushStatus(
                         t("liveAgent.status.noteUpdated", {
                             field: event.field_key,
@@ -197,6 +203,9 @@ export const useLiveAgent = ({
                         },
                     }));
                     noteChangedRef.current?.();
+                    break;
+                case "agent_edits":
+                    setAgentEdits((prev) => ({ ...prev, ...(event.fields ?? {}) }));
                     break;
                 case "agent_status":
                     pushStatus(event.content);
@@ -351,6 +360,7 @@ export const useLiveAgent = ({
             setArtifacts([]);
             setStagedJobs([]);
             setFieldFlash({});
+            setAgentEdits({});
             setBacklog(0);
             setStatus("live");
             setAgentState("listening");
@@ -406,6 +416,12 @@ export const useLiveAgent = ({
                     },
                 }));
                 noteChangedRef.current?.();
+            }
+            if (finalState?.agent_edits) {
+                setAgentEdits((prev) => ({
+                    ...prev,
+                    ...(finalState.agent_edits as Record<string, string>),
+                }));
             }
             return finalState;
         } catch (error) {
@@ -515,6 +531,7 @@ export const useLiveAgent = ({
         artifacts,
         stagedJobs,
         fieldFlash,
+        agentEdits,
         lastError,
         backlog,
         startLive,

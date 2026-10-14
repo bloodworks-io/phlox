@@ -14,7 +14,7 @@ import { useNavigate, useLocation } from "react-router";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
 import NewNoteStartCard from "../components/patient/NewNoteStartCard";
 import { useScribe } from "../components/patient/Scribe";
-import SummaryBase from "../components/patient/Summary";
+import Summary from "../components/patient/Summary";
 import Chat from "../components/panels/chat/Chat";
 import LetterBase from "../components/panels/letter/Letter";
 import ReasoningPanelBase from "../components/panels/reasoning/ReasoningPanel";
@@ -51,7 +51,6 @@ import type {
 } from "../utils/patient/types";
 
 // loosen props until each is converted to .tsx
-const Summary = SummaryBase as unknown as ComponentType<any>;
 const Letter = LetterBase as unknown as ComponentType<any>;
 const ReasoningPanel = ReasoningPanelBase as unknown as ComponentType<any>;
 
@@ -439,6 +438,7 @@ const PatientDetails = ({
                     recentlyCopied={recentlyCopied}
                     isEncounterSaved={Boolean(patient?.id)}
                     liveUpdatedFields={liveAgent.fieldFlash}
+                    agentEdits={liveAgent.agentEdits}
                 />
 
                 <WrapUpModal

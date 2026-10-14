@@ -133,6 +133,17 @@ const inputStyles = (props) => ({
                 : `${colors.dark.overlay0} !important`,
         fontSize: "0.7rem !important",
     },
+    ".cohesive-agent-edit-marker": {
+        marginLeft: "4px !important",
+        display: "inline-flex !important",
+        alignItems: "center !important",
+        verticalAlign: "middle !important",
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.secondaryButton} !important`
+                : `${colors.dark.secondaryButton} !important`,
+        fontSize: "0.7rem !important",
+    },
     ".cohesive-textarea": {
         backgroundColor: "transparent !important",
         border: "none !important",
