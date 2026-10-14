@@ -169,6 +169,7 @@ async def chat(
         patient_context = (
             chat_request.patient_context.model_dump() if chat_request.patient_context else None
         )
+        mode = chat_request.mode
 
         async def generate():
             chunk_count = 0
@@ -176,6 +177,7 @@ async def chat(
                 conversation_history,
                 raw_transcription=raw_transcription,
                 patient_context=patient_context,
+                mode=mode,
             ):
                 chunk_count += 1
                 yield f"data: {json.dumps(chunk)}\n\n"

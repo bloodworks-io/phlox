@@ -820,7 +820,6 @@
             "tabModelsTooltip": "Manage local LLM and Whisper models",
             "tabChat": "Chat",
             "tabSummary": "Summary",
-            "tabRagChat": "RAG Chat",
             "tabTools": "Tools",
             "tabToolsTooltip": "Configure external tool servers",
             "tabPolicy": "Policy",
@@ -845,12 +844,12 @@
             "kvWarmingDescription": "Pre-warm the note-generation prompt with the transcript as it grows. On by default with the bundled local model; enabling overrides that for any endpoint; effective for self-hosted servers (vLLM, Ollama), but multiplies billed input tokens on metered cloud APIs."
         },
         "prompt": {
-            "chatTitle": "Chat Prompt",
-            "chatSubtitle": "System prompt used for chat interactions",
+            "chatTitle": "Patient Chat",
+            "chatSubtitle": "System prompt used for the patient encounter chat (patient context attached)",
             "summaryTitle": "Summary Prompt",
             "summarySubtitle": "System prompt used for generating patient summaries",
-            "ragTitle": "RAG Chat Prompt",
-            "ragSubtitle": "System prompt used for knowledge-base chat (no patient context)"
+            "ragTitle": "Dashboard Chat",
+            "ragSubtitle": "System prompt used for the dashboard chat (no patient context)"
         },
         "chat": {
             "description": "Configure the quick chat buttons that appear in the chat interface.",

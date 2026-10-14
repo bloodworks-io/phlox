@@ -89,6 +89,9 @@ class ConfigManager:
             for row in cursor.fetchall():
                 prompts[row["key"]] = {"system": row["system"]}
 
+            for key, prompt in DEFAULT_PROMPTS["prompts"].items():
+                prompts.setdefault(key, {"system": prompt["system"]})
+
             options = {}
             cursor.execute("SELECT category, key, value FROM options")
             for row in cursor.fetchall():

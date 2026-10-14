@@ -3,13 +3,6 @@ import { useTranslation } from "react-i18next";
 import { chatApi } from "../api/chatApi";
 import { formatPatientContext } from "../chat/messageUtils";
 
-// Simple mode for RAG chat (no patient/template required)
-const RAG_SYSTEM_MESSAGE = {
-    role: "system",
-    content:
-        "The user is a qualified healthcare professional. They will ask you general questions about medical conditions, treatment and guidelines. You are an informational and educational assistant only; you are NOT a clinical decision support tool. Do not provide definitive diagnoses or treatment recommendations. All responses are general and educational; the clinician is solely responsible for all clinical decisions and must rely on their own professional judgement and current authoritative guidelines.",
-};
-
 const getClinicianToolActionLabel = (toolName = "", t) => {
     const normalized = String(toolName).toLowerCase();
 
@@ -128,11 +121,11 @@ export const useChat = ({ mode = "patient" } = {}) => {
             setShowSuggestions(false);
 
             try {
-                let initialMessage;
                 let patientContext = null;
 
                 if (mode === "rag") {
-                    initialMessage = RAG_SYSTEM_MESSAGE;
+                    // RAG mode: no patient context; the backend selects the
+                    // RAG system prompt based on the mode field.
                 } else {
                     // Format patient context for the backend to build the system message
                     patientContext = formatPatientContext(
@@ -142,15 +135,11 @@ export const useChat = ({ mode = "patient" } = {}) => {
                     if (!patientContext) {
                         throw new Error("Failed to format patient context");
                     }
-                    // No initial message needed - backend will build system message from patient context
-                    initialMessage = null;
                 }
 
-                // Messages for API are just the conversation history (no initial message with patient data)
-                // Use userMessageForApi which includes extracted attachment text
-                const messagesForApi = initialMessage
-                    ? [initialMessage, ...messages, userMessageForApi]
-                    : [...messages, userMessageForApi];
+                // Messages for API are just the conversation history (no
+                // client-side system messages; the backend owns those)
+                const messagesForApi = [...messages, userMessageForApi];
 
                 let fullContent = "";
                 let firstChunkSeen = false;
@@ -170,6 +159,7 @@ export const useChat = ({ mode = "patient" } = {}) => {
                     messagesForApi,
                     rawTranscription,
                     patientContext,
+                    mode,
                 )) {
                     if (
                         !firstChunkSeen &&

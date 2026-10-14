@@ -1,4 +1,4 @@
-import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button, Switch } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button, Switch, Separator } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import AnimatedChevron from "../common/icons/AnimatedChevron";
 import {
@@ -404,6 +404,23 @@ const AdminSettingsPanel = ({
                                             handlePromptReset("chat")
                                         }
                                     />
+                                    <Separator my={6} />
+                                    <PromptEditorTab
+                                        title={t("settings.prompt.ragTitle")}
+                                        subtitle={t("settings.prompt.ragSubtitle")}
+                                        value={prompts?.rag?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "rag",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("rag")
+                                        }
+                                    />
                                 </Tabs.Content>
                                 <Tabs.Content
                                     className="floating-main"
@@ -604,6 +621,23 @@ const AdminSettingsPanel = ({
                                         onReset={() =>
                                             handlePromptReset &&
                                             handlePromptReset("chat")
+                                        }
+                                    />
+                                    <Separator my={6} />
+                                    <PromptEditorTab
+                                        title={t("settings.prompt.ragTitle")}
+                                        subtitle={t("settings.prompt.ragSubtitle")}
+                                        value={prompts?.rag?.system}
+                                        onChange={(value) =>
+                                            handlePromptChange(
+                                                "rag",
+                                                "system",
+                                                value,
+                                            )
+                                        }
+                                        onReset={() =>
+                                            handlePromptReset &&
+                                            handlePromptReset("rag")
                                         }
                                     />
                                 </Tabs.Content>

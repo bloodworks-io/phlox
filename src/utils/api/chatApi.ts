@@ -8,6 +8,7 @@ export const chatApi = {
         messages,
         rawTranscription = null,
         patientContext = null,
+        mode = "patient",
     ) => {
         return handleApiRequest({
             apiCall: async () => {
@@ -19,6 +20,7 @@ export const chatApi = {
                         messages,
                         raw_transcription: rawTranscription,
                         patient_context: patientContext,
+                        mode,
                     }),
                 });
             },
@@ -101,6 +103,7 @@ export const chatApi = {
         messages,
         rawTranscription = null,
         patientContext = null,
+        mode = "patient",
     ) {
         const url = await buildApiUrl("/api/chat");
         const response = await universalFetch(url, {
@@ -110,6 +113,7 @@ export const chatApi = {
                 messages,
                 raw_transcription: rawTranscription,
                 patient_context: patientContext,
+                mode,
             }),
         });
 

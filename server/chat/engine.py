@@ -78,6 +78,7 @@ class ChatEngine:
         conversation_history: list,
         raw_transcription=None,
         patient_context: dict | None = None,
+        mode: str = "patient",
     ):
         """
         Generate a streaming response based on the conversation history and relevant literature.
@@ -87,6 +88,7 @@ class ChatEngine:
             raw_transcription: Optional raw transcription
             patient_context: Optional patient context dict containing name, dob, ur_number,
                            encounter_date, template_data, and template_fields
+            mode: Chat mode — 'patient' (default) or 'rag' (knowledge-base chat)
         """
         prompts = config_manager.get_prompts_and_options()
         collection_names = (
@@ -108,9 +110,11 @@ class ChatEngine:
         # ensures system messages are only at the beginning)
         filtered_history = [m for m in cleaned_conversation_history if m.get("role") != "system"]
 
-        # Build system messages with patient context
+        # Build system messages with patient context (mode selects the prompt)
         template_fields = patient_context.get("template_fields") if patient_context else None
-        message_list = build_system_messages(patient_context, template_fields) + filtered_history
+        message_list = (
+            build_system_messages(patient_context, template_fields, mode) + filtered_history
+        )
 
         # Debug-level only: the message list embeds patient context (PHI)
         self.logger.debug(f"Message list: {message_list}")
