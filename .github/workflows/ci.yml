@@ -121,7 +121,7 @@ jobs:
           mkdir -p src-tauri/server_dist
           touch src-tauri/server_dist/placeholder
 
-      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: src-tauri
 
