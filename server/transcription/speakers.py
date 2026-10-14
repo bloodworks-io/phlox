@@ -35,9 +35,25 @@ DISTANT_MINT_THRESHOLD = 0.30
 MODEL_FILENAME = "campplus-zh-en.onnx"
 
 
+def sanitize_utterance(text: str) -> str:
+    """Collapse all whitespace runs to single spaces — one utterance, one line."""
+    return " ".join(text.split())
+
+
 def format_segment(speaker: str | None, text: str) -> str:
     """Prefix a transcript line with the speaker label, if any."""
+    text = sanitize_utterance(text)
     return f"{speaker}: {text}" if speaker else text
+
+
+def numbered_transcript(raw: str) -> list[tuple[int, str]]:
+    """Non-empty transcript lines with their split-indices (empty lines keep theirs)."""
+    return [(i, line) for i, line in enumerate(raw.split("\n")) if line.strip()]
+
+
+def render_numbered(raw: str) -> str:
+    """Render a transcript with 0-based line indices for LLM prompts."""
+    return "\n".join(f"[{i}] {line}" for i, line in numbered_transcript(raw))
 
 
 def split_speaker_segment(segment: str) -> tuple[str | None, str]:

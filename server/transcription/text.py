@@ -12,7 +12,7 @@ from server.llm_client.client import get_llm_client
 from server.schemas.grammars import MultiFieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
 from server.transcription.refinement import refine_field_content
-from server.transcription.speakers import speaker_legend_hint
+from server.transcription.speakers import render_numbered, speaker_legend_hint
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +116,13 @@ INSTRUCTIONS: {(field.system_prompt or "").strip()}"""
     if legend:
         intro += f" {legend}"
 
+    # Prompt-layer line indices: grounding's citation keys, numbered once here
+    # so warm -> extraction -> grounding share a byte-identical prefix.
+    intro += (
+        " Transcript lines are prefixed with 0-based indices in brackets for "
+        "reference; never include these indices in your output."
+    )
+
     system_content = f"""{intro}
 
 {patient_context_str}
@@ -129,7 +136,7 @@ Output MUST be ONLY valid JSON with top-level key "field_summaries" (object mapp
 
     return [
         {"role": "system", "content": system_content},
-        {"role": "user", "content": transcript_text},
+        {"role": "user", "content": render_numbered(transcript_text)},
     ]
 
 

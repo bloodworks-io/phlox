@@ -7,6 +7,7 @@ from typing import Union
 import httpx
 
 from server.database.config.manager import config_manager
+from server.transcription.speakers import sanitize_utterance
 from server.utils.whisper_models import whisper_model_manager
 
 logger = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ async def _transcribe_local_whisper(
 
             if "segments" in result:
                 transcript_text = "\n".join(
-                    segment["text"].strip() for segment in result["segments"]
+                    sanitize_utterance(segment["text"]) for segment in result["segments"]
                 )
             else:
                 transcript_text = result["text"]
@@ -179,7 +180,9 @@ async def _transcribe_external_api(
 
         if "segments" in result:
             # Extract text from each segment and join with newlines
-            transcript_text = "\n".join(segment["text"].strip() for segment in result["segments"])
+            transcript_text = "\n".join(
+                sanitize_utterance(segment["text"]) for segment in result["segments"]
+            )
         else:
             transcript_text = result["text"]
 

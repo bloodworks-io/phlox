@@ -72,6 +72,29 @@ class NarrativeResponse(BaseModel):
     )
 
 
+# Note Grounding
+class GroundedLine(BaseModel):
+    """One note line's grounding against the transcript, by line index only."""
+
+    line_index: int = Field(description="0-based index of the note line, in the order provided")
+    sources: list[int] = Field(
+        default_factory=list,
+        description="0-based transcript line indices that directly support this note line",
+    )
+    contradicts: list[int] = Field(
+        default_factory=list,
+        description="0-based transcript line indices that state the opposite of this note line",
+    )
+
+
+class GroundingResponse(BaseModel):
+    """
+    Structured model for post-hoc note grounding (indices only, no text echo).
+    """
+
+    lines: list[GroundedLine]
+
+
 # Patient Analysis
 class PreviousVisitSummary(BaseModel):
     """
