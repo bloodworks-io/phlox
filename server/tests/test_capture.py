@@ -691,7 +691,11 @@ async def test_finalize_runs_batch_pipeline(monkeypatch):
             fields=kwargs["template_fields"],
             primary=kwargs.get("primary_condition"),
         )
-        return {"fields": {"plan": "ok"}, "process_duration": 1.5}
+        return {
+            "fields": {"plan": "ok"},
+            "citations": {"plan": [{"line_index": 0, "verdict": "supported"}]},
+            "process_duration": 1.5,
+        }
 
     monkeypatch.setattr("server.transcription.text.process_transcription", fake_process)
 
@@ -700,6 +704,7 @@ async def test_finalize_runs_batch_pipeline(monkeypatch):
     assert calls["transcript"] == "line one\nline two"
     assert calls["is_ambient"] is False
     assert result["fields"] == {"plan": "ok"}
+    assert result["citations"] == {"plan": [{"line_index": 0, "verdict": "supported"}]}
     assert result["rawTranscription"] == "line one\nline two"
     # Cumulative ASR seconds, not the batch wait of zero.
     assert result["transcriptionDuration"] == pytest.approx(0.82)
@@ -942,6 +947,29 @@ def test_stop_capture_session_returns_fields(monkeypatch):
 def test_stop_capture_session_unknown_404():
     response = client.post("/api/transcribe/capture/sessions/nope/stop")
     assert response.status_code == 404
+
+
+def test_reprocess_returns_citations(monkeypatch):
+    """The /reprocess response carries grounding citations through to the client."""
+
+    async def fake_process(**_kwargs):
+        return {
+            "fields": {"plan": "ok"},
+            "citations": {"plan": [{"line_index": 0, "verdict": "supported", "sources": [1]}]},
+            "process_duration": 1.5,
+        }
+
+    monkeypatch.setattr("server.api.transcribe.process_transcription", fake_process)
+
+    response = client.post(
+        "/api/transcribe/reprocess",
+        data={"transcript_text": "S1: hello\nS2: plan stuff", "templateKey": "phlox_01"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["fields"] == {"plan": "ok"}
+    assert body["citations"]["plan"][0]["sources"] == [1]
+    assert body["rawTranscription"] == "S1: hello\nS2: plan stuff"
 
 
 # ------------------------------------------------------- middleware paths

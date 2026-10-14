@@ -82,6 +82,9 @@ class TranscribeResponse(BaseModel):
     rawTranscription: str
     transcriptionDuration: float
     processDuration: float
+    # Post-hoc grounding: field_key -> list of line citations (optional —
+    # absent for document flows and whenever grounding was unavailable).
+    citations: dict[str, Any] | None = None
 
     class Config:
         arbitrary_types_allowed = True

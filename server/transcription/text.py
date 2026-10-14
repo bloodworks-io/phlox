@@ -12,12 +12,40 @@ from server.llm_client.client import get_llm_client
 from server.schemas.grammars import MultiFieldResponse
 from server.schemas.templates import TemplateField, TemplateResponse
 from server.transcription.refinement import refine_field_content
-from server.transcription.speakers import render_numbered, speaker_legend_hint
+from server.transcription.speakers import (
+    numbered_transcript,
+    render_numbered,
+    speaker_legend_hint,
+)
 
 logger = logging.getLogger(__name__)
 
 # Applied when a field has no content after extraction and refinement
 EMPTY_FIELD_PLACEHOLDER = "Nil documented"
+
+
+def _resolve_grounding_context(
+    transcript_text: str,
+    fields: list[TemplateField],
+    patient_context: dict[str, str | None],
+    is_ambient: bool,
+    primary_condition: str | None,
+) -> tuple | None:
+    """Client/config/prefix for post-hoc grounding, or None when unavailable."""
+    numbered = numbered_transcript(transcript_text)
+    if not numbered:
+        return None
+    try:
+        prefix_messages = build_extraction_messages(
+            transcript_text, fields, patient_context, is_ambient, primary_condition
+        )
+        config = config_manager.get_config()
+        options = config_manager.get_prompts_and_options()["options"]["general"]
+        client = get_llm_client()
+    except Exception as exc:
+        logger.warning("Grounding unavailable for this run (%s): %s", type(exc).__name__, exc)
+        return None
+    return prefix_messages, numbered, client, config, options
 
 
 async def process_transcription(
@@ -30,6 +58,8 @@ async def process_transcription(
     """
     Process the transcribed text to generate summaries for non-persistent template fields.
     """
+    from server.transcription.grounding import ground_field  # local: grounding imports text
+
     process_start = time.perf_counter()
 
     try:
@@ -50,11 +80,33 @@ async def process_transcription(
         ]
         logger.info(f"Successfully summarised {total_fields} fields")
 
-        # Refine all results concurrently
+        # Best-effort grounding context for the post-hoc citation pass
+        grounding = _resolve_grounding_context(
+            transcript_text, non_persistent_fields, patient_context, is_ambient, primary_condition
+        )
+
+        # Refine each field, then ground it as soon as its refinement lands
+        # (overlap across fields; each grounding call hits the warm prefix)
+        async def _refine_and_ground(result, field):
+            refined = await refine_field_content(result.content, field, is_ambient=is_ambient)
+            citations = []
+            if grounding is not None and str(refined).strip():
+                prefix_messages, numbered, client, config, options = grounding
+                citations = await ground_field(
+                    field.field_name,
+                    str(refined),
+                    numbered,
+                    prefix_messages,
+                    client,
+                    config,
+                    options,
+                )
+            return refined, citations
+
         logger.info(f"Refining {total_fields} fields...")
-        refined_results = await asyncio.gather(
+        paired_results = await asyncio.gather(
             *[
-                refine_field_content(result.content, field, is_ambient=is_ambient)
+                _refine_and_ground(result, field)
                 for result, field in zip(raw_results, non_persistent_fields, strict=True)
             ]
         )
@@ -67,13 +119,23 @@ async def process_transcription(
             field.field_key: (
                 refined_content if str(refined_content).strip() else EMPTY_FIELD_PLACEHOLDER
             )
-            for field, refined_content in zip(non_persistent_fields, refined_results, strict=True)
+            for field, (refined_content, _citations) in zip(
+                non_persistent_fields, paired_results, strict=True
+            )
+        }
+        citations = {
+            field.field_key: [citation.model_dump() for citation in field_citations]
+            for field, (_refined, field_citations) in zip(
+                non_persistent_fields, paired_results, strict=True
+            )
+            if field_citations
         }
 
         process_duration = time.perf_counter() - process_start
 
         return {
             "fields": processed_fields,
+            "citations": citations,
             "process_duration": float(f"{process_duration:.2f}"),
         }
 
