@@ -107,6 +107,18 @@ const ReasoningPanel = forwardRef(
                         )}
                     </Box>
 
+                    {/* Disclaimer */}
+                    <Text
+                        textAlign="center"
+                        fontSize="xs"
+                        color="overlay0"
+                        px="3"
+                        pb="2"
+                        flexShrink={0}
+                    >
+                        {t("reasoning.disclaimer")}
+                    </Text>
+
                     {/* Resizer */}
                     <Box
                         ref={resizerRef}
