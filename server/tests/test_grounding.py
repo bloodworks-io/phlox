@@ -33,14 +33,32 @@ class _FakeClient:
         self.error = error
         self.calls = []
 
-    async def chat_with_structured_output(self, model, messages, schema, options):
-        self.calls.append({"model": model, "messages": messages, "options": options})
+    async def chat_with_structured_output(self, model, messages, schema, options, tools=None):
+        self.calls.append(
+            {"model": model, "messages": messages, "options": options, "tools": tools}
+        )
         if self.error:
             raise self.error
         payload = self.payloads[min(len(self.calls) - 1, len(self.payloads) - 1)]
         if isinstance(payload, Exception):
             raise payload
         return json.dumps(payload)
+
+
+class _RejectsToolsOnce:
+    """Raises a 400 on the first call, then delegates to a fake client."""
+
+    def __init__(self, payload):
+        self._inner = _FakeClient(payloads=[payload])
+        self.rejections = 0
+
+    async def chat_with_structured_output(self, model, messages, schema, options, tools=None):
+        if tools:
+            self.rejections += 1
+            raise type("Rejected", (Exception,), {"status_code": 400})("tools unsupported")
+        return await self._inner.chat_with_structured_output(
+            model, messages, schema, options, tools=tools
+        )
 
 
 def _field(key="clinical_history", name="Current History", persistent=False):
@@ -242,15 +260,17 @@ async def test_ground_via_conversation_combined_warm_turn():
     client = _FakeClient(
         payloads=[
             {
-                "lines": [
+                "fields": [
                     {
                         "field_key": "clinical_history",
-                        "line_index": 0,
-                        "sources": [1],
-                        "contradicts": [],
+                        "lines": [
+                            {"line": 0, "sources": [1]},
+                            # Out-of-range note line: dropped by the collector.
+                            {"line": 5, "sources": [0]},
+                        ],
                     },
-                    {"field_key": "bogus", "line_index": 0, "sources": [0], "contradicts": []},
-                    {"field_key": "pmh", "line_index": 5, "sources": [0], "contradicts": []},
+                    {"field_key": "bogus", "lines": [{"line": 0, "sources": [0]}]},
+                    {"field_key": "pmh", "lines": []},
                 ]
             }
         ]
@@ -276,6 +296,115 @@ async def test_ground_via_conversation_combined_warm_turn():
     assert messages[-1]["role"] == "user"
     assert "clinical_history" in messages[-1]["content"]
     assert len(conversation) == 1
+
+
+@pytest.mark.asyncio
+async def test_ground_via_conversation_accepts_legacy_flat_shape():
+    client = _FakeClient(
+        payloads=[
+            {
+                "lines": [
+                    {"field_key": "clinical_history", "line_index": 0, "sources": [1]},
+                ]
+            }
+        ]
+    )
+    result = await ground_via_conversation(
+        [{"role": "system", "content": "sys"}],
+        _make_fields(),
+        {"clinical_history": "A", "pmh": "C"},
+        transcript_line_count=6,
+        client=client,
+        config=CONFIG,
+        options=OPTIONS,
+    )
+    assert result["clinical_history"][0].verdict == "supported"
+
+
+@pytest.mark.asyncio
+async def test_ground_via_conversation_sends_tools_with_tool_choice_none():
+    client = _FakeClient(payloads=[{"fields": []}])
+    tools = [{"type": "function", "function": {"name": "noop"}}]
+    await ground_via_conversation(
+        [{"role": "system", "content": "sys"}],
+        _make_fields(),
+        {"clinical_history": "A"},
+        transcript_line_count=3,
+        client=client,
+        config=CONFIG,
+        options=OPTIONS,
+        tools=tools,
+    )
+    call = client.calls[0]
+    # Same tools as the agent ticks -> identical rendered prompt (cache hit);
+    # "none" keeps the schema in charge of decoding on vLLM/llama.cpp.
+    assert call["tools"] == tools
+    assert call["options"]["tool_choice"] == "none"
+
+
+@pytest.mark.asyncio
+async def test_ground_via_conversation_retries_without_tools_on_rejection():
+    client = _RejectsToolsOnce(payload={"fields": []})
+    result = await ground_via_conversation(
+        [{"role": "system", "content": "sys"}],
+        _make_fields(),
+        {"clinical_history": "A"},
+        transcript_line_count=3,
+        client=client,
+        config=CONFIG,
+        options=OPTIONS,
+        tools=[{"type": "function", "function": {"name": "noop"}}],
+    )
+    assert client.rejections == 1
+    assert client._inner.calls[0]["tools"] is None
+    assert "tool_choice" not in client._inner.calls[0]["options"]
+    # The retry grounded: empty payload -> every line unverified, not a failure.
+    assert result["clinical_history"][0].verdict == "unverified"
+
+
+@pytest.mark.asyncio
+async def test_ground_via_conversation_skips_baseline_lines():
+    client = _FakeClient(payloads=[{"fields": []}])
+    result = await ground_via_conversation(
+        [{"role": "system", "content": "sys"}],
+        _make_fields(),
+        {"clinical_history": "carried over\n• New finding", "pmh": "all old"},
+        transcript_line_count=6,
+        client=client,
+        config=CONFIG,
+        options=OPTIONS,
+        baseline_fields={"clinical_history": "carried over", "pmh": "all old"},
+    )
+    # Only the session's new line is grounded; fully-baseline fields drop out.
+    assert set(result) == {"clinical_history"}
+    assert [c.text for c in result["clinical_history"]] == ["• New finding"]
+    assert result["clinical_history"][0].line_index == 1
+    suffix = client.calls[0]["messages"][-1]["content"]
+    assert "[1] • New finding" in suffix
+    assert "carried over" not in suffix
+
+
+@pytest.mark.asyncio
+async def test_ground_note_skips_baseline_lines():
+    client = _FakeClient(payloads=[EMPTY])
+    result = await ground_note(
+        _make_fields(),
+        {"clinical_history": "old line\nnew line", "pmh": "ancient"},
+        TRANSCRIPT,
+        {},
+        include_persistent=True,
+        baseline_fields={"clinical_history": "old line", "pmh": "ancient"},
+        client=client,
+        config=CONFIG,
+        options=OPTIONS,
+    )
+    # The fully-baseline persistent field makes no LLM call and gets no citations.
+    assert result["pmh"] == []
+    assert len(client.calls) == 1
+    assert [c.text for c in result["clinical_history"]] == ["new line"]
+    suffix = client.calls[0]["messages"][2]["content"]
+    assert "new line" in suffix
+    assert "old line" not in suffix
 
 
 @pytest.mark.asyncio
@@ -316,6 +445,20 @@ async def test_ground_via_conversation_failure_and_empty_inputs():
             client=_FakeClient(),
             config=CONFIG,
             options=OPTIONS,
+        )
+        == {}
+    )
+    # Everything baseline-carried -> nothing to ground.
+    assert (
+        await ground_via_conversation(
+            empty_conversation,
+            _make_fields(),
+            {"plan": "unchanged"},
+            3,
+            client=_FakeClient(),
+            config=CONFIG,
+            options=OPTIONS,
+            baseline_fields={"plan": "unchanged"},
         )
         == {}
     )

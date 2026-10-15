@@ -8,8 +8,8 @@ import type { Dispatch, SetStateAction } from "react";
 import type { NoteCitations, NoteTemplate, Patient } from "../patient/types";
 import { provenanceExemptKeys } from "../patient/citationMatching";
 
-// Let the flushed tail segment's transcription land before stop.
-const TAIL_SETTLE_MS = 1200;
+// Bounded wait for the flushed tail segment's upload before stopping.
+const UPLOAD_SETTLE_MS = 10000;
 const FEEDBACK_DEBOUNCE_MS = 1500;
 const MAX_STATUS_ITEMS = 8;
 
@@ -90,6 +90,11 @@ export const useLiveAgent = ({
     const runningRef = useRef(false);
     const toastRef = useRef(false);
     const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const uploadsRef = useRef<Set<Promise<unknown>>>(new Set());
+
+    const baseRawRef = useRef<string>("");
+    const baselineFieldsRef = useRef<Record<string, string>>({});
     // Last pure-agent version per field (field_update is agent-origin by
     // construction) — the provenance baseline for live-stop exemptions.
     const lastAgentContentRef = useRef<Record<string, string>>({});
@@ -341,7 +346,7 @@ export const useLiveAgent = ({
             await recorder.start();
             recorder.enableSegmentStreaming((blob) => {
                 if (sessionIdRef.current !== sessionId) return;
-                liveAgentApi.sendAudioChunk(sessionId, blob).catch((error) => {
+                const upload = liveAgentApi.sendAudioChunk(sessionId, blob).catch((error) => {
                     console.error("Live audio upload failed:", error);
                     if (!toastRef.current) {
                         toastRef.current = true;
@@ -355,6 +360,8 @@ export const useLiveAgent = ({
                         });
                     }
                 });
+                uploadsRef.current.add(upload);
+                void upload.finally(() => uploadsRef.current.delete(upload));
             });
 
             recorderRef.current = recorder;
@@ -369,6 +376,9 @@ export const useLiveAgent = ({
             setFieldFlash({});
             setAgentEdits({});
             lastAgentContentRef.current = {};
+            uploadsRef.current.clear();
+            baseRawRef.current = current?.raw_transcription ?? "";
+            baselineFieldsRef.current = { ...(current?.template_data ?? {}) };
             setBacklog(0);
             setStatus("live");
             setAgentState("listening");
@@ -386,22 +396,40 @@ export const useLiveAgent = ({
 
     // Live-stop grounding
     const applyStopCitations = useCallback(
-        async (finalState: Record<string, unknown> | null) => {
+        async (
+            sessionId: string,
+            finalState: Record<string, unknown> | null,
+            rawTranscript: string,
+        ) => {
             const current = patientRef.current;
             if (!current) return;
             const mergedFields = {
                 ...current.template_data,
                 ...(finalState?.fields as Record<string, string> | undefined),
             };
-            const raw = current.raw_transcription ?? "";
-            let envelope = finalState?.citations as NoteCitations | undefined;
-            if (!envelope && raw.trim()) {
+            let envelope: NoteCitations | undefined;
+            // A non-empty transcript prefix means the session's [N] indices
+            // cannot map onto the note's transcript — ground cold instead.
+            if (!baseRawRef.current.trim()) {
+                pushStatus(t("liveAgent.status.verifyingNote"));
+                const result = await liveAgentApi
+                    .getCitations(sessionId)
+                    .catch((error) => {
+                        console.error("Live-stop grounding failed:", error);
+                        return null;
+                    });
+                if (result?.status === "ready" && result.citations) {
+                    envelope = result.citations as NoteCitations;
+                }
+            }
+            if (!envelope && rawTranscript.trim()) {
                 envelope = await patientApi
                     .groundNote({
                         template_key: currentTemplateRef.current?.template_key ?? null,
                         fields: mergedFields,
-                        raw_transcription: raw,
+                        raw_transcription: rawTranscript,
                         include_persistent: true,
+                        baseline_fields: baselineFieldsRef.current,
                         name: current.name,
                         gender: current.gender,
                         dob: current.dob,
@@ -417,8 +445,9 @@ export const useLiveAgent = ({
                 ...envelope.resolved,
                 ...provenanceExemptKeys(mergedFields, lastAgentContentRef.current),
             ];
+            const noteId = current.id;
             setPatient((prev) =>
-                prev
+                prev && prev.id === noteId
                     ? {
                           ...prev,
                           note_citations: { ...envelope, resolved } as NoteCitations,
@@ -426,7 +455,7 @@ export const useLiveAgent = ({
                     : prev,
             );
         },
-        [setPatient],
+        [setPatient, pushStatus, t],
     );
 
     const stopLive = useCallback(async () => {
@@ -441,7 +470,11 @@ export const useLiveAgent = ({
             await recorder.stop().catch(() => {});
         }
 
-        await new Promise((resolve) => setTimeout(resolve, TAIL_SETTLE_MS));
+
+        await Promise.race([
+            Promise.allSettled([...uploadsRef.current]),
+            new Promise((resolve) => setTimeout(resolve, UPLOAD_SETTLE_MS)),
+        ]);
 
         // Flush any debounced field edits so the server's final state
         // includes them (the feedback debounce can outlive the settle wait).
@@ -460,6 +493,18 @@ export const useLiveAgent = ({
 
         try {
             const finalState = await liveAgentApi.stopSession(sessionId);
+
+            const sessionTranscript =
+                typeof finalState?.transcript === "string" ? finalState.transcript : "";
+            const nextRaw = [baseRawRef.current, sessionTranscript]
+                .filter(Boolean)
+                .join("\n");
+            setPatient((prev) =>
+                prev && prev.raw_transcription !== nextRaw
+                    ? { ...prev, raw_transcription: nextRaw }
+                    : prev,
+            );
+            setTranscripts(sessionTranscript ? sessionTranscript.split("\n") : []);
             if (finalState?.fields) {
                 setPatient((prev) => ({
                     ...prev,
@@ -476,7 +521,9 @@ export const useLiveAgent = ({
                     ...(finalState.agent_edits as Record<string, string>),
                 }));
             }
-            await applyStopCitations(finalState);
+            // Grounding is lazy and off the stop request; don't block the
+            // review state on it.
+            void applyStopCitations(sessionId, finalState, nextRaw).catch(() => {});
             return finalState;
         } catch (error) {
             console.error("Failed to stop live session:", error);

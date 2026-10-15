@@ -90,6 +90,7 @@ class AsyncLLMClient:
         messages: list[dict[str, Any]],
         schema: dict[str, Any],
         options: dict[str, Any] | None = None,
+        tools: list[dict[str, Any]] | None = None,
     ) -> str:
         """
         Send a chat completion request with structured output.
@@ -99,11 +100,17 @@ class AsyncLLMClient:
             messages: List of message dictionaries
             schema: JSON schema for structured output
             options: Additional options for the model
+            tools: Optional tool definitions. Passing the same tool list a
+                prior call used keeps the rendered prompt byte-identical, so
+                provider prefix caches survive (set options["tool_choice"]
+                to "none" to forbid actual tool calls).
 
         Returns:
             JSON string response
         """
-        response = await self.chat(model=model, messages=messages, format=schema, options=options)
+        response = await self.chat(
+            model=model, messages=messages, format=schema, options=options, tools=tools
+        )
 
         # chat() with stream=False always returns dict
         if isinstance(response, dict):

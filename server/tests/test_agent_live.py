@@ -1,5 +1,6 @@
 """Tests for the live scribe agent: sessions, tools, and router endpoints."""
 
+import asyncio
 import json
 import math
 from types import SimpleNamespace
@@ -11,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from server.agent_live import router as agent_live_router
-from server.agent_live.router import _current_owner, _get_owned_session
+from server.agent_live.router import _current_owner, _get_owned_session, stop_session
 from server.agent_live.session import LiveSession, session_manager
 from server.agent_live.tools import (
     _normalise_entry,
@@ -1786,7 +1787,7 @@ async def test_prewarm_primes_gate_and_agent_prompts():
     session = _make_session()
     engine = LiveAgentEngine.__new__(LiveAgentEngine)
     engine.session = session
-    engine._tools = lambda: [{"type": "function", "function": {"name": "noop"}}]
+    engine._tools_definition = [{"type": "function", "function": {"name": "noop"}}]
     engine._chat = AsyncMock(return_value={"message": {"content": "SKIP"}})
 
     await engine.prewarm()
@@ -1801,7 +1802,7 @@ async def test_prewarm_primes_gate_and_agent_prompts():
     assert agent_messages[0] is session.agent_messages[0]
     assert agent_messages[0]["role"] == "system"
     assert agent_messages[1]["role"] == "user"
-    assert agent_call.kwargs["tools"] == engine._tools()
+    assert agent_call.kwargs["tools"] == engine.tools()
     assert agent_call.kwargs["max_tokens"] == 1
 
 
@@ -1812,7 +1813,7 @@ async def test_prewarm_swallows_errors():
     session = _make_session()
     engine = LiveAgentEngine.__new__(LiveAgentEngine)
     engine.session = session
-    engine._tools = lambda: []
+    engine._tools_definition = []
     engine._chat = AsyncMock(side_effect=RuntimeError("no endpoint"))
 
     await engine.prewarm()
@@ -1870,7 +1871,7 @@ def test_tick_user_message_numbers_segments_with_absolute_indices():
     assert "[0] S1: hello" not in message
 
 
-def test_stop_final_state_includes_citations_from_warm_turn(monkeypatch):
+def test_stop_citations_endpoint_returns_warm_turn_envelope(monkeypatch):
     response = client.post(
         "/api/agent-live/sessions",
         json={"patient": {"name": "Test"}, "template_key": "phlox_01"},
@@ -1883,10 +1884,12 @@ def test_stop_final_state_includes_citations_from_warm_turn(monkeypatch):
     session.transcript_segments = ["S1: a", "S2: b"]
     session.field_drafts = {"clinical_history": "• Fatigue"}
 
-    async def fake_ground(
-        agent_messages, template_fields, contents, transcript_line_count, **kwargs
-    ):
+    async def fake_ground(agent_messages, template_fields, contents, transcript_line_count, **kwargs):
         assert transcript_line_count == 2
+        # The stop snapshot passes the session-start baseline and (when the
+        # engine survives) its frozen tools; None engine -> no tools.
+        assert kwargs.get("tools") is None
+        assert kwargs.get("baseline_fields") == {}
         from server.transcription.grounding import LineCitation
 
         return {
@@ -1897,14 +1900,51 @@ def test_stop_final_state_includes_citations_from_warm_turn(monkeypatch):
 
     monkeypatch.setattr("server.transcription.grounding.ground_via_conversation", fake_ground)
 
-    response = client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    stop = client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    assert stop.status_code == 200
+    # Stop returns the final state immediately; grounding is lazy.
+    assert "citations" not in stop.json()
+
+    response = client.get(f"/api/agent-live/sessions/{session_id}/citations")
     assert response.status_code == 200
     body = response.json()
+    assert body["status"] == "ready"
     assert body["citations"]["transcript_line_count"] == 2
     assert body["citations"]["fields"]["clinical_history"][0]["sources"] == [0]
 
 
-def test_stop_omits_citations_when_grounding_fails(monkeypatch):
+def test_stop_citations_repeat_call_reuses_result(monkeypatch):
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}, "template_key": "phlox_01"},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.engine = None
+    session.agent_messages = [{"role": "system", "content": "sys"}]
+    session.transcript_segments = ["S1: a"]
+    session.field_drafts = {"plan": "1. Review"}
+
+    calls = {"count": 0}
+
+    async def fake_ground(*_args, **_kwargs):
+        calls["count"] += 1
+        from server.transcription.grounding import LineCitation
+
+        return {"plan": [LineCitation(line_index=0, text="1. Review", sources=[], verdict="unverified")]}
+
+    monkeypatch.setattr("server.transcription.grounding.ground_via_conversation", fake_ground)
+
+    client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    first = client.get(f"/api/agent-live/sessions/{session_id}/citations").json()
+    second = client.get(f"/api/agent-live/sessions/{session_id}/citations").json()
+    assert calls["count"] == 1
+    assert first == second
+    assert first["status"] == "ready"
+
+
+def test_stop_citations_endpoint_reports_failure(monkeypatch):
     response = client.post(
         "/api/agent-live/sessions",
         json={"patient": {"name": "Test"}},
@@ -1922,6 +1962,75 @@ def test_stop_omits_citations_when_grounding_fails(monkeypatch):
 
     monkeypatch.setattr("server.transcription.grounding.ground_via_conversation", failing_ground)
 
-    response = client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    response = client.get(f"/api/agent-live/sessions/{session_id}/citations")
     assert response.status_code == 200
-    assert "citations" not in response.json()
+    assert response.json() == {"status": "failed"}
+
+
+def test_citations_before_stop_is_rejected():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    response = client.get(f"/api/agent-live/sessions/{session_id}/citations")
+    assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_stop_waits_for_inflight_transcription():
+    session = _make_session()
+    session_manager._sessions[session.id] = session
+
+    async def slow_tail():
+        await asyncio.sleep(0.1)
+        session.transcript_segments.append("S1: tail line")
+
+    session.track_task(asyncio.create_task(slow_tail()))
+
+    result = await stop_session(session.id, _fake_request())
+    # The tail utterance landed before the final-state snapshot.
+    assert result["transcript"] == "S1: tail line"
+    # Repeat stop replays the cached final state unchanged.
+    assert await stop_session(session.id, _fake_request()) == result
+
+
+@pytest.mark.asyncio
+async def test_stop_snapshots_engine_tools_and_baseline():
+    session = _make_session()
+    session.field_drafts["plan"] = "1. Pre-existing"
+    session.initial_fields = dict(session.field_drafts)
+    session_manager._sessions[session.id] = session
+    sentinel_tools = [{"type": "function", "function": {"name": "noop"}}]
+    session.engine = SimpleNamespace(
+        stop=AsyncMock(),
+        tools=lambda: sentinel_tools,
+    )
+
+    await stop_session(session.id, _fake_request())
+
+    payload = session.citations_input
+    assert payload is not None
+    assert payload["tools"] is sentinel_tools
+    assert payload["baseline_fields"] == {"plan": "1. Pre-existing"}
+    assert payload["transcript_line_count"] == 0
+    session.engine.stop.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_settle_tasks_cancels_stragglers():
+    session = _make_session()
+    cancelled = False
+
+    async def stuck():
+        nonlocal cancelled
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
+
+    session.track_task(asyncio.create_task(stuck()))
+    await session.settle_tasks(timeout=0.05)
+    assert cancelled

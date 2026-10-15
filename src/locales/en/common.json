@@ -1280,6 +1280,7 @@
             "tidyFailed": "Tidy request failed ({{status}})",
             "pushJobsFailed": "Jobs push failed ({{status}})",
             "stopFailed": "Could not stop live session",
+            "citationsFailed": "Could not verify note citations",
             "streamFailed": "Event stream failed ({{status}})"
         },
         "capture": {
@@ -1424,7 +1425,8 @@
             "artifact": "artifact",
             "jobsUpdated": "Wrap-up jobs updated",
             "openingWrapUp": "Opening wrap-up…",
-            "letterSaved": "Letter saved to the encounter"
+            "letterSaved": "Letter saved to the encounter",
+            "verifyingNote": "Verifying note against transcript…"
         },
         "toast": {
             "error": "Live agent error",

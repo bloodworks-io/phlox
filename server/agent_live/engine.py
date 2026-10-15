@@ -85,6 +85,7 @@ class LiveAgentEngine:
         self._audio_lock = asyncio.Lock()  # serialises segment transcription
         self._tick_task: asyncio.Task | None = None
         self._tick_pending: str | None = None
+        self._tools_definition: list[dict[str, Any]] | None = None
 
     def _client(self):
         if self._llm_client is None:
@@ -170,7 +171,7 @@ class LiveAgentEngine:
                         ),
                     },
                 ],
-                tools=self._tools(),
+                tools=self.tools(),
                 max_tokens=1,
             )
         except Exception as exc:
@@ -362,10 +363,15 @@ class LiveAgentEngine:
             reason = self._tick_pending
             self._tick_pending = None
 
-    def _tools(self) -> list[dict[str, Any]]:
-        from server.chat.tools import get_tools_definition
+    def tools(self) -> list[dict[str, Any]]:
+        """Session tool definitions, computed once."""
+        if self._tools_definition is None:
+            from server.chat.tools import get_tools_definition
 
-        return get_live_tools_definition() + get_tools_definition([], exclude_chat_only=True)
+            self._tools_definition = get_live_tools_definition() + get_tools_definition(
+                [], exclude_chat_only=True
+            )
+        return self._tools_definition
 
     def _ensure_agent_messages(self) -> None:
         """Initialise the append-only conversation (stable system prefix)."""
@@ -465,7 +471,7 @@ class LiveAgentEngine:
         await session.emit({"type": "backlog", "count": 0})
 
         messages = session.agent_messages
-        tools = self._tools()
+        tools = self.tools()
         final_text = ""
 
         for _ in range(_TICK_TOOL_ITERATIONS.get(reason, MAX_TOOL_ITERATIONS)):

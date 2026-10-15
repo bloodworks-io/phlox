@@ -95,21 +95,38 @@ class GroundingResponse(BaseModel):
     lines: list[GroundedLine]
 
 
-class GroundedFieldLine(GroundedLine):
+class CompactGroundedLine(BaseModel):
     """
-    One grounded note line tagged with its field — the combined multi-field
-    shape used by the live-stop warm conversation turn.
-    """
-
-    field_key: str = Field(description="field_key of the note field this line belongs to")
-
-
-class GroundingFieldsResponse(BaseModel):
-    """
-    Combined multi-field grounding response (indices only, no text echo).
+    Compact wire shape for one grounded note line: grouped per field, empty
+    contradicts omitted. Output tokens are the stop-turn bottleneck, so the
+    schema avoids repeating field keys per line.
     """
 
-    lines: list[GroundedFieldLine]
+    line: int = Field(description="0-based index of the note line, in the order provided")
+    sources: list[int] = Field(
+        default_factory=list,
+        description="0-based transcript line indices that directly support this note line",
+    )
+    contradicts: list[int] = Field(
+        default=None,
+        description="0-based transcript line indices that state the opposite; omit when empty",
+    )
+
+
+class CompactGroundedField(BaseModel):
+    """Grounding entries for one note field, keyed once."""
+
+    field_key: str = Field(description="field_key of the note field these lines belong to")
+    lines: list[CompactGroundedLine] = Field(default_factory=list)
+
+
+class CompactGroundingFieldsResponse(BaseModel):
+    """
+    Combined multi-field grounding response, grouped by field (indices only,
+    no text echo).
+    """
+
+    fields: list[CompactGroundedField]
 
 
 # Patient Analysis

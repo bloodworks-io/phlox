@@ -281,14 +281,18 @@ export const patientApi = {
 
   groundNote: async (request) => {
     return handleApiRequest({
-      apiCall: async () => {
+      apiCall: async (signal) => {
         const url = await buildApiUrl("/api/note/ground");
         return universalFetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(request),
+          signal,
         });
       },
+      // Cold grounding re-prefills per-field prompts over the transcript;
+      // the default 120s can cut a slow local deployment short.
+      timeout: 300000,
       errorMessage: t("api.patient.groundNoteFailed"),
     });
   },

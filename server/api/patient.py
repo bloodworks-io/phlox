@@ -60,6 +60,7 @@ class GroundNoteRequest(BaseModel):
     fields: dict[str, str] = Field(default_factory=dict)
     raw_transcription: str
     include_persistent: bool = False
+    baseline_fields: dict[str, str] = Field(default_factory=dict)
     name: str | None = None
     gender: str | None = None
     dob: str | None = None
@@ -125,6 +126,7 @@ async def ground_note_endpoint(request: GroundNoteRequest):
             is_ambient=True,
             primary_condition=primary_condition,
             include_persistent=request.include_persistent,
+            baseline_fields=request.baseline_fields or None,
         )
         return {
             "transcript_line_count": len(request.raw_transcription.split("\n")),

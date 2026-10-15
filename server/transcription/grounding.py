@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from server.database.config.manager import config_manager
 from server.llm_client.client import get_llm_client
-from server.schemas.grammars import GroundingFieldsResponse, GroundingResponse
+from server.schemas.grammars import CompactGroundingFieldsResponse, GroundingResponse
 from server.schemas.templates import TemplateField
 from server.transcription.speakers import numbered_transcript
 from server.transcription.text import build_extraction_messages
@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 
 # Deterministic grounding: analysis, not generation.
 GROUNDING_SEED = 123
+
+# The warm stop turn decodes one citation entry per note line; on slow local
+# deployments that outlives the shared 80s client default.
+GROUNDING_CALL_TIMEOUT_SECONDS = 240
 
 Verdict = Literal["supported", "unverified", "conflict"]
 
@@ -59,6 +63,17 @@ def _build_suffix(field_name: str, note_lines: list[tuple[int, str]]) -> str:
     )
 
 
+def _baseline_filtered_lines(content: str, baseline: str | None) -> list[tuple[int, str]]:
+    """Non-empty lines with their split-indices, minus lines already present
+    in the baseline content."""
+    baseline_lines = {line.strip() for line in (baseline or "").split("\n") if line.strip()}
+    return [
+        (i, line)
+        for i, line in enumerate(content.split("\n"))
+        if line.strip() and line.strip() not in baseline_lines
+    ]
+
+
 async def ground_field(
     field_name: str,
     field_content: str,
@@ -67,13 +82,16 @@ async def ground_field(
     client,
     config: dict,
     options: dict,
+    baseline_content: str | None = None,
 ) -> list[LineCitation]:
     """Ground one field's final content against the numbered transcript.
 
     Returns one LineCitation per non-empty note line; a failed call returns []
-    (no citations), which callers treat as "render as today".
+    (no citations), which callers treat as "render as today". Lines already
+    present in ``baseline_content`` (the field's session-start text) are
+    skipped: this session's transcript cannot support them.
     """
-    note_lines = [(i, line) for i, line in enumerate(field_content.split("\n")) if line.strip()]
+    note_lines = _baseline_filtered_lines(field_content, baseline_content)
     if not note_lines or not numbered:
         return []
 
@@ -150,6 +168,7 @@ async def ground_note(
     is_ambient: bool = True,
     primary_condition: str | None = None,
     include_persistent: bool = False,
+    baseline_fields: dict[str, str] | None = None,
     client=None,
     config: dict | None = None,
     options: dict | None = None,
@@ -177,8 +196,17 @@ async def ground_note(
 
     results = await asyncio.gather(
         *(
-            ground_field(field_name, content, numbered, prefix_messages, client, config, options)
-            for _, field_name, content in targets
+            ground_field(
+                field_name,
+                content,
+                numbered,
+                prefix_messages,
+                client,
+                config,
+                options,
+                baseline_content=(baseline_fields or {}).get(field_key),
+            )
+            for field_key, field_name, content in targets
         )
     )
     return {key: citations for (key, _, _), citations in zip(targets, results, strict=True)}
@@ -188,7 +216,43 @@ _CONVERSATION_GROUNDING_INSTRUCTION = """The transcript segments in this convers
 
 {field_blocks}
 
-For EACH note line, report the transcript line indices that directly support it (sources) and the transcript line indices that state the opposite (contradicts). Use empty lists when there are none. Cite only indices that appear in the transcript above. Output ONLY JSON: {{"lines": [{{"field_key": <field key>, "line_index": <note line index>, "sources": [<transcript indices>], "contradicts": [<transcript indices>]}}]}}."""
+For each note line that has supporting or contradicting transcript lines, report the transcript line indices: sources directly support it, contradicts state the opposite. Omit "contradicts" when it is empty and omit lines with neither. Cite only indices that appear in the transcript above. Output ONLY JSON: {{"fields": [{{"field_key": <field key>, "lines": [{{"line": <note line index>, "sources": [<transcript indices>], "contradicts": [<transcript indices>]}}]}}]}}."""
+
+
+def _is_tool_rejection(exc: Exception) -> bool:
+    """True when a provider rejected the tools + structured-output combination."""
+    status = getattr(exc, "status_code", None)
+    if status == 400:
+        return True
+    text = str(exc).lower()
+    return any(word in text for word in ("tool_choice", "response_format", "tools")) and any(
+        marker in text for marker in ("unsupported", "not supported", "invalid")
+    )
+
+
+def _as_index_entry(entry: dict) -> dict:
+    """Normalise a compact or legacy grounding entry to the collector shape."""
+    return {
+        "line_index": entry.get("line", entry.get("line_index")),
+        "sources": entry.get("sources"),
+        "contradicts": entry.get("contradicts"),
+    }
+
+
+def _entries_by_field(parsed: dict) -> dict[str, list]:
+    """Fold the compact grouped response (and the legacy flat shape) into
+    per-field entry lists."""
+    entries_by_field: dict[str, list] = {}
+    for field in parsed.get("fields") or []:
+        if not isinstance(field, dict) or not isinstance(field.get("field_key"), str):
+            continue
+        for entry in field.get("lines") or []:
+            if isinstance(entry, dict):
+                entries_by_field.setdefault(field["field_key"], []).append(_as_index_entry(entry))
+    for entry in parsed.get("lines") or []:
+        if isinstance(entry, dict) and isinstance(entry.get("field_key"), str):
+            entries_by_field.setdefault(entry["field_key"], []).append(_as_index_entry(entry))
+    return entries_by_field
 
 
 async def ground_via_conversation(
@@ -200,32 +264,26 @@ async def ground_via_conversation(
     client=None,
     config: dict | None = None,
     options: dict | None = None,
+    tools: list[dict[str, Any]] | None = None,
+    baseline_fields: dict[str, str] | None = None,
 ) -> dict[str, list[LineCitation]]:
-    """Ground the final note as one warm turn appended to the live conversation.
-
-    The agent conversation already contains the numbered transcript (engine
-    numbers segments at injection), so this pays only the suffix prefill —
-    no cold prefill of an extraction-shaped prompt. Any failure returns {}
-    (no citations), never a failed stop.
-    """
+    """Ground the final note as one warm turn appended to the live conversation. """
     fields = [f for f in template_fields if include_persistent or not f.persistent]
-    targets = [
-        (f.field_key, f.field_name, str(contents.get(f.field_key, "")))
-        for f in fields
-        if str(contents.get(f.field_key, "")).strip()
-    ]
+    targets: list[tuple[str, str, list[tuple[int, str]]]] = []
+    for field in fields:
+        content = str(contents.get(field.field_key, ""))
+        if not content.strip():
+            continue
+        note_lines = _baseline_filtered_lines(content, (baseline_fields or {}).get(field.field_key))
+        if note_lines:
+            targets.append((field.field_key, field.field_name, note_lines))
     if not targets or not agent_messages or transcript_line_count <= 0:
         return {}
 
     field_blocks = "\n\n".join(
         f'Field "{field_name}" ({field_key}):\n'
-        + "\n".join(
-            f"[{i}] {line}"
-            for i, line in (
-                (index, text) for index, text in enumerate(content.split("\n")) if text.strip()
-            )
-        )
-        for field_key, field_name, content in targets
+        + "\n".join(f"[{i}] {line}" for i, line in note_lines)
+        for field_key, field_name, note_lines in targets
     )
     messages = [
         *agent_messages,
@@ -235,7 +293,7 @@ async def ground_via_conversation(
         },
     ]
     if client is None:
-        client = get_llm_client()
+        client = get_llm_client(timeout=GROUNDING_CALL_TIMEOUT_SECONDS)
     if config is None:
         config = config_manager.get_config()
     call_options = {
@@ -245,36 +303,53 @@ async def ground_via_conversation(
     }
     if config.get("LLM_PROVIDER") == "local":
         call_options["extra_body"] = {"cache_prompt": True}
+    if tools:
+        call_options["tool_choice"] = "none"
 
-    try:
-        raw = await client.chat_with_structured_output(
+    async def _call(active_tools):
+        return await client.chat_with_structured_output(
             model=config["PRIMARY_MODEL"],
             messages=messages,
-            schema=GroundingFieldsResponse.model_json_schema(),
+            schema=CompactGroundingFieldsResponse.model_json_schema(),
             options=call_options,
+            tools=active_tools,
         )
-        parsed = json.loads(raw) if isinstance(raw, str) else raw
-        entries = parsed.get("lines", []) if isinstance(parsed, dict) else []
-    except Exception as exc:
-        logger.warning("Conversation grounding failed (%s): %s", type(exc).__name__, exc)
-        return {}
 
-    note_lines_by_field = {
-        field_key: [(i, line) for i, line in enumerate(content.split("\n")) if line.strip()]
-        for field_key, _, content in targets
-    }
-    entries_by_field: dict[str, list] = {}
-    for entry in entries if isinstance(entries, list) else []:
-        if isinstance(entry, dict) and entry.get("field_key") in note_lines_by_field:
-            entries_by_field.setdefault(entry["field_key"], []).append(entry)
+    try:
+        raw = await _call(tools)
+    except Exception as exc:
+        if not (tools and _is_tool_rejection(exc)):
+            logger.warning("Conversation grounding failed (%s): %s", type(exc).__name__, exc)
+            return {}
+        logger.warning(
+            "Conversation grounding: provider rejected tools alongside structured "
+            "output (%s); retrying without tools (prefix cache will miss)",
+            exc,
+        )
+        call_options.pop("tool_choice", None)
+        tools = None
+        try:
+            raw = await _call(None)
+        except Exception as retry_exc:
+            logger.warning(
+                "Conversation grounding failed (%s): %s", type(retry_exc).__name__, retry_exc
+            )
+            return {}
+
+    try:
+        parsed = json.loads(raw) if isinstance(raw, str) else raw
+    except json.JSONDecodeError as exc:
+        logger.warning("Conversation grounding produced invalid JSON: %s", exc)
+        return {}
+    if not isinstance(parsed, dict):
+        parsed = {}
+    entries_by_field = _entries_by_field(parsed)
 
     max_index = transcript_line_count - 1
     return {
         field_key: _citations_for_lines(
-            note_lines_by_field[field_key],
-            _collect_entries(
-                entries_by_field.get(field_key, []), note_lines_by_field[field_key], max_index
-            ),
+            note_lines,
+            _collect_entries(entries_by_field.get(field_key, []), note_lines, max_index),
         )
-        for field_key, _, _ in targets
+        for field_key, _, note_lines in targets
     }
