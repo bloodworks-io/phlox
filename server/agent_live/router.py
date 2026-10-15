@@ -237,4 +237,32 @@ async def stop_session(session_id: str, request: Request):
     if not already_ended:
         await session.emit({"type": "end"})
         logger.info("Live session %s stopped", session.id)
-    return _final_state(session)
+    result = _final_state(session)
+    # Warm grounding turn:
+    if session.agent_messages:
+        try:
+            from server.schemas.templates import TemplateField
+            from server.transcription.grounding import ground_via_conversation
+
+            template_fields = [
+                field if isinstance(field, TemplateField) else TemplateField(**field)
+                for field in session.template_fields
+            ]
+            citations = await ground_via_conversation(
+                session.agent_messages,
+                template_fields,
+                dict(session.field_drafts),
+                transcript_line_count=len(session.transcript_segments),
+            )
+            if citations:
+                result["citations"] = {
+                    "transcript_line_count": len(session.transcript_segments),
+                    "resolved": [],
+                    "fields": {
+                        key: [citation.model_dump() for citation in lines]
+                        for key, lines in citations.items()
+                    },
+                }
+        except Exception as exc:
+            logger.warning("Live session %s: stop grounding skipped (%s)", session.id, exc)
+    return result

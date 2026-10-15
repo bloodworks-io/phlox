@@ -95,6 +95,23 @@ class GroundingResponse(BaseModel):
     lines: list[GroundedLine]
 
 
+class GroundedFieldLine(GroundedLine):
+    """
+    One grounded note line tagged with its field — the combined multi-field
+    shape used by the live-stop warm conversation turn.
+    """
+
+    field_key: str = Field(description="field_key of the note field this line belongs to")
+
+
+class GroundingFieldsResponse(BaseModel):
+    """
+    Combined multi-field grounding response (indices only, no text echo).
+    """
+
+    lines: list[GroundedFieldLine]
+
+
 # Patient Analysis
 class PreviousVisitSummary(BaseModel):
     """

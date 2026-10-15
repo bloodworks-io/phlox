@@ -403,7 +403,14 @@ class LiveAgentEngine:
     def _tick_user_message(self, reason: str) -> str:
         session = self.session
         new_segments = session.transcript_segments[session.segments_sent_to_agent :]
-        new_text = "\n".join(new_segments) or "(none)"
+
+        new_text = (
+            "\n".join(
+                f"[{session.segments_sent_to_agent + offset}] {segment}"
+                for offset, segment in enumerate(new_segments)
+            )
+            or "(none)"
+        )
 
         if reason == "tidy_tick":
             return build_tidy_tick_message(

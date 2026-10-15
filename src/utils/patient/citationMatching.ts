@@ -39,3 +39,20 @@ export const activeCitations = (
     citations.filter(
         (citation) => !resolved.includes(citationKey(fieldKey, citation.line_index)),
     );
+
+export const provenanceExemptKeys = (
+    finalFields: Record<string, string | undefined>,
+    lastAgentContent: Record<string, string>,
+): string[] => {
+    const keys: string[] = [];
+    for (const [fieldKey, content] of Object.entries(finalFields)) {
+        if (typeof content !== "string" || !content.trim()) continue;
+        const agentLines = new Set((lastAgentContent[fieldKey] ?? "").split("\n"));
+        content.split("\n").forEach((line, index) => {
+            if (line.trim() && !agentLines.has(line)) {
+                keys.push(citationKey(fieldKey, index));
+            }
+        });
+    }
+    return keys;
+};

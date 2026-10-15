@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioRecorder } from "../audioRecorder";
 import { liveAgentApi } from "../api/liveAgentApi";
+import { patientApi } from "../api/patientApi";
 import { toaster } from "@/components/ui/toaster";
 import type { Dispatch, SetStateAction } from "react";
-import type { NoteTemplate, Patient } from "../patient/types";
+import type { NoteCitations, NoteTemplate, Patient } from "../patient/types";
+import { provenanceExemptKeys } from "../patient/citationMatching";
 
 // Let the flushed tail segment's transcription land before stop.
 const TAIL_SETTLE_MS = 1200;
@@ -88,6 +90,9 @@ export const useLiveAgent = ({
     const runningRef = useRef(false);
     const toastRef = useRef(false);
     const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Last pure-agent version per field (field_update is agent-origin by
+    // construction) — the provenance baseline for live-stop exemptions.
+    const lastAgentContentRef = useRef<Record<string, string>>({});
     // Latest session content and status, readable inside stable callbacks
     // (stop/end transitions decide between "review" and "idle" from these).
     const transcriptsRef = useRef<string[]>([]);
@@ -185,6 +190,8 @@ export const useLiveAgent = ({
                         ...prev,
                         [event.field_key]: "agent",
                     }));
+                    lastAgentContentRef.current[event.field_key] =
+                        event.content ?? "";
                     pushStatus(
                         t("liveAgent.status.noteUpdated", {
                             field: event.field_key,
@@ -361,6 +368,7 @@ export const useLiveAgent = ({
             setStagedJobs([]);
             setFieldFlash({});
             setAgentEdits({});
+            lastAgentContentRef.current = {};
             setBacklog(0);
             setStatus("live");
             setAgentState("listening");
@@ -375,6 +383,51 @@ export const useLiveAgent = ({
             return false;
         }
     }, [consumeEvents, t]);
+
+    // Live-stop grounding
+    const applyStopCitations = useCallback(
+        async (finalState: Record<string, unknown> | null) => {
+            const current = patientRef.current;
+            if (!current) return;
+            const mergedFields = {
+                ...current.template_data,
+                ...(finalState?.fields as Record<string, string> | undefined),
+            };
+            const raw = current.raw_transcription ?? "";
+            let envelope = finalState?.citations as NoteCitations | undefined;
+            if (!envelope && raw.trim()) {
+                envelope = await patientApi
+                    .groundNote({
+                        template_key: currentTemplateRef.current?.template_key ?? null,
+                        fields: mergedFields,
+                        raw_transcription: raw,
+                        include_persistent: true,
+                        name: current.name,
+                        gender: current.gender,
+                        dob: current.dob,
+                        noteId: current.id,
+                    })
+                    .catch((error) => {
+                        console.error("Live-stop grounding fallback failed:", error);
+                        return undefined;
+                    });
+            }
+            if (!envelope || Object.keys(envelope.fields ?? {}).length === 0) return;
+            const resolved = [
+                ...envelope.resolved,
+                ...provenanceExemptKeys(mergedFields, lastAgentContentRef.current),
+            ];
+            setPatient((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          note_citations: { ...envelope, resolved } as NoteCitations,
+                      }
+                    : prev,
+            );
+        },
+        [setPatient],
+    );
 
     const stopLive = useCallback(async () => {
         const sessionId = sessionIdRef.current;
@@ -423,6 +476,7 @@ export const useLiveAgent = ({
                     ...(finalState.agent_edits as Record<string, string>),
                 }));
             }
+            await applyStopCitations(finalState);
             return finalState;
         } catch (error) {
             console.error("Failed to stop live session:", error);
@@ -433,7 +487,7 @@ export const useLiveAgent = ({
             setAgentState("listening");
             setBacklog(0);
         }
-    }, [setPatient, settleAfterSession]);
+    }, [setPatient, settleAfterSession, applyStopCitations]);
 
     const retryLive = useCallback(async () => {
         if (runningRef.current) return true;

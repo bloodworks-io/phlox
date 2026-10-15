@@ -9,6 +9,7 @@ from server.transcription.grounding import (
     LineCitation,
     ground_field,
     ground_note,
+    ground_via_conversation,
 )
 from server.transcription.speakers import numbered_transcript, render_numbered
 from server.transcription.text import build_extraction_messages
@@ -234,3 +235,87 @@ async def test_ground_note_skips_empty_fields_and_transcripts():
         options=OPTIONS,
     )
     assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_ground_via_conversation_combined_warm_turn():
+    client = _FakeClient(
+        payloads=[
+            {
+                "lines": [
+                    {
+                        "field_key": "clinical_history",
+                        "line_index": 0,
+                        "sources": [1],
+                        "contradicts": [],
+                    },
+                    {"field_key": "bogus", "line_index": 0, "sources": [0], "contradicts": []},
+                    {"field_key": "pmh", "line_index": 5, "sources": [0], "contradicts": []},
+                ]
+            }
+        ]
+    )
+    conversation = [{"role": "system", "content": "sys"}]
+    result = await ground_via_conversation(
+        conversation,
+        _make_fields(),
+        {"clinical_history": "A\nB", "pmh": "C"},
+        transcript_line_count=6,
+        client=client,
+        config=CONFIG,
+        options=OPTIONS,
+    )
+    # Cited line supported; omitted lines unverified; junk fields/indices dropped.
+    assert result["clinical_history"][0].verdict == "supported"
+    assert result["clinical_history"][1].verdict == "unverified"
+    assert result["pmh"][0].verdict == "unverified"
+    assert set(result) == {"clinical_history", "pmh"}
+    # Warm turn: suffix appended after the conversation, which is not mutated.
+    messages = client.calls[0]["messages"]
+    assert messages[:1] == conversation
+    assert messages[-1]["role"] == "user"
+    assert "clinical_history" in messages[-1]["content"]
+    assert len(conversation) == 1
+
+
+@pytest.mark.asyncio
+async def test_ground_via_conversation_failure_and_empty_inputs():
+    empty_conversation = [{"role": "system", "content": "s"}]
+    assert (
+        await ground_via_conversation(
+            [],
+            _make_fields(),
+            {"plan": "x"},
+            3,
+            client=_FakeClient(),
+            config=CONFIG,
+            options=OPTIONS,
+        )
+        == {}
+    )
+    failing = _FakeClient(error=RuntimeError("boom"))
+    assert (
+        await ground_via_conversation(
+            empty_conversation,
+            _make_fields(),
+            {"plan": "x"},
+            3,
+            client=failing,
+            config=CONFIG,
+            options=OPTIONS,
+        )
+        == {}
+    )
+    # No non-empty field content -> nothing to ground.
+    assert (
+        await ground_via_conversation(
+            empty_conversation,
+            _make_fields(),
+            {"plan": "  "},
+            3,
+            client=_FakeClient(),
+            config=CONFIG,
+            options=OPTIONS,
+        )
+        == {}
+    )

@@ -1,13 +1,13 @@
 import asyncio
 import json
 import logging
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 from server.database.config.manager import config_manager
 from server.llm_client.client import get_llm_client
-from server.schemas.grammars import GroundingResponse
+from server.schemas.grammars import GroundingFieldsResponse, GroundingResponse
 from server.schemas.templates import TemplateField
 from server.transcription.speakers import numbered_transcript
 from server.transcription.text import build_extraction_messages
@@ -103,17 +103,32 @@ async def ground_field(
         )
         return []
 
+    collected = _collect_entries(entries, note_lines, max_transcript_index)
+    return _citations_for_lines(note_lines, collected)
+
+
+def _collect_entries(
+    entries: object, note_lines: list[tuple[int, str]], max_transcript_index: int
+) -> dict[int, tuple[set[int], set[int]]]:
+    """Fold raw model entries into per-note-line index sets, clamped."""
+    valid = {i for i, _ in note_lines}
     collected: dict[int, tuple[set[int], set[int]]] = {}
-    for entry in entries:
+    for entry in entries if isinstance(entries, list) else []:
         if not isinstance(entry, dict):
             continue
         index = entry.get("line_index")
-        if not isinstance(index, int) or isinstance(index, bool) or index not in dict(note_lines):
+        if not isinstance(index, int) or isinstance(index, bool) or index not in valid:
             continue
         sources, contradicts = collected.setdefault(index, (set(), set()))
         sources.update(_clean_indices(entry.get("sources"), max_transcript_index))
         contradicts.update(_clean_indices(entry.get("contradicts"), max_transcript_index))
+    return collected
 
+
+def _citations_for_lines(
+    note_lines: list[tuple[int, str]], collected: dict[int, tuple[set[int], set[int]]]
+) -> list[LineCitation]:
+    """One LineCitation per non-empty note line; model omissions -> unverified."""
     return [
         LineCitation(
             line_index=i,
@@ -167,3 +182,99 @@ async def ground_note(
         )
     )
     return {key: citations for (key, _, _), citations in zip(targets, results, strict=True)}
+
+
+_CONVERSATION_GROUNDING_INSTRUCTION = """The transcript segments in this conversation are prefixed with their 0-based [N] line indices. The final note follows, each field's lines numbered the same way.
+
+{field_blocks}
+
+For EACH note line, report the transcript line indices that directly support it (sources) and the transcript line indices that state the opposite (contradicts). Use empty lists when there are none. Cite only indices that appear in the transcript above. Output ONLY JSON: {{"lines": [{{"field_key": <field key>, "line_index": <note line index>, "sources": [<transcript indices>], "contradicts": [<transcript indices>]}}]}}."""
+
+
+async def ground_via_conversation(
+    agent_messages: list[dict[str, Any]],
+    template_fields: list[TemplateField],
+    contents: dict[str, str],
+    transcript_line_count: int,
+    include_persistent: bool = True,
+    client=None,
+    config: dict | None = None,
+    options: dict | None = None,
+) -> dict[str, list[LineCitation]]:
+    """Ground the final note as one warm turn appended to the live conversation.
+
+    The agent conversation already contains the numbered transcript (engine
+    numbers segments at injection), so this pays only the suffix prefill —
+    no cold prefill of an extraction-shaped prompt. Any failure returns {}
+    (no citations), never a failed stop.
+    """
+    fields = [f for f in template_fields if include_persistent or not f.persistent]
+    targets = [
+        (f.field_key, f.field_name, str(contents.get(f.field_key, "")))
+        for f in fields
+        if str(contents.get(f.field_key, "")).strip()
+    ]
+    if not targets or not agent_messages or transcript_line_count <= 0:
+        return {}
+
+    field_blocks = "\n\n".join(
+        f'Field "{field_name}" ({field_key}):\n'
+        + "\n".join(
+            f"[{i}] {line}"
+            for i, line in (
+                (index, text) for index, text in enumerate(content.split("\n")) if text.strip()
+            )
+        )
+        for field_key, field_name, content in targets
+    )
+    messages = [
+        *agent_messages,
+        {
+            "role": "user",
+            "content": _CONVERSATION_GROUNDING_INSTRUCTION.format(field_blocks=field_blocks),
+        },
+    ]
+    if client is None:
+        client = get_llm_client()
+    if config is None:
+        config = config_manager.get_config()
+    call_options = {
+        **(options or config_manager.get_prompts_and_options()["options"]["general"]),
+        "temperature": 0.0,
+        "seed": GROUNDING_SEED,
+    }
+    if config.get("LLM_PROVIDER") == "local":
+        call_options["extra_body"] = {"cache_prompt": True}
+
+    try:
+        raw = await client.chat_with_structured_output(
+            model=config["PRIMARY_MODEL"],
+            messages=messages,
+            schema=GroundingFieldsResponse.model_json_schema(),
+            options=call_options,
+        )
+        parsed = json.loads(raw) if isinstance(raw, str) else raw
+        entries = parsed.get("lines", []) if isinstance(parsed, dict) else []
+    except Exception as exc:
+        logger.warning("Conversation grounding failed (%s): %s", type(exc).__name__, exc)
+        return {}
+
+    note_lines_by_field = {
+        field_key: [(i, line) for i, line in enumerate(content.split("\n")) if line.strip()]
+        for field_key, _, content in targets
+    }
+    entries_by_field: dict[str, list] = {}
+    for entry in entries if isinstance(entries, list) else []:
+        if isinstance(entry, dict) and entry.get("field_key") in note_lines_by_field:
+            entries_by_field.setdefault(entry["field_key"], []).append(entry)
+
+    max_index = transcript_line_count - 1
+    return {
+        field_key: _citations_for_lines(
+            note_lines_by_field[field_key],
+            _collect_entries(
+                entries_by_field.get(field_key, []), note_lines_by_field[field_key], max_index
+            ),
+        )
+        for field_key, _, _ in targets
+    }

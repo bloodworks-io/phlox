@@ -3,6 +3,7 @@ import {
     activeCitations,
     isFullyUnverified,
     matchCitationsToLines,
+    provenanceExemptKeys,
 } from "./citationMatching";
 import type { LineCitation } from "./types";
 
@@ -66,5 +67,41 @@ describe("activeCitations", () => {
         const citations = [cite(0, "a", "unverified"), cite(1, "b", "conflict")];
         const active = activeCitations("examination", citations, ["examination::1"]);
         expect(active.map((c) => c.line_index)).toEqual([0]);
+    });
+});
+
+describe("provenanceExemptKeys", () => {
+    it("exempts clinician-added lines but not verbatim agent lines", () => {
+        const keys = provenanceExemptKeys(
+            { plan: "• Agent line\n• Clinician line" },
+            { plan: "• Agent line" },
+        );
+        expect(keys).toEqual(["plan::1"]);
+    });
+
+    it("exempts every line of a field the agent never touched (carried content)", () => {
+        const keys = provenanceExemptKeys({ pmh: "• HTN\n• T2DM" }, {});
+        expect(keys).toEqual(["pmh::0", "pmh::1"]);
+    });
+
+    it("exempts agent lines the clinician edited (reworded text)", () => {
+        const keys = provenanceExemptKeys(
+            { plan: "• Agent line, reworded" },
+            { plan: "• Agent line" },
+        );
+        expect(keys).toEqual(["plan::0"]);
+    });
+
+    it("never keys empty lines and skips empty fields", () => {
+        const keys = provenanceExemptKeys({ plan: "a\n\nb", empty: "  " }, { plan: "a" });
+        expect(keys).toEqual(["plan::2"]);
+    });
+
+    it("matches agent lines regardless of position (renumber-safe)", () => {
+        const keys = provenanceExemptKeys(
+            { plan: "• Two\n• One" },
+            { plan: "• One\n• Two" },
+        );
+        expect(keys).toEqual([]);
     });
 });

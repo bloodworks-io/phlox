@@ -1852,3 +1852,76 @@ def test_tidy_transition_mentions_jobs_and_rewording():
     assert "just keep the 'email CDU' job" in message
     assert "make it tighter" in message
     assert "set_jobs" in message
+
+
+def test_tick_user_message_numbers_segments_with_absolute_indices():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+    session.transcript_segments = ["S1: hello", "S2: chest pain", "S1: bye"]
+    session.segments_sent_to_agent = 1
+
+    message = engine._tick_user_message("NOTE")
+
+    assert "[1] S2: chest pain" in message
+    assert "[2] S1: bye" in message
+    # Already-sent segments are not repeated, and indices are absolute.
+    assert "[0] S1: hello" not in message
+
+
+def test_stop_final_state_includes_citations_from_warm_turn(monkeypatch):
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}, "template_key": "phlox_01"},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.engine = None  # stop() skips engine shutdown
+    session.agent_messages = [{"role": "system", "content": "sys"}]
+    session.transcript_segments = ["S1: a", "S2: b"]
+    session.field_drafts = {"clinical_history": "• Fatigue"}
+
+    async def fake_ground(
+        agent_messages, template_fields, contents, transcript_line_count, **kwargs
+    ):
+        assert transcript_line_count == 2
+        from server.transcription.grounding import LineCitation
+
+        return {
+            "clinical_history": [
+                LineCitation(line_index=0, text="• Fatigue", sources=[0], verdict="supported")
+            ]
+        }
+
+    monkeypatch.setattr("server.transcription.grounding.ground_via_conversation", fake_ground)
+
+    response = client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["citations"]["transcript_line_count"] == 2
+    assert body["citations"]["fields"]["clinical_history"][0]["sources"] == [0]
+
+
+def test_stop_omits_citations_when_grounding_fails(monkeypatch):
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.engine = None
+    session.agent_messages = [{"role": "system", "content": "sys"}]
+    session.transcript_segments = ["S1: a"]
+    session.field_drafts = {"plan": "1. Review"}
+
+    async def failing_ground(*_args, **_kwargs):
+        raise RuntimeError("model down")
+
+    monkeypatch.setattr("server.transcription.grounding.ground_via_conversation", failing_ground)
+
+    response = client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    assert response.status_code == 200
+    assert "citations" not in response.json()
