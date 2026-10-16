@@ -85,6 +85,7 @@ def _final_state(session: LiveSession) -> dict:
         "mode": session.mode,
         "fields": dict(session.field_drafts),
         "agent_edits": dict(session.field_last_editor),
+        "initial_fields": dict(session.initial_fields),
         "transcript": "\n".join(session.transcript_segments),
         "artifacts": list(session.staged_artifacts),
         "jobs": list(session.staged_jobs),

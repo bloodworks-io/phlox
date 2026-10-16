@@ -85,6 +85,8 @@ export const useLiveAgent = ({
     const [fieldFlash, setFieldFlash] = useState<Record<string, number>>({});
     const [agentEdits, setAgentEdits] = useState<Record<string, string>>({});
 
+    const [agentBaselines, setAgentBaselines] = useState<Record<string, string>>({});
+
     const sessionIdRef = useRef<string | null>(null);
     const recorderRef = useRef<AudioRecorder | null>(null);
     const runningRef = useRef(false);
@@ -180,6 +182,15 @@ export const useLiveAgent = ({
                     break;
                 }
                 case "field_update":
+                    setAgentBaselines((prev) =>
+                        event.field_key && event.field_key in prev
+                            ? prev
+                            : {
+                                  ...prev,
+                                  [event.field_key as string]:
+                                      templateDataRef.current?.[event.field_key] ?? "",
+                              },
+                    );
                     setPatient((prev) => ({
                         ...prev,
                         template_data: {
@@ -375,6 +386,7 @@ export const useLiveAgent = ({
             setStagedJobs([]);
             setFieldFlash({});
             setAgentEdits({});
+            setAgentBaselines({});
             lastAgentContentRef.current = {};
             uploadsRef.current.clear();
             baseRawRef.current = current?.raw_transcription ?? "";
@@ -520,6 +532,18 @@ export const useLiveAgent = ({
                     ...prev,
                     ...(finalState.agent_edits as Record<string, string>),
                 }));
+
+                setAgentBaselines((prev) => {
+                    const initial = (finalState?.initial_fields ??
+                        {}) as Record<string, string>;
+                    const next = { ...prev };
+                    for (const key of Object.keys(
+                        finalState.agent_edits as Record<string, string>,
+                    )) {
+                        if (!(key in next)) next[key] = initial[key] ?? "";
+                    }
+                    return next;
+                });
             }
             // Grounding is lazy and off the stop request; don't block the
             // review state on it.
@@ -611,6 +635,7 @@ export const useLiveAgent = ({
     const noteIdentity = `${patient?.id ?? "new"}|${patient?.encounter_date ?? ""}|${patient?.name ?? ""}`;
     useEffect(() => {
         setAgentEdits({});
+        setAgentBaselines({});
         setFieldFlash({});
         lastAgentContentRef.current = {};
     }, [noteIdentity]);
@@ -640,6 +665,7 @@ export const useLiveAgent = ({
         stagedJobs,
         fieldFlash,
         agentEdits,
+        agentBaselines,
         lastError,
         backlog,
         startLive,

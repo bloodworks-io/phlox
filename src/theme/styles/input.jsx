@@ -139,11 +139,55 @@ const inputStyles = (props) => ({
         display: "inline-flex !important",
         alignItems: "center !important",
         verticalAlign: "middle !important",
+        background: "none !important",
+        border: "none !important",
+        padding: "0 !important",
+        cursor: "pointer !important",
         color:
             props.colorMode === "light"
                 ? `${colors.light.secondaryButton} !important`
                 : `${colors.dark.secondaryButton} !important`,
         fontSize: "0.7rem !important",
+    },
+    ".agent-diff": {
+        maxHeight: "300px !important",
+        overflowY: "auto !important",
+        fontSize: "0.85rem !important",
+        lineHeight: "1.5 !important",
+        borderRadius: "4px !important",
+        padding: "6px 0 !important",
+    },
+    ".agent-diff-line": {
+        padding: "0 10px !important",
+        whiteSpace: "pre-wrap !important",
+        wordBreak: "break-word !important",
+    },
+    ".agent-diff-line--same": {
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.textSecondary} !important`
+                : `${colors.dark.textSecondary} !important`,
+    },
+    ".agent-diff-line--add": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.successButton}1a !important`
+                : `${colors.dark.successButton}1a !important`,
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.successButton} !important`
+                : `${colors.dark.successButton} !important`,
+    },
+    ".agent-diff-line--remove": {
+        backgroundColor:
+            props.colorMode === "light"
+                ? `${colors.light.dangerButtonFaint} !important`
+                : `${colors.dark.dangerButtonFaint} !important`,
+        color:
+            props.colorMode === "light"
+                ? `${colors.light.dangerButton} !important`
+                : `${colors.dark.dangerButton} !important`,
+        textDecoration: "line-through !important",
     },
     ".cohesive-textarea": {
         backgroundColor: "transparent !important",

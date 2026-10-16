@@ -36,7 +36,10 @@ const patient: Patient = {
 
 const markerLabel = () => t("patient.agentEditedPersistentField") as string;
 
-function renderSummary(agentEdits: Record<string, string>, overrides: Partial<Patient> = {}) {
+function renderSummary(
+    agentEdits: Record<string, string>,
+    overrides: Partial<Patient> = {},
+) {
     return renderWithProviders(
         <Summary
             isSummaryCollapsed={false}

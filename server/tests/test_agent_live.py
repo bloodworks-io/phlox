@@ -838,6 +838,20 @@ def test_stop_final_state_includes_agent_edits():
     assert response.json()["agent_edits"] == {"pmh": "agent"}
 
 
+def test_stop_final_state_includes_initial_fields():
+    session = session_manager.create(
+        owner_user=CurrentUser(1, "local", "admin"),
+        patient_context={"name": "Test"},
+        template_key=None,
+        template_fields=[],
+        initial_fields={"clinical_history": "carry me over"},
+    )
+
+    response = client.post(f"/api/agent-live/sessions/{session.id}/stop")
+    assert response.status_code == 200
+    assert response.json()["initial_fields"] == {"clinical_history": "carry me over"}
+
+
 def test_events_stream_replays_agent_edits():
     response = client.post(
         "/api/agent-live/sessions",

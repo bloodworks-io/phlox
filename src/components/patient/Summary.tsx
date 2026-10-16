@@ -14,11 +14,12 @@ import {
   CopyIcon,
   CheckIcon,
 } from "../common/icons";
-import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText, FaExclamationTriangle, FaExclamationCircle } from "react-icons/fa";
+import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText, FaExclamationCircle } from "react-icons/fa";
 import { GreenButton, GreyButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { useTemplateChange } from "../../utils/hooks/useTemplateChange";
 import ConfirmDialog from "../common/ConfirmDialog";
+import AgentEditDiffMarker from "./AgentEditDiffMarker";
 import GroundedTextarea from "./GroundedTextarea";
 import { citationKey } from "../../utils/patient/citations";
 import { isFullyUnverified, matchCitationsToLines } from "../../utils/patient/citationMatching";
@@ -42,6 +43,7 @@ interface SummaryProps {
   isEncounterSaved?: boolean;
   liveUpdatedFields?: Record<string, number>;
   agentEdits?: Record<string, string>;
+  agentBaselines?: Record<string, string>;
   onCiteLine?: (lineIndex: number) => void;
 }
 
@@ -69,6 +71,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
       isEncounterSaved = false,
       liveUpdatedFields = {},
       agentEdits = {},
+      agentBaselines = {},
       onCiteLine,
     },
     ref,
@@ -195,21 +198,11 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
         agentEdits[field.field_key] === "agent" &&
         !clinicianEdited.has(field.field_key);
       const agentEditMarker = agentEdited ? (
-        <Tooltip
-          content={t("patient.agentEditedPersistentField")}
-          showArrow
-          positioning={{
-            placement: "right"
-          }}
-        >
-          <Box
-            as="span"
-            className="cohesive-agent-edit-marker"
-            aria-label={t("patient.agentEditedPersistentField")}
-          >
-            <FaExclamationTriangle />
-          </Box>
-        </Tooltip>
+        <AgentEditDiffMarker
+          fieldLabel={field.field_name}
+          before={agentBaselines[field.field_key]}
+          after={fieldValue}
+        />
       ) : null;
 
       // Live agent update flash: re-mounts on each new timestamp so the

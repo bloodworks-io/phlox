@@ -441,6 +441,7 @@ const PatientDetails = ({
                     isEncounterSaved={Boolean(patient?.id)}
                     liveUpdatedFields={liveAgent.fieldFlash}
                     agentEdits={liveAgent.agentEdits}
+                    agentBaselines={liveAgent.agentBaselines}
                     onCiteLine={setHighlightLine}
                 />
 

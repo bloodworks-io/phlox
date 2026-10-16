@@ -243,6 +243,7 @@ describe("useLiveAgent note switching", () => {
         });
 
         expect(result.current.api.agentEdits).toEqual({});
+        expect(result.current.api.agentBaselines).toEqual({});
         expect(result.current.api.fieldFlash).toEqual({});
     });
 
@@ -281,5 +282,76 @@ describe("useLiveAgent note switching", () => {
         });
 
         expect(result.current.api.agentEdits).toEqual({});
+    });
+});
+
+describe("useLiveAgent agent-edit baselines", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        liveAgentApiMock.startSession.mockResolvedValue({ session_id: "sess-1" });
+        liveAgentApiMock.sendAudioChunk.mockResolvedValue(true);
+        liveAgentApiMock.sendFeedback.mockResolvedValue(true);
+        liveAgentApiMock.stopSession.mockResolvedValue({
+            session_id: "sess-1",
+            fields: {},
+            agent_edits: {},
+            initial_fields: {},
+            transcript: "",
+        });
+    });
+
+    it("snapshots the pre-edit content on the agent's first field update only", async () => {
+        liveAgentApiMock.streamEvents.mockImplementation(async function* () {
+            yield {
+                type: "field_update",
+                field_key: "pmh",
+                content: "• Hypertension\n• AF",
+            };
+            yield {
+                type: "field_update",
+                field_key: "pmh",
+                content: "• Hypertension\n• AF\n• GORD",
+            };
+        });
+        const { result } = setup(
+            makePatient({ template_data: { pmh: "• Hypertension" } }),
+        );
+
+        await act(async () => {
+            await result.current.api.startLive();
+        });
+
+        await waitFor(() => {
+            expect(result.current.api.agentEdits).toEqual({ pmh: "agent" });
+        });
+        // Baseline is the content before the first write, not the latest.
+        expect(result.current.api.agentBaselines).toEqual({ pmh: "• Hypertension" });
+        expect(result.current.patient.template_data?.pmh).toBe(
+            "• Hypertension\n• AF\n• GORD",
+        );
+    });
+
+    it("backfills missing baselines from initial_fields at stop", async () => {
+        liveAgentApiMock.streamEvents.mockImplementation(async function* () {});
+        const { result } = setup(
+            makePatient({ template_data: { pmh: "old pmh" } }),
+        );
+        await act(async () => {
+            await result.current.api.startLive();
+        });
+
+        liveAgentApiMock.stopSession.mockResolvedValue({
+            session_id: "sess-1",
+            fields: { pmh: "new pmh" },
+            agent_edits: { pmh: "agent" },
+            initial_fields: { pmh: "old pmh" },
+            transcript: "S1: a",
+        });
+        await act(async () => {
+            await result.current.api.stopLive();
+        });
+
+        expect(result.current.api.agentEdits).toEqual({ pmh: "agent" });
+        expect(result.current.api.agentBaselines).toEqual({ pmh: "old pmh" });
     });
 });
