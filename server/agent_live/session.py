@@ -50,6 +50,7 @@ class LiveSession:
     last_draft_at: float = field(default_factory=time.time)
     words_since_draft: int = 0
     segments_sent_to_agent: int = 0
+    tidy_settled: bool = False
     stop_result: dict | None = field(default=None, repr=False, compare=False)
     citations_input: dict | None = field(default=None, repr=False, compare=False)
     citations_task: asyncio.Task | None = field(default=None, repr=False, compare=False)

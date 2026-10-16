@@ -1632,6 +1632,120 @@ def test_request_tidy_refuses_ended_session():
     assert engine.request_tidy() is False
 
 
+def test_request_tidy_refuses_settled_session():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    session.tidy_settled = True
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._schedule_tick = lambda _reason: pytest.fail("should not schedule")
+    assert engine.request_tidy() is False
+
+
+def _tool_call_response(name, args):
+    return {
+        "message": {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call-1",
+                    "type": "function",
+                    "function": {"name": name, "arguments": json.dumps(args)},
+                }
+            ],
+        }
+    }
+
+
+def _armed_engine():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+    session.emit = AsyncMock()
+    engine._tools_definition = []
+    return session, engine
+
+
+@pytest.mark.asyncio
+async def test_tidy_tick_settles_when_note_unchanged():
+    session, engine = _armed_engine()
+    engine._chat = AsyncMock(return_value={"message": {"content": "no changes needed"}})
+
+    await engine._run_tick("tidy_tick")
+
+    assert session.tidy_settled is True
+    assert engine.request_tidy() is False
+
+
+@pytest.mark.asyncio
+async def test_tidy_tick_with_field_update_stays_armed():
+    session, engine = _armed_engine()
+    engine._chat = AsyncMock(
+        side_effect=[
+            _tool_call_response(
+                "update_note_field", {"field_key": "plan", "content": "1. GP review"}
+            ),
+            {"message": {"content": "consolidated plan"}},
+        ]
+    )
+
+    await engine._run_tick("tidy_tick")
+
+    assert session.tidy_settled is False
+    assert engine.request_tidy() is True
+
+    engine._chat = AsyncMock(return_value={"message": {"content": "no changes needed"}})
+    await engine._run_tick("tidy_tick")
+    assert session.tidy_settled is True
+    assert engine.request_tidy() is False
+
+
+@pytest.mark.asyncio
+async def test_regular_tick_field_edit_rearms_settled_tidy():
+    session, engine = _armed_engine()
+    session.tidy_settled = True
+    engine._chat = AsyncMock(
+        side_effect=[
+            _tool_call_response("append_to_field", {"field_key": "plan", "entry": "Book PET scan"}),
+            {"message": {"content": "captured"}},
+        ]
+    )
+
+    await engine._run_tick("NOTE")
+
+    assert session.tidy_settled is False
+    assert engine.request_tidy() is True
+
+
+@pytest.mark.asyncio
+async def test_regular_tick_without_field_edit_keeps_tidy_settled():
+    session, engine = _armed_engine()
+    session.tidy_settled = True
+    engine._chat = AsyncMock(return_value={"message": {"content": "nothing new"}})
+
+    await engine._run_tick("NOTE")
+
+    assert session.tidy_settled is True
+    assert engine.request_tidy() is False
+
+
+@pytest.mark.asyncio
+async def test_clinician_feedback_does_not_rearm_settled_tidy():
+    session = _make_session()
+    session_manager._sessions[session.id] = session
+    session.tidy_settled = True
+
+    body = agent_live_router.LiveFeedbackRequest(fields={"plan": "1. GP review"})
+    await agent_live_router.push_feedback(session.id, body, _fake_request())
+
+    assert session.field_drafts["plan"] == "1. GP review"
+    assert "plan" in session.user_touched
+    assert session.tidy_settled is True
+
+
 def test_tidy_endpoint_calls_engine():
     response = client.post(
         "/api/agent-live/sessions",

@@ -473,6 +473,7 @@ class LiveAgentEngine:
         messages = session.agent_messages
         tools = self.tools()
         final_text = ""
+        note_changed = False
 
         for _ in range(_TICK_TOOL_ITERATIONS.get(reason, MAX_TOOL_ITERATIONS)):
             response = await self._chat(messages=messages, tools=tools)
@@ -500,6 +501,8 @@ class LiveAgentEngine:
                     result = await execute_live_tool(session, name, args)
                     for event in result["events"]:
                         await session.emit(event)
+                        if event.get("type") == "field_update":
+                            note_changed = True
                     tool_content = result["content"]
                 else:
                     tool_content, artifacts = await self._run_registry_tool(tool_call, name)
@@ -526,6 +529,11 @@ class LiveAgentEngine:
             )
             response = await self._chat(messages=messages)
             final_text = response.get("message", {}).get("content") or ""
+
+        if reason == "tidy_tick":
+            session.tidy_settled = not note_changed
+        elif note_changed:
+            session.tidy_settled = False
 
         if session.mode == "tidy" and reason == "tidy_command":
             await session.emit({"type": "command_result", "content": final_text.strip()[:400]})
@@ -570,8 +578,12 @@ class LiveAgentEngine:
         return content or f"Tool '{name}' returned no content.", artifacts
 
     def request_tidy(self) -> bool:
-        """Schedule a one-off note-consolidation tick (client timer)."""
-        if self.session.is_ended:
+        """Schedule a one-off note-consolidation tick (client timer).
+
+        Refused once a tidy tick changed nothing (the note is consolidated)
+        until the agent edits a note field again.
+        """
+        if self.session.is_ended or self.session.tidy_settled:
             return False
         self._schedule_tick("tidy_tick")
         return True
