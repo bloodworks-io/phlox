@@ -58,7 +58,7 @@ const setup = (patient: Patient) =>
             onLetterSaved: vi.fn(),
             onNoteContentChanged: vi.fn(),
         });
-        return { patient: current, api };
+        return { patient: current, setPatient, api };
     });
 
 describe("useLiveAgent stop", () => {
@@ -202,5 +202,84 @@ describe("useLiveAgent stop", () => {
         await waitFor(() => {
             expect(result.current.patient.note_citations?.fields?.plan).toBeDefined();
         });
+    });
+});
+
+describe("useLiveAgent note switching", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        liveAgentApiMock.startSession.mockResolvedValue({ session_id: "sess-1" });
+        liveAgentApiMock.sendAudioChunk.mockResolvedValue(true);
+        liveAgentApiMock.sendFeedback.mockResolvedValue(true);
+        liveAgentApiMock.streamEvents.mockImplementation(async function* () {});
+    });
+
+    const stopWithAgentEdits = async (
+        result: ReturnType<typeof setup>["result"],
+    ) => {
+        liveAgentApiMock.stopSession.mockResolvedValue({
+            session_id: "sess-1",
+            fields: {},
+            agent_edits: { plan: "agent" },
+            transcript: "S1: a",
+        });
+        await act(async () => {
+            await result.current.api.stopLive();
+        });
+        expect(result.current.api.agentEdits).toEqual({ plan: "agent" });
+    };
+
+    it("clears agent-edit markers when a new encounter loads", async () => {
+        const { result } = setup(makePatient({ encounter_date: "2026-10-15" }));
+        await act(async () => {
+            await result.current.api.startLive();
+        });
+        await stopWithAgentEdits(result);
+
+        await act(async () => {
+            result.current.setPatient(
+                makePatient({ id: null, encounter_date: "2026-10-16" }),
+            );
+        });
+
+        expect(result.current.api.agentEdits).toEqual({});
+        expect(result.current.api.fieldFlash).toEqual({});
+    });
+
+    it("keeps markers on the same note after stop", async () => {
+        const { result } = setup(makePatient({ encounter_date: "2026-10-15" }));
+        await act(async () => {
+            await result.current.api.startLive();
+        });
+        await stopWithAgentEdits(result);
+
+        // Clinician edits churn template_data, not the note identity.
+        await act(async () => {
+            result.current.setPatient(
+                makePatient({
+                    id: 7,
+                    encounter_date: "2026-10-15",
+                    template_data: { plan: "clinician tweak" },
+                }),
+            );
+        });
+
+        expect(result.current.api.agentEdits).toEqual({ plan: "agent" });
+    });
+
+    it("clears markers when switching to a different patient", async () => {
+        const { result } = setup(makePatient({ encounter_date: "2026-10-15" }));
+        await act(async () => {
+            await result.current.api.startLive();
+        });
+        await stopWithAgentEdits(result);
+
+        await act(async () => {
+            result.current.setPatient(
+                makePatient({ id: 99, name: "Other", encounter_date: "2026-10-15" }),
+            );
+        });
+
+        expect(result.current.api.agentEdits).toEqual({});
     });
 });

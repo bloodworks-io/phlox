@@ -608,6 +608,13 @@ export const useLiveAgent = ({
         };
     }, [patient?.id]);
 
+    const noteIdentity = `${patient?.id ?? "new"}|${patient?.encounter_date ?? ""}|${patient?.name ?? ""}`;
+    useEffect(() => {
+        setAgentEdits({});
+        setFieldFlash({});
+        lastAgentContentRef.current = {};
+    }, [noteIdentity]);
+
     const isLiveActive = ["connecting", "live", "stopping"].includes(status);
 
     useEffect(() => {
