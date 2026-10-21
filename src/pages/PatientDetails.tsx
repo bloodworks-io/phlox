@@ -44,6 +44,7 @@ import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
 import { useScribeMode } from "../utils/hooks/useScribeMode";
 import { usePatientSwitching } from "../utils/hooks/usePatientSwitching";
 import { useTranscriptionApply } from "../utils/hooks/useTranscriptionApply";
+import { useTranscription } from "../utils/hooks/useTranscription";
 import { useLiveAgentPanel } from "../utils/hooks/useLiveAgentPanel";
 import type {
     Patient,
@@ -199,6 +200,41 @@ const PatientDetails = ({
         setIsSummaryCollapsed: summary.setIsCollapsed,
         summaryRef,
     });
+
+    // Note generation for filed-but-ungenerated imports: run the LLM pass
+    // with the currently selected template, then persist immediately.
+    const { reprocessTranscription } = useTranscription(
+        (data, isReprocess) => handleTranscriptionComplete(data, isReprocess),
+        setLoading,
+    );
+    const isUngeneratedNote =
+        Boolean(patient?.id) &&
+        Boolean(patient?.raw_transcription) &&
+        Object.keys(patient?.template_data ?? {}).length === 0;
+    const [generating, setGenerating] = useState(false);
+    const handleGenerateNote = async () => {
+        if (!patient?.raw_transcription) return;
+        setGenerating(true);
+        try {
+            await reprocessTranscription(
+                patient.raw_transcription,
+                {
+                    name: patient.name,
+                    gender: patient.gender,
+                    dob: patient.dob,
+                    templateKey: currentTemplate?.template_key,
+                    noteId: patient.id,
+                },
+                patient.transcription_duration,
+                true,
+            );
+            await handleSavePatientData();
+        } catch {
+            // toast already raised by the transcription hook
+        } finally {
+            setGenerating(false);
+        }
+    };
 
     // Scribe hook for recording controls
     const scribeControls = useScribe({
@@ -435,6 +471,9 @@ const PatientDetails = ({
                     setIsModified={setIsSummaryModified}
                     selectTemplate={selectTemplate}
                     isNewPatient={isNewPatient}
+                    isUngeneratedNote={isUngeneratedNote}
+                    onGenerateNote={handleGenerateNote}
+                    generateLoading={generating}
                     isSearchedPatient={searchFlow.isSearchedPatient}
                     onCopy={handleCopy}
                     recentlyCopied={recentlyCopied}

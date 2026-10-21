@@ -6,7 +6,7 @@ import React, {
 } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
+import { Box, Button, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -38,6 +38,9 @@ interface SummaryProps {
   onCopy: () => void;
   recentlyCopied?: boolean;
   isNewPatient?: boolean;
+  isUngeneratedNote?: boolean;
+  onGenerateNote?: () => void | Promise<void>;
+  generateLoading?: boolean;
   selectTemplate: (templateKey: string) => void;
   isSearchedPatient?: boolean;
   isEncounterSaved?: boolean;
@@ -66,6 +69,9 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
       onCopy,
       recentlyCopied,
       isNewPatient,
+      isUngeneratedNote = false,
+      onGenerateNote,
+      generateLoading = false,
       selectTemplate,
       isSearchedPatient,
       isEncounterSaved = false,
@@ -99,7 +105,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
     const handleTemplateChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newTemplateKey = e.target.value;
 
-      if (!isNewPatient && !isSearchedPatient) {
+      if (!isNewPatient && !isSearchedPatient && !isUngeneratedNote) {
         toaster.create({
           title: t("patient.templateLocked"),
           description: t("patient.templateLockedDescription"),
@@ -284,7 +290,10 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                     style={{ marginRight: "8px" }}
                     className="pill-box-icons"
                   />
-                  <NativeSelect.Root size="sm" disabled={!isNewPatient}>
+                  <NativeSelect.Root
+                    size="sm"
+                    disabled={!(isNewPatient || isUngeneratedNote)}
+                  >
                     <NativeSelect.Field
                       placeholder={t("patient.selectTemplate")}
                       value={
@@ -314,6 +323,17 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                     </NativeSelect.Field>
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
+                  {isUngeneratedNote && onGenerateNote && (
+                    <Button
+                      size="sm"
+                      className="green-button"
+                      loading={generateLoading}
+                      onClick={onGenerateNote}
+                      ml={2}
+                    >
+                      {t("patient.generateNote")}
+                    </Button>
+                  )}
                 </Flex>
               </Box>
             </Tooltip>
