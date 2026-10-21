@@ -56,8 +56,9 @@ def save_patient(patient: Patient) -> int:
             if plan := template_data.get("plan") if isinstance(template_data, dict) else None:
                 jobs_list = generate_jobs_list_from_plan(plan)
 
-        # Check if all jobs are completed
-        all_jobs_completed = are_all_jobs_completed(jobs_list)
+        # Check if all jobs are completed. A note with no jobs at all (e.g.
+        # a filed-but-not-yet-generated import) has nothing outstanding.
+        all_jobs_completed = True if not jobs_list else are_all_jobs_completed(jobs_list)
 
         # Ensure jobs_list is properly serialized as JSON string
         jobs_list_json = (
@@ -207,8 +208,10 @@ def update_patient(patient: Patient) -> None:
                 if not jobs_list and new_plan:
                     jobs_list = generate_jobs_list_from_plan(new_plan)
 
-            # Check if all jobs are completed
-            all_jobs_completed = are_all_jobs_completed(jobs_list)
+            # Check if all jobs are completed. A note with no jobs at all
+            # (e.g. a filed-but-not-yet-generated import) has nothing
+            # outstanding.
+            all_jobs_completed = True if not jobs_list else are_all_jobs_completed(jobs_list)
 
             # Ensure template_data is properly serialized
             template_data_json = (
