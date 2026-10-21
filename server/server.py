@@ -267,6 +267,12 @@ def initialize_and_get_app():
     app.include_router(templates.router, prefix="/api/templates")
     app.include_router(letter.router, prefix="/api/letter")
 
+    # Companion sync (not scoped for multi-user at the moment)
+    if not IS_DOCKER:
+        from server.companion import router as companion_router
+
+        app.include_router(companion_router.router, prefix="/api/companion")
+
     from server.api import audit, pdf_forms
 
     app.include_router(audit.router, prefix="/api/audit")
