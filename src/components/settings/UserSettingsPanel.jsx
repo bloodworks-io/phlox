@@ -3,11 +3,13 @@ import { Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import AnimatedChevron from "../common/icons/AnimatedChevron";
-import { FaUser, FaFileAlt, FaEnvelopeOpenText, FaComments } from "react-icons/fa";
+import { FaUser, FaFileAlt, FaEnvelopeOpenText, FaComments, FaMobileAlt } from "react-icons/fa";
 import TemplateSettingsPanel from "./TemplateSettingsPanel";
 import LetterTemplatesPanel from "./LetterTemplatesPanel";
 import ChatSettingsPanel from "./ChatSettingsPanel";
+import CompanionUserSettings from "./CompanionUserSettings";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
+import { isTauri } from "../../utils/helpers/apiConfig";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { syncLanguage } from "../../i18n";
 import { UI_LANGUAGES, getLanguageName } from "../../utils/i18n/languages";
@@ -21,6 +23,8 @@ const UserSettingsPanel = ({
   templates,
   letterTemplates,
   onDefaultTemplateChange,
+  config,
+  handleConfigChange,
 }) => {
   const { t } = useTranslation();
   const [capabilities, setCapabilities] = useState(null);
@@ -107,6 +111,14 @@ const UserSettingsPanel = ({
                   <HStack>
                     <FaComments />
                     <Text>{t("settings.userPanel.quickChat")}</Text>
+                  </HStack>
+                </Tabs.Trigger>
+              )}
+              {isTauri() && (
+                <Tabs.Trigger className="tab-style" value="companion">
+                  <HStack>
+                    <FaMobileAlt />
+                    <Text>{t("settings.userPanel.companion")}</Text>
                   </HStack>
                 </Tabs.Trigger>
               )}
@@ -254,6 +266,14 @@ const UserSettingsPanel = ({
                   <ChatSettingsPanel
                     userSettings={userSettings}
                     setUserSettings={setUserSettings}
+                  />
+                </Tabs.Content>
+              )}
+              {isTauri() && (
+                <Tabs.Content value="companion" className="floating-main">
+                  <CompanionUserSettings
+                    config={config}
+                    handleConfigChange={handleConfigChange}
                   />
                 </Tabs.Content>
               )}

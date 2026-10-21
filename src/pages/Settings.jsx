@@ -482,6 +482,8 @@ const Settings = () => {
                     templates={providerTemplates || []}
                     letterTemplates={letterTemplates}
                     onDefaultTemplateChange={handleDefaultTemplateChange}
+                    config={config}
+                    handleConfigChange={handleConfigChange}
                 />
 
                 {isAdmin && (
