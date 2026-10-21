@@ -221,6 +221,31 @@ pub fn start_whisper_service(pm_state: tauri::State<PmState>) -> Result<String, 
 }
 
 #[tauri::command]
+pub fn start_companion_host(pm_state: tauri::State<PmState>) -> Result<bool, String> {
+    log::info!("Starting companion-host...");
+
+    let mut state = pm_state.0.lock().unwrap();
+    state.start_companion()
+}
+
+#[tauri::command]
+pub fn stop_companion_host(pm_state: tauri::State<PmState>) -> Result<String, String> {
+    log::info!("Stopping companion-host...");
+
+    let mut state = pm_state.0.lock().unwrap();
+    match state.stop("companion") {
+        Ok(()) => {
+            log::info!("companion-host stopped");
+            Ok("companion-host stopped".to_string())
+        }
+        Err(e) => {
+            log::error!("Failed to stop companion-host: {}", e);
+            Err(format!("Failed to stop companion-host: {}", e))
+        }
+    }
+}
+
+#[tauri::command]
 pub fn restart_llama(
     _app_handle: tauri::AppHandle,
     pm_state: tauri::State<PmState>,

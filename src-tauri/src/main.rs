@@ -2,6 +2,7 @@
 
 mod commands;
 mod encryption;
+mod companion;
 mod pm;
 mod process;
 
@@ -15,8 +16,8 @@ use commands::{
     change_passphrase, clear_keychain, get_encryption_status, get_service_status, get_system_specs,
     has_database, has_encryption_setup, has_keychain_entry, restart_embedding, restart_llama,
     restart_whisper, send_passphrase_command, setup_encryption, start_embedding_service,
-    start_llama_service, start_server_command, start_whisper_service, unlock_with_passphrase,
-    CachedServiceStatus,
+    start_llama_service, start_server_command, start_whisper_service, start_companion_host,
+    stop_companion_host, unlock_with_passphrase, CachedServiceStatus,
 };
 use process::{cleanup_stale_files, kill_all_processes};
 
@@ -146,6 +147,8 @@ pub fn run() {
             restart_embedding,
             start_llama_service,
             start_whisper_service,
+            start_companion_host,
+            stop_companion_host,
             start_embedding_service,
             start_server_command,
             send_passphrase_command,

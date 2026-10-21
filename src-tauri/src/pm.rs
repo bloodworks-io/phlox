@@ -83,6 +83,7 @@ pub struct ProcessManagerState {
     whisper: Option<ManagedProcess>,
     server: Option<ManagedProcess>,
     embedding: Option<ManagedProcess>,
+    companion: Option<crate::companion::CompanionService>,
     allocated_ports: Option<AllocatedPorts>,
     request_token: Option<String>,
 }
@@ -158,6 +159,49 @@ fn find_whisper_server() -> Option<PathBuf> {
         log::warn!("phlox-whisper-server not found at {:?}", path);
         None
     }
+}
+
+fn companion_pair_code() -> Option<String> {
+    let dir = phlox_dir()?;
+    fs::create_dir_all(&dir).ok()?;
+    let file = dir.join("companion_pair_code.txt");
+
+    if let Ok(code) = fs::read_to_string(&file) {
+        let code = code.trim().to_string();
+        if !code.is_empty() {
+            return Some(code);
+        }
+    }
+
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos() as u64 ^ d.as_secs())
+        .unwrap_or(0);
+    let code = format!("{:06}", 100_000 + (nanos % 900_000));
+    fs::write(&file, &code).ok()?;
+    Some(code)
+}
+
+fn computer_name() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(name) = std::process::Command::new("scutil")
+            .args(["--get", "ComputerName"])
+            .output()
+        {
+            if name.status.success() {
+                if let Ok(text) = String::from_utf8(name.stdout) {
+                    let trimmed = text.trim();
+                    if !trimmed.is_empty() {
+                        return trimmed.to_string();
+                    }
+                }
+            }
+        }
+    }
+    std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "Phlox Desktop".to_string())
 }
 
 /// Find the server (Python) binary path.
@@ -808,6 +852,7 @@ fn stop_drain_threads(process: &mut ManagedProcess) {
 
 /// Start the Python server (waits for passphrase via stdin).
 /// Returns the process once it has confirmed `WAITING_FOR_PASSPHRASE`.
+
 fn start_server() -> Result<ManagedProcess, String> {
     let server_path = find_python_server().ok_or("Server binary not found")?;
 
@@ -1144,6 +1189,11 @@ impl ProcessManagerState {
                         self.allocated_ports = Some(ports.clone());
                         self.server = Some(proc);
                         log::info!("Server PID {} unlocked", pid);
+                        // Best-effort: bring up the phone sync host when the
+                        // companion feature is enabled (off by default).
+                        if let Err(e) = self.start_companion() {
+                            log::info!("companion host not started: {}", e);
+                        }
                         Ok(ports)
                     }
                     Err(e) => {
@@ -1160,12 +1210,56 @@ impl ProcessManagerState {
         }
     }
 
+    /// Start (or restart, after a server re-unlock rotated the token) the
+    /// companion sync host. Ok(false) when the feature is disabled or the
+    /// binary is absent — never fatal.
+    pub fn start_companion(&mut self) -> Result<bool, String> {
+        // The enabled flag lives in the server's encrypted config, so ask
+        // the server live — a boot-time snapshot would go stale the moment
+        // the clinician flips the toggle.
+        let (port, token) = match self.allocated_ports.as_ref() {
+            Some(ports) => (ports.server, ports.request_token.clone()),
+            None => return Err("server ports not allocated yet".into()),
+        };
+        if !crate::companion::backend::companion_enabled(port, &token) {
+            log::debug!("companion sync disabled; host not started");
+            return Ok(false);
+        }
+        let Some(code) = companion_pair_code() else {
+            return Err("no data directory for pairing code".into());
+        };
+        // A running host holds a token that may be stale after a server
+        // restart — always replace it.
+        if let Some(service) = self.companion.take() {
+            service.stop();
+        }
+        let credential_path = phlox_dir()
+            .ok_or("no data directory for pairing credential")?
+            .join("companion_credential.json");
+        self.companion = Some(crate::companion::start(crate::companion::HostConfig {
+            server_port: port,
+            request_token: token,
+            host_name: computer_name(),
+            pair_code: code,
+            credential_path,
+        })?);
+        Ok(true)
+    }
+
     /// Stop a specific service.
     pub fn stop(&mut self, service: &str) -> Result<(), String> {
         match service {
             "llama" => stop_managed(&mut self.llama, "llama"),
             "whisper" => stop_managed(&mut self.whisper, "whisper"),
             "embedding" => stop_managed(&mut self.embedding, "embedding"),
+            "companion" => {
+                if let Some(service) = self.companion.take() {
+                    service.stop();
+                    Ok(())
+                } else {
+                    Err("companion host is not running".to_string())
+                }
+            }
             "server" => {
                 if let Some(mut proc) = self.server.take() {
                     stop_drain_threads(&mut proc);
@@ -1202,6 +1296,7 @@ impl ProcessManagerState {
             && self.whisper.is_none()
             && self.server.is_none()
             && self.embedding.is_none()
+            && self.companion.is_none()
         {
             log::debug!("shutdown() called but no managed processes; skipping");
             return;
@@ -1232,6 +1327,9 @@ impl ProcessManagerState {
             let _ = proc.child.kill();
             let _ = proc.child.wait();
             remove_pid_file("embedding");
+        }
+        if let Some(service) = self.companion.take() {
+            service.stop();
         }
 
         // Fallback: kill any orphans by name pattern
