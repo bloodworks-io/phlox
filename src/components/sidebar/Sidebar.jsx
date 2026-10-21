@@ -70,6 +70,7 @@ const Sidebar = ({
   isAdmin,
   patientScope,
   setPatientScope,
+  onOpenCompanionImport,
 }) => {
   // State declarations remain the same
   const { t } = useTranslation();
@@ -359,6 +360,7 @@ const Sidebar = ({
               onTogglePatientScope={() =>
                 setPatientScope(patientScope === "mine" ? "all" : "mine")
               }
+              onOpenCompanionImport={onOpenCompanionImport}
             />
           </Box>
         )}

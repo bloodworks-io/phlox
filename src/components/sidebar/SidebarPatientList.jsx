@@ -13,11 +13,14 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { FaClinicMedical, FaUser, FaUsers } from "react-icons/fa";
+import useSWR from "swr";
+import { FaClinicMedical, FaMobileAlt, FaUser, FaUsers } from "react-icons/fa";
 import { DeleteIcon, ChevronDownIcon, ChevronUpIcon } from "../common/icons";
 import { getInitials, getAvatarColor } from "./SidebarHelpers";
 import { colors } from "../../theme/colors";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import { companionApi } from "../../utils/api/companionApi";
+import { KEYS } from "../../utils/cache/keys";
 
 const SidebarPatientList = ({
     patients,
@@ -28,6 +31,7 @@ const SidebarPatientList = ({
     selectedDate,
     setSelectedDate,
     onShowSummary,
+    onOpenCompanionImport,
     isAdmin,
     patientScope,
     onTogglePatientScope,
@@ -36,6 +40,12 @@ const SidebarPatientList = ({
     const [hoveredPatientId, setHoveredPatientId] = useState(null);
     const { t } = useTranslation();
     const labelColor = colors.dark.textSecondary;
+
+    const { data: companionStatus } = useSWR(
+        onOpenCompanionImport ? KEYS.COMPANION_STATUS : null,
+        companionApi.fetchStatus,
+        { revalidateOnFocus: true, refreshInterval: 30000 },
+    );
 
     return (
         <Box w="100%" h="100%" display="flex" flexDirection="column" minH="0">
@@ -85,6 +95,30 @@ const SidebarPatientList = ({
                         </Text>
                     </Flex>
                     <Flex align="center" gap={1}>
+                        {isTauri() && companionStatus?.enabled && onOpenCompanionImport && (
+                            <Tooltip
+                                content={t("sidebar.patientList.companionTooltip")}
+                                positioning={{ placement: "top" }}
+                                openDelay={700}
+                            >
+                                <Flex
+                                    align="center"
+                                    position="relative"
+                                    color={labelColor}
+                                    _hover={{ color: colors.dark.accent }}
+                                    cursor="pointer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onOpenCompanionImport();
+                                    }}
+                                    onKeyDown={(e) => e.stopPropagation()}
+                                >
+                                    <Icon aria-label={t("sidebar.patientList.companionTooltip")}>
+                                        <FaMobileAlt size={11} />
+                                    </Icon>
+                                </Flex>
+                            </Tooltip>
+                        )}
                         {isAdmin && (
                              <Tooltip
                                  content={t("sidebar.patientList.scopeTooltip")}
