@@ -15,6 +15,24 @@ updates:
     cooldown:
       default-days: 3
 
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "security"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    cooldown:
+      default-days: 3
+
   # Enable version updates for npm
   - package-ecosystem: "npm"
     directory: "/"
