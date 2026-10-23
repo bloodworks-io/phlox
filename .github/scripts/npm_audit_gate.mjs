@@ -7,6 +7,7 @@ if (!path) {
 }
 
 const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
+const CVSS_CRITICAL = 9;
 
 let report;
 try {
@@ -20,6 +21,17 @@ const vulnerabilities = Object.values(report.vulnerabilities ?? {});
 const packumentCache = new Map();
 const advisoryCache = new Map();
 
+async function fetchAdvisory(advisoryId) {
+  if (!advisoryCache.has(advisoryId)) {
+    const res = await fetch(`https://api.github.com/advisories/${advisoryId}`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!res.ok) throw new Error(`advisory ${res.status} for ${advisoryId}`);
+    advisoryCache.set(advisoryId, await res.json());
+  }
+  return advisoryCache.get(advisoryId);
+}
+
 async function publishTime(name, version) {
   if (!packumentCache.has(name)) {
     const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}`);
@@ -30,37 +42,47 @@ async function publishTime(name, version) {
   return time ? new Date(time).getTime() : null;
 }
 
-async function firstPatchedVersions(name, advisoryUrl) {
-  const advisoryId = advisoryUrl.split("/").pop();
-  if (!advisoryCache.has(advisoryId)) {
-    const res = await fetch(`https://api.github.com/advisories/${advisoryId}`, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    if (!res.ok) throw new Error(`advisory ${res.status} for ${advisoryId}`);
-    advisoryCache.set(advisoryId, await res.json());
-  }
-  const advisory = advisoryCache.get(advisoryId);
-  return (advisory.vulnerabilities ?? [])
-    .filter((v) => v.package?.name === name)
-    .map((v) => v.first_patched_version)
-    .filter(Boolean);
-}
-
-async function fixInCooldown(name, via) {
+async function evaluateFix(name, via) {
   const advisories = (via ?? []).filter(
     (v) => typeof v === "object" && v.url?.startsWith("https://github.com/advisories/"),
   );
-  if (advisories.length === 0) return false;
-  const times = [];
+  if (advisories.length === 0) return { cooldown: false, severity: null, score: null };
+  const entries = [];
   for (const adv of advisories) {
-    for (const version of await firstPatchedVersions(name, adv.url)) {
-      const t = await publishTime(name, version);
-      if (t === null) return false;
-      times.push(t);
+    const advisory = await fetchAdvisory(adv.url.split("/").pop());
+    for (const v of advisory.vulnerabilities ?? []) {
+      if (v.package?.name !== name || !v.first_patched_version) continue;
+      entries.push({
+        version: v.first_patched_version,
+        severity: advisory.severity ?? null,
+        score: advisory.cvss_severities?.cvss_v4?.score ?? advisory.cvss?.score ?? null,
+      });
     }
   }
-  if (times.length === 0) return false;
-  return times.every((t) => Date.now() - t < COOLDOWN_MS);
+  if (entries.length === 0) return { cooldown: false, severity: null, score: null };
+  const times = [];
+  for (const entry of entries) {
+    const t = await publishTime(name, entry.version);
+    if (t === null) return { cooldown: false, severity: null, score: null };
+    times.push(t);
+  }
+  const worst = entries.reduce((a, b) => ((b.score ?? -1) > (a.score ?? -1) ? b : a));
+  return {
+    cooldown: times.every((t) => Date.now() - t < COOLDOWN_MS),
+    severity: worst.severity,
+    score: worst.score,
+  };
+}
+
+function isCritical(severity, score) {
+  return (typeof score === "number" && score >= CVSS_CRITICAL) || severity === "critical";
+}
+
+function severitySuffix(severity, score) {
+  const parts = [];
+  if (severity) parts.push(severity);
+  if (typeof score === "number") parts.push(`cvss ${score}`);
+  return parts.length ? ` [${parts.join(", ")}]` : "";
 }
 
 async function main() {
@@ -76,14 +98,21 @@ async function main() {
     const fix = vuln.fixAvailable;
 
     if (fix === true) {
-      let cooldown;
+      let result;
       try {
-        cooldown = await fixInCooldown(vuln.name, vuln.via);
+        result = await evaluateFix(vuln.name, vuln.via);
       } catch {
-        cooldown = false;
+        result = { cooldown: false, severity: null, score: null };
       }
-      if (cooldown) {
-        console.log(`::warning::npm ${label} - fix still in release cooldown (min-release-age)`);
+      if (result.cooldown && isCritical(result.severity, result.score)) {
+        console.log(
+          `::error::npm ${label} - fix in cooldown but severity critical${severitySuffix(result.severity, result.score)} - update now despite cooldown`,
+        );
+        failing++;
+      } else if (result.cooldown) {
+        console.log(
+          `::warning::npm ${label} - fix still in release cooldown (min-release-age)${severitySuffix(result.severity, result.score)}`,
+        );
         blocked++;
       } else {
         console.log(`::error::npm ${label} - fix available via \`npm audit fix\``);
