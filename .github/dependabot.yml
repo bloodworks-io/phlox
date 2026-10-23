@@ -46,6 +46,9 @@ updates:
       - "dependencies"
       - "javascript"
     versioning-strategy: increase
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     cooldown:
       default-days: 3
 
