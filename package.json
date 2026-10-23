@@ -3,7 +3,7 @@
     "version": "2.5.2",
     "private": true,
     "engines": {
-        "node": ">=24 <25",
+        "node": ">=24.22.1 <25",
         "npm": ">=11.12.1"
     },
     "packageManager": "npm@11.16.0",
@@ -79,6 +79,6 @@
         "typescript-eslint": "^8.65.0",
         "vite": "^8.2.1",
         "vite-plugin-static-copy": "^4.1.1",
-        "vitest": "^4.1.10"
+        "vitest": "^4.1.12"
     }
 }
