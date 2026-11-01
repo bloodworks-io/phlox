@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useColorMode } from "../../ui/color-mode";
 import { Flex, Box, Text, HStack, VStack, Spinner, Image } from "@chakra-ui/react";
 import {
     parseMessageContent,
@@ -20,7 +19,6 @@ const ChatMessages = ({
 }) => {
     const [expandedToolBlocks, setExpandedToolBlocks] = useState({});
     const { t } = useTranslation();
-    const { colorMode } = useColorMode();
 
     const filteredMessages = useMemo(
         () =>
@@ -100,7 +98,7 @@ const ChatMessages = ({
                             position="relative"
                         >
                             {message.loading ? (
-                                <Spinner size="sm" mt="1" />
+                                <Spinner size="sm" mt="1" color="folio.accent" />
                             ) : (
                                 <VStack
                                     align="start"
@@ -118,7 +116,7 @@ const ChatMessages = ({
                                             <Text
                                                 fontSize="xs"
                                                 fontWeight="semibold"
-                                                color="overlay0"
+                                                color="folio.muted"
                                                 lineHeight="1"
                                             >
                                                 {t("chat.assistant")}
@@ -179,12 +177,12 @@ const ChatMessages = ({
 
                                     {message.role === "assistant" &&
                                         message.context && (
-                                            <CitationList
-                                                citations={allCitations}
-                                                citedOriginals={footerOriginals}
-                                                colorMode={colorMode}
-                                                inline
-                                            />
+                                             <CitationList
+                                                 citations={allCitations}
+                                                 citedOriginals={footerOriginals}
+                                                 inline
+                                             />
+
                                         )}
 
                                     {message.role === "assistant" &&

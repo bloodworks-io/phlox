@@ -1,6 +1,6 @@
 // Styles for text input fields and buttons.
 import { colors } from "../colors";
-import { lightenColor, darkenColor } from "../utils"; // adjust path as needed
+import { lightenColor } from "../utils"; // adjust path as needed
 
 const folioFocusRing = {
     "&:focus": {
@@ -217,47 +217,30 @@ const inputStyles = (props) => ({
     },
     ".refinement-fab": {
         borderRadius: "full !important",
-        color: `${colors.light.invertedText} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${darkenColor(colors.light.chatIcon, 0.15)} !important`
-                : "none !important",
-        backgroundColor: `${
-            props.colorMode === "light"
-                ? colors.light.chatIcon
-                : colors.dark.chatIcon
-        } !important`,
-        opacity: 0,
-        transition: "opacity 0.2s ease-in-out",
+        color: "folio.accentInk !important",
+        border: "1px solid !important",
+        borderColor: "folio.accent !important",
+        backgroundColor: "folio.accent !important",
+        opacity: 1,
+        transition:
+            "color 160ms ease, background-color 160ms ease, border-color 160ms ease",
         width: "40px !important",
         height: "40px !important",
         aspectRatio: "1/1",
         "&:hover": {
-            backgroundColor: `${
-                props.colorMode === "light"
-                    ? lightenColor(colors.light.chatIcon)
-                    : lightenColor(colors.dark.chatIcon)
-            } !important`,
+            backgroundColor: "folio.accent/90 !important",
         },
     },
     ".refinement-submit-button": {
-        borderRadius: "lg !important",
-        color: `${colors.light.invertedText} !important`,
-        backgroundColor: `${
-            props.colorMode === "light"
-                ? colors.light.chatIcon
-                : colors.dark.chatIcon
-        } !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${darkenColor(colors.light.chatIcon, 0.15)} !important`
-                : "none !important",
+        borderRadius: "folioControl !important",
+        color: "folio.accentInk !important",
+        backgroundColor: "folio.accent !important",
+        border: "1px solid !important",
+        borderColor: "folio.accent !important",
+        transition:
+            "color 160ms ease, background-color 160ms ease, border-color 160ms ease",
         "&:hover": {
-            backgroundColor: `${
-                props.colorMode === "light"
-                    ? lightenColor(colors.light.chatIcon)
-                    : lightenColor(colors.dark.chatIcon)
-            } !important`,
+            backgroundColor: "folio.accent/90 !important",
         },
     },
     ".reason-button": {

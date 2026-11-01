@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { screen, fireEvent, cleanup } from "@testing-library/react";
 import AgentPanel from "./AgentPanel";
-import { renderWithProviders } from "../../../test/utils";
+import {
+    renderWithProviders,
+    emotionStylesFor,
+} from "../../../test/utils";
 
 // Vitest runs without globals — register cleanup or renders leak.
 afterEach(cleanup);
@@ -16,6 +19,17 @@ const statuses = [
     { id: "s1", content: "Note updated: history", kind: "edit" },
     { id: "s2", content: "Staged: Patient summary letter", kind: "artifact" },
 ];
+
+const renderPanel = (props) =>
+    renderWithProviders(
+        <AgentPanel
+            transcripts={[]}
+            statuses={[]}
+            artifacts={[]}
+            isExpanded
+            {...props}
+        />,
+    );
 
 const stubLocalStorage = () => {
     const store = new Map();
@@ -245,5 +259,109 @@ describe("AgentPanel", () => {
             window.innerWidth = 1024;
             window.innerHeight = 768;
         }
+    });
+});
+
+describe("AgentPanel status visuals", () => {
+    it.each([
+        ["connecting", "folio-muted", true],
+        ["stopping", "folio-muted", false],
+        ["review", "folio-muted", false],
+    ])("maps %s to a muted, %s dot", (status, token, pulse) => {
+        renderPanel({ status });
+        const dot = screen.getByTestId("agent-status-dot");
+        expect(emotionStylesFor(dot)).toContain(
+            `var(--chakra-colors-${token})`,
+        );
+        expect(dot.classList.contains("live-bolt-pulse")).toBe(pulse);
+    });
+
+    it("maps a listening live session to the info role with a pulse", () => {
+        renderPanel({ status: "live", agentState: "listening" });
+        const dot = screen.getByTestId("agent-status-dot");
+        expect(emotionStylesFor(dot)).toContain(
+            "var(--chakra-colors-folio-info)",
+        );
+        expect(dot.classList.contains("live-bolt-pulse")).toBe(true);
+    });
+
+    it("maps a working live session to the warning role without a pulse", () => {
+        renderPanel({ status: "live", agentState: "working" });
+        const dot = screen.getByTestId("agent-status-dot");
+        expect(emotionStylesFor(dot)).toContain(
+            "var(--chakra-colors-folio-warning)",
+        );
+        expect(dot.classList.contains("live-bolt-pulse")).toBe(false);
+    });
+
+    it("maps failures to the danger role", () => {
+        renderPanel({ status: "error" });
+        expect(
+            emotionStylesFor(screen.getByTestId("agent-status-dot")),
+        ).toContain("var(--chakra-colors-folio-danger)");
+    });
+
+    it("renders the agent symbol on the info soft surface", () => {
+        renderPanel({ status: "live" });
+        expect(emotionStylesFor(screen.getByTestId("agent-symbol"))).toContain(
+            "var(--chakra-colors-folio-info-soft)",
+        );
+    });
+
+    it("keeps the status pulse static under reduced motion", () => {
+        renderPanel({ status: "connecting" });
+        const styles = emotionStylesFor(
+            screen.getByTestId("agent-status-dot"),
+        );
+        expect(styles).toContain("phloxBoltPulse");
+        expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
+        expect(styles).toContain("animation: none");
+    });
+});
+
+describe("AgentPanel activity visuals", () => {
+    it.each([
+        ["info", "folio-muted"],
+        ["edit", "folio-info"],
+        ["command", "folio-success"],
+        ["artifact", "folio-warning"],
+    ])("marks %s activity with %s", (kind, token) => {
+        renderPanel({
+            status: "live",
+            statuses: [{ id: "a1", content: `Did ${kind}`, kind }],
+        });
+        const icon = screen.getByText(`Did ${kind}`).previousElementSibling;
+        expect(emotionStylesFor(icon)).toContain(
+            `var(--chakra-colors-${token})`,
+        );
+    });
+});
+
+describe("AgentPanel artifact visuals", () => {
+    it("presents prepared drafts on Folio paper with a hairline border", () => {
+        renderPanel({ status: "review", artifacts: [letterArtifact] });
+        const row = screen.getByRole("button", {
+            name: /patient summary letter/i,
+        });
+        const styles = emotionStylesFor(row);
+        expect(styles).toContain("var(--chakra-colors-folio-paper)");
+        expect(styles).toContain("var(--chakra-colors-folio-line)");
+        expect(styles).toContain("var(--chakra-colors-folio-accent)");
+    });
+
+    it("presents connection failures on the Folio danger surface", () => {
+        renderPanel({
+            status: "error",
+            lastError: "The event stream ended unexpectedly.",
+        });
+        const retry = screen.getByRole("button", { name: /reconnect/i });
+        expect(emotionStylesFor(retry)).toContain(
+            "var(--chakra-colors-folio-danger)",
+        );
+        const block = screen.getByText(/event stream ended/i)
+            .parentElement;
+        expect(emotionStylesFor(block)).toContain(
+            "var(--chakra-colors-folio-danger-soft)",
+        );
     });
 });

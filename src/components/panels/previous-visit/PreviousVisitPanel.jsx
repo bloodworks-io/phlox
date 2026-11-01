@@ -100,9 +100,12 @@ const PreviousVisitPanel = ({
           justify="space-between"
           p="3"
           className="panel-header"
+          backgroundColor="folio.paper"
+          color="folio.ink"
+          borderBottomColor="folio.line"
           flexShrink={0}
         >
-          <Flex align="center">
+          <Flex align="center" color="folio.accent">
             <FaClock size="1em" style={{ marginRight: "8px" }} />
             <Text fontWeight="bold">{t("common.fab.previousVisit")}</Text>
           </Flex>
@@ -140,7 +143,7 @@ const PreviousVisitPanel = ({
 
               {/* Summary Tab */}
               <Tabs.Content value="0"
-                className="floating-main"
+                className="attached-panel-body"
                 p={0}
                 width="100%"
                 height="100%"
@@ -162,7 +165,7 @@ const PreviousVisitPanel = ({
                       <Spinner size="sm" />
                     </Flex>
                   ) : (
-                    <Text color="overlay0" textAlign="center" py={4}>
+                    <Text color="folio.faint" textAlign="center" py={4}>
                       {t("previousVisit.noSummary")}
                     </Text>
                   )}
@@ -171,7 +174,7 @@ const PreviousVisitPanel = ({
 
               {/* Full Note Tab */}
               <Tabs.Content value="1"
-                className="floating-main"
+                className="attached-panel-body"
                 p={0}
                 width="100%"
                 height="100%"
@@ -189,7 +192,7 @@ const PreviousVisitPanel = ({
                       {/* Encounter Date */}
                       {previousVisitEncounterDate && (
                         <Box p="2" width="100%">
-                          <Text fontSize="xs" color="overlay0" fontWeight="bold">
+                          <Text fontSize="xs" color="folio.faint" fontWeight="bold">
                             {t("previousVisit.encounterDate")}
                           </Text>
                           <Text fontSize="sm">{previousVisitEncounterDate}</Text>
@@ -202,7 +205,7 @@ const PreviousVisitPanel = ({
                       </VStack>
                     </VStack>
                   ) : (
-                    <Text color="overlay0" textAlign="center" py={4}>
+                    <Text color="folio.faint" textAlign="center" py={4}>
                       {t("previousVisit.noNote")}
                     </Text>
                   )}

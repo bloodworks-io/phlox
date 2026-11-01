@@ -14,13 +14,13 @@ const getReasoningKey = (section) => {
     return section;
 };
 
-const renderItems = (section, reasoning, colorMode) => {
+const renderItems = (section, reasoning) => {
     const key = getReasoningKey(section);
     const items = reasoning?.[key];
 
     if (!items || items.length === 0) {
         return (
-            <Text fontSize="sm" color="overlay0">
+            <Text fontSize="sm" color="folio.faint">
                 {translate("reasoning.noItems")}
             </Text>
         );
@@ -29,12 +29,12 @@ const renderItems = (section, reasoning, colorMode) => {
     return (
         <VStack align="stretch" gap={2} className="anim-stagger">
             {items.map((item, i) => (
-                <ReasoningItem
-                    key={i}
-                    item={item}
-                    section={section}
-                    colorMode={colorMode}
-                />
+                 <ReasoningItem
+                     key={i}
+                     item={item}
+                     section={section}
+                 />
+
             ))}
         </VStack>
     );
@@ -100,17 +100,17 @@ const parseThinkingTrace = (thinking = "") => {
 const getCardAccent = (type) => {
     switch (type) {
         case "iteration":
-            return "purple.400";
+            return "folio.accent";
         case "tool_call":
-            return "orange.400";
+            return "folio.warning";
         case "tool_result":
-            return "blue.400";
+            return "folio.info";
         case "reasoning_snapshot":
-            return "teal.400";
+            return "folio.muted";
         case "final_reasoning":
-            return "green.400";
+            return "folio.success";
         default:
-            return "gray.400";
+            return "folio.muted";
     }
 };
 
@@ -154,12 +154,19 @@ const ThinkingCard = ({ step, index }) => {
             key={`${step.type}-${index}`}
             p={3}
             borderWidth="1px"
-            borderRadius="md"
+            borderRadius="folioControl"
+            borderColor="folio.line"
             borderLeftWidth="4px"
             borderLeftColor={getCardAccent(step.type)}
-            bg="surfaceMuted"
+            bg="folio.paperAlt"
         >
-            <Badge mb={2} colorPalette="gray" variant="subtle">
+            <Badge
+                mb={2}
+                bg="folio.canvas"
+                color="folio.muted"
+                borderWidth="1px"
+                borderColor="folio.line"
+            >
                 {getCardBadge(step.type)}
             </Badge>
             <Text fontSize="sm" whiteSpace="pre-wrap">
@@ -181,12 +188,12 @@ const ThinkingCard = ({ step, index }) => {
     );
 };
 
-const renderThinkingCards = (thinking, colorMode) => {
+const renderThinkingCards = (thinking) => {
     const steps = parseThinkingTrace(thinking);
 
     if (!steps.length) {
         return (
-            <Text fontSize="sm" color="overlay0">
+            <Text fontSize="sm" color="folio.faint">
                 {translate("reasoning.noThinkingTrace")}
             </Text>
         );
@@ -199,7 +206,6 @@ const renderThinkingCards = (thinking, colorMode) => {
                     key={`${step.type}-${i}`}
                     step={step}
                     index={i}
-                    colorMode={colorMode}
                 />
             ))}
         </VStack>
@@ -210,7 +216,6 @@ export const ReasoningContent = ({
     reasoning,
     tabIndex,
     setTabIndex,
-    colorMode,
 }) => {
     const { remap, citedOriginals } = useMemo(() => {
         const citations = reasoning?.citations;
@@ -267,7 +272,7 @@ export const ReasoningContent = ({
             </Tabs.List>
             {/* Summary Tab */}
             <Tabs.Content
-                className="floating-main"
+                className="attached-panel-body"
                 flex="1"
                 minHeight="0"
                 overflowY="auto"
@@ -285,52 +290,51 @@ export const ReasoningContent = ({
 
             {/* Possible Conditions Tab */}
             <Tabs.Content
-                className="floating-main"
+                className="attached-panel-body"
                 flex="1"
                 minHeight="0"
                 overflowY="auto"
                 value="1"
             >
-                {renderItems("differentials", reasoning, colorMode)}
+                {renderItems("differentials", reasoning)}
             </Tabs.Content>
 
             {/* Suggested Workup Tab */}
             <Tabs.Content
-                className="floating-main"
+                className="attached-panel-body"
                 flex="1"
                 minHeight="0"
                 overflowY="auto"
                 value="2"
             >
-                {renderItems("investigations", reasoning, colorMode)}
+                {renderItems("investigations", reasoning)}
             </Tabs.Content>
 
             {/* Considerations Tab */}
             <Tabs.Content
-                className="floating-main"
+                className="attached-panel-body"
                 flex="1"
                 minHeight="0"
                 overflowY="auto"
                 value="3"
             >
-                {renderItems("considerations", reasoning, colorMode)}
+                {renderItems("considerations", reasoning)}
             </Tabs.Content>
 
             {/* Thinking Tab */}
             <Tabs.Content
-                className="floating-main"
+                className="attached-panel-body"
                 flex="1"
                 minHeight="0"
                 overflowY="auto"
                 value="4"
             >
-                {renderThinkingCards(reasoning?.thinking, colorMode)}
+                {renderThinkingCards(reasoning?.thinking)}
                 <CitationList
                     citations={reasoning?.citations}
                     citedOriginals={
                         citedOriginals.length > 0 ? citedOriginals : null
                     }
-                    colorMode={colorMode}
                 />
             </Tabs.Content>
         </Tabs.Root>

@@ -75,25 +75,33 @@ const FormFillArtifact = ({ artifact }: FormFillArtifactProps) => {
         <Box
             p={2}
             borderWidth="1px"
-            borderRadius="md"
-            borderColor="border"
-            bg="surfaceInset"
+            borderRadius="folioPanel"
+            borderColor="folio.line"
+            bg="folio.paper"
             maxW="320px"
         >
             <HStack gap={2} mb={1}>
-                <FaFilePdf size="1.2em" color="gray" />
+                <Box
+                    as="span"
+                    color="folio.faint"
+                    flexShrink={0}
+                    display="flex"
+                    alignItems="center"
+                >
+                    <FaFilePdf size="1.2em" />
+                </Box>
             <Text fontSize="xs" fontWeight="semibold" truncate minW="0" flex={1}>
                 {filename}
             </Text>
             </HStack>
             <HStack gap={2} justify="space-between">
-                <Text fontSize="xs" color="overlay0">
+                <Text fontSize="xs" color="folio.faint">
                     {t("forms.pdfFormFilled")}
                 </Text>
                 <Button
                     size="xs"
                     variant="ghost"
-                    colorPalette="blue"
+                    color="folio.info"
                     aria-label={t("forms.downloadFilledPdf")}
                     onClick={handleDownload}
                     loading={loading}><DownloadIcon />{t("action.save")}

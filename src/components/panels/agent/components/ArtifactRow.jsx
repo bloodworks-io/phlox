@@ -49,14 +49,14 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
             w="100%"
             p={2.5}
             borderWidth="1px"
-            borderColor="border"
-            borderRadius="8px"
-            bg="surfaceInset"
+            borderColor="folio.line"
+            borderRadius="folioPanel"
+            bg="folio.paper"
             cursor="pointer"
             textAlign="left"
             mb={1.5}
             transition="border-color 0.15s ease"
-            _hover={{ borderColor: "accent" }}
+            _hover={{ borderColor: "folio.accent" }}
             onClick={handleClick}
             aria-label={t("agent.artifact.aria", {
                 label,
@@ -67,7 +67,7 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
         >
             <Box
                 as="span"
-                color="accent"
+                color="folio.accent"
                 flexShrink={0}
                 display="flex"
                 alignItems="center"
@@ -78,7 +78,7 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
                 <Text fontSize="xs" fontWeight="semibold" truncate>
                     {label}
                 </Text>
-                <Text fontSize="xs" color="fg.subtle">
+                <Text fontSize="xs" color="folio.muted">
                     {artifact.saved
                         ? t("agent.artifact.saved")
                         : t("agent.artifact.preparedForReview")}{" "}
@@ -90,7 +90,7 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
             </Box>
             <Box
                 as="span"
-                color="fg.subtle"
+                color="folio.muted"
                 flexShrink={0}
                 display="flex"
                 alignItems="center"

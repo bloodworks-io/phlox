@@ -6,7 +6,9 @@ import React, {
 } from "react";
 import { useColorMode } from "../ui/color-mode";
 import { Box } from "@chakra-ui/react";
-import { colors } from "../../theme/colors";
+import { folioColors } from "../../theme/colors";
+
+const PANEL_CLOSE_MS = 160;
 
 /**
  * Shared floating panel wrapper with consistent positioning and optional speech bubble arrow.
@@ -35,6 +37,11 @@ const FloatingPanel = ({
     zIndex = "1060",
 }) => {
     const { colorMode } = useColorMode();
+    const prefersReducedMotion = Boolean(
+        window
+            .matchMedia("(prefers-reduced-motion: reduce)")
+            ?.matches,
+    );
     const panelRef = useRef(null);
     const arrowRef = useRef(null);
     const [hasMeasured, setHasMeasured] = useState(false);
@@ -53,38 +60,43 @@ const FloatingPanel = ({
         const t = setTimeout(() => {
             setShouldRender(false);
             setIsClosing(false);
-        }, 180);
+        }, PANEL_CLOSE_MS);
         return () => clearTimeout(t);
     }, [isOpen]);
 
     useLayoutEffect(() => {
         if (!shouldRender || !showArrow || !triggerId) return undefined;
 
+        const triggerEl = document.getElementById(triggerId);
+        const arrowEl = arrowRef.current;
+        const panel = panelRef.current;
+        if (!triggerEl || !panel || !arrowEl) return undefined;
+
         const updateArrowPosition = () => {
-            const triggerEl = document.getElementById(triggerId);
-            const arrowEl = arrowRef.current;
-            if (!triggerEl || !panelRef.current || !arrowEl) return;
-            const triggerRect = triggerEl.getBoundingClientRect();
+            const currentTrigger = document.getElementById(triggerId);
+            const currentArrow = arrowRef.current;
+            if (!currentTrigger || !panelRef.current || !currentArrow) return;
+            const triggerRect = currentTrigger.getBoundingClientRect();
             const panelRect = panelRef.current.getBoundingClientRect();
 
             if (
                 position === "left-of-fab" ||
                 position === "left-of-fab-grow-down"
             ) {
-                const menuEl = triggerEl.closest(".floating-action-menu");
+                const menuEl = currentTrigger.closest(".floating-action-menu");
                 if (menuEl) {
                     setMinPanelHeight(
                         `${menuEl.getBoundingClientRect().height}px`,
                     );
                 }
-                arrowEl.style.left = "";
-                arrowEl.style.top = `${triggerRect.top + triggerRect.height / 2 - panelRect.top}px`;
+                currentArrow.style.left = "";
+                currentArrow.style.top = `${triggerRect.top + triggerRect.height / 2 - panelRect.top}px`;
             } else if (
                 position === "bottom-center" ||
                 position === "above-transcript-button"
             ) {
-                arrowEl.style.top = "";
-                arrowEl.style.left = `${triggerRect.left + triggerRect.width / 2 - panelRect.left}px`;
+                currentArrow.style.top = "";
+                currentArrow.style.left = `${triggerRect.left + triggerRect.width / 2 - panelRect.left}px`;
             }
             setHasMeasured(true);
         };
@@ -92,23 +104,30 @@ const FloatingPanel = ({
         updateArrowPosition();
         window.addEventListener("resize", updateArrowPosition);
 
-        const onAnimationEnd = () => updateArrowPosition();
-        const onTransitionEnd = (e) => {
-            if (e.propertyName === "transform") updateArrowPosition();
-        };
-        const panel = panelRef.current;
-        panel.addEventListener("animationend", onAnimationEnd);
-        panel.addEventListener("transitionend", onTransitionEnd);
+        // One post-layout pass covers first-frame content/font shifts that
+        // previously arrived incidentally through animation events.
+        const animationFrameId = window.requestAnimationFrame(
+            updateArrowPosition,
+        );
+
+        // Arrow position is derived from the panel, trigger, and rail layout
+        // boxes. Observing those boxes keeps measurement independent of
+        // entrance/close animation timing and correct under reduced motion.
+        const observedElements = [panel, triggerEl];
+        const menuEl = triggerEl.closest(".floating-action-menu");
+        if (menuEl) observedElements.push(menuEl);
+
         let resizeObserver;
         if (typeof ResizeObserver !== "undefined") {
-            resizeObserver = new ResizeObserver(() => updateArrowPosition());
-            resizeObserver.observe(panel);
+            resizeObserver = new ResizeObserver(updateArrowPosition);
+            for (const element of observedElements) {
+                resizeObserver.observe(element);
+            }
         }
 
         return () => {
             window.removeEventListener("resize", updateArrowPosition);
-            panel.removeEventListener("animationend", onAnimationEnd);
-            panel.removeEventListener("transitionend", onTransitionEnd);
+            window.cancelAnimationFrame(animationFrameId);
             resizeObserver?.disconnect();
         };
     }, [shouldRender, showArrow, triggerId, position]);
@@ -145,22 +164,15 @@ const FloatingPanel = ({
 
     const positionStyles = getPositionStyles();
 
-    // Fade/shrink on close, composing with each position's base transform
-    // so centered panels don't jump while animating out.
-    const closeStyle = isClosing
-        ? {
-              opacity: 0,
-              transform: positionStyles.transform
-                  ? `${positionStyles.transform} scale(0.95)`
-                  : "scale(0.95)",
-          }
-        : undefined;
+    // Opacity-only close animation. The base transform remains untouched so
+    // centered panels and fixed positioning cannot shift during exit.
+    const closeStyle = isClosing ? { opacity: 0 } : undefined;
 
-    // Get colors for the arrow to match the panel
+    // The SVG arrow cannot consume Chakra semantic tokens directly.
     const bgColor =
-        colorMode === "light" ? colors.light.secondary : colors.dark.secondary;
+        colorMode === "light" ? folioColors.light.paper : folioColors.dark.paper;
     const borderColor =
-        colorMode === "light" ? colors.light.surface : colors.dark.surface;
+        colorMode === "light" ? folioColors.light.line : folioColors.dark.line;
 
     return (
         <Box
@@ -168,7 +180,11 @@ const FloatingPanel = ({
             position="fixed"
             {...positionStyles}
             style={closeStyle}
-            transition="transform 0.18s ease-in, opacity 0.18s ease-in"
+            transition={
+                prefersReducedMotion
+                    ? "none"
+                    : `opacity ${PANEL_CLOSE_MS}ms ease-in`
+            }
             width={width}
             height={height}
             minHeight={minPanelHeight}
@@ -180,7 +196,8 @@ const FloatingPanel = ({
             flexDirection="column"
         >
             <Box
-                className="anim-emerge-spring"
+                className="anim-fade"
+                css={{ animationDuration: `${PANEL_CLOSE_MS}ms` }}
                 width="100%"
                 height="100%"
                 flex="1"
@@ -211,6 +228,7 @@ const FloatingPanel = ({
                         height="24px"
                         viewBox="4 0 6 24"
                         zIndex="1"
+                        aria-hidden="true"
                         asChild
                     >
                         <svg>
@@ -246,6 +264,7 @@ const FloatingPanel = ({
                             height="16px"
                             viewBox="0 0 24 16"
                             zIndex="1"
+                            aria-hidden="true"
                             asChild
                         >
                             <svg>

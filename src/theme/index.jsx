@@ -76,10 +76,14 @@ globalCss[".citation-badge--conflict"] = {
     },
     borderRadius: "full",
 };
+// Transcript citation highlight: Folio info soft fill with an info ring.
 globalCss[".transcript-line--highlighted"] = {
-    backgroundColor: { _light: "rgba(135, 186, 255, 0.18)", _dark: "rgba(135, 186, 255, 0.22)" },
+    backgroundColor: "folio.infoSoft",
     borderRadius: "4px",
-    boxShadow: "0 0 0 4px rgba(135, 186, 255, 0.12)",
+    boxShadow: {
+        _light: `0 0 0 4px ${folioColors.light.info}1f`,
+        _dark: `0 0 0 4px ${folioColors.dark.info}26`,
+    },
 };
 
 globalCss[".chakra-button"] = {
@@ -167,6 +171,8 @@ globalCss["@media (prefers-reduced-motion: reduce)"] = {
     ".anim-stagger > *": { animation: "none !important" },
     ".chakra-tabs-content": { animation: "none !important" },
     ".chakra-popover-content": { animation: "none !important" },
+    ".live-field-updated": { animation: "none !important" },
+    ".live-bolt-pulse": { animation: "none !important" },
     // Striped progress bars keep their stripes but stop animating.
     ".chakra-progress__range": { animation: "none !important" },
 };

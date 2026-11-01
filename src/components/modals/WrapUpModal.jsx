@@ -178,13 +178,11 @@ const WrapUpModal = ({
                                 <Section title={t("modal.wrapUp.jobsToAction")}>
                                     {extracting ? (
                                         <Center py={6}>
-                                            <Spinner size="sm" />
+                                            <Spinner size="sm" color="folio.accent" />
                                             <Text
                                                 ml={2}
                                                 fontSize="sm"
-                                                color={
-                                                    "textSecondary"
-                                                }
+                                                color="folio.muted"
                                             >
                                                 {t("modal.wrapUp.extracting")}
                                             </Text>
@@ -193,7 +191,7 @@ const WrapUpModal = ({
                                       fallback !== "empty" ? (
                                         <Text
                                             fontSize="sm"
-                                            color={"textSecondary"}
+                                            color="folio.muted"
                                         >
                                             {t("modal.wrapUp.noTasksExtracted")}
                                         </Text>
@@ -242,9 +240,7 @@ const WrapUpModal = ({
                                                     variant="unstyled"
                                                     size="sm"
                                                     flex="1"
-                                                    color={
-                                                        "textPrimary"
-                                                    }
+                                                    color="folio.ink"
                                                     css={{
                                                         padding: 0,
                                                         height: "auto",
@@ -296,7 +292,7 @@ const WrapUpModal = ({
                                         <Text
                                             fontSize="sm"
                                             fontWeight="600"
-                                            color={"textPrimary"}
+                                            color="folio.ink"
                                             cursor="pointer"
                                             userSelect="none"
                                             onClick={() =>
@@ -325,14 +321,14 @@ const WrapUpModal = ({
                                                                 key={idx}
                                                                 justify="space-between"
                                                             >
-                                                                <Text
-                                                                    fontSize="sm"
-                                                                    color={
-                                                                        "textSecondary"
-                                                                    }
-                                                                >
-                                                                    {item.text}
-                                                                </Text>
+                                                                 <Text
+                                                                     fontSize="sm"
+                                                                     color={
+                                                                         "folio.muted"
+                                                                     }
+                                                                 >
+                                                                     {item.text}
+                                                                 </Text>
                                                                  <IconButton
                                                                      aria-label={t("modal.wrapUp.promoteToTask")}
                                                                     size="xs"

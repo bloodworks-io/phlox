@@ -28,8 +28,9 @@ const RefinementPanel = ({
         width="90%"
         maxWidth="500px"
         zIndex={2}
-        className="floating-panel"
-        borderRadius="lg"
+         className="floating-panel"
+         borderRadius="folioOverlay"
+
     >
         {loading && (
             <Flex
@@ -41,10 +42,12 @@ const RefinementPanel = ({
                 zIndex={3}
                 justify="center"
                 align="center"
-                bg="rgba(255, 255, 255, 0.4)"
-                borderRadius="xl"
-            >
-                <Spinner size="xl" />
+                 bg="folio.canvas"
+                 opacity={0.78}
+                 borderRadius="folioOverlay"
+             >
+                 <Spinner size="xl" color="folio.brand" />
+
             </Flex>
         )}
         <Flex align="center" justify="space-between" p="3">
@@ -59,7 +62,16 @@ const RefinementPanel = ({
                 aria-label={t("letter.closeRefinement")}
                 variant="ghost"
                 size="sm"
-                className="collapse-toggle"><CloseIcon boxSize="12px" /></IconButton>
+                color="folio.muted"
+                backgroundColor="transparent"
+                _hover={{ backgroundColor: "folio.hover", color: "folio.ink" }}
+                 _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
+                 }}
+            ><CloseIcon boxSize="12px" /></IconButton>
+
         </Flex>
 
         <Box p="3">

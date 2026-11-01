@@ -25,35 +25,42 @@ const ArtifactCard = ({ artifact }) => {
         <Box
             p={2}
             borderWidth="1px"
-            borderRadius="md"
-            borderColor="border"
-            bg="surfaceInset"
-            _dark={{ borderColor: "border", bg: "surface1" }}
-            _hover={{ borderColor: "accent" }}
+            borderRadius="folioPanel"
+            borderColor="folio.line"
+            bg="folio.paper"
+            _hover={{ borderColor: "folio.accent" }}
             transition="border-color 0.15s ease"
             maxW="320px"
             className="anim-fade-scale"
             css={{ animationDuration: "0.2s" }}
         >
             <HStack gap={2} mb={1}>
-                {React.createElement(icon, { size: "1.2em", color: "overlay0" })}
+                <Box
+                    as="span"
+                    color="folio.faint"
+                    flexShrink={0}
+                    display="flex"
+                    alignItems="center"
+                >
+                    {React.createElement(icon, { size: "1.2em" })}
+                </Box>
                 <Text fontSize="xs" fontWeight="semibold" truncate minW="0" flex={1}>
                     {filename}
                 </Text>
             </HStack>
             <HStack gap={2} justify="space-between">
-                <Text fontSize="xs" color="overlay0">
+                <Text fontSize="xs" color="folio.faint">
                     {mime_type} · {formatFileSize(size)}
                 </Text>
                 <HStack gap={1}>
                     {mime_type === "application/pdf" && (
                         <Link href={url} target='_blank' rel='noopener noreferrer'>
-                            <Button size="xs" variant="ghost" colorPalette="blue" aria-label={t("common.artifact.viewFile")}><ExternalLinkIcon />{t("common.artifact.view")}
+                            <Button size="xs" variant="ghost" color="folio.info" aria-label={t("common.artifact.viewFile")}><ExternalLinkIcon />{t("common.artifact.view")}
                             </Button>
                         </Link>
                     )}
                     <Link href={url} download>
-                        <Button size="xs" variant="ghost" colorPalette="blue" aria-label={t("common.artifact.downloadFile")}><DownloadIcon />{t("action.save")}
+                        <Button size="xs" variant="ghost" color="folio.info" aria-label={t("common.artifact.downloadFile")}><DownloadIcon />{t("action.save")}
                                                     </Button>
                     </Link>
                 </HStack>

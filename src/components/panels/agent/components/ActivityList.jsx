@@ -10,10 +10,10 @@ const ACTIVITY_ICONS = {
 };
 
 const ACTIVITY_ICON_COLORS = {
-    info: "overlay0",
-    edit: "accent",
-    command: "successButton",
-    artifact: "secondaryButton",
+    info: "folio.muted",
+    edit: "folio.info",
+    command: "folio.success",
+    artifact: "folio.warning",
 };
 
 export const ActivityList = ({ statuses }) => (
@@ -43,14 +43,16 @@ export const ActivityList = ({ statuses }) => (
                     <Box
                         as="span"
                         mt="3px"
-                        color={ACTIVITY_ICON_COLORS[item.kind] || "overlay0"}
+                        color={
+                            ACTIVITY_ICON_COLORS[item.kind] || "folio.muted"
+                        }
                         flexShrink={0}
                         display="flex"
                         alignItems="center"
                     >
                         <Icon size="10px" />
                     </Box>
-                    <Text fontSize="xs" color="fg.subtle">
+                    <Text fontSize="xs" color="folio.muted">
                         {item.content}
                     </Text>
                 </HStack>

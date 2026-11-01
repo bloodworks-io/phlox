@@ -4,19 +4,20 @@ import { useTranslation } from "react-i18next";
 
 import { useColorModeValue } from "@/components/ui/color-mode";
 
-// Catppuccin-derived accents, one per anonymous speaker label (S1..S4+).
-const SPEAKER_COLORS: [string, string][] = [
-    ["#179299", "#8bd5ca"],
-    ["#fe640b", "#f5a97f"],
-    ["#7287fd", "#b7bdf8"],
-    ["#d20f39", "#ed8796"],
+// Dedicated categorical speaker colors. Speaker identity is not clinical
+// status, so these deliberately do not reuse action/success/warning/danger.
+const SPEAKER_PAIRS: Array<[string, string]> = [
+    ["#51617c", "#8fb8ce"],
+    ["#7d5c46", "#e0b48c"],
+    ["#5c724f", "#c3d59b"],
+    ["#7a4f74", "#cbb3d8"],
 ];
+const UNKNOWN_PAIR: [string, string] = ["#5e675c", "#b8bdb1"];
 
 const SPEAKER_LINE_RE = /^(S[1-9]\d*|S\?):\s/;
 
 /** Label for an utterance the diarizer heard but could not attribute. */
 export const UNKNOWN_SPEAKER = "S?";
-const UNKNOWN_COLORS: ["#6c6f85", "#a5adcb"] = ["#6c6f85", "#a5adcb"];
 
 export interface ParsedSpeakerLine {
     speaker: string | null;
@@ -30,11 +31,11 @@ export const parseSpeakerLine = (line: string): ParsedSpeakerLine => {
     return { speaker: match[1], text: line.slice(match[0].length) };
 };
 
-/** Light/dark hex pair for a speaker label (S5+ cycles the palette). */
+/** Light/dark categorical pair for a speaker label (S5+ cycles). */
 export const speakerColorPair = (speaker: string): [string, string] => {
-    if (speaker === UNKNOWN_SPEAKER) return UNKNOWN_COLORS;
-    const num = parseInt(speaker.slice(1), 10);
-    return SPEAKER_COLORS[(num - 1) % SPEAKER_COLORS.length];
+    if (speaker === UNKNOWN_SPEAKER) return UNKNOWN_PAIR;
+    const index = parseInt(speaker.slice(1), 10) - 1;
+    return SPEAKER_PAIRS[index % SPEAKER_PAIRS.length];
 };
 
 interface SpeakerDotProps {

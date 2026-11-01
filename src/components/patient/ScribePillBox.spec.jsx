@@ -41,8 +41,6 @@ const baseProps = {
 const renderScribe = (overrides = {}) =>
     renderWithProviders(<ScribePillBox {...baseProps} {...overrides} />);
 
-const centerButton = () => screen.getAllByRole("button")[1];
-
 describe("ScribePillBox branch precedence", () => {
     it("renders only the loading pill while processing", () => {
         const { container } = renderScribe({
@@ -53,6 +51,9 @@ describe("ScribePillBox branch precedence", () => {
 
         expect(container.querySelector(".pill-box-scribe")).not.toBeNull();
         expect(container.querySelectorAll("button")).toHaveLength(0);
+        expect(
+            screen.getByRole("status", { name: /processing consultation/i }),
+        ).toBeInTheDocument();
     });
 
     it("renders the transcription failure recovery pill before live states", () => {
@@ -79,23 +80,41 @@ describe("ScribePillBox branch precedence", () => {
 describe("ScribePillBox ordinary capture controls", () => {
     it("starts, pauses, resumes, resets, and sends through the three-slot pill", () => {
         renderScribe();
-        fireEvent.click(centerButton());
+        const record = screen.getByRole("button", { name: /^Record$/i });
+        expect(record).toHaveAttribute("data-capture-state", "idle");
+        fireEvent.click(record);
         expect(baseProps.onStart).toHaveBeenCalledTimes(1);
 
         cleanup();
         renderScribe({ isRecording: true });
         expect(screen.getAllByRole("button")).toHaveLength(3);
-        fireEvent.click(screen.getAllByRole("button")[0]);
-        fireEvent.click(screen.getAllByRole("button")[1]);
-        fireEvent.click(screen.getAllByRole("button")[2]);
+        expect(
+            screen.getByRole("button", { name: /recording\.\.\./i }),
+        ).toHaveAttribute("data-capture-state", "recording");
+        fireEvent.click(screen.getByRole("button", { name: /reset/i }));
+        fireEvent.click(screen.getByRole("button", { name: /recording\.\.\./i }));
+        fireEvent.click(
+            screen.getByRole("button", { name: /stop and send/i }),
+        );
         expect(baseProps.onReset).toHaveBeenCalledTimes(1);
         expect(baseProps.onPause).toHaveBeenCalledTimes(1);
         expect(baseProps.onSend).toHaveBeenCalledTimes(1);
 
         cleanup();
         renderScribe({ isRecording: true, isPaused: true });
-        fireEvent.click(centerButton());
+        const resume = screen.getByRole("button", { name: /resume/i });
+        expect(resume).toHaveAttribute("data-capture-state", "paused");
+        fireEvent.click(resume);
         expect(baseProps.onResume).toHaveBeenCalledTimes(1);
+    });
+
+    it("announces the blocked capture state without disabling the control", () => {
+        renderScribe({ canRecord: false });
+        const blocked = screen.getByRole("button", {
+            name: /enter patient details/i,
+        });
+        expect(blocked).toHaveAttribute("data-capture-state", "blocked");
+        expect(blocked).not.toBeDisabled();
     });
 
     it("routes a blocked start through the recording gate", () => {
@@ -104,7 +123,11 @@ describe("ScribePillBox ordinary capture controls", () => {
             onBlockedRecord: baseProps.onBlockedRecord,
         });
 
-        fireEvent.click(centerButton());
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: /enter patient details/i,
+            }),
+        );
         expect(baseProps.onStart).not.toHaveBeenCalled();
         expect(baseProps.onBlockedRecord).toHaveBeenCalledTimes(1);
     });

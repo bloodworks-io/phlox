@@ -11,7 +11,7 @@ export const EmptyState = ({ loading, status, onGenerate }) => {
             <Text
                 textAlign="center"
                 fontSize="sm"
-                color="overlay0"
+                color="folio.faint"
             >
                 {t("reasoning.emptyHint")}
             </Text>

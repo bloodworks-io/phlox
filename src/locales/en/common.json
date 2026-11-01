@@ -120,6 +120,7 @@
         },
         "transcription": {
             "failed": "Transcription failed",
+            "processing": "Processing consultation",
             "retrySend": "Retry sending",
             "downloadAudio": "Download audio to retry later",
             "dismissWarning": "Dismiss — download first to keep the audio"
@@ -229,6 +230,7 @@
         "fab": {
             "chartInsights": "Chart Insights",
             "chatWithPhlox": "Chat with Phlox",
+            "criticalReasoning": "Critical reasoning available",
             "noPreviousVisit": "No previous visit available",
             "openChat": "Open Chat",
             "openDocumentUpload": "Open Document Upload",
@@ -237,6 +239,7 @@
             "openReasoning": "Open Reasoning",
             "patientLetter": "Patient Letter",
             "previousVisit": "Previous Visit",
+            "previousVisitUnread": "Previous visit summary unread",
             "saveForChartInsights": "Save encounter to access Chart Insights",
             "saveForLetter": "Save encounter to access Letter",
             "uploadDocument": "Upload Document"

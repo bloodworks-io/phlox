@@ -1,30 +1,26 @@
 // Styles for the chat interface.
 import { colors } from "../colors";
 
-const CHAT_UI_TOKENS = {
-    chevron: {
-        light: "#9ca3af",
-        dark: "#9ca3af",
-    },
-};
-
 const floatingStyles = (props) => ({
     ".floating-panel": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.secondary} !important`
-                : `${colors.dark.secondary} !important`,
-        borderRadius: "xl",
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
-        fontSize: "1rem !important",
-        fontWeight: "700",
+        backgroundColor: "folio.paper",
+        borderRadius: "folioOverlay",
+        border: "1px solid",
+        borderColor: "folio.line",
+        color: "folio.ink",
+        fontWeight: "normal",
+        boxShadow: "overlay",
+    },
+    ".attached-panel-body": {
+        backgroundColor: "folio.canvas",
+        color: "folio.ink",
+        fontWeight: "normal",
+        fontSize: "0.7rem",
+    },
+    ".attached-chat-input": {
+        backgroundColor: "folio.paperAlt",
+        borderColor: "folio.line",
+        color: "folio.ink",
     },
     ".floating-main": {
         backgroundColor:
@@ -42,61 +38,52 @@ const floatingStyles = (props) => ({
         fontSize: "0.7rem !important",
     },
     ".chat-suggestions": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.crust} !important`
-                : `${colors.dark.overlay0} !important`,
-        borderRadius: "xl !important",
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface1} !important`,
+        backgroundColor: "folio.paperAlt",
+        borderRadius: "folioControl !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
         fontWeight: "500 !important",
         fontSize: "0.9rem !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        color: "folio.muted !important",
+        transition:
+            "color 160ms ease, background-color 160ms ease, border-color 160ms ease",
         _hover: {
-            transform: "translateY(-1px)",
-            boxShadow: "sm",
+            backgroundColor: "folio.hover",
+            color: "folio.ink",
+            boxShadow: "none",
         },
     },
     ".refinement-suggestions": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.crust} !important`
-                : `${colors.dark.overlay0} !important`,
-        borderRadius: "xl !important",
+        backgroundColor: "folio.paperAlt",
+        borderRadius: "folioControl !important",
         height: "25px !important",
         fontSize: "0.8rem !important",
         fontWeight: "500 !important",
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : "none !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        color: "folio.muted !important",
+        transition:
+            "color 160ms ease, background-color 160ms ease, border-color 160ms ease",
+        _hover: {
+            backgroundColor: "folio.hover",
+            color: "folio.ink",
+        },
     },
     ".quick-chat-buttons-collapsed": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.crust} !important`
-                : `${colors.dark.overlay0} !important`,
-        borderRadius: "lg !important",
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : "none !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        backgroundColor: "folio.paperAlt !important",
+        borderRadius: "folioControl !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        color: "folio.muted !important",
         justifyContent: "flex-start !important",
         padding: "0 8px !important",
         height: "32px !important",
+        transition:
+            "color 160ms ease, background-color 160ms ease, border-color 160ms ease",
+        _hover: {
+            backgroundColor: "folio.hover !important",
+            color: "folio.ink !important",
+        },
     },
 
     ".quick-chat-buttons-text": {
@@ -109,36 +96,28 @@ const floatingStyles = (props) => ({
     },
     ".message-box": {
         padding: "10px",
-        borderRadius: "2xl",
+        borderRadius: "folioControl",
         wordBreak: "break-word",
     },
     ".message-box.assistant": {
         backgroundColor: "transparent !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        color: "folio.muted !important",
         borderRadius: "0 !important",
         border: "none !important",
         boxShadow: "none !important",
         padding: "0 !important",
     },
     ".message-box.user": {
-        background:
-            props.colorMode === "light"
-                ? `${colors.light.brandFaint} !important`
-                : `${colors.dark.brandFaint} !important`,
-        color: `${colors.light.invertedText} !important`,
-        borderRadius: "2xl !important",
+        backgroundColor: "folio.accentSoft !important",
+        color: "folio.ink !important",
+        borderRadius: "folioControl !important",
     },
     ".message-box ul, .message-box ol": {
         paddingLeft: "20px",
     },
     ".template-selector": {
-        borderTop:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
+        borderTop: "1px solid !important",
+        borderTopColor: "folio.line !important",
     },
     ".template-selector .template-selector": {
         textAlign: "left !important",
@@ -153,10 +132,7 @@ const floatingStyles = (props) => ({
         userSelect: "none",
     },
     ".thinking-block": {
-        borderLeftColor:
-            props.colorMode === "light"
-                ? `${colors.light.secondaryButton} !important`
-                : `${colors.dark.secondaryButton} !important`,
+        borderLeftColor: "folio.info !important",
     },
     ".thinking-block-text": {
         fontSize: "0.9rem !important",
@@ -174,10 +150,7 @@ const floatingStyles = (props) => ({
                 : `${colors.dark.base} !important`,
     },
     ".chat-disclosure-icon": {
-        color:
-            props.colorMode === "light"
-                ? `${CHAT_UI_TOKENS.chevron.light} !important`
-                : `${CHAT_UI_TOKENS.chevron.dark} !important`,
+        color: "folio.muted !important",
         backgroundColor: "transparent !important",
         border: "none !important",
         boxShadow: "none !important",
@@ -188,53 +161,12 @@ const floatingStyles = (props) => ({
     ".chat-disclosure-icon:hover, .chat-disclosure-icon:active": {
         backgroundColor: "transparent !important",
     },
-    ".fam-main-button": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface} !important` // Choose a prominent color
-                : `${colors.dark.surface} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        transition:
-            "transform 0.2s ease-in-out, background-color 0.2s ease-in-out",
-        _hover: {
-            transform: "scale(1.1)",
-            backgroundColor:
-                props.colorMode === "light"
-                    ? `${colors.light.primaryHover} !important` // Darker/lighter shade
-                    : `${colors.dark.primaryHover} !important`,
-        },
-    },
-    ".fam-action-button": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface} !important`
-                : `${colors.dark.surface} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-
-        transition:
-            "transform 0.15s ease-in-out, background-color 0.15s ease-in-out",
-        _hover: {
-            transform: "scale(1.05)",
-            backgroundColor:
-                props.colorMode === "light"
-                    ? `${colors.light.overlay0} !important`
-                    : `${colors.dark.overlay0} !important`,
-        },
-    },
     ".pill-box-scribe": {
-        background:
-            "linear-gradient(to bottom, rgba(45, 47, 65, 0.95), rgba(30, 32, 48, 0.95)) !important",
-        backdropFilter: "blur(20px) saturate(180%)",
-        color: colors.light.sidebar.text,
-        border: "1px solid rgba(0, 0, 0, 0.2) !important",
-        boxShadow:
-            "0 8px 32px rgba(20, 20, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important",
+        backgroundColor: "folio.sidebar",
+        color: "folio.sidebarInk",
+        border: "1px solid",
+        borderColor: "folio.line",
+        boxShadow: "overlay",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -244,21 +176,14 @@ const floatingStyles = (props) => ({
         fontWeight: "700 !important",
         letterSpacing: "0.9px !important",
         textTransform: "uppercase !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        color: "folio.muted !important",
     },
     ".floating-action-menu": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? colors.light.secondary
-                : colors.dark.secondary,
-        color: colors.light.sidebar.text,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
+        backgroundColor: "folio.paper",
+        color: "folio.muted",
+        border: "1px solid",
+        borderColor: "folio.line",
+        boxShadow: "overlay",
     },
     ".floating-action-menu .chakra-button svg": {
         width: "14px !important",

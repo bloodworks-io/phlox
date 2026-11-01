@@ -60,11 +60,15 @@ const LetterPanel = ({
         <Flex
           align="center"
           justify="space-between"
-          p="3"
-          className="panel-header"
-          flexShrink={0}
-        >
-          <Flex align="center">
+           p="3"
+           className="panel-header"
+           backgroundColor="folio.paper"
+           color="folio.ink"
+           borderBottomColor="folio.line"
+           flexShrink={0}
+         >
+           <Flex align="center" color="folio.accent">
+
             <FaEnvelope size="1em" style={{ marginRight: "8px" }} />
             <Text>{t("common.fab.patientLetter")}</Text>
           </Flex>
@@ -146,7 +150,7 @@ const LetterPanel = ({
           </Box>
 
           {!isDictateMode && (
-            <Box pt={2} flexShrink={0} className="template-selector">
+            <Box pt={2} flexShrink={0} className="template-selector" borderTopWidth="1px" borderTopColor="folio.line">
               <TemplateSelector
                 letterTemplates={letterTemplates}
                 selectedTemplate={selectedTemplate}
@@ -165,7 +169,7 @@ const LetterPanel = ({
         </Box>
 
         {/* Footer */}
-        <Box p="4" flexShrink={0}>
+        <Box p="4" flexShrink={0} borderTopWidth="1px" borderTopColor="folio.line">
           <PanelFooterActions
             handleGenerateLetter={handleGenerateLetterClick}
             handleCopy={handleCopy}

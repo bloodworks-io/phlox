@@ -1,6 +1,5 @@
 import React, { forwardRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useColorMode } from "../../ui/color-mode";
 import { Box, Flex, Text, Button } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaAtom, FaSync } from "react-icons/fa";
@@ -16,7 +15,6 @@ const ReasoningPanel = forwardRef(
         { isOpen, _onClose, noteId, initialReasoning, onReasoningGenerated },
         _ref,
     ) => {
-        const { colorMode } = useColorMode();
         const { t } = useTranslation();
         const {
             loading,
@@ -57,9 +55,12 @@ const ReasoningPanel = forwardRef(
                         justify="space-between"
                         p="3"
                         className="panel-header"
+                        backgroundColor="folio.paper"
+                        color="folio.ink"
+                        borderBottomColor="folio.line"
                         flexShrink={0}
                     >
-                        <Flex align="center">
+                        <Flex align="center" color="folio.accent">
                             <FaAtom size="1em" style={{ marginRight: "8px" }} />
                             <Text fontWeight="bold">{t("common.fab.chartInsights")}</Text>
                         </Flex>
@@ -95,7 +96,6 @@ const ReasoningPanel = forwardRef(
                                     reasoning={reasoning}
                                     tabIndex={tabIndex}
                                     setTabIndex={setTabIndex}
-                                    colorMode={colorMode}
                                 />
                             </Box>
                         ) : (
@@ -111,7 +111,7 @@ const ReasoningPanel = forwardRef(
                     <Text
                         textAlign="center"
                         fontSize="xs"
-                        color="overlay0"
+                        color="folio.faint"
                         px="3"
                         pb="2"
                         flexShrink={0}
@@ -134,11 +134,9 @@ const ReasoningPanel = forwardRef(
 
                     {/* Loading overlay with status */}
                     {loading && reasoning && status && (
-                        <LoadingStatus status={status} colorMode={colorMode} />
+                        <LoadingStatus status={status} />
                     )}
-                    {loading && reasoning && !status && (
-                        <LoadingOverlay colorMode={colorMode} />
-                    )}
+                    {loading && reasoning && !status && <LoadingOverlay />}
                 </Box>
             </FloatingPanel>
         );

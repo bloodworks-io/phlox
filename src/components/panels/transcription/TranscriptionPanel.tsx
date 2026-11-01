@@ -45,14 +45,20 @@ const TranscriptionPanel = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const { reprocessTranscription, isTranscribing } = useTranscription(onReprocess, () => {});
+  const prefersReducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
 
   useEffect(() => {
     if (highlightLine == null) return undefined;
     const element = scrollRef.current?.querySelector(`[data-line="${highlightLine}"]`);
-    element?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    element?.scrollIntoView({
+      block: "nearest",
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
     const id = window.setTimeout(() => onHighlightLineConsumed?.(), HIGHLIGHT_CLEAR_MS);
     return () => window.clearTimeout(id);
-  }, [highlightLine, onHighlightLineConsumed]);
+  }, [highlightLine, onHighlightLineConsumed, prefersReducedMotion]);
 
   const handleReprocess = async () => {
     if (!rawTranscription) return;
@@ -74,8 +80,9 @@ const TranscriptionPanel = ({
     <Box
       p={3}
       maxHeight="280px"
-      backdropFilter="blur(12px)"
-      borderRadius="xl"
+      bg="folio.paper"
+      color="folio.ink"
+      borderRadius="folioOverlay"
       position="relative"
       className="slim-scrollbar"
     >
@@ -87,12 +94,16 @@ const TranscriptionPanel = ({
             left={0}
             right={0}
             bottom={0}
-            bg="rgba(72, 187, 120, 0.2)"
-            borderRadius="xl"
+            bg="folio.successSoft"
+            borderRadius="folioOverlay"
             justify="center"
             align="center"
             zIndex={10}
-            animation="fadeOut 1.5s ease-out forwards"
+            animation={
+              prefersReducedMotion
+                ? undefined
+                : "fadeOut 1.5s ease-out forwards"
+            }
             css={{
               '& @keyframes fadeOut': {
                 "0%": { opacity: 1 },
@@ -101,7 +112,11 @@ const TranscriptionPanel = ({
               }
             }}
           >
-            <FaCheck size="32px" color="#48BB78" opacity={0.8} />
+            <FaCheck
+              size="32px"
+              color="var(--chakra-colors-folio-success)"
+              opacity={0.8}
+            />
           </Flex>
         )}
 
@@ -127,7 +142,7 @@ const TranscriptionPanel = ({
             <Flex justify="space-between" align="center">
               {/* Stats (guard with > 0: a bare falsy check renders "0" in JSX) */}
               {Number(transcriptionDuration) > 0 && (
-                <HStack fontSize="10px" color="overlay0" gap={2}>
+                <HStack fontSize="10px" color="folio.faint" gap={2}>
                   <Tooltip content={t("transcription.transcriptionTime")} showArrow positioning={{
                     placement: "top"
                   }}>
@@ -167,7 +182,7 @@ const TranscriptionPanel = ({
             </Flex>
           </>
         ) : (
-          <Text color="overlay0" textAlign="center" fontSize="xs" py={3}>
+          <Text color="folio.faint" textAlign="center" fontSize="xs" py={3}>
             {t("transcription.empty")}
           </Text>
         )}

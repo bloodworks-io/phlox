@@ -22,20 +22,18 @@ import {
     FaWaveSquare,
 } from "react-icons/fa";
 import PillBox from "../common/PillBox";
-import { colors } from "../../theme/colors";
-import { LavaBlobs, InternalGlow, LoadingOrb } from "./scribeVisuals";
+import { InternalGlow, LoadingOrb } from "./scribeVisuals";
 
 const PILL = {
-    danger: colors.dark.dangerButton, // #ed8796
-    success: colors.dark.successButton, // #a6da95
-    warning: colors.dark.secondaryButton, // #eed49f
-    info: colors.dark.primaryButton, // #8bd5ca
-    muted: colors.dark.textSecondary, // #a5adcb
-    dangerFill: colors.light.dangerButton, // #d20f39
-    successFill: colors.light.successButton, // #40a02b
-    warningFill: colors.light.secondaryButton, // #df8e1d
-    infoFill: colors.light.primaryButton, // #179299
-    onFill: "#ffffff",
+    danger: "folio.danger",
+    success: "folio.success",
+    warning: "folio.warning",
+    info: "folio.info",
+    muted: "folio.sidebarMuted",
+    dangerFill: "folio.danger",
+    successFill: "folio.success",
+    warningFill: "folio.warning",
+    infoFill: "folio.info",
 };
 
 // Main record button with states
@@ -55,20 +53,26 @@ export const RecordButton = ({
     const getButtonStyles = () => {
         if (isRecording && !isPaused) {
             return {
-                bg: PILL.dangerFill,
-                color: PILL.onFill,
-                boxShadow: "0 0 0 0 rgba(210, 15, 57, 0.4)",
+                bg: "folio.danger",
+                color: "folio.dangerInk",
+                boxShadow: "none",
             };
         } else if (isPaused) {
             return {
-                bg: PILL.warningFill,
-                color: PILL.onFill,
+                bg: "folio.warning",
+                color: "folio.warningInk",
+                boxShadow: "none",
+            };
+        } else if (!canStart) {
+            return {
+                bg: "folio.sidebarAlt",
+                color: "folio.sidebarMuted",
                 boxShadow: "none",
             };
         } else {
             return {
-                bg: "transparent",
-                color: "white",
+                bg: "folio.brand",
+                color: "folio.brandInk",
                 boxShadow: "none",
             };
         }
@@ -130,37 +134,36 @@ export const RecordButton = ({
                 borderRadius="full"
                 border="none"
                 cursor="pointer"
-                transition="all 0.2s ease"
+                transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease"
                 outline="none"
                 overflow="hidden"
-                boxShadow="xl"
+                boxShadow="none"
+                _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
+                }}
                 {...styles}
                 asChild><button
+                    aria-label={getLabel()}
+                    data-capture-state={
+                        isRecording
+                            ? isPaused
+                                ? "paused"
+                                : "recording"
+                            : canStart
+                              ? "idle"
+                              : "blocked"
+                    }
                     onClick={handleClick}
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}>
-                    {/* Idle state: lava blobs (muted when recording is locked) */}
+                    {/* Flat Folio signature and state ring */}
+                    {isRecording && !isPaused && <InternalGlow tone="danger" />}
+                    {isPaused && <InternalGlow tone="warning" />}
                     {!isRecording && !isPaused && (
-                        <Box
-                            opacity={canStart ? 1 : 0.4}
-                            filter={canStart ? "none" : "grayscale(1)"}
-                        >
-                            <LavaBlobs />
-                        </Box>
+                        <InternalGlow tone="brand" />
                     )}
-                    {/* Recording state: internal pulsing glow */}
-                    {isRecording && !isPaused && <InternalGlow />}
-                    {/* Inner highlight border */}
-                    <Box
-                        position="absolute"
-                        top="2px"
-                        left="2px"
-                        right="2px"
-                        bottom="2px"
-                        borderRadius="full"
-                        border="1px solid rgba(255,255,255,0.3)"
-                        pointerEvents="none"
-                    />
                     {/* Icon */}
                     <Box
                         position="absolute"
@@ -240,12 +243,18 @@ export const ModeSelectButton = ({
                     bg="transparent"
                     p={0}
                 cursor={isBusy ? "default" : "pointer"}
-                color="white"
-                opacity={isBusy ? 0.5 : 1}
+                color="folio.sidebarInk"
+                opacity={isBusy ? 0.55 : 1}
                 pointerEvents={isBusy ? "none" : "auto"}
                 outline="none"
-                transition="transform 0.2s ease"
-                _hover={{ transform: "scale(1.1)" }}
+                backgroundColor="transparent"
+                transition="color 160ms ease, background-color 160ms ease, opacity 160ms ease"
+                _hover={{ backgroundColor: "folio.sidebarAlt" }}
+                _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
+                }}
                 aria-label={t("scribe.mode.aria", { label: t(active.label) })}
                 >
                     <ActiveIcon size={15} />
@@ -269,18 +278,24 @@ export const ModeSelectButton = ({
                                 w="full"
                                 px={2.5}
                                 py={2}
-                                borderRadius="8px"
+                                borderRadius="folioControl"
                                 border="none"
-                                bg={isActive ? "surfaceQuartile" : "transparent"}
+                                bg={isActive ? "folio.accentSoft" : "transparent"}
                                 cursor={isActive ? "default" : "pointer"}
                                 textAlign="left"
+                                color={isActive ? "folio.ink" : "folio.muted"}
                                 outline="none"
-                                transition="background-color 0.15s ease"
+                                transition="color 160ms ease, background-color 160ms ease"
                                 _hover={
                                     isActive
                                         ? undefined
-                                        : { bg: "surfaceQuartile" }
+                                        : { bg: "folio.hover", color: "folio.ink" }
                                 }
+                                _focusVisible={{
+                                    outline: "2px solid",
+                                    outlineColor: "folio.focus",
+                                    outlineOffset: "2px",
+                                }}
                                 onClick={() => handleSelect(entry.id)}
                             >
                                 <Box
@@ -292,8 +307,8 @@ export const ModeSelectButton = ({
                                     h="26px"
                                     flexShrink={0}
                                     borderRadius="full"
-                                    color={isActive ? "accent" : "textTertiary"}
-                                    bg="surfaceQuartile"
+                                    color={isActive ? "folio.accent" : "folio.muted"}
+                                    bg="folio.paperAlt"
                                 >
                                     <Icon size={12} />
                                 </Box>
@@ -301,17 +316,13 @@ export const ModeSelectButton = ({
                                     <Text
                                         fontSize="xs"
                                         fontWeight="700"
-                                        color={
-                                            isActive
-                                                ? "textPrimary"
-                                                : "textSecondary"
-                                        }
+                                        color={isActive ? "folio.ink" : "folio.muted"}
                                     >
                                         {t(entry.label)}
                                     </Text>
                                     <Text
                                         fontSize="10px"
-                                        color="textTertiary"
+                                        color="folio.faint"
                                         lineHeight="1.3"
                                     >
                                         {t(entry.hint)}
@@ -323,7 +334,7 @@ export const ModeSelectButton = ({
                                         display="flex"
                                         alignItems="center"
                                         flexShrink={0}
-                                        color="accent"
+                                        color="folio.accent"
                                     >
                                         <FaCheck size={10} />
                                     </Box>
@@ -363,64 +374,33 @@ export const LiveAgentControls = ({ status = "live", onStop }) => {
                 borderRadius="full"
                 border="none"
                 cursor={isBusy ? "default" : "pointer"}
-                opacity={isBusy ? 0.5 : 1}
+                opacity={isBusy ? 0.55 : 1}
                 pointerEvents={isBusy ? "none" : "auto"}
-                transition="all 0.2s ease"
+                transition="color 160ms ease, background-color 160ms ease, opacity 160ms ease"
                 outline="none"
                 overflow="hidden"
-                boxShadow="xl"
-                color={PILL.onFill}
+                boxShadow="none"
+                bg={isBusy ? "folio.sidebarAlt" : "folio.info"}
+                color={isBusy ? "folio.sidebarMuted" : "folio.infoInk"}
+                _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
+                }}
                 asChild><button
                     aria-label={label}
+                    data-live-status={status}
                     onClick={onStop}
                     disabled={isBusy}
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}>
                     {isBusy ? (
-                        // Pill's waiting orb, hue-shifted orange → teal
-                        <Box
-                            position="absolute"
-                            top={0}
-                            left={0}
-                            right={0}
-                            bottom={0}
-                            pointerEvents="none"
-                            filter="hue-rotate(160deg) saturate(0.7)"
-                        >
-                            <LoadingOrb size={46} />
-                        </Box>
+                        <LoadingOrb size={46} tone="muted" label={label} />
                     ) : (
-                        <>
-                            {/* RecordButton's lava, hue-shifted orange → teal */}
-                            <Box
-                                position="absolute"
-                                top={0}
-                                left={0}
-                                right={0}
-                                bottom={0}
-                                borderRadius="full"
-                                overflow="hidden"
-                                pointerEvents="none"
-                                filter="hue-rotate(160deg) saturate(0.7)"
-                            >
-                                <LavaBlobs />
-                            </Box>
-                            {/* Pulsing teal glow — the "agent is live" cue */}
-                            <InternalGlow rgb="23,146,153" />
-                        </>
+                        <InternalGlow tone="info" />
                     )}
-                    {/* Inner highlight border */}
-                    <Box
-                        position="absolute"
-                        top="2px"
-                        left="2px"
-                        right="2px"
-                        bottom="2px"
-                        borderRadius="full"
-                        border="1px solid rgba(255,255,255,0.3)"
-                        pointerEvents="none"
-                    />
                     {/* Icon: wave at rest, stop on hover; hidden while busy */}
+
                     {!isBusy && (
                         <Box
                             position="absolute"
@@ -468,10 +448,15 @@ export const LiveExpandButton = ({
             borderRadius="full"
             cursor="pointer"
             outline="none"
-            transition="all 0.2s ease"
-            color={isExpanded ? PILL.info : "white"}
-            bg={isExpanded ? colors.dark.surface : "transparent"}
-            _hover={{ bg: colors.dark.surface, transform: "scale(1.05)" }}
+            transition="color 160ms ease, background-color 160ms ease"
+            color={isExpanded ? PILL.info : "folio.sidebarInk"}
+            bg={isExpanded ? "folio.sidebarAlt" : "transparent"}
+            _hover={{ bg: "folio.sidebarAlt", color: isExpanded ? PILL.info : "folio.sidebarInk" }}
+            _focusVisible={{
+                outline: "2px solid",
+                outlineColor: "folio.focus",
+                outlineOffset: "2px",
+            }}
             asChild><button
                 aria-label={isExpanded ? collapseLabel : expandLabel}
                 onClick={onExpand}>
@@ -505,10 +490,15 @@ const GhostButton = ({ label, onClick, children }) => (
             border="none"
             cursor="pointer"
             outline="none"
-            transition="all 0.2s ease"
+            transition="color 160ms ease, background-color 160ms ease"
             color={PILL.muted}
             bg="transparent"
-            _hover={{ bg: colors.dark.surface, transform: "scale(1.05)" }}
+            _hover={{ bg: "folio.sidebarAlt", color: "folio.sidebarInk" }}
+            _focusVisible={{
+                outline: "2px solid",
+                outlineColor: "folio.focus",
+                outlineOffset: "2px",
+            }}
             asChild><button aria-label={label} onClick={onClick}>
                 {children}
             </button></Box>
@@ -565,8 +555,8 @@ export const AgentReviewPill = ({
                 <FaTimes size={13} />
             </GhostButton>
             <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
-                {/* Static teal hero — the lava returns on resume. Doubles as
-                    the resume action, consent-gated like the mic. */}
+                {/* Static review hero; doubles as the resume action and is
+                    consent-gated like the mic. */}
                 <Box
                     position="relative"
                     display="flex"
@@ -577,30 +567,27 @@ export const AgentReviewPill = ({
                     p={0}
                     flexShrink={0}
                     borderRadius="full"
-                    border="none"
+                    border="1px solid"
+                    borderColor={PILL.info}
                     cursor="pointer"
-                    transition="all 0.2s ease"
+                    transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease"
                     outline="none"
                     overflow="hidden"
-                    boxShadow="xl"
-                    color={PILL.onFill}
-                    bg="radial-gradient(circle at 30% 30%, #45c0b2 0%, #179299 55%, #0d6570 100%)"
+                    boxShadow="none"
+                    color={PILL.info}
+                    backgroundColor="folio.sidebarAlt"
+                    _focusVisible={{
+                        outline: "2px solid",
+                        outlineColor: "folio.focus",
+                        outlineOffset: "2px",
+                    }}
                     asChild><button
                         aria-label={label}
-                        onClick={handleClick}
+                        data-live-status="review"
+                                                onClick={handleClick}
                         onMouseEnter={() => setIsHovered(true)}
-                        onMouseLeave={() => setIsHovered(false)}>
-                        {/* Inner highlight border */}
-                        <Box
-                            position="absolute"
-                            top="2px"
-                            left="2px"
-                            right="2px"
-                            bottom="2px"
-                            borderRadius="full"
-                            border="1px solid rgba(255,255,255,0.3)"
-                            pointerEvents="none"
-                        />
+                        onMouseLeave={() => setIsHovered(false)}
+>
                         {/* Icon: wave at rest, play on hover */}
                         <Box
                             position="absolute"
@@ -655,30 +642,26 @@ export const AgentErrorPill = ({ onRetry, onDismiss }) => {
                     p={0}
                     flexShrink={0}
                     borderRadius="full"
-                    border="none"
+                    border="1px solid"
+                    borderColor={PILL.danger}
                     cursor="pointer"
-                    transition="all 0.2s ease"
+                    transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease"
                     outline="none"
                     overflow="hidden"
-                    boxShadow="xl"
-                    color={PILL.onFill}
-                    bg="radial-gradient(circle at 30% 30%, #ed8796 0%, #d20f39 55%, #a30d2e 100%)"
+                    boxShadow="none"
+                    color={PILL.danger}
+                    backgroundColor="folio.sidebarAlt"
+                    _focusVisible={{
+                        outline: "2px solid",
+                        outlineColor: "folio.focus",
+                        outlineOffset: "2px",
+                    }}
                     asChild><button
                         aria-label={label}
+                        data-live-status="error"
                         onClick={onRetry}
                         onMouseEnter={() => setIsHovered(true)}
                         onMouseLeave={() => setIsHovered(false)}>
-                        {/* Inner highlight border */}
-                        <Box
-                            position="absolute"
-                            top="2px"
-                            left="2px"
-                            right="2px"
-                            bottom="2px"
-                            borderRadius="full"
-                            border="1px solid rgba(255,255,255,0.3)"
-                            pointerEvents="none"
-                        />
                         {/* Icon: warning at rest, retry on hover */}
                         <Box
                             position="absolute"
@@ -704,7 +687,6 @@ export const AgentErrorPill = ({ onRetry, onDismiss }) => {
 
 // Reset button shown in the mode slot while a recording is in progress.
 export const ResetButton = ({ onReset }) => {
-    const [isHovered, setIsHovered] = React.useState(false);
     const { t } = useTranslation();
 
     return (
@@ -718,20 +700,28 @@ export const ResetButton = ({ onReset }) => {
                 w="40px"
                 h="40px"
                 borderRadius="full"
-                border={`1px solid ${isHovered ? PILL.warningFill : PILL.warning}`}
+                border="1px solid"
+                borderColor={PILL.warning}
                 cursor="pointer"
-                transition="all 0.2s ease"
+                transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease"
                 outline="none"
-                bg={isHovered ? PILL.warningFill : "transparent"}
-                color={isHovered ? PILL.onFill : PILL.warning}
-                boxShadow="md"
+                bg="transparent"
+                color={PILL.warning}
+                boxShadow="none"
                 _hover={{
-                    transform: "scale(1.05)",
+                    bg: PILL.warningFill,
+                    borderColor: PILL.warningFill,
+                    color: "folio.warningInk",
+                }}
+                _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
                 }}
                 asChild><button
+                    aria-label={t("scribe.reset")}
                     onClick={onReset}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}>
+                >
                     <FaTimes size={16} />
                 </button></Box>
         </Tooltip>
@@ -745,7 +735,6 @@ export const TranscriptSendButton = ({
     isTranscriptionOpen,
     hasRawTranscription,
 }) => {
-    const [isHovered, setIsHovered] = React.useState(false);
     const { t } = useTranslation();
 
     if (isRecording) {
@@ -761,20 +750,28 @@ export const TranscriptSendButton = ({
                     w="40px"
                     h="40px"
                     borderRadius="full"
-                    border={`1px solid ${isHovered ? PILL.successFill : PILL.success}`}
+                    border="1px solid"
+                    borderColor={PILL.success}
                     cursor="pointer"
-                    transition="all 0.2s ease"
+                    transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease"
                     outline="none"
-                    bg={isHovered ? PILL.successFill : "transparent"}
-                    color={isHovered ? PILL.onFill : PILL.success}
-                    boxShadow="md"
+                    bg="transparent"
+                    color={PILL.success}
+                    boxShadow="none"
                     _hover={{
-                        transform: "scale(1.05)",
+                        bg: PILL.successFill,
+                        borderColor: PILL.successFill,
+                        color: "folio.successInk",
+                    }}
+                    _focusVisible={{
+                        outline: "2px solid",
+                        outlineColor: "folio.focus",
+                        outlineOffset: "2px",
                     }}
                     asChild><button
+                        aria-label={t("scribe.send.stopAndSend")}
                         onClick={onSend}
-                        onMouseEnter={() => setIsHovered(true)}
-                        onMouseLeave={() => setIsHovered(false)}>
+                    >
                         <FaPaperPlane size={14} />
                     </button></Box>
             </Tooltip>
@@ -803,17 +800,26 @@ export const TranscriptSendButton = ({
                 className="pill-box-icons"
                 mr={0}
                 cursor={isDisabled ? "not-allowed" : "pointer"}
-                transition="all 0.2s ease"
+                transition="color 160ms ease, background-color 160ms ease, opacity 160ms ease"
                 outline="none"
                 opacity={isDisabled ? 0.4 : 1}
-                bg={isTranscriptionOpen ? colors.dark.surface : "transparent"}
+                color={isTranscriptionOpen ? "folio.accent" : "folio.sidebarInk"}
+                bg={isTranscriptionOpen ? "folio.accentSoft" : "transparent"}
                 _hover={
                     isDisabled
                         ? {}
-                        : { bg: colors.dark.surface, transform: "scale(1.05)" }
+                        : {
+                              bg: "folio.accentSoft",
+                              color: "folio.accent",
+                          }
                 }
+                _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
+                }}
                 pointerEvents={isDisabled ? "none" : "auto"}
-                asChild><button aria-label={label}>
+                asChild><button aria-label={label} aria-disabled={isDisabled}>
                     <FaFileAlt size={14} />
                 </button></Box>
         </Popover.Trigger>
@@ -864,19 +870,27 @@ export const TranscriptionFailurePill = ({
                 w="32px"
                 h="32px"
                 borderRadius="full"
-                border={`1px solid ${PILL.success}`}
+                border="1px solid"
+                borderColor={PILL.success}
                 cursor="pointer"
                 outline="none"
                 color={PILL.success}
                 bg="transparent"
-                transition="all 0.2s ease"
+                transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease"
                 _hover={{
                     bg: PILL.successFill,
                     borderColor: PILL.successFill,
-                    color: PILL.onFill,
-                    transform: "scale(1.05)",
+                    color: "folio.successInk",
                 }}
-                asChild><button onClick={onRetry}>
+                _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
+                }}
+                asChild><button
+                    aria-label={t("scribe.transcription.retrySend")}
+                    onClick={onRetry}
+                >
                     <FaRedoAlt size={13} />
                 </button></Box>
         </Tooltip>
@@ -890,19 +904,27 @@ export const TranscriptionFailurePill = ({
                 w="32px"
                 h="32px"
                 borderRadius="full"
-                border={`1px solid ${PILL.info}`}
+                border="1px solid"
+                borderColor={PILL.info}
                 cursor="pointer"
                 outline="none"
                 color={PILL.info}
                 bg="transparent"
-                transition="all 0.2s ease"
+                transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease"
                 _hover={{
                     bg: PILL.infoFill,
                     borderColor: PILL.infoFill,
-                    color: PILL.onFill,
-                    transform: "scale(1.05)",
+                    color: "folio.infoInk",
                 }}
-                asChild><button onClick={onDownload}>
+                _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
+                }}
+                asChild><button
+                    aria-label={t("scribe.transcription.downloadAudio")}
+                    onClick={onDownload}
+                >
                     <FaDownload size={13} />
                 </button></Box>
         </Tooltip>
@@ -926,9 +948,17 @@ export const TranscriptionFailurePill = ({
                 color={PILL.muted}
                 bg="transparent"
                 className="pill-box-icons"
-                transition="all 0.2s ease"
-                _hover={{ color: PILL.danger, transform: "scale(1.05)" }}
-                asChild><button onClick={onDismiss}>
+                transition="color 160ms ease, background-color 160ms ease"
+                _hover={{ color: PILL.danger, bg: "folio.dangerSoft" }}
+                _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "folio.focus",
+                    outlineOffset: "2px",
+                }}
+                asChild><button
+                    aria-label={t("scribe.transcription.dismissWarning")}
+                    onClick={onDismiss}
+                >
                     <FaTimes size={13} />
                 </button></Box>
         </Tooltip>

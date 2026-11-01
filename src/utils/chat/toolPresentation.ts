@@ -27,8 +27,9 @@ export const getToolPresentation = (toolName = "") => {
             icon: FaWikipediaW,
             label: "Wikipedia",
             colorScheme: "blue",
-            borderColor: "blue.300",
-            bg: "blue.50",
+            color: "folio.info",
+            borderColor: "folio.info",
+            bg: "folio.infoSoft",
         };
     }
 
@@ -37,8 +38,9 @@ export const getToolPresentation = (toolName = "") => {
             icon: FaBookMedical,
             label: "PubMed",
             colorScheme: "teal",
-            borderColor: "teal.300",
-            bg: "teal.50",
+            color: "folio.info",
+            borderColor: "folio.info",
+            bg: "folio.infoSoft",
         };
     }
 
@@ -47,8 +49,9 @@ export const getToolPresentation = (toolName = "") => {
             icon: FaSearch,
             label: "Literature search",
             colorScheme: "green",
-            borderColor: "green.300",
-            bg: "green.50",
+            color: "folio.success",
+            borderColor: "folio.success",
+            bg: "folio.successSoft",
         };
     }
 
@@ -57,8 +60,9 @@ export const getToolPresentation = (toolName = "") => {
             icon: FaFileAlt,
             label: "Transcript",
             colorScheme: "orange",
-            borderColor: "orange.300",
-            bg: "orange.50",
+            color: "folio.warning",
+            borderColor: "folio.warning",
+            bg: "folio.warningSoft",
         };
     }
 
@@ -67,8 +71,9 @@ export const getToolPresentation = (toolName = "") => {
             icon: FaRegCommentDots,
             label: "Direct response",
             colorScheme: "gray",
-            borderColor: "gray.300",
-            bg: "gray.50",
+            color: "folio.muted",
+            borderColor: "folio.line",
+            bg: "folio.paperAlt",
         };
     }
 
@@ -76,8 +81,9 @@ export const getToolPresentation = (toolName = "") => {
         icon: FaTools,
         label: "Tool",
         colorScheme: "purple",
-        borderColor: "purple.300",
-        bg: "purple.50",
+        color: "folio.accent",
+        borderColor: "folio.accent",
+        bg: "folio.accentSoft",
     };
 };
 

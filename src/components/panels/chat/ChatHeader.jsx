@@ -10,12 +10,15 @@ const ChatHeader = ({ title, _onClose }) => {
             justify="space-between"
             p="3"
             borderBottomWidth="1px"
+            borderBottomColor="folio.line"
             className="panel-header"
+            backgroundColor="folio.paper"
+            color="folio.ink"
             flexShrink={0}
         >
-            <Flex align="center">
+            <Flex align="center" color="folio.accent">
                 <ChatIcon mr="2" />
-                <Text fontWeight="bold">{title ?? t("chat.title")}</Text>
+                <Text fontWeight="bold" color="folio.ink">{title ?? t("chat.title")}</Text>
             </Flex>
         </Flex>
     );

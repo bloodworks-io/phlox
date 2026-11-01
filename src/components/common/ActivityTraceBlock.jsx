@@ -88,11 +88,11 @@ const ActivityTraceBlock = ({
                             {collapsedLabel}
                         </Text>
                         {currentActivity.isOngoing && (
-                            <Spinner size="xs" mr="2" />
+                            <Spinner size="xs" mr="2" color="folio.accent" />
                         )}
                     </>
                 ) : (
-                    <Text mr="2" fontWeight="medium" fontSize="xs" color="overlay0">
+                    <Text mr="2" fontWeight="medium" fontSize="xs" color="folio.muted">
                         {t("common.activityTrace.steps", { count: stepCount })}
                     </Text>
                 )}
@@ -160,9 +160,9 @@ const ActivityTraceBlock = ({
                                                     mt={1}
                                                     p={1}
                                                     borderLeftWidth="3px"
-                                                    borderColor="accent"
-                                                    bg="blackAlpha.50"
-                                                    borderRadius="sm"
+                                                    borderColor="folio.info"
+                                                    bg="folio.infoSoft"
+                                                    borderRadius="folioControl"
                                                 >
                                                     <Text
                                                         whiteSpace="pre-wrap"
@@ -209,7 +209,7 @@ const ActivityTraceBlock = ({
                                             borderRadius="sm"
                                             className="thinking-toggle"
                                         >
-                                            <HStack gap={1.5} mr="1">
+                                            <HStack gap={1.5} mr="1" color={presentation.color}>
                                                 <ToolIcon size="0.75em" />
                                                 <Text
                                                     fontSize="xs"
@@ -233,17 +233,18 @@ const ActivityTraceBlock = ({
                                                 <Box
                                                     mt={1}
                                                     p={1}
-                                                    borderLeftWidth="3px"
-                                                    borderColor={
-                                                        presentation.borderColor
-                                                    }
-                                                    bg={presentation.bg}
-                                                    borderRadius="sm"
+                                                     borderLeftWidth="3px"
+                                                     borderColor={
+                                                         presentation.borderColor
+                                                     }
+                                                     bg={presentation.bg}
+                                                     borderRadius="folioControl"
                                                 >
                                                     <Text
                                                         fontSize="xs"
-                                                        color="overlay0"
+                                                        color="folio.muted"
                                                         mb={1}
+
                                                     >
                                                         {toolContent ||
                                                             t("common.activityTrace.noToolOutput")}

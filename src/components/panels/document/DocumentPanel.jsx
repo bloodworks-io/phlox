@@ -183,12 +183,12 @@ const DocumentPanel = ({
           bottom={0}
           align="center"
           justify="center"
-          bg="rgba(255,107,53,0.1)"
+          bg="folio.accentSoft"
           zIndex={10}
           borderRadius="lg"
           pointerEvents="none"
         >
-          <Text fontWeight="bold" color="primaryButton">
+          <Text fontWeight="bold" color="folio.accent">
             {t("document.dropHere")}
           </Text>
         </Flex>
@@ -199,6 +199,9 @@ const DocumentPanel = ({
         justify="space-between"
         p="3"
         className="panel-header"
+        backgroundColor="folio.paper"
+        color="folio.ink"
+        borderBottomColor="folio.line"
         flexShrink={0}
       >
         <Flex align="center">
@@ -334,7 +337,7 @@ const DocumentPanel = ({
                     p={2}
                     borderWidth="1px"
                     borderRadius="sm"
-                    borderColor="border"
+                    borderColor="folio.line"
                   >
                     <Flex justify="space-between" align="center">
                       <Text
@@ -347,7 +350,7 @@ const DocumentPanel = ({
                         {field.field_name}
                       </Text>
                       {!hasContent ? (
-                        <Badge colorPalette="yellow" fontSize="xs">
+                        <Badge bg="folio.warningSoft" color="folio.warning" fontSize="xs">
                           {t("document.empty")}
                         </Badge>
                       ) : (

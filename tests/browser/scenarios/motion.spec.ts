@@ -45,6 +45,9 @@ test("current motion inventory", async ({ page }, testInfo) => {
     const normal = await page.evaluate(motionInventory);
 
     expect(normal.animated).toBeInstanceOf(Array);
+    expect(
+        normal.animated.filter((item) => item.iteration === "infinite"),
+    ).toHaveLength(0);
 
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.waitForTimeout(100);
@@ -52,6 +55,10 @@ test("current motion inventory", async ({ page }, testInfo) => {
     const reduced = await page.evaluate(motionInventory);
 
     expect(reduced.reducedMotion).toBe("reduce");
+    expect(reduced.animated.length).toBeLessThanOrEqual(normal.animated.length);
+    expect(
+        reduced.animated.filter((item) => item.iteration === "infinite"),
+    ).toHaveLength(0);
 
     await testInfo.attach("motion-inventory", {
         body: JSON.stringify({ normal, reduced }, null, 2),

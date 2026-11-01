@@ -84,15 +84,54 @@ describe("FloatingActionMenu", () => {
         expect(callbacks.onOpenLetter).not.toHaveBeenCalled();
     });
 
+    it("exposes open-panel state through aria-pressed", () => {
+        renderMenu({
+            isDocumentOpen: false,
+            isPreviousVisitOpen: true,
+            isChatOpen: false,
+            isReasoningOpen: true,
+            isLetterOpen: false,
+        });
+
+        expect(
+            screen.getByRole("button", { name: /open document upload/i }),
+        ).toHaveAttribute("aria-pressed", "false");
+        expect(
+            screen.getByRole("button", { name: /open previous visit/i }),
+        ).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", { name: /open chat/i })).toHaveAttribute(
+            "aria-pressed",
+            "false",
+        );
+        expect(
+            screen.getByRole("button", { name: /open reasoning/i }),
+        ).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", { name: /open letter/i })).toHaveAttribute(
+            "aria-pressed",
+            "false",
+        );
+    });
+
     it("exposes previous-visit unread and critical-reasoning indicators", () => {
         const { container } = renderMenu({
             showPreviousVisitDot: true,
             hasCriticalReasoning: true,
         });
 
+        expect(
+            screen.getByRole("button", {
+                name: /open previous visit, previous visit summary unread/i,
+            }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", {
+                name: /open reasoning, critical reasoning available/i,
+            }),
+        ).toBeInTheDocument();
+
         const dots = container.querySelectorAll(
-            ".pill-box-icons + div, #fab-reasoning + div",
+            "#fab-previous-visit + div[aria-hidden=\"true\"], #fab-reasoning + div[aria-hidden=\"true\"]",
         );
-        expect(dots.length).toBeGreaterThanOrEqual(2);
+        expect(dots).toHaveLength(2);
     });
 });

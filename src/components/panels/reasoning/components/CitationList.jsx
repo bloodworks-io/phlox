@@ -69,8 +69,7 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
             mt={inline ? 2 : 4}
             pt={inline ? 2 : 3}
             borderTop="1px solid"
-            borderColor="border"
-            _dark={{ borderColor: "border" }}
+            borderColor="folio.line"
         >
             <HStack
                 gap={1}
@@ -83,8 +82,7 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                 <Text
                     fontSize="xs"
                     fontWeight="medium"
-                    color="overlay0"
-                    _dark={{ color: "overlay0" }}
+                    color="folio.faint"
                 >
                     {t("reasoning.sources", { number: entries.length })}
                 </Text>
@@ -105,17 +103,16 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                                     as="span"
                                     fontSize="xs"
                                     fontWeight="bold"
-                                    color="primaryButton"
+                                    color="folio.accent"
                                     minW="18px"
                                 >
                                     {num}.
                                 </Text>
-                                <Icon color="primaryButton" mt="1px" />
+                                <Icon color="var(--chakra-colors-folio-accent)" mt="1px" />
                                 {isString || !c.url ? (
                                     <Text
                                         fontSize="xs"
-                                        color="textTertiary"
-                                        _dark={{ color: "overlay0" }}
+                                        color="folio.muted"
                                         lineClamp={1}
                                     >
                                         {title}
@@ -125,8 +122,7 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                                         href={c.url}
                                         isExternal={!isDownload}
                                         fontSize="xs"
-                                        color="primaryButton"
-                                        _dark={{ color: "primaryButton" }}
+                                        color="folio.accent"
                                         _hover={{ textDecoration: "underline" }}
                                         lineClamp={1}
                                     >
