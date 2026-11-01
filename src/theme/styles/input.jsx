@@ -76,6 +76,33 @@ const inputStyles = (props) => ({
             opacity: 1,
         },
     },
+    ".note-panel": {
+        backgroundColor: "folio.paper",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioPanel",
+    },
+    ".note-header": {
+        borderBottom: "1px solid",
+        borderBottomColor: "folio.line",
+    },
+    ".note-footer": {
+        borderTop: "1px solid",
+        borderTopColor: "folio.line",
+    },
+    ".note-fields-container": {
+        backgroundColor: "transparent",
+        border: "none",
+        borderRadius: "0",
+        padding: "12px",
+        paddingRight: "72px",
+        overflow: "hidden",
+    },
+    ".note-field-label": {
+        color: "folio.ink",
+        fontWeight: "600",
+    },
     ".cohesive-fields-container": {
         backgroundColor:
             props.colorMode === "light"
@@ -112,10 +139,7 @@ const inputStyles = (props) => ({
         display: "inline-flex !important",
         alignItems: "center !important",
         verticalAlign: "middle !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.overlay0} !important`
-                : `${colors.dark.overlay0} !important`,
+        color: "folio.faint !important",
         fontSize: "0.7rem !important",
     },
     ".cohesive-agent-edit-marker": {
@@ -127,10 +151,7 @@ const inputStyles = (props) => ({
         border: "none !important",
         padding: "0 !important",
         cursor: "pointer !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.secondaryButton} !important`
-                : `${colors.dark.secondaryButton} !important`,
+        color: "folio.warning !important",
         fontSize: "0.7rem !important",
     },
     ".agent-diff": {
@@ -147,30 +168,15 @@ const inputStyles = (props) => ({
         wordBreak: "break-word !important",
     },
     ".agent-diff-line--same": {
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        color: "folio.muted !important",
     },
     ".agent-diff-line--add": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.successButton}1a !important`
-                : `${colors.dark.successButton}1a !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.successButton} !important`
-                : `${colors.dark.successButton} !important`,
+        backgroundColor: "folio.successSoft !important",
+        color: "folio.success !important",
     },
     ".agent-diff-line--remove": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.dangerButtonFaint} !important`
-                : `${colors.dark.dangerButtonFaint} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.dangerButton} !important`
-                : `${colors.dark.dangerButton} !important`,
+        backgroundColor: "folio.dangerSoft !important",
+        color: "folio.danger !important",
         textDecoration: "line-through !important",
     },
     ".cohesive-textarea": {
@@ -202,6 +208,11 @@ const inputStyles = (props) => ({
                     ? `${colors.light.textSecondary} !important`
                     : `${colors.dark.textSecondary} !important`,
             opacity: "1 !important",
+        },
+    },
+    ".note-textarea": {
+        "&::placeholder": {
+            color: "folio.faint",
         },
     },
     ".refinement-fab": {

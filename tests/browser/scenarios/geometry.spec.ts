@@ -61,8 +61,22 @@ test("consultation geometry contract", async ({ page }, testInfo) => {
 
     const citationCount = await page.locator(".citation-badge").count();
     const mirrorMarkerCount = await page.locator("[data-line-end]").count();
+    const supportedCitationCount = await page
+        .locator(".citation-badge[data-verdict='supported']")
+        .count();
+    const unverifiedCitationCount = await page
+        .locator(".citation-badge[data-verdict='unverified']")
+        .count();
+    const conflictCitationCount = await page
+        .locator(".citation-badge[data-verdict='conflict']")
+        .count();
     expect(citationCount).toBeGreaterThan(0);
     expect(mirrorMarkerCount).toBeGreaterThan(0);
+    expect(citationCount).toBe(9);
+    expect(mirrorMarkerCount).toBe(9);
+    expect(supportedCitationCount).toBe(7);
+    expect(unverifiedCitationCount).toBe(1);
+    expect(conflictCitationCount).toBe(1);
 
     await page.locator("#fab-chat").click();
     await page.locator(".floating-panel").waitFor();
@@ -85,6 +99,9 @@ test("consultation geometry contract", async ({ page }, testInfo) => {
         chatPanel,
         toolIds,
         citationCount,
+        supportedCitationCount,
+        unverifiedCitationCount,
+        conflictCitationCount,
         mirrorMarkerCount,
     };
 

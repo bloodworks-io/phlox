@@ -12,7 +12,7 @@ const Field = ({ label, required, children }) => (
         <Text fontSize="sm" fontWeight="bold" mb={1}>
             {label}
             {required && (
-                <Text as="span" color="dangerButton" ml={1}>
+                <Text as="span" color="folio.danger" ml={1}>
                     *
                 </Text>
             )}
@@ -157,14 +157,14 @@ const DemographicsForm = ({
             {/* Document drop zone — auto-fills fields from a referral/ID/etc. */}
             <Box
                 position="relative"
-                borderRadius="md"
+                borderRadius="folioControl"
                 border="2px dashed"
-                borderColor={isDragOver ? "accent" : "surface"}
-                bg={isDragOver ? "rgba(66, 153, 225, 0.15)" : "transparent"}
+                borderColor={isDragOver ? "folio.accent" : "folio.line"}
+                bg={isDragOver ? "folio.accentSoft" : "transparent"}
                 p={3}
                 textAlign="center"
                 cursor="pointer"
-                transition="all 0.15s"
+                transition="background-color 160ms ease, border-color 160ms ease"
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -180,7 +180,7 @@ const DemographicsForm = ({
                 <HStack
                     gap={2}
                     justify="center"
-                    color={"textSecondary"}
+                    color="folio.muted"
                     fontSize="sm"
                 >
                     <Icon asChild><FaFileUpload /></Icon>
@@ -194,7 +194,7 @@ const DemographicsForm = ({
                 {extractError && (
                     <Text
                         fontSize="xs"
-                        color="dangerButton"
+                        color="folio.danger"
                         mt={1}
                         className="anim-fade-slide-up"
                         css={{ animationDuration: "0.15s" }}

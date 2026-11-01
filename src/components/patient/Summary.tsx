@@ -220,7 +220,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
           key={`${field.field_key}-${liveFlash || "static"}`}
           className={`cohesive-field${liveFlash ? " live-field-updated" : ""}`}
         >
-          <Text className="cohesive-field-label">
+          <Text className="cohesive-field-label note-field-label">
             {field.field_name}:{persistentMarker}{agentEditMarker}{unverifiedMarker}
           </Text>
           <GroundedTextarea
@@ -229,7 +229,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
             onChange={(e) => {
               handleTemplateDataChange(field.field_key, e.target.value);
             }}
-            className="cohesive-textarea"
+            className="cohesive-textarea note-textarea"
             textareaRef={(el) => {
               textareasRefs.current[field.field_key] = el;
             }}
@@ -257,7 +257,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
 
     if (templateStatus === "loading") {
       return (
-        <Box p="4" borderRadius="sm" className="panels-bg">
+        <Box p="4" className="note-panel">
           <Center mt={4}>
             <Spinner size="sm" animationDuration="0.65s" />
             <Text ml={2}>{t("patient.loadingTemplate")}</Text>
@@ -268,12 +268,14 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
 
     return (
       <>
-        <Box p={[2, 3, 4]} borderRadius="sm" className="panels-bg">
-          <Flex align="center" justify="space-between">
+        <Box p={[2, 3, 4]} className="note-panel">
+          <Flex className="note-header" align="center" justify="space-between">
             <Flex align="center">
               <HStack gap={2}>
-                <EditIcon size="1.2em" />
-                <Text as="h3">{t("patient.noteHeading")}</Text>
+                <EditIcon size="1.2em" color="folio.accent" />
+                <Text as="h3" fontFamily="display" fontWeight="500">
+                  {t("patient.noteHeading")}
+                </Text>
               </HStack>
             </Flex>
             <Tooltip
@@ -286,10 +288,9 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
             >
               <Box>
                 <Flex alignItems="center">
-                  <FaFileAlt
-                    style={{ marginRight: "8px" }}
-                    className="pill-box-icons"
-                  />
+                  <Box as="span" marginRight="8px" color="folio.muted">
+                    <FaFileAlt />
+                  </Box>
                   <NativeSelect.Root
                     size="sm"
                     disabled={!(isNewPatient || isUngeneratedNote)}
@@ -340,12 +341,12 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
 
           <Collapsible.Root open={!isSummaryCollapsed}>
             <Collapsible.Content>
-              <Box mt="4" className="cohesive-fields-container">
+              <Box mt="4" className="note-fields-container">
                 <VStack gap="0" align="stretch">
                   {currentTemplate?.fields?.map(renderField)}
                 </VStack>
               </Box>
-              <Flex mt="4" justifyContent="space-between" align="center">
+              <Flex className="note-footer" mt="4" justifyContent="space-between" align="center">
                 <Flex gap={2}>
                   <Tooltip
                     content={t("patient.copyNoteTooltip")}
@@ -356,9 +357,9 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         onClick={onCopy}
                         aria-label={t("patient.copyNoteLabel")}
                         variant="outline"
-                        borderColor="surface"
+                        borderColor="folio.line"
                         bg="transparent"
-                        color="fg.muted"
+                        color="folio.muted"
                         borderRadius="full"
                         css={{
                           width: "35px !important",
@@ -366,7 +367,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                           minWidth: "35px !important",
                           padding: "0 !important",
                         }}
-                        _hover={{ bg: "surface", color: "fg" }}
+                        _hover={{ bg: "folio.hover", color: "folio.ink" }}
                       >
                         {recentlyCopied ? (
                           <CheckIcon
@@ -392,9 +393,9 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         onClick={() => handleGenerateLetterClick(null)}
                         aria-label={t("patient.generateLetterLabel")}
                         variant="outline"
-                        borderColor="surface"
+                        borderColor="folio.line"
                         bg="transparent"
-                        color="fg.muted"
+                        color="folio.muted"
                         borderRadius="full"
                         css={{
                           width: "35px !important",
@@ -403,7 +404,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                           padding: "0 !important",
                         }}
                         disabled={saveLoading || !isEncounterSaved}
-                        _hover={{ bg: "surface", color: "fg" }}
+                        _hover={{ bg: "folio.hover", color: "folio.ink" }}
                       >
                         <FaEnvelopeOpenText />
                       </IconButton>

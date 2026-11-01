@@ -24,6 +24,37 @@ const patientInfoStyles = (props) => ({
         flexShrink: 0, // Prevent icon from shrinking
     },
 
+    // Clinical Folio consultation surfaces. These are deliberately scoped:
+    // `.panels-bg` remains the legacy surface for RAG/settings/PDF consumers.
+    ".patient-context-bar": {
+        backgroundColor: "folio.paper",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioPanel",
+    },
+    ".new-note-card": {
+        backgroundColor: "folio.paper",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioOverlay",
+    },
+    ".entry-path": {
+        backgroundColor: "folio.paperAlt",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioPanel",
+    },
+    ".entry-candidate-row": {
+        backgroundColor: "folio.paperAlt",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioControl",
+    },
+
     // Shared Folio input surface. Height, padding, and font metrics are
     // preserved; disabled/error semantics still come from the Folio input
     // recipe layered underneath.

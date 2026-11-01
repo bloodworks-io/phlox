@@ -3,7 +3,7 @@
 
 import { createSystem, defaultConfig } from "@chakra-ui/react";
 import { typography } from "./typography";
-import { tokens as colorTokens, folioShadowTokens, folioRadiusTokens } from "./colors";
+import { tokens as colorTokens, folioColors, folioShadowTokens, folioRadiusTokens } from "./colors";
 import { buttonGlobalCss } from "./styles/button";
 import { inputGlobalCss } from "./styles/input";
 import { sidebarGlobalCss } from "./styles/sidebar";
@@ -65,12 +65,15 @@ globalCss[".citation-badge"] = {
     zIndex: 1,
     transition: "opacity 0.15s ease",
 };
-globalCss[".citation-badge[data-verdict='supported']"] = { opacity: 0.45 };
+globalCss[".citation-badge[data-verdict='supported']"] = { opacity: 0.7 };
 globalCss[".citation-badge[data-verdict='unverified']"] = { opacity: 0.7 };
 globalCss[".citation-badge[data-verdict='conflict']"] = { opacity: 1 };
 globalCss[".citation-badge:hover"] = { opacity: 1 };
 globalCss[".citation-badge--conflict"] = {
-    boxShadow: { _light: "0 0 0 3px #d20f3915", _dark: "0 0 0 3px #ed879620" },
+    boxShadow: {
+        _light: `0 0 0 3px ${folioColors.light.danger}26`,
+        _dark: `0 0 0 3px ${folioColors.dark.danger}26`,
+    },
     borderRadius: "full",
 };
 globalCss[".transcript-line--highlighted"] = {
@@ -195,10 +198,10 @@ export const system = createSystem(defaultConfig, {
                 },
             },
             phloxLiveFieldFlash: {
-                // Matches the edit-is-blue coding in the agent activity feed.
+                // Agent edits use the Folio information role.
                 from: {
-                    backgroundColor: "rgba(114, 135, 253, 0.15)",
-                    boxShadow: "inset 2px 0 0 0 #7287fd",
+                    backgroundColor: "var(--chakra-colors-folio-info-soft)",
+                    boxShadow: "inset 2px 0 0 0 var(--chakra-colors-folio-info)",
                 },
                 to: {
                     backgroundColor: "transparent",

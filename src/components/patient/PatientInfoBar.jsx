@@ -16,8 +16,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
     return (
         <Flex w="100%">
             <Flex
-                className="panels-bg"
-                borderRadius="lg"
+                className="patient-context-bar"
                 py={2}
                 px={4}
                 align="center"
@@ -30,36 +29,28 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                     boxSize="28px"
                     borderRadius="full"
                     bg={getAvatarColor(patient.name)}
-                    color="#fff"
+                    color="white"
                     fontSize="xs"
                     fontWeight="700"
                     flexShrink={0}
-                    css={{
-                        fontFamily: '"Space Grotesk", sans-serif',
-                    }}
                 >
                     {(patient.name && getInitials(patient.name)) || "?"}
                 </Flex>
 
                 <HStack gap={2} minW="0">
                     <Text
-                        fontWeight="700"
+                        fontFamily="display"
+                        fontWeight="500"
                         fontSize="md"
-                        color={"textPrimary"}
+                        color="folio.ink"
                         lineClamp={1}
-                        css={{
-                            fontFamily: '"Space Grotesk", sans-serif',
-                        }}
                     >
                         {name}
                     </Text>
                     <Text
                         fontSize="sm"
-                        color={"textSecondary"}
+                        color="folio.muted"
                         lineClamp={1}
-                        css={{
-                            fontFamily: '"Roboto", sans-serif',
-                        }}
                     >
                         {meta.length
                             ? meta.join("  ·  ")
@@ -72,9 +63,10 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                         aria-label={t("patient.editPatientDetails")}
                         size="sm"
                         variant="ghost"
-                        color={"textSecondary"}
+                        color="folio.muted"
                         onClick={onEdit}
                         flexShrink={0}
+                        _hover={{ bg: "folio.hover", color: "folio.ink" }}
                     >
                         <FaEdit />
                     </IconButton>

@@ -23,8 +23,8 @@ const UrSearchField = ({
                 autoFocus={autoFocus}
                 className="input-style"
                 css={{
-                    borderTopLeftRadius: "md !important",
-                    borderBottomLeftRadius: "md !important",
+                    borderTopLeftRadius: "folioControl !important",
+                    borderBottomLeftRadius: "folioControl !important",
                     borderTopRightRadius: "0 !important",
                     borderBottomRightRadius: "0 !important"
                 }}

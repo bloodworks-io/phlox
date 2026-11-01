@@ -137,7 +137,7 @@ const NewNoteModal = ({
                             <Heading
                                 as="h3"
                                 size="xl"
-                                color="textPrimary"
+                                color="folio.ink"
                             >
                                 {t("modal.newNote.title")}
                             </Heading>
@@ -150,7 +150,7 @@ const NewNoteModal = ({
                         >
                             <Text
                                 fontSize="sm"
-                                color="textSecondary"
+                                color="folio.muted"
                                 mb={4}
                                 lineHeight={1.5}
                             >
@@ -168,16 +168,12 @@ const NewNoteModal = ({
                                             icon={FaUserPlus}
                                             title={t("modal.newNote.newPatient")}
                                             subtitle={t("modal.newNote.createRecord")}
-                                            accent="primaryButton"
-                                            tileBg="tile"
                                             onClick={handleNewPatient}
                                         />
                                         <PathHalf
                                             icon={FaSearch}
                                             title={t("modal.newNote.search")}
                                             subtitle={t("modal.newNote.existingPatient")}
-                                            accent="secondaryButton"
-                                            tileBg="tile"
                                             onClick={() => setView("search")}
                                         />
                                     </Flex>
