@@ -113,11 +113,26 @@ async def import_session(body: ImportRequest, background: BackgroundTasks) -> di
     metadata = service.claim_metadata(document)
     if not service.companion_auto_import():
         held = repository.start_import(session_guid, metadata, status="received")
+        if held:
+            status = "received"
+        else:
+            existing = repository.get_import(session_guid)
+            if existing is None:
+                # The row start_import refused to duplicate is unreadable
+                # (deleted mid-request, or the lookup itself failed — both
+                # surface as None). Fail closed: the host must treat this
+                # as a failed upload and let the phone retry, never
+                # acknowledge a session whose stored state is unconfirmed.
+                raise HTTPException(
+                    status_code=500,
+                    detail="import state unreadable; upload not acknowledged",
+                )
+            status = existing["status"]
         return {
             "session_id": session_guid,
             "accepted": True,
             "already_imported": False,
-            "status": "received" if held else repository.get_import(session_guid)["status"],
+            "status": status,
         }
 
     claimed = repository.start_import(session_guid, metadata) or repository.reset_failed_import(
