@@ -102,7 +102,7 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }: UploadTemplateModal
 
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content>
+          <Dialog.Content className="modal-style">
             <Dialog.Header>
               <Text as="h3">{t("forms.newFormTemplate")}</Text>
             </Dialog.Header>
@@ -128,10 +128,10 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }: UploadTemplateModal
                     type="file"
                     accept=".pdf"
                     onChange={handleFileChange}
-                    style={{ display: "block", width: "100%", fontSize: "0.875rem" }}
+                    className="file-input-style"
                   />
                 </Box>
-                <Text fontSize="xs" color="overlay0">
+                <Text fontSize="xs" color="folio.muted">
                   {t("forms.pageMetadataNote")}
                 </Text>
               </VStack>

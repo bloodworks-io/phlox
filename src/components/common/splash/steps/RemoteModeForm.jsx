@@ -125,7 +125,7 @@ export const RemoteModeForm = ({
 
       {/* Transcription settings — always visible */}
       <VStack gap={2} w="100%" align="stretch">
-        <Text fontSize="xs" fontWeight="bold" className="pill-box-icons">
+        <Text fontSize="xs" fontWeight="bold" className="settings-meta">
           {t("splash.step.aiModels.transcription")}
         </Text>
         <Field.Root>

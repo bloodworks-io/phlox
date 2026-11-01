@@ -26,35 +26,52 @@ export const HANDLE_SIZE = 6;
 // Minimum drawn/kept field size (canvas px for drawing, PDF pt for resize clamp).
 export const MIN_FIELD_SIZE = 10;
 
-// Canvas-safe overflow warning color (matches Chakra red-ish used elsewhere)
-export const OVERFLOW_COLOR = "#e53e3e";
+// Canvas-safe overflow warning color: the Folio danger light-mode value,
+// because the PDF canvas renders white in both color modes.
+export const OVERFLOW_COLOR = "#b42318";
 
-// Canvas-safe colors mapped from field types (can't use Chakra tokens in canvas)
+// Semantic Folio role for each field type, consumed by the HTML chrome
+// (FieldEditor, FieldList). Single source of truth for type→color meaning.
+export const FIELD_SEMANTIC_COLORS: Record<FieldType, string> = {
+    text: "folio.info",
+    checkbox: "folio.success",
+    date: "folio.warning",
+    number: "folio.accent",
+};
+
+// Concrete canvas strokes: the Folio light-mode values of the semantic
+// roles above (canvas can't use Chakra tokens, and it is white in both
+// modes). Fills are the same ink at .10/.20 alpha.
+const FIELD_CANVAS_STROKES: Record<FieldType, string> = {
+    text: "#3d6391",
+    checkbox: "#35644b",
+    date: "#8a5a12",
+    number: "#854127",
+};
+
+const rgbaFromHex = (hex: string, alpha: number): string => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+};
+
 export const FIELD_CANVAS_COLORS: Record<
     FieldType,
     { stroke: string; fill: string; fillSelected: string }
-> = {
-    text: {
-        stroke: "#3182ce",
-        fill: "rgba(49,130,206,0.1)",
-        fillSelected: "rgba(49,130,206,0.2)",
-    },
-    checkbox: {
-        stroke: "#38a169",
-        fill: "rgba(56,161,105,0.1)",
-        fillSelected: "rgba(56,161,105,0.2)",
-    },
-    date: {
-        stroke: "#dd6b20",
-        fill: "rgba(221,107,32,0.1)",
-        fillSelected: "rgba(221,107,32,0.2)",
-    },
-    number: {
-        stroke: "#805ad5",
-        fill: "rgba(128,90,213,0.1)",
-        fillSelected: "rgba(128,90,213,0.2)",
-    },
-};
+> = Object.fromEntries(
+    (Object.keys(FIELD_CANVAS_STROKES) as FieldType[]).map((type) => {
+        const stroke = FIELD_CANVAS_STROKES[type];
+        return [
+            type,
+            {
+                stroke,
+                fill: rgbaFromHex(stroke, 0.1),
+                fillSelected: rgbaFromHex(stroke, 0.2),
+            },
+        ];
+    }),
+) as Record<FieldType, { stroke: string; fill: string; fillSelected: string }>;
 
 export function getPageHeight(pageHeights: number[], page: number): number {
     return pageHeights[page - 1] || DEFAULT_PAGE_HEIGHT;

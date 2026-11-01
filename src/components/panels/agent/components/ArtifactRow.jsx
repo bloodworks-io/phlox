@@ -1,13 +1,13 @@
 import React from "react";
 import { Box, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaEnvelope, FaFilePdf, FaFile, FaArrowRight } from "react-icons/fa";
+import { LuArrowRight, LuFile, LuFileText, LuMail } from "react-icons/lu";
 
 import { downloadFormFillArtifact } from "../../../pdf-forms/FormFillArtifact";
 
 const ARTIFACT_ROW_ICONS = {
-    letter: FaEnvelope,
-    form_fill: FaFilePdf,
+    letter: LuMail,
+    form_fill: LuFileText,
 };
 
 const _downloadUrl = (url, filename) => {
@@ -22,7 +22,7 @@ const _downloadUrl = (url, filename) => {
 /* A prepared output as one full-width action row. */
 export const ArtifactRow = ({ artifact, onOpenLetter }) => {
     const { t } = useTranslation();
-    const Icon = ARTIFACT_ROW_ICONS[artifact.type] || FaFile;
+    const Icon = ARTIFACT_ROW_ICONS[artifact.type] || LuFile;
     const label =
         artifact.title ||
         artifact.template_name ||
@@ -95,7 +95,7 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
                 display="flex"
                 alignItems="center"
             >
-                <FaArrowRight size="10px" />
+                <LuArrowRight size="10px" strokeWidth={1.6} />
             </Box>
         </Box>
     );

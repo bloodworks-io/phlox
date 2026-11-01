@@ -4,7 +4,6 @@
 import { createSystem, defaultConfig } from "@chakra-ui/react";
 import { typography } from "./typography";
 import { tokens as colorTokens, folioColors, folioShadowTokens, folioRadiusTokens } from "./colors";
-import { buttonGlobalCss } from "./styles/button";
 import { inputGlobalCss } from "./styles/input";
 import { sidebarGlobalCss } from "./styles/sidebar";
 import { baseGlobalCss } from "./styles/base";
@@ -26,7 +25,6 @@ Object.assign(
     baseGlobalCss,
     sidebarGlobalCss,
     panelGlobalCss,
-    buttonGlobalCss,
     inputGlobalCss,
     modalGlobalCss,
     floatingGlobalCss,
@@ -46,16 +44,6 @@ globalCss[".flex-container"] = {
     alignItems: "center",
     height: "50px",
 };
-globalCss[".landing-items"] = {
-    backgroundColor: { _light: "base", _dark: "crust" },
-    color: "textSecondary !important",
-    border: "none",
-    fontWeight: "normal",
-};
-globalCss[".green-icon"] = { color: "successButton !important" };
-globalCss[".red-icon"] = { color: "dangerButton !important" };
-globalCss[".yellow-icon"] = { color: "secondaryButton !important" };
-globalCss[".blue-icon"] = { color: "primaryButton !important" };
 
 // Citation badges
 globalCss[".citation-badge"] = {

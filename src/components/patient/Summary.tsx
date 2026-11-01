@@ -14,7 +14,7 @@ import {
   CopyIcon,
   CheckIcon,
 } from "../common/icons";
-import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText, FaExclamationCircle } from "react-icons/fa";
+import { LuCheckCheck, LuCircleAlert, LuFileText, LuMailOpen, LuPin, LuSave } from "react-icons/lu";
 import { SecondaryButton, PrimaryButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { useTemplateChange } from "../../utils/hooks/useTemplateChange";
@@ -177,7 +177,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
             className="cohesive-agent-edit-marker"
             aria-label={t("patient.fieldUnverifiedBanner")}
           >
-            <FaExclamationCircle />
+            <LuCircleAlert strokeWidth={1.6} />
           </Box>
         </Tooltip>
       ) : null;
@@ -191,7 +191,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
           }}
         >
           <Box as="span" className="cohesive-persistent-marker">
-            <FaThumbtack />
+            <LuPin strokeWidth={1.6} />
           </Box>
         </Tooltip>
       ) : null;
@@ -289,7 +289,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
               <Box>
                 <Flex alignItems="center">
                   <Box as="span" marginRight="8px" color="folio.muted">
-                    <FaFileAlt />
+                    <LuFileText strokeWidth={1.6} />
                   </Box>
                   <NativeSelect.Root
                     size="sm"
@@ -406,7 +406,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         disabled={saveLoading || !isEncounterSaved}
                         _hover={{ bg: "folio.hover", color: "folio.ink" }}
                       >
-                        <FaEnvelopeOpenText />
+                        <LuMailOpen strokeWidth={1.6} />
                       </IconButton>
                     </Box>
                   </Tooltip>
@@ -422,7 +422,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         loading={saveLoading}
                         loadingText={t("patient.saving")}
                         mr="2"
-                        leftIcon={saveLoading ? null : <FaSave />}
+                        leftIcon={saveLoading ? null : <LuSave strokeWidth={1.6} />}
                       >
                         {saveLoading ? t("patient.savingOngoing") : t("action.save")}
                       </SecondaryButton>
@@ -438,7 +438,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         loading={wrapUpLoading}
                         loadingText={t("patient.wrapping")}
                         ml="2"
-                        leftIcon={wrapUpLoading ? null : <FaCheckDouble />}
+                        leftIcon={wrapUpLoading ? null : <LuCheckCheck strokeWidth={1.6} />}
                         disabled={saveLoading}
                       >
                         {wrapUpLoading ? t("patient.wrappingOngoing") : t("patient.wrapUp")}

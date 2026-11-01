@@ -2,7 +2,7 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslation } from "react-i18next";
 import ModalTitle from "../common/ModalTitle";
-import { FaGithub } from "react-icons/fa";
+import { LuGithub } from "react-icons/lu";
 
 import {
     Box,
@@ -11,7 +11,6 @@ import {
     HStack,
     VStack,
     Button,
-    Badge,
     Link,
     Dialog,
     Portal,
@@ -55,18 +54,21 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                     rel="noopener noreferrer"
                                     _hover={{ textDecoration: "none" }}
                                 >
-                                    <Badge
-                                        colorPalette="gray"
-                                        variant="subtle"
+                                    <Box
+                                        bg="folio.paperAlt"
+                                        color="folio.muted"
+                                        border="1px solid"
+                                        borderColor="folio.line"
                                         borderRadius="full"
                                         p={1}
                                         px={2}
+                                        fontSize="xs"
                                     >
                                         <HStack gap={1}>
-                                            <FaGithub />
+                                            <LuGithub strokeWidth={1.6} />
                                             <Text fontSize="xs">GitHub</Text>
                                         </HStack>
-                                    </Badge>
+                                    </Box>
                                 </Link>
                             </HStack>
                         </Dialog.Header>
@@ -95,7 +97,7 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                         </Box>
                                     ))
                                 ) : (
-                                    <Text color={"textPrimary"}>
+                                    <Text color={"folio.ink"}>
                                         {t("modal.changelog.loading")}
                                     </Text>
                                 )}

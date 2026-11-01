@@ -16,14 +16,16 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import { useRef, useEffect } from "react";
-import { FaUser, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
 import {
-    FaFileAlt,
-    FaSitemap,
-    FaVial,
-    FaBrain,
-    FaArrowRight,
-} from "react-icons/fa";
+    LuArrowRight,
+    LuBrain,
+    LuCalendar,
+    LuFileText,
+    LuIdCard,
+    LuListTree,
+    LuMicroscope,
+    LuUser,
+} from "react-icons/lu";
 import { RepeatIcon } from "../common/icons";
 import { getLocale } from "../../utils/helpers/formatHelpers";
 import {
@@ -68,19 +70,19 @@ const PatientTable = ({
         <Box>
             <HStack gap="2">
                 <Icon asChild>
-                    <FaUser />
+                    <LuUser strokeWidth={1.6} />
                 </Icon>
                 <Text fontWeight="bold">{formatName(patient.name)}</Text>
             </HStack>
             <HStack gap="2">
                 <Icon asChild>
-                    <FaCalendarAlt />
+                    <LuCalendar strokeWidth={1.6} />
                 </Icon>
                 <Text>{patient.dob}</Text>
             </HStack>
             <HStack gap="2">
                 <Icon asChild>
-                    <FaIdBadge />
+                    <LuIdCard strokeWidth={1.6} />
                 </Icon>
                 <Text>{patient.ur_number}</Text>
             </HStack>
@@ -136,7 +138,7 @@ const PatientTable = ({
                     <Box>
                         <HStack gap="2">
                             <Icon asChild>
-                                <FaUser />
+                                <LuUser strokeWidth={1.6} />
                             </Icon>
                             <Text fontWeight="bold">
                                 {formatName(patient.name)}
@@ -155,20 +157,20 @@ const PatientTable = ({
                                     onClick={() => handleSelectPatient(patient)}
                                 >
                                     <Icon asChild>
-                                        <FaArrowRight />
+                                        <LuArrowRight strokeWidth={1.6} />
                                     </Icon>
                                 </IconButton>
                             </Tooltip>
                         </HStack>
                         <HStack gap="2">
                             <Icon asChild>
-                                <FaCalendarAlt />
+                                <LuCalendar strokeWidth={1.6} />
                             </Icon>
                             <Text>{patient.dob}</Text>
                         </HStack>
                         <HStack gap="2">
                             <Icon asChild>
-                                <FaIdBadge />
+                                <LuIdCard strokeWidth={1.6} />
                             </Icon>
                             <Text>{patient.ur_number}</Text>
                         </HStack>
@@ -216,22 +218,22 @@ const PatientTable = ({
                                 {[
                                     {
                                         section: "summary",
-                                        icon: FaFileAlt,
+                                        icon: LuFileText,
                                         tooltip: t("patient.sectionSummary"),
                                     },
                                     {
                                         section: "differentials",
-                                        icon: FaSitemap,
+                                        icon: LuListTree,
                                         tooltip: t("patient.sectionDifferentials"),
                                     },
                                     {
                                         section: "investigations",
-                                        icon: FaVial,
+                                        icon: LuMicroscope,
                                         tooltip: t("patient.sectionInvestigations"),
                                     },
                                     {
                                         section: "considerations",
-                                        icon: FaBrain,
+                                        icon: LuBrain,
                                         tooltip: t("patient.sectionConsiderations"),
                                     },
                                 ].map(({ section, icon: ReasonIcon, tooltip }) => (

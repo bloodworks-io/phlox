@@ -6,7 +6,7 @@ import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 import { PrimaryButton, SecondaryButton } from "../common/Buttons";
-import { FaRegEye } from "react-icons/fa";
+import { LuEye } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 import type { FormTemplate } from "./types";
 
@@ -158,7 +158,7 @@ const FillFormModal = ({ isOpen, onClose, template }: FillFormModalProps) => {
 
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content>
+          <Dialog.Content className="modal-style">
             <Dialog.Header>
               <Text as="h3">{t("forms.fillTitle", { name: template?.name })}</Text>
             </Dialog.Header>
@@ -166,7 +166,7 @@ const FillFormModal = ({ isOpen, onClose, template }: FillFormModalProps) => {
               {previewDoc ? (
                 <PdfPageStack doc={previewDoc} />
               ) : fields.length === 0 ? (
-                <Text color="overlay0" fontSize="sm">
+                <Text color="folio.muted" fontSize="sm">
                   {t("forms.noFieldsDefined")}
                 </Text>
               ) : (
@@ -176,7 +176,7 @@ const FillFormModal = ({ isOpen, onClose, template }: FillFormModalProps) => {
                       <Field.Label fontSize="sm" mb="1">
                         {field.name || t("forms.fieldWithType", { type: field.field_type })}
                         {field.required && (
-                          <Text as="span" color="dangerButton" ml="1">
+                          <Text as="span" color="folio.danger" ml="1">
                             *
                           </Text>
                         )}
@@ -231,7 +231,7 @@ const FillFormModal = ({ isOpen, onClose, template }: FillFormModalProps) => {
               ) : (
                 <SecondaryButton
                   mr="3"
-                  leftIcon={<FaRegEye />}
+                  leftIcon={<LuEye strokeWidth={1.6} />}
                   onClick={handlePreview}
                   loading={previewing}
                   disabled={fields.length === 0}

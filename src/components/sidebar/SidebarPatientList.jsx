@@ -14,7 +14,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import useSWR from "swr";
-import { FaClinicMedical, FaMobileAlt, FaUser, FaUsers } from "react-icons/fa";
+import { LuHospital, LuSmartphone, LuUser, LuUsers } from "react-icons/lu";
 import { DeleteIcon, ChevronDownIcon, ChevronUpIcon } from "../common/icons";
 import { getInitials, getAvatarColor } from "./SidebarHelpers";
 import { isTauri } from "../../utils/helpers/apiConfig";
@@ -106,7 +106,7 @@ const SidebarPatientList = ({
                                     onKeyDown={(e) => e.stopPropagation()}
                                 >
                                     <Icon aria-label={t("sidebar.patientList.companionTooltip")}>
-                                        <FaMobileAlt size={11} />
+                                        <LuSmartphone size={11} strokeWidth={1.6} />
                                     </Icon>
                                 </Flex>
                             </Tooltip>
@@ -124,7 +124,7 @@ const SidebarPatientList = ({
                                     onClick={(e) => e.stopPropagation()}
                                     onKeyDown={(e) => e.stopPropagation()}
                                 >
-                                    <FaUser
+                                    <LuUser strokeWidth={1.6}
                                         size={8}
                                         color={
                                             patientScope === "mine"
@@ -157,7 +157,7 @@ const SidebarPatientList = ({
                                             <Switch.Thumb />
                                         </Switch.Control>
                                     </Switch.Root>
-                                    <FaUsers
+                                    <LuUsers strokeWidth={1.6}
                                         size={12}
                                         color={
                                             patientScope === "all"
@@ -465,7 +465,7 @@ const SidebarPatientList = ({
                              }}
                              transition="background-color 160ms ease"
                          >
-                            <Icon as={FaClinicMedical} boxSize={3} />
+                            <Icon as={LuHospital} boxSize={3} />
                             <Text
                                 fontSize="sm"
                                 fontWeight="medium"

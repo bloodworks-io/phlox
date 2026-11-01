@@ -1,7 +1,7 @@
 import { Flex, Text, IconButton, HStack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaEdit } from "react-icons/fa";
+import { LuPencil } from "react-icons/lu";
 import { getAvatarColor, getInitials } from "../sidebar/SidebarHelpers";
 
 const PatientInfoBar = ({ patient, onEdit }) => {
@@ -68,7 +68,7 @@ const PatientInfoBar = ({ patient, onEdit }) => {
                         flexShrink={0}
                         _hover={{ bg: "folio.hover", color: "folio.ink" }}
                     >
-                        <FaEdit />
+                        <LuPencil strokeWidth={1.6} />
                     </IconButton>
                 </Tooltip>
             </Flex>

@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Flex, Text, Tabs, HStack, VStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
-import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
+import { LuClock, LuFileText, LuList } from "react-icons/lu";
 import FloatingPanel from "../../common/FloatingPanel";
 import { getTemplateFamilyBase } from "../../../utils/templates/templateService";
 
@@ -106,7 +106,7 @@ const PreviousVisitPanel = ({
           flexShrink={0}
         >
           <Flex align="center" color="folio.accent">
-            <FaClock size="1em" style={{ marginRight: "8px" }} />
+            <LuClock size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
             <Text fontWeight="bold">{t("common.fab.previousVisit")}</Text>
           </Flex>
         </Flex>
@@ -125,7 +125,7 @@ const PreviousVisitPanel = ({
               <Tooltip content={t("previousVisit.summaryTooltip")}>
                 <Tabs.Trigger className="tab-style" value="0">
                   <HStack>
-                    <FaList />
+                    <LuList strokeWidth={1.6} />
                     <Text>{t("settings.admin.tabSummary")}</Text>
                   </HStack>
                 </Tabs.Trigger>
@@ -133,7 +133,7 @@ const PreviousVisitPanel = ({
               <Tooltip content={t("previousVisit.fullNoteTooltip")}>
                 <Tabs.Trigger className="tab-style" value="1">
                   <HStack>
-                    <FaFileAlt />
+                    <LuFileText strokeWidth={1.6} />
                     <Text>{t("previousVisit.fullNote")}</Text>
                   </HStack>
                 </Tabs.Trigger>

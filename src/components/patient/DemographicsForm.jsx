@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { FaFileUpload } from "react-icons/fa";
+import { LuFileUp } from "react-icons/lu";
 import { transcriptionApi } from "../../utils/api/transcriptionApi";
 import { extractFromFile } from "../../utils/helpers/documentExtraction";
 import { areRequiredDemographicsMet } from "../../utils/helpers/validationHelpers";
@@ -183,7 +183,7 @@ const DemographicsForm = ({
                     color="folio.muted"
                     fontSize="sm"
                 >
-                    <Icon asChild><FaFileUpload /></Icon>
+                    <Icon asChild><LuFileUp strokeWidth={1.6} /></Icon>
                     <Text>
                         {isExtracting
                             ? t("patient.readingDocument")

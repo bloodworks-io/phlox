@@ -2,7 +2,7 @@ import React, { forwardRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Flex, Text, Button } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
-import { FaAtom, FaSync } from "react-icons/fa";
+import { LuAtom, LuRefreshCw } from "react-icons/lu";
 
 import FloatingPanel from "../../common/FloatingPanel";
 import { useReasoning } from "../../../utils/hooks/useReasoning";
@@ -61,7 +61,7 @@ const ReasoningPanel = forwardRef(
                         flexShrink={0}
                     >
                         <Flex align="center" color="folio.accent">
-                            <FaAtom size="1em" style={{ marginRight: "8px" }} />
+                            <LuAtom size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
                             <Text fontWeight="bold">{t("common.fab.chartInsights")}</Text>
                         </Flex>
                         {reasoning && (
@@ -70,7 +70,7 @@ const ReasoningPanel = forwardRef(
                                     onClick={handleGenerateReasoning}
                                     loading={loading}
                                     size="xs"
-                                    variant="folioSecondary"><FaSync size="10px" />{t("reasoning.regenerate")}
+                                    variant="folioSecondary"><LuRefreshCw size="10px" strokeWidth={1.6} />{t("reasoning.regenerate")}
                                                                     </Button>
                             </Tooltip>
                         )}

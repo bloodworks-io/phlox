@@ -1,12 +1,12 @@
 import { Alert, Badge, Box, Button, Checkbox, Flex, HStack, IconButton, Input, Spacer, Switch, Text, VStack, Field } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
-    FaPuzzlePiece,
-    FaPlus,
-    FaCheck,
-    FaServer,
-    FaLock,
-} from "react-icons/fa";
+    LuCheck,
+    LuLock,
+    LuPlus,
+    LuPuzzle,
+    LuServer,
+} from "react-icons/lu";
 import { DeleteIcon } from "../common/icons";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -121,7 +121,7 @@ const ToolsSettingsTab = ({ className }) => {
             <Box>
                 <Flex align="center" mb={2}>
                     <HStack>
-                        <FaPuzzlePiece style={{ opacity: 0.7 }} />
+                        <LuPuzzle style={{ opacity: 0.7 }} strokeWidth={1.6} />
                         <Text fontSize="sm" fontWeight="semibold">
                             {t("settings.tools.builtinTitle")}
                         </Text>
@@ -153,12 +153,12 @@ const ToolsSettingsTab = ({ className }) => {
                                             {tool.external && (
                                                 <Tooltip content={t("settings.tools.externalTooltip")}>
                                                     <Box>
-                                                        <FaLock
+                                                        <LuLock
                                                             style={{
                                                                 opacity: 0.6,
                                                                 color: "var(--chakra-colors-folio-warning)",
                                                             }}
-                                                        />
+ strokeWidth={1.6} />
                                                     </Box>
                                                 </Tooltip>
                                             )}
@@ -192,7 +192,7 @@ const ToolsSettingsTab = ({ className }) => {
             {/* Tool Servers Header */}
             <Flex align="center">
                 <HStack>
-                    <FaPuzzlePiece style={{ opacity: 0.7 }} />
+                    <LuPuzzle style={{ opacity: 0.7 }} strokeWidth={1.6} />
                     <Text fontSize="sm" fontWeight="semibold">
                         {t("settings.tools.serversTitle")}
                     </Text>
@@ -210,7 +210,7 @@ const ToolsSettingsTab = ({ className }) => {
                 onClick={() => setShowAddForm(!showAddForm)}
                 size="sm"
                 variant="folioSecondary"
-                alignSelf="flex-start"><FaPlus />{t("settings.tools.addServer")}
+                alignSelf="flex-start"><LuPlus strokeWidth={1.6} />{t("settings.tools.addServer")}
                             </Button>
             {/* Add Server Form */}
             {showAddForm && (
@@ -263,7 +263,7 @@ const ToolsSettingsTab = ({ className }) => {
                                 </Checkbox.Label></Checkbox.Root>
                                 <Tooltip content={t("settings.tools.allowSensitiveTooltip")}>
                                     <Box>
-                                        <FaLock style={{ opacity: 0.6, color: "var(--chakra-colors-folio-warning)" }} />
+                                        <LuLock style={{ opacity: 0.6, color: "var(--chakra-colors-folio-warning)" }} strokeWidth={1.6} />
                                     </Box>
                                 </Tooltip>
                             </HStack>
@@ -295,10 +295,10 @@ const ToolsSettingsTab = ({ className }) => {
             {/* Server List */}
             {toolServers.length === 0 ? (
                 <Box p={6} textAlign="center" className="settings-tab-body">
-                    <FaServer
+                    <LuServer
                         size="1.5em"
                         style={{ opacity: 0.5, marginBottom: "8px" }}
-                    />
+ strokeWidth={1.6} />
                     <Text fontSize="sm" className="settings-meta">
                         {t("settings.tools.emptyTitle")}
                     </Text>
@@ -317,7 +317,7 @@ const ToolsSettingsTab = ({ className }) => {
                         >
                             <Flex justify="space-between" align="center">
                                 <HStack gap={3} flex="1">
-                                    <FaServer style={{ opacity: 0.5 }} />
+                                    <LuServer style={{ opacity: 0.5 }} strokeWidth={1.6} />
                                     <Box flex="1">
                                         <HStack>
                                             <Text
@@ -387,7 +387,7 @@ const ToolsSettingsTab = ({ className }) => {
                                             loading={
                                                 testingServerId === server.id
                                             }
-                                            aria-label={t("settings.tools.testConnection")}><FaCheck /></IconButton>
+                                            aria-label={t("settings.tools.testConnection")}><LuCheck strokeWidth={1.6} /></IconButton>
                                     </Tooltip>
 
                                     <Tooltip
@@ -416,7 +416,7 @@ const ToolsSettingsTab = ({ className }) => {
                                                     !server.allow_sensitive_data,
                                                 )
                                             }
-                                            aria-label={t("settings.tools.togglePhi")}><FaLock /></IconButton>
+                                            aria-label={t("settings.tools.togglePhi")}><LuLock strokeWidth={1.6} /></IconButton>
                                     </Tooltip>
 
                                     <Tooltip

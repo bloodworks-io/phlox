@@ -2,7 +2,7 @@
 import React from "react";
 import { Box, Text, VStack, HStack, IconButton } from "@chakra-ui/react";
 import { DeleteIcon } from "../common/icons";
-import { FIELD_COLORS } from "./FieldEditor";
+import { FIELD_SEMANTIC_COLORS } from "./formBuilderUtils";
 import { useTranslation } from "react-i18next";
 import type { FormField } from "./types";
 
@@ -24,7 +24,7 @@ const FieldList = ({
   const { t } = useTranslation();
   if (!fields.length) {
     return (
-      <Text fontSize="xs" color="overlay0" py="2" textAlign="center">
+      <Text fontSize="xs" color="folio.muted" py="2" textAlign="center">
         {t("forms.noFieldsYet")}
       </Text>
     );
@@ -47,8 +47,8 @@ const FieldList = ({
             borderRadius="sm"
             cursor="pointer"
             minW="0"
-            bg={isSelected ? "surfaceMuted" : undefined}
-            _hover={{ bg: "surfaceMuted" }}
+             bg={isSelected ? "folio.selection" : undefined}
+             _hover={{ bg: "folio.hover" }}
             onClick={() => {
               onSelectField(field.id);
               onJumpToPage(field.page_number);
@@ -59,7 +59,10 @@ const FieldList = ({
               h="7px"
               borderRadius="full"
               flexShrink={0}
-              bg={FIELD_COLORS[field.field_type] || FIELD_COLORS.text}
+               bg={
+                 FIELD_SEMANTIC_COLORS[field.field_type] ||
+                 FIELD_SEMANTIC_COLORS.text
+               }
             />
             <Text
               fontSize="xs"
@@ -73,14 +76,15 @@ const FieldList = ({
             >
               {field.name || t("forms.unnamedField")}
             </Text>
-            <Text fontSize="xs" color="overlay0" flexShrink={0}>
+            <Text fontSize="xs" color="folio.muted" flexShrink={0}>
               {t("forms.pageShort", { page: field.page_number })}
             </Text>
-            <IconButton
-              variant="ghost"
-              size="xs"
-              colorPalette="red"
-              aria-label={t("forms.deleteFieldNamed", {
+             <IconButton
+               variant="ghost"
+               size="xs"
+               color="folio.danger"
+               _hover={{ bg: "folio.dangerSoft" }}
+               aria-label={t("forms.deleteFieldNamed", {
                 name: field.name || t("forms.unnamed"),
               })}
               flexShrink={0}

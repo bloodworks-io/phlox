@@ -4,8 +4,7 @@ import { Field, Box, Text, Flex, HStack, VStack, Input, IconButton, Collapsible,
 import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { toaster } from "@/components/ui/toaster";
 import { ChevronDownIcon, ChevronRightIcon, AddIcon } from "../common/icons";
-import { MdFileUpload } from "react-icons/md";
-import { FaCloudUploadAlt } from "react-icons/fa";
+import { LuCloudUpload, LuFileUp } from "react-icons/lu";
 import { ragApi } from "../../utils/api/ragApi";
 import { extractPdfMetadata } from "../../utils/helpers/pdfExtractHelpers";
 import BulkUploader from "./BulkUploader";
@@ -152,22 +151,22 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }: UploaderProps
         }
     };
     return (
-        <Box className="panels-bg" p="4" borderRadius="sm">
+        <Box className="rag-panel" p="4" borderRadius="sm">
             <Flex align="center" justify="space-between">
                 <Flex align="center">
                     <IconButton
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         aria-label={t("rag.toggleCollapse")}
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         mr="2"
-                        className="collapse-toggle">{isCollapsed ? (
+                        className="rag-collapse-toggle">{isCollapsed ? (
                             <ChevronRightIcon />
                         ) : (
                             <ChevronDownIcon />
                         )}</IconButton>
                     <HStack gap={2}>
-                        <MdFileUpload size="1.2em" />
+                        <LuFileUp size="1.2em" strokeWidth={1.6} />
                         <Text as="h3">{t("rag.uploadDocuments")}</Text>
                     </HStack>
                 </Flex>
@@ -178,18 +177,18 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }: UploaderProps
                         <Tabs.List>
                             <Tabs.Trigger className="tab-style" value="0">
                                 <HStack>
-                                    <MdFileUpload />
+                                    <LuFileUp strokeWidth={1.6} />
                                     <Text>{t("rag.singleUpload")}</Text>
                                 </HStack>
                             </Tabs.Trigger>
                             <Tabs.Trigger className="tab-style" value="1">
                                 <HStack>
-                                    <FaCloudUploadAlt />
+                                    <LuCloudUpload strokeWidth={1.6} />
                                     <Text>{t("rag.bulkUpload")}</Text>
                                 </HStack>
                             </Tabs.Trigger>
                         </Tabs.List>
-                        <Tabs.Content className="floating-main" value="0">
+                        <Tabs.Content className="rag-tab-body" value="0">
                                 <VStack gap={4} align="stretch">
                                     <Input
                                         id="pdf-upload"
@@ -281,7 +280,7 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }: UploaderProps
                                     )}
                                 </VStack>
                             </Tabs.Content>
-                            <Tabs.Content className="floating-main" value="1">
+                            <Tabs.Content className="rag-tab-body" value="1">
                                 <BulkUploader setCollections={setCollections} />
                             </Tabs.Content>
                     </Tabs.Root>

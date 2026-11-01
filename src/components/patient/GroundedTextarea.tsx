@@ -8,7 +8,7 @@ import React, {
 import { useTranslation } from "react-i18next";
 import { Box, Popover, Text } from "@chakra-ui/react";
 import TextareaAutosize from "react-textarea-autosize";
-import { FaCheck } from "react-icons/fa";
+import { LuCheck } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { SpeakerDot, parseSpeakerLine } from "../transcript/SpeakerText";
 import { activeCitations, matchCitationsToLines } from "../../utils/patient/citationMatching";
@@ -371,7 +371,7 @@ const CitationBadge = ({
                   onDismiss(fieldKey, citation.line_index);
                 }}
               >
-                <FaCheck size="10px" />
+                <LuCheck size="10px" strokeWidth={1.6} />
                 {t("patient.citationKeep")}
               </Box>
             )}

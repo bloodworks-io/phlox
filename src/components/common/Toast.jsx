@@ -1,6 +1,6 @@
 import { Box, Flex } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaTimes } from "react-icons/fa";
+import { LuX } from "react-icons/lu";
 import {
     CheckCircleIcon,
     InfoIcon,
@@ -71,7 +71,7 @@ export function CustomToast(props) {
                 _hover={{ opacity: 1 }}
                 aria-label={t("action.close")}
             >
-                <FaTimes size={12} />
+                <LuX size={12} strokeWidth={1.6} />
             </Box>
         </Box>
     );

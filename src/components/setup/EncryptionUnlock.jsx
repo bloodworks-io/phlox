@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Icon, Alert } from "@chakra-ui/react";
+import { Box, Button, Heading, HStack, VStack, Text, Input, Flex, Image, Alert } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { LuEye, LuEyeOff } from "react-icons/lu";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
 
@@ -225,7 +225,9 @@ const EncryptionUnlock = ({ onComplete }) => {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={t("common.togglePasswordVisibility")}
                 >
-                  <Icon as={showPassword ? FaEyeSlash : FaEye} />
+                  {showPassword
+                    ? <LuEyeOff strokeWidth={1.6} />
+                    : <LuEye strokeWidth={1.6} />}
                 </Button>
               </HStack>
             </Box>

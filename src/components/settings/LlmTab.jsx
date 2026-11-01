@@ -18,7 +18,7 @@ import { CheckCircleIcon } from "../common/icons";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { chatApi } from "../../utils/api/chatApi";
-import { FiRefreshCw } from "react-icons/fi";
+import { LuRefreshCw } from "react-icons/lu";
 
 const LlmTab = ({
     config,
@@ -358,7 +358,7 @@ const LlmTab = ({
                                     variant="folioSecondary"
                                     onClick={onOptionsReset}
                                 >
-                                    <FiRefreshCw />
+                                    <LuRefreshCw strokeWidth={1.6} />
                                     {t("settings.resetToDefault")}
                                 </Button>
                             )}

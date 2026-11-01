@@ -1,46 +1,54 @@
 // Styles specifically for the document explorer user interface.
-import { colors } from "../colors";
+const documentExplorerStyles = () => ({
 
-const documentExplorerStyles = (props) => ({
-    ".documentExplorer-style": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textPrimary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        border: "none !important",
-        resize: "none !important",
-        fontSize: "0.9rem !important",
-        borderRadius: "4px !important",
-        overflow: "hidden !important",
-        whiteSpace: "pre-wrap !important",
-        boxShadow: "none !important",
-        transition: "background-color 0.15s ease !important",
+    ".rag-workspace": {
+        backgroundColor: "folio.paper",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioPanel",
     },
-    ".documentExplorer-button": {
-        backgroundColor: "none !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textPrimary} !important`
-                : `${colors.dark.textTertiary} !important`,
+    ".rag-panel": {
+        backgroundColor: "folio.paper",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioPanel",
     },
-    ".filelist-style": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
+    // Preserves the compact 0.7rem tab density and the tab-flush top-left
+    // corner geometry of the former tab body.
+    ".rag-tab-body": {
+        backgroundColor: "folio.canvas",
+        color: "folio.ink",
+        fontWeight: "normal",
+        borderTop: "1px solid",
+        borderTopColor: "folio.line",
+        borderTopLeftRadius: "0",
+        borderTopRightRadius: "md",
+        borderBottomLeftRadius: "md",
+        borderBottomRightRadius: "md",
+        fontSize: "0.7rem",
+    },
+    ".rag-collapse-toggle": {
+        border: "none",
+        borderRadius: "lg",
+        color: "folio.muted",
+        backgroundColor: "folio.paperAlt",
+    },
+    ".rag-row": {
+        backgroundColor: "folio.paperAlt",
+        color: "folio.ink",
+        borderRadius: "folioControl",
+        transition: "background-color 0.15s ease",
+    },
+    ".rag-file-list": {
+        backgroundColor: "folio.canvas",
+        color: "folio.muted",
     },
 });
 
-const _lo = documentExplorerStyles({ colorMode: "light" });
-const _do = documentExplorerStyles({ colorMode: "dark" });
+const _lo = documentExplorerStyles();
+const _do = documentExplorerStyles();
 export const documentExplorerGlobalCss = {};
 for (const sel of Object.keys(_lo)) {
     documentExplorerGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };

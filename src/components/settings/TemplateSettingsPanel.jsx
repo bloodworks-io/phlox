@@ -11,7 +11,7 @@ import {
 import { toaster } from "@/components/ui/toaster";
 import { useTranslation } from "react-i18next";
 import { AddIcon, DeleteIcon, EditIcon, RepeatIcon } from "../common/icons";
-import { FaFileAlt } from "react-icons/fa";
+import { LuFileText } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useState } from "react";
 import TemplateEditor from "../modals/TemplateEditor";
@@ -167,7 +167,7 @@ const TemplateSettingsPanel = () => {
                     borderColor="folio.line"
                     borderRadius="md"
                 >
-                    <FaFileAlt
+                    <LuFileText strokeWidth={1.6}
                         size="1.5em"
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
@@ -197,7 +197,7 @@ const TemplateSettingsPanel = () => {
                             >
                                 <Flex justify="space-between" align="center">
                                     <HStack gap={3}>
-                                        <FaFileAlt
+                                        <LuFileText strokeWidth={1.6}
                                             style={{ opacity: 0.5 }}
                                         />
                                         <Text fontWeight="bold" fontSize="sm">

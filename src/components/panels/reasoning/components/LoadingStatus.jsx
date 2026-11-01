@@ -1,24 +1,24 @@
 import React from "react";
 import { Flex, Spinner, Text, VStack } from "@chakra-ui/react";
 import {
-    FaWikipediaW,
-    FaBookMedical,
-    FaHistory,
-    FaDatabase,
-    FaCog,
-} from "react-icons/fa";
+    LuBookOpen,
+    LuBriefcaseMedical,
+    LuCog,
+    LuDatabase,
+    LuHistory,
+} from "react-icons/lu";
 
 const getStatusIcon = (status) => {
     const lower = status.toLowerCase();
     if (lower.includes("wikipedia") || lower.includes("wiki"))
-        return FaWikipediaW;
+        return LuBookOpen;
     if (lower.includes("pubmed") || lower.includes("literature"))
-        return FaBookMedical;
+        return LuBriefcaseMedical;
     if (lower.includes("encounter"))
-        return FaHistory;
+        return LuHistory;
     if (lower.includes("guideline"))
-        return FaDatabase;
-    return FaCog; // Default / general
+        return LuDatabase;
+    return LuCog; // Default / general
 };
 
 export const LoadingStatus = ({ status }) => {
@@ -36,7 +36,7 @@ export const LoadingStatus = ({ status }) => {
             justify="center"
             align="center"
             zIndex={2}
-            bg="scrim"
+            bg="folio.paper/90"
             flexDirection="column"
             gap={4}
             className="anim-fade-scale"
@@ -73,9 +73,9 @@ export const LoadingOverlay = () => {
             justify="center"
             align="center"
             zIndex={2}
-            bg="scrimSoft"
+            bg="folio.paper/70"
         >
-            <Spinner size="lg" />
+            <Spinner size="lg" color="folio.accent" borderWidth="3px" />
         </Flex>
     );
 };

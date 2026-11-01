@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Flex, Text, NativeSelect } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
-import { FaEnvelope, FaMicrophone, FaMagic } from "react-icons/fa";
+import { LuMail, LuMic, LuWandSparkles } from "react-icons/lu";
 
 import LetterEditor from "./LetterEditor";
 import TemplateSelector from "./TemplateSelector";
@@ -69,7 +69,7 @@ const LetterPanel = ({
          >
            <Flex align="center" color="folio.accent">
 
-            <FaEnvelope size="1em" style={{ marginRight: "8px" }} />
+            <LuMail size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
             <Text>{t("common.fab.patientLetter")}</Text>
           </Flex>
 
@@ -84,14 +84,14 @@ const LetterPanel = ({
             <Box>
               <Flex alignItems="center">
                 {isDictateMode ? (
-                  <FaMicrophone
+                  <LuMic strokeWidth={1.6}
                     style={{ marginRight: "8px" }}
-                    className="pill-box-icons"
+                    className="settings-meta"
                   />
                 ) : (
-                  <FaMagic
+                  <LuWandSparkles strokeWidth={1.6}
                     style={{ marginRight: "8px" }}
-                    className="pill-box-icons"
+                    className="settings-meta"
                   />
                 )}
                 <NativeSelect.Root>

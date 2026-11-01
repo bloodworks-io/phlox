@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Flex, IconButton, Text, HStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
-import { FaSync, FaClock, FaCogs, FaCheck } from "react-icons/fa";
+import { LuCheck, LuClock, LuRefreshCw, LuSettings2 } from "react-icons/lu";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 import SpeakerText from "../../transcript/SpeakerText";
 
@@ -112,7 +112,7 @@ const TranscriptionPanel = ({
               }
             }}
           >
-            <FaCheck
+            <LuCheck strokeWidth={1.6}
               size="32px"
               color="var(--chakra-colors-folio-success)"
               opacity={0.8}
@@ -147,7 +147,7 @@ const TranscriptionPanel = ({
                     placement: "top"
                   }}>
                     <HStack gap={1}>
-                      <FaClock size="8px" />
+                      <LuClock size="8px" strokeWidth={1.6} />
                       <Text>{t("transcription.durationSeconds", { duration: transcriptionDuration })}</Text>
                     </HStack>
                   </Tooltip>
@@ -155,7 +155,7 @@ const TranscriptionPanel = ({
                     placement: "top"
                   }}>
                     <HStack gap={1}>
-                      <FaCogs size="8px" />
+                      <LuSettings2 size="8px" strokeWidth={1.6} />
                       <Text>{t("transcription.durationSeconds", { duration: processDuration })}</Text>
                     </HStack>
                   </Tooltip>
@@ -176,7 +176,7 @@ const TranscriptionPanel = ({
                   _hover={{ opacity: 1 }}>{isTranscribing ? (
                     <Spinner size="xs" />
                   ) : (
-                    <FaSync size="12px" />
+                    <LuRefreshCw size="12px" strokeWidth={1.6} />
                   )}</IconButton>
               </Tooltip>
             </Flex>

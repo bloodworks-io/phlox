@@ -1,6 +1,6 @@
 import { Spinner } from "@chakra-ui/react";
 import { CheckIcon, WarningIcon } from "../common/icons";
-import { FaRegClock } from "react-icons/fa";
+import { LuClock } from "react-icons/lu";
 
 // Shared presentation for companion session rows: the status icon and the
 // one-line detail string used by the settings tab and the import modal.
@@ -11,7 +11,7 @@ export const SessionStatusIcon = ({ status }) => {
     if (status === "imported")
         return <CheckIcon color="folio.success" boxSize={3} />;
     if (status === "received")
-        return <FaRegClock color="folio.info" boxSize={3} />;
+        return <LuClock color="folio.info" boxSize={3} strokeWidth={1.6} />;
     return <WarningIcon color="folio.danger" boxSize={3} />;
 };
 

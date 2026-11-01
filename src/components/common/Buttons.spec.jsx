@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { cleanup, screen } from "@testing-library/react";
 import {
   PrimaryButton,
@@ -6,13 +9,11 @@ import {
   SuccessButton,
   DangerButton,
   WarningButton,
-  GreenButton,
-  RedButton,
-  GreyButton,
-  SettingsButton,
-  NavButton,
 } from "./Buttons";
 import { emotionStylesFor, renderWithProviders } from "../../test/utils";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const readSource = () => readFileSync(path.resolve(here, "Buttons.jsx"), "utf8");
 
 afterEach(cleanup);
 
@@ -58,15 +59,30 @@ describe("semantic Folio button wrappers", () => {
   });
 });
 
-describe("legacy color-named wrappers stay available for compatibility", () => {
-  it.each([
-    ["GreenButton", GreenButton, "green-button"],
-    ["RedButton", RedButton, "red-button"],
-    ["GreyButton", GreyButton, "grey-button"],
-    ["SettingsButton", SettingsButton, "grey-button"],
-    ["NavButton", NavButton, "nav-button"],
-  ])("%s keeps its legacy class export", (_name, Wrapper, className) => {
-    renderWithProviders(<Wrapper>Legacy</Wrapper>);
-    expect(screen.getByRole("button")).toHaveClass(className);
+describe("legacy color-named wrappers are retired", () => {
+  it("exports only the semantic Folio wrappers", () => {
+    const buttons = readSource();
+    for (const legacy of [
+      "GreenButton",
+      "RedButton",
+      "GreyButton",
+      "SettingsButton",
+      "NavButton",
+      "green-button",
+      "red-button",
+      "grey-button",
+      "nav-button",
+    ]) {
+      expect(buttons).not.toContain(legacy);
+    }
+    for (const semantic of [
+      "PrimaryButton",
+      "SecondaryButton",
+      "SuccessButton",
+      "DangerButton",
+      "WarningButton",
+    ]) {
+      expect(buttons).toContain(semantic);
+    }
   });
 });

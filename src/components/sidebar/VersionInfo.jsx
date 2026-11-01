@@ -10,10 +10,16 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useThemePreference } from "@/components/ui/color-mode";
 import { useTranslation } from "react-i18next";
-import { FaMoon, FaSun, FaSignOutAlt } from "react-icons/fa";
-import { LuMonitor } from "react-icons/lu";
-import { TbVersions } from "react-icons/tb";
-import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
+
+import {
+    LuCheckCheck,
+    LuHistory,
+    LuMonitor,
+    LuMoon,
+    LuSun,
+    LuLogOut,
+    LuTriangleAlert,
+} from "react-icons/lu";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { authApi } from "../../utils/api/authApi";
 import { isTauri, clearStoredToken } from "../../utils/helpers/apiConfig";
@@ -92,7 +98,7 @@ const StatusIcon = ({ serverStatus, isCollapsed }) => {
         variant="subtle"
         p={1}
       >
-        {allServicesUp ? <BsCheck2All /> : <BsExclamationTriangle />}
+        {allServicesUp ? <LuCheckCheck strokeWidth={1.6} /> : <LuTriangleAlert strokeWidth={1.6} />}
       </Badge>
     </Tooltip>
   );
@@ -154,7 +160,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
               label={t("sidebar.versionInfoTooltip")}
               onClick={onOpen}
             >
-              <TbVersions />
+              <LuHistory strokeWidth={1.6} />
             </SidebarControlButton>
           </Tooltip>
 
@@ -164,7 +170,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                 label={t("sidebar.signOut")}
                 onClick={handleLogout}
               >
-                <FaSignOutAlt />
+                <LuLogOut strokeWidth={1.6} />
               </SidebarControlButton>
             </Tooltip>
           )}
@@ -187,7 +193,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
               }
               onClick={toggleColorMode}
             >
-              {colorMode === "light" ? <FaMoon /> : <FaSun />}
+              {colorMode === "light" ? <LuMoon strokeWidth={1.6} /> : <LuSun strokeWidth={1.6} />}
             </SidebarControlButton>
           </Tooltip>
 
@@ -240,7 +246,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                 fontSize="lg"
                 onClick={handleLogout}
               >
-                <FaSignOutAlt />
+                <LuLogOut strokeWidth={1.6} />
               </SidebarControlButton>
             </Tooltip>
           )}
@@ -261,7 +267,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
               fontSize="lg"
               onClick={toggleColorMode}
             >
-              {colorMode === "light" ? <FaMoon /> : <FaSun />}
+              {colorMode === "light" ? <LuMoon strokeWidth={1.6} /> : <LuSun strokeWidth={1.6} />}
             </SidebarControlButton>
           </Tooltip>
 

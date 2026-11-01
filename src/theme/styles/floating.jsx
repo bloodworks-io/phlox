@@ -1,7 +1,5 @@
 // Styles for the chat interface.
-import { colors } from "../colors";
-
-const floatingStyles = (props) => ({
+const floatingStyles = () => ({
     ".floating-panel": {
         backgroundColor: "folio.paper",
         borderRadius: "folioOverlay",
@@ -17,9 +15,7 @@ const floatingStyles = (props) => ({
         fontWeight: "normal",
         fontSize: "0.7rem",
     },
-    // Clinical Folio settings tab body. Scoped: `.floating-main` remains the
-    // legacy surface for RAG consumers outside Settings. Preserves the
-    // compact 0.7rem density and the tab-flush top-left corner geometry.
+
     ".settings-tab-body": {
         backgroundColor: "folio.canvas",
         color: "folio.ink !important",
@@ -32,8 +28,6 @@ const floatingStyles = (props) => ({
         borderBottomRightRadius: "md !important",
         fontSize: "0.7rem !important",
     },
-    // Clinical Folio settings collapse toggle. Scoped: the global
-    // `.collapse-toggle` stays legacy for RAG consumers outside Settings.
     ".settings-collapse-toggle": {
         border: "none !important",
         borderRadius: "lg !important",
@@ -44,21 +38,6 @@ const floatingStyles = (props) => ({
         backgroundColor: "folio.paperAlt",
         borderColor: "folio.line",
         color: "folio.ink",
-    },
-    ".floating-main": {
-        backgroundColor:
-            props.colorMode === "light" ? colors.light.base : colors.dark.crust,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
-        fontWeight: "normal",
-
-        borderTopLeftRadius: "0 !important",
-        borderTopRightRadius: "md !important",
-        borderBottomLeftRadius: "md !important",
-        borderBottomRightRadius: "md !important",
-        fontSize: "0.7rem !important",
     },
     ".chat-suggestions": {
         backgroundColor: "folio.paperAlt",
@@ -160,18 +139,6 @@ const floatingStyles = (props) => ({
     ".thinking-block-text": {
         fontSize: "0.9rem !important",
     },
-    ".collapse-toggle": {
-        border: "none !important",
-        borderRadius: "lg !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.crust} !important`
-                : `${colors.dark.base} !important`,
-    },
     ".chat-disclosure-icon": {
         color: "folio.muted !important",
         backgroundColor: "transparent !important",
@@ -244,7 +211,7 @@ const floatingStyles = (props) => ({
         fontSize: "0.9rem !important",
         border: "1px solid !important",
         borderColor: "folio.line !important",
-        color: "folio.muted !important",
+        color: "folio.ink !important",
         transition:
             "background-color 160ms ease, border-color 160ms ease, color 160ms ease",
         _hover: {
@@ -256,8 +223,8 @@ const floatingStyles = (props) => ({
     },
 });
 
-const _lo = floatingStyles({ colorMode: "light" });
-const _do = floatingStyles({ colorMode: "dark" });
+const _lo = floatingStyles();
+const _do = floatingStyles();
 export const floatingGlobalCss = {};
 for (const sel of Object.keys(_lo)) {
     floatingGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };

@@ -13,7 +13,7 @@ import {
     Icon,
 } from "@chakra-ui/react";
 import { ArrowUpIcon, AttachmentIcon, CloseIcon } from "../common/icons";
-import { FaFilePdf } from "react-icons/fa";
+import { LuFileText } from "react-icons/lu";
 
 const VALID_IMAGE_TYPES = [
     "image/png",
@@ -195,7 +195,7 @@ const DashboardChatInput = ({
                                 flexShrink={0}
                                 asChild
                             >
-                                <FaFilePdf />
+                                <LuFileText strokeWidth={1.6} />
                             </Icon>
                         )}
                         <Text fontSize="xs" flex="1" minW="0" truncate>

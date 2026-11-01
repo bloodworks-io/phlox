@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
-import { FaServer } from "react-icons/fa";
+import { LuServer } from "react-icons/lu";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
 
@@ -142,7 +142,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           textAlign="center"
         >
           <VStack gap={6}>
-            <Icon boxSize={12} color="folio.danger" asChild><FaServer /></Icon>
+            <Icon boxSize={12} color="folio.danger" asChild><LuServer strokeWidth={1.6} /></Icon>
             <Heading
               as="h1"
               color="folio.ink"

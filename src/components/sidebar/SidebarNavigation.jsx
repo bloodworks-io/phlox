@@ -1,7 +1,7 @@
 import { Box, VStack, Flex, Icon, Text, Badge } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
-import { FaTasks, FaNotesMedical, FaBrain, FaCog } from "react-icons/fa";
+import { LuBrain, LuCog, LuListChecks, LuNotebookText } from "react-icons/lu";
 import { useLocation } from "react-router";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
 
@@ -131,7 +131,7 @@ const SidebarNavigation = ({
             >
                 <Box>
                     <NavButton
-                        icon={FaNotesMedical}
+                        icon={LuNotebookText}
                         label={t("nav.newNote.label")}
                         onClick={onNewPatient}
                         isCollapsed={isCollapsed}
@@ -147,7 +147,7 @@ const SidebarNavigation = ({
             >
                 <Box>
                     <NavButton
-                        icon={FaTasks}
+                        icon={LuListChecks}
                         label={t("nav.allJobs.label")}
                         onClick={() => handleNavigation("/outstanding-jobs")}
                         isCollapsed={isCollapsed}
@@ -166,7 +166,7 @@ const SidebarNavigation = ({
                 >
                     <Box mb={isCollapsed ? "1px" : "0px"}>
                         <NavButton
-                            icon={FaBrain}
+                            icon={LuBrain}
                             label={t("page.rag.title")}
                             onClick={() => handleNavigation("/rag")}
                             isCollapsed={isCollapsed}
@@ -182,7 +182,7 @@ const SidebarNavigation = ({
             >
                 <Box>
                     <NavButton
-                        icon={FaCog}
+                        icon={LuCog}
                         label={t("page.settings.title")}
                         onClick={() => handleNavigation("/settings")}
                         isCollapsed={isCollapsed}

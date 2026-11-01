@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { VStack, Text, Button } from "@chakra-ui/react";
-import { FaAtom } from "react-icons/fa";
+import { LuAtom } from "react-icons/lu";
 
 // Empty state component shown when no reasoning has been generated yet
 export const EmptyState = ({ loading, status, onGenerate }) => {
@@ -20,7 +20,7 @@ export const EmptyState = ({ loading, status, onGenerate }) => {
                 loading={loading}
                 loadingText={status || t("reasoning.generating")}
                 size="sm"
-                variant="folioPrimary"><FaAtom />{t("reasoning.generate")}
+                variant="folioPrimary"><LuAtom strokeWidth={1.6} />{t("reasoning.generate")}
                             </Button>
         </VStack>
     );

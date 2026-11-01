@@ -27,7 +27,7 @@ const selectorBlock = (source, selector) => {
 };
 
 describe("Clinical Folio consultation-core theme mapping", () => {
-    it("adds scoped Folio surfaces without replacing broad shared panel classes", () => {
+    it("adds scoped Folio surfaces without broad shared panel classes", () => {
         const patientInfo = readSource("src/theme/styles/patientInfo.jsx");
         const panel = readSource("src/theme/styles/panel.jsx");
 
@@ -40,8 +40,8 @@ describe("Clinical Folio consultation-core theme mapping", () => {
             expect(patientInfo).toContain(`"${selector}"`);
         }
 
-        expect(patientInfo).toContain('".pill-box-icons"');
-        expect(panel).toContain('".panels-bg"');
+        expect(patientInfo).toContain('".settings-meta"');
+        expect(panel).toContain('".panel-header"');
     });
 
     it("maps the consultation note to Folio paper, hairlines, and flat fields", () => {

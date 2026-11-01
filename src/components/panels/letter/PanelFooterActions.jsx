@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Flex, Button, Spinner } from "@chakra-ui/react";
 import { RepeatIcon, CopyIcon, CheckIcon } from "../../common/icons";
-import { FaSave } from "react-icons/fa";
+import { LuSave } from "react-icons/lu";
 
 const PanelFooterActions = ({
     handleGenerateLetter,
@@ -33,7 +33,7 @@ const PanelFooterActions = ({
                 };
             default:
                 return {
-                    leftIcon: <FaSave />,
+                    leftIcon: <LuSave strokeWidth={1.6} />,
                     children: t("letter.save"),
                 };
         }

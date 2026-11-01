@@ -1,32 +1,8 @@
 // Styles for the patient information bar component
-import { colors } from "../colors";
-
-const patientInfoStyles = (props) => ({
-    ".pill-box": {
-        display: "inline-flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.secondary} !important`
-                : `${colors.dark.secondary} !important`,
-        border: "none",
-        padding: "10px 20px",
-        borderRadius: "lg",
-    },
-    ".pill-box-icons": {
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textQuaternary} !important`,
-        minWidth: "16px",
-        marginRight: "8px",
-        flexShrink: 0, // Prevent icon from shrinking
-    },
-
-    // Clinical Folio settings metadata/icons. Scoped: `.pill-box-icons`
-    // stays legacy for splash/panel/scribe consumers outside Settings.
-    // Layout metrics mirror the legacy class to preserve geometry.
+const patientInfoStyles = () => ({
+    // Shared Folio metadata/icons class (settings, splash, letter panel).
+    // Layout metrics mirror the legacy pill metadata class to preserve
+    // geometry.
     ".settings-meta": {
         color: "folio.muted !important",
         minWidth: "16px",
@@ -34,8 +10,6 @@ const patientInfoStyles = (props) => ({
         flexShrink: 0, // Prevent icon from shrinking
     },
 
-    // Clinical Folio consultation surfaces. These are deliberately scoped:
-    // `.panels-bg` remains the legacy surface for RAG/settings/PDF consumers.
     ".patient-context-bar": {
         backgroundColor: "folio.paper",
         color: "folio.ink",
@@ -86,6 +60,28 @@ const patientInfoStyles = (props) => ({
             boxShadow: "0 0 0 1px var(--chakra-colors-folio-focus) !important",
         },
     },
+    // Shared Folio file input surface for raw <input type="file"> controls
+    // (PDF template upload/replace). Keeps native picker behavior and the
+    // previous full-width 0.875rem metrics.
+    ".file-input-style": {
+        display: "block",
+        width: "100%",
+        fontSize: "0.875rem",
+        color: "folio.ink",
+        backgroundColor: "folio.canvas",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioControl",
+        padding: "6px",
+        "&::file-selector-button": {
+            color: "folio.muted",
+            backgroundColor: "folio.paperAlt",
+            border: "1px solid",
+            borderColor: "folio.line",
+            borderRadius: "folioControl",
+            marginRight: "8px",
+        },
+    },
     ".input-style.quick-chat-title-input": {
         paddingLeft: "32px !important",
         borderRadius: "folioControl !important",
@@ -111,8 +107,8 @@ const patientInfoStyles = (props) => ({
     },
 });
 
-const _lo = patientInfoStyles({ colorMode: "light" });
-const _do = patientInfoStyles({ colorMode: "dark" });
+const _lo = patientInfoStyles();
+const _do = patientInfoStyles();
 export const patientInfoGlobalCss = {};
 for (const sel of Object.keys(_lo)) {
     patientInfoGlobalCss[sel] = { _light: _lo[sel], _dark: _do[sel] };

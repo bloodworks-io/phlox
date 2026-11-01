@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 
 
 import { AddIcon, DeleteIcon, EditIcon } from "../common/icons";
-import { FaEnvelopeOpenText } from "react-icons/fa";
+import { LuMailOpen } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
 import { settingsService } from "../../utils/settings/settingsUtils";
@@ -135,7 +135,7 @@ const LetterTemplatesPanel = () => {
                     borderColor="folio.line"
                     borderRadius="md"
                 >
-                    <FaEnvelopeOpenText
+                    <LuMailOpen strokeWidth={1.6}
                         size="1.5em"
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
@@ -160,7 +160,7 @@ const LetterTemplatesPanel = () => {
                             >
                                 <Flex justify="space-between" align="center">
                                     <HStack gap={3} align="flex-start">
-                                        <FaEnvelopeOpenText
+                                        <LuMailOpen strokeWidth={1.6}
                                             style={{
                                                 opacity: 0.5,
                                                 marginTop: "2px",

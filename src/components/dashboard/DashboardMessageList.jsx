@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useColorMode } from "../ui/color-mode";
 import { Box, Flex, VStack, HStack, Text, Spinner, Badge, Icon, Image } from "@chakra-ui/react";
 import { AttachmentIcon } from "../common/icons";
-import { FaFilePdf, FaFileImage } from "react-icons/fa";
+import { LuFileImage, LuFileText } from "react-icons/lu";
 import MarkdownRenderer from "../common/MarkdownRenderer";
 import ArtifactCard from "../common/ArtifactCard";
 import {
@@ -164,9 +164,9 @@ const DashboardMessageList = ({
                                                             <Icon
                                                                 as={
                                                                     isPdf
-                                                                        ? FaFilePdf
+                                                                        ? LuFileText
                                                                         : isImage
-                                                                          ? FaFileImage
+                                                                          ? LuFileImage
                                                                           : AttachmentIcon
                                                                 }
                                                                 mr={1}

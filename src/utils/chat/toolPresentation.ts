@@ -1,11 +1,11 @@
 import {
-    FaTools,
-    FaWikipediaW,
-    FaBookMedical,
-    FaSearch,
-    FaFileAlt,
-    FaRegCommentDots,
-} from "react-icons/fa";
+    LuBookOpen,
+    LuBriefcaseMedical,
+    LuFileText,
+    LuMessageCircle,
+    LuSearch,
+    LuWrench,
+} from "react-icons/lu";
 
 export const getToolName = (toolBlock) => {
     const attrs = toolBlock?.attrs || {};
@@ -24,7 +24,7 @@ export const getToolPresentation = (toolName = "") => {
 
     if (normalized.includes("wiki")) {
         return {
-            icon: FaWikipediaW,
+            icon: LuBookOpen,
             label: "Wikipedia",
             colorScheme: "blue",
             color: "folio.info",
@@ -35,7 +35,7 @@ export const getToolPresentation = (toolName = "") => {
 
     if (normalized.includes("pubmed")) {
         return {
-            icon: FaBookMedical,
+            icon: LuBriefcaseMedical,
             label: "PubMed",
             colorScheme: "teal",
             color: "folio.info",
@@ -46,7 +46,7 @@ export const getToolPresentation = (toolName = "") => {
 
     if (normalized.includes("literature")) {
         return {
-            icon: FaSearch,
+            icon: LuSearch,
             label: "Literature search",
             colorScheme: "green",
             color: "folio.success",
@@ -57,7 +57,7 @@ export const getToolPresentation = (toolName = "") => {
 
     if (normalized.includes("transcript")) {
         return {
-            icon: FaFileAlt,
+            icon: LuFileText,
             label: "Transcript",
             colorScheme: "orange",
             color: "folio.warning",
@@ -68,7 +68,7 @@ export const getToolPresentation = (toolName = "") => {
 
     if (normalized.includes("direct_response")) {
         return {
-            icon: FaRegCommentDots,
+            icon: LuMessageCircle,
             label: "Direct response",
             colorScheme: "gray",
             color: "folio.muted",
@@ -78,7 +78,7 @@ export const getToolPresentation = (toolName = "") => {
     }
 
     return {
-        icon: FaTools,
+        icon: LuWrench,
         label: "Tool",
         colorScheme: "purple",
         color: "folio.accent",

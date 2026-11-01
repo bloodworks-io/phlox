@@ -1,8 +1,11 @@
 import type { Page, Route } from "@playwright/test";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import {
     basicPatients,
     detailedPatients,
     outstandingPatients,
+    PREVIOUS_DATE,
+    SEED_DATE,
     seedGlobalConfig,
     seedLetterTemplates,
     seedOptions,
@@ -42,6 +45,36 @@ const eventStream = (route: Route, events: unknown[]) =>
         status: 200,
         contentType: "text/event-stream",
         body: events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""),
+    });
+
+let seedFormPdfCache: Buffer | null = null;
+
+/**
+ * Deterministic one-page letter PDF for the seed form template. Dates are
+ * pinned so repeated runs produce identical bytes.
+ */
+export async function buildSeedFormPdf(): Promise<Buffer> {
+    if (seedFormPdfCache) return seedFormPdfCache;
+    const doc = await PDFDocument.create();
+    doc.setCreator("Phlox browser seed");
+    doc.setProducer("Phlox browser seed");
+    doc.setTitle("Specialist referral");
+    doc.setCreationDate(new Date(`${PREVIOUS_DATE}T09:00:00Z`));
+    doc.setModificationDate(new Date(`${PREVIOUS_DATE}T09:00:00Z`));
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const page = doc.addPage([612, 792]);
+    page.drawText("Specialist referral", { x: 72, y: 720, size: 16, font });
+    page.drawText("Patient name", { x: 72, y: 646, size: 10, font });
+    page.drawText("Urgent", { x: 92, y: 503, size: 10, font });
+    seedFormPdfCache = Buffer.from(await doc.save());
+    return seedFormPdfCache;
+}
+
+const pdfResponse = async (route: Route) =>
+    route.fulfill({
+        status: 200,
+        contentType: "application/pdf",
+        body: await buildSeedFormPdf(),
     });
 
 const seedPatientForVariant = (variant: SeedVariant) => {
@@ -231,8 +264,31 @@ export async function installApiMocks(
             );
         }
 
-        if (method === "GET" && path === "/api/rag/collection_files/Clinical Guidelines") {
+        if (
+            method === "GET" &&
+            decodeURIComponent(path) ===
+                "/api/rag/collection_files/Clinical Guidelines"
+        ) {
             return jsonResponse(route, seedRagCollectionFiles);
+        }
+
+        if (method === "PATCH" && path === "/api/rag/update-document-metadata") {
+            return jsonResponse(route, {});
+        }
+
+        if (method === "DELETE" && path === "/api/rag/delete-file") {
+            return jsonResponse(route, {});
+        }
+
+        if (
+            method === "DELETE" &&
+            decodeURIComponent(path).startsWith("/api/rag/delete-collection/")
+        ) {
+            return jsonResponse(route, {});
+        }
+
+        if (method === "GET" && path.startsWith("/api/rag/download-pdf/")) {
+            return pdfResponse(route);
         }
 
         if (method === "GET" && path === "/api/pdf-forms/templates") {
@@ -241,6 +297,42 @@ export async function installApiMocks(
 
         if (method === "GET" && path === "/api/pdf-forms/templates/seed-form") {
             return jsonResponse(route, seedPdfFormTemplate);
+        }
+
+        if (
+            method === "GET" &&
+            path.startsWith("/api/pdf-forms/templates/") &&
+            path.endsWith("/pdf")
+        ) {
+            return pdfResponse(route);
+        }
+
+        if (method === "POST" && path === "/api/pdf-forms/templates") {
+            return jsonResponse(route, {
+                id: "uploaded-form",
+                name: "Uploaded form",
+                pdf_file_name: "uploaded.pdf",
+                page_count: 1,
+                page_heights: [792],
+                created_at: `${SEED_DATE}T10:00:00`,
+                updated_at: `${SEED_DATE}T10:00:00`,
+                fields: [],
+            });
+        }
+
+        if (method === "PUT" && path === "/api/pdf-forms/templates/seed-form/pdf") {
+            return jsonResponse(route, {
+                ...seedPdfFormTemplate,
+                pdf_file_name: "replacement.pdf",
+                updated_at: `${SEED_DATE}T10:00:00`,
+            });
+        }
+
+        if (method === "PUT" && path === "/api/pdf-forms/templates/seed-form/fields") {
+            return jsonResponse(route, {
+                ...seedPdfFormTemplate,
+                updated_at: `${SEED_DATE}T10:00:00`,
+            });
         }
 
         if (method === "POST" && path === "/api/chat") {

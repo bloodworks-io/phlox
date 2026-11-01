@@ -2,11 +2,11 @@ import { Box, Button, Flex, Input, Spinner, Text, VStack, Alert, ButtonGroup, Ba
 import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import {
-  FaFileUpload,
-  FaRedo,
-  FaExclamationTriangle,
-  FaRedoAlt,
-} from "react-icons/fa";
+  LuFileUp,
+  LuRedo2,
+  LuRotateCcw,
+  LuTriangleAlert,
+} from "react-icons/lu";
 import { CheckIcon } from "../../common/icons";
 import { SecondaryButton } from "../../common/Buttons";
 import { useState } from "react";
@@ -205,7 +205,7 @@ const DocumentPanel = ({
         flexShrink={0}
       >
         <Flex align="center">
-          <FaFileUpload size="1em" style={{ marginRight: "8px" }} />
+          <LuFileUp size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
           <Text fontWeight="bold">{t("document.title")}</Text>
         </Flex>
       </Flex>
@@ -232,7 +232,7 @@ const DocumentPanel = ({
             css={{ animationDuration: "0.2s" }}
           >
             <Flex mb={2}>
-              <Alert.Indicator mr={2} asChild><FaExclamationTriangle /></Alert.Indicator>
+              <Alert.Indicator mr={2} asChild><LuTriangleAlert strokeWidth={1.6} /></Alert.Indicator>
               <Alert.Title>{t("document.processingError")}</Alert.Title>
             </Flex>
             <Alert.Description maxWidth="lg">
@@ -243,10 +243,10 @@ const DocumentPanel = ({
                 onClick={retryProcessing}
                 variant="folioPrimary"
                 disabled={isProcessing}
-                size="sm"><FaRedoAlt />{isProcessing ? <Spinner size="sm" mr={2} /> : null}
+                size="sm"><LuRedo2 strokeWidth={1.6} />{isProcessing ? <Spinner size="sm" mr={2} /> : null}
                 {t("document.resend")}
               </Button>
-              <Button onClick={startNewUpload} variant="folioSecondary" size="sm"><FaRedo />{t("document.newDocument")}
+              <Button onClick={startNewUpload} variant="folioSecondary" size="sm"><LuRotateCcw strokeWidth={1.6} />{t("document.newDocument")}
                               </Button>
             </ButtonGroup>
           </Alert.Root>
@@ -284,7 +284,7 @@ const DocumentPanel = ({
               />
               <SecondaryButton
                 px="6"
-                leftIcon={<FaFileUpload />}
+                leftIcon={<LuFileUp strokeWidth={1.6} />}
                 onClick={() =>
                   document.getElementById("doc-file-upload").click()
                 }
@@ -316,7 +316,7 @@ const DocumentPanel = ({
               <Text fontWeight="bold" fontSize="sm">
                 {docFileName}
               </Text>
-              <Button onClick={startNewUpload} size="xs" variant="folioSecondary"><FaFileUpload />{t("forms.new")}
+              <Button onClick={startNewUpload} size="xs" variant="folioSecondary"><LuFileUp strokeWidth={1.6} />{t("forms.new")}
                               </Button>
             </Flex>
             <Separator my={2} />

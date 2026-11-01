@@ -17,7 +17,7 @@ import {
     Dialog,
     Portal,
 } from "@chakra-ui/react";
-import { FaCheckDouble, FaPlus, FaTimes } from "react-icons/fa";
+import { LuCheckCheck, LuPlus, LuX } from "react-icons/lu";
 import useSWRMutation from "swr/mutation";
 import { patientApi } from "../../utils/api/patientApi";
 import { PrimaryButton } from "../common/Buttons";
@@ -162,7 +162,7 @@ const WrapUpModal = ({
                     <Dialog.Content className="modal-style">
                         <Dialog.Header>
                             <HStack>
-                                <FaCheckDouble />
+                                <LuCheckCheck strokeWidth={1.6} />
                                 <Heading as="h3" size="xl" fontFamily="heading">
                                     {t("modal.wrapUp.title")}
                                 </Heading>
@@ -255,7 +255,7 @@ const WrapUpModal = ({
                                                         removeItem(idx)
                                                     }
                                                 >
-                                                    <FaTimes />
+                                                    <LuX strokeWidth={1.6} />
                                                 </IconButton>
                                             </HStack>
                                         ))}
@@ -282,7 +282,7 @@ const WrapUpModal = ({
                                             size="sm"
                                             onClick={addTask}
                                         >
-                                            <FaPlus />
+                                            <LuPlus strokeWidth={1.6} />
                                         </IconButton>
                                     </HStack>
                                 </Section>
@@ -339,7 +339,7 @@ const WrapUpModal = ({
                                                                         )
                                                                     }
                                                                 >
-                                                                    <FaPlus />
+                                                                    <LuPlus strokeWidth={1.6} />
                                                                 </IconButton>
                                                             </HStack>
                                                         ),

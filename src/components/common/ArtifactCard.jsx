@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Box, HStack, Text, Button, Link } from "@chakra-ui/react";
 import { ExternalLinkIcon, DownloadIcon } from "./icons";
-import { FaFilePdf, FaFileImage, FaFile } from "react-icons/fa";
+import { LuFile, LuFileImage, LuFileText } from "react-icons/lu";
 
 const formatFileSize = (bytes) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -11,9 +11,9 @@ const formatFileSize = (bytes) => {
 };
 
 const getArtifactIcon = (mimeType = "") => {
-    if (mimeType.startsWith("image/")) return FaFileImage;
-    if (mimeType === "application/pdf") return FaFilePdf;
-    return FaFile;
+    if (mimeType.startsWith("image/")) return LuFileImage;
+    if (mimeType === "application/pdf") return LuFileText;
+    return LuFile;
 };
 
 const ArtifactCard = ({ artifact }) => {

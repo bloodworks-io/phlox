@@ -7,8 +7,8 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import {
-  FaMicrophone, FaDatabase, FaStar, FaExclamationTriangle, FaMemory, FaMicrochip,
-} from "react-icons/fa";
+  LuDatabase, LuMemoryStick, LuMic, LuMicrochip, LuStar, LuTriangleAlert,
+} from "react-icons/lu";
 import { DownloadIcon, CheckIcon, InfoIcon, ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
 import { PrimaryButton, SuccessButton } from "../common/Buttons";
 import ModalTitle from "../common/ModalTitle";
@@ -128,7 +128,7 @@ const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDow
         <HStack gap={1}>
           {model.recommendedType === "recommended" && (
             <Tooltip content={t("settings.localModels.recommendedTooltip")} showArrow>
-              <Box color="folio.accent" display="flex" alignItems="center" cursor="default"><FaStar size="12" /></Box>
+              <Box color="folio.accent" display="flex" alignItems="center" cursor="default"><LuStar size="12" strokeWidth={1.6} /></Box>
             </Tooltip>
           )}
           <Text fontSize="sm" fontWeight="bold">{model.simple_name || model.id}</Text>
@@ -313,7 +313,7 @@ const LocalModelManager = ({ className }) => {
   if (!localStatus.available && !localStatus?.llama_server_running) {
     return (
       <Alert.Root status="warning" borderRadius="md">
-        <Alert.Indicator asChild><FaExclamationTriangle /></Alert.Indicator>
+        <Alert.Indicator asChild><LuTriangleAlert strokeWidth={1.6} /></Alert.Indicator>
         <Box>
           <Alert.Title fontSize="sm">{t("settings.localModels.notAvailableTitle")}</Alert.Title>
           <Alert.Description fontSize="xs">{t("settings.localModels.notAvailableDescription")}</Alert.Description>
@@ -330,11 +330,11 @@ const LocalModelManager = ({ className }) => {
       {systemSpecs && (
         <HStack gap={4} fontSize="xs" className="settings-meta">
           <HStack gap={1}>
-            <Box color="folio.muted" display="flex" alignItems="center"><FaMemory /></Box>
+            <Box color="folio.muted" display="flex" alignItems="center"><LuMemoryStick strokeWidth={1.6} /></Box>
             <Text>{t("settings.localModels.ram", { value: systemSpecs.total_memory_gb.toFixed(1) })}</Text>
           </HStack>
           <HStack gap={1}>
-            <Box color="folio.muted" display="flex" alignItems="center"><FaMicrochip /></Box>
+            <Box color="folio.muted" display="flex" alignItems="center"><LuMicrochip strokeWidth={1.6} /></Box>
             <Text>{t("settings.localModels.cores", { value: systemSpecs.cpu_count })}</Text>
           </HStack>
         </HStack>
@@ -421,7 +421,7 @@ const LocalModelManager = ({ className }) => {
         <Text fontSize="xs" fontWeight="bold" className="settings-meta">{t("settings.localModels.supportingModels")}</Text>
         <HStack w="100%" gap={3} align="stretch">
           <SupportingModelRow
-            icon={<FaMicrophone size="12" />}
+            icon={<LuMic size="12" strokeWidth={1.6} />}
             iconColor="folio.accent"
             label={t("settings.localModels.transcription")}
             required
@@ -432,7 +432,7 @@ const LocalModelManager = ({ className }) => {
             tooltipContent={`${t("settings.localModels.transcriptionTooltip")}${recommendedWhisper ? ` (${recommendedWhisper.size})` : ""}`}
           />
           <SupportingModelRow
-            icon={<FaDatabase size="12" />}
+            icon={<LuDatabase size="12" strokeWidth={1.6} />}
             iconColor="folio.info"
             label={t("settings.localModels.embeddings")}
             required={false}
@@ -449,7 +449,7 @@ const LocalModelManager = ({ className }) => {
       {hasAnyModels && (
         <Box mt={2}>
           <Button variant="folioDanger" size="sm" onClick={() => setIsResetOpen(true)}>
-            <FaExclamationTriangle /> {t("settings.localModels.resetAll")}
+            <LuTriangleAlert strokeWidth={1.6} /> {t("settings.localModels.resetAll")}
           </Button>
         </Box>
       )}
@@ -462,7 +462,7 @@ const LocalModelManager = ({ className }) => {
             <Dialog.Content className="modal-style">
               <Dialog.Header>
                 <HStack>
-                  <Box display="flex" alignItems="center"><FaExclamationTriangle /></Box>
+                  <Box display="flex" alignItems="center"><LuTriangleAlert strokeWidth={1.6} /></Box>
                   <ModalTitle>{t("settings.localModels.resetAllTitle")}</ModalTitle>
                 </HStack>
               </Dialog.Header>

@@ -3,24 +3,24 @@ import { Box, Flex, Text, Popover } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
-    FaMicrophone,
-    FaPause,
-    FaPlay,
-    FaTimes,
-    FaComments,
-    FaKeyboard,
-    FaPaperPlane,
-    FaFileAlt,
-    FaCircle,
-    FaRedoAlt,
-    FaDownload,
-    FaExclamationTriangle,
-    FaBolt,
-    FaStop,
-    FaCheck,
-    FaExternalLinkAlt,
-    FaWaveSquare,
-} from "react-icons/fa";
+    LuAudioWaveform,
+    LuBolt,
+    LuCheck,
+    LuCircle,
+    LuDownload,
+    LuExternalLink,
+    LuFileText,
+    LuKeyboard,
+    LuMessageCircle,
+    LuMic,
+    LuPause,
+    LuPlay,
+    LuRedo2,
+    LuSend,
+    LuSquare,
+    LuTriangleAlert,
+    LuX,
+} from "react-icons/lu";
 import PillBox from "../common/PillBox";
 import { InternalGlow, LoadingOrb } from "./scribeVisuals";
 
@@ -84,11 +84,11 @@ export const RecordButton = ({
     const getIcon = () => {
         if (isRecording && !isPaused) {
             // When recording, show pause on hover, otherwise show circle
-            return isHovered ? <FaPause size={20} /> : <FaCircle size={20} />;
+            return isHovered ? <LuPause size={20} strokeWidth={1.6} /> : <LuCircle size={20} strokeWidth={1.6} />;
         } else if (isPaused) {
-            return <FaPlay size={20} />;
+            return <LuPlay size={20} strokeWidth={1.6} />;
         } else {
-            return <FaMicrophone size={20} />;
+            return <LuMic size={20} strokeWidth={1.6} />;
         }
     };
 
@@ -186,19 +186,19 @@ export const RecordButton = ({
 const MODES = [
     {
         id: "dictate",
-        icon: FaKeyboard,
+        icon: LuKeyboard,
         label: "scribe.mode.dictate",
         hint: "scribe.mode.dictateHint",
     },
     {
         id: "ambient",
-        icon: FaComments,
+        icon: LuMessageCircle,
         label: "scribe.mode.ambient",
         hint: "scribe.mode.ambientHint",
     },
     {
         id: "agent",
-        icon: FaBolt,
+        icon: LuBolt,
         label: "agent.liveAgent",
         hint: "scribe.mode.agentHint",
     },
@@ -336,7 +336,7 @@ export const ModeSelectButton = ({
                                         flexShrink={0}
                                         color="folio.accent"
                                     >
-                                        <FaCheck size={10} />
+                                        <LuCheck size={10} strokeWidth={1.6} />
                                     </Box>
                                 )}
                             </Box>
@@ -413,9 +413,9 @@ export const LiveAgentControls = ({ status = "live", onStop }) => {
                             justifyContent="center"
                         >
                             {isHovered ? (
-                                <FaStop size={16} />
+                                <LuSquare size={16} strokeWidth={1.6} />
                             ) : (
-                                <FaWaveSquare size={18} />
+                                <LuAudioWaveform size={18} strokeWidth={1.6} />
                             )}
                         </Box>
                     )}
@@ -468,7 +468,7 @@ export const LiveExpandButton = ({
                     transition="transform 0.2s ease"
                     transform={isExpanded ? "rotate(180deg)" : "none"}
                 >
-                    <FaExternalLinkAlt size={13} />
+                    <LuExternalLink size={13} strokeWidth={1.6} />
                 </Box>
             </button></Box>
     </Tooltip>
@@ -552,7 +552,7 @@ export const AgentReviewPill = ({
                 label={t("agent.panel.closeSession")}
                 onClick={onDismiss}
             >
-                <FaTimes size={13} />
+                <LuX size={13} strokeWidth={1.6} />
             </GhostButton>
             <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
                 {/* Static review hero; doubles as the resume action and is
@@ -600,9 +600,9 @@ export const AgentReviewPill = ({
                             justifyContent="center"
                         >
                             {isHovered ? (
-                                <FaPlay size={14} />
+                                <LuPlay size={14} strokeWidth={1.6} />
                             ) : (
-                                <FaWaveSquare size={18} />
+                                <LuAudioWaveform size={18} strokeWidth={1.6} />
                             )}
                         </Box>
                     </button></Box>
@@ -628,7 +628,7 @@ export const AgentErrorPill = ({ onRetry, onDismiss }) => {
                 label={t("agent.error.dismissError")}
                 onClick={onDismiss}
             >
-                <FaTimes size={13} />
+                <LuX size={13} strokeWidth={1.6} />
             </GhostButton>
             <Tooltip content={label} showArrow positioning={{ placement: "top" }}>
                 {/* Static danger hero — one-click retry, like the live hero stops */}
@@ -674,9 +674,9 @@ export const AgentErrorPill = ({ onRetry, onDismiss }) => {
                             justifyContent="center"
                         >
                             {isHovered ? (
-                                <FaRedoAlt size={14} />
+                                <LuRedo2 size={14} />
                             ) : (
-                                <FaExclamationTriangle size={15} />
+                                <LuTriangleAlert size={15} strokeWidth={1.6} />
                             )}
                         </Box>
                     </button></Box>
@@ -722,7 +722,7 @@ export const ResetButton = ({ onReset }) => {
                     aria-label={t("scribe.reset")}
                     onClick={onReset}
                 >
-                    <FaTimes size={16} />
+                    <LuX size={16} strokeWidth={1.6} />
                 </button></Box>
         </Tooltip>
     );
@@ -772,7 +772,7 @@ export const TranscriptSendButton = ({
                         aria-label={t("scribe.send.stopAndSend")}
                         onClick={onSend}
                     >
-                        <FaPaperPlane size={14} />
+                        <LuSend size={14} strokeWidth={1.6} />
                     </button></Box>
             </Tooltip>
         );
@@ -797,7 +797,7 @@ export const TranscriptSendButton = ({
                 w="30px"
                 h="30px"
                 borderRadius="full"
-                className="pill-box-icons"
+                flexShrink={0}
                 mr={0}
                 cursor={isDisabled ? "not-allowed" : "pointer"}
                 transition="color 160ms ease, background-color 160ms ease, opacity 160ms ease"
@@ -820,7 +820,7 @@ export const TranscriptSendButton = ({
                 }}
                 pointerEvents={isDisabled ? "none" : "auto"}
                 asChild><button aria-label={label} aria-disabled={isDisabled}>
-                    <FaFileAlt size={14} />
+                    <LuFileText size={14} strokeWidth={1.6} />
                 </button></Box>
         </Popover.Trigger>
     );
@@ -854,7 +854,7 @@ export const TranscriptionFailurePill = ({
             }}
         >
             <Flex align="center" gap={2} color={PILL.danger} pr={1}>
-                <FaExclamationTriangle size={15} />
+                <LuTriangleAlert size={15} strokeWidth={1.6} />
                 <Text fontSize="xs" fontWeight="700">
                     {t("scribe.transcription.failed")}
                 </Text>
@@ -891,7 +891,7 @@ export const TranscriptionFailurePill = ({
                     aria-label={t("scribe.transcription.retrySend")}
                     onClick={onRetry}
                 >
-                    <FaRedoAlt size={13} />
+                    <LuRedo2 size={13} />
                 </button></Box>
         </Tooltip>
         <Tooltip content={t("scribe.transcription.downloadAudio")} showArrow positioning={{
@@ -925,7 +925,7 @@ export const TranscriptionFailurePill = ({
                     aria-label={t("scribe.transcription.downloadAudio")}
                     onClick={onDownload}
                 >
-                    <FaDownload size={13} />
+                    <LuDownload size={13} strokeWidth={1.6} />
                 </button></Box>
         </Tooltip>
         <Tooltip
@@ -943,11 +943,12 @@ export const TranscriptionFailurePill = ({
                 h="32px"
                 borderRadius="full"
                 border="none"
+                flexShrink={0}
+                mr={2}
                 cursor="pointer"
                 outline="none"
                 color={PILL.muted}
                 bg="transparent"
-                className="pill-box-icons"
                 transition="color 160ms ease, background-color 160ms ease"
                 _hover={{ color: PILL.danger, bg: "folio.dangerSoft" }}
                 _focusVisible={{
@@ -959,7 +960,7 @@ export const TranscriptionFailurePill = ({
                     aria-label={t("scribe.transcription.dismissWarning")}
                     onClick={onDismiss}
                 >
-                    <FaTimes size={13} />
+                    <LuX size={13} strokeWidth={1.6} />
                 </button></Box>
         </Tooltip>
     </PillBox>

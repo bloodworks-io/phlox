@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon, Alert } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { LuEye, LuEyeOff } from "react-icons/lu";
 import {
   encryptionApi,
   calculatePassphraseStrength,
@@ -228,7 +228,7 @@ const EncryptionSetup = ({ onComplete }) => {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={t("common.togglePasswordVisibility")}
                 >
-                  <Icon asChild>{showPassword ? <FaEyeSlash /> : <FaEye />}</Icon>
+                  <Icon asChild>{showPassword ? <LuEyeOff strokeWidth={1.6} /> : <LuEye strokeWidth={1.6} />}</Icon>
                 </Button>
               </HStack>
 
@@ -289,7 +289,7 @@ const EncryptionSetup = ({ onComplete }) => {
                   aria-label={t("encryption.toggleConfirmVisibility")}
                 >
                   <Icon asChild>
-                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    {showConfirmPassword ? <LuEyeOff strokeWidth={1.6} /> : <LuEye strokeWidth={1.6} />}
                   </Icon>
                 </Button>
               </HStack>

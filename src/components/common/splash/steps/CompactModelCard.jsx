@@ -11,7 +11,7 @@ import {
   DownloadIcon,
   CheckIcon,
 } from "../../icons";
-import { FaStar } from "react-icons/fa";
+import { LuStar } from "react-icons/lu";
 import { PrimaryButton, SuccessButton } from "../../Buttons";
 import { PerformancePopover } from "./PerformancePopover";
 
@@ -64,7 +64,7 @@ export const CompactModelCard = ({
           {model.recommendedType === "recommended" && (
             <Tooltip content={t("splash.step.aiModels.recommendedTooltip")} showArrow>
               <Box color="folio.info" display="flex" alignItems="center" cursor="default">
-                <FaStar size="12" />
+                <LuStar size="12" strokeWidth={1.6} />
               </Box>
             </Tooltip>
           )}
@@ -75,7 +75,7 @@ export const CompactModelCard = ({
         <PerformancePopover model={model} systemSpecs={systemSpecs} />
       </HStack>
 
-      <Text fontSize="xs" fontWeight="normal" color="folio.muted" className="pill-box-icons" noOfLines={2}>
+      <Text fontSize="xs" fontWeight="normal" color="folio.muted" className="settings-meta" noOfLines={2}>
         {model.description}
       </Text>
 
@@ -96,7 +96,7 @@ export const CompactModelCard = ({
           <Text
             fontSize="xs"
             color="folio.muted"
-            className="pill-box-icons"
+            className="settings-meta"
             textAlign="right"
             mt={0.5}
           >

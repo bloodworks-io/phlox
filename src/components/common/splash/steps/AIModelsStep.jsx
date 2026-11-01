@@ -23,11 +23,11 @@ import {
   ChevronRightIcon,
 } from "../../icons";
 import {
-  FaDesktop,
-  FaCloud,
-  FaMicrophone,
-  FaDatabase,
-} from "react-icons/fa";
+  LuCloud,
+  LuDatabase,
+  LuMic,
+  LuMonitor,
+} from "react-icons/lu";
 import {
   getSmartRecommendations,
 } from "../../../../utils/performanceUtils";
@@ -210,14 +210,14 @@ export const AIModelsStep = ({ llm, transcription }) => {
               className={`mode-selector-button ${isLocal ? "active" : ""}`}
               onClick={() => setInferenceMode("local")}
             >
-              <FaDesktop />
+              <LuMonitor strokeWidth={1.6} />
               {t("splash.step.aiModels.runLocally")}
             </Button>
             <Button
               className={`mode-selector-button ${!isLocal ? "active" : ""}`}
               onClick={() => setInferenceMode("remote")}
             >
-              <FaCloud />
+              <LuCloud strokeWidth={1.6} />
               {t("splash.step.aiModels.useApi")}
             </Button>
           </Flex>
@@ -245,7 +245,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                 <Text fontSize="sm" fontWeight="bold" color="folio.ink">
                   {t("splash.step.aiModels.chooseModel")}
                 </Text>
-                <Text fontSize="xs" color="folio.muted" className="pill-box-icons">
+                <Text fontSize="xs" color="folio.muted" className="settings-meta">
                   {t("splash.step.aiModels.modelIntro")}
                 </Text>
               </VStack>
@@ -336,7 +336,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                   fontSize="xs"
                   fontWeight="bold"
                   color="folio.muted"
-                  className="pill-box-icons"
+                  className="settings-meta"
                 >
                   {t("splash.step.aiModels.supportingModels")}
                 </Text>
@@ -372,7 +372,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           display="flex"
                           alignItems="center"
                         >
-                          <FaMicrophone size="12" />
+                          <LuMic size="12" strokeWidth={1.6} />
                         </Box>
                         <Text fontSize="xs" fontWeight="bold">
                           {t("splash.step.aiModels.transcription")}
@@ -414,7 +414,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           <Text
                             fontSize="2xs"
                             color="folio.muted"
-                            className="pill-box-icons"
+                            className="settings-meta"
                             whiteSpace="nowrap"
                           >
                             {whisperDownloadProgress.toFixed(0)}%
@@ -472,7 +472,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           display="flex"
                           alignItems="center"
                         >
-                          <FaDatabase size="12" />
+                          <LuDatabase size="12" strokeWidth={1.6} />
                         </Box>
                         <Text fontSize="xs" fontWeight="bold">
                           {t("splash.step.aiModels.embeddings")}
@@ -515,7 +515,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           <Text
                             fontSize="2xs"
                             color="folio.muted"
-                            className="pill-box-icons"
+                            className="settings-meta"
                             whiteSpace="nowrap"
                           >
                             {embeddingProgress.toFixed(0)}%

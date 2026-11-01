@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Box, HStack, Text, Button } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { DownloadIcon } from "../common/icons";
-import { FaFilePdf } from "react-icons/fa";
+import { LuFileText } from "react-icons/lu";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
 import { useTranslation } from "react-i18next";
@@ -88,7 +88,7 @@ const FormFillArtifact = ({ artifact }: FormFillArtifactProps) => {
                     display="flex"
                     alignItems="center"
                 >
-                    <FaFilePdf size="1.2em" />
+                    <LuFileText size="1.2em" strokeWidth={1.6} />
                 </Box>
             <Text fontSize="xs" fontWeight="semibold" truncate minW="0" flex={1}>
                 {filename}

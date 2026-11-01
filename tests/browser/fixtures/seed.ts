@@ -318,9 +318,26 @@ export const seedRagCollections = {
 };
 
 export const seedRagCollectionFiles = {
-    files: ["anaemia-guideline.pdf", "iron-therapy.pdf"],
+    files: [
+        {
+            filename: "anaemia-guideline.pdf",
+            title: "Anaemia guideline",
+            source: "Haematology Society",
+            focus_area: "guidelines",
+            has_pdf: true,
+        },
+        {
+            filename: "iron-therapy.pdf",
+            title: null,
+            source: null,
+            focus_area: null,
+            has_pdf: false,
+        },
+    ],
 };
 
+// Letter-size page (612×792 pt); field geometry is absolute PDF points
+// with the origin at the page's bottom-left corner.
 export const seedPdfFormTemplate = {
     id: "seed-form",
     name: "Specialist referral",
@@ -336,20 +353,22 @@ export const seedPdfFormTemplate = {
             name: "Patient name",
             field_type: "text",
             page_number: 1,
-            x_pct: 15,
-            y_pct: 20,
-            width_pct: 60,
-            height_pct: 5,
+            x: 72,
+            y: 640,
+            width: 300,
+            height: 18,
+            font_size: 12,
         },
         {
             id: "field-2",
             name: "Urgent",
             field_type: "checkbox",
             page_number: 1,
-            x_pct: 15,
-            y_pct: 35,
-            width_pct: 4,
-            height_pct: 3,
+            x: 72,
+            y: 500,
+            width: 14,
+            height: 14,
+            font_size: 12,
         },
     ],
 };

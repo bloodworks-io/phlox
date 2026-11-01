@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { IconButton, Box } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ChatIcon } from "./icons";
-import { FaEnvelope, FaAtom, FaFileUpload, FaClock } from "react-icons/fa";
+import { LuAtom, LuClock, LuFileUp, LuMail } from "react-icons/lu";
 import PillBox from "./PillBox";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
 
@@ -77,7 +77,7 @@ const FloatingActionMenu = ({
                         className="folio-rail-button"
                         {...buttonState(isDocumentOpen)}
                     >
-                        <FaFileUpload />
+                        <LuFileUp strokeWidth={1.6} />
                     </IconButton>
                 </Tooltip>
             )}
@@ -112,7 +112,7 @@ const FloatingActionMenu = ({
                             ? buttonState(isPreviousVisitOpen)
                             : { color: "folio.faint" })}
                     >
-                        <FaClock />
+                        <LuClock strokeWidth={1.6} />
                     </IconButton>
                 </Tooltip>
                 {showPreviousVisitDot && hasPreviousVisit && (
@@ -186,7 +186,7 @@ const FloatingActionMenu = ({
                                 ? buttonState(isReasoningOpen)
                                 : { color: "folio.faint" })}
                         >
-                            <FaAtom />
+                            <LuAtom strokeWidth={1.6} />
                         </IconButton>
                     </Tooltip>
                     {hasCriticalReasoning && isEncounterSaved && (
@@ -233,7 +233,7 @@ const FloatingActionMenu = ({
                         ? buttonState(isLetterOpen)
                         : { color: "folio.faint" })}
                 >
-                    <FaEnvelope />
+                    <LuMail strokeWidth={1.6} />
                 </IconButton>
             </Tooltip>
         </PillBox>

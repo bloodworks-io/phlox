@@ -3,7 +3,13 @@ import { Box, Flex, HStack, IconButton, Text, Collapsible, Input, NativeSelect, 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import AnimatedChevron from "../common/icons/AnimatedChevron";
-import { FaUser, FaFileAlt, FaEnvelopeOpenText, FaComments, FaMobileAlt } from "react-icons/fa";
+import {
+    LuFileText,
+    LuMailOpen,
+    LuMessageCircle,
+    LuSmartphone,
+    LuUser,
+} from "react-icons/lu";
 import TemplateSettingsPanel from "./TemplateSettingsPanel";
 import LetterTemplatesPanel from "./LetterTemplatesPanel";
 import ChatSettingsPanel from "./ChatSettingsPanel";
@@ -80,7 +86,7 @@ const UserSettingsPanel = ({
             size="sm"
             mr="2"
             className="settings-collapse-toggle"><AnimatedChevron isOpen={!isCollapsed} /></IconButton>
-          <FaUser size="1.2em" style={{ marginRight: "5px" }} />
+          <LuUser size="1.2em" strokeWidth={1.6} style={{ marginRight: "5px" }} />
           <Text as="h3">{t("settings.userPanel.title")}</Text>
         </Flex>
       </Flex>
@@ -90,26 +96,26 @@ const UserSettingsPanel = ({
             <Tabs.List>
               <Tabs.Trigger className="tab-style" value="0">
                 <HStack>
-                  <FaUser />
+                  <LuUser strokeWidth={1.6} />
                   <Text>{t("settings.userPanel.general")}</Text>
                 </HStack>
               </Tabs.Trigger>
               <Tabs.Trigger className="tab-style" value="2">
                 <HStack>
-                  <FaFileAlt />
+                  <LuFileText strokeWidth={1.6} />
                   <Text>{t("settings.userPanel.noteTemplates")}</Text>
                 </HStack>
               </Tabs.Trigger>
               <Tabs.Trigger className="tab-style" value="3">
                 <HStack>
-                  <FaEnvelopeOpenText />
+                  <LuMailOpen strokeWidth={1.6} />
                   <Text>{t("settings.userPanel.letterTemplatesTab")}</Text>
                 </HStack>
               </Tabs.Trigger>
               {isChatEnabled() && (
                 <Tabs.Trigger className="tab-style" value="4">
                   <HStack>
-                    <FaComments />
+                    <LuMessageCircle strokeWidth={1.6} />
                     <Text>{t("settings.userPanel.quickChat")}</Text>
                   </HStack>
                 </Tabs.Trigger>
@@ -117,7 +123,7 @@ const UserSettingsPanel = ({
               {isTauri() && (
                 <Tabs.Trigger className="tab-style" value="companion">
                   <HStack>
-                    <FaMobileAlt />
+                    <LuSmartphone strokeWidth={1.6} />
                     <Text>{t("settings.userPanel.companion")}</Text>
                   </HStack>
                 </Tabs.Trigger>

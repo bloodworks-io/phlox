@@ -107,7 +107,7 @@ describe("Clinical Folio Phase 5 theme mapping", () => {
         expect(inputStyles).toContain("folio.accentSoft");
     });
 
-    it("uses scoped Settings surfaces without narrowing legacy global classes", () => {
+    it("uses scoped Settings surfaces with no legacy global classes left", () => {
         const settingsSources = phaseFiveSources.filter((source) =>
             source.startsWith("src/components/settings/") ||
             source.startsWith("src/components/modals/"),
@@ -127,9 +127,6 @@ describe("Clinical Folio Phase 5 theme mapping", () => {
         expect(floating).toContain('".settings-tab-body"');
         expect(floating).toContain('".settings-collapse-toggle"');
         expect(patientInfo).toContain('".settings-meta"');
-        expect(panel).toContain('".panels-bg"');
-        expect(floating).toContain('".floating-main"');
-        expect(floating).toContain('".collapse-toggle"');
     });
 
     it("maps companion status meaning to Folio roles", () => {

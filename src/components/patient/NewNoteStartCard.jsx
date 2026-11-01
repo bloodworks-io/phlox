@@ -11,7 +11,7 @@ import {
     Text,
     VStack,
 } from "@chakra-ui/react";
-import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
+import { LuArrowLeft, LuSearch, LuUserPlus } from "react-icons/lu";
 import { toaster } from "@/components/ui/toaster";
 import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
 import { formatDate } from "../../utils/helpers/formatHelpers";
@@ -219,13 +219,13 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                     {view === "choose" ? (
                         <Flex gap={3}>
                             <PathHalf
-                                icon={FaUserPlus}
+                                icon={LuUserPlus}
                                 title={t("patient.newPatient")}
                                 subtitle={t("patient.createNewRecord")}
                                 onClick={onNewPatient}
                             />
                             <PathHalf
-                                icon={FaSearch}
+                                icon={LuSearch}
                                 title={t("patient.search")}
                                 subtitle={t("patient.existingPatient")}
                                 onClick={() => setView("search")}
@@ -254,7 +254,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                                 mt={3}
                                 onClick={() => setView("search")}
                             >
-                                <FaArrowLeft />
+                                <LuArrowLeft strokeWidth={1.6} />
                                 {t("patient.back")}
                             </Button>
                         </Box>
@@ -281,7 +281,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                                 mt={3}
                                 onClick={() => setView("choose")}
                             >
-                                <FaArrowLeft />
+                                <LuArrowLeft strokeWidth={1.6} />
                                 {t("patient.back")}
                             </Button>
                         </Box>

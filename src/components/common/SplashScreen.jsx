@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Button, Heading, VStack, Text, Flex, Image, HStack, Progress } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
+import { LuArrowLeft, LuArrowRight } from "react-icons/lu";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { authApi } from "../../utils/api/authApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
@@ -315,7 +315,7 @@ const SplashScreen = ({ onComplete }) => {
             variant="folioSecondary"
             size="md"
           >
-            <FaArrowLeft />{t("action.back")}
+            <LuArrowLeft strokeWidth={1.6} />{t("action.back")}
           </Button>
 
           <Button
@@ -331,7 +331,7 @@ const SplashScreen = ({ onComplete }) => {
             variant="folioPrimary"
           >
             {currentStepIndex === totalSteps - 1 ? t("splash.startUsingPhlox") : t("action.continue")}
-            {currentStepIndex !== totalSteps - 1 && <FaArrowRight />}
+            {currentStepIndex !== totalSteps - 1 && <LuArrowRight strokeWidth={1.6} />}
           </Button>
         </Flex>
       </Box>

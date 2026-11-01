@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text, HStack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaRedo } from "react-icons/fa";
+import { LuRotateCcw } from "react-icons/lu";
 
 export const ErrorBlock = ({ message, onRetry, onDismiss }) => {
     const { t } = useTranslation();
@@ -39,7 +39,7 @@ export const ErrorBlock = ({ message, onRetry, onDismiss }) => {
                 _hover={{ bg: "folio.danger", color: "folio.dangerInk" }}
                 onClick={onRetry}
             >
-                <FaRedo size="10px" /> {t("agent.error.reconnect")}
+                <LuRotateCcw size="10px" strokeWidth={1.6} /> {t("agent.error.reconnect")}
             </Box>
             <Box
                 as="button"

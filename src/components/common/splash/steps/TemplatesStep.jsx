@@ -9,7 +9,7 @@ import {
   Box,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaCheckCircle } from "react-icons/fa";
+import { LuCircleCheck } from "react-icons/lu";
 import { TEMPLATE_DESCRIPTIONS } from "../constants";
 
 export const TemplatesStep = ({
@@ -85,7 +85,7 @@ export const TemplatesStep = ({
                     className="anim-fade-scale"
                     sx={{ animationDuration: "0.2s" }}
                   >
-                    <FaCheckCircle />
+                    <LuCircleCheck strokeWidth={1.6} />
                   </Icon>
                 )}
               </HStack>

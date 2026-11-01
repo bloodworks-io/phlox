@@ -6,13 +6,12 @@ import {
   Flex,
   Heading,
   HStack,
-  Icon,
   Image,
   Input,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { LuEye, LuEyeOff } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import { setStoredToken } from "../../utils/helpers/apiConfig";
@@ -157,7 +156,9 @@ export const SetupWizard = ({ onSuccess }) => {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={t("common.togglePasswordVisibility")}
                 >
-                  <Icon as={showPassword ? FaEyeSlash : FaEye} />
+                  {showPassword
+                    ? <LuEyeOff strokeWidth={1.6} />
+                    : <LuEye strokeWidth={1.6} />}
                 </Button>
               </HStack>
             </Box>

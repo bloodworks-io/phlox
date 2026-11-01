@@ -1,6 +1,6 @@
 import React from "react";
 import { Box } from "@chakra-ui/react";
-import { FaWaveSquare } from "react-icons/fa";
+import { LuAudioWaveform } from "react-icons/lu";
 
 // Decorative pulse loop: static under prefers-reduced-motion.
 // Inline (unlayered) emotion rules win over the layered global class, so
@@ -43,6 +43,6 @@ export const AgentSymbol = ({
         className={pulse ? "live-bolt-pulse" : undefined}
         css={pulse ? pulseCss : undefined}
     >
-        <FaWaveSquare size={iconSize} />
+        <LuAudioWaveform size={iconSize} strokeWidth={1.6} />
     </Box>
 );

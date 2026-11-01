@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Box, Text, HStack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaChevronUp, FaChevronDown, FaTimes } from "react-icons/fa";
+import { LuChevronDown, LuChevronUp, LuX } from "react-icons/lu";
 
 import { AgentSymbol, StatusDot } from "./agentVisuals";
 import { getStatusInfo, getContextLine } from "./agentStatus";
@@ -94,7 +94,7 @@ export const ExpandedAgentPanel = ({
                                 aria-label={t("agent.panel.closeSession")}
                                 onClick={onDismissReview}
                             >
-                                <FaTimes size="11px" />
+                                <LuX size="11px" strokeWidth={1.6} />
                             </button>
                         </Box>
                     </Tooltip>
@@ -122,7 +122,7 @@ export const ExpandedAgentPanel = ({
                             aria-label={t("agent.panel.collapse")}
                             onClick={onToggleExpand}
                         >
-                            <FaChevronDown size="11px" />
+                            <LuChevronDown size="11px" strokeWidth={1.6} />
                         </button>
                     </Box>
                 </Tooltip>
@@ -232,9 +232,9 @@ export const ExpandedAgentPanel = ({
                     onClick={() => setIsTranscriptOpen((open) => !open)}
                 >
                     {isTranscriptOpen ? (
-                        <FaChevronDown size="10px" />
+                        <LuChevronDown size="10px" strokeWidth={1.6} />
                     ) : (
-                        <FaChevronUp size="10px" />
+                        <LuChevronUp size="10px" strokeWidth={1.6} />
                     )}
                     {t("agent.panel.transcript")}
                 </Box>

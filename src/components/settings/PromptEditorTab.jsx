@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Textarea, Text, VStack } from "@chakra-ui/react";
-import { FiRefreshCw } from "react-icons/fi";
+import { LuRefreshCw } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
 const ResetToDefaultButton = ({ onClick, ...props }) => {
@@ -13,7 +13,7 @@ const ResetToDefaultButton = ({ onClick, ...props }) => {
         onClick={onClick}
         {...props}
     >
-        <FiRefreshCw />
+        <LuRefreshCw strokeWidth={1.6} />
         {t("settings.resetToDefault")}
     </Button>
     );

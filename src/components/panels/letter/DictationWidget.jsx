@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
-import { FaMicrophone, FaStop } from "react-icons/fa";
+import { LuMic, LuSquare } from "react-icons/lu";
 import { transcriptionApi } from "../../../utils/api/transcriptionApi";
 import { letterApi } from "../../../utils/api/letterApi";
 import { AudioRecorder } from "../../../utils/audioRecorder";
@@ -247,9 +247,9 @@ const DictationWidget = ({
             <Spinner size="sm" color="folio.brandInk" />
 
           ) : isRecording ? (
-            <FaStop />
+            <LuSquare strokeWidth={1.6} />
           ) : (
-            <FaMicrophone />
+            <LuMic strokeWidth={1.6} />
           )}</IconButton>
       </Tooltip>
     </>
