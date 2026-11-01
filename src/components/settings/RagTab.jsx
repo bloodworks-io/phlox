@@ -64,7 +64,7 @@ const RagTab = ({
                     <Text fontSize="md" fontWeight="bold">
                         {t("settings.rag.title")}
                     </Text>
-                    <Text fontSize="sm" color="overlay0">
+                    <Text fontSize="sm" color="folio.muted">
                         {t("settings.rag.description")}
                     </Text>
                 </Box>
@@ -78,7 +78,7 @@ const RagTab = ({
                     {llmModelsLoading ? (
                         <HStack gap="2">
                             <Spinner size="sm" />
-                            <Text fontSize="sm" color="overlay0">
+                            <Text fontSize="sm" color="folio.muted">
                                 {t("settings.loadingModels")}
                             </Text>
                         </HStack>
@@ -102,12 +102,12 @@ const RagTab = ({
                             <NativeSelect.Indicator />
                         </NativeSelect.Root>
                     )}
-                    <Text fontSize="xs" color="overlay0" mt="1">
+                    <Text fontSize="xs" color="folio.muted" mt="1">
                         {t("settings.rag.modelsHint")}
                     </Text>
                     <Text
                         fontSize="xs"
-                        color="secondaryButton"
+                        color="folio.warning"
                         mt="2"
                         fontWeight="medium"
                     >

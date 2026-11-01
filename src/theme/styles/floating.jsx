@@ -17,6 +17,29 @@ const floatingStyles = (props) => ({
         fontWeight: "normal",
         fontSize: "0.7rem",
     },
+    // Clinical Folio settings tab body. Scoped: `.floating-main` remains the
+    // legacy surface for RAG consumers outside Settings. Preserves the
+    // compact 0.7rem density and the tab-flush top-left corner geometry.
+    ".settings-tab-body": {
+        backgroundColor: "folio.canvas",
+        color: "folio.ink !important",
+        fontWeight: "normal",
+        borderTop: "1px solid !important",
+        borderTopColor: "folio.line !important",
+        borderTopLeftRadius: "0 !important",
+        borderTopRightRadius: "md !important",
+        borderBottomLeftRadius: "md !important",
+        borderBottomRightRadius: "md !important",
+        fontSize: "0.7rem !important",
+    },
+    // Clinical Folio settings collapse toggle. Scoped: the global
+    // `.collapse-toggle` stays legacy for RAG consumers outside Settings.
+    ".settings-collapse-toggle": {
+        border: "none !important",
+        borderRadius: "lg !important",
+        color: "folio.muted !important",
+        backgroundColor: "folio.paperAlt !important",
+    },
     ".attached-chat-input": {
         backgroundColor: "folio.paperAlt",
         borderColor: "folio.line",
@@ -197,16 +220,14 @@ const floatingStyles = (props) => ({
         width: "100%",
     },
     ".dashboard-chat-input-container": {
-        background:
-            props.colorMode === "light"
-                ? `${colors.light.secondary} !important`
-                : `${colors.dark.surface} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface2} !important`,
-        borderRadius: "3xl !important",
+        background: "folio.paper !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        borderRadius: "folioOverlay !important",
+        color: "folio.ink !important",
         padding: "10px 16px !important",
+        transition:
+            "background-color 160ms ease, border-color 160ms ease, color 160ms ease",
     },
     ".dashboard-chat-messages": {
         height: "calc(100dvh - 160px)",
@@ -214,30 +235,23 @@ const floatingStyles = (props) => ({
         paddingBottom: "100px", // Space for fixed input
     },
     ".dashboard-chat-greeting": {
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        color: "folio.ink !important",
     },
     ".dashboard-chat-suggestions": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.crust} !important`
-                : `${colors.dark.overlay0} !important`,
-        borderRadius: "xl !important",
+        backgroundColor: "folio.paper !important",
+        borderRadius: "folioControl !important",
         fontWeight: "500 !important",
         fontSize: "0.9rem !important",
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface1} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        color: "folio.muted !important",
+        transition:
+            "background-color 160ms ease, border-color 160ms ease, color 160ms ease",
         _hover: {
-            transform: "translateY(-1px)",
-            boxShadow: "sm",
+            backgroundColor: "folio.hover",
+            borderColor: "folio.focus",
+            color: "folio.ink",
+            boxShadow: "none",
         },
     },
 });

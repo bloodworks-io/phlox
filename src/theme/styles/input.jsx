@@ -1,6 +1,5 @@
 // Styles for text input fields and buttons.
 import { colors } from "../colors";
-import { lightenColor } from "../utils"; // adjust path as needed
 
 const folioFocusRing = {
     "&:focus": {
@@ -245,35 +244,29 @@ const inputStyles = (props) => ({
     },
     ".reason-button": {
         backgroundColor: "transparent !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.invertedText} !important`,
+        color: "folio.muted !important",
         fontSize: "sm !important",
-        borderRadius: "lg !important",
+        borderRadius: "folioControl !important",
         borderRightRadius: "none !important",
         height: "30px !important",
         fontWeight: "medium !important",
+        transition:
+            "color 160ms ease, background-color 160ms ease !important",
         _active: {
             transform: "none !important",
         },
         "&:hover": {
-            backgroundColor: `${
-                props.colorMode === "light"
-                    ? lightenColor(colors.light.crust)
-                    : lightenColor(colors.dark.crust)
-            } !important`,
+            backgroundColor: "folio.hover !important",
+            color: "folio.ink !important",
         },
     },
     ".reason-button-active": {
-        backgroundColor: `${
-            props.colorMode === "light" ? colors.light.crust : colors.dark.base
-        } !important`,
+        backgroundColor: "folio.accentSoft !important",
+        color: "folio.accent !important",
     },
     ".reason-button-active-patient-table": {
-        backgroundColor: `${
-            props.colorMode === "light" ? colors.light.surface : colors.dark.surface
-        } !important`,
+        backgroundColor: "folio.accentSoft !important",
+        color: "folio.accent !important",
     },
     ".transcription-style": {
         backgroundColor: "folio.canvas !important",
@@ -297,25 +290,15 @@ const inputStyles = (props) => ({
     ".scroll-container": {
         marginLeft: "-5px",
         scrollbarWidth: "thin",
-        scrollbarColor: `${
-            props.colorMode === "light"
-                ? `${colors.light.overlay0} ${colors.light.surface}`
-                : `${colors.dark.overlay0} ${colors.dark.surface}`
-        }`,
+        scrollbarColor: "folio.faint folio.paperAlt",
         "&::-webkit-scrollbar": {
             width: "4px",
         },
         "&::-webkit-scrollbar-track": {
-            backgroundColor:
-                props.colorMode === "light"
-                    ? colors.light.surface
-                    : colors.dark.surface,
+            backgroundColor: "folio.paperAlt",
         },
         "&::-webkit-scrollbar-thumb": {
-            backgroundColor:
-                props.colorMode === "light"
-                    ? colors.light.overlay0
-                    : colors.dark.overlay0,
+            backgroundColor: "folio.faint",
             borderRadius: "4px",
         },
     },

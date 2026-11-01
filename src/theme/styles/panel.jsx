@@ -60,6 +60,15 @@ const panelStyles = (props) => ({
         fontSize: "1rem !important",
         fontWeight: "700",
     },
+    // Clinical Folio settings surface. Scoped: `.panels-bg` remains the
+    // legacy surface for RAG/PDF consumers outside Settings.
+    ".settings-panel": {
+        backgroundColor: "folio.paper",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioPanel",
+    },
     ".splash-panel": {
         backgroundColor: "folio.paper",
         color: "folio.ink",

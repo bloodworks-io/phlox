@@ -148,7 +148,7 @@ const TemplateSettingsPanel = () => {
     return (
         <VStack gap={3} align="stretch">
             <Flex justify="space-between" align="center">
-                <Text fontSize="xs" className="pill-box-icons" maxW="60%">
+                <Text fontSize="xs" className="settings-meta" maxW="60%">
                     {t("settings.templates.description")}
                 </Text>
                 <Button
@@ -164,17 +164,17 @@ const TemplateSettingsPanel = () => {
                     p={6}
                     textAlign="center"
                     borderWidth="1px"
-                    borderColor="border"
+                    borderColor="folio.line"
                     borderRadius="md"
                 >
                     <FaFileAlt
                         size="1.5em"
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
-                    <Text fontSize="sm" className="pill-box-icons">
+                    <Text fontSize="sm" className="settings-meta">
                         {t("settings.templates.emptyTitle")}
                     </Text>
-                    <Text fontSize="xs" className="pill-box-icons" mt={1}>
+                    <Text fontSize="xs" className="settings-meta" mt={1}>
                         {t("settings.templates.emptyDescription")}
                     </Text>
                 </Box>
@@ -192,7 +192,7 @@ const TemplateSettingsPanel = () => {
                                 key={template.template_key}
                                 p={3}
                                 borderWidth="1px"
-                                borderColor="border"
+                                borderColor="folio.line"
                                 borderRadius="md"
                             >
                                 <Flex justify="space-between" align="center">
@@ -204,12 +204,19 @@ const TemplateSettingsPanel = () => {
                                             {template.template_name}
                                         </Text>
                                         <Badge
-                                            colorPalette={
+                                            bg={
                                                 isDefault
-                                                    ? "green"
+                                                    ? "folio.successSoft"
                                                     : isCustomized
-                                                      ? "blue"
-                                                      : "gray"
+                                                      ? "folio.infoSoft"
+                                                      : "folio.paperAlt"
+                                            }
+                                            color={
+                                                isDefault
+                                                    ? "folio.success"
+                                                    : isCustomized
+                                                      ? "folio.info"
+                                                      : "folio.muted"
                                             }
                                             fontSize="xs"
                                         >
@@ -255,7 +262,8 @@ const TemplateSettingsPanel = () => {
                                                 <IconButton
                                                     variant="ghost"
                                                     size="sm"
-                                                    colorPalette="red"
+                                                    color="folio.danger"
+                                                    _hover={{ bg: "folio.dangerSoft" }}
                                                     aria-label={t("settings.templates.deleteTemplate")}
                                                     onClick={() => {
                                                         setTemplateToDelete({

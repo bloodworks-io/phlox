@@ -126,7 +126,7 @@ const DashboardMessageList = ({
                                             <Text
                                                 fontSize="xs"
                                                 fontWeight="semibold"
-                                                color="overlay0"
+                                                color="folio.muted"
                                             >
                                                 {t("chat.assistant")}
                                             </Text>
@@ -147,14 +147,17 @@ const DashboardMessageList = ({
                                                             key={i}
                                                             size="sm"
                                                             variant="subtle"
-                                                            colorPalette={
-                                                                isPdf
-                                                                    ? "red"
-                                                                    : isImage
-                                                                      ? "blue"
-                                                                      : "gray"
+                                                            bg={
+                                                                isPdf || isImage
+                                                                    ? "folio.infoSoft"
+                                                                    : "folio.paperAlt"
                                                             }
-                                                            borderRadius="md"
+                                                            color={
+                                                                isPdf || isImage
+                                                                    ? "folio.info"
+                                                                    : "folio.muted"
+                                                            }
+                                                            borderRadius="folioControl"
                                                             px={2}
                                                             py={1}
                                                         >

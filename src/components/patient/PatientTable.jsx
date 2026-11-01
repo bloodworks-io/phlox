@@ -25,8 +25,6 @@ import {
     FaArrowRight,
 } from "react-icons/fa";
 import { RepeatIcon } from "../common/icons";
-import { useColorMode } from "../ui/color-mode";
-import { colors } from "../../theme/colors";
 import { getLocale } from "../../utils/helpers/formatHelpers";
 import {
     resetJobsItems,
@@ -46,7 +44,6 @@ const PatientTable = ({
 }) => {
     const { t } = useTranslation();
     const pendingJobsUpdates = useRef(new Map());
-    const { colorMode } = useColorMode();
 
     useEffect(() => {
         return () => {
@@ -65,7 +62,7 @@ const PatientTable = ({
     };
 
     const getRowBackgroundColor = (index) =>
-        index % 2 === 0 ? "secondary" : "crust";
+        index % 2 === 0 ? "folio.paper" : "folio.paperAlt";
 
     const PatientDetails = ({ patient }) => (
         <Box>
@@ -91,23 +88,18 @@ const PatientTable = ({
     );
 
     const getTagStyle = (section) => {
-        const token =
-            section === "differentials"
-                ? "primaryButton"
-                : section === "investigations"
-                  ? "successButton"
-                  : section === "considerations"
-                    ? "secondaryButton"
-                    : section === "thinking"
-                      ? "neutralButton"
-                      : null;
-        if (!token) return { bg: "surface", color: "textPrimary" };
-        const hex = colors[colorMode]?.[token] ?? colors.dark.surface2;
+        const roles = {
+            differentials: { bg: "folio.infoSoft", color: "folio.info" },
+            investigations: { bg: "folio.successSoft", color: "folio.success" },
+            considerations: { bg: "folio.warningSoft", color: "folio.warning" },
+            thinking: { bg: "folio.paperAlt", color: "folio.muted" },
+        };
+        const role = roles[section] ?? { bg: "folio.paperAlt", color: "folio.ink" };
         return {
-            bg: `${hex}1f`,
-            color: hex,
+            bg: role.bg,
+            color: role.color,
             border: "1px solid",
-            borderColor: `${hex}40`,
+            borderColor: "folio.line",
         };
     };
 
@@ -129,14 +121,14 @@ const PatientTable = ({
         <Table.Row
             key={patient.id}
             backgroundColor={getRowBackgroundColor(index)}
-            transition="background-color 0.15s ease, opacity 0.2s ease"
-            _hover={{ backgroundColor: "surfaceQuartile" }}
-            opacity={
+            transition="background-color 160ms ease"
+            _hover={{ backgroundColor: "folio.hover" }}
+            color={
                 summaryOnly &&
                 (patient.jobs_list?.length || 0) > 0 &&
                 patient.jobs_list.every((j) => j.completed)
-                    ? 0.5
-                    : 1
+                    ? "folio.muted"
+                    : "folio.ink"
             }
         >
             <Table.Cell width="25%" verticalAlign="top">
@@ -210,7 +202,7 @@ const PatientTable = ({
                     <Box
                         p={2}
                         borderRadius="lg"
-                        bg="surface"
+                        bg="folio.paperAlt"
                     >
                         <Text fontSize="sm">
                             {patient.reasoning?.summary ??
@@ -289,12 +281,6 @@ const PatientTable = ({
                                                 !patient.reasoning &&
                                                 section !== "summary"
                                             }
-                                            opacity={
-                                                !patient.reasoning &&
-                                                section !== "summary"
-                                                    ? 0.5
-                                                    : 1
-                                            }
                                             p={1}
                                         >
                                             <Icon asChild>
@@ -309,7 +295,7 @@ const PatientTable = ({
                             overflowY="auto"
                             className="scroll-container"
                             p={3}
-                            bg="surface"
+                            bg="folio.paperAlt"
                                 borderRadius="lg"
                                 h="100%"
                                 position="relative"
@@ -472,14 +458,14 @@ const PatientTable = ({
                                             whiteSpace: "normal",
                                             paddingTop: 0,
                                             transition:
-                                                "opacity 0.2s ease, text-decoration-color 0.2s ease",
+                                                "color 160ms ease, text-decoration-color 160ms ease",
                                             textDecorationColor:
                                                 "currentColor",
                                             ...(item.completed
                                                 ? {
                                                       textDecoration:
                                                           "line-through",
-                                                      opacity: 0.5,
+                                                      color: "folio.muted",
                                                   }
                                                 : {}),
                                         },
@@ -501,7 +487,7 @@ const PatientTable = ({
                             <Text
                                 fontSize="sm"
                                 fontStyle="italic"
-                                opacity={0.6}
+                                color="folio.muted"
                             >
                                 {t("patient.noTasks")}
                             </Text>
@@ -535,8 +521,11 @@ const PatientTable = ({
     return (
         <Box
             p="5"
-            borderRadius="xl"
+            borderRadius="folioPanel"
             w="100%"
+            bg="folio.paper"
+            border="1px solid"
+            borderColor="folio.line"
             className="anim-fade-slide-up"
             css={{ animationDuration: "0.25s" }}
         >
@@ -564,7 +553,7 @@ const PatientTable = ({
                             <Box
                                 overflowX="auto"
                                 border="1px solid"
-                                borderColor="surface"
+                                borderColor="folio.line"
                                 borderRadius="xl"
                             >
                                 <Table.Root
@@ -577,7 +566,7 @@ const PatientTable = ({
                                     }}
                                 >
                                     <Table.Header
-                                        bg="surface"
+                                        bg="folio.paperAlt"
                                     >
                                         <Table.Row>
                                             <Table.ColumnHeader width="25%">
@@ -618,7 +607,7 @@ const PatientTable = ({
                 <Box
                     overflowX="auto"
                     border="1px solid"
-                    borderColor="surface"
+                    borderColor="folio.line"
                     borderRadius="xl"
                 >
                     <Table.Root
@@ -631,7 +620,7 @@ const PatientTable = ({
                         }}
                     >
                         <Table.Header
-                            bg="surface"
+                            bg="folio.paperAlt"
                         >
                             <Table.Row>
                                 <Table.ColumnHeader width="25%">

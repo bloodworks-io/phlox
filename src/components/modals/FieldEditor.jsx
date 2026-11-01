@@ -32,9 +32,8 @@ export const FieldEditor = ({
 
     return (
         <Box
-            className="panels-bg"
+            className="settings-panel"
             p="3"
-            borderRadius="sm"
             css={{ animation: "phloxFadeScaleIn 0.2s ease-out both" }}
         >
             <Flex maxW="530px" align="center" mb={2}>
@@ -60,18 +59,18 @@ export const FieldEditor = ({
                                 variant="unstyled"
                                 fontSize="md"
                                 fontWeight="600"
-                                css={{
+                                 css={{
                                     '& &::placeholder': {
                                         fontWeight: "600",
                                     },
 
                                     '& &:hover': {
-                                        bg: "whiteAlpha.200",
+                                        bg: "folio.hover",
                                         borderRadius: "sm",
                                     },
 
                                     '& &:focus': {
-                                        bg: "whiteAlpha.100",
+                                        bg: "folio.paperAlt",
                                         borderRadius: "sm",
                                         outline: "none",
                                         "& + .edit-icon": {
@@ -79,9 +78,9 @@ export const FieldEditor = ({
                                         },
                                     },
 
-                                    transition: "all 0.2s",
+                                    transition: "background-color 160ms ease, color 160ms ease, border-color 160ms ease",
 
-                                    color: "var(--chakra-colors-text-secondary)"
+                                    color: "var(--chakra-colors-folio-ink)"
                                 }}
                             />
                             <EditIcon
@@ -89,7 +88,7 @@ export const FieldEditor = ({
                                 position="absolute"
                                 right="0"
                                 display="none"
-                                color="overlay0"
+                                color="folio.muted"
                                 fontSize="14px"
                                 _groupHover={{
                                     display: "block",
@@ -171,15 +170,15 @@ export const FieldEditor = ({
                             size="sm"
                             variant="ghost"
                             ml={3}
-                            color="dangerButton"
-                            _hover={{ bg: "dangerButton", color: "white" }}><DeleteIcon /></IconButton>
+                            color="folio.danger"
+                            _hover={{ bg: "folio.dangerSoft", color: "folio.danger" }}><DeleteIcon /></IconButton>
                     )}
                 </Flex>
             </Flex>
             <VStack gap={3} align="stretch">
                 {/* System prompt */}
                 <Box width="full">
-                    <Text fontSize="sm" color="overlay0" mb={1}>
+                    <Text fontSize="sm" color="folio.muted" mb={1}>
                         {t("modal.fieldEditor.systemPrompt")}
                     </Text>
                     <Textarea
@@ -206,8 +205,8 @@ export const FieldEditor = ({
                             aria-label={t("modal.fieldEditor.toggleAdvanced")}
                             variant="ghost"
                             size="sm"
-                            className="collapse-toggle"><AnimatedChevron isOpen={showAdvanced} /></IconButton>
-                        <Text fontSize="sm" color="overlay0">
+                            className="settings-collapse-toggle"><AnimatedChevron isOpen={showAdvanced} /></IconButton>
+                        <Text fontSize="sm" color="folio.muted">
                             {t("modal.fieldEditor.advancedSettings")}
                         </Text>
                     </HStack>
@@ -216,7 +215,7 @@ export const FieldEditor = ({
                             <VStack gap={3} mt={3}>
                                 <HStack>
                                     <Box flex="1">
-                                        <Text fontSize="sm" color="overlay0" mb={1}>
+                                        <Text fontSize="sm" color="folio.muted" mb={1}>
                                             {t("modal.fieldEditor.formatSchema")}
                                         </Text>
                                         <NativeSelect.Root>
@@ -264,7 +263,7 @@ export const FieldEditor = ({
                                         <Box flex="1">
                                             <Text
                                                 fontSize="sm"
-                                                color="overlay0"
+                                                color="folio.muted"
                                                 mb={1}
                                             >
                                                 {t("modal.fieldEditor.bulletCharacter")}
@@ -302,7 +301,7 @@ export const FieldEditor = ({
 
                                 {/* Style Example */}
                                 <Box width="full">
-                                    <Text fontSize="sm" color="overlay0" mb={1}>
+                                    <Text fontSize="sm" color="folio.muted" mb={1}>
                                         {t("modal.fieldEditor.styleExample")}
                                     </Text>
                                     <Textarea

@@ -38,7 +38,7 @@ const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
                 <Text fontSize="sm" fontWeight="medium">
                     {t("settings.policy.storeOriginalPdfs")}
                 </Text>
-                <Text fontSize="xs" className="pill-box-icons">
+                <Text fontSize="xs" className="settings-meta">
                     {t("settings.policy.storeOriginalPdfsDescription")}
                 </Text>
             </Box>
@@ -60,7 +60,7 @@ const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
                 <Text fontSize="sm" fontWeight="medium">
                     {t("settings.policy.requireScribeConsent")}
                 </Text>
-                <Text fontSize="xs" className="pill-box-icons">
+                <Text fontSize="xs" className="settings-meta">
                     {t("settings.policy.requireScribeConsentDescription")}
                 </Text>
             </Box>
@@ -84,7 +84,7 @@ const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
                         <Text fontSize="sm" fontWeight="medium">
                             {t("settings.policy.streamingCapture")}
                         </Text>
-                        <Text fontSize="xs" className="pill-box-icons">
+                        <Text fontSize="xs" className="settings-meta">
                             {t("settings.policy.streamingCaptureDescription")}
                         </Text>
                     </Box>
@@ -106,7 +106,7 @@ const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
                         <Text fontSize="sm" fontWeight="medium">
                             {t("settings.policy.kvWarming")}
                         </Text>
-                        <Text fontSize="xs" className="pill-box-icons">
+                        <Text fontSize="xs" className="settings-meta">
                             {t("settings.policy.kvWarmingDescription")}
                         </Text>
                     </Box>
@@ -217,7 +217,7 @@ const AdminSettingsPanel = ({
     };
 
     return (
-        <Box className="panels-bg" p="4" borderRadius="sm">
+        <Box className="settings-panel" p="4">
             <Flex align="center" justify="space-between">
                 <Flex align="center">
                     <IconButton
@@ -226,7 +226,7 @@ const AdminSettingsPanel = ({
                         variant="outline"
                         size="sm"
                         mr="2"
-                        className="collapse-toggle"
+                        className="settings-collapse-toggle"
                     >
                         <AnimatedChevron isOpen={!isCollapsed} />
                     </IconButton>
@@ -379,13 +379,13 @@ const AdminSettingsPanel = ({
                                     )}
                                 </Tabs.List>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="0"
                                 >
                                     <LocalModelManager />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="chat"
                                 >
                                     <PromptEditorTab
@@ -423,7 +423,7 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="summary"
                                 >
                                     <PromptEditorTab
@@ -444,13 +444,13 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="1"
                                 >
                                     <ToolsSettingsTab />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="2"
                                 >
                                     <PolicyTab
@@ -461,7 +461,7 @@ const AdminSettingsPanel = ({
                                 </Tabs.Content>
                                 {!isTauri() && (
                                     <Tabs.Content
-                                        className="floating-main"
+                                        className="settings-tab-body"
                                         value="3"
                                     >
                                         <UsersTab />
@@ -568,7 +568,7 @@ const AdminSettingsPanel = ({
                                     )}
                                 </Tabs.List>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="0"
                                 >
                                     <WhisperTab
@@ -587,7 +587,7 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="1"
                                 >
                                     <LlmTab
@@ -604,7 +604,7 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="chat"
                                 >
                                     <PromptEditorTab
@@ -642,7 +642,7 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="summary"
                                 >
                                     <PromptEditorTab
@@ -664,7 +664,7 @@ const AdminSettingsPanel = ({
                                 </Tabs.Content>
                                 {isRagEnabled() && (
                                     <Tabs.Content
-                                        className="floating-main"
+                                        className="settings-tab-body"
                                         value="2"
                                     >
                                         <RagTab
@@ -678,13 +678,13 @@ const AdminSettingsPanel = ({
                                     </Tabs.Content>
                                 )}
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="3"
                                 >
                                     <ToolsSettingsTab />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="4"
                                 >
                                     <PolicyTab
@@ -695,7 +695,7 @@ const AdminSettingsPanel = ({
                                 </Tabs.Content>
                                 {!isTauri() && (
                                     <Tabs.Content
-                                        className="floating-main"
+                                        className="settings-tab-body"
                                         value="5"
                                     >
                                         <UsersTab />

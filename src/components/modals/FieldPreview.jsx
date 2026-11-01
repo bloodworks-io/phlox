@@ -36,11 +36,11 @@ export const FieldPreview = ({ field }) => {
                 borderRadius="sm"
                 whiteSpace="pre-wrap"
                 fontSize="sm"
-                color="textTertiary"
+                color="folio.ink"
             >
                 {content || (
                     <Text
-                        color="textSecondary"
+                        color="folio.faint"
                         asChild
                     ><i>
                             {field.persistent

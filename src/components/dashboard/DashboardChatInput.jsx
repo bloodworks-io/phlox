@@ -141,17 +141,17 @@ const DashboardChatInput = ({
                     bottom={0}
                     align="center"
                     justify="center"
-                    bg="primaryButtonFaint"
+                    bg="folio.accentSoft"
                     borderWidth="2px"
                     borderStyle="dashed"
-                    borderColor="accent"
-                    borderRadius="lg"
+                    borderColor="folio.accent"
+                    borderRadius="folioOverlay"
                     zIndex={20}
                     pointerEvents="none"
                     className="anim-fade-scale"
                     css={{ animationDuration: "0.15s" }}
                 >
-                    <Text fontWeight="bold" color="primaryButton">
+                    <Text fontWeight="bold" color="folio.accent">
                         {t("chat.attachment.dropHere")}
                     </Text>
                 </Flex>
@@ -171,8 +171,10 @@ const DashboardChatInput = ({
                         mb={2}
                         px={2}
                         py={1.5}
-                        borderRadius="md"
-                        bg="surfaceMuted"
+                        borderRadius="folioControl"
+                        bg="folio.paperAlt"
+                        border="1px solid"
+                        borderColor="folio.line"
                         maxW="33%"
                         className="anim-fade-slide-up"
                         css={{ animationDuration: "0.15s" }}
@@ -189,7 +191,7 @@ const DashboardChatInput = ({
                         ) : (
                             <Icon
                                 boxSize={3.5}
-                                color="dangerButton"
+                                color="folio.info"
                                 flexShrink={0}
                                 asChild
                             >
@@ -233,9 +235,9 @@ const DashboardChatInput = ({
                     py="1.5"
                     px="3"
                     lineHeight="1.35"
-                    color="textPrimary"
+                    color="folio.ink"
                     _placeholder={{
-                        color: "textQuaternary",
+                        color: "folio.faint",
                     }}
                     fontSize="md"
                     disabled={isLoading || isProcessingImage}
@@ -250,9 +252,10 @@ const DashboardChatInput = ({
                             aria-label={t("chat.attachment.attach")}
                             size="sm"
                             variant="ghost"
-                            color="textQuaternary"
+                            color="folio.muted"
                             _hover={{
-                                bg: "hoverOverlay",
+                                bg: "folio.hover",
+                                color: "folio.ink",
                             }}
                         >
                             <AttachmentIcon />
@@ -273,16 +276,8 @@ const DashboardChatInput = ({
                         aria-label={t("chat.input.send")}
                         size="sm"
                         alignSelf="center"
+                        variant="folioPrimary"
                         borderRadius="full"
-                        bg={canSend ? "sendButton" : "sendButtonDisabled"}
-                        color={canSend ? "sendButtonText" : "sendButtonTextDisabled"}
-                        _hover={{
-                            bg: canSend
-                                ? "sendButtonHover"
-                                : "sendButtonHoverDisabled",
-                            transform: "scale(1.05)",
-                        }}
-                        transition="all 0.2s ease"
                     >
                         <ArrowUpIcon />
                     </IconButton>
@@ -292,9 +287,8 @@ const DashboardChatInput = ({
                 <Text
                     textAlign="center"
                     fontSize="xs"
-                    color="overlay0"
+                    color="folio.muted"
                     mt={2}
-                    opacity={0.8}
                 >
                     {t("chat.disclaimer")}
                 </Text>

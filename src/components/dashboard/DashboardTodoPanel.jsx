@@ -40,21 +40,31 @@ const DashboardTodoPanel = ({
     const activeCount = Math.max(todos.length - completedCount, 0);
 
     return (
-        <Box w="100%" maxW="760px" px={1} py={1}>
+        <Box
+            w="100%"
+            maxW="760px"
+            px={3}
+            py={3}
+            bg="folio.paper"
+            border="1px solid"
+            borderColor="folio.line"
+            borderRadius="folioPanel"
+            boxShadow="overlay"
+        >
             <VStack align="stretch" gap={2}>
                 <HStack justify="space-between" align="center">
                     <Button
                         onClick={toggleCollapsed}
                         variant='plain'
-                        color="overlay0"
+                        color="folio.muted"
                         fontWeight="medium"
                         fontSize="sm"
                         textDecoration="none"
-                        _hover={{ color: "textPrimary", textDecoration: "none" }}>{t("dashboard.todos.title")}
+                        _hover={{ color: "folio.ink", textDecoration: "none" }}>{t("dashboard.todos.title")}
                                             {
                             <AnimatedChevron isOpen={!isCollapsed} direction="up" />
                         }</Button>
-                    <Text fontSize="xs" color="overlay0">
+                    <Text fontSize="xs" color="folio.muted">
                         {t("dashboard.todos.activeCount", {
                             count: activeCount,
                         })}
@@ -65,7 +75,7 @@ const DashboardTodoPanel = ({
                     <Collapsible.Content>
                         <VStack align="stretch" gap={2} pt={1}>
                             <Flex align="center" justify="space-between">
-                                <Text fontSize="xs" color="overlay0">
+                                <Text fontSize="xs" color="folio.muted">
                                     {t("dashboard.todos.optional")}
                                 </Text>
                                 <Button
@@ -74,9 +84,9 @@ const DashboardTodoPanel = ({
                                     onClick={() =>
                                         setShowAllTodos?.((prev) => !prev)
                                     }
-                                    color="overlay0"
+                                    color="folio.muted"
                                     _hover={{
-                                        color: "textPrimary",
+                                        color: "folio.ink",
                                         textDecoration: "none",
                                     }}
                                 >
@@ -146,15 +156,10 @@ const DashboardTodoPanel = ({
                                                     }
                                                     color={
                                                         todo.completed
-                                                            ? "overlay0"
-                                                            : "textTertiary"
+                                                            ? "folio.success"
+                                                            : "folio.ink"
                                                     }
-                                                    opacity={
-                                                        todo.completed
-                                                            ? 0.6
-                                                            : 1
-                                                    }
-                                                    transition="color 0.2s ease, opacity 0.2s ease"
+                                                    transition="color 160ms ease"
                                                 >
                                                     {todo.task}
                                                 </Text>
@@ -170,22 +175,22 @@ const DashboardTodoPanel = ({
                                                     "dashboard.todos.delete",
                                                 )}
                                                 disabled={isSaving}
-                                                color="overlay0"
+                                                color="folio.muted"
                                                 _hover={{
-                                                    color: "dangerButton",
+                                                    color: "folio.danger",
                                                     bg: "transparent",
                                                 }}><DeleteIcon /></IconButton>
                                         </HStack>
                                     ))
                                 ) : (
-                                    <Text fontSize="sm" color="overlay0" px={1}>
+                                    <Text fontSize="sm" color="folio.muted" px={1}>
                                         {t("dashboard.todos.empty")}
                                     </Text>
                                 )}
                             </VStack>
 
                             {completedCount > 0 && (
-                                <Text fontSize="xs" color="overlay0" pt={1}>
+                                <Text fontSize="xs" color="folio.muted" pt={1}>
                                     {t("dashboard.todos.completedCount", {
                                         count: completedCount,
                                     })}

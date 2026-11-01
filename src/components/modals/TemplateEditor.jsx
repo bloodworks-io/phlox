@@ -150,12 +150,12 @@ const TemplateEditor = ({
                                                 },
 
                                                 '& &:hover': {
-                                                    bg: "whiteAlpha.200",
+                                                    bg: "folio.hover",
                                                     borderRadius: "sm",
                                                 },
 
                                                 '& &:focus': {
-                                                    bg: "whiteAlpha.100",
+                                                    bg: "folio.paperAlt",
                                                     borderRadius: "sm",
                                                     outline: "none",
                                                     "& + .edit-icon": {
@@ -163,10 +163,10 @@ const TemplateEditor = ({
                                                     },
                                                 },
 
-                                                transition: "all 0.2s",
+                                                transition: "background-color 160ms ease, color 160ms ease, border-color 160ms ease",
 
                                                 color:
-                                                    "var(--chakra-colors-text-secondary) !important"
+                                                    "var(--chakra-colors-folio-ink) !important"
                                             }}
                                         />
                                         <EditIcon
@@ -176,7 +176,7 @@ const TemplateEditor = ({
                                             top="50%"
                                             transform="translateY(-50%)"
                                             display="none"
-                                            color="overlay0"
+                                            color="folio.muted"
                                             fontSize="16px"
                                             _groupHover={{
                                                 display: "block",
@@ -193,14 +193,14 @@ const TemplateEditor = ({
                                 <Box
                                     px={6}
                                     py={4}
-                                    bg="surfaceMuted"
+                                    bg="folio.accentSoft"
                                     borderLeft="4px solid"
-                                    borderLeftColor="accent"
+                                    borderLeftColor="folio.accent"
                                     borderBottom="1px solid"
-                                    borderBottomColor="whiteAlpha.200"
+                                    borderBottomColor="folio.line"
                                 >
                                     <HStack align="start" gap={3}>
-                                        <Box color="primaryButton" mt={0.5}>
+                                        <Box color="folio.accent" mt={0.5}>
                                             <svg
                                                 width="20"
                                                 height="20"
@@ -229,14 +229,14 @@ const TemplateEditor = ({
                                 <Box
                                     px={6}
                                     py={4}
-                                    bg="surfaceMuted"
+                                    bg="folio.accentSoft"
                                     borderLeft="4px solid"
-                                    borderLeftColor="accent"
+                                    borderLeftColor="folio.accent"
                                     borderBottom="1px solid"
-                                    borderBottomColor="whiteAlpha.200"
+                                    borderBottomColor="folio.line"
                                 >
                                     <HStack align="start" gap={3}>
-                                        <Box color="primaryButton" mt={0.5}>
+                                        <Box color="folio.accent" mt={0.5}>
                                             <svg
                                                 width="20"
                                                 height="20"
@@ -267,7 +267,7 @@ const TemplateEditor = ({
                                     flex="1"
                                     align="stretch"
                                     borderRight="1px"
-                                    borderColor="whiteAlpha.200"
+                                    borderColor="folio.line"
                                     h="full"
                                 >
                                     <Box px={4} pt={4} pb={2}>
@@ -275,7 +275,7 @@ const TemplateEditor = ({
                                             css={{
                                                 ...typography.styles.h4,
 
-                                                color: "var(--chakra-colors-text-tertiary)"
+                                                color: "var(--chakra-colors-folio-muted)"
                                             }}
                                         >
                                             {t("modal.templateEditor.editor")}
@@ -329,7 +329,7 @@ const TemplateEditor = ({
                                             css={{
                                                 ...typography.styles.h4,
 
-                                                color: "var(--chakra-colors-text-tertiary)"
+                                                color: "var(--chakra-colors-folio-muted)"
                                             }}
                                         >
                                             {t("modal.templateEditor.preview")}
@@ -350,7 +350,7 @@ const TemplateEditor = ({
                                                     px={4}
                                                     py={3}
                                                     mb={2}
-                                                    bg="surfaceInset"
+                                                    bg="folio.paperAlt"
                                                     borderRadius="md"
                                                     fontSize="xs"
                                                     opacity={0.8}

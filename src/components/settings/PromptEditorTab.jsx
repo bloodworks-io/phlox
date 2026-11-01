@@ -26,7 +26,7 @@ const PromptEditorTab = ({ title, subtitle, value, onChange, onReset }) => (
                 <Text fontSize="md" fontWeight="bold">
                     {title}
                 </Text>
-                <Text fontSize="sm" color="overlay0">
+                <Text fontSize="sm" color="folio.muted">
                     {subtitle}
                 </Text>
             </Box>

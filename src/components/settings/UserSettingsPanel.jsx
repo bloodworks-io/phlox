@@ -70,7 +70,7 @@ const UserSettingsPanel = ({
     }));
   };
   return (
-    <Box className="panels-bg" p="4" borderRadius="sm">
+    <Box className="settings-panel" p="4">
       <Flex align="center" justify="space-between">
         <Flex align="center">
           <IconButton
@@ -79,7 +79,7 @@ const UserSettingsPanel = ({
             variant="outline"
             size="sm"
             mr="2"
-            className="collapse-toggle"><AnimatedChevron isOpen={!isCollapsed} /></IconButton>
+            className="settings-collapse-toggle"><AnimatedChevron isOpen={!isCollapsed} /></IconButton>
           <FaUser size="1.2em" style={{ marginRight: "5px" }} />
           <Text as="h3">{t("settings.userPanel.title")}</Text>
         </Flex>
@@ -124,7 +124,7 @@ const UserSettingsPanel = ({
               )}
             </Tabs.List>
 
-              <Tabs.Content value="0" className="floating-main">
+              <Tabs.Content value="0" className="settings-tab-body">
                 <VStack gap={4} align="stretch">
                   <Box>
                     <Text fontSize="sm" mb="1">
@@ -195,7 +195,7 @@ const UserSettingsPanel = ({
                       </NativeSelect.Field>
                       <NativeSelect.Indicator />
                     </NativeSelect.Root>
-                    <Text fontSize="xs" className="pill-box-icons" mt={1}>
+                    <Text fontSize="xs" className="settings-meta" mt={1}>
                       {t("language.description")}
                     </Text>
                     {!languageSupported && (
@@ -255,14 +255,14 @@ const UserSettingsPanel = ({
                 </VStack>
               </Tabs.Content>
 
-              <Tabs.Content value="2" className="floating-main">
+              <Tabs.Content value="2" className="settings-tab-body">
                 <TemplateSettingsPanel />
               </Tabs.Content>
-              <Tabs.Content value="3" className="floating-main">
+              <Tabs.Content value="3" className="settings-tab-body">
                 <LetterTemplatesPanel />
               </Tabs.Content>
               {isChatEnabled() && (
-                <Tabs.Content value="4" className="floating-main">
+                <Tabs.Content value="4" className="settings-tab-body">
                   <ChatSettingsPanel
                     userSettings={userSettings}
                     setUserSettings={setUserSettings}
@@ -270,7 +270,7 @@ const UserSettingsPanel = ({
                 </Tabs.Content>
               )}
               {isTauri() && (
-                <Tabs.Content value="companion" className="floating-main">
+                <Tabs.Content value="companion" className="settings-tab-body">
                   <CompanionUserSettings
                     config={config}
                     handleConfigChange={handleConfigChange}

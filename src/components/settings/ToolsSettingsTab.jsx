@@ -112,7 +112,7 @@ const ToolsSettingsTab = ({ className }) => {
         <VStack gap={4} align="stretch" className={className}>
             {/* Warning Banner */}
             <Alert.Root status="warning" borderRadius="md">
-                <Alert.Indicator color="secondaryButton" />
+                <Alert.Indicator color="folio.warning" />
                 <Alert.Description fontSize="sm">
                     {t("settings.tools.warning")}
                 </Alert.Description>
@@ -128,7 +128,7 @@ const ToolsSettingsTab = ({ className }) => {
                     </HStack>
                 </Flex>
 
-                <Text fontSize="xs" className="pill-box-icons" mb={2}>
+                <Text fontSize="xs" className="settings-meta" mb={2}>
                     {t("settings.tools.builtinDescription")}
                 </Text>
 
@@ -138,7 +138,7 @@ const ToolsSettingsTab = ({ className }) => {
                             key={tool.name}
                             p={2}
                             borderRadius="md"
-                            className="floating-main"
+                            className="settings-tab-body"
                         >
                             <Flex justify="space-between" align="center">
                                 <HStack gap={2} flex="1">
@@ -156,7 +156,7 @@ const ToolsSettingsTab = ({ className }) => {
                                                         <FaLock
                                                             style={{
                                                                 opacity: 0.6,
-                                                                color: "var(--chakra-colors-secondary-button)",
+                                                                color: "var(--chakra-colors-folio-warning)",
                                                             }}
                                                         />
                                                     </Box>
@@ -165,7 +165,7 @@ const ToolsSettingsTab = ({ className }) => {
                                         </HStack>
                                         <Text
                                             fontSize="xs"
-                                            className="pill-box-icons"
+                                            className="settings-meta"
                                         >
                                             {t(tool.descriptionKey)}
                                         </Text>
@@ -198,11 +198,11 @@ const ToolsSettingsTab = ({ className }) => {
                     </Text>
                 </HStack>
                 <Spacer />
-                <Badge colorPalette="purple" fontSize="xs">
+                <Badge bg="folio.infoSoft" color="folio.info" fontSize="xs">
                     {t("settings.tools.streamableHttp")}
                 </Badge>
             </Flex>
-            <Text fontSize="xs" className="pill-box-icons">
+            <Text fontSize="xs" className="settings-meta">
                 {t("settings.tools.serversDescription")}
             </Text>
             {/* Add Server Button */}
@@ -214,7 +214,7 @@ const ToolsSettingsTab = ({ className }) => {
                             </Button>
             {/* Add Server Form */}
             {showAddForm && (
-                <Box p={4} borderRadius="md" className="floating-main">
+                <Box p={4} borderRadius="md" className="settings-tab-body">
                     <VStack gap={3}>
                         <Field.Root invalid={!!nameError}>
                             <Field.Label fontSize="xs">{t("settings.tools.serverName")}</Field.Label>
@@ -248,19 +248,26 @@ const ToolsSettingsTab = ({ className }) => {
                             <HStack gap={2}>
                                 <Checkbox.Root
                                     onCheckedChange={({ checked }) => setAllowSensitiveData(checked)}
-                                    colorPalette="red"
+                                    color="folio.danger"
                                     size="sm"
                                     checked={allowSensitiveData}
+                                    css={{
+                                        "& [data-part=control][data-state=checked]": {
+                                            bg: "folio.danger",
+                                            borderColor: "folio.danger",
+                                            color: "folio.dangerInk",
+                                        },
+                                    }}
                                 ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
                                     <Text fontSize="xs">{t("settings.tools.allowSensitive")}</Text>
                                 </Checkbox.Label></Checkbox.Root>
                                 <Tooltip content={t("settings.tools.allowSensitiveTooltip")}>
                                     <Box>
-                                        <FaLock style={{ opacity: 0.6, color: "var(--chakra-colors-secondary-button)" }} />
+                                        <FaLock style={{ opacity: 0.6, color: "var(--chakra-colors-folio-warning)" }} />
                                     </Box>
                                 </Tooltip>
                             </HStack>
-                            <Text fontSize="xs" className="pill-box-icons" mt={1}>
+                            <Text fontSize="xs" className="settings-meta" mt={1}>
                                 {t("settings.tools.sensitiveDefault")}
                             </Text>
                         </Field.Root>
@@ -287,15 +294,15 @@ const ToolsSettingsTab = ({ className }) => {
             )}
             {/* Server List */}
             {toolServers.length === 0 ? (
-                <Box p={6} textAlign="center" className="floating-main">
+                <Box p={6} textAlign="center" className="settings-tab-body">
                     <FaServer
                         size="1.5em"
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
-                    <Text fontSize="sm" className="pill-box-icons">
+                    <Text fontSize="sm" className="settings-meta">
                         {t("settings.tools.emptyTitle")}
                     </Text>
-                    <Text fontSize="xs" className="pill-box-icons" mt={1}>
+                    <Text fontSize="xs" className="settings-meta" mt={1}>
                         {t("settings.tools.emptyDescription")}
                     </Text>
                 </Box>
@@ -306,7 +313,7 @@ const ToolsSettingsTab = ({ className }) => {
                             key={server.id}
                             p={3}
                             borderRadius="md"
-                            className="floating-main"
+                            className="settings-tab-body"
                         >
                             <Flex justify="space-between" align="center">
                                 <HStack gap={3} flex="1">
@@ -321,10 +328,15 @@ const ToolsSettingsTab = ({ className }) => {
                                             </Text>
                                             <Badge
                                                 size="sm"
-                                                colorPalette={
+                                                bg={
                                                     server.enabled
-                                                        ? "green"
-                                                        : "gray"
+                                                        ? "folio.successSoft"
+                                                        : "folio.paperAlt"
+                                                }
+                                                color={
+                                                    server.enabled
+                                                        ? "folio.success"
+                                                        : "folio.muted"
                                                 }
                                                 fontSize="xs"
                                             >
@@ -336,7 +348,8 @@ const ToolsSettingsTab = ({ className }) => {
                                                 <Tooltip content={t("settings.tools.phiAllowedTooltip")}>
                                                     <Badge
                                                         size="sm"
-                                                        colorPalette="red"
+                                                        bg="folio.dangerSoft"
+                                                        color="folio.danger"
                                                         fontSize="xs"
                                                     >
                                                         PHI
@@ -346,14 +359,14 @@ const ToolsSettingsTab = ({ className }) => {
                                         </HStack>
                                         <Text
                                             fontSize="xs"
-                                            className="pill-box-icons"
+                                            className="settings-meta"
                                         >
                                             {server.url}
                                         </Text>
                                         {server.description && (
                                             <Text
                                                 fontSize="xs"
-                                                className="pill-box-icons"
+                                                className="settings-meta"
                                                 fontStyle="italic"
                                                 opacity={0.8}
                                             >
@@ -387,8 +400,16 @@ const ToolsSettingsTab = ({ className }) => {
                                         <IconButton
                                             size="sm"
                                             variant="ghost"
-                                            colorPalette={server.allow_sensitive_data ? "red" : "gray"}
-                                            opacity={server.allow_sensitive_data ? 1 : 0.4}
+                                            color={
+                                                server.allow_sensitive_data
+                                                    ? "folio.danger"
+                                                    : "folio.muted"
+                                            }
+                                            _hover={{
+                                                bg: server.allow_sensitive_data
+                                                    ? "folio.dangerSoft"
+                                                    : "folio.hover",
+                                            }}
                                             onClick={() =>
                                                 toggleSensitiveData(
                                                     server.id,
@@ -422,7 +443,8 @@ const ToolsSettingsTab = ({ className }) => {
                                     <Tooltip content={t("settings.tools.delete")}>
                                         <IconButton
                                             size="sm"
-                                            colorPalette="red"
+                                            color="folio.danger"
+                                            _hover={{ bg: "folio.dangerSoft" }}
                                             variant="ghost"
                                             onClick={() =>
                                                 deleteServer(server.id)

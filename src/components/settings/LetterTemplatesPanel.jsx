@@ -104,7 +104,7 @@ const LetterTemplatesPanel = () => {
     return (
         <VStack gap={3} align="stretch">
             <Flex justify="space-between" align="center">
-                <Text fontSize="xs" className="pill-box-icons" maxW="55%">
+                <Text fontSize="xs" className="settings-meta" maxW="55%">
                     {t("settings.letterTemplates.description")}
                 </Text>
                 <HStack>
@@ -132,17 +132,17 @@ const LetterTemplatesPanel = () => {
                     p={6}
                     textAlign="center"
                     borderWidth="1px"
-                    borderColor="border"
+                    borderColor="folio.line"
                     borderRadius="md"
                 >
                     <FaEnvelopeOpenText
                         size="1.5em"
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
-                    <Text fontSize="sm" className="pill-box-icons">
+                    <Text fontSize="sm" className="settings-meta">
                         {t("settings.letterTemplates.emptyTitle")}
                     </Text>
-                    <Text fontSize="xs" className="pill-box-icons" mt={1}>
+                    <Text fontSize="xs" className="settings-meta" mt={1}>
                         {t("settings.letterTemplates.emptyDescription")}
                     </Text>
                 </Box>
@@ -155,7 +155,7 @@ const LetterTemplatesPanel = () => {
                                 key={template.id}
                                 p={3}
                                 borderWidth="1px"
-                                borderColor="border"
+                                borderColor="folio.line"
                                 borderRadius="md"
                             >
                                 <Flex justify="space-between" align="center">
@@ -175,10 +175,15 @@ const LetterTemplatesPanel = () => {
                                                     {template.name}
                                                 </Text>
                                                 <Badge
-                                                    colorPalette={
+                                                    bg={
                                                         isDefault
-                                                            ? "green"
-                                                            : "gray"
+                                                            ? "folio.successSoft"
+                                                            : "folio.paperAlt"
+                                                    }
+                                                    color={
+                                                        isDefault
+                                                            ? "folio.success"
+                                                            : "folio.muted"
                                                     }
                                                     fontSize="xs"
                                                 >
@@ -190,7 +195,7 @@ const LetterTemplatesPanel = () => {
                                             {template.instructions && (
                                                 <Text
                                                     fontSize="xs"
-                                                    className="pill-box-icons"
+                                                    className="settings-meta"
                                                     mt={1}
                                                 >
                                                     {template.instructions}
@@ -215,7 +220,8 @@ const LetterTemplatesPanel = () => {
                                                 <IconButton
                                                     variant="ghost"
                                                     size="sm"
-                                                    colorPalette="red"
+                                                    color="folio.danger"
+                                                    _hover={{ bg: "folio.dangerSoft" }}
                                                     aria-label={t("settings.templates.deleteTemplate")}
                                                     onClick={() =>
                                                         handleDelete(

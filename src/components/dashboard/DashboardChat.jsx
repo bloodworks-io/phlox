@@ -37,6 +37,9 @@ const pickSuggestions = (specialty) => {
         .slice(0, 3);
 };
 
+const prefersReducedMotion = () =>
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
 const DashboardChat = () => {
     const { t } = useTranslation();
     const {
@@ -91,7 +94,9 @@ const DashboardChat = () => {
     // Scroll to bottom when messages change (only if user is near bottom)
     useEffect(() => {
         if (messagesEndRef.current && hasMessages && userIsNearBottomRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            messagesEndRef.current.scrollIntoView({
+                behavior: prefersReducedMotion() ? "auto" : "smooth",
+            });
         }
     }, [messages, hasMessages]);
 
@@ -391,7 +396,7 @@ const DashboardChat = () => {
                         >
                             {t("dashboard.chat.greeting")}
                         </Text>
-                        <Text fontSize="md" color="overlay0">
+                        <Text fontSize="md" color="folio.muted">
                             {t("dashboard.chat.subtitle")}
                         </Text>
                     </VStack>

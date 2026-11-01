@@ -24,6 +24,16 @@ const patientInfoStyles = (props) => ({
         flexShrink: 0, // Prevent icon from shrinking
     },
 
+    // Clinical Folio settings metadata/icons. Scoped: `.pill-box-icons`
+    // stays legacy for splash/panel/scribe consumers outside Settings.
+    // Layout metrics mirror the legacy class to preserve geometry.
+    ".settings-meta": {
+        color: "folio.muted !important",
+        minWidth: "16px",
+        marginRight: "8px",
+        flexShrink: 0, // Prevent icon from shrinking
+    },
+
     // Clinical Folio consultation surfaces. These are deliberately scoped:
     // `.panels-bg` remains the legacy surface for RAG/settings/PDF consumers.
     ".patient-context-bar": {

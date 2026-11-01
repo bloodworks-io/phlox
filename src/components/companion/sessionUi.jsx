@@ -6,10 +6,13 @@ import { FaRegClock } from "react-icons/fa";
 // one-line detail string used by the settings tab and the import modal.
 
 export const SessionStatusIcon = ({ status }) => {
-    if (status === "processing") return <Spinner size="xs" />;
-    if (status === "imported") return <CheckIcon color="successButton" boxSize={3} />;
-    if (status === "received") return <FaRegClock color="brand" boxSize={3} />;
-    return <WarningIcon color="dangerButton" boxSize={3} />;
+    if (status === "processing")
+        return <Spinner size="xs" color="folio.info" />;
+    if (status === "imported")
+        return <CheckIcon color="folio.success" boxSize={3} />;
+    if (status === "received")
+        return <FaRegClock color="folio.info" boxSize={3} />;
+    return <WarningIcon color="folio.danger" boxSize={3} />;
 };
 
 export const formatDuration = (startedAt, endedAt) => {

@@ -84,6 +84,8 @@ describe("PatientTable", () => {
 
         expect(screen.getByText("Review in four months")).toHaveStyle({
             textDecoration: "line-through",
+        });
+        expect(screen.getByText("Review in four months")).not.toHaveStyle({
             opacity: "0.5",
         });
     });
@@ -125,6 +127,63 @@ describe("PatientTable", () => {
         expect(screen.getAllByRole("row").length).toBeGreaterThan(4);
     });
 
+    it("renders reasoning sections and keeps unavailable sections disabled", () => {
+        renderTable({ summaryOnly: false });
+
+        const reasonButtons = document.querySelectorAll(".reason-button");
+        expect(reasonButtons).toHaveLength(8);
+        expect([...reasonButtons].filter((button) => button.disabled)).toHaveLength(
+            3,
+        );
+
+        fireEvent.click(reasonButtons[1]);
+        expect(baseProps.setPatients).toHaveBeenCalledWith([
+            expect.objectContaining({
+                id: 1,
+                activeSection: "differentials",
+            }),
+            expect.objectContaining({ id: 2 }),
+        ]);
+    });
+
+    it("renders semantic reasoning category tags for the active section", () => {
+        renderTable({
+            summaryOnly: false,
+            patients: [
+                {
+                    ...patients[0],
+                    activeSection: "differentials",
+                },
+            ],
+        });
+
+        expect(screen.getByText("Stable iron deficiency")).toBeInTheDocument();
+    });
+
+    it("groups Outstanding Jobs by descending encounter date", () => {
+        renderTable({
+            groupByDate: true,
+            patients: [
+                {
+                    ...patients[0],
+                    id: 2,
+                    encounter_date: "2026-07-22",
+                },
+                {
+                    ...patients[1],
+                    id: 1,
+                    encounter_date: "2026-07-23",
+                },
+            ],
+        });
+
+        const headings = screen.getAllByRole("heading", { level: 3 });
+        expect(headings).toHaveLength(2);
+        expect(headings[0].textContent).not.toBe(headings[1].textContent);
+        expect(headings[0].textContent).toMatch(/23/);
+        expect(headings[1].textContent).toMatch(/22/);
+    });
+
     it("renders a subdued row when every summary job is complete", () => {
         renderTable({
             patients: [
@@ -139,6 +198,7 @@ describe("PatientTable", () => {
         });
 
         const row = screen.getByRole("row", { name: /J\. Smith/ });
-        expect(row).toHaveStyle({ opacity: "0.5" });
+        expect(row).not.toHaveStyle({ opacity: "0.5" });
+        expect(row).toHaveTextContent(/improving iron-deficiency anaemia/i);
     });
 });
