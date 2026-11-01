@@ -43,6 +43,8 @@ __pycache__/
 build/
 dist/
 .tmp/
+test-results/
+playwright-report/
 main.*/
 repo/
 
