@@ -84,16 +84,18 @@ const inputStyles = () => ({
     ".note-header": {
         borderBottom: "1px solid",
         borderBottomColor: "folio.line",
+        padding: "16px 20px 12px",
     },
     ".note-footer": {
         borderTop: "1px solid",
         borderTopColor: "folio.line",
+        padding: "16px 20px",
     },
     ".note-fields-container": {
         backgroundColor: "transparent",
         border: "none",
         borderRadius: "0",
-        padding: "12px",
+        padding: "16px 20px 24px",
         paddingRight: "72px",
         overflow: "hidden",
     },

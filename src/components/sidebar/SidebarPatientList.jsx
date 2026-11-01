@@ -358,11 +358,8 @@ const SidebarPatientList = ({
                                                             </Text>
                                                             <Text
                                                                 fontSize="xs"
-                                                                 color={
-                                                                     labelColor
-                                                                 }
-                                                                 lineClamp={1}
-                                                             >
+                                                                lineClamp={1}
+                                                            >
                                                                  {t(
                                                                      "sidebar.patientList.ur",
                                                                      {

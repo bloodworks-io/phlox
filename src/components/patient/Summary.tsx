@@ -268,7 +268,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
 
     return (
       <>
-        <Box p={[2, 3, 4]} className="note-panel">
+        <Box className="note-panel">
           <Flex className="note-header" align="center" justify="space-between">
             <Flex align="center">
               <HStack gap={2}>
@@ -341,12 +341,12 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
 
           <Collapsible.Root open={!isSummaryCollapsed}>
             <Collapsible.Content>
-              <Box mt="4" className="note-fields-container">
+              <Box className="note-fields-container">
                 <VStack gap="0" align="stretch">
                   {currentTemplate?.fields?.map(renderField)}
                 </VStack>
               </Box>
-              <Flex className="note-footer" mt="4" justifyContent="space-between" align="center">
+              <Flex className="note-footer" justifyContent="space-between" align="center">
                 <Flex gap={2}>
                   <Tooltip
                     content={t("patient.copyNoteTooltip")}

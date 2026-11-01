@@ -1,21 +1,21 @@
-// Muted, deterministic Clinical Folio avatar hues. White initials retain at
-// least 4.5:1 contrast on every background while preserving the original
-// categorical order and hash assignment.
+// Deterministic Clinical Folio avatar hues, pre-mixed 62% hue / 38% #20251f
+// exactly as the design portfolio renders them. White initials retain at
+// least 4.5:1 contrast on every background.
 export const FOLIO_AVATAR_COLORS = [
-    "#7e746e",
-    "#7d6a67",
-    "#7f6778",
-    "#6c5b79",
-    "#7a4f4c",
-    "#7b5957",
-    "#7d5c46",
-    "#796e52",
-    "#5c724f",
-    "#4c6e67",
-    "#567274",
-    "#4d6b74",
-    "#51617c",
-    "#65687e",
+    "#745752",
+    "#516552",
+    "#6C6246",
+    "#5A5464",
+    "#4B6466",
+    "#705D4C",
+    "#7E6059",
+    "#5A6F56",
+    "#83734C",
+    "#55726F",
+    "#6C6476",
+    "#504039",
+    "#38483B",
+    "#7E6752",
 ];
 
 export const getAvatarColor = (name) => {

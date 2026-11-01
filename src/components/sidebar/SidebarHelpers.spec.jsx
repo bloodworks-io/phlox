@@ -6,22 +6,22 @@ import {
 } from "./SidebarHelpers";
 
 describe("SidebarHelpers", () => {
-    it("exposes the muted Folio avatar palette", () => {
+    it("exposes the Folio avatar palette", () => {
         expect(FOLIO_AVATAR_COLORS).toEqual([
-            "#7e746e",
-            "#7d6a67",
-            "#7f6778",
-            "#6c5b79",
-            "#7a4f4c",
-            "#7b5957",
-            "#7d5c46",
-            "#796e52",
-            "#5c724f",
-            "#4c6e67",
-            "#567274",
-            "#4d6b74",
-            "#51617c",
-            "#65687e",
+            "#745752",
+            "#516552",
+            "#6C6246",
+            "#5A5464",
+            "#4B6466",
+            "#705D4C",
+            "#7E6059",
+            "#5A6F56",
+            "#83734C",
+            "#55726F",
+            "#6C6476",
+            "#504039",
+            "#38483B",
+            "#7E6752",
         ]);
     });
 
