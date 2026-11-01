@@ -47,7 +47,32 @@ test("citation verdicts and popover use the Folio status language", async ({
         page.locator(".citation-badge[data-verdict='conflict']"),
     ).toHaveCount(1);
 
-    await page.locator(".citation-badge[data-verdict='conflict']").click();
+    const conflictBadge = page.locator(".citation-badge[data-verdict='conflict']");
+    const bleedingLine = page.locator("[data-line]", {
+        hasText: "- No new bleeding symptoms",
+    });
+    // The [3] assertion below pins the quoted transcript line; this framed
+    // shot pins where the badge sits in the note. The clip unions the note
+    // line's box with the badge's, so a mis-anchored badge displaces the
+    // frame itself instead of hiding inside the 2% whole-page budget.
+    const [lineBox, badgeBox] = await Promise.all([
+        bleedingLine.boundingBox(),
+        conflictBadge.boundingBox(),
+    ]);
+    await expectStableScreenshot(page, "consultation-citation-anchor", {
+        clip: {
+            x: Math.min(lineBox.x, badgeBox.x),
+            y: Math.min(lineBox.y, badgeBox.y),
+            width:
+                Math.max(lineBox.x + lineBox.width, badgeBox.x + badgeBox.width) -
+                Math.min(lineBox.x, badgeBox.x),
+            height:
+                Math.max(lineBox.y + lineBox.height, badgeBox.y + badgeBox.height) -
+                Math.min(lineBox.y, badgeBox.y),
+        },
+    });
+
+    await conflictBadge.click();
     const popover = page
         .getByRole("dialog")
         .filter({ hasText: "The transcript says the opposite:" });
@@ -55,6 +80,9 @@ test("citation verdicts and popover use the Folio status language", async ({
     await expect(
         popover.getByText("I have noticed some bruising on my arms lately."),
     ).toBeVisible();
+    // Wrong-citation anchoring fits inside the 2% whole-page screenshot
+    // budget, so the quoted 0-based transcript index is the focused guard.
+    await expect(popover.getByText("[3]")).toBeVisible();
 
     await expectStableScreenshot(page, "consultation-citation-popover");
 });

@@ -49,12 +49,17 @@ export async function openSeededApp(
     return mocks;
 }
 
-export async function expectStableScreenshot(page: Page, name: string) {
+export async function expectStableScreenshot(
+    page: Page,
+    name: string,
+    options: { clip?: { x: number; y: number; width: number; height: number } } = {},
+) {
     await expect(page).toHaveScreenshot(`${name}.png`, {
         fullPage: false,
         animations: "disabled",
         caret: "hide",
         maxDiffPixelRatio: 0.02,
+        clip: options.clip,
     });
 }
 
