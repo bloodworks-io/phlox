@@ -290,7 +290,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                     <HStack gap={2}>
                                         {showOption && (
                                             <Button
-                                                className="green-button"
+                                                variant="folioSecondary"
                                                 loading={saving}
                                                 disabled={selected.size === 0}
                                                 onClick={() => save(true)}
@@ -302,7 +302,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                             </Button>
                                         )}
                                         <Button
-                                            className="green-button"
+                                            variant="folioPrimary"
                                             loading={saving}
                                             disabled={selected.size === 0}
                                             onClick={() => save(false)}
@@ -316,7 +316,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                                   })}
                                         </Button>
                                         <Button
-                                            className="grey-button"
+                                            variant="folioSecondary"
                                             onClick={onClose}
                                         >
                                             {t("action.close")}

@@ -315,7 +315,7 @@ const TemplateEditor = ({
                                                     <strong>{t("modal.templateEditor.dyn")}</strong>{" = "}
                                                     {t("modal.templateEditor.dynGenerated")}
                                                 </Box>
-                                                <Button onClick={addField} className="summary-buttons" size="sm"><AddIcon />{t("modal.templateEditor.addField")}
+                                                <Button onClick={addField} variant="folioSecondary" size="sm"><AddIcon />{t("modal.templateEditor.addField")}
                                                 </Button>
                                             </VStack>
                                         </Box>
@@ -378,12 +378,7 @@ const TemplateEditor = ({
                             <Button
                                 onClick={onClose}
                                 size="md"
-                                borderRadius="2xl"
-                                className="switch-mode"
-                                css={{
-                                    fontFamily: '"Space Grotesk", sans-serif',
-                                    fontWeight: "600"
-                                }}
+                                variant="folioSecondary"
                                 mr={3}
                             >
                                 {t("action.cancel")}
@@ -391,12 +386,7 @@ const TemplateEditor = ({
                             <Button
                                 onClick={handleSave}
                                 size="md"
-                                borderRadius="2xl"
-                                className="green-button"
-                                css={{
-                                    fontFamily: '"Space Grotesk", sans-serif',
-                                    fontWeight: "600",
-                                }}
+                                variant="folioPrimary"
                             >
                                 {t("modal.templateEditor.saveChanges")}
                             </Button>

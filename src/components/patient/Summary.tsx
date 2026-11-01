@@ -6,7 +6,7 @@ import React, {
 } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -15,7 +15,7 @@ import {
   CheckIcon,
 } from "../common/icons";
 import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText, FaExclamationCircle } from "react-icons/fa";
-import { GreenButton, GreyButton } from "../common/Buttons";
+import { SecondaryButton, PrimaryButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { useTemplateChange } from "../../utils/hooks/useTemplateChange";
 import ConfirmDialog from "../common/ConfirmDialog";
@@ -324,15 +324,14 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
                   {isUngeneratedNote && onGenerateNote && (
-                    <Button
+                    <PrimaryButton
                       size="sm"
-                      className="green-button"
                       loading={generateLoading}
                       onClick={onGenerateNote}
                       ml={2}
                     >
                       {t("patient.generateNote")}
-                    </Button>
+                    </PrimaryButton>
                   )}
                 </Flex>
               </Box>
@@ -417,7 +416,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                     positioning={{ placement: "top" }}
                   >
                     <Box>
-                      <GreyButton
+                      <SecondaryButton
                         onClick={handleSavePatientData}
                         loading={saveLoading}
                         loadingText={t("patient.saving")}
@@ -425,7 +424,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         leftIcon={saveLoading ? null : <FaSave />}
                       >
                         {saveLoading ? t("patient.savingOngoing") : t("action.save")}
-                      </GreyButton>
+                      </SecondaryButton>
                     </Box>
                   </Tooltip>
                   <Tooltip
@@ -433,7 +432,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                     positioning={{ placement: "top" }}
                   >
                     <Box>
-                      <GreenButton
+                      <PrimaryButton
                         onClick={onWrapUp}
                         loading={wrapUpLoading}
                         loadingText={t("patient.wrapping")}
@@ -442,7 +441,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         disabled={saveLoading}
                       >
                         {wrapUpLoading ? t("patient.wrappingOngoing") : t("patient.wrapUp")}
-                      </GreenButton>
+                      </PrimaryButton>
                     </Box>
                   </Tooltip>
                 </Flex>

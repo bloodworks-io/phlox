@@ -287,7 +287,7 @@ const LlmTab = ({
                     <HStack gap={3} mb={2}>
                         <Button
                             size="sm"
-                            variant="outline"
+                            variant="folioSecondary"
                             onClick={handleProbeVisionCapability}
                             loading={isProbingVision}
                         >
@@ -348,7 +348,7 @@ const LlmTab = ({
                                     size="sm"
                                     h="30px"
                                     minH="30px"
-                                    className="red-button"
+                                    variant="folioSecondary"
                                     onClick={onOptionsReset}
                                 >
                                     <FiRefreshCw />

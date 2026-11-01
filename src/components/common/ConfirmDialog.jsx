@@ -9,9 +9,14 @@ const ConfirmDialog = ({
     body,
     confirmLabel,
     cancelLabel = undefined,
+    // "default" renders a primary confirm; "destructive" renders a
+    // danger confirm for delete/reset confirmations.
+    intent = "default",
 }) => {
     const { t } = useTranslation();
     const cancelText = cancelLabel ?? t("action.cancel");
+    const confirmVariant =
+        intent === "destructive" ? "folioDanger" : "folioPrimary";
 
     return (
         <Dialog.Root
@@ -35,10 +40,14 @@ const ConfirmDialog = ({
                         </Dialog.Body>
                         <Dialog.Footer>
                             <HStack justify="flex-end" width="100%">
-                                <Button className="red-button" mr={3} onClick={onConfirm}>
+                                <Button
+                                    variant={confirmVariant}
+                                    mr={3}
+                                    onClick={onConfirm}
+                                >
                                     {confirmLabel}
                                 </Button>
-                                <Button className="green-button" onClick={onClose}>
+                                <Button variant="folioSecondary" onClick={onClose}>
                                     {cancelText}
                                 </Button>
                             </HStack>

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Text, VStack, HStack, NativeSelect, Flex } from "@chakra-ui/react";
 import { AddIcon } from "../common/icons";
 import { FaPencilAlt, FaMagic, FaSave, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-import { GreenButton, GreyButton } from "../common/Buttons";
+import { PrimaryButton, SecondaryButton, SuccessButton } from "../common/Buttons";
 import FormTemplateList from "./FormTemplateList";
 import FormBuilder from "./FormBuilder";
 import FieldEditor from "./FieldEditor";
@@ -87,9 +87,9 @@ const FormTemplatesPanel = ({
           <Text as="h4" fontSize="sm">
             {t("forms.forms")}
           </Text>
-          <GreyButton size="xs" leftIcon={<AddIcon />} onClick={onOpenUpload}>
+          <SecondaryButton size="xs" leftIcon={<AddIcon />} onClick={onOpenUpload}>
             {t("forms.new")}
-          </GreyButton>
+          </SecondaryButton>
         </Flex>
 
         <FormTemplateList
@@ -174,26 +174,26 @@ const FormTemplatesPanel = ({
                   </NativeSelect.Field>
                   <NativeSelect.Indicator />
                 </NativeSelect.Root>
-                <GreyButton
+                <SecondaryButton
                   size="xs"
                   width="100%"
                   onClick={() => onSetDrawingMode(false)}
                 >
                   {t("forms.done")}
-                </GreyButton>
+                </SecondaryButton>
               </VStack>
             ) : (
               <VStack gap="2" align="stretch">
-                <GreyButton
+                <SecondaryButton
                   size="xs"
                   width="100%"
                   leftIcon={<AddIcon />}
                   onClick={() => onSetDrawingMode(true)}
                 >
                   {t("forms.newField")}
-                </GreyButton>
+                </SecondaryButton>
                 {visionCapable && (
-                  <GreyButton
+                  <SecondaryButton
                     size="xs"
                     width="100%"
                     leftIcon={<FaMagic />}
@@ -202,17 +202,21 @@ const FormTemplatesPanel = ({
                     loadingText={t("forms.detecting")}
                   >
                     {t("forms.autoDetect")}
-                  </GreyButton>
+                  </SecondaryButton>
                 )}
-                <GreyButton
-                  size="xs"
-                  width="100%"
-                  leftIcon={previewOn ? <FaRegEyeSlash /> : <FaRegEye />}
-                  onClick={() => setPreviewOn(!previewOn)}
-                  colorPalette={previewOn ? "green" : undefined}
-                >
-                  {previewOn ? t("forms.hidePreview") : t("forms.previewFill")}
-                </GreyButton>
+                {(() => {
+                  const PreviewButton = previewOn ? SuccessButton : SecondaryButton;
+                  return (
+                    <PreviewButton
+                      size="xs"
+                      width="100%"
+                      leftIcon={previewOn ? <FaRegEyeSlash /> : <FaRegEye />}
+                      onClick={() => setPreviewOn(!previewOn)}
+                    >
+                      {previewOn ? t("forms.hidePreview") : t("forms.previewFill")}
+                    </PreviewButton>
+                  );
+                })()}
               </VStack>
             )}
           </Box>
@@ -252,7 +256,7 @@ const FormTemplatesPanel = ({
 
         {selectedTemplate && (
           <Box mt="3" pt="2" borderTop="1px solid" borderColor="border">
-            <GreenButton
+            <PrimaryButton
               size="xs"
               width="100%"
               onClick={onSaveFields}
@@ -261,7 +265,7 @@ const FormTemplatesPanel = ({
               leftIcon={saving ? null : <FaSave />}
             >
               {saving ? t("forms.savingDots") : t("forms.saveFields")}
-            </GreenButton>
+            </PrimaryButton>
           </Box>
         )}
       </Box>

@@ -169,7 +169,7 @@ const ThinkingCard = ({ step, index }) => {
                 <Button
                     mt={3}
                     size="xs"
-                    variant="outline"
+                    variant="folioSecondary"
                     onClick={() => setIsResultCollapsed((prev) => !prev)}
                 >
                     {isResultCollapsed

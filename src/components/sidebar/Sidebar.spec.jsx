@@ -142,6 +142,35 @@ describe("Sidebar", () => {
         expect(baseProps.toggleSidebar).toHaveBeenCalledTimes(1);
     });
 
+    it("navigates to the clinic day summary", async () => {
+        renderSidebar();
+        expect(await screen.findByText("Smith, John")).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("button", { name: /day summary/i }));
+        expect(baseProps.handleNavigation).toHaveBeenCalledWith(
+            "/clinic-summary",
+        );
+    });
+
+    it("renders the collapsed sidebar without list details", async () => {
+        renderSidebar({ isCollapsed: true });
+
+        expect(await screen.findByText("2")).toBeInTheDocument();
+        expect(screen.queryByText("Smith, John")).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue("2026-07-23")).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /day summary/i })).not.toBeInTheDocument();
+    });
+
+    it("shows the empty patient state without a day-summary action", async () => {
+        patientApiMock.fetchNoteList.mockResolvedValue([]);
+        renderSidebar({ selectedDate: "2026-07-30" });
+
+        expect(
+            await screen.findByText(/no patients/i),
+        ).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /day summary/i })).not.toBeInTheDocument();
+    });
+
     it("exposes the admin patient-scope switch", async () => {
         renderSidebar({ isAdmin: true });
         expect(await screen.findByText("Smith, John")).toBeInTheDocument();

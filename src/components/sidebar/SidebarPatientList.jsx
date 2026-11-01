@@ -17,7 +17,6 @@ import useSWR from "swr";
 import { FaClinicMedical, FaMobileAlt, FaUser, FaUsers } from "react-icons/fa";
 import { DeleteIcon, ChevronDownIcon, ChevronUpIcon } from "../common/icons";
 import { getInitials, getAvatarColor } from "./SidebarHelpers";
-import { colors } from "../../theme/colors";
 import { isTauri } from "../../utils/helpers/apiConfig";
 import { companionApi } from "../../utils/api/companionApi";
 import { KEYS } from "../../utils/cache/keys";
@@ -39,7 +38,7 @@ const SidebarPatientList = ({
     const [isPatientsCollapsed, setIsPatientsCollapsed] = useState(false);
     const [hoveredPatientId, setHoveredPatientId] = useState(null);
     const { t } = useTranslation();
-    const labelColor = colors.dark.textSecondary;
+    const labelColor = "folio.sidebarMuted";
 
     const { data: companionStatus } = useSWR(
         onOpenCompanionImport ? KEYS.COMPANION_STATUS : null,
@@ -67,20 +66,13 @@ const SidebarPatientList = ({
                             setIsPatientsCollapsed(!isPatientsCollapsed);
                         }
                     }}
-                    _hover={{ color: "textTertiary" }}
-                    css={{
-                        // Don't scale when the scope switch (or anything else
-                        // nested) is the thing being pressed
-                        "&:active:not(:has(*:active))": {
-                            transform: "scale(0.98)",
-                        },
-                    }}
+                    _hover={{ color: "folio.sidebarInk" }}
                     _focusVisible={{
                         outline: "2px solid",
-                        outlineColor: "accent",
+                        outlineColor: "folio.brandOnSidebar",
                         outlineOffset: "2px",
                     }}
-                    transition="transform 0.1s ease, background 0.15s ease"
+                    transition="background-color 160ms ease, color 160ms ease"
                 >
                     <Flex align="center" gap={1} minW="0">
                         <Text
@@ -105,7 +97,7 @@ const SidebarPatientList = ({
                                     align="center"
                                     position="relative"
                                     color={labelColor}
-                                    _hover={{ color: colors.dark.accent }}
+                                    _hover={{ color: "folio.accent" }}
                                     cursor="pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -136,7 +128,7 @@ const SidebarPatientList = ({
                                         size={8}
                                         color={
                                             patientScope === "mine"
-                                                ? colors.dark.accent
+                                                ? "var(--chakra-colors-folio-accent)"
                                                 : undefined
                                         }
                                     />
@@ -152,11 +144,15 @@ const SidebarPatientList = ({
                                     >
                                         <Switch.HiddenInput />
                                         <Switch.Control
-                                            bg={colors.dark.surface2}
+                                            bg="folio.sidebarAlt"
                                             _checked={{
-                                                bg: colors.dark.accent,
+                                                bg: "folio.accent",
                                             }}
-                                            _focusVisible={{ outline: "none" }}
+                                            _focusVisible={{
+                                                outline: "2px solid",
+                                                outlineColor: "folio.brandOnSidebar",
+                                                outlineOffset: "2px",
+                                            }}
                                         >
                                             <Switch.Thumb />
                                         </Switch.Control>
@@ -165,7 +161,7 @@ const SidebarPatientList = ({
                                         size={12}
                                         color={
                                             patientScope === "all"
-                                                ? colors.dark.accent
+                                                ? "var(--chakra-colors-folio-accent)"
                                                 : undefined
                                         }
                                     />
@@ -178,8 +174,8 @@ const SidebarPatientList = ({
                         minW="auto"
                         h="auto"
                         p={0.5}
-                        color={colors.dark.textPrimary}
-                        _hover={{ bg: "rgba(184, 192, 224, 0.1)" }}
+                         color="folio.sidebarInk"
+                         _hover={{ bg: "folio.sidebarAlt" }}
                          aria-label={
                              isPatientsCollapsed
                                  ? t("sidebar.patientList.expandAriaLabel")
@@ -220,7 +216,9 @@ const SidebarPatientList = ({
                                 value={selectedDate || ""}
                                 onChange={(e) => setSelectedDate(e.target.value)}
                                 size="sm"
-                                borderRadius="md"
+                                aria-label={t(
+                                    "sidebar.patientList.clinicDateTooltip",
+                                )}
                                 className="clinic-date-input"
                                 w="100%"
                                 mb={2}
@@ -272,7 +270,7 @@ const SidebarPatientList = ({
                                                 w="100%"
                                                 align="center"
                                                 p="2"
-                                                borderRadius="lg"
+                                                borderRadius="folioControl"
                                                 role="button"
                                                 tabIndex={0}
                                                 cursor="pointer"
@@ -305,26 +303,25 @@ const SidebarPatientList = ({
                                                 }
                                                 bg={
                                                     isSelected
-                                                        ? "primaryButtonFaint"
+                                                        ? "folio.selection"
                                                         : isHovered
-                                                          ? "rgba(184, 192, 224, 0.1)"
+                                                          ? "folio.sidebarAlt"
                                                           : "transparent"
                                                 }
                                                 boxShadow={
                                                     isSelected
-                                                        ? "inset 3px 0 0 var(--chakra-colors-primaryButton)"
+                                                        ? "inset 2px 0 0 var(--chakra-colors-folio-accent)"
                                                         : undefined
                                                 }
-                                                transition="transform 0.1s ease, background 0.15s ease"
-                                                _active={{
-                                                    transform: "scale(0.98)",
-                                                }}
+                                                transition="background-color 160ms ease"
                                                 _focusVisible={{
                                                     outline: "2px solid",
-                                                    outlineColor: "accent",
+                                                    outlineColor: "folio.brandOnSidebar",
                                                     outlineOffset: "2px",
                                                 }}
-                                                className="patient-list-item"
+                                                className={`patient-list-item${
+                                                    isSelected ? " selected" : ""
+                                                }`}
                                             >
                                                 <Flex
                                                     align="center"
@@ -393,7 +390,11 @@ const SidebarPatientList = ({
                                                                  "sidebar.patientList.deleteAriaLabel",
                                                              )}
                                                             variant="ghost"
-                                                            colorPalette="red"
+                                                            color="folio.danger"
+                                                            _hover={{
+                                                                bg: "folio.dangerSoft",
+                                                                color: "folio.danger",
+                                                            }}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 onDeletePatient(
@@ -432,37 +433,38 @@ const SidebarPatientList = ({
                              )}
                             positioning={{ placement: "top" }} openDelay={700}
                         >
-                        <Flex
-                            align="center"
-                            gap={1.5}
-                            w="fit-content"
-                            mx="auto"
-                            px={3}
-                            py={1}
-                            mt={2}
-                            flexShrink={0}
-                            borderRadius="full"
-                            bg={colors.dark.surface}
-                            color={colors.dark.textPrimary}
-                            cursor="pointer"
-                            role="button"
-                            tabIndex={0}
-                            onClick={onShowSummary}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    onShowSummary();
-                                }
-                            }}
-                            _hover={{ bg: colors.dark.surface1 }}
-                            _active={{ transform: "scale(0.98)" }}
-                            _focusVisible={{
-                                outline: "2px solid",
-                                outlineColor: "accent",
-                                outlineOffset: "2px",
-                            }}
-                            transition="transform 0.1s ease, background 0.15s ease"
-                        >
+                         <Flex
+                             align="center"
+                             gap={1.5}
+                             w="fit-content"
+                             mx="auto"
+                             px={3}
+                             py={1}
+                             mt={2}
+                             flexShrink={0}
+                             borderRadius="folioControl"
+                             bg="folio.sidebarAlt"
+                             color="folio.sidebarInk"
+                             border="1px solid"
+                             borderColor="folio.line"
+                             cursor="pointer"
+                             role="button"
+                             tabIndex={0}
+                             onClick={onShowSummary}
+                             onKeyDown={(e) => {
+                                 if (e.key === "Enter" || e.key === " ") {
+                                     e.preventDefault();
+                                     onShowSummary();
+                                 }
+                             }}
+                             _hover={{ bg: "folio.sidebar" }}
+                             _focusVisible={{
+                                 outline: "2px solid",
+                                 outlineColor: "folio.brandOnSidebar",
+                                 outlineOffset: "2px",
+                             }}
+                             transition="background-color 160ms ease"
+                         >
                             <Icon as={FaClinicMedical} boxSize={3} />
                             <Text
                                 fontSize="sm"

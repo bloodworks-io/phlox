@@ -103,12 +103,7 @@ const NewTemplateFromExampleModal = ({
                                 <Button
                                     onClick={onClose}
                                     size="md"
-                                    borderRadius="2xl"
-                                    className="switch-mode"
-                                    css={{
-                                        fontFamily: '"Space Grotesk", sans-serif',
-                                        fontWeight: "600"
-                                    }}
+                                    variant="folioSecondary"
                                     mr={3}
                                 >
                                     {t("action.cancel")}
@@ -118,12 +113,7 @@ const NewTemplateFromExampleModal = ({
                                     loading={isLoading}
                                     loadingText={t("modal.newTemplateFromExample.creating")}
                                     size="md"
-                                    borderRadius="2xl"
-                                    className="green-button"
-                                    css={{
-                                        fontFamily: '"Space Grotesk", sans-serif',
-                                        fontWeight: "600"
-                                    }}
+                                    variant="folioPrimary"
                                 >
                                     {t("modal.newTemplateFromExample.create")}
                                 </Button>

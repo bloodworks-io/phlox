@@ -125,7 +125,7 @@ const UsersTab = () => {
         </NativeSelect.Root>
         <Button
           size="sm"
-          className="green-button"
+          variant="folioPrimary"
           loading={busy}
           disabled={!newUsername || !newPassword}
           onClick={handleCreate}

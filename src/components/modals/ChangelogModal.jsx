@@ -106,16 +106,10 @@ const ChangelogModal = ({ isOpen, onClose, version, changelog }) => {
                                 <Button
                                     onClick={onClose}
                                     size="md"
-                                    borderRadius="2xl"
-                                    className="switch-mode"
-                                    css={{
-                                        fontFamily:
-                                            '"Space Grotesk", sans-serif',
-                                        fontWeight: "600",
-                                    }}
+                                    variant="folioSecondary"
                                     >
-                                        {t("action.close")}
-                                    </Button>
+                                    {t("action.close")}
+                                </Button>
                             </HStack>
                         </Dialog.Footer>
                     </Dialog.Content>

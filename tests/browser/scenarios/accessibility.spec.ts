@@ -78,4 +78,27 @@ test("current accessibility baseline", async ({ page }, testInfo) => {
     const summaryPath = testInfo.outputPath("axe-summary.json");
     await mkdir(dirname(summaryPath), { recursive: true });
     await writeFile(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
+
+    const allowedViolationTypes = new Set([
+        "button-name",
+        "color-contrast",
+        "label",
+        "landmark-one-main",
+        "nested-interactive",
+        "page-has-heading-one",
+        "region",
+        "select-name",
+    ]);
+    const maxAffectedNodes =
+        testInfo.project.name.endsWith("-dark") ? 143 : 164;
+
+    expect(summary.length).toBeLessThanOrEqual(43);
+    expect(summary.reduce((total, item) => total + item.nodes, 0)).toBeLessThanOrEqual(
+        maxAffectedNodes,
+    );
+    for (const item of summary) {
+        expect(allowedViolationTypes.has(item.name.split(":").at(-1) ?? "")).toBe(
+            true,
+        );
+    }
 });

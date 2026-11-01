@@ -208,9 +208,8 @@ const ToolsSettingsTab = ({ className }) => {
             {/* Add Server Button */}
             <Button
                 onClick={() => setShowAddForm(!showAddForm)}
-                variant="outline"
                 size="sm"
-                className="nav-button"
+                variant="folioSecondary"
                 alignSelf="flex-start"><FaPlus />{t("settings.tools.addServer")}
                             </Button>
             {/* Add Server Form */}
@@ -269,7 +268,7 @@ const ToolsSettingsTab = ({ className }) => {
                         <HStack justify="flex-end" w="100%">
                             <Button
                                 onClick={() => setShowAddForm(false)}
-                                variant="ghost"
+                                variant="folioSecondary"
                                 size="sm"
                             >
                                 {t("action.cancel")}
@@ -277,7 +276,7 @@ const ToolsSettingsTab = ({ className }) => {
                             <Button
                                 onClick={handleAddServer}
                                 loading={isLoading}
-                                colorPalette="green"
+                                variant="folioPrimary"
                                 size="sm"
                             >
                                 {t("settings.tools.addServer")}

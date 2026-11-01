@@ -233,11 +233,8 @@ const SplashScreen = ({ onComplete }) => {
         />
       )}
       <Box
-        className="anim-fade-scale panels-bg splash-panel"
+        className="anim-fade-scale splash-panel"
         p={{ base: 6, md: 8 }}
-        boxShadow="2xl"
-        borderWidth="1px"
-        borderColor="surface"
         w={{ base: "100%", sm: "90%", md: "600px" }}
         maxW="600px"
         h="600px"
@@ -247,23 +244,13 @@ const SplashScreen = ({ onComplete }) => {
         display="flex"
         flexDirection="column"
       >
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          height="120px"
-          bgGradient="linear(to b, sidebarBackgroundFaint, transparent)"
-          zIndex="0"
-        />
-
         {/* Header — logo, title, description, progress */}
         <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
           <Image src="/logo.webp" alt="Phlox" height="40px" width="auto" />
           <Heading
             as="h2"
             size="md"
-            color="textPrimary"
+            color="folio.ink"
             textAlign="center"
             key={currentStep}
             className="anim-fade-slide-up"
@@ -273,7 +260,7 @@ const SplashScreen = ({ onComplete }) => {
           </Heading>
           <Text
             fontSize="sm"
-            color="textSecondary"
+            color="folio.muted"
             textAlign="center"
             maxW="420px"
             lineHeight="1.5"
@@ -286,7 +273,7 @@ const SplashScreen = ({ onComplete }) => {
           <HStack w="100%" justify="space-between" mt={1}>
             <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
-              colorPalette="blue"
+              variant="folio"
               borderRadius="full"
               size="sm"
               flex="1"
@@ -295,7 +282,7 @@ const SplashScreen = ({ onComplete }) => {
                 <Progress.Range />
               </Progress.Track>
             </Progress.Root>
-            <Text fontSize="xs" color="textSecondary" whiteSpace="nowrap" ml={3}>
+            <Text fontSize="xs" color="folio.muted" whiteSpace="nowrap" ml={3}>
               {t("splash.stepOf", { current: currentStepIndex + 1, total: totalSteps })}
             </Text>
           </HStack>
@@ -325,10 +312,8 @@ const SplashScreen = ({ onComplete }) => {
           <Button
             onClick={handlePrevious}
             disabled={currentStepIndex === 0}
-            variant="outline"
+            variant="folioSecondary"
             size="md"
-            borderRadius="2xl"
-            className="switch-mode"
           >
             <FaArrowLeft />{t("action.back")}
           </Button>
@@ -343,12 +328,7 @@ const SplashScreen = ({ onComplete }) => {
             }
             disabled={!canProceedToNext()}
             size="md"
-            borderRadius="2xl"
-            className="green-button"
-            css={{
-              fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: "600",
-            }}
+            variant="folioPrimary"
           >
             {currentStepIndex === totalSteps - 1 ? t("splash.startUsingPhlox") : t("action.continue")}
             {currentStepIndex !== totalSteps - 1 && <FaArrowRight />}

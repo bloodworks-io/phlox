@@ -38,9 +38,9 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
           onClick={(e) => e.stopPropagation()}
           display="flex"
           alignItems="center"
-          color="textSecondary"
-          _hover={{ color: "primaryButton" }}
-          transition="color 0.15s"
+          color="folio.muted"
+          _hover={{ color: "folio.accent" }}
+          transition="color 160ms ease"
         >
           <InfoIcon boxSize={3.5} />
         </Box>
@@ -95,8 +95,8 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                       color={
                         model.recommended_ram_gb &&
                         systemSpecs.total_memory_gb >= model.recommended_ram_gb
-                          ? "successButton"
-                          : "secondaryButton"
+                          ? "folio.success"
+                          : "folio.warning"
                       }
                     >
                       {systemSpecs.total_memory_gb.toFixed(0)}GB

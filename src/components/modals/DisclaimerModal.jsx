@@ -151,9 +151,6 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                     <Text
                                         color={"textPrimary"}
                                         fontSize="sm"
-                                        css={{
-                                            fontFamily: '"Roboto", sans-serif'
-                                        }}
                                     >
                                         {t("modal.disclaimer.agreement")}
                                     </Text>
@@ -163,12 +160,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                         onClick={handleContinue}
                                         disabled={!agreed}
                                         size="md"
-                                        borderRadius="2xl"
-                                        className="green-button"
-                                        css={{
-                                            fontFamily: '"Space Grotesk", sans-serif',
-                                            fontWeight: "600"
-                                        }}
+                                        variant="folioPrimary"
                                     >
                                         {t("action.continue")}
                                     </Button>

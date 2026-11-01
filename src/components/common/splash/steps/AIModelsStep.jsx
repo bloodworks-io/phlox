@@ -229,8 +229,8 @@ export const AIModelsStep = ({ llm, transcription }) => {
         <>
           {localAvailableModels.length === 0 ? (
             <Flex align="center" justify="center" py={8}>
-              <Spinner size="lg" color="primaryButton" />
-              <Text ml={4} color="textSecondary">
+              <Spinner size="lg" color="folio.accent" />
+              <Text ml={4} color="folio.muted">
                 {t("splash.step.aiModels.findingModel")}
               </Text>
             </Flex>
@@ -242,10 +242,10 @@ export const AIModelsStep = ({ llm, transcription }) => {
             >
               {/* Intro text */}
               <VStack align="start" gap={0.5} w="100%">
-                <Text fontSize="sm" fontWeight="bold" color="textPrimary">
+                <Text fontSize="sm" fontWeight="bold" color="folio.ink">
                   {t("splash.step.aiModels.chooseModel")}
                 </Text>
-                <Text fontSize="xs" className="pill-box-icons">
+                <Text fontSize="xs" color="folio.muted" className="pill-box-icons">
                   {t("splash.step.aiModels.modelIntro")}
                 </Text>
               </VStack>
@@ -258,17 +258,17 @@ export const AIModelsStep = ({ llm, transcription }) => {
                     w="28px"
                     h="28px"
                     borderRadius="full"
-                    bg="surface"
+                    bg="folio.paperAlt"
                     borderWidth="1px"
-                    borderColor="border"
+                    borderColor="folio.line"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
                     cursor={canGoPrev ? "pointer" : "default"}
                     opacity={canGoPrev ? 1 : 0.3}
                     onClick={() => canGoPrev && setStartIndex(startIndex - 1)}
-                    _hover={canGoPrev ? { bg: "surface1" } : {}}
-                    transition="all 0.15s"
+                    _hover={canGoPrev ? { bg: "folio.hover" } : {}}
+                    transition="background-color 160ms ease, opacity 160ms ease"
                     alignSelf="center"
                   >
                     <ChevronLeftIcon boxSize={4} />
@@ -312,17 +312,17 @@ export const AIModelsStep = ({ llm, transcription }) => {
                     w="28px"
                     h="28px"
                     borderRadius="full"
-                    bg="surface"
+                    bg="folio.paperAlt"
                     borderWidth="1px"
-                    borderColor="border"
+                    borderColor="folio.line"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
                     cursor={canGoNext ? "pointer" : "default"}
                     opacity={canGoNext ? 1 : 0.3}
                     onClick={() => canGoNext && setStartIndex(startIndex + 1)}
-                    _hover={canGoNext ? { bg: "surface1" } : {}}
-                    transition="all 0.15s"
+                    _hover={canGoNext ? { bg: "folio.hover" } : {}}
+                    transition="background-color 160ms ease, opacity 160ms ease"
                     alignSelf="center"
                   >
                     <ChevronRightIcon boxSize={4} />
@@ -335,6 +335,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                 <Text
                   fontSize="xs"
                   fontWeight="bold"
+                  color="folio.muted"
                   className="pill-box-icons"
                 >
                   {t("splash.step.aiModels.supportingModels")}
@@ -345,13 +346,13 @@ export const AIModelsStep = ({ llm, transcription }) => {
                     flex={1}
                     p={2}
                     pl={3}
-                    borderRadius="md"
+                    borderRadius="folioControl"
                     position="relative"
                     overflow="hidden"
                     borderWidth="1px"
-                    borderColor={whisperReady ? "successButton" : "border"}
-                    bg={whisperReady ? "primaryButtonFaint" : "secondary"}
-                    transition="all 0.2s"
+                    borderColor={whisperReady ? "folio.success" : "folio.line"}
+                    bg={whisperReady ? "folio.successSoft" : "folio.paper"}
+                    transition="background-color 160ms ease, border-color 160ms ease"
                     display="flex"
                     alignItems="center"
                   >
@@ -361,13 +362,13 @@ export const AIModelsStep = ({ llm, transcription }) => {
                       top={0}
                       bottom={0}
                       width="3px"
-                      bg={whisperReady ? "successButton" : "secondaryButton"}
+                      bg={whisperReady ? "folio.success" : "folio.warning"}
                       opacity={0.6}
                     />
                     <HStack justify="space-between" w="full">
                       <HStack>
                         <Box
-                          color="secondaryButton"
+                          color="folio.warning"
                           display="flex"
                           alignItems="center"
                         >
@@ -377,7 +378,8 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           {t("splash.step.aiModels.transcription")}
                         </Text>
                         <Badge
-                          colorPalette="red"
+                          bg="folio.warning"
+                          color="folio.warningInk"
                           fontSize="2xs"
                           variant="solid"
                         >
@@ -387,12 +389,12 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           content={whisperTooltipText}
                           showArrow
                         >
-                          <InfoIcon boxSize={3} color="textSecondary" />
+                          <InfoIcon boxSize={3} color="folio.muted" />
                         </Tooltip>
                       </HStack>
                       {whisperReady ? (
                         <CheckIcon
-                          color="successButton"
+                          color="folio.success"
                           boxSize={4}
                           className="anim-fade-scale"
                           sx={{ animationDuration: "0.2s" }}
@@ -401,7 +403,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                         <HStack gap={1}>
                           <Progress.Root
                             value={whisperDownloadProgress}
-                            colorPalette="blue"
+                            variant="folio"
                             size="xs"
                             w="50px"
                           >
@@ -411,6 +413,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           </Progress.Root>
                           <Text
                             fontSize="2xs"
+                            color="folio.muted"
                             className="pill-box-icons"
                             whiteSpace="nowrap"
                           >
@@ -437,17 +440,17 @@ export const AIModelsStep = ({ llm, transcription }) => {
                     flex={1}
                     p={2}
                     pl={3}
-                    borderRadius="md"
+                    borderRadius="folioControl"
                     position="relative"
                     overflow="hidden"
                     borderWidth="1px"
                     borderColor={
-                      embeddingDownloaded ? "successButton" : "border"
+                      embeddingDownloaded ? "folio.success" : "folio.line"
                     }
                     bg={
-                      embeddingDownloaded ? "primaryButtonFaint" : "secondary"
+                      embeddingDownloaded ? "folio.successSoft" : "folio.paper"
                     }
-                    transition="all 0.2s"
+                    transition="background-color 160ms ease, border-color 160ms ease"
                     display="flex"
                     alignItems="center"
                   >
@@ -458,14 +461,14 @@ export const AIModelsStep = ({ llm, transcription }) => {
                       bottom={0}
                       width="3px"
                       bg={
-                        embeddingDownloaded ? "successButton" : "neutralButton"
+                        embeddingDownloaded ? "folio.success" : "folio.info"
                       }
                       opacity={0.6}
                     />
                     <HStack justify="space-between" w="full">
                       <HStack>
                         <Box
-                          color="neutralButton"
+                          color="folio.info"
                           display="flex"
                           alignItems="center"
                         >
@@ -475,7 +478,9 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           {t("splash.step.aiModels.embeddings")}
                         </Text>
                         <Badge
-                          colorPalette="gray"
+                          bg="transparent"
+                          color="folio.muted"
+                          borderColor="folio.line"
                           fontSize="2xs"
                           variant="outline"
                         >
@@ -485,12 +490,12 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           content={t("splash.step.aiModels.embeddingTooltip", { size: RECOMMENDED_EMBEDDING.size_mb })}
                           showArrow
                         >
-                          <InfoIcon boxSize={3} color="textSecondary" />
+                          <InfoIcon boxSize={3} color="folio.muted" />
                         </Tooltip>
                       </HStack>
                       {embeddingDownloaded ? (
                         <CheckIcon
-                          color="successButton"
+                          color="folio.success"
                           boxSize={4}
                           className="anim-fade-scale"
                           sx={{ animationDuration: "0.2s" }}
@@ -499,7 +504,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                         <HStack gap={1}>
                           <Progress.Root
                             value={embeddingProgress}
-                            colorPalette="blue"
+                            variant="folio"
                             size="xs"
                             w="50px"
                           >
@@ -509,6 +514,7 @@ export const AIModelsStep = ({ llm, transcription }) => {
                           </Progress.Root>
                           <Text
                             fontSize="2xs"
+                            color="folio.muted"
                             className="pill-box-icons"
                             whiteSpace="nowrap"
                           >

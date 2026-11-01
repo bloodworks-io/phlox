@@ -8,7 +8,7 @@ import {
   FaRedoAlt,
 } from "react-icons/fa";
 import { CheckIcon } from "../../common/icons";
-import { GreyButton } from "../../common/Buttons";
+import { SecondaryButton } from "../../common/Buttons";
 import { useState } from "react";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 import FloatingPanel from "../../common/FloatingPanel";
@@ -238,12 +238,12 @@ const DocumentPanel = ({
             <ButtonGroup mt={4} gap={3}>
               <Button
                 onClick={retryProcessing}
-                className="green-button"
+                variant="folioPrimary"
                 disabled={isProcessing}
                 size="sm"><FaRedoAlt />{isProcessing ? <Spinner size="sm" mr={2} /> : null}
                 {t("document.resend")}
               </Button>
-              <Button onClick={startNewUpload} className="orange-button" size="sm"><FaRedo />{t("document.newDocument")}
+              <Button onClick={startNewUpload} variant="folioSecondary" size="sm"><FaRedo />{t("document.newDocument")}
                               </Button>
             </ButtonGroup>
           </Alert.Root>
@@ -279,7 +279,7 @@ const DocumentPanel = ({
                 id="doc-file-upload"
                 accept=".pdf,.doc,.docx,.txt"
               />
-              <GreyButton
+              <SecondaryButton
                 px="6"
                 leftIcon={<FaFileUpload />}
                 onClick={() =>
@@ -288,7 +288,7 @@ const DocumentPanel = ({
                 size="sm"
               >
                 {t("document.choose")}
-              </GreyButton>
+              </SecondaryButton>
               {docFileName && <Text fontSize="sm">{docFileName}</Text>}
             </VStack>
             {file && (
@@ -296,7 +296,7 @@ const DocumentPanel = ({
                 <Button
                   onClick={handleUpload}
                   disabled={!file}
-                  className="green-button"
+                  variant="folioPrimary"
                   size="sm"
                 >
                   {t("document.process")}
@@ -313,7 +313,7 @@ const DocumentPanel = ({
               <Text fontWeight="bold" fontSize="sm">
                 {docFileName}
               </Text>
-              <Button onClick={startNewUpload} size="xs" className="orange-button"><FaFileUpload />{t("forms.new")}
+              <Button onClick={startNewUpload} size="xs" variant="folioSecondary"><FaFileUpload />{t("forms.new")}
                               </Button>
             </Flex>
             <Separator my={2} />
@@ -355,10 +355,7 @@ const DocumentPanel = ({
                           size="xs"
                           onClick={() => toggleDocumentField(fieldKey)}
                           disabled={!hasContent}
-                          className={
-                            isReplaced ? "green-button" : "grey-button"
-                          }
-                          variant={isReplaced ? "solid" : "outline"}
+                          variant={isReplaced ? "folioSuccess" : "folioSecondary"}
                           height="20px"
                           minWidth="70px"
                           fontSize="xs">{

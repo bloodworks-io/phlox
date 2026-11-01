@@ -143,27 +143,13 @@ const EncryptionUnlock = ({ onComplete }) => {
         />
       )}
       <Box
-        className="anim-fade-slide-up panels-bg splash-panel"
+        className="anim-fade-slide-up splash-panel"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl"
-        boxShadow="2xl"
-        border={`1px solid ${"surface"}`}
         w={{ base: "100%", sm: "90%", md: "450px" }}
         maxW="450px"
         position="relative"
         overflow="hidden"
       >
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          height="120px"
-          bgGradient={`linear(to b, "sidebarBackgroundFaint", transparent)`}
-          borderRadius="2xl"
-          zIndex="0"
-        />
-
         <VStack gap={6} align="stretch" position="relative" zIndex="1">
           <Flex
             className="anim-fade-slide-up"
@@ -172,13 +158,12 @@ const EncryptionUnlock = ({ onComplete }) => {
             align="center"
             mb={2}
           >
-            <Image src="/logo.webp" alt={t("chat.logoAlt")} width="60px" mb={3} />
+            <Image src="/logo.webp" alt={t("encryption.logoAlt")} width="60px" mb={3} />
             <Heading
               as="h1"
               textAlign="center"
-              color={"textPrimary"}
+              color="folio.ink"
               css={{
-                fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
                 fontWeight: "700",
                 lineHeight: "1.2",
@@ -190,7 +175,7 @@ const EncryptionUnlock = ({ onComplete }) => {
             <Text
               textAlign="center"
               fontSize="sm"
-              color={"textSecondary"}
+              color="folio.muted"
               maxW="350px"
               lineHeight="1.6"
             >
@@ -219,7 +204,7 @@ const EncryptionUnlock = ({ onComplete }) => {
                 mb={1}
                 fontSize="sm"
                 fontWeight="500"
-                color={"textPrimary"}
+                color="folio.ink"
               >
                 {t("encryption.passphrase")}
               </Text>
@@ -233,15 +218,6 @@ const EncryptionUnlock = ({ onComplete }) => {
                   size="md"
                   fontWeight="400"
                   autoFocus
-                  borderRadius="lg"
-                  bg={"surface"}
-                  border={`1px solid ${"border"}`}
-                  color={"textPrimary"}
-                  _placeholder={{ color: "textSecondary" }}
-                  _focus={{
-                    borderColor: "accent",
-                    boxShadow: `0 0 0 1px ${"accent"}`,
-                  }}
                 />
                 <Button
                   size="md"
@@ -260,13 +236,8 @@ const EncryptionUnlock = ({ onComplete }) => {
             loading={isSubmitting}
             loadingText={t("encryption.unlocking")}
             disabled={passphrase.length < 1}
-            borderRadius="2xl"
             size="lg"
-            className="green-button"
-            css={{
-              fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: "600"
-            }}
+            variant="folioPrimary"
             mt={2}
           >
             {t("encryption.unlock")}

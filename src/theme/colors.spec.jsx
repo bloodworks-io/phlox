@@ -22,9 +22,16 @@ const folioPairs = {
     badgeInk: ["#ffffff", "#2b1513"],
     success: ["#35644b", "#a9d5b1"],
     successSoft: ["#e0ebdd", "#304536"],
+    successInk: ["#ffffff", "#1d3122"],
     danger: ["#b42318", "#ff9b96"],
+    dangerInk: ["#ffffff", "#2b1513"],
+    dangerSoft: ["#f9ece6", "#413e35"],
     warning: ["#8a5a12", "#e6c179"],
+    warningInk: ["#ffffff", "#2b2111"],
+    warningSoft: ["#f4eee3", "#404334"],
     info: ["#3d6391", "#a8c8e8"],
+    infoInk: ["#ffffff", "#16283a"],
+    infoSoft: ["#e8ebec", "#3e4843"],
     selection: ["#e8e2d4", "#414a3c"],
     selectionInk: ["#262b25", "#f0eee6"],
     hover: ["#eae5db", "#363e34"],
@@ -46,6 +53,17 @@ describe("Clinical Folio color foundation", () => {
         expect(folioColors.dark.canvas).toBe("#262b25");
         expect(folioColors.light.sidebar).toBe("#272a24");
         expect(folioColors.dark.sidebar).toBe("#1c201b");
+        expect(folioColors.light.successInk).toBe("#ffffff");
+        expect(folioColors.dark.successInk).toBe("#1d3122");
+        expect(folioColors.dark.dangerInk).toBe("#2b1513");
+        expect(folioColors.dark.warningInk).toBe("#2b2111");
+        expect(folioColors.dark.infoInk).toBe("#16283a");
+        expect(folioColors.light.dangerSoft).toBe("#f9ece6");
+        expect(folioColors.dark.dangerSoft).toBe("#413e35");
+        expect(folioColors.light.warningSoft).toBe("#f4eee3");
+        expect(folioColors.dark.warningSoft).toBe("#404334");
+        expect(folioColors.light.infoSoft).toBe("#e8ebec");
+        expect(folioColors.dark.infoSoft).toBe("#3e4843");
     });
 
     it("preserves overloaded legacy aliases during the foundation phase", () => {

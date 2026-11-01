@@ -70,10 +70,16 @@ test("consultation geometry contract", async ({ page }, testInfo) => {
     expect(Math.round(chatPanel.width)).toBeGreaterThanOrEqual(470);
     expect(Math.round(chatPanel.height)).toBeGreaterThanOrEqual(300);
 
+    await page.getByRole("button", { name: "Collapse sidebar" }).click();
+    await expect(page.locator("nav")).toHaveCSS("width", "80px");
+    const collapsedSidebar = (await page.evaluate(readBox("nav"))) as Box;
+    expect(Math.round(collapsedSidebar.width)).toBe(80);
+
     const metrics = {
         project: testInfo.project.name,
         viewport: page.viewportSize(),
         sidebar,
+        collapsedSidebar,
         rail,
         scribe,
         chatPanel,

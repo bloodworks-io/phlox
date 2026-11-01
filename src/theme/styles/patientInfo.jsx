@@ -24,54 +24,49 @@ const patientInfoStyles = (props) => ({
         flexShrink: 0, // Prevent icon from shrinking
     },
 
+    // Shared Folio input surface. Height, padding, and font metrics are
+    // preserved; disabled/error semantics still come from the Folio input
+    // recipe layered underneath.
     ".input-style": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
+        backgroundColor: "folio.canvas !important",
+        color: "folio.ink !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
         padding: "7px 8px !important",
-        borderRadius: "md !important",
+        borderRadius: "folioControl !important",
         height: "35px !important",
         fontSize: "0.9rem !important",
         fontWeight: "400 !important",
+        "&::placeholder": {
+            color: "folio.faint",
+        },
+        "&:focus": {
+            borderColor: "folio.focus !important",
+            boxShadow: "0 0 0 1px var(--chakra-colors-folio-focus) !important",
+        },
     },
     ".input-style.quick-chat-title-input": {
         paddingLeft: "32px !important",
-        borderRadius: "lg !important",
+        borderRadius: "folioControl !important",
     },
     ".search-button": {
         borderLeft: "none !important",
         borderTopLeftRadius: "0 !important",
         borderBottomLeftRadius: "0 !important",
-        borderTopRightRadius: "md !important",
-        borderBottomRightRadius: "md !important",
+        borderTopRightRadius: "folioControl !important",
+        borderBottomRightRadius: "folioControl !important",
         marginLeft: "-1px",
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface2} !important`
-                : `${colors.dark.base} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface2} !important`
-                : `1px solid ${colors.dark.textTertiary} !important`,
-        color: "#575279 !important",
+        backgroundColor: "folio.paperAlt !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        color: "folio.muted !important",
         height: "32px !important",
         minWidth: "32px !important",
         flexShrink: 0, // Prevent button from shrinking
     },
     ".search-button:hover": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface} !important`
-                : `${colors.dark.surface2} !important`,
+        backgroundColor: "folio.hover !important",
+        color: "folio.ink !important",
     },
 });
 

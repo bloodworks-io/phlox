@@ -111,7 +111,7 @@ const LetterTemplatesPanel = () => {
                     <Button
                         onClick={handleReset}
                         size="sm"
-                        className="red-button"
+                        variant="folioDanger"
                     >
                         {t("settings.letterTemplates.resetToDefaults")}
                     </Button>
@@ -120,9 +120,8 @@ const LetterTemplatesPanel = () => {
                             setEditTemplate(null);
                             setIsEditing(true);
                         }}
-                        variant="outline"
                         size="sm"
-                        className="nav-button"
+                        variant="folioSecondary"
                     ><AddIcon />{t("settings.templates.newTemplate")}
                     </Button>
                 </HStack>

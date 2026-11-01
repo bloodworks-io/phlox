@@ -2,6 +2,8 @@
 import { colors } from "../colors";
 
 const toggleStyles = (props) => ({
+    // Scribe transcript mode control — scribe visuals convert in a later
+    // Folio slice, so this keeps its legacy styling for now.
     ".transcript-mode": {
         display: "inline-flex",
         justifyContent: "center",
@@ -17,50 +19,29 @@ const toggleStyles = (props) => ({
         color: "#575279 !important",
         fontSize: "0.9rem !important",
     },
+    // Neutral Folio control: quiet surface, hairline, no hover lift.
     ".switch-mode": {
         display: "inline-flex",
         height: "35px !important",
-        borderRadius: "full !important",
+        borderRadius: "folioControl !important",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.crust} !important`
-                : `${colors.dark.crust} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        backgroundColor: "transparent !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        color: "folio.ink !important",
     },
     ".switch-mode:hover": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.secondary} !important`
-                : `${colors.dark.secondary} !important`,
-        transform: "translateY(-1px)",
-        boxShadow: "md",
+        backgroundColor: "folio.hover !important",
     },
     ".dark-toggle": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.secondary} !important`
-                : `${colors.dark.secondary} !important`,
+        backgroundColor: "transparent !important",
         border: "none !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        borderRadius: "md !important",
+        color: "folio.muted !important",
+        borderRadius: "folioControl !important",
     },
     ".dark-toggle:hover": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface} !important`
-                : `${colors.dark.surface} !important`,
+        backgroundColor: "folio.hover !important",
         cursor: "pointer",
     },
 });

@@ -38,7 +38,7 @@ const AppLayout = ({
                 ml={isSmallScreen ? "0" : sidebarOffset(isCollapsed, isTauri())}
                 minH="100dvh"
                 transition="margin-left 0.3s ease"
-                bg={isTauri() ? "base" : "transparent"}
+                bg="folio.canvas"
                 display="flex"
                 flexDirection="column"
             >

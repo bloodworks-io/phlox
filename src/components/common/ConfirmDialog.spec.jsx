@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import ConfirmDialog from "./ConfirmDialog";
-import { renderWithProviders } from "../../test/utils";
+import { emotionStylesFor, renderWithProviders } from "../../test/utils";
 
 afterEach(cleanup);
 
@@ -47,14 +47,41 @@ describe("ConfirmDialog", () => {
         expect(onConfirm).toHaveBeenCalledTimes(1);
     });
 
-    it("preserves the current intent-bearing button classes", () => {
+    it("defaults to a primary confirm and a secondary cancel", () => {
         renderDialog();
 
-        expect(screen.getByRole("button", { name: "Delete" })).toHaveClass(
-            "red-button",
+        const confirmStyles = emotionStylesFor(
+            screen.getByRole("button", { name: "Delete" }),
         );
-        expect(screen.getByRole("button", { name: "Cancel" })).toHaveClass(
-            "green-button",
+        const cancelStyles = emotionStylesFor(
+            screen.getByRole("button", { name: "Cancel" }),
+        );
+
+        expect(confirmStyles).toContain(
+            "var(--chakra-colors-folio-accent)",
+        );
+        expect(confirmStyles).toContain(
+            "var(--chakra-colors-folio-accent-ink)",
+        );
+        expect(cancelStyles).toContain("var(--chakra-colors-folio-line)");
+        expect(cancelStyles).not.toContain(
+            "var(--chakra-colors-folio-accent)",
+        );
+    });
+
+    it("renders a danger confirm for destructive intents", () => {
+        renderDialog({ intent: "destructive" });
+
+        const confirmStyles = emotionStylesFor(
+            screen.getByRole("button", { name: "Delete" }),
+        );
+
+        expect(confirmStyles).toContain("var(--chakra-colors-folio-danger)");
+        expect(confirmStyles).toContain(
+            "var(--chakra-colors-folio-danger-ink)",
+        );
+        expect(confirmStyles).not.toContain(
+            "var(--chakra-colors-folio-accent)",
         );
     });
 

@@ -22,11 +22,10 @@ const TemplateSelector = ({
               size="sm"
               variant={
                 selectedTemplate && selectedTemplate.id === template.id
-                  ? "solid"
-                  : "outline"
+                  ? "folioSuccess"
+                  : "folioSecondary"
               }
               onClick={() => onTemplateSelect(template)}
-              className="grey-button grey-button-sm"
               minWidth="auto"
               flexShrink={0}
             >
@@ -35,9 +34,8 @@ const TemplateSelector = ({
           ))}
         <Button
           size="sm"
-          variant={selectedTemplate === "custom" ? "solid" : "outline"}
+          variant={selectedTemplate === "custom" ? "folioSuccess" : "folioSecondary"}
           onClick={() => onTemplateSelect("custom")}
-          className="grey-button grey-button-sm"
           minWidth="auto"
           flexShrink={0}
         >

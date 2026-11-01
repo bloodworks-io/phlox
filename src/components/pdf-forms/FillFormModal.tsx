@@ -5,7 +5,7 @@ import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
-import { GreenButton, GreyButton } from "../common/Buttons";
+import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { FaRegEye } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import type { FormTemplate } from "./types";
@@ -218,18 +218,18 @@ const FillFormModal = ({ isOpen, onClose, template }: FillFormModalProps) => {
               )}
             </Dialog.Body>
             <Dialog.Footer>
-              <GreyButton mr="3" onClick={handleClose}>
+              <SecondaryButton mr="3" onClick={handleClose}>
                 {t("action.cancel")}
-              </GreyButton>
+              </SecondaryButton>
               {previewDoc ? (
-                <GreyButton
+                <SecondaryButton
                   mr="3"
                   onClick={() => setPreviewDoc(null)}
                 >
                   {t("forms.backToEdit")}
-                </GreyButton>
+                </SecondaryButton>
               ) : (
-                <GreyButton
+                <SecondaryButton
                   mr="3"
                   leftIcon={<FaRegEye />}
                   onClick={handlePreview}
@@ -237,15 +237,15 @@ const FillFormModal = ({ isOpen, onClose, template }: FillFormModalProps) => {
                   disabled={fields.length === 0}
                 >
                   {t("forms.preview")}
-                </GreyButton>
+                </SecondaryButton>
               )}
-              <GreenButton
+              <PrimaryButton
                 onClick={handleFill}
                 loading={filling}
                 disabled={fields.length === 0}
               >
                 {t("forms.fillAndDownload")}
-              </GreenButton>
+              </PrimaryButton>
             </Dialog.Footer>
           </Dialog.Content>
         </Dialog.Positioner>

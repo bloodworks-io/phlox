@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  Text,
   useDisclosure,
   Badge,
   VStack,
@@ -22,6 +21,36 @@ import ChangelogModal from "../modals/ChangelogModal";
 import { APP_VERSION } from "../../utils/constants/version";
 import changelogContent from "../../../CHANGELOG.md?raw";
 
+const SidebarControlButton = ({
+  label,
+  onClick,
+  fontSize = "md",
+  ariaPressed,
+  children,
+}) => (
+  <Box
+    as="button"
+    type="button"
+    onClick={onClick}
+    aria-label={label}
+    aria-pressed={ariaPressed}
+    cursor="pointer"
+    fontSize={fontSize}
+    color="folio.sidebarInk"
+    background="transparent"
+    border="none"
+    padding={0}
+    _hover={{ color: "folio.brandOnSidebar" }}
+    _focusVisible={{
+      outline: "2px solid",
+      outlineColor: "folio.brandOnSidebar",
+      outlineOffset: "2px",
+    }}
+  >
+    {children}
+  </Box>
+);
+
 const StatusIcon = ({ serverStatus, isCollapsed }) => {
   const { t } = useTranslation();
   // embedding is null in Docker/external mode (no distinct embedding server);
@@ -38,24 +67,27 @@ const StatusIcon = ({ serverStatus, isCollapsed }) => {
         mark: serverStatus.embedding ? "✓" : "✗",
       })
     : "";
+  const statusLabel = allServicesUp
+    ? t("sidebar.status.allConnected")
+    : t("sidebar.status.services", {
+        llm: serverStatus.llm ? "✓" : "✗",
+        whisper: serverStatus.whisper ? "✓" : "✗",
+        embedding: embeddingLine,
+      });
 
   return (
     <Tooltip
-      content={
-        allServicesUp
-          ? t("sidebar.status.allConnected")
-          : t("sidebar.status.services", {
-              llm: serverStatus.llm ? "✓" : "✗",
-              whisper: serverStatus.whisper ? "✓" : "✗",
-              embedding: embeddingLine,
-            })
-      }
+      content={statusLabel}
       positioning={{
         placement: isCollapsed ? "right" : "top",
       }}
     >
       <Badge
-        colorPalette={allServicesUp ? "green" : "orange"}
+        role="status"
+        aria-label={statusLabel}
+        title={statusLabel}
+        bg={allServicesUp ? "folio.successSoft" : "folio.warningSoft"}
+        color={allServicesUp ? "folio.success" : "folio.warning"}
         borderRadius="full"
         variant="subtle"
         p={1}
@@ -87,7 +119,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
     window.location.reload();
   };
 
-  // Sidebar is always-dark by design; sidebar.text token resolves to a light value in both modes
+  // The Folio sidebar remains dark in both application modes.
 
   useEffect(() => {
     // Check server status
@@ -118,28 +150,22 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
               placement: "right",
             }}
           >
-            <Box
+            <SidebarControlButton
+              label={t("sidebar.versionInfoTooltip")}
               onClick={onOpen}
-              cursor="pointer"
-              fontSize="md"
-              color="sidebar.text" // Apply consistent color
-              _hover={{ color: "sidebar.text" }} // Brighten on hover
             >
               <TbVersions />
-            </Box>
+            </SidebarControlButton>
           </Tooltip>
 
           {!isTauri() && (
             <Tooltip content={t("sidebar.signOut")} positioning={{ placement: "right" }}>
-              <Box
+              <SidebarControlButton
+                label={t("sidebar.signOut")}
                 onClick={handleLogout}
-                cursor="pointer"
-                fontSize="md"
-                color="sidebar.text"
-                _hover={{ color: "sidebar.text" }}
               >
                 <FaSignOutAlt />
-              </Box>
+              </SidebarControlButton>
             </Tooltip>
           )}
 
@@ -153,15 +179,16 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
               placement: "right",
             }}
           >
-            <Box
+            <SidebarControlButton
+              label={
+                colorMode === "light"
+                  ? t("sidebar.switchToDarkMode")
+                  : t("sidebar.switchToLightMode")
+              }
               onClick={toggleColorMode}
-              cursor="pointer"
-              fontSize="md"
-              color="sidebar.text"
-              _hover={{ color: "sidebar.text" }}
             >
               {colorMode === "light" ? <FaMoon /> : <FaSun />}
-            </Box>
+            </SidebarControlButton>
           </Tooltip>
 
           <Tooltip
@@ -170,27 +197,13 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
               placement: "right",
             }}
           >
-            <Box
-              as="button"
-              type="button"
+            <SidebarControlButton
+              label={t("sidebar.useSystemAppearance")}
               onClick={() => setThemePreference("system")}
-              aria-label={t("sidebar.useSystemAppearance")}
-              aria-pressed={themePreference === "system"}
-              cursor="pointer"
-              fontSize="md"
-              color="sidebar.text"
-              background="transparent"
-              border="none"
-              padding={0}
-              _hover={{ color: "sidebar.text" }}
-              _focusVisible={{
-                outline: "2px solid",
-                outlineColor: "sidebar.text",
-                outlineOffset: "2px",
-              }}
+              ariaPressed={themePreference === "system"}
             >
               <LuMonitor />
-            </Box>
+            </SidebarControlButton>
           </Tooltip>
 
           <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />
@@ -212,31 +225,23 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
       <Center width="100%">
         <HStack gap={4}>
           <Tooltip content={t("sidebar.changelogTooltip")}>
-            <Text
-              fontSize="md"
+            <SidebarControlButton
+              label={`${t("sidebar.changelogTooltip")} — v${version}`}
               onClick={onOpen}
-              cursor="pointer"
-              color="sidebar.text" // Apply consistent color
-              _hover={{
-                textDecoration: "underline",
-                color: "var(--chakra-colors-sidebar-text)",
-              }}
             >
               v{version}
-            </Text>
+            </SidebarControlButton>
           </Tooltip>
 
           {!isTauri() && (
             <Tooltip content={t("sidebar.signOut")}>
-              <Box
-                onClick={handleLogout}
-                cursor="pointer"
+              <SidebarControlButton
+                label={t("sidebar.signOut")}
                 fontSize="lg"
-                color="sidebar.text"
-                _hover={{ color: "sidebar.text" }}
+                onClick={handleLogout}
               >
                 <FaSignOutAlt />
-              </Box>
+              </SidebarControlButton>
             </Tooltip>
           )}
 
@@ -247,39 +252,28 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
                 : t("sidebar.switchToLightMode")
             }
           >
-            <Box
-              onClick={toggleColorMode}
-              cursor="pointer"
+            <SidebarControlButton
+              label={
+                colorMode === "light"
+                  ? t("sidebar.switchToDarkMode")
+                  : t("sidebar.switchToLightMode")
+              }
               fontSize="lg"
-              color="sidebar.text"
-              _hover={{ color: "sidebar.text" }}
+              onClick={toggleColorMode}
             >
               {colorMode === "light" ? <FaMoon /> : <FaSun />}
-            </Box>
+            </SidebarControlButton>
           </Tooltip>
 
           <Tooltip content={t("sidebar.useSystemAppearance")}>
-            <Box
-              as="button"
-              type="button"
-              onClick={() => setThemePreference("system")}
-              aria-label={t("sidebar.useSystemAppearance")}
-              aria-pressed={themePreference === "system"}
-              cursor="pointer"
+            <SidebarControlButton
+              label={t("sidebar.useSystemAppearance")}
               fontSize="lg"
-              color="sidebar.text"
-              background="transparent"
-              border="none"
-              padding={0}
-              _hover={{ color: "sidebar.text" }}
-              _focusVisible={{
-                outline: "2px solid",
-                outlineColor: "sidebar.text",
-                outlineOffset: "2px",
-              }}
+              onClick={() => setThemePreference("system")}
+              ariaPressed={themePreference === "system"}
             >
               <LuMonitor />
-            </Box>
+            </SidebarControlButton>
           </Tooltip>
 
           <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />

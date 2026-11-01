@@ -1,41 +1,28 @@
 // Defines visual styles for tab components within the application.
-import { colors } from "../colors";
 
-const tabStyles = (props) => ({
+const tabStyles = () => ({
     ".tab-style": {
         backgroundColor: "transparent !important",
         borderRadius: "0 !important",
-        borderTopLeftRadius: "md !important",
-        borderTopRightRadius: "md !important",
+        borderTopLeftRadius: "folioControl !important",
+        borderTopRightRadius: "folioControl !important",
         marginBottom: "-1px",
         fontSize: "16px !important",
         fontWeight: "400 !important",
         transition:
-            "background-color 0.15s ease, color 0.15s ease !important",
+            "background-color 160ms ease, color 160ms ease, border-color 160ms ease !important",
     },
     ".tab-style[aria-selected='true']": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        backgroundColor: "folio.paper !important",
+        color: "folio.ink !important",
         border: "none",
     },
     ".tab-style[aria-selected='false']": {
         backgroundColor: "transparent !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        color: "folio.muted !important",
     },
     ".tab-style:hover": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface} !important`
-                : `${colors.dark.surface} !important`,
+        backgroundColor: "folio.hover !important",
     },
     ".compact-tabs .tab-style": {
         fontSize: "13px !important",

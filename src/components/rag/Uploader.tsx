@@ -1,6 +1,7 @@
 // Component for uploading and vectorizing documents into the RAG database.
 import React, { useState } from "react";
-import { Field, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Tabs } from "@chakra-ui/react";
+import { Field, Box, Text, Flex, HStack, VStack, Input, IconButton, Collapsible, Tabs } from "@chakra-ui/react";
+import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { toaster } from "@/components/ui/toaster";
 import { ChevronDownIcon, ChevronRightIcon, AddIcon } from "../common/icons";
 import { MdFileUpload } from "react-icons/md";
@@ -197,14 +198,15 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }: UploaderProps
                                         onChange={handlePdfUpload}
                                         className="input-style"
                                     />
-                                    <Button
+                                    <SecondaryButton
                                         onClick={handleExtractPdfInfo}
                                         width="220px"
                                         loading={isExtracting}
                                         loadingText={t("rag.status.extracting")}
-                                        className="orange-button"
-                                        alignSelf="flex-start"><AddIcon />{t("rag.extractPdfInfo")}
-                                                                        </Button>
+                                        alignSelf="flex-start"
+                                    >
+                                        <AddIcon />{t("rag.extractPdfInfo")}
+                                    </SecondaryButton>
                                     {pdfData && (
                                         <VStack
                                             gap={3}
@@ -266,14 +268,15 @@ const Uploader = ({ isCollapsed, setIsCollapsed, setCollections }: UploaderProps
                                                 onChange={(e) => setTitle(e.target.value)}
                                             />
                                             </Field.Root>
-                                            <Button
+                                            <PrimaryButton
                                                 onClick={handleCommitToDatabase}
                                                 loading={isCommitting}
                                                 loadingText={t("rag.status.committing")}
-                                                className="green-button"
                                                 width="220px"
-                                                alignSelf="flex-start"><AddIcon />{t("rag.commitToDatabase")}
-                                                                                        </Button>
+                                                alignSelf="flex-start"
+                                            >
+                                                <AddIcon />{t("rag.commitToDatabase")}
+                                            </PrimaryButton>
                                         </VStack>
                                     )}
                                 </VStack>

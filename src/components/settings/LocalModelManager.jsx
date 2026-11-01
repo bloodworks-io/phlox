@@ -10,7 +10,7 @@ import {
   FaMicrophone, FaDatabase, FaStar, FaExclamationTriangle, FaMemory, FaMicrochip,
 } from "react-icons/fa";
 import { DownloadIcon, CheckIcon, InfoIcon, ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
-import { GreenButton, NavButton } from "../common/Buttons";
+import { PrimaryButton, SuccessButton } from "../common/Buttons";
 import ModalTitle from "../common/ModalTitle";
 import { useLocalModels } from "../../utils/hooks/useLocalModels";
 import {
@@ -141,17 +141,17 @@ const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDow
 
       {isDownloadingThis ? (
         <Box>
-          <Progress.Root value={downloadProgress?.percentage || 0} colorPalette="blue" size="xs" striped animated>
+          <Progress.Root value={downloadProgress?.percentage || 0} variant="folio" size="xs" striped animated>
             <Progress.Track><Progress.Range /></Progress.Track>
           </Progress.Root>
           <Text fontSize="2xs" className="pill-box-icons" textAlign="right">{(downloadProgress?.percentage || 0).toFixed(0)}%</Text>
         </Box>
       ) : isDownloaded ? (
-        <GreenButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>{t("settings.localModels.downloaded")}</GreenButton>
+        <SuccessButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>{t("settings.localModels.downloaded")}</SuccessButton>
       ) : (
-        <NavButton size="sm" w="full" onClick={onDownload}>
+        <PrimaryButton size="sm" w="full" onClick={onDownload}>
           <DownloadIcon />{t("settings.localModels.download")}
-        </NavButton>
+        </PrimaryButton>
       )}
     </Box>
   );
@@ -190,7 +190,7 @@ const SupportingModelRow = ({ icon, iconColor, label, required, isReady, isDownl
         <CheckIcon color="successButton" boxSize={4} />
       ) : isDownloading ? (
         <HStack gap={1}>
-          <Progress.Root value={progress} colorPalette="blue" size="xs" w="50px">
+          <Progress.Root value={progress} variant="folio" size="xs" w="50px">
             <Progress.Track><Progress.Range /></Progress.Track>
           </Progress.Root>
           <Text fontSize="2xs" className="pill-box-icons" whiteSpace="nowrap">{progress.toFixed(0)}%</Text>
@@ -444,7 +444,7 @@ const LocalModelManager = ({ className }) => {
       {/* Danger zone */}
       {hasAnyModels && (
         <Box mt={2}>
-          <Button variant="outline" size="sm" colorPalette="red" borderRadius="lg" onClick={() => setIsResetOpen(true)}>
+          <Button variant="folioDanger" size="sm" onClick={() => setIsResetOpen(true)}>
             <FaExclamationTriangle /> {t("settings.localModels.resetAll")}
           </Button>
         </Box>
@@ -485,10 +485,10 @@ const LocalModelManager = ({ className }) => {
               </Dialog.Body>
               <Dialog.Footer>
                 <HStack justify="flex-end" width="100%">
-                  <Button className="red-button" mr={3} onClick={() => setIsResetOpen(false)}>
+                  <Button variant="folioSecondary" mr={3} onClick={() => setIsResetOpen(false)}>
                     {t("action.cancel")}
                   </Button>
-                  <Button className="green-button" onClick={handleResetAll} loading={isResetting} loadingText={t("settings.localModels.deleting")}>
+                  <Button variant="folioDanger" onClick={handleResetAll} loading={isResetting} loadingText={t("settings.localModels.deleting")}>
                     {t("settings.localModels.deleteAll")}
                   </Button>
                 </HStack>

@@ -17,11 +17,6 @@ import { CandidateRow, PathHalf } from "../patient/NewNoteStartCard";
 import UrSearchField from "../patient/UrSearchField";
 import DemographicsForm from "../patient/DemographicsForm";
 
-const btnSx = {
-    fontFamily: '"Space Grotesk", sans-serif',
-    fontWeight: "600",
-};
-
 const NewNoteModal = ({
     isOpen,
     onClose,
@@ -143,9 +138,6 @@ const NewNoteModal = ({
                                 as="h3"
                                 size="xl"
                                 color="textPrimary"
-                                css={{
-                                    fontFamily: '"Space Grotesk", sans-serif',
-                                }}
                             >
                                 {t("modal.newNote.title")}
                             </Heading>
@@ -207,12 +199,9 @@ const NewNoteModal = ({
                                         </Flex>
                                         <Button
                                             type="button"
-                                            variant="outline"
+                                            variant="folioSecondary"
                                             size="md"
                                             mt={3}
-                                            borderRadius="2xl"
-                                            className="switch-mode"
-                                            css={btnSx}
                                             onClick={() => setView("choose")}
                                         >
                                             <FaArrowLeft />
@@ -243,12 +232,9 @@ const NewNoteModal = ({
                                         </VStack>
                                         <Button
                                             type="button"
-                                            variant="outline"
+                                            variant="folioSecondary"
                                             size="md"
                                             mt={3}
-                                            borderRadius="2xl"
-                                            className="switch-mode"
-                                            css={btnSx}
                                             onClick={() => setView("search")}
                                         >
                                             <FaArrowLeft />

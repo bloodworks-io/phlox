@@ -3,7 +3,6 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import { FaTasks, FaNotesMedical, FaBrain, FaCog } from "react-icons/fa";
 import { useLocation } from "react-router";
-import { colors } from "../../theme/colors";
 import { isRagEnabled } from "../../utils/helpers/featureFlags";
 
 const NavButton = ({
@@ -13,18 +12,13 @@ const NavButton = ({
     isCollapsed,
     badge = null,
     isActive = false,
-    accent,
+    accent = false,
 }) => {
-    const iconColor = isActive
-        ? colors.dark.primaryButton
+    const ink = isActive
+        ? "folio.selectionInk"
         : accent
-          ? accent
-          : colors.dark.overlay2;
-    const labelColor = isActive
-        ? colors.dark.primaryButton
-        : accent
-          ? accent
-          : colors.dark.textPrimary;
+          ? "folio.brandOnSidebar"
+          : "folio.sidebarMuted";
     const weight = isActive || accent ? "600" : "medium";
     return (
         <Flex
@@ -32,7 +26,7 @@ const NavButton = ({
             pr="2"
             py="1.5"
             align="center"
-            borderRadius="md"
+            borderRadius="folioControl"
             cursor="pointer"
             role="button"
             tabIndex={0}
@@ -43,24 +37,21 @@ const NavButton = ({
                     onClick();
                 }
             }}
-            bg={isActive ? "primaryButtonFaint" : undefined}
+            color={ink}
+            bg={isActive ? "folio.selection" : undefined}
             boxShadow={
-                isActive
-                    ? "inset 3px 0 0 var(--chakra-colors-primaryButton)"
-                    : undefined
+                isActive ? "inset 2px 0 0 var(--chakra-colors-folio-accent)" : undefined
             }
             _hover={{
-                bg: isActive
-                    ? "primaryButtonHalftone"
-                    : colors.dark.sidebar.hover,
+                bg: isActive ? "folio.selection" : "folio.sidebarAlt",
+                color: isActive ? "folio.selectionInk" : "folio.sidebarInk",
             }}
-            _active={{ transform: "scale(0.98)" }}
             _focusVisible={{
                 outline: "2px solid",
-                outlineColor: "accent",
+                outlineColor: "folio.brandOnSidebar",
                 outlineOffset: "2px",
             }}
-            transition="transform 0.1s ease, background 0.15s ease"
+            transition="background-color 160ms ease, color 160ms ease"
             justify="flex-start"
             position="relative"
         >
@@ -73,8 +64,8 @@ const NavButton = ({
             >
                 {isCollapsed && badge ? (
                     <Badge
-                        bg="dangerButton"
-                        color="white"
+                        bg="folio.danger"
+                        color="folio.badgeInk"
                         borderRadius="full"
                         px={1.5}
                         fontSize="xs"
@@ -86,7 +77,7 @@ const NavButton = ({
                 ) : (
                     <Icon
                         as={icon}
-                        color={iconColor}
+                        color="currentColor"
                         boxSize={5}
                         mr={isCollapsed ? 0 : 3}
                     />
@@ -96,7 +87,7 @@ const NavButton = ({
                         <Text
                             fontWeight={weight}
                             fontSize="sm"
-                            color={labelColor}
+                            color="currentColor"
                             whiteSpace="nowrap"
                         >
                             {label}
@@ -105,8 +96,8 @@ const NavButton = ({
                         {badge && (
                             <Badge
                                 ml={2}
-                                bg="dangerButton"
-                                color="white"
+                                bg="folio.danger"
+                                color="folio.badgeInk"
                                 borderRadius="full"
                                 px={1.5}
                                 fontSize="xs"
@@ -144,7 +135,7 @@ const SidebarNavigation = ({
                         label={t("nav.newNote.label")}
                         onClick={onNewPatient}
                         isCollapsed={isCollapsed}
-                        accent={colors.dark.brand}
+                        accent
                         isActive={isActive("/new-note")}
                     />
                 </Box>

@@ -97,6 +97,7 @@ const Rag = () => {
       </Box>
       {ragEnabled && (
         <ConfirmDialog
+          intent="destructive"
           isOpen={!!rag.itemToDelete}
           onClose={() => rag.setItemToDelete(null)}
           onConfirm={rag.handleDelete}

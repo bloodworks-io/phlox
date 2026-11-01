@@ -160,14 +160,14 @@ const RagTab = ({
                             {!isReEmbedding && (
                                 <Dialog.Footer>
                                     <Button
-                                        className="red-button"
+                                        variant="folioSecondary"
                                         mr={3}
                                         onClick={handleCancelEmbeddingChange}
                                     >
                                         {t("action.cancel")}
                                     </Button>
                                     <Button
-                                        className="green-button"
+                                        variant="folioPrimary"
                                         onClick={handleConfirmEmbeddingChange}
                                     >
                                         {t("settings.rag.confirmChange")}

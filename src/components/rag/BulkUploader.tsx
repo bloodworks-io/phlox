@@ -1,6 +1,7 @@
 // Component for bulk uploading and vectorizing multiple PDF documents.
 import React, { useState, useRef } from "react";
-import { Field, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
+import { Field, Box, Text, Flex, HStack, VStack, Input, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
+import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { toaster } from "@/components/ui/toaster";
 import {
     ChevronDownIcon,
@@ -348,7 +349,7 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                         })}
                     </Text>
                     <HStack>
-                        <Button
+                        <SecondaryButton
                             onClick={extractAll}
                             disabled={
                                 !hasPendingOrFailed || isProcessing
@@ -356,9 +357,10 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                             loading={isProcessing && extractedCount === 0}
                             loadingText={t("rag.status.extracting")}
                             size="sm"
-                            className="orange-button"><CheckIcon />{t("rag.extractAll")}
-                                                    </Button>
-                        <Button
+                        >
+                            <CheckIcon />{t("rag.extractAll")}
+                        </SecondaryButton>
+                        <PrimaryButton
                             onClick={commitAll}
                             disabled={
                                 readyToCommit === 0 || isProcessing
@@ -368,8 +370,9 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                             }
                             loadingText={t("rag.status.committing")}
                             size="sm"
-                            className="green-button"><CheckIcon />{t("rag.commitAll")}
-                                                    </Button>
+                        >
+                            <CheckIcon />{t("rag.commitAll")}
+                        </PrimaryButton>
                     </HStack>
                 </Flex>
             )}

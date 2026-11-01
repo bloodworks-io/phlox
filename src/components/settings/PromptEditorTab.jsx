@@ -9,7 +9,7 @@ const ResetToDefaultButton = ({ onClick, ...props }) => {
         size="sm"
         h="30px"
         minH="30px"
-        className="red-button"
+        variant="folioSecondary"
         onClick={onClick}
         {...props}
     >

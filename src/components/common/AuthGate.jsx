@@ -94,28 +94,13 @@ export const AuthGate = ({ onSuccess }) => {
       position="relative"
     >
       <Box
-        className="anim-fade-slide-up panels-bg splash-panel"
+        className="anim-fade-slide-up splash-panel"
         p={{ base: 6, md: 8 }}
-        borderRadius="2xl"
-        boxShadow="2xl"
-        border="1px solid"
-        borderColor="surface"
         w={{ base: "100%", sm: "90%", md: "450px" }}
         maxW="450px"
         position="relative"
         overflow="hidden"
       >
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          height="120px"
-          bgGradient="linear(to b, sidebarBackgroundFaint, transparent)"
-          borderRadius="2xl"
-          zIndex="0"
-        />
-
         <VStack gap={6} align="stretch" position="relative" zIndex="1">
           <Flex
             className="anim-fade-slide-up"
@@ -128,9 +113,8 @@ export const AuthGate = ({ onSuccess }) => {
             <Heading
               as="h1"
               textAlign="center"
-              color="textPrimary"
+              color="folio.ink"
               css={{
-                fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: ["1.5rem", "1.75rem"],
                 fontWeight: "700",
                 lineHeight: "1.2",
@@ -168,7 +152,7 @@ export const AuthGate = ({ onSuccess }) => {
 
           <VStack gap={4} align="stretch">
             <Box>
-              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
+              <Text mb={1} fontSize="sm" fontWeight="500" color="folio.ink">
                 {t("auth.username")}
               </Text>
               <Input
@@ -180,20 +164,10 @@ export const AuthGate = ({ onSuccess }) => {
                 size="md"
                 fontWeight="400"
                 autoFocus
-                borderRadius="lg"
-                bg="surface"
-                border="1px solid"
-                borderColor="border"
-                color="textPrimary"
-                _placeholder={{ color: "textSecondary" }}
-                _focus={{
-                  borderColor: "accent",
-                  boxShadow: "0 0 0 1px accent",
-                }}
               />
             </Box>
             <Box>
-              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
+              <Text mb={1} fontSize="sm" fontWeight="500" color="folio.ink">
                 {t("common.password")}
               </Text>
               <HStack>
@@ -205,16 +179,6 @@ export const AuthGate = ({ onSuccess }) => {
                   onKeyPress={handleKeyPress}
                   size="md"
                   fontWeight="400"
-                  borderRadius="lg"
-                  bg="surface"
-                  border="1px solid"
-                  borderColor="border"
-                  color="textPrimary"
-                  _placeholder={{ color: "textSecondary" }}
-                  _focus={{
-                    borderColor: "accent",
-                    boxShadow: "0 0 0 1px accent",
-                  }}
                 />
                 <Button
                   size="md"
@@ -233,13 +197,8 @@ export const AuthGate = ({ onSuccess }) => {
             loading={isSubmitting}
             loadingText={t("auth.signingIn")}
             disabled={username.length < 1 || password.length < 1}
-            borderRadius="2xl"
             size="lg"
-            className="green-button"
-            css={{
-              fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: "600",
-            }}
+            variant="folioPrimary"
             mt={2}
           >
             {t("auth.signIn")}

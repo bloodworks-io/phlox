@@ -215,6 +215,7 @@ const CompanionSessionList = () => {
             )}
 
             <ConfirmDialog
+                intent="destructive"
                 isOpen={!!dismissTarget}
                 onClose={() => setDismissTarget(null)}
                 onConfirm={confirmDismiss}

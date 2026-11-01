@@ -16,7 +16,6 @@ import VersionInfo from "./VersionInfo";
 import SidebarPatientList from "./SidebarPatientList";
 import SidebarNavigation from "./SidebarNavigation";
 import ConfirmDialog from "../common/ConfirmDialog";
-import { colors } from "../../theme/colors";
 import { sidebarWidth } from "../../theme/dimensions";
 import { patientApi } from "../../utils/api/patientApi";
 import { KEYS } from "../../utils/cache/keys";
@@ -99,10 +98,6 @@ const Sidebar = ({
   const [patientToDelete, setPatientToDelete] = useState(null);
   const toast = useApiToast();
 
-  // Color mode values
-  const labelColor = colors.dark.textSecondary;
-  const hoverColor = colors.dark.sidebar.hover;
-
   // Ref for detecting outside clicks on small screens
   const sidebarRef = useRef(null);
 
@@ -159,7 +154,7 @@ const Sidebar = ({
   // Determine if the sidebar should have floating behavior
   const shouldFloat = isSmallScreen && !isCollapsed;
 
-  // glass styling only for desktop; web/docker gets flat full-height
+  // Matte Folio sidebar treatment; web/docker gets flat full-height
   const navStyle = isTauri()
     ? {
         h: "calc(100dvh - 18px)",
@@ -167,8 +162,7 @@ const Sidebar = ({
         mx: 2,
         bg: "folio.sidebar",
         borderRadius: "2xl",
-        boxShadow:
-          "0 4px 24px rgba(20, 20, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
+        boxShadow: "overlay",
         border: "1px solid",
         borderColor: "folio.line",
       }
@@ -226,8 +220,13 @@ const Sidebar = ({
           aria-label={t("sidebar.closeAriaLabel")}
           zIndex="200"
           variant="ghost"
-          color={labelColor}
-          _hover={{ bg: hoverColor }}
+          color="folio.sidebarMuted"
+          _hover={{ bg: "folio.sidebarAlt", color: "folio.sidebarInk" }}
+          _focusVisible={{
+            outline: "2px solid",
+            outlineColor: "folio.brandOnSidebar",
+            outlineOffset: "2px",
+          }}
         >
           <CollapseIcon boxSize="20px" />
         </IconButton>
@@ -300,10 +299,10 @@ const Sidebar = ({
               <Flex align="center" gap={3}>
                 <Image src="/logo.webp" alt={t("sidebar.logoAlt")} width="28px" />
                 <Text
-                  fontFamily="heading"
+                  fontFamily="display"
                   fontSize="3xl"
-                  fontWeight="700"
-                  color="sidebar.text"
+                  fontWeight="500"
+                  color="folio.sidebarInk"
                   letterSpacing="-0.02em"
                 >
                   Phlox
@@ -324,8 +323,13 @@ const Sidebar = ({
               variant="ghost"
               borderRadius="full"
               aria-label={t("sidebar.collapseAriaLabel")}
-              color={labelColor}
-              _hover={{ bg: hoverColor }}
+              color="folio.sidebarMuted"
+              _hover={{ bg: "folio.sidebarAlt", color: "folio.sidebarInk" }}
+              _focusVisible={{
+                outline: "2px solid",
+                outlineColor: "folio.brandOnSidebar",
+                outlineOffset: "2px",
+              }}
             >
               <CollapseIcon boxSize="18px" />
             </IconButton>
@@ -374,6 +378,7 @@ const Sidebar = ({
       </Box>
       {/* Delete confirmation modal */}
       <ConfirmDialog
+        intent="destructive"
         isOpen={open}
         onClose={onClose}
         onConfirm={confirmDelete}

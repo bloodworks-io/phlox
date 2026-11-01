@@ -88,11 +88,6 @@ const candidateMeta = (cand, t) =>
         .filter(Boolean)
         .join("  ·  ");
 
-const startBtnSx = {
-    fontFamily: '"Space Grotesk", sans-serif',
-    fontWeight: "600",
-};
-
 export const CandidateRow = ({
     candidate,
     onConfirm,
@@ -146,8 +141,7 @@ export const CandidateRow = ({
                 size="sm"
                 loading={confirming}
                 disabled={disabled}
-                className="green-button"
-                css={startBtnSx}
+                variant="folioPrimary"
                 onClick={() => onConfirm(candidate)}
             >
                 {t("patient.startVisit")}
@@ -227,9 +221,6 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                         as="h1"
                         size="lg"
                         color="textPrimary"
-                        css={{
-                            fontFamily: '"Space Grotesk", sans-serif',
-                        }}
                     >
                         {t("patient.newEncounter")}
                     </Heading>
@@ -282,12 +273,9 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                             </VStack>
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="folioSecondary"
                                 size="md"
                                 mt={3}
-                                borderRadius="2xl"
-                                className="switch-mode"
-                                css={startBtnSx}
                                 onClick={() => setView("search")}
                             >
                                 <FaArrowLeft />
@@ -312,12 +300,9 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                             </Flex>
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="folioSecondary"
                                 size="md"
                                 mt={3}
-                                borderRadius="2xl"
-                                className="switch-mode"
-                                css={startBtnSx}
                                 onClick={() => setView("choose")}
                             >
                                 <FaArrowLeft />

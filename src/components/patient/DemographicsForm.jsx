@@ -152,11 +152,6 @@ const DemographicsForm = ({
         if (onSaved) onSaved(updated);
     };
 
-    const btnSx = {
-        fontFamily: '"Space Grotesk", sans-serif',
-        fontWeight: "600",
-    };
-
     return (
         <VStack gap={4} align="stretch">
             {/* Document drop zone — auto-fills fields from a referral/ID/etc. */}
@@ -288,18 +283,15 @@ const DemographicsForm = ({
                     <Button
                         onClick={onCancel}
                         size="md"
-                        borderRadius="2xl"
-                        className="switch-mode"
-                        css={btnSx}>{cancelIcon || undefined}{cancelLabel ?? t("action.cancel")}</Button>
+                        variant="folioSecondary"
+                        >{cancelIcon || undefined}{cancelLabel ?? t("action.cancel")}</Button>
                 )}
                 <Button
                     onClick={handleSave}
                     disabled={!requiredMet}
                     loading={isSaving}
                     size="md"
-                    borderRadius="2xl"
-                    className="green-button"
-                    css={btnSx}
+                    variant="folioPrimary"
                 >
                     {saveLabel ?? t("action.save")}
                 </Button>

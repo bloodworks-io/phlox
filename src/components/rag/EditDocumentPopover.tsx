@@ -7,8 +7,8 @@ import {
     Popover,
     Input,
     VStack,
-    Button,
 } from "@chakra-ui/react";
+import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { toaster } from "@/components/ui/toaster";
 import { EditIcon } from "../common/icons";
 import { FaTimes } from "react-icons/fa";
@@ -191,21 +191,19 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                         borderTop="1px solid"
                         borderColor="surface"
                     >
-                        <Button
+                        <SecondaryButton
                             size="xs"
-                            variant="ghost"
                             onClick={() => setOpen(false)}
                         >
                             {t("action.cancel")}
-                        </Button>
-                        <Button
+                        </SecondaryButton>
+                        <PrimaryButton
                             size="xs"
-                            className="green-button"
                             loading={saving}
                             onClick={handleSave}
                         >
                             {t("action.save")}
-                        </Button>
+                        </PrimaryButton>
                     </Flex>
                 </Popover.Content>
             </Popover.Positioner>

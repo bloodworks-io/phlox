@@ -153,9 +153,8 @@ const TemplateSettingsPanel = () => {
                 </Text>
                 <Button
                     onClick={() => setIsNewTemplateModalOpen(true)}
-                    variant="outline"
                     size="sm"
-                    className="nav-button"
+                    variant="folioSecondary"
                 ><AddIcon />{t("settings.templates.newTemplate")}
                 </Button>
             </Flex>
@@ -300,6 +299,7 @@ const TemplateSettingsPanel = () => {
             />
             <ConfirmDialog
                 isOpen={isDeleteModalOpen}
+                intent="destructive"
                 onClose={() => {
                     setIsDeleteModalOpen(false);
                     setTemplateToDelete(null);

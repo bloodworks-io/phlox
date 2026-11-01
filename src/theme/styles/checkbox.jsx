@@ -1,36 +1,27 @@
 // Styles for checkbox components
-import { colors } from "../colors";
 
-const checkboxStyles = (props) => ({
+const checkboxStyles = () => ({
     ".task-checkbox": {
         borderRadius: "sm !important",
     },
+    // Folio control surface for the shared task checkbox. Geometry (16px
+    // box, 2px radius) and label metrics are preserved; the checked fill
+    // comes from the Folio checkmark recipe (accent + accentInk).
     ".task-checkbox .chakra-checkbox__control": {
         borderWidth: "1px !important",
+        borderStyle: "solid !important",
+        borderColor: "folio.line !important",
         width: "16px !important",
         height: "16px !important",
         borderRadius: "2px !important",
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface1} !important`
-                : `1px solid ${colors.dark.surface2} !important`,
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.crust} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        backgroundColor: "folio.paper !important",
+        color: "folio.ink !important",
     },
     ".task-checkbox .chakra-checkbox__label": {
         fontSize: "16px !important",
         lineHeight: "20px !important",
         fontWeight: "400 !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        color: "folio.muted !important",
     },
 });
 

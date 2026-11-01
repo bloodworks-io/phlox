@@ -83,6 +83,39 @@ describe("VersionInfo", () => {
         expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
 
+    it("renders real expanded controls with accessible names", async () => {
+        renderWithProviders(
+            <VersionInfo colorMode="light" toggleColorMode={vi.fn()} />,
+        );
+
+        expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: /switch to dark mode/i }),
+        ).toBeInTheDocument();
+        expect(screen.getByRole("status")).toBeInTheDocument();
+        await waitFor(() =>
+            expect(settingsApiMock.fetchServerStatus).toHaveBeenCalledTimes(1),
+        );
+    });
+
+    it("renders real collapsed controls with accessible names", async () => {
+        renderWithProviders(
+            <VersionInfo
+                isCollapsed
+                colorMode="dark"
+                toggleColorMode={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: /switch to light mode/i }),
+        ).toBeInTheDocument();
+        await waitFor(() =>
+            expect(settingsApiMock.fetchServerStatus).toHaveBeenCalledTimes(1),
+        );
+    });
+
     it("returns to the system theme from the expanded sidebar control", async () => {
         renderWithProviders(
             <VersionInfo colorMode="light" toggleColorMode={vi.fn()} />,

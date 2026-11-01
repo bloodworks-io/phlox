@@ -20,7 +20,7 @@ import {
 import { FaCheckDouble, FaPlus, FaTimes } from "react-icons/fa";
 import useSWRMutation from "swr/mutation";
 import { patientApi } from "../../utils/api/patientApi";
-import { GreenButton } from "../common/Buttons";
+import { PrimaryButton } from "../common/Buttons";
 import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { KEYS } from "../../utils/cache/keys";
 
@@ -378,26 +378,20 @@ const WrapUpModal = ({
                                 <Button
                                     onClick={onClose}
                                     size="md"
-                                    borderRadius="2xl"
-                                    className="switch-mode"
-                                    css={{
-                                        fontFamily:
-                                            '"Space Grotesk", sans-serif',
-                                        fontWeight: "600",
-                                    }}
+                                    variant="folioSecondary"
                                     mr={3}
                                     disabled={submitting}
                                 >
                                     {t("action.cancel")}
                                 </Button>
-                                <GreenButton
+                                <PrimaryButton
                                     onClick={handleConfirm}
                                     loading={submitting}
                                     loadingText={t("modal.wrapUp.saving")}
                                     disabled={!canConfirm}
                                 >
                                     {t("modal.wrapUp.confirmFinish")}
-                                </GreenButton>
+                                </PrimaryButton>
                             </HStack>
                         </Dialog.Footer>
                     </Dialog.Content>

@@ -194,7 +194,7 @@ const PatientTable = ({
                             <PatientDetails patient={patient} />
                         </Tooltip>
                         <Button
-                            className="grey-button"
+                            variant="folioSecondary"
                             size="sm"
                             onClick={() => handleSelectPatient(patient)}
                             maxW="150px"

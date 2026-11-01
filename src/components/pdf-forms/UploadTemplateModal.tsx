@@ -4,7 +4,7 @@ import { Input, Text, VStack, Box, Dialog, Portal } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
-import { GreenButton, GreyButton } from "../common/Buttons";
+import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { useTranslation } from "react-i18next";
 import type { FormTemplate } from "./types";
 
@@ -137,16 +137,16 @@ const UploadTemplateModal = ({ isOpen, onClose, onCreated }: UploadTemplateModal
               </VStack>
             </Dialog.Body>
             <Dialog.Footer>
-              <GreyButton mr="3" onClick={handleClose}>
+              <SecondaryButton mr="3" onClick={handleClose}>
                 {t("action.cancel")}
-              </GreyButton>
-              <GreenButton
+              </SecondaryButton>
+              <PrimaryButton
                 onClick={handleSubmit}
                 loading={uploading}
                 disabled={!file || !name.trim()}
               >
                 {t("forms.upload")}
-              </GreenButton>
+              </PrimaryButton>
             </Dialog.Footer>
           </Dialog.Content>
         </Dialog.Positioner>

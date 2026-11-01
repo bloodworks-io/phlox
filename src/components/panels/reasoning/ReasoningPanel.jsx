@@ -69,7 +69,7 @@ const ReasoningPanel = forwardRef(
                                     onClick={handleGenerateReasoning}
                                     loading={loading}
                                     size="xs"
-                                    className="orange-button"><FaSync size="10px" />{t("reasoning.regenerate")}
+                                    variant="folioSecondary"><FaSync size="10px" />{t("reasoning.regenerate")}
                                                                     </Button>
                             </Tooltip>
                         )}

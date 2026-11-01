@@ -1,27 +1,46 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { CustomToast } from "./Toast";
-import { renderWithProviders } from "../../test/utils";
+import { emotionStylesFor, renderWithProviders } from "../../test/utils";
 
 afterEach(cleanup);
 
 const cases = [
-    { status: "success", className: "green-icon" },
-    { status: "error", className: "red-icon" },
-    { status: "warning", className: "yellow-icon" },
-    { status: "info", className: "blue-icon" },
+    { status: "success", token: "folio-success" },
+    { status: "error", token: "folio-danger" },
+    { status: "warning", token: "folio-warning" },
+    { status: "info", token: "folio-info" },
 ];
 
 describe("CustomToast", () => {
     it.each(cases)(
-        "renders the $status status icon treatment",
-        ({ status, className }) => {
+        "renders the $status status icon with its Folio role color",
+        ({ status, token }) => {
             const { container } = renderWithProviders(
                 <CustomToast status={status} title="Seed title" />,
             );
-            expect(container.querySelector(`.${className}`)).not.toBeNull();
+            const svg = container.querySelector("svg");
+            expect(svg).not.toBeNull();
+            const styles = emotionStylesFor(svg);
+            expect(styles).toContain(`var(--chakra-colors-${token})`);
         },
     );
+
+    it("renders on the Folio paper surface with Public Sans text", () => {
+        const { container } = renderWithProviders(
+            <CustomToast status="success" title="Saved" />,
+        );
+        // The provider renders a theme script first; the surface is the
+        // toast's outermost div.
+        const surface = container.querySelector("div");
+        const styles = emotionStylesFor(surface);
+
+        expect(styles).toContain("var(--chakra-colors-folio-paper)");
+        expect(styles).toContain("var(--chakra-colors-folio-line)");
+        expect(styles).toContain("var(--chakra-radii-folio-panel)");
+        // Public Sans is the body role; no Roboto is hard-coded anymore.
+        expect(styles).not.toContain("Roboto");
+    });
 
     it("renders title and description text", () => {
         renderWithProviders(
@@ -48,14 +67,12 @@ describe("CustomToast", () => {
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it("omits the icon for an unknown status", () => {
+    it("omits the status icon for an unknown status", () => {
         const { container } = renderWithProviders(
             <CustomToast status="unknown" title="Seed title" />,
         );
 
-        expect(container.querySelector(".green-icon")).toBeNull();
-        expect(container.querySelector(".red-icon")).toBeNull();
-        expect(container.querySelector(".yellow-icon")).toBeNull();
-        expect(container.querySelector(".blue-icon")).toBeNull();
+        // Only the close affordance remains; no status icon is rendered.
+        expect(container.querySelectorAll("svg")).toHaveLength(1);
     });
 });

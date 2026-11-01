@@ -20,7 +20,7 @@ export const EmptyState = ({ loading, status, onGenerate }) => {
                 loading={loading}
                 loadingText={status || t("reasoning.generating")}
                 size="sm"
-                className="green-button"><FaAtom />{t("reasoning.generate")}
+                variant="folioPrimary"><FaAtom />{t("reasoning.generate")}
                             </Button>
         </VStack>
     );
