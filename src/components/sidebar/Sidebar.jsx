@@ -20,8 +20,7 @@ import { sidebarWidth } from "../../theme/dimensions";
 import { patientApi } from "../../utils/api/patientApi";
 import { KEYS } from "../../utils/cache/keys";
 import { isTauri } from "../../utils/helpers/apiConfig";
-
-const IS_MAC = /Mac/i.test(navigator.userAgent);
+import { isMacOS } from "../../utils/helpers/platform";
 
 const CollapseIcon = ({ boxSize = "20px" }) => (
   <svg
@@ -154,28 +153,20 @@ const Sidebar = ({
   // Determine if the sidebar should have floating behavior
   const shouldFloat = isSmallScreen && !isCollapsed;
 
-  // Matte Folio sidebar treatment; web/docker gets flat full-height
-  const navStyle = isTauri()
-    ? {
-        h: "calc(100dvh - 18px)",
-        my: 2,
-        mx: 2,
-        bg: "folio.sidebar",
-        borderRadius: "2xl",
-        boxShadow: "overlay",
-        border: "1px solid",
-        borderColor: "folio.line",
-      }
-    : {
-        h: "100dvh",
-        my: 0,
-        mx: 0,
-        bg: "folio.sidebar",
-        backdropFilter: "none",
-        borderRadius: "0",
-        boxShadow: "none",
-        border: "none",
-      };
+  const isMacTauri = isTauri() && isMacOS();
+
+  // Web, Docker, and every Tauri platform share the same full-height rail.
+  // macOS keeps platform-specific clearance below the overlay traffic lights.
+  const navStyle = {
+    h: "100dvh",
+    my: 0,
+    mx: 0,
+    bg: "folio.sidebar",
+    backdropFilter: "none",
+    borderRadius: "0",
+    boxShadow: "none",
+    border: "none",
+  };
 
   return (
     <Box
@@ -186,7 +177,7 @@ const Sidebar = ({
       left="0"
       {...navStyle}
       p="4"
-      pt={isTauri() ? "3" : "4"}
+      pt="4"
       display="flex"
       flexDirection="column"
       w={sidebarWidth(isCollapsed)}
@@ -196,8 +187,9 @@ const Sidebar = ({
         isSmallScreen && isCollapsed ? "translateX(-100%)" : "translateX(0)"
       }
     >
-      {/* Tauri titlebar drag region - full sidebar width */}
-      {isTauri() && (
+      {/* macOS overlay titlebar drag region; Windows/GNOME keep native
+          titlebar dragging. */}
+      {isMacTauri && (
         <Box
           data-tauri-drag-region
           position="absolute"
@@ -213,7 +205,7 @@ const Sidebar = ({
         <IconButton
           onClick={toggleSidebar}
           position="absolute"
-          top={isTauri() ? (IS_MAC ? "44px" : "24px") : "12px"}
+          top={isMacTauri ? "44px" : "12px"}
           right="15px"
           size="sm"
           borderRadius="full"
@@ -239,7 +231,7 @@ const Sidebar = ({
         justify="space-between"
         overflow="hidden"
         transition="margin-top 0.3s ease"
-        mt={isTauri() ? (IS_MAC ? "30px" : "4px") : "0px"}
+        mt={isMacTauri ? "30px" : "0px"}
         mb="12px"
       >
         <Box cursor={isCollapsed ? "e-resize" : "pointer"} asChild ml="10px">

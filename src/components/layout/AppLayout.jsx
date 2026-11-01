@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import Sidebar from "../sidebar/Sidebar";
 import CollapseIcon from "../common/icons/CollapseIcon";
 import { isTauri } from "../../utils/helpers/apiConfig";
-import { sidebarOffset } from "../../theme/dimensions";
+import { isMacOS } from "../../utils/helpers/platform";
+import { sidebarWidth } from "../../theme/dimensions";
 
 const AppLayout = ({
     isSmallScreen,
@@ -15,6 +16,7 @@ const AppLayout = ({
 }) => {
     const location = useLocation();
     const { t } = useTranslation();
+    const isMacTauri = isTauri() && isMacOS();
     return (
         <Flex position="relative">
             {/* Floating hamburger button for small screens */}
@@ -35,22 +37,23 @@ const AppLayout = ({
             <Sidebar {...sidebarProps} />
             <Box
                 flex="1"
-                ml={isSmallScreen ? "0" : sidebarOffset(isCollapsed, isTauri())}
+                ml={isSmallScreen ? "0" : sidebarWidth(isCollapsed)}
                 minH="100dvh"
                 transition="margin-left 0.3s ease"
                 bg="folio.canvas"
                 display="flex"
                 flexDirection="column"
             >
-                {/* Tauri titlebar drag region for macOS */}
-                {isTauri() && (
+                {/* macOS overlay titlebar drag region; native Windows/GNOME
+                    titlebars remain the drag surface on their platforms. */}
+                {isMacTauri && (
                     <Box
                         data-tauri-drag-region
                         height="25px"
                         position="fixed"
                         top="0"
                         right="0"
-                        left={isSmallScreen ? "0" : sidebarOffset(isCollapsed, true)}
+                        left={isSmallScreen ? "0" : sidebarWidth(isCollapsed)}
                         zIndex="1000"
                         transition="left 0.3s ease"
                     />
@@ -60,11 +63,7 @@ const AppLayout = ({
                     m="0px"
                     borderRadius="0px"
                     p="0"
-                    pt={
-                        isSmallScreen && isTauri()
-                            ? "50px"
-                            : "0"
-                    }
+                    pt={isSmallScreen && isMacTauri ? "50px" : "0"}
                     className="main-bg"
                     height="100dvh"
                     overflowY="auto"

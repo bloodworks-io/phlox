@@ -9,6 +9,7 @@ import {
   calculatePassphraseStrength,
 } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
+import { isMacOS } from "../../utils/helpers/platform";
 import {
   SPLASH_STEPS,
   STEP_TITLES,
@@ -141,7 +142,7 @@ const EncryptionSetup = ({ onComplete }) => {
       position="relative"
     >
       {/* Tauri titlebar drag region - full window width */}
-      {isTauri() && (
+      {isTauri() && isMacOS() && (
         <Box
           data-tauri-drag-region
           height="25px"

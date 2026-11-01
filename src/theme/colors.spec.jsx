@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { colors, folioColors, folioRadiusTokens, folioShadowTokens, tokens } from "./colors";
+import { folioColors, folioRadiusTokens, folioShadowTokens, tokens } from "./colors";
 
 const folioPairs = {
     canvas: ["#f3f0e9", "#262b25"],
@@ -66,13 +66,11 @@ describe("Clinical Folio color foundation", () => {
         expect(folioColors.dark.infoSoft).toBe("#3e4843");
     });
 
-    it("preserves overloaded legacy aliases during the foundation phase", () => {
-        expect(tokens.accent.value.base).toBe("#179299");
-        expect(tokens.accent.value._dark).toBe("#8bd5ca");
-        expect(tokens.brand.value.base).toBe("#fe640b");
-        expect(tokens.brand.value._dark).toBe("#f5a97f");
-        expect(colors.light.sidebar.background).toBe("#232634");
-        expect(colors.dark.sidebar.background).toBe("#1e2030");
+    it("removes the overloaded pre-Folio compatibility aliases", () => {
+        expect(Object.keys(tokens)).toEqual(["folio"]);
+        expect(tokens.folio).not.toHaveProperty("base");
+        expect(folioColors.light).not.toHaveProperty("base");
+        expect(folioColors.dark).not.toHaveProperty("crust");
     });
 
     it("registers the Folio overlay shadow and radius scale", () => {

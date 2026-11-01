@@ -6,6 +6,7 @@ import { LuArrowLeft, LuArrowRight } from "react-icons/lu";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { authApi } from "../../utils/api/authApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import { isMacOS } from "../../utils/helpers/platform";
 import {
   SPLASH_STEPS,
   STEP_TITLES,
@@ -221,7 +222,7 @@ const SplashScreen = ({ onComplete }) => {
       py={8}
       position="relative"
     >
-      {isTauri() && (
+      {isTauri() && isMacOS() && (
         <Box
           data-tauri-drag-region
           height="25px"

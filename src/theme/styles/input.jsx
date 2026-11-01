@@ -1,5 +1,4 @@
 // Styles for text input fields and buttons.
-import { colors } from "../colors";
 
 const folioFocusRing = {
     "&:focus": {
@@ -9,7 +8,7 @@ const folioFocusRing = {
     },
 };
 
-const inputStyles = (props) => ({
+const inputStyles = () => ({
     ".textarea-style": {
         backgroundColor: "folio.canvas !important",
         color: "folio.ink !important",
@@ -103,10 +102,7 @@ const inputStyles = (props) => ({
         fontWeight: "600",
     },
     ".cohesive-fields-container": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
+        backgroundColor: "folio.canvas !important",
         borderRadius: "lg !important",
         border: "none !important",
         padding: "12px !important",
@@ -126,10 +122,7 @@ const inputStyles = (props) => ({
     ".cohesive-field-label": {
         fontSize: "1rem !important",
         fontWeight: "500 !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        color: "folio.muted !important",
         padding: "0 0 4px 0 !important",
         marginBottom: "4px !important",
     },
@@ -193,19 +186,13 @@ const inputStyles = (props) => ({
             backgroundColor: "transparent !important",
         },
         "&::placeholder": {
-            color:
-                props.colorMode === "light"
-                    ? colors.light.overlay0
-                    : colors.dark.overlay0,
+            color: "folio.faint",
         },
     },
     ".cohesive-textarea--empty": {
         minHeight: "24px !important",
         "&::placeholder": {
-            color:
-                props.colorMode === "light"
-                    ? `${colors.light.textSecondary} !important`
-                    : `${colors.dark.textSecondary} !important`,
+            color: "folio.faint !important",
             opacity: "1 !important",
         },
     },
@@ -323,8 +310,8 @@ const inputStyles = (props) => ({
     },
 });
 
-const _lightOut = inputStyles({ colorMode: "light" });
-const _darkOut = inputStyles({ colorMode: "dark" });
+const _lightOut = inputStyles();
+const _darkOut = inputStyles();
 export const inputGlobalCss = {};
 for (const selector of Object.keys(_lightOut)) {
     inputGlobalCss[selector] = {

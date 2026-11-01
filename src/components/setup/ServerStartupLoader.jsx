@@ -4,6 +4,7 @@ import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra
 import { LuServer } from "react-icons/lu";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import { isMacOS } from "../../utils/helpers/platform";
 
 const LOADING_MESSAGES = [
   "setup.serverStartup.loading1",
@@ -122,8 +123,8 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         py={8}
         position="relative"
       >
-        {/* Tauri titlebar drag region - full window width */}
-        {isTauri() && (
+        {/* macOS overlay titlebar drag region */}
+        {isTauri() && isMacOS() && (
           <Box
             data-tauri-drag-region
             height="25px"
@@ -184,8 +185,8 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       py={8}
       position="relative"
     >
-      {/* Tauri titlebar drag region - full window width */}
-      {isTauri() && (
+      {/* macOS overlay titlebar drag region */}
+      {isTauri() && isMacOS() && (
         <Box
           data-tauri-drag-region
           height="25px"

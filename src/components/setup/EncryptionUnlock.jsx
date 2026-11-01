@@ -6,6 +6,7 @@ import { toaster } from "@/components/ui/toaster";
 import { LuEye, LuEyeOff } from "react-icons/lu";
 import { encryptionApi } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
+import { isMacOS } from "../../utils/helpers/platform";
 
 const EncryptionUnlock = ({ onComplete }) => {
 
@@ -131,7 +132,7 @@ const EncryptionUnlock = ({ onComplete }) => {
       position="relative"
     >
       {/* Tauri titlebar drag region - full window width */}
-      {isTauri() && (
+      {isTauri() && isMacOS() && (
         <Box
           data-tauri-drag-region
           height="25px"
