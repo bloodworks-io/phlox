@@ -142,7 +142,7 @@ export const AuthGate = ({ onSuccess }) => {
             <Text
               textAlign="center"
               fontSize="sm"
-              color="textSecondary"
+              color="folio.ink"
               maxW="350px"
               lineHeight="1.6"
             >

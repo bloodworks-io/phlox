@@ -78,7 +78,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
         return () => clearInterval(refresh);
     }, [isOpen, mutate, mutateStatus]);
 
-    const groups = useMemo(() => {
+    const groups = (() => {
         const byDay = new Map();
         for (const session of sessions) {
             const key = sessionDay(session, t);
@@ -86,7 +86,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
             byDay.get(key).push(session);
         }
         return [...byDay.entries()];
-    }, [sessions, t]);
+    })();
 
     const toggle = (sessionId) => {
         setSelected((prev) => {

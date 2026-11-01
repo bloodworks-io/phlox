@@ -1158,6 +1158,7 @@
         "changelogTooltip": "View Changelog",
         "switchToDarkMode": "Switch to Dark Mode",
         "switchToLightMode": "Switch to Light Mode",
+        "useSystemAppearance": "Use system appearance",
         "status": {
             "allConnected": "All services connected",
             "services": "Services: {{llm}} LLM, {{whisper}} Transcription{{embedding}}",

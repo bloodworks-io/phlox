@@ -43,6 +43,12 @@ export default tseslint.config(
         },
     },
     {
+        files: ["public/theme-boot.js"],
+        languageOptions: {
+            globals: { ...globals.browser },
+        },
+    },
+    {
         files: ["src/**/*.{js,jsx,ts,tsx}"],
         plugins: {
             "unused-imports": unusedImports,

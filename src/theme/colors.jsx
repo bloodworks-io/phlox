@@ -1,6 +1,52 @@
 // Application palette.
 import { lightenColor } from "./utils";
 
+
+const folioPalette = {
+    "folio.canvas": { light: "#f3f0e9", dark: "#262b25" },
+    "folio.paper": { light: "#fffdf8", dark: "#30362d" },
+    "folio.paperAlt": { light: "#ede8de", dark: "#3a4137" },
+    "folio.sidebar": { light: "#272a24", dark: "#1c201b" },
+    "folio.sidebarAlt": { light: "#34392f", dark: "#2c332a" },
+    "folio.sidebarInk": { light: "#f4f1e8", dark: "#f0eee6" },
+    "folio.sidebarMuted": { light: "#bfc5b7", dark: "#b7bdb0" },
+    "folio.ink": { light: "#262b25", dark: "#f0eee6" },
+    "folio.muted": { light: "#5e675c", dark: "#b8bdb1" },
+    "folio.faint": { light: "#737c6f", dark: "#98a091" },
+    "folio.line": { light: "#d8d3c7", dark: "#485045" },
+    "folio.accent": { light: "#854127", dark: "#e3a17f" },
+    "folio.accentInk": { light: "#ffffff", dark: "#2a1b14" },
+    "folio.accentSoft": { light: "#f0dcd0", dark: "#4b352b" },
+    "folio.brand": { light: "#d55c2c", dark: "#f08a58" },
+    "folio.brandOnSidebar": { light: "#f0a07d", dark: "#f0a07d" },
+    "folio.brandInk": { light: "#ffffff", dark: "#2b170f" },
+    "folio.badgeInk": { light: "#ffffff", dark: "#2b1513" },
+    "folio.success": { light: "#35644b", dark: "#a9d5b1" },
+    "folio.successSoft": { light: "#e0ebdd", dark: "#304536" },
+    "folio.danger": { light: "#b42318", dark: "#ff9b96" },
+    "folio.warning": { light: "#8a5a12", dark: "#e6c179" },
+    "folio.info": { light: "#3d6391", dark: "#a8c8e8" },
+    "folio.selection": { light: "#e8e2d4", dark: "#414a3c" },
+    "folio.selectionInk": { light: "#262b25", dark: "#f0eee6" },
+    "folio.hover": { light: "#eae5db", dark: "#363e34" },
+    "folio.focus": { light: "#a24b25", dark: "#f4c5a8" },
+};
+
+export const folioShadowTokens = {
+    overlay: {
+        value: {
+            base: "0 12px 32px rgba(58, 42, 25, 0.08)",
+            _dark: "0 16px 36px rgba(0, 0, 0, 0.28)",
+        },
+    },
+};
+
+export const folioRadiusTokens = {
+    folioControl: { value: "4px" },
+    folioPanel: { value: "7px" },
+    folioOverlay: { value: "10px" },
+};
+
 const palette = {
     base: { light: "#eff1f5", dark: "#24273a" },
     secondary: { light: "#e6e9ef", dark: "#1e2030" },
@@ -84,6 +130,7 @@ const palette = {
         light: lightenColor("#dd7878"),
         dark: lightenColor("#f5bde6"),
     },
+    ...folioPalette,
 };
 
 // Chakra v3 semantic-token registration
@@ -105,9 +152,9 @@ export const tokens = (() => {
 })();
 
 // Legacy flat view — do not use in new code.
-const buildFlatView = (mode) => {
+const buildFlatView = (source, mode) => {
     const view = {};
-    for (const [name, pair] of Object.entries(palette)) {
+    for (const [name, pair] of Object.entries(source)) {
         const value = pair[mode];
         const parts = name.split(".");
         let node = view;
@@ -121,6 +168,11 @@ const buildFlatView = (mode) => {
 };
 
 export const colors = {
-    light: buildFlatView("light"),
-    dark: buildFlatView("dark"),
+    light: buildFlatView(palette, "light"),
+    dark: buildFlatView(palette, "dark"),
+};
+
+export const folioColors = {
+    light: buildFlatView(folioPalette, "light").folio,
+    dark: buildFlatView(folioPalette, "dark").folio,
 };

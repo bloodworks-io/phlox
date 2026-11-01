@@ -1,7 +1,30 @@
 /* Global styles for Phlox. */
 
+:root {
+    background: #f3f0e9;
+    color-scheme: light;
+}
+
+:root.light {
+    background: #f3f0e9;
+    color-scheme: light;
+}
+
+:root.dark {
+    background: #262b25;
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+        background: #262b25;
+        color-scheme: dark;
+    }
+}
+
 body {
     margin: 0;
+    background: transparent;
 }
 
 code {

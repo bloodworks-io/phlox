@@ -14,7 +14,12 @@ const authApiMock = vi.hoisted(() => ({
 vi.mock("../../utils/api/settingsApi", () => ({ settingsApi: settingsApiMock }));
 vi.mock("../../utils/api/authApi", () => ({ authApi: authApiMock }));
 
-afterEach(cleanup);
+afterEach(() => {
+    cleanup();
+    if (window.localStorage) {
+        window.localStorage.removeItem("theme");
+    }
+});
 beforeEach(() => {
     vi.clearAllMocks();
     settingsApiMock.fetchServerStatus.mockResolvedValue({
@@ -76,5 +81,37 @@ describe("VersionInfo", () => {
         fireEvent.click(screen.getByText("v2.5.2"));
         expect(await screen.findByText("GitHub")).toBeInTheDocument();
         expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("returns to the system theme from the expanded sidebar control", async () => {
+        renderWithProviders(
+            <VersionInfo colorMode="light" toggleColorMode={vi.fn()} />,
+        );
+
+        const systemControl = screen.getByRole("button", {
+            name: "Use system appearance",
+        });
+        fireEvent.click(systemControl);
+
+        await waitFor(() =>
+            expect(document.documentElement.dataset.themePreference).toBe(
+                "system",
+            ),
+        );
+        expect(systemControl).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("exposes the system theme control in the collapsed sidebar", () => {
+        renderWithProviders(
+            <VersionInfo
+                isCollapsed
+                colorMode="dark"
+                toggleColorMode={vi.fn()}
+            />,
+        );
+
+        expect(
+            screen.getByRole("button", { name: "Use system appearance" }),
+        ).toBeInTheDocument();
     });
 });

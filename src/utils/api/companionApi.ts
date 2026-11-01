@@ -2,6 +2,11 @@ import { handleApiRequest, universalFetch } from "../helpers/apiHelpers";
 import { buildApiUrl } from "../helpers/apiConfig";
 import { t } from "@/i18n";
 
+type ImportBatchOptions = {
+    generate?: boolean;
+    templateKey?: string;
+};
+
 export const companionApi = {
     fetchStatus: async () =>
         handleApiRequest({
@@ -44,7 +49,10 @@ export const companionApi = {
             errorMessage: t("api.companion.retryFailed"),
         }),
 
-    importBatch: async (sessionIds, { generate = false, templateKey } = {}) =>
+    importBatch: async (
+        sessionIds: string[],
+        { generate = false, templateKey }: ImportBatchOptions = {},
+    ) =>
         handleApiRequest({
             apiCall: async () => {
                 const url = await buildApiUrl(

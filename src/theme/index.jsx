@@ -3,7 +3,7 @@
 
 import { createSystem, defaultConfig } from "@chakra-ui/react";
 import { typography } from "./typography";
-import { tokens as colorTokens } from "./colors";
+import { tokens as colorTokens, folioShadowTokens, folioRadiusTokens } from "./colors";
 import { buttonGlobalCss } from "./styles/button";
 import { inputGlobalCss } from "./styles/input";
 import { sidebarGlobalCss } from "./styles/sidebar";
@@ -39,7 +39,7 @@ Object.assign(
     patientInfoGlobalCss,
 );
 
-globalCss[".main-bg"] = { backgroundColor: "base" };
+globalCss[".main-bg"] = { backgroundColor: "folio.canvas" };
 globalCss[".flex-container"] = {
     display: "flex",
     justifyContent: "center",
@@ -223,10 +223,13 @@ export const system = createSystem(defaultConfig, {
             fonts: {
                 heading: { value: typography.fonts.heading },
                 body: { value: typography.fonts.body },
+                display: { value: typography.fonts.display },
             },
+            radii: folioRadiusTokens,
         },
         semanticTokens: {
             colors: colorTokens,
+            shadows: folioShadowTokens,
         },
         slotRecipes: {
             table: {

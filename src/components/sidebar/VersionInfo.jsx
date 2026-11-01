@@ -9,8 +9,10 @@ import {
   Center,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useThemePreference } from "@/components/ui/color-mode";
 import { useTranslation } from "react-i18next";
 import { FaMoon, FaSun, FaSignOutAlt } from "react-icons/fa";
+import { LuMonitor } from "react-icons/lu";
 import { TbVersions } from "react-icons/tb";
 import { BsCheck2All, BsExclamationTriangle } from "react-icons/bs";
 import { settingsApi } from "../../utils/api/settingsApi";
@@ -66,6 +68,7 @@ const StatusIcon = ({ serverStatus, isCollapsed }) => {
 
 const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
   const { t } = useTranslation();
+  const { themePreference, setThemePreference } = useThemePreference();
   const { open, onOpen, onClose } = useDisclosure();
   const [serverStatus, setServerStatus] = useState({
     whisper: false,
@@ -161,6 +164,35 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
             </Box>
           </Tooltip>
 
+          <Tooltip
+            content={t("sidebar.useSystemAppearance")}
+            positioning={{
+              placement: "right",
+            }}
+          >
+            <Box
+              as="button"
+              type="button"
+              onClick={() => setThemePreference("system")}
+              aria-label={t("sidebar.useSystemAppearance")}
+              aria-pressed={themePreference === "system"}
+              cursor="pointer"
+              fontSize="md"
+              color="sidebar.text"
+              background="transparent"
+              border="none"
+              padding={0}
+              _hover={{ color: "sidebar.text" }}
+              _focusVisible={{
+                outline: "2px solid",
+                outlineColor: "sidebar.text",
+                outlineOffset: "2px",
+              }}
+            >
+              <LuMonitor />
+            </Box>
+          </Tooltip>
+
           <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />
         </VStack>
         <ChangelogModal
@@ -223,6 +255,30 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
               _hover={{ color: "sidebar.text" }}
             >
               {colorMode === "light" ? <FaMoon /> : <FaSun />}
+            </Box>
+          </Tooltip>
+
+          <Tooltip content={t("sidebar.useSystemAppearance")}>
+            <Box
+              as="button"
+              type="button"
+              onClick={() => setThemePreference("system")}
+              aria-label={t("sidebar.useSystemAppearance")}
+              aria-pressed={themePreference === "system"}
+              cursor="pointer"
+              fontSize="lg"
+              color="sidebar.text"
+              background="transparent"
+              border="none"
+              padding={0}
+              _hover={{ color: "sidebar.text" }}
+              _focusVisible={{
+                outline: "2px solid",
+                outlineColor: "sidebar.text",
+                outlineOffset: "2px",
+              }}
+            >
+              <LuMonitor />
             </Box>
           </Tooltip>
 

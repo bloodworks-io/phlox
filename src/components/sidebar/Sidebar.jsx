@@ -165,19 +165,18 @@ const Sidebar = ({
         h: "calc(100dvh - 18px)",
         my: 2,
         mx: 2,
-        bg: "linear-gradient(to bottom, rgba(45, 47, 65, 0.95), rgba(30, 32, 48, 0.95))",
-        backdropFilter: "blur(20px) saturate(180%)",
+        bg: "folio.sidebar",
         borderRadius: "2xl",
         boxShadow:
           "0 4px 24px rgba(20, 20, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
         border: "1px solid",
-        borderColor: "rgba(0, 0, 0, 0.2)",
+        borderColor: "folio.line",
       }
     : {
         h: "100dvh",
         my: 0,
         mx: 0,
-        bg: "sidebar.background",
+        bg: "folio.sidebar",
         backdropFilter: "none",
         borderRadius: "0",
         boxShadow: "none",

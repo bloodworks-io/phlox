@@ -4,12 +4,9 @@ import { typography } from "../typography";
 
 const baseStyles = (props) => ({
     body: {
-        bg: props.colorMode === "light" ? colors.light.base : colors.dark.base,
-        color:
-            props.colorMode === "light"
-                ? colors.light.textPrimary
-                : colors.dark.textPrimary,
-        fontFamily: '"Roboto", sans-serif',
+        bg: "folio.canvas",
+        color: "folio.ink",
+        fontFamily: "body",
     },
     ".headings": {
         color:
@@ -68,7 +65,7 @@ const baseStyles = (props) => ({
                 : colors.dark.textSecondary,
     },
     p: {
-        fontFamily: '"Roboto", sans-serif',
+        fontFamily: "body",
         fontSize: "1rem",
         lineHeight: "1.5",
         textWrap: "pretty",
