@@ -53,7 +53,7 @@ test("citation verdicts and popover use the Folio status language", async ({
         .filter({ hasText: "The transcript says the opposite:" });
     await expect(popover).toBeVisible();
     await expect(
-        popover.getByText("Your haemoglobin is now 132, up from 105."),
+        popover.getByText("I have noticed some bruising on my arms lately."),
     ).toBeVisible();
 
     await expectStableScreenshot(page, "consultation-citation-popover");
