@@ -12,17 +12,25 @@ const tabStyles = () => ({
         transition:
             "background-color 160ms ease, color 160ms ease, border-color 160ms ease !important",
     },
+    // Accent ink keeps the active tab distinct even on the folio.canvas body
+    // it now merges with, where ink-on-canvas read as no state at all.
     ".tab-style[aria-selected='true']": {
-        backgroundColor: "folio.paper !important",
-        color: "folio.ink !important",
+        backgroundColor: "folio.canvas !important",
+        color: "folio.accent !important",
         border: "none",
+        // Non-colour cue: the selected surface is the same colour as the
+        // content body it faces, so weight — not hue — carries the state.
+        fontWeight: "600 !important",
     },
     ".tab-style[aria-selected='false']": {
         backgroundColor: "transparent !important",
         color: "folio.muted !important",
     },
-    ".tab-style:hover": {
+    // Scoped to unselected tabs so re-hovering the active tab keeps its paper
+    // surface; ink text matches the app-wide hover idiom.
+    ".tab-style:not([aria-selected='true']):hover": {
         backgroundColor: "folio.hover !important",
+        color: "folio.ink !important",
     },
     ".compact-tabs .tab-style": {
         fontSize: "13px !important",

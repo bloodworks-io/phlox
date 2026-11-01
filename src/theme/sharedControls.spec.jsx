@@ -267,6 +267,54 @@ describe("Folio overlay foundations", () => {
     expect(globalCss).toContain("--chakra-colors-folio-hover");
   });
 
+  it("keeps three distinct tab states with a non-colour selected cue", () => {
+    const base = system.getGlobalCss()["@layer base"];
+    const modes = (suffix) => {
+      const rule = base[`&.tab-style${suffix}`];
+      expect(rule).toBeTruthy();
+      return [":root &, .light &", ".dark &, .dark .chakra-theme:not(.light) &"].map(
+        (mode) => rule[mode],
+      );
+    };
+
+    // Hover must stay scoped: :not([aria-selected='true']) is what keeps a
+    // hovered selected tab on its canvas surface, and no other hover rule may
+    // bypass that scope (the regression this PR fixes).
+    const hoverKeys = Object.keys(base).filter(
+      (k) => k.includes("tab-style") && k.includes(":hover"),
+    );
+    expect(hoverKeys).toEqual([
+      "&.tab-style:not([aria-selected='true']):hover",
+    ]);
+
+    for (const mode of modes("")) {
+      expect(mode.backgroundColor).toBe(
+        "var(--chakra-colors-transparent) !important",
+      );
+      expect(mode.fontWeight).toBe("400 !important");
+    }
+    for (const mode of modes("[aria-selected='false']")) {
+      expect(mode.backgroundColor).toBe(
+        "var(--chakra-colors-transparent) !important",
+      );
+      expect(mode.color).toBe("var(--chakra-colors-folio-muted) !important");
+    }
+    for (const mode of modes(":not([aria-selected='true']):hover")) {
+      expect(mode.backgroundColor).toBe(
+        "var(--chakra-colors-folio-hover) !important",
+      );
+      expect(mode.color).toBe("var(--chakra-colors-folio-ink) !important");
+    }
+    for (const mode of modes("[aria-selected='true']")) {
+      expect(mode.backgroundColor).toBe(
+        "var(--chakra-colors-folio-canvas) !important",
+      );
+      expect(mode.color).toBe("var(--chakra-colors-folio-accent) !important");
+      // The weight bump only signals if idle tabs keep the regular weight.
+      expect(mode.fontWeight).toBe("600 !important");
+    }
+  });
+
   it("keeps tabular numerals and Folio header colors on tables", () => {
     const table = system.getSlotRecipe("table").base;
     expect(table.cell.fontVariantNumeric).toBe("tabular-nums");
