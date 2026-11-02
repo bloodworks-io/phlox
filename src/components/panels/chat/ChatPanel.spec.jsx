@@ -102,7 +102,12 @@ describe("ChatPanel Folio shell", () => {
         expect(emotionStylesFor(header.firstElementChild)).toContain(
             "var(--chakra-colors-folio-accent)",
         );
-        expect(screen.getByText("Chat With Phlox")).toBeInTheDocument();
+        const title = screen.getByText("Chat with Phlox");
+        expect(title).toBeInTheDocument();
+        // The title carries no ink of its own — it inherits the cluster accent.
+        expect(emotionStylesFor(title)).not.toContain(
+            "var(--chakra-colors-folio-ink)",
+        );
     });
 
     it("reads messages on the canvas body and composes on paper", () => {

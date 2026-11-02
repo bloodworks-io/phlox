@@ -131,7 +131,7 @@
         }
     },
     "chat": {
-        "title": "Chat With Phlox",
+        "title": "Chat with Phlox",
         "assistant": "Phlox Assistant",
         "logoAlt": "Phlox Logo",
         "disclaimer": "Phlox may make mistakes. Always verify critical information.",

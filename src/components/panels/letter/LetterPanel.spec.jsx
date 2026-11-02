@@ -135,7 +135,11 @@ describe("LetterPanel Folio shell", () => {
     expect(emotionStylesFor(header.firstElementChild)).toContain(
       "var(--chakra-colors-folio-accent)",
     );
-    expect(screen.getByText("Patient Letter")).toBeInTheDocument();
+    const title = screen.getByText("Patient Letter");
+    expect(title).toBeInTheDocument();
+    expect(emotionStylesFor(title)).toContain(
+      "font-weight: var(--chakra-font-weights-bold)",
+    );
   });
 
   it("edits the letter on the canvas body of the folio panel", () => {

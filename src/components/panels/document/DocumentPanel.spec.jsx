@@ -49,6 +49,20 @@ function renderPanel(props = {}) {
 }
 
 describe("DocumentPanel Folio conversion", () => {
+    it("sets the header on paper with an accent icon cluster and title", () => {
+        renderPanel();
+        const header = document.querySelector(".panel-header");
+        const cluster = header.firstElementChild;
+        expect(emotionStylesFor(cluster)).toContain(
+            "var(--chakra-colors-folio-accent)",
+        );
+        // The title carries no ink of its own — it inherits the cluster accent.
+        const title = screen.getByText("Document Upload");
+        expect(emotionStylesFor(title)).not.toContain(
+            "var(--chakra-colors-folio-ink)",
+        );
+    });
+
     it("tints the drag overlay with accentSoft over an accent hint", () => {
         renderPanel();
         // Drag handlers live on the scrolling content box; the hint text is

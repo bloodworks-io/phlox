@@ -70,7 +70,7 @@ const LetterPanel = ({
            <Flex align="center" color="folio.accent">
 
             <LuMail size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
-            <Text>{t("common.fab.patientLetter")}</Text>
+            <Text fontWeight="bold">{t("common.fab.patientLetter")}</Text>
           </Flex>
 
           <Tooltip
