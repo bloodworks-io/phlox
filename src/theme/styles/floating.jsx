@@ -55,22 +55,6 @@ const floatingStyles = () => ({
             boxShadow: "none",
         },
     },
-    ".refinement-suggestions": {
-        backgroundColor: "folio.paperAlt",
-        borderRadius: "folioControl !important",
-        height: "25px !important",
-        fontSize: "0.8rem !important",
-        fontWeight: "500 !important",
-        border: "1px solid !important",
-        borderColor: "folio.line !important",
-        color: "folio.muted !important",
-        transition:
-            "color 160ms ease, background-color 160ms ease, border-color 160ms ease",
-        _hover: {
-            backgroundColor: "folio.hover",
-            color: "folio.ink",
-        },
-    },
     ".quick-chat-buttons-collapsed": {
         backgroundColor: "folio.paperAlt !important",
         borderRadius: "folioControl !important",
@@ -116,14 +100,6 @@ const floatingStyles = () => ({
     },
     ".message-box ul, .message-box ol": {
         paddingLeft: "20px",
-    },
-    ".template-selector": {
-        borderTop: "1px solid !important",
-        borderTopColor: "folio.line !important",
-    },
-    ".template-selector .template-selector": {
-        textAlign: "left !important",
-        display: "block !important",
     },
     ".thinking-toggle": {
         display: "inline-flex",

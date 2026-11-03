@@ -105,9 +105,9 @@ const PreviousVisitPanel = ({
           borderBottomColor="folio.line"
           flexShrink={0}
         >
-          <Flex align="center" color="folio.accent">
+          <Flex align="center" color="folio.accent" lineHeight="1">
             <LuClock size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
-            <Text fontWeight="bold">{t("common.fab.previousVisit")}</Text>
+            <Text fontWeight="bold" lineHeight="1">{t("common.fab.previousVisit")}</Text>
           </Flex>
         </Flex>
 

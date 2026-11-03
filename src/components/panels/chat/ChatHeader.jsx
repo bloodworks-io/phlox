@@ -16,9 +16,9 @@ const ChatHeader = ({ title, _onClose }) => {
             color="folio.ink"
             flexShrink={0}
         >
-            <Flex align="center" color="folio.accent">
+            <Flex align="center" color="folio.accent" lineHeight="1">
                 <ChatIcon mr="2" />
-                <Text fontWeight="bold" color="folio.ink">{title ?? t("chat.title")}</Text>
+                <Text fontWeight="bold" lineHeight="1">{title ?? t("chat.title")}</Text>
             </Flex>
         </Flex>
     );

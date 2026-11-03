@@ -28,7 +28,12 @@ const inputStyles = () => ({
         minHeight: "auto !important",
     },
     ".letter-editor-textarea": {
+        border: "none !important",
+        borderRadius: "0 !important",
         overflow: "auto !important",
+        // .textarea-style sets border/radius with !important at equal
+        // specificity; the later declaration wins, so this override must
+        // stay after it in the stylesheet.
     },
     ".chat-input": {
         backgroundColor: "folio.canvas !important",
@@ -215,18 +220,6 @@ const inputStyles = () => ({
         width: "40px !important",
         height: "40px !important",
         aspectRatio: "1/1",
-        "&:hover": {
-            backgroundColor: "folio.accent/90 !important",
-        },
-    },
-    ".refinement-submit-button": {
-        borderRadius: "folioControl !important",
-        color: "folio.accentInk !important",
-        backgroundColor: "folio.accent !important",
-        border: "1px solid !important",
-        borderColor: "folio.accent !important",
-        transition:
-            "color 160ms ease, background-color 160ms ease, border-color 160ms ease",
         "&:hover": {
             backgroundColor: "folio.accent/90 !important",
         },

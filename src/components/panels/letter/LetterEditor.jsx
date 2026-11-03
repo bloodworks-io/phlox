@@ -9,8 +9,8 @@ const LetterEditor = ({
   setIsRefining,
   loading,
   isRefining,
+  refineButtonRef,
   textareaRef,
-  refinementPanel,
   dictationWidget,
 }) => {
   const { t } = useTranslation();
@@ -62,44 +62,46 @@ const LetterEditor = ({
           ref={textareaRef}
           disabled={loading}
         />
-        <Tooltip
-          content={t("letter.refineTooltip")}
-          disabled={loading}
-          positioning={{ placement: "left" }}
-        >
-          <IconButton
-            position="absolute"
-            bottom={4}
-            width="40px"
-            height="40px"
-            right={4}
-            zIndex={2}
-            aspectRatio="1/1"
-            pointerEvents={loading ? "none" : "auto"}
-            backgroundColor="folio.accent"
-            color="folio.accentInk"
-            borderWidth="1px"
-            borderColor="folio.accent"
-            transition="background-color 160ms ease, color 160ms ease, opacity 160ms ease"
-            _hover={
-              loading ? undefined : { backgroundColor: "folio.accent/90" }
-            }
-            _focusVisible={{
-              outline: "2px solid",
-              outlineColor: "folio.focus",
-              outlineOffset: "2px",
-            }}
-            className="refinement-fab"
-            onClick={() => !loading && setIsRefining(true)}
-            aria-label={t("letter.refineTooltip")}
+        {!isRefining && (
+          <Tooltip
+            content={t("letter.refineTooltip")}
             disabled={loading}
+            positioning={{ placement: "left" }}
           >
-            <EditIcon />
-          </IconButton>
-        </Tooltip>
+            <IconButton
+              ref={refineButtonRef}
+              position="absolute"
+              bottom={4}
+              width="40px"
+              height="40px"
+              right={4}
+              zIndex={2}
+              aspectRatio="1/1"
+              pointerEvents={loading ? "none" : "auto"}
+              backgroundColor="folio.accent"
+              color="folio.accentInk"
+              borderWidth="1px"
+              borderColor="folio.accent"
+              transition="background-color 160ms ease, color 160ms ease, opacity 160ms ease"
+              _hover={
+                loading ? undefined : { backgroundColor: "folio.accent/90" }
+              }
+              _focusVisible={{
+                outline: "2px solid",
+                outlineColor: "folio.focus",
+                outlineOffset: "2px",
+              }}
+              className="refinement-fab"
+              onClick={() => !loading && setIsRefining(true)}
+              aria-label={t("letter.refineTooltip")}
+              disabled={loading}
+            >
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+        )}
         {dictationWidget}
       </Box>
-      {isRefining && refinementPanel}
     </Box>
   );
 };

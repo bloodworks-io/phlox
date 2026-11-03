@@ -60,9 +60,9 @@ const ReasoningPanel = forwardRef(
                         borderBottomColor="folio.line"
                         flexShrink={0}
                     >
-                        <Flex align="center" color="folio.accent">
+                        <Flex align="center" color="folio.accent" lineHeight="1">
                             <LuAtom size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
-                            <Text fontWeight="bold">{t("common.fab.chartInsights")}</Text>
+                            <Text fontWeight="bold" lineHeight="1">{t("common.fab.chartInsights")}</Text>
                         </Flex>
                         {reasoning && (
                             <Tooltip content={t("reasoning.regenerateTooltip")}>

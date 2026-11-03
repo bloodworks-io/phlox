@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Flex, Text, NativeSelect } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
 import { LuMail, LuMic, LuWandSparkles } from "react-icons/lu";
 
 import LetterEditor from "./LetterEditor";
-import TemplateSelector from "./TemplateSelector";
 import CustomInstructionsInput from "./CustomInstructionsInput";
 import PanelFooterActions from "./PanelFooterActions";
 import RefinementPanel from "./RefinementPanel";
@@ -40,8 +39,24 @@ const LetterPanel = ({
   handleCopy,
 }) => {
   const [letterMode, setLetterMode] = useState("draft");
+  const refineButtonRef = useRef(null);
+  const wasRefiningRef = useRef(isRefining);
   const { t } = useTranslation();
   const isDictateMode = letterMode === "dictate";
+  const templateOptions = letterTemplates.filter((tpl) => tpl.name !== "Dictation");
+  const templateValue =
+    selectedTemplate === "custom"
+      ? "custom"
+      : selectedTemplate && templateOptions.some((tpl) => tpl.id === selectedTemplate.id)
+        ? String(selectedTemplate.id)
+        : "";
+
+  useEffect(() => {
+    if (wasRefiningRef.current && !isRefining) {
+      refineButtonRef.current?.focus();
+    }
+    wasRefiningRef.current = isRefining;
+  }, [isRefining]);
 
   return (
     <Box
@@ -67,48 +82,140 @@ const LetterPanel = ({
            borderBottomColor="folio.line"
            flexShrink={0}
          >
-           <Flex align="center" color="folio.accent">
+           <Flex align="center" color="folio.accent" lineHeight="1">
 
             <LuMail size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
-            <Text fontWeight="bold">{t("common.fab.patientLetter")}</Text>
+            <Text fontWeight="bold" lineHeight="1">{t("common.fab.patientLetter")}</Text>
           </Flex>
 
-          <Tooltip
-            content={
-              isDictateMode
-                ? t("letter.modeTooltipDictate")
-                : t("letter.modeTooltipDraft")
-            }
-            aria-label={t("letter.modeTooltipAria")}
-          >
-            <Box>
-              <Flex alignItems="center">
+          <Flex align="center" gap="2">
+            <Tooltip
+              content={
+                isDictateMode
+                  ? t("letter.modeTooltipDictate")
+                  : t("letter.modeTooltipDraft")
+              }
+              aria-label={t("letter.modeTooltipAria")}
+            >
+              <Box
+                className="mode-slider"
+                position="relative"
+                display="inline-flex"
+                backgroundColor="folio.paperAlt"
+                border="1px solid"
+                borderColor="folio.line"
+                borderRadius="full"
+                padding="2px"
+                height="28px"
+                boxSizing="border-box"
+              >
+                {/* Sliding thumb behind the active mode icon. The cells are
+                    plain buttons on a fixed 26px grid so the thumb tracks the
+                    active mode exactly (IconButton would absolutely position
+                    its child and collapse the cells). */}
+                <Box
+                  position="absolute"
+                  top="2px"
+                  left="2px"
+                  width="26px"
+                  height="22px"
+                  borderRadius="full"
+                  backgroundColor="folio.accent"
+                  transform={
+                    isDictateMode ? "translateX(26px)" : "translateX(0)"
+                  }
+                  transition="transform 180ms ease"
+                />
+                <Box
+                  as="button"
+                  aria-label={t("letter.modeDraft")}
+                  aria-pressed={!isDictateMode}
+                  onClick={() => setLetterMode("draft")}
+                  width="26px"
+                  height="22px"
+                  flexShrink={0}
+                  display="inline-flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  position="relative"
+                  zIndex={1}
+                  border="none"
+                  background="transparent"
+                  cursor="pointer"
+                  color={isDictateMode ? "folio.muted" : "folio.accentInk"}
+                  transition="color 160ms ease"
+                >
+                  <LuWandSparkles size={13} strokeWidth={1.6} />
+                </Box>
+                <Box
+                  as="button"
+                  aria-label={t("scribe.mode.dictate")}
+                  aria-pressed={isDictateMode}
+                  onClick={() => setLetterMode("dictate")}
+                  width="26px"
+                  height="22px"
+                  flexShrink={0}
+                  display="inline-flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  position="relative"
+                  zIndex={1}
+                  border="none"
+                  background="transparent"
+                  cursor="pointer"
+                  color={isDictateMode ? "folio.accentInk" : "folio.muted"}
+                  transition="color 160ms ease"
+                >
+                  <LuMic size={13} strokeWidth={1.6} />
+                </Box>
+              </Box>
+            </Tooltip>
+            <NativeSelect.Root size="sm" width="150px">
+              <NativeSelect.Field
+                aria-label={t("letter.templateLabel")}
+                value={templateValue}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "custom") {
+                    selectTemplate("custom");
+                    return;
+                  }
+                  const template = letterTemplates.find(
+                    (tpl) => String(tpl.id) === value,
+                  );
+                  if (template) selectTemplate(template);
+                }}
+                disabled={isDictateMode}
+                height="28px"
+                lineHeight="1"
+                fontSize="xs"
+                borderColor="folio.line"
+                backgroundColor="folio.canvas"
+                color="folio.ink"
+              >
                 {isDictateMode ? (
-                  <LuMic strokeWidth={1.6}
-                    style={{ marginRight: "8px" }}
-                    className="settings-meta"
-                  />
+                  <option value="dictated">{t("letter.modeDictated")}</option>
                 ) : (
-                  <LuWandSparkles strokeWidth={1.6}
-                    style={{ marginRight: "8px" }}
-                    className="settings-meta"
-                  />
+                  <>
+                    {templateValue === "" && (
+                      <option value="" disabled>
+                        {t("letter.templatePlaceholder")}
+                      </option>
+                    )}
+                    {templateOptions.map((template) => (
+                      <option key={template.id} value={String(template.id)}>
+                        {template.name}
+                      </option>
+                    ))}
+                    <option value="custom">
+                      {t("settings.templates.badgeCustom")}
+                    </option>
+                  </>
                 )}
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={letterMode}
-                    onChange={(e) => setLetterMode(e.target.value)}
-                    size="sm"
-                    width={["110px", "140px", "160px"]}
-                    className="input-style">
-                    <option value="draft">{t("letter.modeDraft")}</option>
-                    <option value="dictate">{t("scribe.mode.dictate")}</option>
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Flex>
-            </Box>
-          </Tooltip>
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </Flex>
         </Flex>
 
         {/* Content Area - Now a Flex Column */}
@@ -124,16 +231,8 @@ const LetterPanel = ({
               setIsRefining={setIsRefining}
               loading={letterLoading}
               isRefining={isRefining}
+              refineButtonRef={refineButtonRef}
               textareaRef={textareaRef}
-              refinementPanel={
-                <RefinementPanel
-                  refinementInput={refinementInput}
-                  setRefinementInput={setRefinementInput}
-                  handleRefinement={handleRefinement}
-                  loading={letterLoading}
-                  setIsRefining={setIsRefining}
-                />
-              }
               dictationWidget={
                 isDictateMode ? (
                   <DictationWidget
@@ -149,24 +248,25 @@ const LetterPanel = ({
             />
           </Box>
 
-          {!isDictateMode && (
-            <Box pt={2} flexShrink={0} className="template-selector" borderTopWidth="1px" borderTopColor="folio.line">
-              <TemplateSelector
-                letterTemplates={letterTemplates}
-                selectedTemplate={selectedTemplate}
-                onTemplateSelect={selectTemplate}
+          {!isDictateMode && selectedTemplate === "custom" && (
+            <Box px="3" pt="1" pb="2" flexShrink={0}>
+              <CustomInstructionsInput
+                additionalInstructions={additionalInstructions}
+                setAdditionalInstructions={setAdditionalInstructions}
               />
-              {selectedTemplate === "custom" && (
-                <Box pt={5}>
-                  <CustomInstructionsInput
-                    additionalInstructions={additionalInstructions}
-                    setAdditionalInstructions={setAdditionalInstructions}
-                  />
-                </Box>
-              )}
             </Box>
           )}
         </Box>
+
+        {isRefining && (
+          <RefinementPanel
+            refinementInput={refinementInput}
+            setRefinementInput={setRefinementInput}
+            handleRefinement={handleRefinement}
+            loading={letterLoading}
+            setIsRefining={setIsRefining}
+          />
+        )}
 
         {/* Footer */}
         <Box p="4" flexShrink={0} borderTopWidth="1px" borderTopColor="folio.line">

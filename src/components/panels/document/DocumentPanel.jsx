@@ -204,9 +204,9 @@ const DocumentPanel = ({
         borderBottomColor="folio.line"
         flexShrink={0}
       >
-        <Flex align="center" color="folio.accent">
+        <Flex align="center" color="folio.accent" lineHeight="1">
           <LuFileUp size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
-          <Text fontWeight="bold">{t("document.title")}</Text>
+          <Text fontWeight="bold" lineHeight="1">{t("document.title")}</Text>
         </Flex>
       </Flex>
       {/* Content */}

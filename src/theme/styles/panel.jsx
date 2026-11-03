@@ -4,6 +4,8 @@ const panelStyles = () => ({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
+        height: "52px",
+        boxSizing: "border-box",
         borderBottom: "1px solid !important",
         borderBottomColor: "folio.line !important",
     },

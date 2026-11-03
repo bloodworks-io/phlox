@@ -2,6 +2,7 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   screen,
+  within,
   cleanup,
   fireEvent,
   waitFor,
@@ -107,7 +108,12 @@ function baseProps(props = {}) {
 const renderLetterPanel = (props = {}) =>
   renderWithProviders(<LetterPanel {...baseProps(props)} />);
 
-const getModeSelect = () => document.querySelector("select");
+const getTemplateSelect = () => document.querySelector("select");
+
+const sliderBtn = (name) =>
+  within(document.querySelector(".mode-slider")).getByRole("button", {
+    name,
+  });
 
 describe("LetterPanel Folio shell", () => {
   it("keeps the panel geometry and the resize handle wired", () => {
@@ -140,6 +146,12 @@ describe("LetterPanel Folio shell", () => {
     expect(emotionStylesFor(title)).toContain(
       "font-weight: var(--chakra-font-weights-bold)",
     );
+    // All floating panels share one header height.
+    const headerCss =
+      system.getGlobalCss()["@layer base"]["&.panel-header"][
+        ":root &, .light &"
+      ];
+    expect(headerCss.height).toBe("52px");
   });
 
   it("edits the letter on the canvas body of the folio panel", () => {
@@ -149,6 +161,14 @@ describe("LetterPanel Folio shell", () => {
     expect(bodyStyles).toContain("var(--chakra-colors-folio-canvas)");
     expect(bodyStyles).toContain("var(--chakra-colors-folio-ink)");
     expect(bodyStyles).toContain("var(--chakra-radii-folio-panel)");
+
+    // The textarea is a flat surface: the body owns the hairline and radius.
+    const editorCss =
+      system.getGlobalCss()["@layer base"]["&.letter-editor-textarea"][
+        ":root &, .light &"
+      ];
+    expect(editorCss.border).toBe("none !important");
+    expect(editorCss.borderRadius).toBe("0 !important");
 
     const editor = screen.getByDisplayValue("Dear Dr Rao,");
     expect(editor).toBeEnabled();
@@ -165,65 +185,111 @@ describe("LetterPanel Folio shell", () => {
 describe("LetterPanel mode switching", () => {
   it("offers draft and dictate modes and starts in draft", () => {
     renderLetterPanel();
-    const select = getModeSelect();
-    expect(select.value).toBe("draft");
-    expect(screen.getByText("Draft")).toBeInTheDocument();
-    expect(screen.getByText("Dictate")).toBeInTheDocument();
+    expect(sliderBtn("Draft")).toHaveAttribute("aria-pressed", "true");
+    expect(sliderBtn("Dictate")).toHaveAttribute("aria-pressed", "false");
+    const select = getTemplateSelect();
+    expect(select.value).toBe("11");
+    expect(select).toBeEnabled();
     expect(document.querySelector(".dictation-fab")).toBeNull();
-    expect(document.querySelector(".template-selector")).toBeTruthy();
+    expect(document.querySelector(".template-selector")).toBeNull();
   });
 
-  it("swaps templates for the dictation microphone in dictate mode", () => {
-    const { rerender } = renderLetterPanel();
-    const select = getModeSelect();
+  it("lays the mode slider on 26px cells and pins the select height", () => {
+    renderLetterPanel();
+    for (const cell of [
+      sliderBtn("Draft"),
+      sliderBtn("Dictate"),
+    ]) {
+      expect(emotionStylesFor(cell)).toContain("width: 26px");
+      expect(emotionStylesFor(cell)).toContain("height: 22px");
+    }
+    expect(emotionStylesFor(getTemplateSelect())).toContain("height: 28px");
+  });
 
-    fireEvent.change(select, { target: { value: "dictate" } });
-    expect(select.value).toBe("dictate");
-    expect(document.querySelector(".template-selector")).toBeNull();
+  it("tracks the active mode with a 26px thumb", () => {
+    renderLetterPanel();
+    const slider = document.querySelector(".mode-slider");
+    const thumb = slider.querySelector("div");
+    expect(emotionStylesFor(thumb)).toContain("transform: translateX(0)");
+
+    fireEvent.click(sliderBtn("Dictate"));
+    expect(emotionStylesFor(thumb)).toContain(
+      "transform: translateX(26px)",
+    );
+  });
+
+  it("swaps the template select for a disabled Dictated value in dictate mode", () => {
+    const { rerender } = renderLetterPanel();
+
+    fireEvent.click(sliderBtn("Dictate"));
+    expect(sliderBtn("Dictate")).toHaveAttribute("aria-pressed", "true");
+    expect(sliderBtn("Draft")).toHaveAttribute("aria-pressed", "false");
+    expect(getTemplateSelect()).toBeDisabled();
+    expect(screen.getByText("Dictated")).toBeInTheDocument();
     expect(document.querySelector(".dictation-fab")).toBeTruthy();
 
-    fireEvent.change(select, { target: { value: "draft" } });
+    fireEvent.click(sliderBtn("Draft"));
+    expect(getTemplateSelect()).toBeEnabled();
+    expect(getTemplateSelect().value).toBe("11");
+    expect(screen.queryByText("Dictated")).toBeNull();
     expect(document.querySelector(".dictation-fab")).toBeNull();
-    expect(document.querySelector(".template-selector")).toBeTruthy();
     rerender(<LetterPanel {...baseProps()} />);
   });
 
   it("disables the dictation fab while the letter is loading", () => {
     renderLetterPanel({ letterLoading: true });
-    fireEvent.change(getModeSelect(), { target: { value: "dictate" } });
+    fireEvent.click(sliderBtn("Dictate"));
     expect(document.querySelector(".dictation-fab")).toBeDisabled();
   });
 });
 
 describe("LetterPanel template selector", () => {
-  it("lists templates beside custom, hiding the Dictation source", () => {
+  it("lists templates beside custom in the header select, hiding the Dictation source", () => {
     const selectTemplate = vi.fn();
     renderLetterPanel({ selectTemplate });
 
-    expect(
-      screen.getByRole("button", { name: "General Practice" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Specialist Referral" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Dictation")).toBeNull(); // option only
-    expect(screen.getByRole("button", { name: "Custom" })).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Specialist Referral" }),
+    const select = getTemplateSelect();
+    const names = Array.from(select.options).map(
+      (option) => option.textContent,
     );
+    expect(names).toEqual([
+      "General Practice",
+      "Specialist Referral",
+      "Custom",
+    ]);
+
+    fireEvent.change(select, { target: { value: "13" } });
     expect(selectTemplate).toHaveBeenCalledWith(TEMPLATES[2]);
   });
 
-  it("marks the selected template with the success role", () => {
-    renderLetterPanel();
-    const selected = screen.getByRole("button", { name: "General Practice" });
-    expect(emotionStylesFor(selected)).toContain(
-      "var(--chakra-colors-folio-success)",
-    );
-    expect(screen.getByRole("button", { name: "Custom" })).not.toEqual(
-      selected,
-    );
+  it("marks the selected template in the select value", () => {
+    renderLetterPanel({ selectedTemplate: TEMPLATES[2] });
+    expect(getTemplateSelect().value).toBe("13");
+  });
+
+  it("shows a placeholder instead of silently selecting the first template", () => {
+    const selectTemplate = vi.fn();
+    renderLetterPanel({ selectedTemplate: null, selectTemplate });
+
+    const select = getTemplateSelect();
+    expect(select.value).toBe("");
+    expect(select.options[0]).toHaveTextContent("Select template");
+    expect(select.options[0]).toBeDisabled();
+
+    fireEvent.change(select, { target: { value: "11" } });
+    expect(selectTemplate).toHaveBeenCalledWith(TEMPLATES[0]);
+  });
+
+  it("shows the placeholder when the selected template is unavailable", () => {
+    const selectTemplate = vi.fn();
+    renderLetterPanel({
+      selectedTemplate: { id: 99, name: "Missing default" },
+      selectTemplate,
+    });
+
+    expect(getTemplateSelect().value).toBe("");
+    fireEvent.change(getTemplateSelect(), { target: { value: "11" } });
+    expect(selectTemplate).toHaveBeenCalledWith(TEMPLATES[0]);
   });
 
   it("reveals custom instructions only for the custom template", () => {
@@ -253,7 +319,7 @@ describe("LetterPanel template selector", () => {
 });
 
 describe("LetterEditor refinement flow", () => {
-  it("opens the refinement overlay from the accent fab", () => {
+  it("opens the refinement bar from the accent fab", () => {
     const setIsRefining = vi.fn();
     renderLetterPanel({ setIsRefining });
 
@@ -269,33 +335,63 @@ describe("LetterEditor refinement flow", () => {
     expect(document.querySelector(".floating-panel")).toBeNull();
   });
 
-  it("centers the floating refinement panel over the letter", () => {
+  it("docks the refinement bar above the footer without suggestion chips", () => {
     renderLetterPanel({ isRefining: true });
-    const panel = document.querySelector(".floating-panel");
-    expect(panel).toBeTruthy();
-    const panelStyles = emotionStylesFor(panel);
-    expect(panelStyles).toContain("transform: translate(-50%, -50%)");
-    expect(panelStyles).toContain("max-width: 500px");
-    expect(screen.getByText("Refine Letter")).toBeInTheDocument();
-  });
-
-  it("fills the refinement draft from suggestion chips", () => {
-    const setRefinementInput = vi.fn();
-    renderLetterPanel({ isRefining: true, setRefinementInput });
-
-    const chip = screen.getByRole("button", { name: "More formal" });
-    expect(chip.className).toContain("refinement-suggestions");
-    fireEvent.click(chip);
-    expect(setRefinementInput).toHaveBeenCalledWith("More formal");
-
-    fireEvent.change(
+    const bar = document.querySelector(".refinement-bar");
+    expect(bar).toBeTruthy();
+    expect(bar.nextElementSibling).toHaveTextContent("Regenerate Letter");
+    expect(document.querySelector(".floating-panel")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Refine letter" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "More formal" })).toBeNull();
+    expect(
       screen.getByPlaceholderText("How would you like to improve the letter?"),
-      { target: { value: "Sound less alarming." } },
-    );
-    expect(setRefinementInput).toHaveBeenCalledWith("Sound less alarming.");
+    ).toHaveFocus();
   });
 
-  it("submits and closes the refinement panel", () => {
+  it("edits the instruction and submits with Enter", () => {
+    const setRefinementInput = vi.fn();
+    const handleRefinement = vi.fn();
+    renderLetterPanel({
+      isRefining: true,
+      setRefinementInput,
+      handleRefinement,
+    });
+
+    const input = screen.getByPlaceholderText(
+      "How would you like to improve the letter?",
+    );
+    fireEvent.change(input, { target: { value: "Sound less alarming." } });
+    expect(setRefinementInput).toHaveBeenCalledWith("Sound less alarming.");
+
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(handleRefinement).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes with Escape from any bar control or the quiet close control", () => {
+    const setIsRefining = vi.fn();
+    renderLetterPanel({ isRefining: true, setIsRefining });
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Refine" }), {
+      key: "Escape",
+    });
+    expect(setIsRefining).toHaveBeenCalledWith(false);
+
+    const close = screen.getByLabelText("Close refinement");
+    expect(emotionStylesFor(close)).toContain("var(--chakra-colors-folio-muted)");
+    fireEvent.click(close);
+    expect(setIsRefining).toHaveBeenCalledTimes(2);
+  });
+
+  it("restores focus to the refine opener after the bar unmounts", () => {
+    const { rerender } = renderLetterPanel({ isRefining: true });
+    expect(document.querySelector(".refinement-bar")).toBeTruthy();
+
+    rerender(<LetterPanel {...baseProps({ isRefining: false })} />);
+    expect(document.querySelector(".refinement-bar")).toBeNull();
+    expect(screen.getByRole("button", { name: "Refine letter" })).toHaveFocus();
+  });
+
+  it("ignores Enter and Escape while composing with an IME", () => {
     const handleRefinement = vi.fn();
     const setIsRefining = vi.fn();
     renderLetterPanel({
@@ -303,42 +399,29 @@ describe("LetterEditor refinement flow", () => {
       handleRefinement,
       setIsRefining,
     });
+    const input = screen.getByPlaceholderText(
+      "How would you like to improve the letter?",
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Refine" }));
-    expect(handleRefinement).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(input, { key: "Enter", keyCode: 229, isComposing: true });
+    fireEvent.keyDown(input, { key: "Escape", keyCode: 229, isComposing: true });
+    expect(handleRefinement).not.toHaveBeenCalled();
+    expect(setIsRefining).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByLabelText("Close refinement"));
-    expect(setIsRefining).toHaveBeenCalledWith(false);
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    expect(handleRefinement).not.toHaveBeenCalled();
   });
 
-  it("maps the refinement close control to the quiet Folio secondary role", () => {
-    renderLetterPanel({ isRefining: true });
-
-    const close = screen.getByLabelText("Close refinement");
-    const styles = emotionStylesFor(close);
-    expect(styles).toContain("var(--chakra-colors-folio-muted)");
-    expect(close.className).not.toContain("collapse-toggle");
-  });
-
-  it("scrimms the refinement panel while a refinement runs", () => {
+  it("locks the refinement controls while a refinement runs", () => {
     renderLetterPanel({ isRefining: true, letterLoading: true });
-    const panel = document.querySelector(".floating-panel");
-    expect(panel.querySelector(".chakra-spinner")).toBeTruthy();
+    const bar = document.querySelector(".refinement-bar");
+    expect(bar.querySelector(".chakra-spinner")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: /refining/i }),
     ).toBeDisabled();
-  });
-
-  it("maps the suggestion chips to the quiet folio outline role", () => {
-    const chip =
-      system.getGlobalCss()["@layer base"]["&.refinement-suggestions"][
-        ":root &, .light &"
-      ];
-    expect(chip.backgroundColor).toContain(
-      "var(--chakra-colors-folio-paper-alt)",
-    );
-    expect(chip.borderColor).toContain("var(--chakra-colors-folio-line)");
-    expect(chip.color).toContain("var(--chakra-colors-folio-muted)");
+    expect(
+      screen.getByPlaceholderText("How would you like to improve the letter?"),
+    ).toBeDisabled();
   });
 });
 

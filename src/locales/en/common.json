@@ -1468,6 +1468,7 @@
             "loadFailed": "Failed to load letter"
         },
         "modeDraft": "Draft",
+        "modeDictated": "Dictated",
         "modeTooltipDictate": "Dictate: speak your letter and we'll turn it into a polished letter.",
         "modeTooltipDraft": "Draft: choose a template and have AI draft the letter for you.",
         "modeTooltipAria": "Letter mode tooltip",
@@ -1481,17 +1482,12 @@
         "customInstructions": "Custom Instructions:",
         "customInstructionsPlaceholder": "Enter custom instructions for letter generation...",
         "templateLabel": "Letter Template:",
+        "templatePlaceholder": "Select template",
         "regenerate": "Regenerate Letter",
         "copy": "Copy Letter",
         "copied": "Copied!",
         "save": "Save Letter",
-        "saved": "Saved!",
-        "suggestions": {
-            "formal": "More formal",
-            "concise": "More concise",
-            "detail": "Add detail",
-            "clarity": "Improve clarity"
-        }
+        "saved": "Saved!"
     },
     "liveAgent": {
         "error": {
