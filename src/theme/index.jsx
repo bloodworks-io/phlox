@@ -3,8 +3,7 @@
 
 import { createSystem, defaultConfig } from "@chakra-ui/react";
 import { typography } from "./typography";
-import { tokens as colorTokens } from "./colors";
-import { buttonGlobalCss } from "./styles/button";
+import { tokens as colorTokens, folioColors, folioShadowTokens, folioRadiusTokens } from "./colors";
 import { inputGlobalCss } from "./styles/input";
 import { sidebarGlobalCss } from "./styles/sidebar";
 import { baseGlobalCss } from "./styles/base";
@@ -26,7 +25,6 @@ Object.assign(
     baseGlobalCss,
     sidebarGlobalCss,
     panelGlobalCss,
-    buttonGlobalCss,
     inputGlobalCss,
     modalGlobalCss,
     floatingGlobalCss,
@@ -39,23 +37,13 @@ Object.assign(
     patientInfoGlobalCss,
 );
 
-globalCss[".main-bg"] = { backgroundColor: "base" };
+globalCss[".main-bg"] = { backgroundColor: "folio.canvas" };
 globalCss[".flex-container"] = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     height: "50px",
 };
-globalCss[".landing-items"] = {
-    backgroundColor: { _light: "base", _dark: "crust" },
-    color: "textSecondary !important",
-    border: "none",
-    fontWeight: "normal",
-};
-globalCss[".green-icon"] = { color: "successButton !important" };
-globalCss[".red-icon"] = { color: "dangerButton !important" };
-globalCss[".yellow-icon"] = { color: "secondaryButton !important" };
-globalCss[".blue-icon"] = { color: "primaryButton !important" };
 
 // Citation badges
 globalCss[".citation-badge"] = {
@@ -65,33 +53,39 @@ globalCss[".citation-badge"] = {
     zIndex: 1,
     transition: "opacity 0.15s ease",
 };
-globalCss[".citation-badge[data-verdict='supported']"] = { opacity: 0.45 };
+globalCss[".citation-badge[data-verdict='supported']"] = { opacity: 0.7 };
 globalCss[".citation-badge[data-verdict='unverified']"] = { opacity: 0.7 };
 globalCss[".citation-badge[data-verdict='conflict']"] = { opacity: 1 };
 globalCss[".citation-badge:hover"] = { opacity: 1 };
 globalCss[".citation-badge--conflict"] = {
-    boxShadow: { _light: "0 0 0 3px #d20f3915", _dark: "0 0 0 3px #ed879620" },
+    boxShadow: {
+        _light: `0 0 0 3px ${folioColors.light.danger}26`,
+        _dark: `0 0 0 3px ${folioColors.dark.danger}26`,
+    },
     borderRadius: "full",
 };
+// Transcript citation highlight: Folio info soft fill with an info ring.
 globalCss[".transcript-line--highlighted"] = {
-    backgroundColor: { _light: "rgba(135, 186, 255, 0.18)", _dark: "rgba(135, 186, 255, 0.22)" },
+    backgroundColor: "folio.infoSoft",
     borderRadius: "4px",
-    boxShadow: "0 0 0 4px rgba(135, 186, 255, 0.12)",
+    boxShadow: {
+        _light: `0 0 0 4px ${folioColors.light.info}1f`,
+        _dark: `0 0 0 4px ${folioColors.dark.info}26`,
+    },
 };
 
 globalCss[".chakra-button"] = {
     fontWeight: "600 !important",
     fontSize: "16px !important",
     transition:
-        "transform 0.1s ease, background 0.15s ease, box-shadow 0.2s ease !important",
+        "color 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease !important",
 };
-globalCss[".chakra-button:active"] = {
-    transform: "scale(0.97)",
-};
-// Keyboard-only focus ring — clicks stay ring-free
+// Keyboard-only focus ring — clicks stay ring-free.
+// !important is required: the button recipe emits its own focus-visible ring
+// in @layer recipes, which would otherwise win over this base-layer rule.
 globalCss[".chakra-button:focus-visible"] = {
-    outline: "2px solid var(--chakra-colors-accent)",
-    outlineOffset: "2px",
+    outline: "2px solid var(--chakra-colors-folio-focus) !important",
+    outlineOffset: "2px !important",
 };
 
 // Slightly smaller icons inside buttons (rendered as <svg> children in v3).
@@ -165,6 +159,10 @@ globalCss["@media (prefers-reduced-motion: reduce)"] = {
     ".anim-stagger > *": { animation: "none !important" },
     ".chakra-tabs-content": { animation: "none !important" },
     ".chakra-popover-content": { animation: "none !important" },
+    ".live-field-updated": { animation: "none !important" },
+    ".live-bolt-pulse": { animation: "none !important" },
+    // Striped progress bars keep their stripes but stop animating.
+    ".chakra-progress__range": { animation: "none !important" },
 };
 
 export const system = createSystem(defaultConfig, {
@@ -194,10 +192,10 @@ export const system = createSystem(defaultConfig, {
                 },
             },
             phloxLiveFieldFlash: {
-                // Matches the edit-is-blue coding in the agent activity feed.
+                // Agent edits use the Folio information role.
                 from: {
-                    backgroundColor: "rgba(114, 135, 253, 0.15)",
-                    boxShadow: "inset 2px 0 0 0 #7287fd",
+                    backgroundColor: "var(--chakra-colors-folio-info-soft)",
+                    boxShadow: "inset 2px 0 0 0 var(--chakra-colors-folio-info)",
                 },
                 to: {
                     backgroundColor: "transparent",
@@ -223,10 +221,13 @@ export const system = createSystem(defaultConfig, {
             fonts: {
                 heading: { value: typography.fonts.heading },
                 body: { value: typography.fonts.body },
+                display: { value: typography.fonts.display },
             },
+            radii: folioRadiusTokens,
         },
         semanticTokens: {
             colors: colorTokens,
+            shadows: folioShadowTokens,
         },
         slotRecipes: {
             table: {
@@ -241,14 +242,8 @@ export const system = createSystem(defaultConfig, {
                         letterSpacing: "0.6px",
                         lineHeight: "16px",
                         borderBottomWidth: "1px",
-                        _light: {
-                            color: "#4A5568",
-                            borderBottomColor: "#EDF2F7",
-                        },
-                        _dark: {
-                            color: "#a0aec0",
-                            borderBottomColor: "#2D3748",
-                        },
+                        color: "folio.muted",
+                        borderBottomColor: "folio.line",
                     },
                 },
                 variants: {
@@ -277,19 +272,20 @@ export const system = createSystem(defaultConfig, {
             popover: {
                 base: {
                     content: {
-                        "--popover-bg": "var(--chakra-colors-secondary)",
+                        "--popover-bg": "var(--chakra-colors-folio-paper)",
                         bg: "var(--popover-bg)",
                         border: "1px solid",
-                        borderColor: "surface",
-                        borderRadius: "lg",
-                        color: "textPrimary",
+                        borderColor: "folio.line",
+                        borderRadius: "folioPanel",
+                        color: "folio.ink",
+                        boxShadow: "overlay",
                     },
                     header: {
                         fontSize: "sm",
                         fontWeight: "600",
-                        color: "textPrimary",
+                        color: "folio.ink",
                         borderBottom: "1px solid",
-                        borderColor: "surface",
+                        borderColor: "folio.line",
                         px: "3",
                         py: "2.5",
                         lineHeight: "1.2",
@@ -300,15 +296,214 @@ export const system = createSystem(defaultConfig, {
                     },
                     footer: {
                         borderTop: "1px solid",
-                        borderColor: "surface",
+                        borderColor: "folio.line",
+                    },
+                },
+            },
+            // Folio treatment for native <select> fields: same control
+            // surface as Folio inputs while preserving the default recipe's
+            // geometry and size variants.
+            nativeSelect: {
+                variants: {
+                    variant: {
+                        outline: {
+                            field: {
+                                bg: "folio.canvas",
+                                color: "folio.ink",
+                                borderColor: "folio.line",
+                                borderRadius: "folioControl",
+                                focusRingColor: "folio.focus",
+                                "& > option, & > optgroup": {
+                                    bg: "folio.paper",
+                                    color: "folio.ink",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            // Raw switch foundation: Folio control surface, accent checked
+            // state, explicit on-fill ink, and a visible Folio focus ring.
+            // Dimensions and slide behavior come from the default recipe.
+            switch: {
+                variants: {
+                    variant: {
+                        solid: {
+                            control: {
+                                bg: "folio.paperAlt",
+                                focusRingColor: "folio.focus",
+                                _checked: { bg: "folio.accent" },
+                            },
+                            thumb: {
+                                bg: "folio.paper",
+                                _checked: { bg: "folio.accentInk" },
+                            },
+                        },
+                    },
+                },
+            },
+            // Explicit Folio progress treatment. Striped/animated variants
+            // remain orthogonal and keep working with this variant.
+            progress: {
+                variants: {
+                    variant: {
+                        folio: {
+                            track: { bgColor: "folio.paperAlt" },
+                            range: { bgColor: "folio.accent" },
+                            label: { color: "folio.muted" },
+                            valueText: { color: "folio.ink" },
+                        },
+                        folioSuccess: {
+                            track: { bgColor: "folio.paperAlt" },
+                            range: { bgColor: "folio.success" },
+                            label: { color: "folio.muted" },
+                            valueText: { color: "folio.ink" },
+                        },
+                        folioDanger: {
+                            track: { bgColor: "folio.paperAlt" },
+                            range: { bgColor: "folio.danger" },
+                            label: { color: "folio.muted" },
+                            valueText: { color: "folio.ink" },
+                        },
+                        folioWarning: {
+                            track: { bgColor: "folio.paperAlt" },
+                            range: { bgColor: "folio.warning" },
+                            label: { color: "folio.muted" },
+                            valueText: { color: "folio.ink" },
+                        },
+                        folioInfo: {
+                            track: { bgColor: "folio.paperAlt" },
+                            range: { bgColor: "folio.info" },
+                            label: { color: "folio.muted" },
+                            valueText: { color: "folio.ink" },
+                        },
+                    },
+                },
+            },
+            // Folio status alerts: soft status surface, readable ink, and a
+            // status-colored indicator without relying on Chakra color palettes.
+            alert: {
+                variants: {
+                    status: {
+                        info: {
+                            root: { bg: "folio.infoSoft", color: "folio.ink" },
+                            indicator: { color: "folio.info" },
+                        },
+                        success: {
+                            root: {
+                                bg: "folio.successSoft",
+                                color: "folio.ink",
+                            },
+                            indicator: { color: "folio.success" },
+                        },
+                        warning: {
+                            root: {
+                                bg: "folio.warningSoft",
+                                color: "folio.ink",
+                            },
+                            indicator: { color: "folio.warning" },
+                        },
+                        error: {
+                            root: {
+                                bg: "folio.dangerSoft",
+                                color: "folio.ink",
+                            },
+                            indicator: { color: "folio.danger" },
+                        },
+                    },
+                },
+            },
+            // Folio tooltip: paper surface, hairline border, control radius.
+            tooltip: {
+                base: {
+                    content: {
+                        "--tooltip-bg": "colors.folio.paper",
+                        bg: "var(--tooltip-bg)",
+                        color: "folio.ink",
+                        border: "1px solid",
+                        borderColor: "folio.line",
+                        borderRadius: "folioControl",
+                        boxShadow: "overlay",
+                    },
+                    arrowTip: {
+                        borderColor: "folio.line",
                     },
                 },
             },
         },
         recipes: {
+            button: {
+                // Ordinary buttons use the Folio control radius; call sites
+                // that pass an explicit borderRadius (pills, circles) still
+                // win because inline styles are unlayered.
+                base: {
+                    borderRadius: "folioControl",
+                },
+                variants: {
+                    variant: {
+                        // Semantic Clinical Folio button variants, mirroring
+                        // the .ui-button grammar in design-portfolio.html:
+                        // quiet outline secondary, solid accent primary, and
+                        // explicit status solids with dedicated on-fill inks.
+                        folioPrimary: {
+                            bg: "folio.accent",
+                            color: "folio.accentInk",
+                            borderColor: "folio.accent",
+                            borderRadius: "folioControl",
+                            _hover: { bg: "folio.accent/90" },
+                            _expanded: { bg: "folio.accent/90" },
+                        },
+                        folioSecondary: {
+                            bg: "transparent",
+                            color: "folio.muted",
+                            borderColor: "folio.line",
+                            borderRadius: "folioControl",
+                            _hover: {
+                                bg: "folio.hover",
+                                color: "folio.ink",
+                                borderColor: "folio.line",
+                            },
+                            _expanded: { bg: "folio.hover" },
+                        },
+                        folioSuccess: {
+                            bg: "folio.success",
+                            color: "folio.successInk",
+                            borderColor: "folio.success",
+                            borderRadius: "folioControl",
+                            _hover: { bg: "folio.success/90" },
+                            _expanded: { bg: "folio.success/90" },
+                        },
+                        folioDanger: {
+                            bg: "folio.danger",
+                            color: "folio.dangerInk",
+                            borderColor: "folio.danger",
+                            borderRadius: "folioControl",
+                            _hover: { bg: "folio.danger/90" },
+                            _expanded: { bg: "folio.danger/90" },
+                        },
+                        folioWarning: {
+                            bg: "folio.warning",
+                            color: "folio.warningInk",
+                            borderColor: "folio.warning",
+                            borderRadius: "folioControl",
+                            _hover: { bg: "folio.warning/90" },
+                            _expanded: { bg: "folio.warning/90" },
+                        },
+                    },
+                },
+            },
             input: {
                 variants: {
                     variant: {
+                        outline: {
+                            bg: "folio.canvas",
+                            color: "folio.ink",
+                            borderColor: "folio.line",
+                            borderRadius: "folioControl",
+                            "--focus-color": "colors.folio.focus",
+                            "--error-color": "colors.folio.danger",
+                            _placeholder: { color: "folio.faint" },
+                        },
                         unstyled: {
                             bg: "transparent",
                             borderWidth: "0",
@@ -320,10 +515,36 @@ export const system = createSystem(defaultConfig, {
             textarea: {
                 variants: {
                     variant: {
+                        outline: {
+                            bg: "folio.canvas",
+                            color: "folio.ink",
+                            borderColor: "folio.line",
+                            borderRadius: "folioControl",
+                            "--focus-color": "colors.folio.focus",
+                            "--error-color": "colors.folio.danger",
+                            _placeholder: { color: "folio.faint" },
+                        },
                         unstyled: {
                             bg: "transparent",
                             borderWidth: "0",
                             boxShadow: "none",
+                        },
+                    },
+                },
+            },
+            // Raw checkbox control surface (shared by Checkbox and Checkmark).
+            checkmark: {
+                variants: {
+                    variant: {
+                        solid: {
+                            bg: "folio.paper",
+                            borderColor: "folio.line",
+                            focusRingColor: "folio.focus",
+                            "&:is([data-state=checked], [data-state=indeterminate])": {
+                                bg: "folio.accent",
+                                color: "folio.accentInk",
+                                borderColor: "folio.accent",
+                            },
                         },
                     },
                 },

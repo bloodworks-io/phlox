@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useColorMode } from "../ui/color-mode";
 import { Box, Flex, VStack, HStack, Text, Spinner, Badge, Icon, Image } from "@chakra-ui/react";
 import { AttachmentIcon } from "../common/icons";
-import { FaFilePdf, FaFileImage } from "react-icons/fa";
+import { LuFileImage, LuFileText } from "react-icons/lu";
 import MarkdownRenderer from "../common/MarkdownRenderer";
 import ArtifactCard from "../common/ArtifactCard";
 import {
@@ -126,7 +126,7 @@ const DashboardMessageList = ({
                                             <Text
                                                 fontSize="xs"
                                                 fontWeight="semibold"
-                                                color="overlay0"
+                                                color="folio.muted"
                                             >
                                                 {t("chat.assistant")}
                                             </Text>
@@ -147,23 +147,26 @@ const DashboardMessageList = ({
                                                             key={i}
                                                             size="sm"
                                                             variant="subtle"
-                                                            colorPalette={
-                                                                isPdf
-                                                                    ? "red"
-                                                                    : isImage
-                                                                      ? "blue"
-                                                                      : "gray"
+                                                            bg={
+                                                                isPdf || isImage
+                                                                    ? "folio.infoSoft"
+                                                                    : "folio.paperAlt"
                                                             }
-                                                            borderRadius="md"
+                                                            color={
+                                                                isPdf || isImage
+                                                                    ? "folio.info"
+                                                                    : "folio.muted"
+                                                            }
+                                                            borderRadius="folioControl"
                                                             px={2}
                                                             py={1}
                                                         >
                                                             <Icon
                                                                 as={
                                                                     isPdf
-                                                                        ? FaFilePdf
+                                                                        ? LuFileText
                                                                         : isImage
-                                                                          ? FaFileImage
+                                                                          ? LuFileImage
                                                                           : AttachmentIcon
                                                                 }
                                                                 mr={1}

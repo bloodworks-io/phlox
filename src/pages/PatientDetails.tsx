@@ -319,8 +319,8 @@ const PatientDetails = ({
         toaster.remove();
     }, []);
 
-    const handleSavePatientData = async (e: FormEvent) => {
-        e.preventDefault();
+    const handleSavePatientData = async (e?: FormEvent) => {
+        e?.preventDefault();
         setSaveLoading(true);
         try {
             if (location.pathname === "/new-note") {

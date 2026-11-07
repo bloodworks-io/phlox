@@ -2,13 +2,13 @@ import { Box, Button, Flex, Input, Spinner, Text, VStack, Alert, ButtonGroup, Ba
 import { useTranslation } from "react-i18next";
 import { toaster } from "@/components/ui/toaster";
 import {
-  FaFileUpload,
-  FaRedo,
-  FaExclamationTriangle,
-  FaRedoAlt,
-} from "react-icons/fa";
+  LuFileUp,
+  LuRedo2,
+  LuRotateCcw,
+  LuTriangleAlert,
+} from "react-icons/lu";
 import { CheckIcon } from "../../common/icons";
-import { GreyButton } from "../../common/Buttons";
+import { SecondaryButton } from "../../common/Buttons";
 import { useState } from "react";
 import { useTranscription } from "../../../utils/hooks/useTranscription";
 import FloatingPanel from "../../common/FloatingPanel";
@@ -183,12 +183,12 @@ const DocumentPanel = ({
           bottom={0}
           align="center"
           justify="center"
-          bg="rgba(255,107,53,0.1)"
+          bg="folio.accentSoft"
           zIndex={10}
           borderRadius="lg"
           pointerEvents="none"
         >
-          <Text fontWeight="bold" color="primaryButton">
+          <Text fontWeight="bold" color="folio.accent">
             {t("document.dropHere")}
           </Text>
         </Flex>
@@ -199,11 +199,14 @@ const DocumentPanel = ({
         justify="space-between"
         p="3"
         className="panel-header"
+        backgroundColor="folio.paper"
+        color="folio.ink"
+        borderBottomColor="folio.line"
         flexShrink={0}
       >
-        <Flex align="center">
-          <FaFileUpload size="1em" style={{ marginRight: "8px" }} />
-          <Text fontWeight="bold">{t("document.title")}</Text>
+        <Flex align="center" color="folio.accent" lineHeight="1">
+          <LuFileUp size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
+          <Text fontWeight="bold" lineHeight="1">{t("document.title")}</Text>
         </Flex>
       </Flex>
       {/* Content */}
@@ -229,7 +232,7 @@ const DocumentPanel = ({
             css={{ animationDuration: "0.2s" }}
           >
             <Flex mb={2}>
-              <Alert.Indicator mr={2} asChild><FaExclamationTriangle /></Alert.Indicator>
+              <Alert.Indicator mr={2} asChild><LuTriangleAlert strokeWidth={1.6} /></Alert.Indicator>
               <Alert.Title>{t("document.processingError")}</Alert.Title>
             </Flex>
             <Alert.Description maxWidth="lg">
@@ -238,12 +241,12 @@ const DocumentPanel = ({
             <ButtonGroup mt={4} gap={3}>
               <Button
                 onClick={retryProcessing}
-                className="green-button"
+                variant="folioPrimary"
                 disabled={isProcessing}
-                size="sm"><FaRedoAlt />{isProcessing ? <Spinner size="sm" mr={2} /> : null}
+                size="sm"><LuRedo2 strokeWidth={1.6} />{isProcessing ? <Spinner size="sm" mr={2} /> : null}
                 {t("document.resend")}
               </Button>
-              <Button onClick={startNewUpload} className="orange-button" size="sm"><FaRedo />{t("document.newDocument")}
+              <Button onClick={startNewUpload} variant="folioSecondary" size="sm"><LuRotateCcw strokeWidth={1.6} />{t("document.newDocument")}
                               </Button>
             </ButtonGroup>
           </Alert.Root>
@@ -279,16 +282,16 @@ const DocumentPanel = ({
                 id="doc-file-upload"
                 accept=".pdf,.doc,.docx,.txt"
               />
-              <GreyButton
+              <SecondaryButton
                 px="6"
-                leftIcon={<FaFileUpload />}
+                leftIcon={<LuFileUp strokeWidth={1.6} />}
                 onClick={() =>
                   document.getElementById("doc-file-upload").click()
                 }
                 size="sm"
               >
                 {t("document.choose")}
-              </GreyButton>
+              </SecondaryButton>
               {docFileName && <Text fontSize="sm">{docFileName}</Text>}
             </VStack>
             {file && (
@@ -296,7 +299,7 @@ const DocumentPanel = ({
                 <Button
                   onClick={handleUpload}
                   disabled={!file}
-                  className="green-button"
+                  variant="folioPrimary"
                   size="sm"
                 >
                   {t("document.process")}
@@ -313,7 +316,7 @@ const DocumentPanel = ({
               <Text fontWeight="bold" fontSize="sm">
                 {docFileName}
               </Text>
-              <Button onClick={startNewUpload} size="xs" className="orange-button"><FaFileUpload />{t("forms.new")}
+              <Button onClick={startNewUpload} size="xs" variant="folioSecondary"><LuFileUp strokeWidth={1.6} />{t("forms.new")}
                               </Button>
             </Flex>
             <Separator my={2} />
@@ -334,7 +337,7 @@ const DocumentPanel = ({
                     p={2}
                     borderWidth="1px"
                     borderRadius="sm"
-                    borderColor="border"
+                    borderColor="folio.line"
                   >
                     <Flex justify="space-between" align="center">
                       <Text
@@ -347,7 +350,7 @@ const DocumentPanel = ({
                         {field.field_name}
                       </Text>
                       {!hasContent ? (
-                        <Badge colorPalette="yellow" fontSize="xs">
+                        <Badge bg="folio.warningSoft" color="folio.warning" fontSize="xs">
                           {t("document.empty")}
                         </Badge>
                       ) : (
@@ -355,10 +358,7 @@ const DocumentPanel = ({
                           size="xs"
                           onClick={() => toggleDocumentField(fieldKey)}
                           disabled={!hasContent}
-                          className={
-                            isReplaced ? "green-button" : "grey-button"
-                          }
-                          variant={isReplaced ? "solid" : "outline"}
+                          variant={isReplaced ? "folioSuccess" : "folioSecondary"}
                           height="20px"
                           minWidth="70px"
                           fontSize="xs">{

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Popover, Text } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaExclamationTriangle } from "react-icons/fa";
+import { LuTriangleAlert } from "react-icons/lu";
 import { lineDiff } from "../../utils/lineDiff";
 
 const AgentEditDiffMarker = ({
@@ -41,7 +41,7 @@ const AgentEditDiffMarker = ({
             positioning={{ placement: "right" }}
           >
             <Box as="span" display="inline-flex" lineHeight="0">
-              <FaExclamationTriangle />
+              <LuTriangleAlert strokeWidth={1.6} />
             </Box>
           </Tooltip>
         </Box>
@@ -58,7 +58,7 @@ const AgentEditDiffMarker = ({
             fontSize="sm"
             fontWeight="600"
           >
-            <FaExclamationTriangle />
+            <LuTriangleAlert strokeWidth={1.6} />
             <Text as="span" truncate>
               {t("patient.agentDiffTitle", { field: fieldLabel })}
             </Text>

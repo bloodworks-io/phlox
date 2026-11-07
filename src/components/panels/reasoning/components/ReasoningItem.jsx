@@ -11,13 +11,13 @@ export const ReasoningItem = ({ item, section }) => {
     const getAccentColor = (section) => {
         switch (section) {
             case "differentials":
-                return "primaryButton";
+                return "folio.info";
             case "investigations":
-                return "successButton";
+                return "folio.success";
             case "considerations":
-                return "secondaryButton";
+                return "folio.warning";
             default:
-                return "neutralButton";
+                return "folio.accent";
         }
     };
 
@@ -27,11 +27,11 @@ export const ReasoningItem = ({ item, section }) => {
         <Box
             p={2}
             borderRadius="sm"
-            bg="cardBg"
+            bg="folio.paper"
             borderLeft="3px solid"
             borderColor={
                 isCritical
-                    ? "dangerButton"
+                    ? "folio.danger"
                     : getAccentColor(section)
             }
             shadow="sm"
@@ -50,7 +50,8 @@ export const ReasoningItem = ({ item, section }) => {
                         </Text>
                         {isCritical && (
                             <Badge
-                                colorPalette="red"
+                                bg="folio.danger"
+                                color="folio.dangerInk"
                                 fontSize="xs"
                                 textTransform="uppercase"
                             >
@@ -70,7 +71,7 @@ export const ReasoningItem = ({ item, section }) => {
                                         <Text
                                             key={j}
                                             fontSize="xs"
-                                            color="textTertiary"
+                                            color="folio.muted"
                                             pl={2}
                                         >
                                             • {point}

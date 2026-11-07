@@ -6,7 +6,7 @@ import React, {
 } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Text, Collapsible, HStack, NativeSelect, VStack, Center, Spinner, IconButton } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -14,8 +14,8 @@ import {
   CopyIcon,
   CheckIcon,
 } from "../common/icons";
-import { FaSave, FaFileAlt, FaThumbtack, FaCheckDouble, FaEnvelopeOpenText, FaExclamationCircle } from "react-icons/fa";
-import { GreenButton, GreyButton } from "../common/Buttons";
+import { LuCheckCheck, LuCircleAlert, LuFileText, LuMailOpen, LuPin, LuSave } from "react-icons/lu";
+import { SecondaryButton, PrimaryButton } from "../common/Buttons";
 import { useTemplateSelection } from "../../utils/templates/templateContext";
 import { useTemplateChange } from "../../utils/hooks/useTemplateChange";
 import ConfirmDialog from "../common/ConfirmDialog";
@@ -177,7 +177,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
             className="cohesive-agent-edit-marker"
             aria-label={t("patient.fieldUnverifiedBanner")}
           >
-            <FaExclamationCircle />
+            <LuCircleAlert strokeWidth={1.6} />
           </Box>
         </Tooltip>
       ) : null;
@@ -191,7 +191,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
           }}
         >
           <Box as="span" className="cohesive-persistent-marker">
-            <FaThumbtack />
+            <LuPin strokeWidth={1.6} />
           </Box>
         </Tooltip>
       ) : null;
@@ -220,7 +220,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
           key={`${field.field_key}-${liveFlash || "static"}`}
           className={`cohesive-field${liveFlash ? " live-field-updated" : ""}`}
         >
-          <Text className="cohesive-field-label">
+          <Text className="cohesive-field-label note-field-label">
             {field.field_name}:{persistentMarker}{agentEditMarker}{unverifiedMarker}
           </Text>
           <GroundedTextarea
@@ -229,7 +229,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
             onChange={(e) => {
               handleTemplateDataChange(field.field_key, e.target.value);
             }}
-            className="cohesive-textarea"
+            className="cohesive-textarea note-textarea"
             textareaRef={(el) => {
               textareasRefs.current[field.field_key] = el;
             }}
@@ -257,7 +257,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
 
     if (templateStatus === "loading") {
       return (
-        <Box p="4" borderRadius="sm" className="panels-bg">
+        <Box p="4" className="note-panel">
           <Center mt={4}>
             <Spinner size="sm" animationDuration="0.65s" />
             <Text ml={2}>{t("patient.loadingTemplate")}</Text>
@@ -268,12 +268,14 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
 
     return (
       <>
-        <Box p={[2, 3, 4]} borderRadius="sm" className="panels-bg">
-          <Flex align="center" justify="space-between">
+        <Box className="note-panel">
+          <Flex className="note-header" align="center" justify="space-between">
             <Flex align="center">
               <HStack gap={2}>
-                <EditIcon size="1.2em" />
-                <Text as="h3">{t("patient.noteHeading")}</Text>
+                <EditIcon size="1.2em" color="folio.accent" />
+                <Text as="h3" fontFamily="display" fontWeight="500">
+                  {t("patient.noteHeading")}
+                </Text>
               </HStack>
             </Flex>
             <Tooltip
@@ -286,10 +288,9 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
             >
               <Box>
                 <Flex alignItems="center">
-                  <FaFileAlt
-                    style={{ marginRight: "8px" }}
-                    className="pill-box-icons"
-                  />
+                  <Box as="span" marginRight="8px" color="folio.muted">
+                    <LuFileText strokeWidth={1.6} />
+                  </Box>
                   <NativeSelect.Root
                     size="sm"
                     disabled={!(isNewPatient || isUngeneratedNote)}
@@ -324,15 +325,14 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
                   {isUngeneratedNote && onGenerateNote && (
-                    <Button
+                    <PrimaryButton
                       size="sm"
-                      className="green-button"
                       loading={generateLoading}
                       onClick={onGenerateNote}
                       ml={2}
                     >
                       {t("patient.generateNote")}
-                    </Button>
+                    </PrimaryButton>
                   )}
                 </Flex>
               </Box>
@@ -341,12 +341,12 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
 
           <Collapsible.Root open={!isSummaryCollapsed}>
             <Collapsible.Content>
-              <Box mt="4" className="cohesive-fields-container">
+              <Box className="note-fields-container">
                 <VStack gap="0" align="stretch">
                   {currentTemplate?.fields?.map(renderField)}
                 </VStack>
               </Box>
-              <Flex mt="4" justifyContent="space-between" align="center">
+              <Flex className="note-footer" justifyContent="space-between" align="center">
                 <Flex gap={2}>
                   <Tooltip
                     content={t("patient.copyNoteTooltip")}
@@ -357,9 +357,9 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         onClick={onCopy}
                         aria-label={t("patient.copyNoteLabel")}
                         variant="outline"
-                        borderColor="surface"
+                        borderColor="folio.line"
                         bg="transparent"
-                        color="fg.muted"
+                        color="folio.muted"
                         borderRadius="full"
                         css={{
                           width: "35px !important",
@@ -367,7 +367,7 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                           minWidth: "35px !important",
                           padding: "0 !important",
                         }}
-                        _hover={{ bg: "surface", color: "fg" }}
+                        _hover={{ bg: "folio.hover", color: "folio.ink" }}
                       >
                         {recentlyCopied ? (
                           <CheckIcon
@@ -393,9 +393,9 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                         onClick={() => handleGenerateLetterClick(null)}
                         aria-label={t("patient.generateLetterLabel")}
                         variant="outline"
-                        borderColor="surface"
+                        borderColor="folio.line"
                         bg="transparent"
-                        color="fg.muted"
+                        color="folio.muted"
                         borderRadius="full"
                         css={{
                           width: "35px !important",
@@ -404,9 +404,9 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                           padding: "0 !important",
                         }}
                         disabled={saveLoading || !isEncounterSaved}
-                        _hover={{ bg: "surface", color: "fg" }}
+                        _hover={{ bg: "folio.hover", color: "folio.ink" }}
                       >
-                        <FaEnvelopeOpenText />
+                        <LuMailOpen strokeWidth={1.6} />
                       </IconButton>
                     </Box>
                   </Tooltip>
@@ -417,15 +417,15 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                     positioning={{ placement: "top" }}
                   >
                     <Box>
-                      <GreyButton
+                      <SecondaryButton
                         onClick={handleSavePatientData}
                         loading={saveLoading}
                         loadingText={t("patient.saving")}
                         mr="2"
-                        leftIcon={saveLoading ? null : <FaSave />}
+                        leftIcon={saveLoading ? null : <LuSave strokeWidth={1.6} />}
                       >
                         {saveLoading ? t("patient.savingOngoing") : t("action.save")}
-                      </GreyButton>
+                      </SecondaryButton>
                     </Box>
                   </Tooltip>
                   <Tooltip
@@ -433,16 +433,16 @@ const Summary = forwardRef<SummaryHandle, SummaryProps>(
                     positioning={{ placement: "top" }}
                   >
                     <Box>
-                      <GreenButton
+                      <PrimaryButton
                         onClick={onWrapUp}
                         loading={wrapUpLoading}
                         loadingText={t("patient.wrapping")}
                         ml="2"
-                        leftIcon={wrapUpLoading ? null : <FaCheckDouble />}
+                        leftIcon={wrapUpLoading ? null : <LuCheckCheck strokeWidth={1.6} />}
                         disabled={saveLoading}
                       >
                         {wrapUpLoading ? t("patient.wrappingOngoing") : t("patient.wrapUp")}
-                      </GreenButton>
+                      </PrimaryButton>
                     </Box>
                   </Tooltip>
                 </Flex>

@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { useTranslation } from "react-i18next";
 import { Box, Text, Link, Popover } from "@chakra-ui/react";
 import remarkGfm from "remark-gfm";
-import { FaTimes, FaWikipediaW, FaBookMedical, FaDatabase, FaGlobe } from "react-icons/fa";
+import { LuBookOpen, LuBriefcaseMedical, LuDatabase, LuGlobe, LuX } from "react-icons/lu";
 import { expandCitationNumbers } from "@/utils/chat/messageParser";
 
 /**
@@ -58,21 +58,21 @@ const normalizeCitation = (c) => {
 };
 
 const TYPE_ICONS = {
-    wiki: FaWikipediaW,
-    pubmed: FaBookMedical,
-    literature: FaDatabase,
-    other: FaGlobe,
+    wiki: LuBookOpen,
+    pubmed: LuBriefcaseMedical,
+    literature: LuDatabase,
+    other: LuGlobe,
 };
 
 const iconFor = (c) => {
     if (c?.type && TYPE_ICONS[c.type]) return TYPE_ICONS[c.type];
     const label = (c?.label || "").toLowerCase();
     if (label.includes("wikipedia") || label.includes("wiki:"))
-        return FaWikipediaW;
-    if (label.includes("pubmed")) return FaBookMedical;
+        return LuBookOpen;
+    if (label.includes("pubmed")) return LuBriefcaseMedical;
     if (label.includes("clinical guidelines") || label.includes("according to"))
-        return FaDatabase;
-    return FaGlobe;
+        return LuDatabase;
+    return LuGlobe;
 };
 
 const pillVisual = (Icon, index, { as = "span", ...rest } = {}) => (
@@ -85,9 +85,9 @@ const pillVisual = (Icon, index, { as = "span", ...rest } = {}) => (
         verticalAlign="middle"
         ml="2px"
         mr="2px"
-        bg="surfaceMuted"
+        bg="folio.infoSoft"
         border="1px solid"
-        borderColor="accent"
+        borderColor="folio.info"
         borderRadius="full"
         px="7px"
         h="22px"
@@ -95,15 +95,9 @@ const pillVisual = (Icon, index, { as = "span", ...rest } = {}) => (
         fontSize="11px"
         fontWeight="bold"
         lineHeight={1}
-        color="primaryButton"
-        _dark={{
-            bg: "surfaceMuted",
-            borderColor: "accent",
-            color: "primaryButton",
-        }}
+        color="folio.info"
         _hover={{
-            bg: "surfaceMuted",
-            _dark: { bg: "surfaceMuted" },
+            bg: "folio.infoSoft",
         }}
         {...rest}
     >
@@ -127,7 +121,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
             <Text
                 as="sup"
                 ml="1px"
-                color="primaryButton"
+                color="folio.info"
                 fontSize="xs"
                 fontWeight="bold"
                 verticalAlign="super"
@@ -204,7 +198,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                                 as="span"
                                 fontSize="sm"
                                 fontWeight="600"
-                                color="textPrimary"
+                                color="folio.ink"
                                 lineHeight="1.2"
                                 overflow="hidden"
                                 textOverflow="ellipsis"
@@ -220,7 +214,7 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                             border="none"
                             cursor="pointer"
                             padding="2px"
-                            color="textSecondary"
+                            color="folio.muted"
                             opacity={0.6}
                             _hover={{ opacity: 1 }}
                             aria-label={t("action.close")}
@@ -229,21 +223,21 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                             alignItems="center"
                             lineHeight="1"
                         >
-                            <FaTimes size={12} />
+                            <LuX size={12} strokeWidth={1.6} />
                         </Box>
                     </Popover.Header>
                     <Popover.Body>
                         {snippet ? (
                             <Text
                                 fontSize="xs"
-                                color="textSecondary"
+                                color="folio.muted"
                                 whiteSpace="pre-wrap"
                                 lineHeight={1.5}
                             >
                                 {snippet}
                             </Text>
                         ) : (
-                            <Text fontSize="xs" color="textSecondary">
+                            <Text fontSize="xs" color="folio.muted">
                                 {t("common.citation.noExcerpt")}
                             </Text>
                         )}
@@ -253,12 +247,12 @@ const CitationTag = ({ index, citation, displayLabel }) => {
                             px={3}
                             py={2}
                             borderTop="1px solid"
-                            borderColor="surface"
+                            borderColor="folio.line"
                         >
                             <Link
                                 href={url}
                                 fontSize="xs"
-                                color="primaryButton"
+                                color="folio.info"
                                 _hover={{ textDecoration: "underline" }}
                                 onClick={openUrl}
                             >
@@ -317,7 +311,7 @@ const MarkdownRenderer = ({ children, citations, citationRemap, ...props }) => {
                     }
 
                     return (
-                        <Text as="span" color="overlay0" fontSize="xs">
+                        <Text as="span" color="folio.faint" fontSize="xs">
                             {" "}
                             [{children} ({domain})]{" "}
                         </Text>
@@ -329,6 +323,7 @@ const MarkdownRenderer = ({ children, citations, citationRemap, ...props }) => {
                             width="100%"
                             fontSize="sm"
                             borderWidth="1px"
+                            borderColor="folio.line"
                             borderCollapse="collapse"
                             asChild
                         ><table>
@@ -337,7 +332,7 @@ const MarkdownRenderer = ({ children, citations, citationRemap, ...props }) => {
                     </Box>
                 ),
                 thead: ({ children }) => (
-                    <Box bg="surfaceInset" _dark={{ bg: "surface1" }} asChild><thead>
+                    <Box bg="folio.paperAlt" asChild><thead>
                             {children}
                         </thead></Box>
                 ),
@@ -348,13 +343,20 @@ const MarkdownRenderer = ({ children, citations, citationRemap, ...props }) => {
                         textAlign="left"
                         fontWeight="semibold"
                         borderWidth="1px"
+                        borderColor="folio.line"
                         asChild
                     ><th>
                             {children}
                         </th></Box>
                 ),
                 td: ({ children }) => (
-                    <Box px={2} py={1} borderWidth="1px" asChild><td>
+                    <Box
+                        px={2}
+                        py={1}
+                        borderWidth="1px"
+                        borderColor="folio.line"
+                        asChild
+                    ><td>
                             {children}
                         </td></Box>
                 ),

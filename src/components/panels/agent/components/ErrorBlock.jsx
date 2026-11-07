@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text, HStack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaRedo } from "react-icons/fa";
+import { LuRotateCcw } from "react-icons/lu";
 
 export const ErrorBlock = ({ message, onRetry, onDismiss }) => {
     const { t } = useTranslation();
@@ -10,14 +10,14 @@ export const ErrorBlock = ({ message, onRetry, onDismiss }) => {
     <Box
         p={2.5}
         borderWidth="1px"
-        borderColor="dangerButton"
-        borderRadius="8px"
-        bg="dangerButtonFaint"
+        borderColor="folio.danger"
+        borderRadius="folioPanel"
+        bg="folio.dangerSoft"
     >
-        <Text fontSize="xs" fontWeight="semibold" color="dangerButton">
+        <Text fontSize="xs" fontWeight="semibold" color="folio.danger">
             {t("agent.status.connectionInterrupted")}
         </Text>
-        <Text fontSize="xs" color="fg.subtle" mt={0.5}>
+        <Text fontSize="xs" color="folio.muted" mt={0.5}>
             {message || t("agent.error.fallback")}{" "}
             {t("agent.error.draftsStillAvailable")}
         </Text>
@@ -29,17 +29,17 @@ export const ErrorBlock = ({ message, onRetry, onDismiss }) => {
                 gap={1.5}
                 px={2.5}
                 py={1.5}
-                borderRadius="6px"
+                borderRadius="folioControl"
                 border="1px solid"
-                borderColor="dangerButton"
-                color="dangerButton"
+                borderColor="folio.danger"
+                color="folio.danger"
                 cursor="pointer"
                 fontSize="xs"
                 transition="all 0.15s ease"
-                _hover={{ bg: "dangerButton", color: "invertedText" }}
+                _hover={{ bg: "folio.danger", color: "folio.dangerInk" }}
                 onClick={onRetry}
             >
-                <FaRedo size="10px" /> {t("agent.error.reconnect")}
+                <LuRotateCcw size="10px" strokeWidth={1.6} /> {t("agent.error.reconnect")}
             </Box>
             <Box
                 as="button"
@@ -47,14 +47,14 @@ export const ErrorBlock = ({ message, onRetry, onDismiss }) => {
                 alignItems="center"
                 px={2.5}
                 py={1.5}
-                borderRadius="6px"
+                borderRadius="folioControl"
                 border="1px solid"
-                borderColor="surface"
-                color="fg.subtle"
+                borderColor="folio.line"
+                color="folio.muted"
                 cursor="pointer"
                 fontSize="xs"
                 transition="all 0.15s ease"
-                _hover={{ bg: "surface", color: "fg.muted" }}
+                _hover={{ bg: "folio.hover", color: "folio.ink" }}
                 onClick={onDismiss}
             >
                 {t("agent.error.dismiss")}

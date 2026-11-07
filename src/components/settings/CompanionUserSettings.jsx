@@ -67,7 +67,7 @@ const CompanionUserSettings = ({ config, handleConfigChange }) => {
                     <Text fontSize="sm" fontWeight="medium">
                         {t("settings.companion.enableSync")}
                     </Text>
-                    <Text fontSize="xs" className="pill-box-icons">
+                    <Text fontSize="xs" className="settings-meta">
                         {t("settings.companion.enableSyncDescription")}
                     </Text>
                 </Box>
@@ -90,7 +90,7 @@ const CompanionUserSettings = ({ config, handleConfigChange }) => {
                             <Text fontSize="sm" fontWeight="medium">
                                 {t("settings.companion.autoImport")}
                             </Text>
-                            <Text fontSize="xs" className="pill-box-icons">
+                            <Text fontSize="xs" className="settings-meta">
                                 {t("settings.companion.autoImportDescription")}
                             </Text>
                         </Box>
@@ -113,7 +113,7 @@ const CompanionUserSettings = ({ config, handleConfigChange }) => {
                             <Text fontSize="sm" fontWeight="medium">
                                 {t("settings.companion.pairingCode")}
                             </Text>
-                            <Text fontSize="xs" className="pill-box-icons">
+                            <Text fontSize="xs" className="settings-meta">
                                 {status?.pairing_code
                                     ? t("settings.companion.pairingCodeDescription")
                                     : t("settings.companion.hostNotRunning")}
@@ -125,7 +125,7 @@ const CompanionUserSettings = ({ config, handleConfigChange }) => {
                                     <Text
                                         fontSize="sm"
                                         fontFamily="monospace"
-                                        color="textSecondary"
+                                        color="folio.muted"
                                     >
                                         {revealed
                                             ? pairingCode
@@ -151,7 +151,7 @@ const CompanionUserSettings = ({ config, handleConfigChange }) => {
                                     </Button>
                                 </>
                             ) : (
-                                <Text fontSize="xs" color="textSecondary">
+                                <Text fontSize="xs" color="folio.muted">
                                     —
                                 </Text>
                             )}

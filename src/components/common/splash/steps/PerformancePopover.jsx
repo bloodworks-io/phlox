@@ -38,9 +38,9 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
           onClick={(e) => e.stopPropagation()}
           display="flex"
           alignItems="center"
-          color="textSecondary"
-          _hover={{ color: "primaryButton" }}
-          transition="color 0.15s"
+          color="folio.muted"
+          _hover={{ color: "folio.accent" }}
+          transition="color 160ms ease"
         >
           <InfoIcon boxSize={3.5} />
         </Box>
@@ -54,7 +54,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
             <Popover.Body p={3}>
               <VStack gap={1} align="stretch">
                 <HStack justify="space-between">
-                  <Text fontSize="xs" className="pill-box-icons">
+                  <Text fontSize="xs" className="settings-meta">
                     {t("splash.performance.size")}
                   </Text>
                   <Text fontSize="xs" fontWeight="bold">
@@ -64,7 +64,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                 {(model.active_parameters_billions ||
                   model.parameters_billions) && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">
+                    <Text fontSize="xs" className="settings-meta">
                       {t("splash.performance.parameters")}
                     </Text>
                     <Text fontSize="xs" fontWeight="bold">
@@ -76,7 +76,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                 )}
                 {model.recommended_ram_gb && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">
+                    <Text fontSize="xs" className="settings-meta">
                       {t("splash.performance.ramNeeded")}
                     </Text>
                     <Text fontSize="xs" fontWeight="bold">
@@ -86,7 +86,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                 )}
                 {systemSpecs && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">
+                    <Text fontSize="xs" className="settings-meta">
                       {getMachineLabel(t, systemSpecs.os)}
                     </Text>
                     <Text
@@ -95,8 +95,8 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                       color={
                         model.recommended_ram_gb &&
                         systemSpecs.total_memory_gb >= model.recommended_ram_gb
-                          ? "successButton"
-                          : "secondaryButton"
+                          ? "folio.success"
+                          : "folio.warning"
                       }
                     >
                       {systemSpecs.total_memory_gb.toFixed(0)}GB
@@ -109,7 +109,7 @@ export const PerformancePopover = ({ model, systemSpecs }) => {
                     showArrow
                   >
                     <HStack justify="space-between">
-                      <Text fontSize="xs" className="pill-box-icons">
+                      <Text fontSize="xs" className="settings-meta">
                         {t("splash.performance.estTime")}
                       </Text>
                       <Text fontSize="xs" fontWeight="bold">

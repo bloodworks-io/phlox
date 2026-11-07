@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Button, Heading, VStack, Text, Flex, Spinner, Icon } from "@chakra-ui/react";
-import { FaServer } from "react-icons/fa";
+import { LuServer } from "react-icons/lu";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import { isMacOS } from "../../utils/helpers/platform";
 
 const LOADING_MESSAGES = [
   "setup.serverStartup.loading1",
@@ -122,8 +123,8 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         py={8}
         position="relative"
       >
-        {/* Tauri titlebar drag region - full window width */}
-        {isTauri() && (
+        {/* macOS overlay titlebar drag region */}
+        {isTauri() && isMacOS() && (
           <Box
             data-tauri-drag-region
             height="25px"
@@ -135,32 +136,28 @@ const ServerStartupLoader = ({ onReady, onError }) => {
           />
         )}
         <Box
-          className="anim-fade-slide-up panels-bg splash-panel"
+          className="anim-fade-slide-up splash-panel"
           p={8}
-          borderRadius="2xl"
-          boxShadow="2xl"
-          border={`1px solid ${"surface"}`}
           w="100%"
           maxW="450px"
           textAlign="center"
         >
           <VStack gap={6}>
-            <Icon boxSize={12} color="dangerButton" asChild><FaServer /></Icon>
+            <Icon boxSize={12} color="folio.danger" asChild><LuServer strokeWidth={1.6} /></Icon>
             <Heading
               as="h1"
-              color={"textPrimary"}
+              color="folio.ink"
               css={{
-                fontFamily: '"Space Grotesk", sans-serif',
                 fontSize: "1.5rem",
                 fontWeight: "700"
               }}
             >
               {t("setup.serverStartup.takingLong")}
             </Heading>
-            <Text color={"textSecondary"}>
+            <Text color="folio.muted">
               {t("setup.serverStartup.takingLongDesc")}
             </Text>
-            <Text color={"textSecondary"} fontSize="sm">
+            <Text color="folio.muted" fontSize="sm">
               {t("setup.serverStartup.waited", {
                 seconds: Math.floor(elapsed / 1000),
               })}
@@ -168,11 +165,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             <Button
               onClick={handleRetry}
               size="lg"
-              className="green-button"
-              css={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontWeight: "600"
-              }}
+              variant="folioPrimary"
             >
               {t("setup.serverStartup.tryAgain")}
             </Button>
@@ -192,8 +185,8 @@ const ServerStartupLoader = ({ onReady, onError }) => {
       py={8}
       position="relative"
     >
-      {/* Tauri titlebar drag region - full window width */}
-      {isTauri() && (
+      {/* macOS overlay titlebar drag region */}
+      {isTauri() && isMacOS() && (
         <Box
           data-tauri-drag-region
           height="25px"
@@ -205,11 +198,8 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         />
       )}
       <Box
-        className="anim-fade-slide-up panels-bg splash-panel"
+        className="anim-fade-slide-up splash-panel"
         p={8}
-        borderRadius="2xl"
-        boxShadow="2xl"
-        border={`1px solid ${"surface"}`}
         w="100%"
         maxW="450px"
         textAlign="center"
@@ -217,15 +207,14 @@ const ServerStartupLoader = ({ onReady, onError }) => {
         <VStack gap={6}>
           <Spinner
             size="xl"
-            color={"accent"}
+            color="folio.accent"
             borderWidth="4px"
             animationDuration="0.8s"
           />
           <Heading
             as="h1"
-            color={"textPrimary"}
+            color="folio.ink"
             css={{
-              fontFamily: '"Space Grotesk", sans-serif',
               fontSize: "1.5rem",
               fontWeight: "700"
             }}
@@ -233,7 +222,7 @@ const ServerStartupLoader = ({ onReady, onError }) => {
             {t("setup.serverStartup.starting")}
           </Heading>
           <Text
-            color={"textSecondary"}
+            color="folio.muted"
             fontSize="lg"
             minH="2rem"
             key={messageIndex}

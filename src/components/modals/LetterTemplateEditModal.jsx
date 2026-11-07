@@ -58,7 +58,7 @@ const LetterTemplateEditModal = ({
             <Dialog.Footer>
               <HStack justify="flex-end" width="100%">
                 <Button
-                  className="red-button"
+                  variant="folioSecondary"
                   mr={3}
                   onClick={() => {
                     onClose();
@@ -67,7 +67,7 @@ const LetterTemplateEditModal = ({
                  >
                   {t("action.cancel")}
                 </Button>
-                <Button className="green-button" onClick={handleSave}>
+                <Button variant="folioPrimary" onClick={handleSave}>
                   {t("action.save")}
                 </Button>
               </HStack>

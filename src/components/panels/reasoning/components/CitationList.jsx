@@ -1,36 +1,37 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Text, VStack, HStack, Link } from "@chakra-ui/react";
-import { FaChevronRight, FaChevronDown } from "react-icons/fa";
 import {
-    FaWikipediaW,
-    FaBookMedical,
-    FaHistory,
-    FaDatabase,
-    FaGlobe,
-} from "react-icons/fa";
+    LuBookOpen,
+    LuBriefcaseMedical,
+    LuChevronDown,
+    LuChevronRight,
+    LuDatabase,
+    LuGlobe,
+    LuHistory,
+} from "react-icons/lu";
 
 const TYPE_ICONS = {
-    wiki: FaWikipediaW,
-    pubmed: FaBookMedical,
-    literature: FaDatabase,
-    other: FaGlobe,
+    wiki: LuBookOpen,
+    pubmed: LuBriefcaseMedical,
+    literature: LuDatabase,
+    other: LuGlobe,
 };
 
 const iconFor = (c) => {
     if (c.type && TYPE_ICONS[c.type]) return TYPE_ICONS[c.type];
     const label = (c.label || "").toLowerCase();
     if (label.includes("wikipedia") || label.includes("wiki:"))
-        return FaWikipediaW;
-    if (label.includes("pubmed")) return FaBookMedical;
+        return LuBookOpen;
+    if (label.includes("pubmed")) return LuBriefcaseMedical;
     if (
         label.includes("previous encounter") ||
         label.includes("encounter from")
     )
-        return FaHistory;
+        return LuHistory;
     if (label.includes("clinical guidelines") || label.includes("according to"))
-        return FaDatabase;
-    return FaGlobe;
+        return LuDatabase;
+    return LuGlobe;
 };
 
 const normalize = (c) => {
@@ -62,15 +63,14 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
               }));
 
     if (entries.length === 0) return null;
-    const Chevron = open ? FaChevronDown : FaChevronRight;
+    const Chevron = open ? LuChevronDown : LuChevronRight;
 
     return (
         <Box
             mt={inline ? 2 : 4}
             pt={inline ? 2 : 3}
             borderTop="1px solid"
-            borderColor="border"
-            _dark={{ borderColor: "border" }}
+            borderColor="folio.line"
         >
             <HStack
                 gap={1}
@@ -83,8 +83,7 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                 <Text
                     fontSize="xs"
                     fontWeight="medium"
-                    color="overlay0"
-                    _dark={{ color: "overlay0" }}
+                    color="folio.faint"
                 >
                     {t("reasoning.sources", { number: entries.length })}
                 </Text>
@@ -105,17 +104,16 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                                     as="span"
                                     fontSize="xs"
                                     fontWeight="bold"
-                                    color="primaryButton"
+                                    color="folio.accent"
                                     minW="18px"
                                 >
                                     {num}.
                                 </Text>
-                                <Icon color="primaryButton" mt="1px" />
+                                <Icon color="var(--chakra-colors-folio-accent)" mt="1px" />
                                 {isString || !c.url ? (
                                     <Text
                                         fontSize="xs"
-                                        color="textTertiary"
-                                        _dark={{ color: "overlay0" }}
+                                        color="folio.muted"
                                         lineClamp={1}
                                     >
                                         {title}
@@ -125,8 +123,7 @@ export const CitationList = ({ citations, citedOriginals, inline = false }) => {
                                         href={c.url}
                                         isExternal={!isDownload}
                                         fontSize="xs"
-                                        color="primaryButton"
-                                        _dark={{ color: "primaryButton" }}
+                                        color="folio.accent"
                                         _hover={{ textDecoration: "underline" }}
                                         lineClamp={1}
                                     >

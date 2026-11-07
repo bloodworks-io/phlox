@@ -1,7 +1,7 @@
 import { HStack, Dialog, Portal } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import ModalTitle from "../common/ModalTitle";
-import { FaUserEdit } from "react-icons/fa";
+import { LuUserPen } from "react-icons/lu";
 import DemographicsForm from "../patient/DemographicsForm";
 
 const DemographicsModal = ({
@@ -29,7 +29,7 @@ const DemographicsModal = ({
                     <Dialog.Content className="modal-style">
                         <Dialog.Header>
                             <HStack>
-                                <FaUserEdit />
+                                <LuUserPen strokeWidth={1.6} />
                                 <ModalTitle>
                                     {t("modal.demographics.title")}
                                 </ModalTitle>

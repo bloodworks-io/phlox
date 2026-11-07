@@ -3,40 +3,40 @@
 // and render it as the first child so call sites can keep using leftIcon={<X/>}.
 import { Button } from "@chakra-ui/react";
 
-// Primary Action Buttons
-export const GreenButton = ({ children, leftIcon = null, ...props }) => (
-  <Button className="green-button" gap="2" {...props}>
-    {leftIcon}
-    {children}
-  </Button>
-);
+// Semantic buttons. Each wrapper maps a clinical meaning to a
+// Folio recipe variant; sizes, loading, and disabled behavior stay with the
+// underlying Chakra Button API.
+const withLeftIcon = (VariantButton) => {
+  const Wrapped = ({ children, leftIcon = null, ...props }) => (
+    <VariantButton gap="2" {...props}>
+      {leftIcon}
+      {children}
+    </VariantButton>
+  );
+  return Wrapped;
+};
 
-export const RedButton = ({ children, leftIcon = null, ...props }) => (
-  <Button className="red-button" gap="2" {...props}>
-    {leftIcon}
-    {children}
-  </Button>
-);
+// Final actions: submit, save-and-finish, download, confirm.
+export const PrimaryButton = withLeftIcon((props) => (
+  <Button variant="folioPrimary" {...props} />
+));
 
-export const GreyButton = ({ children, leftIcon = null, ...props }) => (
-  <Button className="grey-button" gap="2" {...props}>
-    {leftIcon}
-    {children}
-  </Button>
-);
+// Quiet actions: cancel, back, close, intermediate and utility steps.
+export const SecondaryButton = withLeftIcon((props) => (
+  <Button variant="folioSecondary" {...props} />
+));
 
-// Utility Buttons
-export const SettingsButton = ({ children, leftIcon, ...props }) => (
-  <Button className="grey-button" gap="2" {...props}>
-    {leftIcon}
-    {children}
-  </Button>
-);
+// Completed-state actions: selected, downloaded, saved, copied, in use.
+export const SuccessButton = withLeftIcon((props) => (
+  <Button variant="folioSuccess" {...props} />
+));
 
-// Navigation Buttons
-export const NavButton = ({ children, leftIcon, ...props }) => (
-  <Button className="nav-button" gap="2" {...props}>
-    {leftIcon}
-    {children}
-  </Button>
-);
+// Destructive actions: delete, reset, discard.
+export const DangerButton = withLeftIcon((props) => (
+  <Button variant="folioDanger" {...props} />
+));
+
+// Cautionary actions that are neither routine nor destructive.
+export const WarningButton = withLeftIcon((props) => (
+  <Button variant="folioWarning" {...props} />
+));

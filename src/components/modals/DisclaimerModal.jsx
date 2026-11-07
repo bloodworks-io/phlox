@@ -14,7 +14,7 @@ import {
     Dialog,
     Portal,
 } from "@chakra-ui/react";
-import { FaExclamationTriangle } from "react-icons/fa";
+import { LuTriangleAlert } from "react-icons/lu";
 
 const DisclaimerModal = ({ isOpen, onClose }) => {
     const { t } = useTranslation();
@@ -50,9 +50,9 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                         </Dialog.Header>
                         {/* Warning alert */}
                         <Box
-                            bg="surfaceMuted"
+                            bg="folio.warningSoft"
                             borderLeft="4px solid"
-                            borderColor="secondaryButton"
+                            borderColor="folio.warning"
                             width="90%"
                             marginLeft="5%"
                             p={3}
@@ -60,8 +60,8 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                             mb={4}
                         >
                             <HStack align="start">
-                                <Icon color="secondaryButton" mt={0.5} asChild><FaExclamationTriangle /></Icon>
-                                <Text color="textPrimary" fontSize="sm" fontWeight="600">
+                                <Icon color="folio.warning" mt={0.5} asChild><LuTriangleAlert strokeWidth={1.6} /></Icon>
+                                <Text color="folio.ink" fontSize="sm" fontWeight="600">
                                     {t("modal.disclaimer.warning")}
                                 </Text>
                             </HStack>
@@ -75,7 +75,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                             <VStack align="stretch" gap={4}>
                                 <Box>
                                     <Text
-                                        color={"textPrimary"}
+                                        color="folio.ink"
                                         fontSize="sm"
                                         fontWeight="600"
                                         mb={2}
@@ -83,7 +83,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                         {t("modal.disclaimer.intro")}
                                     </Text>
                                     <Text
-                                        color={"textPrimary"}
+                                        color="folio.ink"
                                         fontSize="sm"
                                         fontWeight="600"
                                     >
@@ -93,7 +93,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
 
                                 <Box>
                                     <Text
-                                        color={"textPrimary"}
+                                        color="folio.ink"
                                         fontSize="sm"
                                         fontWeight="600"
                                         mb={2}
@@ -102,28 +102,28 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                     </Text>
                                     <VStack align="stretch" gap={2}>
                                         <Text
-                                            color={"textPrimary"}
+                                            color="folio.ink"
                                             fontSize="sm"
                                         >
                                             <strong>{t("modal.disclaimer.experimentalCodeLabel")}</strong>{" "}
                                             {t("modal.disclaimer.experimentalCodeBody")}
                                         </Text>
                                         <Text
-                                            color={"textPrimary"}
+                                            color="folio.ink"
                                             fontSize="sm"
                                         >
                                             <strong>{t("modal.disclaimer.aiHallucinationsLabel")}</strong>{" "}
                                             {t("modal.disclaimer.aiHallucinationsBody")}
                                         </Text>
                                         <Text
-                                            color={"textPrimary"}
+                                            color="folio.ink"
                                             fontSize="sm"
                                         >
                                             <strong>{t("modal.disclaimer.noAuthLabel")}</strong>{" "}
                                             {t("modal.disclaimer.noAuthBody")}
                                         </Text>
                                         <Text
-                                            color={"textPrimary"}
+                                            color="folio.ink"
                                             fontSize="sm"
                                         >
                                             <strong>{t("modal.disclaimer.noComplianceLabel")}</strong>{" "}
@@ -132,11 +132,11 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                     </VStack>
                                 </Box>
 
-                                <Text color={"textPrimary"} fontSize="sm">
+                                <Text color="folio.ink" fontSize="sm">
                                     {t("modal.disclaimer.useAtOwnRisk")}
                                 </Text>
 
-                                <Text color={"textSecondary"} fontSize="xs">
+                                <Text color="folio.muted" fontSize="xs">
                                     {t("modal.disclaimer.license")}
                                 </Text>
                             </VStack>
@@ -149,11 +149,8 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                     checked={agreed}
                                 ><Checkbox.HiddenInput /><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Checkbox.Label>
                                     <Text
-                                        color={"textPrimary"}
+                                        color="folio.ink"
                                         fontSize="sm"
-                                        css={{
-                                            fontFamily: '"Roboto", sans-serif'
-                                        }}
                                     >
                                         {t("modal.disclaimer.agreement")}
                                     </Text>
@@ -163,12 +160,7 @@ const DisclaimerModal = ({ isOpen, onClose }) => {
                                         onClick={handleContinue}
                                         disabled={!agreed}
                                         size="md"
-                                        borderRadius="2xl"
-                                        className="green-button"
-                                        css={{
-                                            fontFamily: '"Space Grotesk", sans-serif',
-                                            fontWeight: "600"
-                                        }}
+                                        variant="folioPrimary"
                                     >
                                         {t("action.continue")}
                                     </Button>

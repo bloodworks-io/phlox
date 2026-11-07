@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Flex, Text, Tabs, HStack, VStack, Spinner } from "@chakra-ui/react";
 import { Tooltip } from '@/components/ui/tooltip';
-import { FaClock, FaFileAlt, FaList } from "react-icons/fa";
+import { LuClock, LuFileText, LuList } from "react-icons/lu";
 import FloatingPanel from "../../common/FloatingPanel";
 import { getTemplateFamilyBase } from "../../../utils/templates/templateService";
 
@@ -100,11 +100,14 @@ const PreviousVisitPanel = ({
           justify="space-between"
           p="3"
           className="panel-header"
+          backgroundColor="folio.paper"
+          color="folio.ink"
+          borderBottomColor="folio.line"
           flexShrink={0}
         >
-          <Flex align="center">
-            <FaClock size="1em" style={{ marginRight: "8px" }} />
-            <Text fontWeight="bold">{t("common.fab.previousVisit")}</Text>
+          <Flex align="center" color="folio.accent" lineHeight="1">
+            <LuClock size="1em" strokeWidth={1.6} style={{ marginRight: "8px" }} />
+            <Text fontWeight="bold" lineHeight="1">{t("common.fab.previousVisit")}</Text>
           </Flex>
         </Flex>
 
@@ -122,7 +125,7 @@ const PreviousVisitPanel = ({
               <Tooltip content={t("previousVisit.summaryTooltip")}>
                 <Tabs.Trigger className="tab-style" value="0">
                   <HStack>
-                    <FaList />
+                    <LuList strokeWidth={1.6} />
                     <Text>{t("settings.admin.tabSummary")}</Text>
                   </HStack>
                 </Tabs.Trigger>
@@ -130,7 +133,7 @@ const PreviousVisitPanel = ({
               <Tooltip content={t("previousVisit.fullNoteTooltip")}>
                 <Tabs.Trigger className="tab-style" value="1">
                   <HStack>
-                    <FaFileAlt />
+                    <LuFileText strokeWidth={1.6} />
                     <Text>{t("previousVisit.fullNote")}</Text>
                   </HStack>
                 </Tabs.Trigger>
@@ -140,7 +143,7 @@ const PreviousVisitPanel = ({
 
               {/* Summary Tab */}
               <Tabs.Content value="0"
-                className="floating-main"
+                className="attached-panel-body"
                 p={0}
                 width="100%"
                 height="100%"
@@ -162,7 +165,7 @@ const PreviousVisitPanel = ({
                       <Spinner size="sm" />
                     </Flex>
                   ) : (
-                    <Text color="overlay0" textAlign="center" py={4}>
+                    <Text color="folio.faint" textAlign="center" py={4}>
                       {t("previousVisit.noSummary")}
                     </Text>
                   )}
@@ -171,7 +174,7 @@ const PreviousVisitPanel = ({
 
               {/* Full Note Tab */}
               <Tabs.Content value="1"
-                className="floating-main"
+                className="attached-panel-body"
                 p={0}
                 width="100%"
                 height="100%"
@@ -189,7 +192,7 @@ const PreviousVisitPanel = ({
                       {/* Encounter Date */}
                       {previousVisitEncounterDate && (
                         <Box p="2" width="100%">
-                          <Text fontSize="xs" color="overlay0" fontWeight="bold">
+                          <Text fontSize="xs" color="folio.faint" fontWeight="bold">
                             {t("previousVisit.encounterDate")}
                           </Text>
                           <Text fontSize="sm">{previousVisitEncounterDate}</Text>
@@ -202,7 +205,7 @@ const PreviousVisitPanel = ({
                       </VStack>
                     </VStack>
                   ) : (
-                    <Text color="overlay0" textAlign="center" py={4}>
+                    <Text color="folio.faint" textAlign="center" py={4}>
                       {t("previousVisit.noNote")}
                     </Text>
                   )}

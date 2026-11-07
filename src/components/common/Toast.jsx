@@ -1,8 +1,6 @@
 import { Box, Flex } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { useColorMode } from "../ui/color-mode";
-import { colors } from "../../theme/colors";
-import { FaTimes } from "react-icons/fa";
+import { LuX } from "react-icons/lu";
 import {
     CheckCircleIcon,
     InfoIcon,
@@ -10,37 +8,31 @@ import {
     WarningTwoIcon,
 } from "./icons";
 
+// Status roles map toast types to their status color and icon.
+const STATUS_ROLES = {
+    success: { icon: CheckCircleIcon, color: "folio.success" },
+    error: { icon: WarningTwoIcon, color: "folio.danger" },
+    warning: { icon: WarningIcon, color: "folio.warning" },
+    info: { icon: InfoIcon, color: "folio.info" },
+};
+
 export function CustomToast(props) {
     const { status, title, description, onClose } = props;
     const { t } = useTranslation();
 
-    const { colorMode } = useColorMode();
-    const c = colors[colorMode];
-
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case "success":
-                return <CheckCircleIcon boxSize={5} className="green-icon" />;
-            case "error":
-                return <WarningTwoIcon boxSize={5} className="red-icon" />;
-            case "warning":
-                return <WarningIcon boxSize={5} className="yellow-icon" />;
-            case "info":
-                return <InfoIcon boxSize={5} className="blue-icon" />;
-            default:
-                return null;
-        }
-    };
+    const role = STATUS_ROLES[status];
+    const StatusIcon = role?.icon;
 
     return (
         <Box
             position="relative"
             width={{ md: "sm" }}
-            backgroundColor={c.base}
+            backgroundColor="folio.paper"
             border="1px solid"
-            borderColor={c.surface}
-            borderRadius="lg"
-            boxShadow="none"
+            borderColor="folio.line"
+            borderRadius="folioPanel"
+            boxShadow="overlay"
+            color="folio.ink"
             px="4"
             py="3"
             marginTop="-5px"
@@ -48,24 +40,17 @@ export function CustomToast(props) {
             pointerEvents="auto"
         >
             <Flex align="center" gap={3}>
-                {getStatusIcon(status)}
+                {StatusIcon && (
+                    <StatusIcon boxSize={5} color={role.color} />
+                )}
                 <Box flex="1">
                     {title && (
-                        <Box
-                            fontWeight="600"
-                            color={c.textPrimary}
-                            fontSize="md"
-                            css={{ fontFamily: '"Roboto", sans-serif' }}
-                        >
+                        <Box fontWeight="600" color="folio.ink" fontSize="md">
                             {title}
                         </Box>
                     )}
                     {description && (
-                        <Box
-                            color={c.textSecondary}
-                            fontSize="sm"
-                            css={{ fontFamily: '"Roboto", sans-serif' }}
-                        >
+                        <Box color="folio.muted" fontSize="sm">
                             {description}
                         </Box>
                     )}
@@ -81,12 +66,12 @@ export function CustomToast(props) {
                 border="none"
                 cursor="pointer"
                 padding="2px"
-                color={c.textSecondary}
+                color="folio.muted"
                 opacity={0.6}
                 _hover={{ opacity: 1 }}
                 aria-label={t("action.close")}
             >
-                <FaTimes size={12} />
+                <LuX size={12} strokeWidth={1.6} />
             </Box>
         </Box>
     );

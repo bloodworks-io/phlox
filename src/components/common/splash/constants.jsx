@@ -1,10 +1,10 @@
 import {
-  FaUserMd,
-  FaRobot,
-  FaFileAlt,
-  FaInfoCircle,
-  FaLock,
-} from "react-icons/fa";
+  LuBot,
+  LuFileText,
+  LuInfo,
+  LuLock,
+  LuStethoscope,
+} from "react-icons/lu";
 import { t } from "@/i18n";
 
 export const SPLASH_STEPS = {
@@ -42,14 +42,14 @@ export const TEMPLATE_DESCRIPTIONS = {
 export const getStepIcon = (step) => {
   switch (step) {
     case SPLASH_STEPS.ENCRYPTION:
-      return FaLock;
+      return LuLock;
     case SPLASH_STEPS.ABOUT_YOU:
-      return FaUserMd;
+      return LuStethoscope;
     case SPLASH_STEPS.AI_MODELS:
-      return FaRobot;
+      return LuBot;
     case SPLASH_STEPS.TEMPLATES:
-      return FaFileAlt;
+      return LuFileText;
     default:
-      return FaInfoCircle;
+      return LuInfo;
   }
 };

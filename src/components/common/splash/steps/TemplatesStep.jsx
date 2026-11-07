@@ -9,16 +9,8 @@ import {
   Box,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaCheckCircle } from "react-icons/fa";
+import { LuCircleCheck } from "react-icons/lu";
 import { TEMPLATE_DESCRIPTIONS } from "../constants";
-
-const TEMPLATE_COLORS = [
-  "primaryButton",
-  "successButton",
-  "secondaryButton",
-  "neutralButton",
-  "tertiaryButton",
-];
 
 export const TemplatesStep = ({
   availableTemplates,
@@ -37,8 +29,8 @@ export const TemplatesStep = ({
   >
     {isFetchingTemplates ? (
       <Flex align="center" justify="center" py={8}>
-        <Spinner size="lg" color="primaryButton" />
-        <Text ml={4} color="textSecondary">{t("splash.step.templates.loading")}</Text>
+        <Spinner size="lg" color="folio.accent" />
+        <Text ml={4} color="folio.muted">{t("splash.step.templates.loading")}</Text>
       </Flex>
     ) : (
       <SimpleGrid
@@ -48,9 +40,8 @@ export const TemplatesStep = ({
         className="anim-stagger"
         sx={{ "& > *": { animationDuration: "0.2s" } }}
       >
-        {availableTemplates.map((template, index) => {
+        {availableTemplates.map((template) => {
           const isSelected = selectedTemplate === template.template_key;
-          const accent = TEMPLATE_COLORS[index % TEMPLATE_COLORS.length];
 
           return (
             <Box
@@ -61,15 +52,14 @@ export const TemplatesStep = ({
               onClick={() => setSelectedTemplate(template.template_key)}
               p={3}
               pl={4}
-              borderRadius="xl"
+              borderRadius="folioPanel"
               borderWidth="1px"
-              borderColor={isSelected ? accent : "border"}
-              bg={isSelected ? "primaryButtonFaint" : "secondary"}
+              borderColor={isSelected ? "folio.accent" : "folio.line"}
+              bg={isSelected ? "folio.accentSoft" : "folio.paper"}
               _hover={{
-                borderColor: accent,
-                shadow: "sm",
+                borderColor: "folio.accent",
               }}
-              transition="all 0.2s ease"
+              transition="background-color 160ms ease, border-color 160ms ease"
             >
               {/* Colored accent strip */}
               <Box
@@ -78,28 +68,28 @@ export const TemplatesStep = ({
                 top={0}
                 bottom={0}
                 width="4px"
-                bg={accent}
-                opacity={isSelected ? 1 : 0.5}
-                transition="opacity 0.2s ease"
+                bg="folio.accent"
+                opacity={isSelected ? 1 : 0.35}
+                transition="opacity 160ms ease"
               />
 
               <HStack justify="space-between" mb={1}>
-                <Text fontSize="sm" fontWeight="bold" color="textPrimary">
+                <Text fontSize="sm" fontWeight="bold" color="folio.ink">
                   {template.template_name}
                 </Text>
                 {isSelected && (
                   <Icon
-                    color={accent}
+                    color="folio.accent"
                     boxSize={4}
                     asChild
                     className="anim-fade-scale"
                     sx={{ animationDuration: "0.2s" }}
                   >
-                    <FaCheckCircle />
+                    <LuCircleCheck strokeWidth={1.6} />
                   </Icon>
                 )}
               </HStack>
-              <Text fontSize="xs" color="textSecondary" lineHeight="1.4">
+              <Text fontSize="xs" color="folio.muted" lineHeight="1.4">
                 {TEMPLATE_DESCRIPTIONS[template.template_key] ||
                   t("splash.step.templates.customDescription")}
               </Text>

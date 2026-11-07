@@ -2,7 +2,7 @@
 import React from "react";
 import { Box, Text, HStack, Tabs } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaBook, FaFileAlt } from "react-icons/fa";
+import { LuBookOpen, LuFileText } from "react-icons/lu";
 import { isRagEnabled, isPdfFormsEnabled } from "../utils/helpers/featureFlags";
 import { useRagDocuments } from "../utils/hooks/useRagDocuments";
 import { usePdfForms } from "../utils/hooks/usePdfForms";
@@ -64,27 +64,27 @@ const Rag = () => {
           {t("page.rag.title")}
         </Text>
 
-        <Box p={[2, 3, 4]} borderRadius="sm" className="panels-bg">
+        <Box p={[2, 3, 4]} borderRadius="sm" className="rag-workspace">
           {showTabs ? (
             <Tabs.Root variant='enclosed' defaultValue="0">
               <Tabs.List>
                 <Tabs.Trigger className="tab-style" value="0">
                   <HStack gap="1">
-                    <FaBook size="0.85em" />
+                    <LuBookOpen size="0.85em" strokeWidth={1.6} />
                     <Text>{t("page.rag.knowledgeBaseTab")}</Text>
                   </HStack>
                 </Tabs.Trigger>
                 <Tabs.Trigger className="tab-style" value="1">
                   <HStack gap="1">
-                    <FaFileAlt size="0.85em" />
+                    <LuFileText size="0.85em" strokeWidth={1.6} />
                     <Text>{t("page.rag.formTemplatesTab")}</Text>
                   </HStack>
                 </Tabs.Trigger>
               </Tabs.List>
-              <Tabs.Content className="floating-main" px="4" py="3" value="0">
+              <Tabs.Content className="rag-tab-body" px="4" py="3" value="0">
                 <KnowledgeBasePanel {...knowledgeBaseProps} />
               </Tabs.Content>
-              <Tabs.Content className="floating-main" px="4" py="3" value="1">
+              <Tabs.Content className="rag-tab-body" px="4" py="3" value="1">
                 <FormTemplatesPanel {...formTemplatesProps} />
               </Tabs.Content>
             </Tabs.Root>
@@ -97,6 +97,7 @@ const Rag = () => {
       </Box>
       {ragEnabled && (
         <ConfirmDialog
+          intent="destructive"
           isOpen={!!rag.itemToDelete}
           onClose={() => rag.setItemToDelete(null)}
           onConfirm={rag.handleDelete}

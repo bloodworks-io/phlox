@@ -2,18 +2,18 @@ import { Box, Flex, IconButton, Text, Collapsible, VStack, Tabs, HStack, Button,
 import { Tooltip } from "@/components/ui/tooltip";
 import AnimatedChevron from "../common/icons/AnimatedChevron";
 import {
-    FaCog,
-    FaDesktop,
-    FaCloud,
-    FaMicrophone,
-    FaBrain,
-    FaDatabase,
-    FaPuzzlePiece,
-    FaShieldAlt,
-    FaUsers,
-    FaComments,
-    FaFileAlt,
-} from "react-icons/fa";
+    LuBrain,
+    LuCloud,
+    LuCog,
+    LuDatabase,
+    LuFileText,
+    LuMessageCircle,
+    LuMic,
+    LuMonitor,
+    LuPuzzle,
+    LuShield,
+    LuUsers,
+} from "react-icons/lu";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -38,7 +38,7 @@ const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
                 <Text fontSize="sm" fontWeight="medium">
                     {t("settings.policy.storeOriginalPdfs")}
                 </Text>
-                <Text fontSize="xs" className="pill-box-icons">
+                <Text fontSize="xs" className="settings-meta">
                     {t("settings.policy.storeOriginalPdfsDescription")}
                 </Text>
             </Box>
@@ -60,7 +60,7 @@ const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
                 <Text fontSize="sm" fontWeight="medium">
                     {t("settings.policy.requireScribeConsent")}
                 </Text>
-                <Text fontSize="xs" className="pill-box-icons">
+                <Text fontSize="xs" className="settings-meta">
                     {t("settings.policy.requireScribeConsentDescription")}
                 </Text>
             </Box>
@@ -84,7 +84,7 @@ const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
                         <Text fontSize="sm" fontWeight="medium">
                             {t("settings.policy.streamingCapture")}
                         </Text>
-                        <Text fontSize="xs" className="pill-box-icons">
+                        <Text fontSize="xs" className="settings-meta">
                             {t("settings.policy.streamingCaptureDescription")}
                         </Text>
                     </Box>
@@ -106,7 +106,7 @@ const PolicyTab = ({ config, handleConfigChange, isDocker = false }) => {
                         <Text fontSize="sm" fontWeight="medium">
                             {t("settings.policy.kvWarming")}
                         </Text>
-                        <Text fontSize="xs" className="pill-box-icons">
+                        <Text fontSize="xs" className="settings-meta">
                             {t("settings.policy.kvWarmingDescription")}
                         </Text>
                     </Box>
@@ -217,7 +217,7 @@ const AdminSettingsPanel = ({
     };
 
     return (
-        <Box className="panels-bg" p="4" borderRadius="sm">
+        <Box className="settings-panel" p="4">
             <Flex align="center" justify="space-between">
                 <Flex align="center">
                     <IconButton
@@ -226,11 +226,11 @@ const AdminSettingsPanel = ({
                         variant="outline"
                         size="sm"
                         mr="2"
-                        className="collapse-toggle"
+                        className="settings-collapse-toggle"
                     >
                         <AnimatedChevron isOpen={!isCollapsed} />
                     </IconButton>
-                    <FaCog size="1.2em" style={{ marginRight: "5px" }} />
+                    <LuCog size="1.2em" style={{ marginRight: "5px" }} strokeWidth={1.6} />
                     <Text as="h3">{t("settings.admin.title")}</Text>
                 </Flex>
             </Flex>
@@ -281,7 +281,7 @@ const AdminSettingsPanel = ({
                                                     !localStatus?.available
                                                 }
                                             >
-                                                <FaDesktop />
+                                                <LuMonitor strokeWidth={1.6} />
                                                 {t("settings.admin.local")}
                                             </Button>
                                         </Tooltip>
@@ -294,7 +294,7 @@ const AdminSettingsPanel = ({
                                                     )
                                                 }
                                             >
-                                                <FaCloud />
+                                                <LuCloud strokeWidth={1.6} />
                                                 {t("settings.admin.remote")}
                                             </Button>
                                         </Tooltip>
@@ -315,7 +315,7 @@ const AdminSettingsPanel = ({
                                             value="0"
                                         >
                                             <HStack>
-                                                <FaDesktop />
+                                                <LuMonitor strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabModels")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -326,7 +326,7 @@ const AdminSettingsPanel = ({
                                             value="chat"
                                         >
                                             <HStack>
-                                                <FaComments />
+                                                <LuMessageCircle strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabChat")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -337,7 +337,7 @@ const AdminSettingsPanel = ({
                                             value="summary"
                                         >
                                             <HStack>
-                                                <FaFileAlt />
+                                                <LuFileText strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabSummary")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -348,7 +348,7 @@ const AdminSettingsPanel = ({
                                             value="1"
                                         >
                                             <HStack>
-                                                <FaPuzzlePiece />
+                                                <LuPuzzle strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabTools")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -359,7 +359,7 @@ const AdminSettingsPanel = ({
                                             value="2"
                                         >
                                             <HStack>
-                                                <FaShieldAlt />
+                                                <LuShield strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabPolicy")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -371,7 +371,7 @@ const AdminSettingsPanel = ({
                                                 value="3"
                                             >
                                                 <HStack>
-                                                    <FaUsers />
+                                                    <LuUsers strokeWidth={1.6} />
                                                     <Text>{t("settings.admin.tabUsers")}</Text>
                                                 </HStack>
                                             </Tabs.Trigger>
@@ -379,13 +379,13 @@ const AdminSettingsPanel = ({
                                     )}
                                 </Tabs.List>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="0"
                                 >
                                     <LocalModelManager />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="chat"
                                 >
                                     <PromptEditorTab
@@ -423,7 +423,7 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="summary"
                                 >
                                     <PromptEditorTab
@@ -444,13 +444,13 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="1"
                                 >
                                     <ToolsSettingsTab />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="2"
                                 >
                                     <PolicyTab
@@ -461,7 +461,7 @@ const AdminSettingsPanel = ({
                                 </Tabs.Content>
                                 {!isTauri() && (
                                     <Tabs.Content
-                                        className="floating-main"
+                                        className="settings-tab-body"
                                         value="3"
                                     >
                                         <UsersTab />
@@ -480,7 +480,7 @@ const AdminSettingsPanel = ({
                                             value="0"
                                         >
                                             <HStack>
-                                                <FaMicrophone />
+                                                <LuMic strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabWhisper")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -491,7 +491,7 @@ const AdminSettingsPanel = ({
                                             value="1"
                                         >
                                             <HStack>
-                                                <FaBrain />
+                                                <LuBrain strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabLlm")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -502,7 +502,7 @@ const AdminSettingsPanel = ({
                                             value="chat"
                                         >
                                             <HStack>
-                                                <FaComments />
+                                                <LuMessageCircle strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabChat")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -513,7 +513,7 @@ const AdminSettingsPanel = ({
                                             value="summary"
                                         >
                                             <HStack>
-                                                <FaFileAlt />
+                                                <LuFileText strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabSummary")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -525,7 +525,7 @@ const AdminSettingsPanel = ({
                                                 value="2"
                                             >
                                                 <HStack>
-                                                    <FaDatabase />
+                                                    <LuDatabase strokeWidth={1.6} />
                                                     <Text>{t("settings.admin.tabRag")}</Text>
                                                 </HStack>
                                             </Tabs.Trigger>
@@ -537,7 +537,7 @@ const AdminSettingsPanel = ({
                                             value="3"
                                         >
                                             <HStack>
-                                                <FaPuzzlePiece />
+                                                <LuPuzzle strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabTools")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -548,7 +548,7 @@ const AdminSettingsPanel = ({
                                             value="4"
                                         >
                                             <HStack>
-                                                <FaShieldAlt />
+                                                <LuShield strokeWidth={1.6} />
                                                 <Text>{t("settings.admin.tabPolicy")}</Text>
                                             </HStack>
                                         </Tabs.Trigger>
@@ -560,7 +560,7 @@ const AdminSettingsPanel = ({
                                                 value="5"
                                             >
                                                 <HStack>
-                                                    <FaUsers />
+                                                    <LuUsers strokeWidth={1.6} />
                                                     <Text>{t("settings.admin.tabUsers")}</Text>
                                                 </HStack>
                                             </Tabs.Trigger>
@@ -568,7 +568,7 @@ const AdminSettingsPanel = ({
                                     )}
                                 </Tabs.List>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="0"
                                 >
                                     <WhisperTab
@@ -587,7 +587,7 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="1"
                                 >
                                     <LlmTab
@@ -604,7 +604,7 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="chat"
                                 >
                                     <PromptEditorTab
@@ -642,7 +642,7 @@ const AdminSettingsPanel = ({
                                     />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="summary"
                                 >
                                     <PromptEditorTab
@@ -664,7 +664,7 @@ const AdminSettingsPanel = ({
                                 </Tabs.Content>
                                 {isRagEnabled() && (
                                     <Tabs.Content
-                                        className="floating-main"
+                                        className="settings-tab-body"
                                         value="2"
                                     >
                                         <RagTab
@@ -678,13 +678,13 @@ const AdminSettingsPanel = ({
                                     </Tabs.Content>
                                 )}
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="3"
                                 >
                                     <ToolsSettingsTab />
                                 </Tabs.Content>
                                 <Tabs.Content
-                                    className="floating-main"
+                                    className="settings-tab-body"
                                     value="4"
                                 >
                                     <PolicyTab
@@ -695,7 +695,7 @@ const AdminSettingsPanel = ({
                                 </Tabs.Content>
                                 {!isTauri() && (
                                     <Tabs.Content
-                                        className="floating-main"
+                                        className="settings-tab-body"
                                         value="5"
                                     >
                                         <UsersTab />

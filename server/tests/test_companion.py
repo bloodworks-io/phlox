@@ -178,6 +178,26 @@ def test_batch_generate_runs_the_llm_with_the_chosen_template():
     assert citations["transcript_line_count"] == 3 and "fields" in citations
 
 
+def test_hold_acknowledgement_fails_closed_when_state_unreadable(monkeypatch):
+    """A row start_import refuses to duplicate must read back; if the lookup
+    misses (row deleted mid-request or the DB read failed — both surface as
+    None), the upload must NOT be acknowledged. The desktop host treats
+    non-2xx as a failed upload and the phone retries — acknowledging with a
+    null status would strand it polling a session that was never stored."""
+    from server.database.config.manager import config_manager
+
+    document = _document(session_id="77777777-7777-7777-7777-777777777771")
+    try:
+        config_manager.update_config({"COMPANION_AUTO_IMPORT": False})
+        monkeypatch.setattr(repository, "start_import", lambda *args, **kwargs: False)
+        monkeypatch.setattr(repository, "get_import", lambda *args, **kwargs: None)
+        response = client.post("/api/companion/sessions/import", json={"document": document})
+    finally:
+        config_manager.update_config({"COMPANION_AUTO_IMPORT": True})
+
+    assert response.status_code >= 400, "unreadable import state must fail closed"
+
+
 def test_reimport_is_idempotent():
     document = _document(session_id="33333333-3333-3333-3333-333333333331")
     first = client.post("/api/companion/sessions/import", json={"document": document}).json()

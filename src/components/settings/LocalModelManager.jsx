@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box, VStack, HStack, Text, Button, Badge, Alert,
-  Progress, Grid, Icon, Spinner,
+  Progress, Grid, Spinner,
   Popover, Portal, Dialog,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import {
-  FaMicrophone, FaDatabase, FaStar, FaExclamationTriangle, FaMemory, FaMicrochip,
-} from "react-icons/fa";
+  LuDatabase, LuMemoryStick, LuMic, LuMicrochip, LuStar, LuTriangleAlert,
+} from "react-icons/lu";
 import { DownloadIcon, CheckIcon, InfoIcon, ChevronLeftIcon, ChevronRightIcon } from "../common/icons";
-import { GreenButton, NavButton } from "../common/Buttons";
+import { PrimaryButton, SuccessButton } from "../common/Buttons";
 import ModalTitle from "../common/ModalTitle";
 import { useLocalModels } from "../../utils/hooks/useLocalModels";
 import {
@@ -50,7 +50,7 @@ const PerformancePopover = ({ model, systemSpecs }) => {
   return (
     <Popover.Root positioning={{ placement: "top", offset: { mainAxis: 4 } }}>
       <Popover.Trigger asChild>
-        <Box cursor="pointer" display="flex" alignItems="center" color="textSecondary" _hover={{ color: "primaryButton" }} transition="color 0.15s">
+        <Box cursor="pointer" display="flex" alignItems="center" color="folio.muted" _hover={{ color: "folio.accent" }} transition="color 0.15s">
           <InfoIcon boxSize={3.5} />
         </Box>
       </Popover.Trigger>
@@ -61,12 +61,12 @@ const PerformancePopover = ({ model, systemSpecs }) => {
             <Popover.Body p={3}>
               <VStack gap={1} align="stretch">
                 <HStack justify="space-between">
-                  <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.size")}</Text>
+                  <Text fontSize="xs" className="settings-meta">{t("settings.localModels.size")}</Text>
                   <Text fontSize="xs" fontWeight="bold">{model.size_mb}MB</Text>
                 </HStack>
                 {(model.active_parameters_billions || model.parameters_billions) && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.parameters")}</Text>
+                    <Text fontSize="xs" className="settings-meta">{t("settings.localModels.parameters")}</Text>
                     <Text fontSize="xs" fontWeight="bold">
                       {model.active_parameters_billions ? `${model.active_parameters_billions}B` : `${model.parameters_billions}B`}
                     </Text>
@@ -74,14 +74,14 @@ const PerformancePopover = ({ model, systemSpecs }) => {
                 )}
                 {model.recommended_ram_gb && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.ramNeeded")}</Text>
+                    <Text fontSize="xs" className="settings-meta">{t("settings.localModels.ramNeeded")}</Text>
                     <Text fontSize="xs" fontWeight="bold">{model.recommended_ram_gb}GB</Text>
                   </HStack>
                 )}
                 {systemSpecs && (
                   <HStack justify="space-between">
-                    <Text fontSize="xs" className="pill-box-icons">{getMachineLabel(systemSpecs.os, t)}</Text>
-                    <Text fontSize="xs" fontWeight="bold" color={model.recommended_ram_gb && systemSpecs.total_memory_gb >= model.recommended_ram_gb ? "successButton" : "secondaryButton"}>
+                    <Text fontSize="xs" className="settings-meta">{getMachineLabel(systemSpecs.os, t)}</Text>
+                    <Text fontSize="xs" fontWeight="bold" color={model.recommended_ram_gb && systemSpecs.total_memory_gb >= model.recommended_ram_gb ? "folio.success" : "folio.warning"}>
                       {systemSpecs.total_memory_gb.toFixed(0)}GB
                     </Text>
                   </HStack>
@@ -89,7 +89,7 @@ const PerformancePopover = ({ model, systemSpecs }) => {
                 {perf && (
                   <Tooltip content={t("settings.localModels.estTimeTooltip")} showArrow>
                     <HStack justify="space-between">
-                      <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.estTime")}</Text>
+                      <Text fontSize="xs" className="settings-meta">{t("settings.localModels.estTime")}</Text>
                       <Text fontSize="xs" fontWeight="bold">~{Math.round(perf.estimatedTime)}s</Text>
                     </HStack>
                   </Tooltip>
@@ -112,8 +112,8 @@ const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDow
       p="3"
       borderRadius="md"
       borderWidth="1px"
-      borderColor={model.recommendedType === "recommended" ? "purple.200" : "surface"}
-      bg="base"
+      borderColor={model.recommendedType === "recommended" ? "folio.accent" : "folio.line"}
+      bg="folio.paperAlt"
       position="relative"
       overflow="hidden"
       h="100%"
@@ -121,37 +121,37 @@ const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDow
       display="flex"
       flexDirection="column"
       justifyContent="space-between"
-      transition="all 0.2s ease"
-      _hover={{ borderColor: "surface1" }}
+      transition="background-color 160ms ease, border-color 160ms ease"
+      _hover={{ borderColor: "folio.accentSoft" }}
     >
       <HStack w="full" justify="space-between">
         <HStack gap={1}>
           {model.recommendedType === "recommended" && (
             <Tooltip content={t("settings.localModels.recommendedTooltip")} showArrow>
-              <Box color="secondaryButton" display="flex" alignItems="center" cursor="default"><FaStar size="12" /></Box>
+              <Box color="folio.accent" display="flex" alignItems="center" cursor="default"><LuStar size="12" strokeWidth={1.6} /></Box>
             </Tooltip>
           )}
           <Text fontSize="sm" fontWeight="bold">{model.simple_name || model.id}</Text>
         </HStack>
         <PerformancePopover model={model} systemSpecs={systemSpecs} />
       </HStack>
-      <Text fontSize="xs" fontWeight="normal" className="pill-box-icons" noOfLines={2}>
+      <Text fontSize="xs" fontWeight="normal" className="settings-meta" noOfLines={2}>
         {model.description}
       </Text>
 
       {isDownloadingThis ? (
         <Box>
-          <Progress.Root value={downloadProgress?.percentage || 0} colorPalette="blue" size="xs" striped animated>
+          <Progress.Root value={downloadProgress?.percentage || 0} variant="folio" size="xs" striped animated>
             <Progress.Track><Progress.Range /></Progress.Track>
           </Progress.Root>
-          <Text fontSize="2xs" className="pill-box-icons" textAlign="right">{(downloadProgress?.percentage || 0).toFixed(0)}%</Text>
+          <Text fontSize="2xs" className="settings-meta" textAlign="right">{(downloadProgress?.percentage || 0).toFixed(0)}%</Text>
         </Box>
       ) : isDownloaded ? (
-        <GreenButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>{t("settings.localModels.downloaded")}</GreenButton>
+        <SuccessButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>{t("settings.localModels.downloaded")}</SuccessButton>
       ) : (
-        <NavButton size="sm" w="full" onClick={onDownload}>
+        <PrimaryButton size="sm" w="full" onClick={onDownload}>
           <DownloadIcon />{t("settings.localModels.download")}
-        </NavButton>
+        </PrimaryButton>
       )}
     </Box>
   );
@@ -168,32 +168,36 @@ const SupportingModelRow = ({ icon, iconColor, label, required, isReady, isDownl
     position="relative"
     overflow="hidden"
     borderWidth="1px"
-    borderColor={isReady ? "successButton" : "border"}
-    bg={isReady ? "primaryButtonFaint" : "secondary"}
-    transition="all 0.2s"
+    borderColor={isReady ? "folio.success" : "folio.line"}
+    bg={isReady ? "folio.successSoft" : "folio.paperAlt"}
+    transition="background-color 160ms ease, border-color 160ms ease"
     display="flex"
     alignItems="center"
   >
-    <Box position="absolute" left={0} top={0} bottom={0} width="3px" bg={isReady ? "successButton" : iconColor} opacity={0.6} />
+    <Box position="absolute" left={0} top={0} bottom={0} width="3px" bg={isReady ? "folio.success" : iconColor} opacity={0.6} />
     <HStack justify="space-between" w="full">
       <HStack>
         <Box color={iconColor} display="flex" alignItems="center">{icon}</Box>
         <Text fontSize="xs" fontWeight="bold">{label}</Text>
-        <Badge colorPalette={required ? "red" : "gray"} fontSize="2xs" variant={required ? "solid" : "outline"}>
+        <Badge
+          bg={required ? "folio.warningSoft" : "folio.paperAlt"}
+          color={required ? "folio.warning" : "folio.muted"}
+          fontSize="2xs"
+        >
           {required ? t("settings.localModels.required") : t("settings.localModels.optional")}
         </Badge>
         <Tooltip content={tooltipContent} showArrow>
-          <InfoIcon boxSize={3} color="textSecondary" />
+          <InfoIcon boxSize={3} color="folio.muted" />
         </Tooltip>
       </HStack>
       {isReady ? (
-        <CheckIcon color="successButton" boxSize={4} />
+        <CheckIcon color="folio.success" boxSize={4} />
       ) : isDownloading ? (
         <HStack gap={1}>
-          <Progress.Root value={progress} colorPalette="blue" size="xs" w="50px">
+          <Progress.Root value={progress} variant="folio" size="xs" w="50px">
             <Progress.Track><Progress.Range /></Progress.Track>
           </Progress.Root>
-          <Text fontSize="2xs" className="pill-box-icons" whiteSpace="nowrap">{progress.toFixed(0)}%</Text>
+          <Text fontSize="2xs" className="settings-meta" whiteSpace="nowrap">{progress.toFixed(0)}%</Text>
         </HStack>
       ) : (
         <Button size="xs" variant="ghost" aria-label={t("settings.localModels.downloadLabel", { label })} onClick={onDownload}>
@@ -301,7 +305,7 @@ const LocalModelManager = ({ className }) => {
     return (
       <HStack gap={2} py={4}>
         <Spinner size="sm" animationDuration="0.65s" />
-        <Text fontSize="sm" color="textSecondary">{t("settings.localModels.loading")}</Text>
+        <Text fontSize="sm" color="folio.muted">{t("settings.localModels.loading")}</Text>
       </HStack>
     );
   }
@@ -309,7 +313,7 @@ const LocalModelManager = ({ className }) => {
   if (!localStatus.available && !localStatus?.llama_server_running) {
     return (
       <Alert.Root status="warning" borderRadius="md">
-        <Alert.Indicator asChild><FaExclamationTriangle /></Alert.Indicator>
+        <Alert.Indicator asChild><LuTriangleAlert strokeWidth={1.6} /></Alert.Indicator>
         <Box>
           <Alert.Title fontSize="sm">{t("settings.localModels.notAvailableTitle")}</Alert.Title>
           <Alert.Description fontSize="xs">{t("settings.localModels.notAvailableDescription")}</Alert.Description>
@@ -324,13 +328,13 @@ const LocalModelManager = ({ className }) => {
     <VStack gap={4} align="stretch" className={className}>
       {/* System info */}
       {systemSpecs && (
-        <HStack gap={4} fontSize="xs" className="pill-box-icons">
+        <HStack gap={4} fontSize="xs" className="settings-meta">
           <HStack gap={1}>
-            <Icon className="blue-icon" asChild><FaMemory /></Icon>
+            <Box color="folio.muted" display="flex" alignItems="center"><LuMemoryStick strokeWidth={1.6} /></Box>
             <Text>{t("settings.localModels.ram", { value: systemSpecs.total_memory_gb.toFixed(1) })}</Text>
           </HStack>
           <HStack gap={1}>
-            <Icon className="blue-icon" asChild><FaMicrochip /></Icon>
+            <Box color="folio.muted" display="flex" alignItems="center"><LuMicrochip strokeWidth={1.6} /></Box>
             <Text>{t("settings.localModels.cores", { value: systemSpecs.cpu_count })}</Text>
           </HStack>
         </HStack>
@@ -344,13 +348,13 @@ const LocalModelManager = ({ className }) => {
             {smartRecommendations.length > MODELS_PER_PAGE && (
               <Box
                 flexShrink={0} w="28px" h="28px" borderRadius="full"
-                bg="surface" borderWidth="1px" borderColor="border"
+                bg="folio.paperAlt" borderWidth="1px" borderColor="folio.line"
                 display="flex" alignItems="center" justifyContent="center"
                 cursor={canGoPrev ? "pointer" : "default"}
                 opacity={canGoPrev ? 1 : 0.3}
                 onClick={() => canGoPrev && setStartIndex(effectiveStartIndex - 1)}
-                _hover={canGoPrev ? { bg: "surface1" } : {}}
-                transition="all 0.15s" alignSelf="center"
+                _hover={canGoPrev ? { bg: "folio.hover" } : {}}
+                transition="background-color 160ms ease" alignSelf="center"
               >
                 <ChevronLeftIcon boxSize={4} />
               </Box>
@@ -387,38 +391,38 @@ const LocalModelManager = ({ className }) => {
             {smartRecommendations.length > MODELS_PER_PAGE && (
               <Box
                 flexShrink={0} w="28px" h="28px" borderRadius="full"
-                bg="surface" borderWidth="1px" borderColor="border"
+                bg="folio.paperAlt" borderWidth="1px" borderColor="folio.line"
                 display="flex" alignItems="center" justifyContent="center"
                 cursor={canGoNext ? "pointer" : "default"}
                 opacity={canGoNext ? 1 : 0.3}
                 onClick={() => canGoNext && setStartIndex(effectiveStartIndex + 1)}
-                _hover={canGoNext ? { bg: "surface1" } : {}}
-                transition="all 0.15s" alignSelf="center"
+                _hover={canGoNext ? { bg: "folio.hover" } : {}}
+                transition="background-color 160ms ease" alignSelf="center"
               >
                 <ChevronRightIcon boxSize={4} />
               </Box>
             )}
           </HStack>
         ) : (
-          <Text fontSize="xs" className="pill-box-icons">{t("settings.localModels.noneAvailable")}</Text>
+          <Text fontSize="xs" className="settings-meta">{t("settings.localModels.noneAvailable")}</Text>
         )}
 
         {models.length > 0 && (
-          <HStack fontSize="xs" className="pill-box-icons">
+          <HStack fontSize="xs" className="settings-meta">
             <Text>{t("settings.localModels.current")}</Text>
             <Text fontWeight="bold">{models[0].filename}</Text>
-            {models[0].is_selected && <Badge colorPalette="green" size="xs">{t("settings.active")}</Badge>}
+            {models[0].is_selected && <Badge bg="folio.successSoft" color="folio.success" size="xs">{t("settings.active")}</Badge>}
           </HStack>
         )}
       </VStack>
 
       {/* Supporting Models */}
       <VStack align="start" gap={1} w="100%">
-        <Text fontSize="xs" fontWeight="bold" className="pill-box-icons">{t("settings.localModels.supportingModels")}</Text>
+        <Text fontSize="xs" fontWeight="bold" className="settings-meta">{t("settings.localModels.supportingModels")}</Text>
         <HStack w="100%" gap={3} align="stretch">
           <SupportingModelRow
-            icon={<FaMicrophone size="12" />}
-            iconColor="secondaryButton"
+            icon={<LuMic size="12" strokeWidth={1.6} />}
+            iconColor="folio.accent"
             label={t("settings.localModels.transcription")}
             required
             isReady={whisperReady}
@@ -428,8 +432,8 @@ const LocalModelManager = ({ className }) => {
             tooltipContent={`${t("settings.localModels.transcriptionTooltip")}${recommendedWhisper ? ` (${recommendedWhisper.size})` : ""}`}
           />
           <SupportingModelRow
-            icon={<FaDatabase size="12" />}
-            iconColor="neutralButton"
+            icon={<LuDatabase size="12" strokeWidth={1.6} />}
+            iconColor="folio.info"
             label={t("settings.localModels.embeddings")}
             required={false}
             isReady={embeddingDownloaded}
@@ -444,8 +448,8 @@ const LocalModelManager = ({ className }) => {
       {/* Danger zone */}
       {hasAnyModels && (
         <Box mt={2}>
-          <Button variant="outline" size="sm" colorPalette="red" borderRadius="lg" onClick={() => setIsResetOpen(true)}>
-            <FaExclamationTriangle /> {t("settings.localModels.resetAll")}
+          <Button variant="folioDanger" size="sm" onClick={() => setIsResetOpen(true)}>
+            <LuTriangleAlert strokeWidth={1.6} /> {t("settings.localModels.resetAll")}
           </Button>
         </Box>
       )}
@@ -458,7 +462,7 @@ const LocalModelManager = ({ className }) => {
             <Dialog.Content className="modal-style">
               <Dialog.Header>
                 <HStack>
-                  <Box display="flex" alignItems="center"><FaExclamationTriangle /></Box>
+                  <Box display="flex" alignItems="center"><LuTriangleAlert strokeWidth={1.6} /></Box>
                   <ModalTitle>{t("settings.localModels.resetAllTitle")}</ModalTitle>
                 </HStack>
               </Dialog.Header>
@@ -468,16 +472,16 @@ const LocalModelManager = ({ className }) => {
                   <Text fontSize="sm">{t("settings.localModels.resetWarning")}</Text>
                   <VStack gap={1} align="start" pl={4}>
                     {models.length > 0 && (
-                      <Text fontSize="sm" className="pill-box-icons">{t("settings.localModels.resetLlm")}</Text>
+                      <Text fontSize="sm" className="settings-meta">{t("settings.localModels.resetLlm")}</Text>
                     )}
                     {whisperReady && (
-                      <Text fontSize="sm" className="pill-box-icons">{t("settings.localModels.resetTranscription")}</Text>
+                      <Text fontSize="sm" className="settings-meta">{t("settings.localModels.resetTranscription")}</Text>
                     )}
                     {embeddingDownloaded && (
-                      <Text fontSize="sm" className="pill-box-icons">{t("settings.localModels.resetEmbedding")}</Text>
+                      <Text fontSize="sm" className="settings-meta">{t("settings.localModels.resetEmbedding")}</Text>
                     )}
                   </VStack>
-                  <Text fontSize="sm" color="successButton">
+                  <Text fontSize="sm" color="folio.success">
                     {t("settings.localModels.resetSafe")}
                   </Text>
                   <Text fontSize="sm">{t("settings.localModels.resetRedownload")}</Text>
@@ -485,10 +489,10 @@ const LocalModelManager = ({ className }) => {
               </Dialog.Body>
               <Dialog.Footer>
                 <HStack justify="flex-end" width="100%">
-                  <Button className="red-button" mr={3} onClick={() => setIsResetOpen(false)}>
+                  <Button variant="folioSecondary" mr={3} onClick={() => setIsResetOpen(false)}>
                     {t("action.cancel")}
                   </Button>
-                  <Button className="green-button" onClick={handleResetAll} loading={isResetting} loadingText={t("settings.localModels.deleting")}>
+                  <Button variant="folioDanger" onClick={handleResetAll} loading={isResetting} loadingText={t("settings.localModels.deleting")}>
                     {t("settings.localModels.deleteAll")}
                   </Button>
                 </HStack>

@@ -78,7 +78,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
         return () => clearInterval(refresh);
     }, [isOpen, mutate, mutateStatus]);
 
-    const groups = useMemo(() => {
+    const groups = (() => {
         const byDay = new Map();
         for (const session of sessions) {
             const key = sessionDay(session, t);
@@ -86,7 +86,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
             byDay.get(key).push(session);
         }
         return [...byDay.entries()];
-    }, [sessions, t]);
+    })();
 
     const toggle = (sessionId) => {
         setSelected((prev) => {
@@ -161,19 +161,19 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                             <HStack
                                 gap={2}
                                 pb={4}
-                                color={phoneConnected ? "textPrimary" : "textSecondary"}
+                                color="folio.ink"
                                 fontSize="sm"
                             >
                                 <Icon
                                     as={phoneConnected ? LuCheck : LuSmartphone}
-                                    color={phoneConnected ? "successButton" : "textSecondary"}
+                                    color={phoneConnected ? "folio.success" : "folio.muted"}
                                     boxSize={4}
                                 />
                                 <Text>{statusLine()}</Text>
                             </HStack>
 
                             {sessions.length === 0 ? (
-                                <Text fontSize="sm" color="textSecondary">
+                                <Text fontSize="sm" color="folio.muted">
                                     {t("settings.companion.modalEmptyFriendly")}
                                 </Text>
                             ) : (
@@ -197,7 +197,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                                 <HStack
                                                     justify="space-between"
                                                     borderBottom="1px solid"
-                                                    borderColor="border"
+                                                    borderColor="folio.line"
                                                     pb={1}
                                                 >
                                                     <Checkbox.Root
@@ -218,7 +218,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                                                 t("settings.companion.modalNoDate")}
                                                         </Checkbox.Label>
                                                     </Checkbox.Root>
-                                                    <Text fontSize="xs" color="textSecondary">
+                                                    <Text fontSize="xs" color="folio.muted">
                                                         {t(
                                                             "settings.companion.modalDayCount",
                                                             { count: daySessions.length },
@@ -247,7 +247,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                             <VStack gap={2} align="stretch" width="100%">
                                 {showOption && (
                                     <HStack justify="space-between">
-                                        <Text fontSize="xs" color="textSecondary">
+                                        <Text fontSize="xs" color="folio.muted">
                                             {t("settings.companion.modalTemplateHint")}
                                         </Text>
                                         <NativeSelect.Root size="sm" width="240px">
@@ -278,8 +278,8 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                     <Button
                                         size="sm"
                                         variant="plain"
-                                        color="textSecondary"
-                                        _hover={{ color: "textPrimary" }}
+                                        color="folio.muted"
+                                        _hover={{ color: "folio.ink" }}
                                         disabled={selected.size === 0 || saving}
                                         onClick={() => setShowOption((v) => !v)}
                                     >
@@ -290,7 +290,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                     <HStack gap={2}>
                                         {showOption && (
                                             <Button
-                                                className="green-button"
+                                                variant="folioSecondary"
                                                 loading={saving}
                                                 disabled={selected.size === 0}
                                                 onClick={() => save(true)}
@@ -302,7 +302,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                             </Button>
                                         )}
                                         <Button
-                                            className="green-button"
+                                            variant="folioPrimary"
                                             loading={saving}
                                             disabled={selected.size === 0}
                                             onClick={() => save(false)}
@@ -316,7 +316,7 @@ const CompanionImportModal = ({ isOpen, onClose }) => {
                                                   })}
                                         </Button>
                                         <Button
-                                            className="grey-button"
+                                            variant="folioSecondary"
                                             onClick={onClose}
                                         >
                                             {t("action.close")}
@@ -348,8 +348,8 @@ const SessionLine = ({ session, checked, onToggle }) => {
             py={1.5}
             align="center"
             borderRadius="md"
-            _hover={{ bg: "surfaceMuted" }}
-            opacity={inProgress ? 0.6 : 1}
+            _hover={{ bg: "folio.hover" }}
+            color={inProgress ? "folio.muted" : "folio.ink"}
             cursor={inProgress ? "default" : "pointer"}
             onClick={inProgress ? undefined : onToggle}
         >
@@ -370,18 +370,18 @@ const SessionLine = ({ session, checked, onToggle }) => {
                         session.patient_ur_number ||
                         t("settings.companion.consultation")}
                 </Text>
-                <Text fontSize="xs" color="textSecondary" isTruncated>
+                <Text fontSize="xs" color="folio.muted" isTruncated>
                     {when}
                 </Text>
             </Box>
             {failed && (
-                <HStack gap={1} color="dangerButton" fontSize="xs" pr={2}>
+                <HStack gap={1} color="folio.danger" fontSize="xs" pr={2}>
                     <Icon as={LuCircleAlert} boxSize={3.5} />
                     <Text>{t("settings.companion.modalProblem")}</Text>
                 </HStack>
             )}
             {inProgress && (
-                <Text fontSize="xs" color="textSecondary" pr={2}>
+                <Text fontSize="xs" color="folio.muted" pr={2}>
                     {t("settings.companion.modalSavingOne")}
                 </Text>
             )}

@@ -32,22 +32,22 @@ const NewTemplateFromExampleModal = ({
                             <VStack gap={4} align="stretch">
                                 {/* Info box */}
                                 <Box
-                                    bg="surfaceMuted"
+                                    bg="folio.accentSoft"
                                     borderLeft="4px solid"
-                                    borderColor="accent"
+                                    borderColor="folio.accent"
                                     p={4}
                                     borderRadius="md"
                                 >
                                     <VStack align="start" gap={2}>
                                         <Text
-                                            color="textPrimary"
+                                            color="folio.ink"
                                             fontWeight="600"
                                             fontSize="sm"
                                         >
                                             {t("modal.newTemplateFromExample.createTitle")}
                                         </Text>
                                         <Text
-                                            color="textSecondary"
+                                            color="folio.muted"
                                             fontSize="sm"
                                         >
                                             {t("modal.newTemplateFromExample.createDescription")}
@@ -58,7 +58,7 @@ const NewTemplateFromExampleModal = ({
                                 {/* Tips */}
                                 <Box px={2}>
                                     <Text
-                                        color="textPrimary"
+                                        color="folio.ink"
                                         fontSize="xs"
                                         fontWeight="600"
                                         mb={2}
@@ -67,19 +67,19 @@ const NewTemplateFromExampleModal = ({
                                     </Text>
                                     <VStack align="start" gap={1} pl={2}>
                                         <Text
-                                            color="textSecondary"
+                                            color="folio.muted"
                                             fontSize="sm"
                                         >
                                             {t("modal.newTemplateFromExample.tipComplete")}
                                         </Text>
                                         <Text
-                                            color="textSecondary"
+                                            color="folio.muted"
                                             fontSize="sm"
                                         >
                                             {t("modal.newTemplateFromExample.tipSections")}
                                         </Text>
                                         <Text
-                                            color="textSecondary"
+                                            color="folio.muted"
                                             fontSize="sm"
                                         >
                                             {t("modal.newTemplateFromExample.tipFields")}
@@ -103,12 +103,7 @@ const NewTemplateFromExampleModal = ({
                                 <Button
                                     onClick={onClose}
                                     size="md"
-                                    borderRadius="2xl"
-                                    className="switch-mode"
-                                    css={{
-                                        fontFamily: '"Space Grotesk", sans-serif',
-                                        fontWeight: "600"
-                                    }}
+                                    variant="folioSecondary"
                                     mr={3}
                                 >
                                     {t("action.cancel")}
@@ -118,12 +113,7 @@ const NewTemplateFromExampleModal = ({
                                     loading={isLoading}
                                     loadingText={t("modal.newTemplateFromExample.creating")}
                                     size="md"
-                                    borderRadius="2xl"
-                                    className="green-button"
-                                    css={{
-                                        fontFamily: '"Space Grotesk", sans-serif',
-                                        fontWeight: "600"
-                                    }}
+                                    variant="folioPrimary"
                                 >
                                     {t("modal.newTemplateFromExample.create")}
                                 </Button>

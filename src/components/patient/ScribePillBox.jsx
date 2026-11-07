@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { Box, Popover } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import PillBox from "../common/PillBox";
 import { LoadingOrb } from "./scribeVisuals";
 import {
@@ -59,6 +60,7 @@ const ScribePillBox = ({
     onDismiss,
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
+    const { t } = useTranslation();
 
     const handleDragOver = useCallback((e) => {
         e.preventDefault();
@@ -106,7 +108,10 @@ const ScribePillBox = ({
                 py={2}
                 gap={0}
             >
-                <LoadingOrb size={46} />
+                <LoadingOrb
+                    size={46}
+                    label={t("scribe.transcription.processing")}
+                />
             </PillBox>
         );
     }
@@ -168,8 +173,8 @@ const ScribePillBox = ({
                     bottom="-8px"
                     borderRadius="full"
                     border="2px dashed"
-                    borderColor="accent"
-                    bg="rgba(66, 153, 225, 0.15)"
+                    borderColor="folio.accent"
+                    bg="folio.accentSoft"
                     zIndex={-1}
                     pointerEvents="none"
                     className="anim-fade-scale"

@@ -8,9 +8,8 @@ import React, {
 import { useTranslation } from "react-i18next";
 import { Box, Popover, Text } from "@chakra-ui/react";
 import TextareaAutosize from "react-textarea-autosize";
-import { FaCheck } from "react-icons/fa";
+import { LuCheck } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import { SpeakerDot, parseSpeakerLine } from "../transcript/SpeakerText";
 import { activeCitations, matchCitationsToLines } from "../../utils/patient/citationMatching";
 import type { LineCitation } from "../../utils/patient/types";
@@ -33,19 +32,18 @@ const GUTTER_PX = 28;
 // Gap between a line's last character and its badge.
 const BADGE_GAP_PX = 6;
 
-// One dot language for all verdicts: filled sage (supported — deliberately
-// quiet), hollow amber (unverified — mirrors SpeakerDot's hollow S?
-// convention), haloed red (conflict). Shape differs so colour is never the
+// One dot language for all verdicts: filled success (supported — deliberately
+// quiet), hollow warning (unverified — mirrors SpeakerDot's hollow S?
+// convention), haloed danger (conflict). Shape differs so colour is never the
 // only cue; rest opacity per verdict lives in the theme.
-const VERDICT_COLORS: Record<LineCitation["verdict"], [string, string]> = {
-  supported: ["#7fae7f", "#76a376"],
-  unverified: ["#df8e1d", "#eed49f"],
-  conflict: ["#d20f39", "#ed8796"],
+const VERDICT_COLORS: Record<LineCitation["verdict"], string> = {
+  supported: "var(--chakra-colors-folio-success)",
+  unverified: "var(--chakra-colors-folio-warning)",
+  conflict: "var(--chakra-colors-folio-danger)",
 };
 
 const VerdictDot = ({ verdict }: { verdict: LineCitation["verdict"] }) => {
-  const [light, dark] = VERDICT_COLORS[verdict];
-  const color = useColorModeValue(light, dark);
+  const color = VERDICT_COLORS[verdict];
   return (
     <span
       style={{
@@ -110,14 +108,14 @@ const UtteranceRow = ({
       fontSize="sm"
       whiteSpace="pre-wrap"
       borderBottomWidth="1px"
-      borderColor="surface"
+      borderColor="folio.line"
       py={1}
       cursor={onCiteLine ? "pointer" : undefined}
-      _hover={onCiteLine ? { bg: "surface" } : undefined}
+      _hover={onCiteLine ? { bg: "folio.hover" } : undefined}
       onClick={() => onCiteLine?.(line)}
       title={onCiteLine ? t("patient.citationGoToLine") : undefined}
     >
-      <Text as="span" color="overlay0" fontSize="xs" mr={2}>
+      <Text as="span" color="folio.faint" fontSize="xs" mr={2}>
         [{line}]
       </Text>
       {speaker ? <SpeakerDot speaker={speaker} /> : null}
@@ -343,7 +341,7 @@ const CitationBadge = ({
               ))}
             {citation.verdict === "conflict" && (
               <>
-                <Text fontSize="xs" color="overlay0" mb={1}>
+                <Text fontSize="xs" color="folio.faint" mb={1}>
                   {t("patient.citationContradictsLine")}
                 </Text>
                 {utterances(citation.contradicts).map((line) => (
@@ -364,7 +362,7 @@ const CitationBadge = ({
                 alignItems="center"
                 gap={1}
                 fontSize="sm"
-                color="primaryButton"
+                color="folio.accent"
                 background="none"
                 border="none"
                 cursor="pointer"
@@ -373,7 +371,7 @@ const CitationBadge = ({
                   onDismiss(fieldKey, citation.line_index);
                 }}
               >
-                <FaCheck size="10px" />
+                <LuCheck size="10px" strokeWidth={1.6} />
                 {t("patient.citationKeep")}
               </Box>
             )}

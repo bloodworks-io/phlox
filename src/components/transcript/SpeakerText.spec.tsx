@@ -4,6 +4,7 @@ import SpeakerText, {
     parseSpeakerLine,
     speakerColorPair,
 } from "../transcript/SpeakerText";
+import { folioColors } from "@/theme/colors";
 import { renderWithProviders } from "../../test/utils";
 
 afterEach(cleanup);
@@ -57,6 +58,22 @@ describe("speakerColorPair", () => {
         [1, 2, 3, 4].forEach((n) => {
             expect(unknown).not.toBe(speakerColorPair(`S${n}`)[0]);
         });
+    });
+
+    it("keeps categorical speaker colors independent from clinical status roles", () => {
+        const modes = ["light", "dark"] as const;
+        const statusRoles = ["accent", "info", "success", "warning", "danger"];
+
+        for (const mode of modes) {
+            const statusColors = new Set(
+                statusRoles.map((role) => folioColors[mode][role]),
+            );
+            for (let n = 1; n <= 4; n += 1) {
+                const [light, dark] = speakerColorPair(`S${n}`);
+                const value = mode === "light" ? light : dark;
+                expect(statusColors.has(value)).toBe(false);
+            }
+        }
     });
 });
 

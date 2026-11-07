@@ -3,6 +3,7 @@ import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import FillFormModal from "./FillFormModal";
 import { renderWithProviders } from "../../test/utils";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
+import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
 import { fillPdf } from "../../utils/pdf/fillForm";
 import { toaster } from "@/components/ui/toaster";
 import { t } from "@/i18n";
@@ -189,5 +190,73 @@ describe("FillFormModal", () => {
         expect(
             screen.getByText(t("forms.fillAndDownload") as string),
         ).toBeInTheDocument();
+    });
+
+    it("preview renders the filled pages and returns to the edit form", async () => {
+        vi.mocked(loadPdfDocument).mockResolvedValue({
+            numPages: 1,
+            getPage: vi.fn().mockResolvedValue({
+                getViewport: ({ scale }) => ({
+                    width: 612 * scale,
+                    height: 792 * scale,
+                }),
+                render: () => ({ promise: Promise.resolve() }),
+            }),
+        } as never);
+        openModal();
+        fireEvent.change(screen.getByLabelText(/Patient Name/), {
+            target: { value: "Ada Lovelace" },
+        });
+        fireEvent.click(
+            screen.getByRole("button", { name: t("forms.preview") as string }),
+        );
+
+        await waitFor(() => {
+            expect(pdfFormsApi.fetchTemplatePdf).toHaveBeenCalledWith("tpl-1");
+        });
+        expect(fillPdf).toHaveBeenCalledWith(
+            expect.any(Uint8Array),
+            template,
+            expect.objectContaining({ "Patient Name": "Ada Lovelace" }),
+        );
+        await waitFor(() => {
+            expect(document.querySelector("canvas")).not.toBeNull();
+        });
+        expect(
+            screen.getByRole("button", {
+                name: t("forms.backToEdit") as string,
+            }),
+        ).toBeInTheDocument();
+
+        fireEvent.click(
+            screen.getByRole("button", { name: t("forms.backToEdit") as string }),
+        );
+        expect(
+            screen.getByLabelText(/Patient Name/),
+        ).toBeInTheDocument();
+        expect(document.querySelector("canvas")).toBeNull();
+    });
+
+    it("preview failure shows an error toast and stays on the form", async () => {
+        vi.mocked(loadPdfDocument).mockRejectedValue(new Error("cannot open"));
+        openModal();
+        fireEvent.click(
+            screen.getByRole("button", { name: t("forms.preview") as string }),
+        );
+
+        await waitFor(() => {
+            expect(toaster.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: "error",
+                    description: t("forms.failedToPreview", {
+                        message: "cannot open",
+                    }),
+                }),
+            );
+        });
+        expect(
+            screen.getByLabelText(/Patient Name/),
+        ).toBeInTheDocument();
+        expect(document.querySelector("canvas")).toBeNull();
     });
 });

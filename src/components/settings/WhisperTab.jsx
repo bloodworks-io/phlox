@@ -18,7 +18,7 @@ const WhisperTab = ({
                 <Text fontSize="md" fontWeight="bold">
                     {t("settings.whisper.title")}
                 </Text>
-                <Text fontSize="sm" color="overlay0">
+                <Text fontSize="sm" color="folio.muted">
                     {t("settings.whisper.description")}
                 </Text>
             </Box>
@@ -35,7 +35,7 @@ const WhisperTab = ({
                         endElement={
                             urlStatus.whisper ? (
                                 <Tooltip content={t("settings.connectionSuccessful")}>
-                                    <CheckCircleIcon color="successButton" />
+                                    <CheckCircleIcon color="folio.success" />
                                 </Tooltip>
                             ) : undefined
                         }
@@ -64,7 +64,7 @@ const WhisperTab = ({
                     {whisperModelsLoading ? (
                         <HStack gap="2">
                             <Spinner size="sm" />
-                            <Text fontSize="sm" color="overlay0">
+                            <Text fontSize="sm" color="folio.muted">
                                 {t("settings.loadingModels")}
                             </Text>
                         </HStack>

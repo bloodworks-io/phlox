@@ -26,7 +26,7 @@ const SessionRow = ({ session, onRetry, onDismiss, onOpenNote, onView }) => {
     const details = sessionDetails(session, t);
 
     return (
-        <Box p={2} borderRadius="md" border="1px solid" borderColor="border">
+        <Box p={2} borderRadius="folioControl" bg="folio.paper" border="1px solid" borderColor="folio.line">
             <Flex justify="space-between" align="center" gap={2}>
                 <HStack align="center" gap={2} minW={0}>
                     <SessionStatusIcon status={session.status} />
@@ -34,14 +34,14 @@ const SessionRow = ({ session, onRetry, onDismiss, onOpenNote, onView }) => {
                         <Text
                             fontSize="sm"
                             fontWeight="medium"
-                            color="textPrimary"
+                            color="folio.ink"
                             isTruncated
                         >
                             {session.patient_display_name ||
                                 session.patient_ur_number ||
                                 t("settings.companion.quickCapture")}
                         </Text>
-                        <Text fontSize="xs" color="textSecondary" isTruncated>
+                        <Text fontSize="xs" color="folio.muted" isTruncated>
                             {details}
                         </Text>
                     </Box>
@@ -82,7 +82,7 @@ const SessionRow = ({ session, onRetry, onDismiss, onOpenNote, onView }) => {
                         <Button
                             size="xs"
                             variant="ghost"
-                            color="dangerButton"
+                            color="folio.danger"
                             onClick={() => onDismiss(session)}
                         >
                             {t("settings.companion.dismiss")}
@@ -91,7 +91,7 @@ const SessionRow = ({ session, onRetry, onDismiss, onOpenNote, onView }) => {
                 </HStack>
             </Flex>
             {session.status === "failed" && session.error && (
-                <Text fontSize="xs" color="dangerButton" pt={1} px={6} noOfLines={2}>
+                <Text fontSize="xs" color="folio.danger" pt={1} px={6} noOfLines={2}>
                     {session.error}
                 </Text>
             )}
@@ -104,8 +104,10 @@ const SessionRow = ({ session, onRetry, onDismiss, onOpenNote, onView }) => {
                         mt={2}
                         mx={6}
                         p={2}
-                        borderRadius="md"
-                        bg="surfaceMuted"
+                        borderRadius="folioControl"
+                        bg="folio.paperAlt"
+                        border="1px solid"
+                        borderColor="folio.line"
                         maxHeight="240px"
                         overflowY="auto"
                     >
@@ -196,7 +198,7 @@ const CompanionSessionList = () => {
                 {t("settings.companion.sessionsTitle")}
             </Text>
             {rows.length === 0 ? (
-                <Text fontSize="xs" color="textSecondary">
+                <Text fontSize="xs" color="folio.muted">
                     {t("settings.companion.empty")}
                 </Text>
             ) : (
@@ -215,6 +217,7 @@ const CompanionSessionList = () => {
             )}
 
             <ConfirmDialog
+                intent="destructive"
                 isOpen={!!dismissTarget}
                 onClose={() => setDismissTarget(null)}
                 onConfirm={confirmDismiss}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HStack, VStack, Box, Text, Input, NativeSelect, Button, Icon, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { FaFileUpload } from "react-icons/fa";
+import { LuFileUp } from "react-icons/lu";
 import { transcriptionApi } from "../../utils/api/transcriptionApi";
 import { extractFromFile } from "../../utils/helpers/documentExtraction";
 import { areRequiredDemographicsMet } from "../../utils/helpers/validationHelpers";
@@ -12,7 +12,7 @@ const Field = ({ label, required, children }) => (
         <Text fontSize="sm" fontWeight="bold" mb={1}>
             {label}
             {required && (
-                <Text as="span" color="dangerButton" ml={1}>
+                <Text as="span" color="folio.danger" ml={1}>
                     *
                 </Text>
             )}
@@ -152,24 +152,19 @@ const DemographicsForm = ({
         if (onSaved) onSaved(updated);
     };
 
-    const btnSx = {
-        fontFamily: '"Space Grotesk", sans-serif',
-        fontWeight: "600",
-    };
-
     return (
         <VStack gap={4} align="stretch">
             {/* Document drop zone — auto-fills fields from a referral/ID/etc. */}
             <Box
                 position="relative"
-                borderRadius="md"
+                borderRadius="folioControl"
                 border="2px dashed"
-                borderColor={isDragOver ? "accent" : "surface"}
-                bg={isDragOver ? "rgba(66, 153, 225, 0.15)" : "transparent"}
+                borderColor={isDragOver ? "folio.accent" : "folio.line"}
+                bg={isDragOver ? "folio.accentSoft" : "transparent"}
                 p={3}
                 textAlign="center"
                 cursor="pointer"
-                transition="all 0.15s"
+                transition="background-color 160ms ease, border-color 160ms ease"
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -185,10 +180,10 @@ const DemographicsForm = ({
                 <HStack
                     gap={2}
                     justify="center"
-                    color={"textSecondary"}
+                    color="folio.muted"
                     fontSize="sm"
                 >
-                    <Icon asChild><FaFileUpload /></Icon>
+                    <Icon asChild><LuFileUp strokeWidth={1.6} /></Icon>
                     <Text>
                         {isExtracting
                             ? t("patient.readingDocument")
@@ -199,7 +194,7 @@ const DemographicsForm = ({
                 {extractError && (
                     <Text
                         fontSize="xs"
-                        color="dangerButton"
+                        color="folio.danger"
                         mt={1}
                         className="anim-fade-slide-up"
                         css={{ animationDuration: "0.15s" }}
@@ -288,18 +283,15 @@ const DemographicsForm = ({
                     <Button
                         onClick={onCancel}
                         size="md"
-                        borderRadius="2xl"
-                        className="switch-mode"
-                        css={btnSx}>{cancelIcon || undefined}{cancelLabel ?? t("action.cancel")}</Button>
+                        variant="folioSecondary"
+                        >{cancelIcon || undefined}{cancelLabel ?? t("action.cancel")}</Button>
                 )}
                 <Button
                     onClick={handleSave}
                     disabled={!requiredMet}
                     loading={isSaving}
                     size="md"
-                    borderRadius="2xl"
-                    className="green-button"
-                    css={btnSx}
+                    variant="folioPrimary"
                 >
                     {saveLabel ?? t("action.save")}
                 </Button>

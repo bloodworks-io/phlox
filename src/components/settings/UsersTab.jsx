@@ -72,15 +72,15 @@ const UsersTab = () => {
           align="center"
           p={2}
           borderRadius="md"
-          border="1px solid"
-          borderColor="border"
-        >
-          <Box>
-            <Text fontSize="sm" fontWeight="medium" color="textPrimary">
-              {user.username}
-              {me && user.id === me.id ? t("settings.users.you") : ""}
-            </Text>
-            <Text fontSize="xs" color="textSecondary">
+           border="1px solid"
+           borderColor="folio.line"
+         >
+           <Box>
+             <Text fontSize="sm" fontWeight="medium" color="folio.ink">
+               {user.username}
+               {me && user.id === me.id ? t("settings.users.you") : ""}
+             </Text>
+             <Text fontSize="xs" color="folio.muted">
               {user.role}
               {user.disabled ? t("settings.users.disabledSuffix") : ""}
             </Text>
@@ -125,7 +125,7 @@ const UsersTab = () => {
         </NativeSelect.Root>
         <Button
           size="sm"
-          className="green-button"
+          variant="folioPrimary"
           loading={busy}
           disabled={!newUsername || !newPassword}
           onClick={handleCreate}

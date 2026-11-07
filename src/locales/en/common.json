@@ -120,6 +120,7 @@
         },
         "transcription": {
             "failed": "Transcription failed",
+            "processing": "Processing consultation",
             "retrySend": "Retry sending",
             "downloadAudio": "Download audio to retry later",
             "dismissWarning": "Dismiss — download first to keep the audio"
@@ -130,7 +131,7 @@
         }
     },
     "chat": {
-        "title": "Chat With Phlox",
+        "title": "Chat with Phlox",
         "assistant": "Phlox Assistant",
         "logoAlt": "Phlox Logo",
         "disclaimer": "Phlox may make mistakes. Always verify critical information.",
@@ -229,6 +230,7 @@
         "fab": {
             "chartInsights": "Chart Insights",
             "chatWithPhlox": "Chat with Phlox",
+            "criticalReasoning": "Critical reasoning available",
             "noPreviousVisit": "No previous visit available",
             "openChat": "Open Chat",
             "openDocumentUpload": "Open Document Upload",
@@ -237,6 +239,7 @@
             "openReasoning": "Open Reasoning",
             "patientLetter": "Patient Letter",
             "previousVisit": "Previous Visit",
+            "previousVisitUnread": "Previous visit summary unread",
             "saveForChartInsights": "Save encounter to access Chart Insights",
             "saveForLetter": "Save encounter to access Letter",
             "uploadDocument": "Upload Document"
@@ -1158,6 +1161,7 @@
         "changelogTooltip": "View Changelog",
         "switchToDarkMode": "Switch to Dark Mode",
         "switchToLightMode": "Switch to Light Mode",
+        "useSystemAppearance": "Use system appearance",
         "status": {
             "allConnected": "All services connected",
             "services": "Services: {{llm}} LLM, {{whisper}} Transcription{{embedding}}",
@@ -1464,6 +1468,7 @@
             "loadFailed": "Failed to load letter"
         },
         "modeDraft": "Draft",
+        "modeDictated": "Dictated",
         "modeTooltipDictate": "Dictate: speak your letter and we'll turn it into a polished letter.",
         "modeTooltipDraft": "Draft: choose a template and have AI draft the letter for you.",
         "modeTooltipAria": "Letter mode tooltip",
@@ -1477,17 +1482,12 @@
         "customInstructions": "Custom Instructions:",
         "customInstructionsPlaceholder": "Enter custom instructions for letter generation...",
         "templateLabel": "Letter Template:",
+        "templatePlaceholder": "Select template",
         "regenerate": "Regenerate Letter",
         "copy": "Copy Letter",
         "copied": "Copied!",
         "save": "Save Letter",
-        "saved": "Saved!",
-        "suggestions": {
-            "formal": "More formal",
-            "concise": "More concise",
-            "detail": "Add detail",
-            "clarity": "Improve clarity"
-        }
+        "saved": "Saved!"
     },
     "liveAgent": {
         "error": {

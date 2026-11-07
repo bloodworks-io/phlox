@@ -3,12 +3,13 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, Heading, VStack, Text, Input, Flex, Image, Progress, HStack, Icon, Alert } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { LuEye, LuEyeOff } from "react-icons/lu";
 import {
   encryptionApi,
   calculatePassphraseStrength,
 } from "../../utils/api/encryptionApi";
 import { resetApiConfig, isTauri } from "../../utils/helpers/apiConfig";
+import { isMacOS } from "../../utils/helpers/platform";
 import {
   SPLASH_STEPS,
   STEP_TITLES,
@@ -119,10 +120,10 @@ const EncryptionSetup = ({ onComplete }) => {
   }, [passphrase, confirmPassphrase, isValid, onComplete, t]);
 
   const getStrengthColor = () => {
-    if (strength.score <= 1) return "red";
-    if (strength.score === 2) return "yellow";
-    if (strength.score === 3) return "blue";
-    return "green";
+    if (strength.score <= 1) return "folioDanger";
+    if (strength.score === 2) return "folioWarning";
+    if (strength.score === 3) return "folioInfo";
+    return "folioSuccess";
   };
 
   const getStrengthPercent = () => {
@@ -141,7 +142,7 @@ const EncryptionSetup = ({ onComplete }) => {
       position="relative"
     >
       {/* Tauri titlebar drag region - full window width */}
-      {isTauri() && (
+      {isTauri() && isMacOS() && (
         <Box
           data-tauri-drag-region
           height="25px"
@@ -153,11 +154,8 @@ const EncryptionSetup = ({ onComplete }) => {
         />
       )}
       <Box
-        className="anim-fade-scale panels-bg splash-panel"
+        className="anim-fade-scale splash-panel"
         p={{ base: 6, md: 8 }}
-        boxShadow="2xl"
-        borderWidth="1px"
-        borderColor="surface"
         w={{ base: "100%", sm: "90%", md: "600px" }}
         maxW="600px"
         h="600px"
@@ -167,28 +165,18 @@ const EncryptionSetup = ({ onComplete }) => {
         display="flex"
         flexDirection="column"
       >
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          height="120px"
-          bgGradient="linear(to b, sidebarBackgroundFaint, transparent)"
-          zIndex="0"
-        />
-
         <VStack gap={2} position="relative" zIndex={1} flexShrink={0} align="center">
           <Image src="/logo.webp" alt={t("encryption.logoAlt")} height="40px" width="auto" />
-          <Heading as="h2" size="md" color="textPrimary" textAlign="center">
+          <Heading as="h2" size="md" color="folio.ink" textAlign="center">
             {STEP_TITLES[SPLASH_STEPS.ENCRYPTION]}
           </Heading>
-          <Text fontSize="sm" color="textSecondary" textAlign="center" maxW="420px" lineHeight="1.5">
+          <Text fontSize="sm" color="folio.muted" textAlign="center" maxW="420px" lineHeight="1.5">
             {STEP_DESCRIPTIONS[SPLASH_STEPS.ENCRYPTION]}
           </Text>
           <HStack w="100%" justify="space-between" mt={1}>
             <Progress.Root
               value={((currentStepIndex + 1) / totalSteps) * 100}
-              colorPalette="blue"
+              variant="folio"
               borderRadius="full"
               size="sm"
               flex="1"
@@ -197,7 +185,7 @@ const EncryptionSetup = ({ onComplete }) => {
                 <Progress.Range />
               </Progress.Track>
             </Progress.Root>
-            <Text fontSize="xs" color="textSecondary" whiteSpace="nowrap" ml={3}>
+            <Text fontSize="xs" color="folio.muted" whiteSpace="nowrap" ml={3}>
               {t("splash.stepOf", { current: currentStepIndex + 1, total: totalSteps })}
             </Text>
           </HStack>
@@ -223,7 +211,7 @@ const EncryptionSetup = ({ onComplete }) => {
 
           <VStack gap={4} align="stretch" mt={4}>
             <Box>
-              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
+              <Text mb={1} fontSize="sm" fontWeight="500"               color="folio.ink">
                 {t("encryption.passphrase")}
               </Text>
               <HStack>
@@ -241,7 +229,7 @@ const EncryptionSetup = ({ onComplete }) => {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={t("common.togglePasswordVisibility")}
                 >
-                  <Icon asChild>{showPassword ? <FaEyeSlash /> : <FaEye />}</Icon>
+                  <Icon asChild>{showPassword ? <LuEyeOff strokeWidth={1.6} /> : <LuEye strokeWidth={1.6} />}</Icon>
                 </Button>
               </HStack>
 
@@ -252,20 +240,20 @@ const EncryptionSetup = ({ onComplete }) => {
                   css={{ animationDuration: "0.2s" }}
                 >
                   <HStack justify="space-between" mb={1}>
-                    <Text fontSize="xs" color="textSecondary">
+                    <Text fontSize="xs" color="folio.muted">
                       {t("encryption.strength")}
                     </Text>
                     <Text
                       fontSize="xs"
                       fontWeight="600"
-                      color={getStrengthColor() + ".400"}
+                      color={getStrengthColor()}
                     >
                       {strength.strength}
                     </Text>
                   </HStack>
                   <Progress.Root
                     value={getStrengthPercent()}
-                    colorPalette={getStrengthColor()}
+                    variant={getStrengthColor()}
                     size="xs"
                     borderRadius="full"
                   >
@@ -278,7 +266,7 @@ const EncryptionSetup = ({ onComplete }) => {
             </Box>
 
             <Box>
-              <Text mb={1} fontSize="sm" fontWeight="500" color="textPrimary">
+              <Text mb={1} fontSize="sm" fontWeight="500"               color="folio.ink">
                 {t("encryption.confirmPassphrase")}
               </Text>
               <HStack>
@@ -302,7 +290,7 @@ const EncryptionSetup = ({ onComplete }) => {
                   aria-label={t("encryption.toggleConfirmVisibility")}
                 >
                   <Icon asChild>
-                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    {showConfirmPassword ? <LuEyeOff strokeWidth={1.6} /> : <LuEye strokeWidth={1.6} />}
                   </Icon>
                 </Button>
               </HStack>
@@ -312,7 +300,7 @@ const EncryptionSetup = ({ onComplete }) => {
                   <Text
                     mt={1}
                     fontSize="xs"
-                    color="dangerButton"
+                    color="folio.danger"
                     className="anim-fade-slide-up"
                     css={{ animationDuration: "0.15s" }}
                    >
@@ -338,12 +326,7 @@ const EncryptionSetup = ({ onComplete }) => {
             loadingText={t("encryption.settingUp")}
             disabled={!isValid()}
             size="md"
-            borderRadius="2xl"
-            className="green-button"
-            css={{
-              fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: "600",
-            }}
+            variant="folioPrimary"
           >
             {t("action.continue")}
           </Button>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Box, Text, HStack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
-import { FaChevronUp, FaChevronDown, FaTimes } from "react-icons/fa";
+import { LuChevronDown, LuChevronUp, LuX } from "react-icons/lu";
 
 import { AgentSymbol, StatusDot } from "./agentVisuals";
 import { getStatusInfo, getContextLine } from "./agentStatus";
@@ -47,7 +47,7 @@ export const ExpandedAgentPanel = ({
                 px={3}
                 py={2.5}
                 borderBottomWidth="1px"
-                borderColor="surface"
+                borderColor="folio.line"
                 cursor="grab"
                 userSelect="none"
                 _active={{ cursor: "grabbing" }}
@@ -60,7 +60,12 @@ export const ExpandedAgentPanel = ({
                     </Text>
                     <HStack gap={1.5} mt="2px">
                         <StatusDot color={info.color} pulse={info.pulse} />
-                        <Text fontSize="xs" color="fg.subtle" truncate minW="0">
+                        <Text
+                            fontSize="xs"
+                            color="folio.muted"
+                            truncate
+                            minW="0"
+                        >
                             {info.label}
                         </Text>
                     </HStack>
@@ -78,18 +83,18 @@ export const ExpandedAgentPanel = ({
                             w="32px"
                             h="32px"
                             borderRadius="full"
-                            color="fg.subtle"
+                            color="folio.muted"
                             cursor="pointer"
                             flexShrink={0}
                             transition="all 0.2s ease"
-                            _hover={{ bg: "surface", color: "fg.muted" }}
+                            _hover={{ bg: "folio.hover", color: "folio.ink" }}
                             asChild
                         >
                             <button
                                 aria-label={t("agent.panel.closeSession")}
                                 onClick={onDismissReview}
                             >
-                                <FaTimes size="11px" />
+                                <LuX size="11px" strokeWidth={1.6} />
                             </button>
                         </Box>
                     </Tooltip>
@@ -106,18 +111,18 @@ export const ExpandedAgentPanel = ({
                         w="32px"
                         h="32px"
                         borderRadius="full"
-                        color="fg.subtle"
+                        color="folio.muted"
                         cursor="pointer"
                         flexShrink={0}
                         transition="all 0.2s ease"
-                        _hover={{ bg: "surface", color: "fg.muted" }}
+                        _hover={{ bg: "folio.hover", color: "folio.ink" }}
                         asChild
                     >
                         <button
                             aria-label={t("agent.panel.collapse")}
                             onClick={onToggleExpand}
                         >
-                            <FaChevronDown size="11px" />
+                            <LuChevronDown size="11px" strokeWidth={1.6} />
                         </button>
                     </Box>
                 </Tooltip>
@@ -150,7 +155,7 @@ export const ExpandedAgentPanel = ({
                                 <Text
                                     fontSize="xs"
                                     fontStyle="italic"
-                                    color="overlay0"
+                                    color="folio.faint"
                                 >
                                     {status === "connecting"
                                         ? t("agent.panel.loadingContext")
@@ -204,7 +209,7 @@ export const ExpandedAgentPanel = ({
                 px={3}
                 py={2}
                 borderTopWidth="1px"
-                borderColor="surface"
+                borderColor="folio.line"
                 display="flex"
                 alignItems="center"
                 gap={2}
@@ -218,24 +223,24 @@ export const ExpandedAgentPanel = ({
                     py={1.5}
                     borderRadius="6px"
                     fontSize="xs"
-                    color="fg.subtle"
+                    color="folio.muted"
                     cursor="pointer"
                     transition="all 0.15s ease"
-                    _hover={{ bg: "surface", color: "fg.muted" }}
+                    _hover={{ bg: "folio.hover", color: "folio.ink" }}
                     aria-expanded={isTranscriptOpen}
                     aria-controls="live-agent-transcript"
                     onClick={() => setIsTranscriptOpen((open) => !open)}
                 >
                     {isTranscriptOpen ? (
-                        <FaChevronDown size="10px" />
+                        <LuChevronDown size="10px" strokeWidth={1.6} />
                     ) : (
-                        <FaChevronUp size="10px" />
+                        <LuChevronUp size="10px" strokeWidth={1.6} />
                     )}
                     {t("agent.panel.transcript")}
                 </Box>
                 <Text
                     fontSize="xs"
-                    color="overlay0"
+                    color="folio.faint"
                     ml="auto"
                     textAlign="right"
                     truncate

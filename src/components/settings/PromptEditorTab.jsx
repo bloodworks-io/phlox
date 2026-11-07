@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Textarea, Text, VStack } from "@chakra-ui/react";
-import { FiRefreshCw } from "react-icons/fi";
+import { LuRefreshCw } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
 const ResetToDefaultButton = ({ onClick, ...props }) => {
@@ -9,11 +9,11 @@ const ResetToDefaultButton = ({ onClick, ...props }) => {
         size="sm"
         h="30px"
         minH="30px"
-        className="red-button"
+        variant="folioSecondary"
         onClick={onClick}
         {...props}
     >
-        <FiRefreshCw />
+        <LuRefreshCw strokeWidth={1.6} />
         {t("settings.resetToDefault")}
     </Button>
     );
@@ -26,7 +26,7 @@ const PromptEditorTab = ({ title, subtitle, value, onChange, onReset }) => (
                 <Text fontSize="md" fontWeight="bold">
                     {title}
                 </Text>
-                <Text fontSize="sm" color="overlay0">
+                <Text fontSize="sm" color="folio.muted">
                     {subtitle}
                 </Text>
             </Box>

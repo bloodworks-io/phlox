@@ -7,6 +7,7 @@ mod pm;
 mod process;
 
 use log::LevelFilter;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 use tauri::{Emitter, Manager};
@@ -115,6 +116,69 @@ fn install_traffic_light_observer(ns_window: &objc2_app_kit::NSWindow) {
     }
 }
 
+static MAIN_WINDOW_REVEALED: AtomicBool = AtomicBool::new(false);
+
+fn reveal_window(window: &tauri::WebviewWindow) -> tauri::Result<()> {
+    if MAIN_WINDOW_REVEALED.swap(true, Ordering::SeqCst) {
+        return Ok(());
+    }
+
+    window.show()?;
+    window.set_focus()?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn apply_macos_window_background(
+    ns_window: &objc2_app_kit::NSWindow,
+    effective_theme: &str,
+) {
+    use objc2_app_kit::NSColor;
+
+    let (red, green, blue) = if effective_theme == "dark" {
+        (28.0, 32.0, 27.0)
+    } else {
+        (39.0, 42.0, 36.0)
+    };
+
+    let background_color = NSColor::colorWithRed_green_blue_alpha(
+        red / 255.0,
+        green / 255.0,
+        blue / 255.0,
+        1.0,
+    );
+    ns_window.setBackgroundColor(Some(&background_color));
+}
+
+#[tauri::command]
+fn set_window_appearance(
+    window: tauri::WebviewWindow,
+    preference: String,
+    effective: String,
+) -> tauri::Result<()> {
+    let theme = match preference.as_str() {
+        "system" => None,
+        "dark" => Some(tauri::Theme::Dark),
+        _ => Some(tauri::Theme::Light),
+    };
+
+    window.set_theme(theme)?;
+
+    #[cfg(target_os = "macos")]
+    if let Ok(ns_window_ptr) = window.ns_window() {
+        let ns_window: &objc2_app_kit::NSWindow =
+            unsafe { &*(ns_window_ptr as *mut objc2_app_kit::NSWindow) };
+        apply_macos_window_background(ns_window, &effective);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+fn reveal_main_window(window: tauri::WebviewWindow) -> tauri::Result<()> {
+    reveal_window(&window)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let log_plugin = tauri_plugin_log::Builder::default()
@@ -140,6 +204,8 @@ pub fn run() {
             commands::get_whisper_port,
             commands::get_embedding_port,
             commands::get_request_token,
+            set_window_appearance,
+            reveal_main_window,
             get_service_status,
             get_system_specs,
             restart_whisper,
@@ -163,30 +229,22 @@ pub fn run() {
             get_encryption_status
         ])
         .setup(|app| {
-            // Set transparent titlebar with custom dark background color on macOS
             #[cfg(target_os = "macos")]
             {
-                use objc2_app_kit::{NSColor, NSWindow, NSWindowTitleVisibility};
+                use objc2_app_kit::{NSWindow, NSWindowTitleVisibility};
 
                 if let Some(window) = app.get_webview_window("main") {
-                    let theme = window.theme().unwrap_or(tauri::Theme::Light);
-                    let (r, g, b) = match theme {
-                        tauri::Theme::Dark => (30.0, 32.0, 48.0),
-                        _ => (230.0, 233.0, 239.0),
+                    let effective_theme = match window.theme() {
+                        Ok(tauri::Theme::Dark) => "dark",
+                        _ => "light",
                     };
+
                     let ns_window_ptr = window.ns_window().unwrap();
-                    let ns_window: &NSWindow = unsafe { &*(ns_window_ptr as *mut NSWindow) };
-                    let bg_color = NSColor::colorWithRed_green_blue_alpha(
-                        r / 255.0,
-                        g / 255.0,
-                        b / 255.0,
-                        1.0,
-                    );
-                    ns_window.setBackgroundColor(Some(&bg_color));
-                    // Hide the title text while keeping the title bar buttons visible
+                    let ns_window: &NSWindow =
+                        unsafe { &*(ns_window_ptr as *mut NSWindow) };
+                    apply_macos_window_background(ns_window, effective_theme);
                     ns_window.setTitleVisibility(NSWindowTitleVisibility::Hidden);
 
-                    // Position traffic light buttons
                     position_traffic_light_buttons(ns_window);
                     install_traffic_light_observer(ns_window);
                 }
@@ -194,6 +252,16 @@ pub fn run() {
 
             let app_handle = app.handle().clone();
             log::info!("App setup started");
+
+            let fallback_app_handle = app_handle.clone();
+            thread::spawn(move || {
+                thread::sleep(Duration::from_secs(3));
+                if let Some(window) = fallback_app_handle.get_webview_window("main") {
+                    if let Err(error) = reveal_window(&window) {
+                        log::error!("Failed to reveal main window fallback: {}", error);
+                    }
+                }
+            });
 
             #[cfg(target_os = "linux")]
             grant_webview_permissions(&app_handle);

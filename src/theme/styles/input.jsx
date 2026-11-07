@@ -1,89 +1,76 @@
 // Styles for text input fields and buttons.
-import { colors } from "../colors";
-import { lightenColor, darkenColor } from "../utils"; // adjust path as needed
 
-const inputStyles = (props) => ({
+const folioFocusRing = {
+    "&:focus": {
+        outline: "none !important",
+        borderColor: "folio.focus !important",
+        boxShadow: "0 0 0 1px var(--chakra-colors-folio-focus) !important",
+    },
+};
+
+const inputStyles = () => ({
     ".textarea-style": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        border: "none !important",
+        backgroundColor: "folio.canvas !important",
+        color: "folio.ink !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
         resize: "none !important",
         fontSize: "0.9rem !important",
         padding: "8px !important",
-        borderRadius: "4px !important",
+        borderRadius: "folioControl !important",
         overflow: "hidden !important",
         whiteSpace: "pre-wrap !important",
         boxShadow: "none !important",
         "&::placeholder": {
-            color:
-                props.colorMode === "light"
-                    ? colors.light.overlay0
-                    : colors.dark.overlay0,
+            color: "folio.faint",
         },
-        "&:focus": {
-            outline: "none !important",
-            boxShadow: "none !important",
-            border: "none !important",
-        },
+        ...folioFocusRing,
         minHeight: "auto !important",
     },
     ".letter-editor-textarea": {
+        border: "none !important",
+        borderRadius: "0 !important",
         overflow: "auto !important",
+        // .textarea-style sets border/radius with !important at equal
+        // specificity; the later declaration wins, so this override must
+        // stay after it in the stylesheet.
     },
     ".chat-input": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
-        borderRadius: "md !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        backgroundColor: "folio.canvas !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        borderRadius: "folioControl !important",
+        color: "folio.ink !important",
+        "&::placeholder": {
+            color: "folio.faint",
+        },
+        ...folioFocusRing,
     },
     ".clinic-date-input": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? "white !important"
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
+        backgroundColor: "folio.sidebarAlt !important",
+        color: "folio.sidebarInk !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        borderRadius: "folioControl !important",
+        ...folioFocusRing,
+        "&:focus": {
+            outline: "none !important",
+            borderColor: "folio.brandOnSidebar !important",
+            boxShadow:
+                "0 0 0 1px var(--chakra-colors-folio-brand-on-sidebar) !important",
+        },
     },
     ".template-field-container": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? colors.light.surface
-                : colors.dark.surface,
-        borderRadius: "sm",
+        backgroundColor: "folio.paperAlt",
+        borderRadius: "folioControl",
         padding: "1rem",
         marginBottom: "1rem",
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface2}`
-                : `1px solid ${colors.dark.surface2}`,
+        border: "1px solid",
+        borderColor: "folio.line",
     },
 
     ".template-field-label": {
-        color:
-            props.colorMode === "light"
-                ? colors.light.textPrimary
-                : colors.dark.textPrimary,
+        color: "folio.ink",
     },
     ".textarea-container": {
         position: "relative",
@@ -92,11 +79,37 @@ const inputStyles = (props) => ({
             opacity: 1,
         },
     },
+    ".note-panel": {
+        backgroundColor: "folio.paper",
+        color: "folio.ink",
+        border: "1px solid",
+        borderColor: "folio.line",
+        borderRadius: "folioPanel",
+    },
+    ".note-header": {
+        borderBottom: "1px solid",
+        borderBottomColor: "folio.line",
+        padding: "16px 20px 12px",
+    },
+    ".note-footer": {
+        borderTop: "1px solid",
+        borderTopColor: "folio.line",
+        padding: "16px 20px",
+    },
+    ".note-fields-container": {
+        backgroundColor: "transparent",
+        border: "none",
+        borderRadius: "0",
+        padding: "16px 20px 24px",
+        paddingRight: "72px",
+        overflow: "hidden",
+    },
+    ".note-field-label": {
+        color: "folio.ink",
+        fontWeight: "600",
+    },
     ".cohesive-fields-container": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
+        backgroundColor: "folio.canvas !important",
         borderRadius: "lg !important",
         border: "none !important",
         padding: "12px !important",
@@ -116,10 +129,7 @@ const inputStyles = (props) => ({
     ".cohesive-field-label": {
         fontSize: "1rem !important",
         fontWeight: "500 !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        color: "folio.muted !important",
         padding: "0 0 4px 0 !important",
         marginBottom: "4px !important",
     },
@@ -128,10 +138,7 @@ const inputStyles = (props) => ({
         display: "inline-flex !important",
         alignItems: "center !important",
         verticalAlign: "middle !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.overlay0} !important`
-                : `${colors.dark.overlay0} !important`,
+        color: "folio.faint !important",
         fontSize: "0.7rem !important",
     },
     ".cohesive-agent-edit-marker": {
@@ -143,10 +150,7 @@ const inputStyles = (props) => ({
         border: "none !important",
         padding: "0 !important",
         cursor: "pointer !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.secondaryButton} !important`
-                : `${colors.dark.secondaryButton} !important`,
+        color: "folio.warning !important",
         fontSize: "0.7rem !important",
     },
     ".agent-diff": {
@@ -163,30 +167,15 @@ const inputStyles = (props) => ({
         wordBreak: "break-word !important",
     },
     ".agent-diff-line--same": {
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        color: "folio.muted !important",
     },
     ".agent-diff-line--add": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.successButton}1a !important`
-                : `${colors.dark.successButton}1a !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.successButton} !important`
-                : `${colors.dark.successButton} !important`,
+        backgroundColor: "folio.successSoft !important",
+        color: "folio.success !important",
     },
     ".agent-diff-line--remove": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.dangerButtonFaint} !important`
-                : `${colors.dark.dangerButtonFaint} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.dangerButton} !important`
-                : `${colors.dark.dangerButton} !important`,
+        backgroundColor: "folio.dangerSoft !important",
+        color: "folio.danger !important",
         textDecoration: "line-through !important",
     },
     ".cohesive-textarea": {
@@ -204,194 +193,120 @@ const inputStyles = (props) => ({
             backgroundColor: "transparent !important",
         },
         "&::placeholder": {
-            color:
-                props.colorMode === "light"
-                    ? colors.light.overlay0
-                    : colors.dark.overlay0,
+            color: "folio.faint",
         },
     },
     ".cohesive-textarea--empty": {
         minHeight: "24px !important",
         "&::placeholder": {
-            color:
-                props.colorMode === "light"
-                    ? `${colors.light.textSecondary} !important`
-                    : `${colors.dark.textSecondary} !important`,
+            color: "folio.faint !important",
             opacity: "1 !important",
+        },
+    },
+    ".note-textarea": {
+        "&::placeholder": {
+            color: "folio.faint",
         },
     },
     ".refinement-fab": {
         borderRadius: "full !important",
-        color: `${colors.light.invertedText} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${darkenColor(colors.light.chatIcon, 0.15)} !important`
-                : `none !important`,
-        backgroundColor: `${
-            props.colorMode === "light"
-                ? colors.light.chatIcon
-                : colors.dark.chatIcon
-        } !important`,
-        opacity: 0,
-        transition: "opacity 0.2s ease-in-out",
+        color: "folio.accentInk !important",
+        border: "1px solid !important",
+        borderColor: "folio.accent !important",
+        backgroundColor: "folio.accent !important",
+        opacity: 1,
+        transition:
+            "color 160ms ease, background-color 160ms ease, border-color 160ms ease",
         width: "40px !important",
         height: "40px !important",
         aspectRatio: "1/1",
         "&:hover": {
-            backgroundColor: `${
-                props.colorMode === "light"
-                    ? lightenColor(colors.light.chatIcon)
-                    : lightenColor(colors.dark.chatIcon)
-            } !important`,
-        },
-    },
-    ".refinement-submit-button": {
-        borderRadius: "lg !important",
-        color: `${colors.light.invertedText} !important`,
-        backgroundColor: `${
-            props.colorMode === "light"
-                ? colors.light.chatIcon
-                : colors.dark.chatIcon
-        } !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${darkenColor(colors.light.chatIcon, 0.15)} !important`
-                : `none !important`,
-        "&:hover": {
-            backgroundColor: `${
-                props.colorMode === "light"
-                    ? lightenColor(colors.light.chatIcon)
-                    : lightenColor(colors.dark.chatIcon)
-            } !important`,
+            backgroundColor: "folio.accent/90 !important",
         },
     },
     ".reason-button": {
         backgroundColor: "transparent !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.invertedText} !important`,
+        color: "folio.muted !important",
         fontSize: "sm !important",
-        borderRadius: "lg !important",
+        borderRadius: "folioControl !important",
         borderRightRadius: "none !important",
         height: "30px !important",
         fontWeight: "medium !important",
+        transition:
+            "color 160ms ease, background-color 160ms ease !important",
         _active: {
             transform: "none !important",
         },
         "&:hover": {
-            backgroundColor: `${
-                props.colorMode === "light"
-                    ? lightenColor(colors.light.crust)
-                    : lightenColor(colors.dark.crust)
-            } !important`,
+            backgroundColor: "folio.hover !important",
+            color: "folio.ink !important",
         },
     },
     ".reason-button-active": {
-        backgroundColor: `${
-            props.colorMode === "light" ? colors.light.crust : colors.dark.base
-        } !important`,
+        backgroundColor: "folio.accentSoft !important",
+        color: "folio.accent !important",
     },
     ".reason-button-active-patient-table": {
-        backgroundColor: `${
-            props.colorMode === "light" ? colors.light.surface : colors.dark.surface
-        } !important`,
+        backgroundColor: "folio.accentSoft !important",
+        color: "folio.accent !important",
     },
     ".transcription-style": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        border: "none !important",
+        backgroundColor: "folio.canvas !important",
+        color: "folio.ink !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
         fontSize: "0.9rem !important",
         padding: "8px !important",
-        borderRadius: "4px !important",
+        borderRadius: "folioControl !important",
         whiteSpace: "pre-wrap !important",
         boxShadow: "none !important",
         "&::placeholder": {
-            color:
-                props.colorMode === "light"
-                    ? colors.light.overlay0
-                    : colors.dark.overlay0,
+            color: "folio.faint",
         },
-        "&:focus": {
-            outline: "none !important",
-            boxShadow: "none !important",
-            border: "none !important",
-        },
+        ...folioFocusRing,
         overflowY: "auto !important",
         resize: "none",
         maxHeight: "200px !important",
-        fontFamily: "'Roboto', sans-serif",
         lineHeight: "1.6",
     },
     ".scroll-container": {
         marginLeft: "-5px",
         scrollbarWidth: "thin",
-        scrollbarColor: `${
-            props.colorMode === "light"
-                ? `${colors.light.overlay0} ${colors.light.surface}`
-                : `${colors.dark.overlay0} ${colors.dark.surface}`
-        }`,
+        scrollbarColor: "folio.faint folio.paperAlt",
         "&::-webkit-scrollbar": {
             width: "4px",
         },
         "&::-webkit-scrollbar-track": {
-            backgroundColor:
-                props.colorMode === "light"
-                    ? colors.light.surface
-                    : colors.dark.surface,
+            backgroundColor: "folio.paperAlt",
         },
         "&::-webkit-scrollbar-thumb": {
-            backgroundColor:
-                props.colorMode === "light"
-                    ? colors.light.overlay0
-                    : colors.dark.overlay0,
+            backgroundColor: "folio.faint",
             borderRadius: "4px",
         },
     },
     ".transcription-view": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
-        border:
-            props.colorMode === "light"
-                ? `1px solid ${colors.light.surface} !important`
-                : `1px solid ${colors.dark.surface} !important`,
+        backgroundColor: "folio.canvas !important",
+        color: "folio.ink !important",
+        border: "1px solid !important",
+        borderColor: "folio.line !important",
+        borderRadius: "folioControl !important",
         resize: "none !important",
         fontSize: "0.9rem !important",
         padding: "8px !important",
-        borderRadius: "lg !important",
         overflow: "auto !important",
         whiteSpace: "pre-wrap !important",
         boxShadow: "none !important",
         "&::placeholder": {
-            color:
-                props.colorMode === "light"
-                    ? colors.light.overlay0
-                    : colors.dark.overlay0,
+            color: "folio.faint",
         },
-        "&:focus": {
-            outline: "none !important",
-            boxShadow: "none !important",
-            border: "none !important",
-        },
+        ...folioFocusRing,
         minHeight: "140px !important",
         maxHeight: "200px !important",
     },
 });
 
-const _lightOut = inputStyles({ colorMode: "light" });
-const _darkOut = inputStyles({ colorMode: "dark" });
+const _lightOut = inputStyles();
+const _darkOut = inputStyles();
 export const inputGlobalCss = {};
 for (const selector of Object.keys(_lightOut)) {
     inputGlobalCss[selector] = {
