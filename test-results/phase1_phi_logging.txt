@@ -1,0 +1,335 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.1.1, pluggy-1.6.0 -- /usr/src/app/server/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /usr/src/app/server
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, cov-7.0.0, anyio-4.14.2
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[success] FAILED [ 14%]
+server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[not_found] FAILED [ 28%]
+server/tests/test_phi_logging.py::test_invalid_token_not_logged FAILED   [ 42%]
+server/tests/test_phi_logging.py::test_rate_limit_warning_does_not_log_patient_id FAILED [ 57%]
+server/tests/test_phi_logging.py::test_sanitizer_does_not_log_query_text[external_search] FAILED [ 71%]
+server/tests/test_phi_logging.py::test_sanitizer_does_not_log_query_text[pubmed] FAILED [ 85%]
+server/tests/test_phi_logging.py::test_uvicorn_access_log_disabled_or_filtered FAILED [100%]
+
+=================================== FAILURES ===================================
+____________ test_audit_path_does_not_store_raw_patient_id[success] ____________
+
+status = 200
+
+    @pytest.mark.parametrize("status", [200, 404], ids=["success", "not_found"])
+    def test_audit_path_does_not_store_raw_patient_id(status):
+        """Issue: AuditMiddleware stores the raw URL path, so patient identifiers
+        (/api/patient/id/<id>) land in audit_log next to actor + timestamp. This
+        must hold for both successful and failing requests."""
+        flush_events_sync()  # drain leftovers from other tests
+        before = _max_audit_id()
+    
+        client = TestClient(_patient_app(AuditMiddleware, status))
+        resp = client.get(FAKE_PATIENT_PATH)
+        assert resp.status_code == status
+        flush_events_sync()
+    
+        with get_db().read() as cursor:
+            cursor.execute(
+                "SELECT method, path, status FROM audit_log WHERE id > ? ORDER BY id",
+                (before,),
+            )
+            rows = [dict(r) for r in cursor.fetchall()]
+    
+        # The access must still be audited...
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["method"] == "GET"
+        assert row["status"] == status
+        assert row["path"].startswith("/api/patient")
+        # ...but without the raw patient identifier.
+>       assert FAKE_PATIENT_ID not in row["path"]
+E       AssertionError: assert '987654' not in '/api/patient/id/987654'
+E         
+E         '987654' is contained here:
+E           /api/patient/id/987654
+E         ?                 ++++++
+
+server/tests/test_phi_logging.py:114: AssertionError
+___________ test_audit_path_does_not_store_raw_patient_id[not_found] ___________
+
+status = 404
+
+    @pytest.mark.parametrize("status", [200, 404], ids=["success", "not_found"])
+    def test_audit_path_does_not_store_raw_patient_id(status):
+        """Issue: AuditMiddleware stores the raw URL path, so patient identifiers
+        (/api/patient/id/<id>) land in audit_log next to actor + timestamp. This
+        must hold for both successful and failing requests."""
+        flush_events_sync()  # drain leftovers from other tests
+        before = _max_audit_id()
+    
+        client = TestClient(_patient_app(AuditMiddleware, status))
+        resp = client.get(FAKE_PATIENT_PATH)
+        assert resp.status_code == status
+        flush_events_sync()
+    
+        with get_db().read() as cursor:
+            cursor.execute(
+                "SELECT method, path, status FROM audit_log WHERE id > ? ORDER BY id",
+                (before,),
+            )
+            rows = [dict(r) for r in cursor.fetchall()]
+    
+        # The access must still be audited...
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["method"] == "GET"
+        assert row["status"] == status
+        assert row["path"].startswith("/api/patient")
+        # ...but without the raw patient identifier.
+>       assert FAKE_PATIENT_ID not in row["path"]
+E       AssertionError: assert '987654' not in '/api/patient/id/987654'
+E         
+E         '987654' is contained here:
+E           /api/patient/id/987654
+E         ?                 ++++++
+
+server/tests/test_phi_logging.py:114: AssertionError
+________________________ test_invalid_token_not_logged _________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff955684d0>
+caplog = <_pytest.logging.LogCaptureFixture object at 0xffff9556a060>
+
+    def test_invalid_token_not_logged(monkeypatch, caplog):
+        """Issue: LocalTokenMiddleware logs the first 8 characters of a rejected
+        bearer token and the raw request path (desktop mode), leaking secret
+        material and patient identifiers into logs."""
+        monkeypatch.setattr("server.constants.IS_DOCKER", False)
+        previous_token = get_request_token()
+        set_request_token(FAKE_EXPECTED_TOKEN)
+        try:
+            caplog.set_level(logging.DEBUG)
+            client = TestClient(_patient_app(LocalTokenMiddleware))
+            resp = client.get(FAKE_PATIENT_PATH, headers={"Authorization": f"Bearer {FAKE_BAD_TOKEN}"})
+    
+            # The failed attempt must still be rejected and logged...
+            assert resp.status_code == 403
+            assert any(
+                r.name == "server.middleware"
+                and r.levelno >= logging.WARNING
+                and "invalid" in r.getMessage().lower()
+                for r in caplog.records
+            )
+    
+            # ...but no 4-char fragment of the supplied token and no patient
+            # identifier may appear. Collect every leak so one run shows them all.
+            fragments = sorted({FAKE_BAD_TOKEN[i : i + 4] for i in range(len(FAKE_BAD_TOKEN) - 3)})
+            needles = [("token fragment", f) for f in fragments]
+            needles.append(("patient ID", FAKE_PATIENT_ID))
+            violations = _find_leaks(_log_messages(caplog), needles)
+>           assert not violations, _format_violations(violations)
+E           AssertionError: 6 privacy violation(s) in logs:
+E               [token fragment] '7xK9' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'
+E               [token fragment] 'K9pW' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'
+E               [token fragment] 'Zq7x' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'
+E               [token fragment] 'q7xK' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'
+E               [token fragment] 'xK9p' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'
+E               [patient ID] '987654' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'
+E           assert not ["[token fragment] '7xK9' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'", "[token fragment] 'K9pW' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'", "[token fragment] 'Zq7x' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'", "[token fragment] 'q7xK' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'", "[token fragment] 'xK9p' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'", "[patient ID] '987654' found in log: 'Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)'"]
+
+server/tests/test_phi_logging.py:147: AssertionError
+----------------------------- Captured stderr call -----------------------------
+DEBUG:asyncio:Using selector: EpollSelector
+WARNING:server.middleware:Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)
+INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 403 Forbidden"
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
+WARNING  server.middleware:middleware.py:309 Invalid token for /api/patient/id/987654 (got Zq7xK9pW...)
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 403 Forbidden"
+_______________ test_rate_limit_warning_does_not_log_patient_id ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff9556b140>
+caplog = <_pytest.logging.LogCaptureFixture object at 0xffff95574aa0>
+
+    def test_rate_limit_warning_does_not_log_patient_id(monkeypatch, caplog):
+        """Issue: RateLimitMiddleware logs `Rate limit exceeded for <ip> on <path>`
+        with the full path, leaking patient identifiers into logs."""
+        monkeypatch.setattr("server.constants.RATE_LIMIT_ENABLED", True)
+        monkeypatch.setattr("server.constants.IS_DOCKER", True)  # no desktop multiplier
+        monkeypatch.setattr(RateLimitMiddleware, "DEFAULT_LIMIT", (1, 1))
+        # Fresh limiter state for this test only; monkeypatch restores the shared dict.
+        monkeypatch.setattr(RateLimitMiddleware, "_request_history", {})
+    
+        caplog.set_level(logging.DEBUG)
+        client = TestClient(_patient_app(RateLimitMiddleware))
+        statuses = [client.get(FAKE_PATIENT_PATH).status_code for _ in range(3)]
+    
+        # Rate limiting must still trigger and be logged...
+        assert 429 in statuses
+        assert any(
+            r.name == "server.middleware"
+            and r.levelno >= logging.WARNING
+            and "rate limit" in r.getMessage().lower()
+            for r in caplog.records
+        )
+        # ...but without the patient identifier.
+        violations = _find_leaks(_log_messages(caplog), [("patient ID", FAKE_PATIENT_ID)])
+>       assert not violations, _format_violations(violations)
+E       AssertionError: 2 privacy violation(s) in logs:
+E           [patient ID] '987654' found in log: 'Rate limit exceeded for unknown on /api/patient/id/987654'
+E           [patient ID] '987654' found in log: 'Rate limit exceeded for unknown on /api/patient/id/987654'
+E       assert not ["[patient ID] '987654' found in log: 'Rate limit exceeded for unknown on /api/patient/id/987654'", "[patient ID] '987654' found in log: 'Rate limit exceeded for unknown on /api/patient/id/987654'"]
+
+server/tests/test_phi_logging.py:178: AssertionError
+----------------------------- Captured stderr call -----------------------------
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 200 OK"
+DEBUG:asyncio:Using selector: EpollSelector
+WARNING:server.middleware:Rate limit exceeded for unknown on /api/patient/id/987654
+INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
+DEBUG:asyncio:Using selector: EpollSelector
+WARNING:server.middleware:Rate limit exceeded for unknown on /api/patient/id/987654
+INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 200 OK"
+DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
+WARNING  server.middleware:middleware.py:562 Rate limit exceeded for unknown on /api/patient/id/987654
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
+DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
+WARNING  server.middleware:middleware.py:562 Rate limit exceeded for unknown on /api/patient/id/987654
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
+___________ test_sanitizer_does_not_log_query_text[external_search] ____________
+
+sanitizer = <function sanitize_query_for_external_search at 0xffffac4bd3a0>
+caplog = <_pytest.logging.LogCaptureFixture object at 0xffff955835c0>
+
+    @pytest.mark.parametrize(
+        "sanitizer",
+        [sanitize_query_for_external_search, sanitize_pubmed_query],
+        ids=["external_search", "pubmed"],
+    )
+    def test_sanitizer_does_not_log_query_text(sanitizer, caplog):
+        """Issue: sanitize_query_for_external_search logs both the original and the
+        sanitized query; sanitize_pubmed_query calls it and leaks the same way.
+        Patient names survive the regex sanitizer, so even the sanitized text is
+        PHI. Only metadata (e.g. length, which rule fired) may be logged."""
+        caplog.set_level(logging.DEBUG)
+    
+        result = sanitizer(FAKE_QUERY)
+    
+        # Sanity: sanitization ran and stripped the regex-detectable PHI.
+        assert result and result != FAKE_QUERY
+        assert FAKE_MRN not in result, "sanitizer weakness: MRN survived sanitization"
+        assert FAKE_EMAIL not in result, "sanitizer weakness: email survived sanitization"
+    
+        # Neither the original query, its PHI parts, nor the sanitized text (names
+        # survive it) may be logged. Collect every leak so one run shows them all.
+        needles = [
+            ("original query", FAKE_QUERY),
+            ("MRN", FAKE_MRN),
+            ("email", FAKE_EMAIL),
+            ("sanitized query", result),
+            ("patient name", "Fakeperson"),
+        ]
+        violations = _find_leaks(_log_messages(caplog), needles)
+>       assert not violations, _format_violations(violations)
+E       AssertionError: 5 privacy violation(s) in logs:
+E           [original query] 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E           [MRN] 'MRN 123456' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E           [email] 'jane.fake@example.org' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E           [sanitized query] 'metformin dosing for Quentavius Fakeperson contact' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E           [patient name] 'Fakeperson' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E       assert not ['[original query] \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"', '[MRN] \'MRN 123456\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"', '[email] \'jane.fake@example.org\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"', '[sanitized query] \'metformin dosing for Quentavius Fakeperson contact\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"', '[patient name] \'Fakeperson\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"']
+
+server/tests/test_phi_logging.py:213: AssertionError
+----------------------------- Captured stderr call -----------------------------
+INFO:server.chat.tools.sanitization:Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'
+------------------------------ Captured log call -------------------------------
+INFO     server.chat.tools.sanitization:sanitization.py:81 Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'
+________________ test_sanitizer_does_not_log_query_text[pubmed] ________________
+
+sanitizer = <function sanitize_pubmed_query at 0xffffac4bc720>
+caplog = <_pytest.logging.LogCaptureFixture object at 0xffff955774a0>
+
+    @pytest.mark.parametrize(
+        "sanitizer",
+        [sanitize_query_for_external_search, sanitize_pubmed_query],
+        ids=["external_search", "pubmed"],
+    )
+    def test_sanitizer_does_not_log_query_text(sanitizer, caplog):
+        """Issue: sanitize_query_for_external_search logs both the original and the
+        sanitized query; sanitize_pubmed_query calls it and leaks the same way.
+        Patient names survive the regex sanitizer, so even the sanitized text is
+        PHI. Only metadata (e.g. length, which rule fired) may be logged."""
+        caplog.set_level(logging.DEBUG)
+    
+        result = sanitizer(FAKE_QUERY)
+    
+        # Sanity: sanitization ran and stripped the regex-detectable PHI.
+        assert result and result != FAKE_QUERY
+        assert FAKE_MRN not in result, "sanitizer weakness: MRN survived sanitization"
+        assert FAKE_EMAIL not in result, "sanitizer weakness: email survived sanitization"
+    
+        # Neither the original query, its PHI parts, nor the sanitized text (names
+        # survive it) may be logged. Collect every leak so one run shows them all.
+        needles = [
+            ("original query", FAKE_QUERY),
+            ("MRN", FAKE_MRN),
+            ("email", FAKE_EMAIL),
+            ("sanitized query", result),
+            ("patient name", "Fakeperson"),
+        ]
+        violations = _find_leaks(_log_messages(caplog), needles)
+>       assert not violations, _format_violations(violations)
+E       AssertionError: 5 privacy violation(s) in logs:
+E           [original query] 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E           [MRN] 'MRN 123456' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E           [email] 'jane.fake@example.org' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E           [sanitized query] 'metformin dosing for Quentavius Fakeperson contact' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E           [patient name] 'Fakeperson' found in log: "Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'"
+E       assert not ['[original query] \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"', '[MRN] \'MRN 123456\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"', '[email] \'jane.fake@example.org\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"', '[sanitized query] \'metformin dosing for Quentavius Fakeperson contact\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"', '[patient name] \'Fakeperson\' found in log: "Sanitized search query: \'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org\' -> \'metformin dosing for Quentavius Fakeperson contact\'"']
+
+server/tests/test_phi_logging.py:213: AssertionError
+----------------------------- Captured stderr call -----------------------------
+INFO:server.chat.tools.sanitization:Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'
+------------------------------ Captured log call -------------------------------
+INFO     server.chat.tools.sanitization:sanitization.py:81 Sanitized search query: 'metformin dosing for Quentavius Fakeperson MRN 123456 contact jane.fake@example.org' -> 'metformin dosing for Quentavius Fakeperson contact'
+_________________ test_uvicorn_access_log_disabled_or_filtered _________________
+
+    def test_uvicorn_access_log_disabled_or_filtered():
+        """Issue: server.py starts uvicorn with its default access log enabled, so
+        every request line (e.g. `GET /api/patient/id/<id>`) is written to stdout
+        logs. Each uvicorn startup must pass access_log=False, or the module must
+        filter/silence the uvicorn.access logger (addFilter, setLevel >= WARNING,
+        or disabled = True).
+    
+        This is a static configuration check: server.py is parsed with `ast`, not
+        imported, and no server is started."""
+        tree = ast.parse(SERVER_PY.read_text(), filename=str(SERVER_PY))
+        calls = _uvicorn_config_calls(tree)
+        assert calls, "expected uvicorn.Config/run calls in server.py"
+    
+        if _access_log_filtered(tree):
+            return
+    
+        offending = []
+        for call in calls:
+            kw = {k.arg: k.value for k in call.keywords if k.arg}
+            access_log = kw.get("access_log")
+            disabled = isinstance(access_log, ast.Constant) and access_log.value is False
+            if not disabled:
+                offending.append(f"server.py:{call.lineno}")
+>       assert not offending, f"uvicorn started with access log enabled at: {offending}"
+E       AssertionError: uvicorn started with access log enabled at: ['server.py:397', 'server.py:418']
+E       assert not ['server.py:397', 'server.py:418']
+
+server/tests/test_phi_logging.py:324: AssertionError
+=============================== warnings summary ===============================
+server/schemas/templates.py:44
+  /usr/src/app/server/schemas/templates.py:44: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ClinicalTemplate(BaseModel):
+
+server/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/src/app/server/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+    
