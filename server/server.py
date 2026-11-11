@@ -41,6 +41,7 @@ from server.middleware import (
     TrustedProxyMiddleware,
     invalid_trusted_proxy_entries,
 )
+from server.utils.log_redaction import install_redaction
 from server.utils.parent_watchdog import start_parent_watchdog
 
 logging.basicConfig(
@@ -49,6 +50,9 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     force=True,
 )
+
+# Defence in depth: mask tokens, MRN/UR, emails and path IDs in all log output
+install_redaction()
 
 # Silence noisy libraries
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -404,6 +408,7 @@ def start_server_for_desktop():
         workers=0,
         http="httptools",
         proxy_headers=False,
+        access_log=False,  # access lines carry raw paths with patient IDs
     )
     server = uvicorn.Server(config)
     server.run()
@@ -427,6 +432,7 @@ if __name__ == "__main__":
             ws_ping_interval=None,
             ws_ping_timeout=None,
             proxy_headers=False,
+            access_log=False,  # access lines carry raw paths with patient IDs
         )
         server = uvicorn.Server(config)
         server.run()

@@ -1,13 +1,17 @@
 """Audit log repository.
 
-Stores HTTP request metadata (method, path, status, actor, IP, duration) for
-compliance auditing. Records identifiers from the URL path but never request
-bodies or note content.
+Stores HTTP request metadata (method, route template, status, actor, IP,
+duration) for compliance auditing. Raw URL identifiers are never stored: the
+path column holds the route template (e.g. /api/note/id/{id}) and patient/note
+IDs are kept only as a keyed HMAC pseudonym in ``subject_ref``. Request bodies
+and note content are never stored.
 
 Per-request middleware events go through a small batch queue.
 """
 
 import asyncio
+import hashlib
+import hmac
 import logging
 import threading
 from collections import deque
@@ -19,6 +23,47 @@ from server.database.core.connection import get_db, is_db_initialized
 logger = logging.getLogger(__name__)
 
 DEFAULT_RETENTION_DAYS = 90
+
+# Path params that identify a patient/note and are pseudonymised into subject_ref.
+SUBJECT_PARAMS = frozenset({"id", "note_id", "patient_id", "ur_number"})
+_SUBJECT_KEY_LABEL = b"phlox-audit-subject-ref-v1"
+_subject_key: bytes | None = None
+
+
+def _get_subject_key() -> bytes:
+    """HMAC key for subject_ref, derived from the DB encryption key.
+
+    Domain-separated with a fixed label so the derived key is never the
+    encryption key itself. Not stored anywhere; recomputed per process.
+    """
+    global _subject_key
+    if _subject_key is None:
+        secret = get_db().encryption_key
+        if not secret:
+            raise RuntimeError("no database encryption key available for audit HMAC")
+        _subject_key = hmac.new(secret.encode(), _SUBJECT_KEY_LABEL, hashlib.sha256).digest()
+    return _subject_key
+
+
+def subject_ref(path_params: dict[str, Any] | None) -> str | None:
+    """Keyed HMAC-SHA256 pseudonym of the patient/note IDs in ``path_params``.
+
+    Returns None when the route carries no subject identifier or the DB is not
+    initialized. An auditor holding the key can recompute the pseudonym for a
+    known ID to find accesses; the stored value alone does not reveal the ID.
+    """
+    if not path_params or not is_db_initialized():
+        return None
+    parts = [f"{k}={path_params[k]}" for k in sorted(path_params) if k in SUBJECT_PARAMS]
+    if not parts:
+        return None
+    try:
+        key = _get_subject_key()
+    except Exception as e:  # pragma: no cover - audit must never break the request
+        logger.warning("audit subject_ref unavailable: %s", type(e).__name__)
+        return None
+    return hmac.new(key, "&".join(parts).encode(), hashlib.sha256).hexdigest()
+
 
 # Batch queue bounds: drop-oldest under pathological bursts (audit is
 # documented best-effort), and coalesce writes on a short delay.
@@ -40,6 +85,7 @@ def enqueue_event(
     actor: str = "local",
     client_ip: str | None = None,
     duration_ms: int | None = None,
+    subject_ref: str | None = None,
 ) -> None:
     """Queue one audit row for the next batch flush. Never touches the DB.
 
@@ -65,6 +111,7 @@ def enqueue_event(
             "actor": actor,
             "client_ip": client_ip,
             "duration_ms": duration_ms,
+            "subject_ref": subject_ref,
         }
     )
     _schedule_flush()
@@ -107,8 +154,10 @@ def _drain_and_write_batch() -> None:
             with get_db().transaction() as cursor:
                 cursor.executemany(
                     """
-                    INSERT INTO audit_log (actor, method, path, status, client_ip, duration_ms)
-                    VALUES (:actor, :method, :path, :status, :client_ip, :duration_ms)
+                    INSERT INTO audit_log
+                        (actor, method, path, status, client_ip, duration_ms, subject_ref)
+                    VALUES (:actor, :method, :path, :status, :client_ip, :duration_ms,
+                            :subject_ref)
                     """,
                     rows,
                 )
@@ -129,8 +178,10 @@ def flush_events_sync() -> int:
             with get_db().transaction() as cursor:
                 cursor.executemany(
                     """
-                    INSERT INTO audit_log (actor, method, path, status, client_ip, duration_ms)
-                    VALUES (:actor, :method, :path, :status, :client_ip, :duration_ms)
+                    INSERT INTO audit_log
+                        (actor, method, path, status, client_ip, duration_ms, subject_ref)
+                    VALUES (:actor, :method, :path, :status, :client_ip, :duration_ms,
+                            :subject_ref)
                     """,
                     rows,
                 )
@@ -148,6 +199,7 @@ def log_event(
     actor: str = "local",
     client_ip: str | None = None,
     duration_ms: int | None = None,
+    subject_ref: str | None = None,
 ) -> None:
     """Insert one audit row. Never raises — audit failure must not fail the request.
 
@@ -159,10 +211,11 @@ def log_event(
         with get_db().transaction() as cursor:
             cursor.execute(
                 """
-                INSERT INTO audit_log (actor, method, path, status, client_ip, duration_ms)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO audit_log
+                    (actor, method, path, status, client_ip, duration_ms, subject_ref)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (actor, method, path, status, client_ip, duration_ms),
+                (actor, method, path, status, client_ip, duration_ms, subject_ref),
             )
     except Exception as e:  # pragma: no cover - audit must never break the request
         logger.warning("audit log_event failed: %s", e)
@@ -190,7 +243,8 @@ def get_events(
             params.extend([limit, offset])
             cursor.execute(
                 f"""
-                SELECT id, timestamp, actor, method, path, status, client_ip, duration_ms
+                SELECT id, timestamp, actor, method, path, status, client_ip, duration_ms,
+                       subject_ref
                 FROM audit_log {clause}
                 ORDER BY timestamp DESC, id DESC
                 LIMIT ? OFFSET ?

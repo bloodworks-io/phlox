@@ -61,6 +61,7 @@ def export_audit(format: str = Query("csv", pattern="^(csv|json)$")):
                 "status",
                 "client_ip",
                 "duration_ms",
+                "subject_ref",
             ],
         )
         writer.writeheader()

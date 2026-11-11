@@ -1,0 +1,118 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.1.1, pluggy-1.6.0 -- /usr/src/app/server/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /usr/src/app/server
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, cov-7.0.0, anyio-4.14.2
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 18 items
+
+server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[success] PASSED [  5%]
+server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[not_found] PASSED [ 11%]
+server/tests/test_phi_logging.py::test_invalid_token_not_logged PASSED   [ 16%]
+server/tests/test_phi_logging.py::test_rate_limit_warning_does_not_log_patient_id PASSED [ 22%]
+server/tests/test_phi_logging.py::test_sanitizer_does_not_log_query_text[external_search] PASSED [ 27%]
+server/tests/test_phi_logging.py::test_sanitizer_does_not_log_query_text[pubmed] PASSED [ 33%]
+server/tests/test_phi_logging.py::test_uvicorn_access_log_disabled_or_filtered PASSED [ 38%]
+server/tests/test_phi_logging.py::test_redact_masks_identifiers[bearer] PASSED [ 44%]
+server/tests/test_phi_logging.py::test_redact_masks_identifiers[mrn] PASSED [ 50%]
+server/tests/test_phi_logging.py::test_redact_masks_identifiers[ur] PASSED [ 55%]
+server/tests/test_phi_logging.py::test_redact_masks_identifiers[email] PASSED [ 61%]
+server/tests/test_phi_logging.py::test_redact_masks_identifiers[path_id] PASSED [ 66%]
+server/tests/test_phi_logging.py::test_redact_masks_identifiers[path_query] PASSED [ 72%]
+server/tests/test_phi_logging.py::test_redact_masks_identifiers[path_uuid] PASSED [ 77%]
+server/tests/test_phi_logging.py::test_redact_keeps_non_phi_text PASSED  [ 83%]
+server/tests/test_phi_logging.py::test_redacting_filter_returns_copy_and_formats_args PASSED [ 88%]
+server/tests/test_phi_logging.py::test_redacting_filter_passes_clean_records_unchanged PASSED [ 94%]
+server/tests/test_phi_logging.py::test_redaction_installed_on_root_handlers PASSED [100%]
+
+=============================== warnings summary ===============================
+server/schemas/templates.py:44
+  /usr/src/app/server/schemas/templates.py:44: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ClinicalTemplate(BaseModel):
+
+server/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/src/app/server/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_phi_logging.py::test_redaction_installed_on_root_handlers
+  /usr/src/app/server/schemas/letter.py:6: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class LetterTemplate(BaseModel):
+
+tests/test_phi_logging.py::test_redaction_installed_on_root_handlers
+  /usr/src/app/server/schemas/patient.py:6: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Patient(BaseModel):
+
+tests/test_phi_logging.py::test_redaction_installed_on_root_handlers
+  /usr/src/app/server/schemas/patient.py:55: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class SavePatientRequest(BaseModel):
+
+tests/test_phi_logging.py::test_redaction_installed_on_root_handlers
+  /usr/src/app/server/schemas/patient.py:70: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TranscribeResponse(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+________________________ test_invalid_token_not_logged _________________________
+----------------------------- Captured stderr call -----------------------------
+DEBUG:asyncio:Using selector: EpollSelector
+WARNING:server.middleware:Invalid request token (method=GET, route=/api/patient/id/{patient_id})
+INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 403 Forbidden"
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
+WARNING  server.middleware:middleware.py:345 Invalid request token (method=GET, route=/api/patient/id/{patient_id})
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 403 Forbidden"
+_______________ test_rate_limit_warning_does_not_log_patient_id ________________
+----------------------------- Captured stderr call -----------------------------
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 200 OK"
+DEBUG:asyncio:Using selector: EpollSelector
+WARNING:server.middleware:Rate limit exceeded for unknown on endpoint group /api/default
+INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
+DEBUG:asyncio:Using selector: EpollSelector
+WARNING:server.middleware:Rate limit exceeded for unknown on endpoint group /api/default
+INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 200 OK"
+DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
+WARNING  server.middleware:middleware.py:603 Rate limit exceeded for unknown on endpoint group /api/default
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
+DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
+WARNING  server.middleware:middleware.py:603 Rate limit exceeded for unknown on endpoint group /api/default
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
+___________ test_sanitizer_does_not_log_query_text[external_search] ____________
+----------------------------- Captured stderr call -----------------------------
+INFO:server.chat.tools.sanitization:Sanitized search query: rules=mrn,email, length 83 -> 50
+------------------------------ Captured log call -------------------------------
+INFO     server.chat.tools.sanitization:sanitization.py:90 Sanitized search query: rules=mrn,email, length 83 -> 50
+________________ test_sanitizer_does_not_log_query_text[pubmed] ________________
+----------------------------- Captured stderr call -----------------------------
+INFO:server.chat.tools.sanitization:Sanitized search query: rules=mrn,email, length 83 -> 50
+------------------------------ Captured log call -------------------------------
+INFO     server.chat.tools.sanitization:sanitization.py:90 Sanitized search query: rules=mrn,email, length 83 -> 50
+__________________ test_redaction_installed_on_root_handlers ___________________
+----------------------------- Captured stderr call -----------------------------
+17:14:27 INFO: Initialising application...
+17:14:27 INFO: Initializing DB and running migrations...
+17:14:27 INFO: Database initialized
+=========================== short test summary info ============================
+PASSED server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[success]
+PASSED server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[not_found]
+PASSED server/tests/test_phi_logging.py::test_invalid_token_not_logged
+PASSED server/tests/test_phi_logging.py::test_rate_limit_warning_does_not_log_patient_id
+PASSED server/tests/test_phi_logging.py::test_sanitizer_does_not_log_query_text[external_search]
+PASSED server/tests/test_phi_logging.py::test_sanitizer_does_not_log_query_text[pubmed]
+PASSED server/tests/test_phi_logging.py::test_uvicorn_access_log_disabled_or_filtered
+PASSED server/tests/test_phi_logging.py::test_redact_masks_identifiers[bearer]
+PASSED server/tests/test_phi_logging.py::test_redact_masks_identifiers[mrn]
+PASSED server/tests/test_phi_logging.py::test_redact_masks_identifiers[ur]
+PASSED server/tests/test_phi_logging.py::test_redact_masks_identifiers[email]
+PASSED server/tests/test_phi_logging.py::test_redact_masks_identifiers[path_id]
+PASSED server/tests/test_phi_logging.py::test_redact_masks_identifiers[path_query]
+PASSED server/tests/test_phi_logging.py::test_redact_masks_identifiers[path_uuid]
+PASSED server/tests/test_phi_logging.py::test_redact_keeps_non_phi_text
+PASSED server/tests/test_phi_logging.py::test_redacting_filter_returns_copy_and_formats_args
+PASSED server/tests/test_phi_logging.py::test_redacting_filter_passes_clean_records_unchanged
+PASSED server/tests/test_phi_logging.py::test_redaction_installed_on_root_handlers
+======================== 18 passed, 6 warnings in 1.67s ========================

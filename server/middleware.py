@@ -53,6 +53,41 @@ def _is_live_audio_chunk(path: str) -> bool:
     )
 
 
+UNMATCHED_ROUTE = "<unmatched>"
+
+
+def _route_info(request) -> tuple[str, dict]:
+    """Return (route template, path params) for a request, never the raw path.
+
+    After routing, FastAPI stores the matched route in ``scope["route"]``.
+    Before routing (auth / rate-limit middlewares) we match against the app's
+    routes ourselves. Mounts are skipped: the static "/" mount matches anything.
+    Unknown paths yield ``UNMATCHED_ROUTE`` so no raw identifiers are exposed.
+    """
+    from starlette.routing import Match
+
+    scope = request.scope
+    route = scope.get("route")
+    if route is not None and getattr(route, "path_format", None):
+        return route.path_format, dict(scope.get("path_params") or {})
+
+    app = scope.get("app")
+    router = getattr(app, "router", None)
+    partial = None
+    for candidate in getattr(router, "routes", []):
+        if not getattr(candidate, "path_format", None):
+            continue  # Mount / Host: not a concrete endpoint
+        try:
+            match, child_scope = candidate.matches(scope)
+        except Exception:
+            continue
+        if match == Match.FULL:
+            return candidate.path_format, dict(child_scope.get("path_params") or {})
+        if match == Match.PARTIAL and partial is None:
+            partial = (candidate.path_format, dict(child_scope.get("path_params") or {}))
+    return partial or (UNMATCHED_ROUTE, {})
+
+
 def should_skip_middleware(path: str, *, check_api: bool = False) -> bool:
     """Check if path should skip auth/rate-limiting middleware.
 
@@ -306,7 +341,12 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
                     content={"detail": "Missing or invalid Authorization header"},
                 )
             if not secrets.compare_digest(provided_token, expected_token):
-                logger.warning(f"Invalid token for {path} (got {provided_token[:8]}...)")
+                # Never log token characters or the raw path (may carry patient IDs).
+                logger.warning(
+                    "Invalid request token (method=%s, route=%s)",
+                    request.method,
+                    _route_info(request)[0],
+                )
                 return JSONResponse(status_code=403, content={"detail": "Invalid request token"})
 
             user = resolve_identity(
@@ -559,7 +599,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 retry_after = int(
                     self.WINDOW_SECONDS - (now - self._request_history[client_ip][endpoint][0])
                 )
-                logger.warning(f"Rate limit exceeded for {client_ip} on {path}")
+                # Log the endpoint group, not the raw path (may carry patient IDs).
+                logger.warning(
+                    "Rate limit exceeded for %s on endpoint group %s", client_ip, endpoint
+                )
                 return JSONResponse(
                     status_code=429,
                     content={
@@ -594,12 +637,14 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
     Runs after TrustedProxy (so ``client_ip`` is populated) and wraps the auth
     middlewares, so authenticated requests, auth denials, and rate-limited
-    responses are all recorded. Stores request identifiers only — never bodies
-    or PHI content. Audit failures never propagate: logging is best-effort.
+    responses are all recorded. Stores the route template (not the raw path)
+    plus an HMAC pseudonym of any patient/note ID (``subject_ref``) — never
+    raw identifiers, bodies or PHI content. Audit failures never propagate:
+    logging is best-effort.
     """
 
     async def dispatch(self, request, call_next):
-        from server.database.repositories.audit import enqueue_event
+        from server.database.repositories.audit import enqueue_event, subject_ref
 
         path = request.url.path
 
@@ -616,28 +661,27 @@ class AuditMiddleware(BaseHTTPMiddleware):
         if _is_live_audio_chunk(path):
             return await call_next(request)
 
-        start = time.monotonic()
-        try:
-            response = await call_next(request)
-            status = response.status_code
-        except Exception:
-            # Request never produced a response; record as 500 and re-raise.
+        def _record(status: int) -> None:
+            # Store the route template (e.g. /api/note/id/{id}), never the raw
+            # path; keep accountability via a keyed pseudonym of the subject ID.
+            template, path_params = _route_info(request)
             enqueue_event(
                 method=request.method,
-                path=path,
-                status=500,
+                path=template,
+                status=status,
                 actor=getattr(request.state, "user", "local"),
                 client_ip=getattr(request.state, "client_ip", None),
                 duration_ms=int((time.monotonic() - start) * 1000),
+                subject_ref=subject_ref(path_params),
             )
+
+        start = time.monotonic()
+        try:
+            response = await call_next(request)
+        except Exception:
+            # Request never produced a response; record as 500 and re-raise.
+            _record(500)
             raise
 
-        enqueue_event(
-            method=request.method,
-            path=path,
-            status=status,
-            actor=getattr(request.state, "user", "local"),
-            client_ip=getattr(request.state, "client_ip", None),
-            duration_ms=int((time.monotonic() - start) * 1000),
-        )
+        _record(response.status_code)
         return response

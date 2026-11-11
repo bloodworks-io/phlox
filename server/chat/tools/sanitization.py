@@ -11,6 +11,37 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+# Named PHI rules, applied in order. Names are logged; matched text never is.
+_PHI_RULES: list[tuple[str, re.Pattern[str]]] = [
+    # UR numbers (various formats)
+    ("ur_number", re.compile(r"\bUR\s*[:#]?\s*\d{4,}\b", re.IGNORECASE)),
+    ("ur_number", re.compile(r"\bUR\s*[:#]?\s*[A-Z]?\d{4,}[A-Z]?\b", re.IGNORECASE)),
+    # Medical record numbers
+    ("mrn", re.compile(r"\bMRN\s*[:#]?\s*\d+\b", re.IGNORECASE)),
+    # Dates of birth (various formats)
+    ("date", re.compile(r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b")),
+    ("date", re.compile(r"\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b")),
+    # Phone numbers
+    ("phone", re.compile(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b")),
+    ("phone", re.compile(r"\b\+?\d{1,3}[-.\s]?\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{4}\b")),
+    # Australian formats (mobile 04XX XXX XXX, landline 0X XXXX XXXX)
+    ("phone", re.compile(r"\b0?4\d{2}[-.\s]?\d{3}[-.\s]?\d{3}\b")),
+    ("phone", re.compile(r"\b0\d[-.\s]?\d{4}[-.\s]?\d{4}\b")),
+    # Email addresses
+    ("email", re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")),
+    # Addresses (simple pattern for street addresses)
+    (
+        "address",
+        re.compile(
+            r"\b\d+\s+[A-Za-z]+\s+(Street|St|Avenue|Ave|Road|Rd|Lane|Ln|Drive|Dr|Court|Ct|Place|Pl)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # Medicare/health card numbers (Australian format)
+    ("medicare", re.compile(r"\b\d{4}\s?\d{4,5}\s?\d{1,2}\b")),
+]
+
+
 def sanitize_query_for_external_search(
     query: str, patient_context: dict[str, Any] | None = None
 ) -> str:
@@ -28,42 +59,17 @@ def sanitize_query_for_external_search(
         Sanitized query string with PHI patterns removed
     """
     sanitized = query
+    fired: list[str] = []
 
-    # Remove common PHI patterns
-    # UR numbers (various formats)
-    sanitized = re.sub(r"\bUR\s*[:#]?\s*\d{4,}\b", "", sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r"\bUR\s*[:#]?\s*[A-Z]?\d{4,}[A-Z]?\b", "", sanitized, flags=re.IGNORECASE)
-
-    # Medical record numbers
-    sanitized = re.sub(r"\bMRN\s*[:#]?\s*\d+\b", "", sanitized, flags=re.IGNORECASE)
-
-    # Dates of birth (various formats)
-    sanitized = re.sub(r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", "", sanitized)
-    sanitized = re.sub(r"\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b", "", sanitized)
-
-    # Phone numbers
-    sanitized = re.sub(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b", "", sanitized)
-    sanitized = re.sub(r"\b\+?\d{1,3}[-.\s]?\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{4}\b", "", sanitized)
-    # Australian formats (mobile 04XX XXX XXX, landline 0X XXXX XXXX)
-    sanitized = re.sub(r"\b0?4\d{2}[-.\s]?\d{3}[-.\s]?\d{3}\b", "", sanitized)
-    sanitized = re.sub(r"\b0\d[-.\s]?\d{4}[-.\s]?\d{4}\b", "", sanitized)
-
-    # Email addresses
-    sanitized = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "", sanitized)
-
-    # Addresses (simple pattern for street addresses)
-    sanitized = re.sub(
-        r"\b\d+\s+[A-Za-z]+\s+(Street|St|Avenue|Ave|Road|Rd|Lane|Ln|Drive|Dr|Court|Ct|Place|Pl)\b",
-        "",
-        sanitized,
-        flags=re.IGNORECASE,
-    )
-
-    # Medicare/health card numbers (Australian format)
-    sanitized = re.sub(r"\b\d{4}\s?\d{4,5}\s?\d{1,2}\b", "", sanitized)
+    # Remove common PHI patterns (order matters; see _PHI_RULES)
+    for rule_name, pattern in _PHI_RULES:
+        sanitized, count = pattern.subn("", sanitized)
+        if count and rule_name not in fired:
+            fired.append(rule_name)
 
     # Remove specific patient context if provided
     if patient_context:
+        before_context = sanitized
         if patient_context.get("ur_number"):
             sanitized = sanitized.replace(patient_context["ur_number"], "")
         if patient_context.get("name"):
@@ -72,13 +78,21 @@ def sanitize_query_for_external_search(
                 sanitized = re.sub(
                     rf"\b{re.escape(name_part)}\b", "", sanitized, flags=re.IGNORECASE
                 )
+        if sanitized != before_context:
+            fired.append("patient_context")
 
     # Clean up extra whitespace and punctuation
     sanitized = re.sub(r"\s+", " ", sanitized)
     sanitized = re.sub(r"^[\s,-]+|[\s,-]+$", "", sanitized)
 
     if sanitized != query:
-        logger.info(f"Sanitized search query: '{query}' -> '{sanitized}'")
+        # Metadata only: never log query text (names survive the regex rules).
+        logger.info(
+            "Sanitized search query: rules=%s, length %d -> %d",
+            ",".join(fired) or "whitespace",
+            len(query),
+            len(sanitized),
+        )
 
     return sanitized.strip() or query  # Return original if sanitization empties it
 

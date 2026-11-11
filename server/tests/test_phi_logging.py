@@ -322,3 +322,82 @@ def test_uvicorn_access_log_disabled_or_filtered():
         if not disabled:
             offending.append(f"server.py:{call.lineno}")
     assert not offending, f"uvicorn started with access log enabled at: {offending}"
+
+
+# --- 6. Central redaction filter (defence in depth, Phase 2) -------------------
+
+from server.utils.log_redaction import RedactingFilter, redact  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    ("raw", "secret"),
+    [
+        (f"Authorization: Bearer {FAKE_BAD_TOKEN}", FAKE_BAD_TOKEN),
+        (f"lookup {FAKE_MRN} failed", "123456"),
+        ("found UR 7654321 in list", "7654321"),
+        (f"mail sent to {FAKE_EMAIL}", FAKE_EMAIL),
+        (f"GET {FAKE_PATIENT_PATH} 200", FAKE_PATIENT_ID),
+        (f"GET /api/note/id/{FAKE_PATIENT_ID}/history?name=Fakeperson", "Fakeperson"),
+        (
+            "session /api/agent-live/sessions/0f8fad5b-d9cb-469f-a165-70867728950e/end",
+            "0f8fad5b-d9cb-469f-a165-70867728950e",
+        ),
+    ],
+    ids=["bearer", "mrn", "ur", "email", "path_id", "path_query", "path_uuid"],
+)
+def test_redact_masks_identifiers(raw, secret):
+    """Issue (defence in depth): even if a call site logs PHI or secrets, the
+    central redaction must mask bearer tokens, MRN/UR numbers, emails and
+    patient-ID path segments (and query strings) before output."""
+    out = redact(raw)
+    assert secret not in out, f"{secret!r} survived redaction: {out!r}"
+
+
+def test_redact_keeps_non_phi_text():
+    """Issue (defence in depth): redaction must not destroy useful,
+    non-identifying log content such as route templates and plain messages."""
+    for msg in [
+        "Rate limit exceeded for 10.0.0.1 on endpoint group /api/default",
+        "Invalid request token (method=GET, route=/api/patient/id/{patient_id})",
+        "Database schema is at version 11",
+    ]:
+        assert redact(msg) == msg
+
+
+def test_redacting_filter_returns_copy_and_formats_args():
+    """Issue (defence in depth): the handler filter must redact %-style args
+    and must not mutate the shared LogRecord seen by other handlers."""
+    record = logging.LogRecord(
+        "server.test",
+        logging.WARNING,
+        __file__,
+        1,
+        "Invalid token for %s (got %s)",
+        (FAKE_PATIENT_PATH, f"Bearer {FAKE_BAD_TOKEN}"),
+        None,
+    )
+    result = RedactingFilter().filter(record)
+
+    assert isinstance(result, logging.LogRecord) and result is not record
+    clean = result.getMessage()
+    assert FAKE_PATIENT_ID not in clean and FAKE_BAD_TOKEN not in clean
+    # Original record untouched.
+    assert FAKE_PATIENT_ID in record.getMessage()
+    assert FAKE_BAD_TOKEN in record.getMessage()
+
+
+def test_redacting_filter_passes_clean_records_unchanged():
+    """Issue (defence in depth): records without identifiers pass through as-is."""
+    record = logging.LogRecord("server.test", logging.INFO, __file__, 1, "all good %d", (1,), None)
+    assert RedactingFilter().filter(record) is True
+
+
+def test_redaction_installed_on_root_handlers():
+    """Issue (defence in depth): server.py must attach RedactingFilter to the
+    root logging handlers at startup so every logger's output is covered."""
+    from server import server  # noqa: F401 - import performs logging setup
+
+    handlers = logging.getLogger().handlers
+    assert any(isinstance(f, RedactingFilter) for h in handlers for f in h.filters), (
+        "no root handler carries a RedactingFilter"
+    )
