@@ -6,6 +6,7 @@ current code. All identifiers, tokens, names and contact details are fake.
 
 import ast
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -61,7 +62,7 @@ def _log_messages(caplog) -> list[str]:
     return [r.getMessage() for r in caplog.records if not _is_test_http_logger(r.name)]
 
 
-def _find_leaks(messages: list[str], needles: list[tuple[str, str]]) -> list[str]:
+def _find_leaks(messages: list[str], needles: Sequence[tuple[str, str]]) -> list[str]:
     """Return one readable line per (label, needle) found in any log message."""
     return [
         f"[{label}] {needle!r} found in log: {msg!r}"

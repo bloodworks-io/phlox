@@ -534,4 +534,4 @@ server/schemas/letter.py:6
     class LetterTemplate(BaseModel):
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================= 491 passed, 1 xfailed, 8 warnings in 14.75s ==================
+================= 491 passed, 1 xfailed, 8 warnings in 13.38s ==================
