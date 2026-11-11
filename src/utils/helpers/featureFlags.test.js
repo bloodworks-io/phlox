@@ -73,6 +73,18 @@ describe("featureFlags", () => {
         expect(flags.isRagEnabled()).toBe(false);
     });
 
+    it("hides the companion UI unless explicitly enabled", async () => {
+        const { flags } = await load(createLocalStorageMock());
+
+        expect(flags.isCompanionEnabled()).toBe(false);
+
+        vi.stubEnv("VITE_COMPANION_UI", "1");
+        expect(flags.isCompanionEnabled()).toBe(false);
+
+        vi.stubEnv("VITE_COMPANION_UI", "true");
+        expect(flags.isCompanionEnabled()).toBe(true);
+    });
+
     it("never forces the splash screen outside desktop dev", async () => {
         const { flags, isTauri } = await load(createLocalStorageMock());
 

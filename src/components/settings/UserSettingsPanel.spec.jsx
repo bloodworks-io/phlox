@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import UserSettingsPanel from "./UserSettingsPanel";
 import { renderWithProviders } from "../../test/utils";
+import { isCompanionEnabled } from "../../utils/helpers/featureFlags";
+import { isTauri } from "../../utils/helpers/apiConfig";
 
 vi.mock("./TemplateSettingsPanel", () => ({
     default: () => <div>Note templates surface</div>,
@@ -17,6 +19,7 @@ vi.mock("./CompanionUserSettings", () => ({
 }));
 vi.mock("../../utils/helpers/featureFlags", () => ({
     isChatEnabled: vi.fn(() => true),
+    isCompanionEnabled: vi.fn(() => true),
 }));
 vi.mock("../../utils/helpers/apiConfig", () => ({
     isTauri: vi.fn(() => false),
@@ -136,5 +139,25 @@ describe("UserSettingsPanel", () => {
         expect(
             screen.queryByRole("tab", { name: /companion/i }),
         ).not.toBeInTheDocument();
+    });
+
+    it("shows companion settings on desktop when the feature flag is on", () => {
+        isTauri.mockReturnValue(true);
+        renderPanel();
+        expect(
+            screen.getByRole("tab", { name: /companion/i }),
+        ).toBeInTheDocument();
+        isTauri.mockReturnValue(false);
+    });
+
+    it("hides companion settings when the companion flag is off, even on desktop", () => {
+        isTauri.mockReturnValue(true);
+        isCompanionEnabled.mockReturnValue(false);
+        renderPanel();
+        expect(
+            screen.queryByRole("tab", { name: /companion/i }),
+        ).not.toBeInTheDocument();
+        isCompanionEnabled.mockReturnValue(true);
+        isTauri.mockReturnValue(false);
     });
 });

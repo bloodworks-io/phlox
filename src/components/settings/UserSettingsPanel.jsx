@@ -14,7 +14,7 @@ import TemplateSettingsPanel from "./TemplateSettingsPanel";
 import LetterTemplatesPanel from "./LetterTemplatesPanel";
 import ChatSettingsPanel from "./ChatSettingsPanel";
 import CompanionUserSettings from "./CompanionUserSettings";
-import { isChatEnabled } from "../../utils/helpers/featureFlags";
+import { isChatEnabled, isCompanionEnabled } from "../../utils/helpers/featureFlags";
 import { isTauri } from "../../utils/helpers/apiConfig";
 import { settingsApi } from "../../utils/api/settingsApi";
 import { syncLanguage } from "../../i18n";
@@ -120,7 +120,7 @@ const UserSettingsPanel = ({
                   </HStack>
                 </Tabs.Trigger>
               )}
-              {isTauri() && (
+              {isTauri() && isCompanionEnabled() && (
                 <Tabs.Trigger className="tab-style" value="companion">
                   <HStack>
                     <LuSmartphone strokeWidth={1.6} />
@@ -275,7 +275,7 @@ const UserSettingsPanel = ({
                   />
                 </Tabs.Content>
               )}
-              {isTauri() && (
+              {isTauri() && isCompanionEnabled() && (
                 <Tabs.Content value="companion" className="settings-tab-body">
                   <CompanionUserSettings
                     config={config}

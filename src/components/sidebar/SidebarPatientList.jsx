@@ -18,6 +18,7 @@ import { LuHospital, LuSmartphone, LuUser, LuUsers } from "react-icons/lu";
 import { DeleteIcon, ChevronDownIcon, ChevronUpIcon } from "../common/icons";
 import { getInitials, getAvatarColor } from "./SidebarHelpers";
 import { isTauri } from "../../utils/helpers/apiConfig";
+import { isCompanionEnabled } from "../../utils/helpers/featureFlags";
 import { companionApi } from "../../utils/api/companionApi";
 import { KEYS } from "../../utils/cache/keys";
 
@@ -87,7 +88,7 @@ const SidebarPatientList = ({
                         </Text>
                     </Flex>
                     <Flex align="center" gap={1}>
-                        {isTauri() && companionStatus?.enabled && onOpenCompanionImport && (
+                        {isTauri() && isCompanionEnabled() && companionStatus?.enabled && onOpenCompanionImport && (
                             <Tooltip
                                 content={t("sidebar.patientList.companionTooltip")}
                                 positioning={{ placement: "top" }}
