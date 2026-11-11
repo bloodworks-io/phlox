@@ -60,7 +60,7 @@ WARNING:server.middleware:Invalid request token (method=GET, route=/api/patient/
 INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 403 Forbidden"
 ------------------------------ Captured log call -------------------------------
 DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
-WARNING  server.middleware:middleware.py:345 Invalid request token (method=GET, route=/api/patient/id/{patient_id})
+WARNING  server.middleware:middleware.py:348 Invalid request token (method=GET, route=/api/patient/id/{patient_id})
 INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 403 Forbidden"
 _______________ test_rate_limit_warning_does_not_log_patient_id ________________
 ----------------------------- Captured stderr call -----------------------------
@@ -76,10 +76,10 @@ INFO:httpx:HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 4
 DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
 INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 200 OK"
 DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
-WARNING  server.middleware:middleware.py:603 Rate limit exceeded for unknown on endpoint group /api/default
+WARNING  server.middleware:middleware.py:606 Rate limit exceeded for unknown on endpoint group /api/default
 INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
 DEBUG    asyncio:selector_events.py:64 Using selector: EpollSelector
-WARNING  server.middleware:middleware.py:603 Rate limit exceeded for unknown on endpoint group /api/default
+WARNING  server.middleware:middleware.py:606 Rate limit exceeded for unknown on endpoint group /api/default
 INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/patient/id/987654 "HTTP/1.1 429 Too Many Requests"
 ___________ test_sanitizer_does_not_log_query_text[external_search] ____________
 ----------------------------- Captured stderr call -----------------------------
@@ -93,9 +93,9 @@ INFO:server.chat.tools.sanitization:Sanitized search query: rules=mrn,email, len
 INFO     server.chat.tools.sanitization:sanitization.py:90 Sanitized search query: rules=mrn,email, length 83 -> 50
 __________________ test_redaction_installed_on_root_handlers ___________________
 ----------------------------- Captured stderr call -----------------------------
-17:14:27 INFO: Initialising application...
-17:14:27 INFO: Initializing DB and running migrations...
-17:14:27 INFO: Database initialized
+17:36:05 INFO: Initialising application...
+17:36:05 INFO: Initializing DB and running migrations...
+17:36:05 INFO: Database initialized
 =========================== short test summary info ============================
 PASSED server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[success]
 PASSED server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[not_found]
@@ -115,4 +115,4 @@ PASSED server/tests/test_phi_logging.py::test_redact_keeps_non_phi_text
 PASSED server/tests/test_phi_logging.py::test_redacting_filter_returns_copy_and_formats_args
 PASSED server/tests/test_phi_logging.py::test_redacting_filter_passes_clean_records_unchanged
 PASSED server/tests/test_phi_logging.py::test_redaction_installed_on_root_handlers
-======================== 18 passed, 6 warnings in 1.67s ========================
+======================== 18 passed, 6 warnings in 1.70s ========================

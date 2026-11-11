@@ -330,7 +330,10 @@ class LocalTokenMiddleware(BaseHTTPMiddleware):
             # Desktop mode: verify the Tauri-injected request token
             expected_token = get_request_token()
             if not expected_token:
-                logger.error(f"Auth fail-closed - no request token set (path: {path})")
+                logger.error(
+                    "Auth fail-closed - no request token set (route=%s)",
+                    _route_info(request)[0],
+                )
                 return JSONResponse(
                     status_code=503,
                     content={"detail": "Service not initialized"},
