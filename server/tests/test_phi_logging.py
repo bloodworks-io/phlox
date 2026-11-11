@@ -39,7 +39,7 @@ def _patient_app(middleware, status: int = 200) -> FastAPI:
     app.add_middleware(middleware)
 
     @app.get("/api/patient/id/{patient_id}")
-    def _get_patient(patient_id: str):
+    def _get_patient(patient_id: str):  # noqa: ARG001 - FastAPI needs the path param
         if status != 200:
             raise HTTPException(status_code=status, detail="fake error")
         return {"ok": True}

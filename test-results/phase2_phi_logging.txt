@@ -93,9 +93,9 @@ INFO:server.chat.tools.sanitization:Sanitized search query: rules=mrn,email, len
 INFO     server.chat.tools.sanitization:sanitization.py:90 Sanitized search query: rules=mrn,email, length 83 -> 50
 __________________ test_redaction_installed_on_root_handlers ___________________
 ----------------------------- Captured stderr call -----------------------------
-17:36:05 INFO: Initialising application...
-17:36:05 INFO: Initializing DB and running migrations...
-17:36:05 INFO: Database initialized
+18:06:50 INFO: Initialising application...
+18:06:50 INFO: Initializing DB and running migrations...
+18:06:50 INFO: Database initialized
 =========================== short test summary info ============================
 PASSED server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[success]
 PASSED server/tests/test_phi_logging.py::test_audit_path_does_not_store_raw_patient_id[not_found]
@@ -115,4 +115,4 @@ PASSED server/tests/test_phi_logging.py::test_redact_keeps_non_phi_text
 PASSED server/tests/test_phi_logging.py::test_redacting_filter_returns_copy_and_formats_args
 PASSED server/tests/test_phi_logging.py::test_redacting_filter_passes_clean_records_unchanged
 PASSED server/tests/test_phi_logging.py::test_redaction_installed_on_root_handlers
-======================== 18 passed, 6 warnings in 1.70s ========================
+======================== 18 passed, 6 warnings in 3.29s ========================
