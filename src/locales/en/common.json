@@ -1165,6 +1165,7 @@
         "changelogTooltip": "View Changelog",
         "switchToDarkMode": "Switch to Dark Mode",
         "switchToLightMode": "Switch to Light Mode",
+        "switchToSystem": "Switch to System Appearance",
         "useSystemAppearance": "Use system appearance",
         "status": {
             "allConnected": "All services connected",
