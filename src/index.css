@@ -22,6 +22,11 @@
     }
 }
 
+html,
+body {
+    overscroll-behavior: none;
+}
+
 body {
     margin: 0;
     background: transparent;
