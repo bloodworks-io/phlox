@@ -42,7 +42,9 @@ const SidebarPatientList = ({
     const labelColor = "folio.sidebarMuted";
 
     const { data: companionStatus } = useSWR(
-        onOpenCompanionImport ? KEYS.COMPANION_STATUS : null,
+        isTauri() && isCompanionEnabled() && onOpenCompanionImport
+            ? KEYS.COMPANION_STATUS
+            : null,
         companionApi.fetchStatus,
         { revalidateOnFocus: true, refreshInterval: 30000 },
     );
