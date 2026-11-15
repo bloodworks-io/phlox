@@ -41,8 +41,10 @@ const DashboardTodoPanel = ({
 
     return (
         <Box
+            data-testid="dashboard-todo-panel"
             w="100%"
             maxW="760px"
+            mx="auto"
             px={3}
             py={3}
             bg="folio.paper"
@@ -119,6 +121,7 @@ const DashboardTodoPanel = ({
                             </HStack>
 
                             <VStack
+                                data-testid="dashboard-todo-items"
                                 align="stretch"
                                 gap={1}
                                 maxH="180px"

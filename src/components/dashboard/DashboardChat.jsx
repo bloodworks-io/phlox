@@ -457,6 +457,7 @@ const DashboardChat = () => {
                             left="0"
                             right="0"
                             zIndex={2}
+                            pb={6}
                             pointerEvents="none"
                         >
                             <Box pointerEvents="auto">

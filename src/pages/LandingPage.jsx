@@ -28,8 +28,9 @@ const LandingPage = () => {
     setShowDisclaimer(false);
   };
 
+  // The todo overlay can extend past the hero; AppLayout owns page scrolling.
   return (
-    <Box h="calc(100dvh - 60px)" position="relative" overflow="hidden">
+    <Box h="calc(100dvh - 60px)" position="relative">
       <DisclaimerModal isOpen={showDisclaimer} onClose={handleDisclaimerClose} />
       <DashboardChat />
     </Box>
