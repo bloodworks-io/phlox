@@ -25,7 +25,7 @@ export type SeedVariant = {
     onboarding?: boolean;
     patients?: "populated" | "empty";
     patient?: "populated" | "ungenerated";
-    todos?: "populated" | "empty";
+    todos?: "populated" | "empty" | typeof seedTodos;
     rag?: "populated" | "empty";
 };
 
@@ -245,7 +245,11 @@ export async function installApiMocks(
         if (method === "GET" && path === "/api/dashboard/todos") {
             return jsonResponse(
                 route,
-                { todos: variant.todos === "empty" ? [] : seedTodos },
+                {
+                    todos: Array.isArray(variant.todos)
+                        ? variant.todos
+                        : variant.todos === "empty" ? [] : seedTodos,
+                },
             );
         }
 
