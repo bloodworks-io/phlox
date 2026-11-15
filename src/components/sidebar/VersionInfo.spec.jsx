@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import VersionInfo from "./VersionInfo";
 import { renderWithProviders } from "../../test/utils";
 
@@ -31,9 +32,7 @@ beforeEach(() => {
 
 describe("VersionInfo", () => {
     it("renders the expanded browser version controls", async () => {
-        renderWithProviders(
-            <VersionInfo colorMode="light" toggleColorMode={vi.fn()} />,
-        );
+        renderWithProviders(<VersionInfo />);
 
         expect(screen.getByText("v2.5.2")).toBeInTheDocument();
         await waitFor(() =>
@@ -42,13 +41,7 @@ describe("VersionInfo", () => {
     });
 
     it("renders the collapsed browser version controls", async () => {
-        renderWithProviders(
-            <VersionInfo
-                isCollapsed
-                colorMode="dark"
-                toggleColorMode={vi.fn()}
-            />,
-        );
+        renderWithProviders(<VersionInfo isCollapsed />);
 
         expect(screen.queryByText("v2.5.2")).not.toBeInTheDocument();
         await waitFor(() =>
@@ -63,9 +56,7 @@ describe("VersionInfo", () => {
             embedding: null,
         });
 
-        renderWithProviders(
-            <VersionInfo colorMode="light" toggleColorMode={vi.fn()} />,
-        );
+        renderWithProviders(<VersionInfo />);
 
         await waitFor(() =>
             expect(settingsApiMock.fetchServerStatus).toHaveBeenCalledTimes(1),
@@ -74,9 +65,7 @@ describe("VersionInfo", () => {
     });
 
     it("opens the changelog dialog from the version control", async () => {
-        renderWithProviders(
-            <VersionInfo colorMode="light" toggleColorMode={vi.fn()} />,
-        );
+        renderWithProviders(<VersionInfo />);
 
         fireEvent.click(screen.getByText("v2.5.2"));
         expect(await screen.findByText("GitHub")).toBeInTheDocument();
@@ -84,13 +73,11 @@ describe("VersionInfo", () => {
     });
 
     it("renders real expanded controls with accessible names", async () => {
-        renderWithProviders(
-            <VersionInfo colorMode="light" toggleColorMode={vi.fn()} />,
-        );
+        renderWithProviders(<VersionInfo />);
 
         expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
         expect(
-            screen.getByRole("button", { name: /switch to dark mode/i }),
+            screen.getByRole("button", { name: /switch to light mode/i }),
         ).toBeInTheDocument();
         expect(screen.getByRole("status")).toBeInTheDocument();
         await waitFor(() =>
@@ -99,13 +86,7 @@ describe("VersionInfo", () => {
     });
 
     it("renders real collapsed controls with accessible names", async () => {
-        renderWithProviders(
-            <VersionInfo
-                isCollapsed
-                colorMode="dark"
-                toggleColorMode={vi.fn()}
-            />,
-        );
+        renderWithProviders(<VersionInfo isCollapsed />);
 
         expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
         expect(
@@ -116,35 +97,58 @@ describe("VersionInfo", () => {
         );
     });
 
-    it("returns to the system theme from the expanded sidebar control", async () => {
-        renderWithProviders(
-            <VersionInfo colorMode="light" toggleColorMode={vi.fn()} />,
-        );
+    it("cycles light → dark → system from the expanded theme control", async () => {
+        renderWithProviders(<VersionInfo />);
 
-        const systemControl = screen.getByRole("button", {
-            name: "Use system appearance",
-        });
-        fireEvent.click(systemControl);
+        const control = () => screen.getByRole("button", { name: /switch to/i });
+        expect(control()).not.toHaveAttribute("aria-pressed");
 
+        // Default preference is system; the first click pins light.
+        fireEvent.click(control());
         await waitFor(() =>
-            expect(document.documentElement.dataset.themePreference).toBe(
-                "system",
-            ),
+            expect(document.documentElement.dataset.themePreference).toBe("light"),
         );
-        expect(systemControl).toHaveAttribute("aria-pressed", "true");
+
+        fireEvent.click(
+            screen.getByRole("button", { name: /switch to dark mode/i }),
+        );
+        await waitFor(() =>
+            expect(document.documentElement.dataset.themePreference).toBe("dark"),
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", { name: /switch to system appearance/i }),
+        );
+        await waitFor(() =>
+            expect(document.documentElement.dataset.themePreference).toBe("system"),
+        );
+        expect(
+            screen.getByRole("button", { name: /switch to light mode/i }),
+        ).toBeInTheDocument();
     });
 
-    it("exposes the system theme control in the collapsed sidebar", () => {
-        renderWithProviders(
-            <VersionInfo
-                isCollapsed
-                colorMode="dark"
-                toggleColorMode={vi.fn()}
-            />,
+    it("shows a tooltip naming the next theme stop on hover", async () => {
+        const user = userEvent.setup();
+        renderWithProviders(<VersionInfo />);
+
+        await user.hover(
+            screen.getByRole("button", { name: /switch to light mode/i }),
         );
 
         expect(
-            screen.getByRole("button", { name: "Use system appearance" }),
+            await screen.findByText(
+                /switch to light mode/i,
+                {},
+                { timeout: 3000 },
+            ),
+        ).toBeInTheDocument();
+    });
+
+    it("exposes the theme cycle control in the collapsed sidebar", () => {
+        renderWithProviders(<VersionInfo isCollapsed />);
+
+        expect(
+            screen.getByRole("button", { name: /switch to light mode/i }),
         ).toBeInTheDocument();
     });
 });

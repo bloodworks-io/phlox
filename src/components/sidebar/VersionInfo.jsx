@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import {
     LuCheckCheck,
     LuHistory,
-    LuMonitor,
+    LuSunMoon,
     LuMoon,
     LuSun,
     LuLogOut,
@@ -33,10 +33,12 @@ const SidebarControlButton = ({
   fontSize = "md",
   ariaPressed,
   children,
+  ...rest
 }) => (
   <Box
     as="button"
     type="button"
+    {...rest}
     onClick={onClick}
     aria-label={label}
     aria-pressed={ariaPressed}
@@ -56,6 +58,50 @@ const SidebarControlButton = ({
     {children}
   </Box>
 );
+
+// One control, three states: light → dark → system → light. The icon shows
+// where the theme is now; the label says where the next click lands.
+const THEME_CYCLE = {
+  light: "dark",
+  dark: "system",
+  system: "light",
+};
+
+const THEME_ICONS = {
+  light: LuSun,
+  dark: LuMoon,
+  system: LuSunMoon,
+};
+
+const THEME_NEXT_LABELS = {
+  light: "sidebar.switchToDarkMode",
+  dark: "sidebar.switchToSystem",
+  system: "sidebar.switchToLightMode",
+};
+
+const ThemeCycleButton = ({ isCollapsed, fontSize }) => {
+  const { t } = useTranslation();
+  const { themePreference, setThemePreference } = useThemePreference();
+  const label = t(THEME_NEXT_LABELS[themePreference]);
+  const ThemeIcon = THEME_ICONS[themePreference];
+
+  return (
+    <Tooltip
+      content={label}
+      positioning={{
+        placement: isCollapsed ? "right" : "top",
+      }}
+    >
+      <SidebarControlButton
+        label={label}
+        fontSize={fontSize}
+        onClick={() => setThemePreference(THEME_CYCLE[themePreference])}
+      >
+        <ThemeIcon strokeWidth={1.6} />
+      </SidebarControlButton>
+    </Tooltip>
+  );
+};
 
 const StatusIcon = ({ serverStatus, isCollapsed }) => {
   const { t } = useTranslation();
@@ -104,9 +150,8 @@ const StatusIcon = ({ serverStatus, isCollapsed }) => {
   );
 };
 
-const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
+const VersionInfo = ({ isCollapsed }) => {
   const { t } = useTranslation();
-  const { themePreference, setThemePreference } = useThemePreference();
   const { open, onOpen, onClose } = useDisclosure();
   const [serverStatus, setServerStatus] = useState({
     whisper: false,
@@ -175,42 +220,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
             </Tooltip>
           )}
 
-          <Tooltip
-            content={
-              colorMode === "light"
-                ? t("sidebar.switchToDarkMode")
-                : t("sidebar.switchToLightMode")
-            }
-            positioning={{
-              placement: "right",
-            }}
-          >
-            <SidebarControlButton
-              label={
-                colorMode === "light"
-                  ? t("sidebar.switchToDarkMode")
-                  : t("sidebar.switchToLightMode")
-              }
-              onClick={toggleColorMode}
-            >
-              {colorMode === "light" ? <LuMoon strokeWidth={1.6} /> : <LuSun strokeWidth={1.6} />}
-            </SidebarControlButton>
-          </Tooltip>
-
-          <Tooltip
-            content={t("sidebar.useSystemAppearance")}
-            positioning={{
-              placement: "right",
-            }}
-          >
-            <SidebarControlButton
-              label={t("sidebar.useSystemAppearance")}
-              onClick={() => setThemePreference("system")}
-              ariaPressed={themePreference === "system"}
-            >
-              <LuMonitor />
-            </SidebarControlButton>
-          </Tooltip>
+          <ThemeCycleButton isCollapsed />
 
           <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />
         </VStack>
@@ -251,36 +261,7 @@ const VersionInfo = ({ isCollapsed, colorMode, toggleColorMode }) => {
             </Tooltip>
           )}
 
-          <Tooltip
-            content={
-              colorMode === "light"
-                ? t("sidebar.switchToDarkMode")
-                : t("sidebar.switchToLightMode")
-            }
-          >
-            <SidebarControlButton
-              label={
-                colorMode === "light"
-                  ? t("sidebar.switchToDarkMode")
-                  : t("sidebar.switchToLightMode")
-              }
-              fontSize="lg"
-              onClick={toggleColorMode}
-            >
-              {colorMode === "light" ? <LuMoon strokeWidth={1.6} /> : <LuSun strokeWidth={1.6} />}
-            </SidebarControlButton>
-          </Tooltip>
-
-          <Tooltip content={t("sidebar.useSystemAppearance")}>
-            <SidebarControlButton
-              label={t("sidebar.useSystemAppearance")}
-              fontSize="lg"
-              onClick={() => setThemePreference("system")}
-              ariaPressed={themePreference === "system"}
-            >
-              <LuMonitor />
-            </SidebarControlButton>
-          </Tooltip>
+          <ThemeCycleButton fontSize="lg" />
 
           <StatusIcon serverStatus={serverStatus} isCollapsed={isCollapsed} />
         </HStack>

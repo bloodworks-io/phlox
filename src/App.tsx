@@ -15,6 +15,7 @@ import NewNoteModal from "./components/modals/NewNoteModal";
 import CompanionImportModal from "./components/modals/CompanionImportModal";
 import { useDisclosure } from "@chakra-ui/react";
 import { handleError } from "./utils/helpers/errorHandlers";
+import { isCompanionEnabled } from "./utils/helpers/featureFlags";
 import { handleLoadPatientDetails } from "./utils/patient/patientHandlers";
 import { usePatientSession } from "./utils/hooks/usePatientSession";
 import { useAppBootstrap } from "./utils/hooks/useAppBootstrap";
@@ -163,10 +164,12 @@ function AppContent({ setIsInitializing }: AppContentProps) {
                 selectedDate={selectedDate}
                 onComplete={newNote.completeNewNote}
             />
-            <CompanionImportModal
-                isOpen={isCompanionImportOpen}
-                onClose={onCloseCompanionImport}
-            />
+            {isCompanionEnabled() && (
+                <CompanionImportModal
+                    isOpen={isCompanionImportOpen}
+                    onClose={onCloseCompanionImport}
+                />
+            )}
             <ConfirmDialog
                 isOpen={nav.isLeaveOpen}
                 onClose={nav.cancelNavigation}

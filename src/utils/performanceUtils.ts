@@ -1,5 +1,24 @@
 
 /**
+ * Threshold below which local models are considered meaningfully less capable.
+ * Must match the quality messaging shown on model cards (<9B warning).
+ */
+export const SMALL_MODEL_THRESHOLD_B = 9.0;
+
+/**
+ * Check whether a model is below the quality threshold (under 9B parameters).
+ * MoE models are judged by total parameters, not active ones.
+ *
+ * @param {Object} model - Model object from the local models API
+ * @returns {boolean}
+ */
+export function isSmallModel(model) {
+  return (
+    model?.parameters_billions != null && model.parameters_billions < SMALL_MODEL_THRESHOLD_B
+  );
+}
+
+/**
  * Calculate LLM performance estimate for Apple Silicon.
  *
  * @param {number} genNumber - M-series generation (1-4)
