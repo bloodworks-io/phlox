@@ -16,6 +16,7 @@ import { useLocalModels } from "../../utils/hooks/useLocalModels";
 import {
   getSmartRecommendations,
   calculateLLMPerformance,
+  isSmallModel,
 } from "../../utils/performanceUtils";
 import { setEmbeddingReady } from "../../utils/helpers/featureFlags";
 import { downloadEmbeddingModel as downloadEmbeddingService } from "../../utils/services/localModelService";
@@ -106,6 +107,7 @@ const PerformancePopover = ({ model, systemSpecs }) => {
 const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDownload, systemSpecs }) => {
   const { t } = useTranslation();
   const isDownloadingThis = isDownloading && downloadProgress !== null;
+  const isSmall = isSmallModel(model);
 
   return (
     <Box
@@ -127,13 +129,29 @@ const ModelCard = ({ model, isDownloaded, isDownloading, downloadProgress, onDow
       <HStack w="full" justify="space-between">
         <HStack gap={1}>
           {model.recommendedType === "recommended" && (
-            <Tooltip content={t("settings.localModels.recommendedTooltip")} showArrow>
+            <Tooltip
+              content={t(
+                isSmall
+                  ? "settings.localModels.recommendedSmallTooltip"
+                  : "settings.localModels.recommendedTooltip"
+              )}
+              showArrow
+            >
               <Box color="folio.accent" display="flex" alignItems="center" cursor="default"><LuStar size="12" strokeWidth={1.6} /></Box>
             </Tooltip>
           )}
           <Text fontSize="sm" fontWeight="bold">{model.simple_name || model.id}</Text>
         </HStack>
-        <PerformancePopover model={model} systemSpecs={systemSpecs} />
+        <HStack gap={1}>
+          {isSmall && (
+            <Tooltip content={t("settings.localModels.smallModelWarning")} showArrow>
+              <Box color="folio.warning" display="flex" alignItems="center" cursor="default">
+                <LuTriangleAlert size="14" strokeWidth={1.6} />
+              </Box>
+            </Tooltip>
+          )}
+          <PerformancePopover model={model} systemSpecs={systemSpecs} />
+        </HStack>
       </HStack>
       <Text fontSize="xs" fontWeight="normal" className="settings-meta" noOfLines={2}>
         {model.description}

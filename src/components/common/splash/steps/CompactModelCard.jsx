@@ -10,10 +10,12 @@ import { Tooltip } from "@/components/ui/tooltip";
 import {
   DownloadIcon,
   CheckIcon,
+  WarningIcon,
 } from "../../icons";
 import { LuStar } from "react-icons/lu";
 import { PrimaryButton, SuccessButton } from "../../Buttons";
 import { PerformancePopover } from "./PerformancePopover";
+import { isSmallModel } from "../../../../utils/performanceUtils";
 
 // Compact model card for carousel
 export const CompactModelCard = ({
@@ -28,6 +30,7 @@ export const CompactModelCard = ({
 }) => {
   const { t } = useTranslation();
   const isRecommended = model.recommendedType === "recommended";
+  const isSmall = isSmallModel(model);
 
   return (
     <Box
@@ -58,11 +61,18 @@ export const CompactModelCard = ({
       flexDirection="column"
       justifyContent="space-between"
     >
-      {/* Header: star + name + info icon */}
+      {/* Header: star + name + warning/info icons */}
       <HStack w="full" justify="space-between">
         <HStack gap={1}>
           {model.recommendedType === "recommended" && (
-            <Tooltip content={t("splash.step.aiModels.recommendedTooltip")} showArrow>
+            <Tooltip
+              content={t(
+                isSmall
+                  ? "splash.step.aiModels.recommendedSmallTooltip"
+                  : "splash.step.aiModels.recommendedTooltip"
+              )}
+              showArrow
+            >
               <Box color="folio.info" display="flex" alignItems="center" cursor="default">
                 <LuStar size="12" strokeWidth={1.6} />
               </Box>
@@ -72,7 +82,16 @@ export const CompactModelCard = ({
             {model.simple_name || model.id}
           </Text>
         </HStack>
-        <PerformancePopover model={model} systemSpecs={systemSpecs} />
+        <HStack gap={1}>
+          {isSmall && (
+            <Tooltip content={t("splash.step.aiModels.smallModelWarning")} showArrow>
+              <Box color="folio.warning" display="flex" alignItems="center" cursor="default">
+                <WarningIcon boxSize={3.5} />
+              </Box>
+            </Tooltip>
+          )}
+          <PerformancePopover model={model} systemSpecs={systemSpecs} />
+        </HStack>
       </HStack>
 
       <Text fontSize="xs" fontWeight="normal" color="folio.muted" className="settings-meta" noOfLines={2}>
